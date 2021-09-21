@@ -35,12 +35,6 @@ class ClassLikeDocblockComment
     public $psalm_internal = null;
 
     /**
-     * @var null|string
-     * @deprecated
-     */
-    public $mixin = null;
-
-    /**
      * @var string[]
      */
     public $mixins = [];
@@ -124,4 +118,27 @@ class ClassLikeDocblockComment
      * @var bool
      */
     public $consistent_constructor = false;
+
+    /**
+     * @var bool
+     */
+    public $consistent_templates = false;
+
+    /** @var bool */
+    public $stub_override = false;
+
+    /**
+     * @var null|string
+     */
+    public $extension_requirement;
+
+    /**
+     * @var array<int, string>
+     */
+    public $implementation_requirements = [];
+
+    /**
+     * @var ?string
+     */
+    public $description;
 }

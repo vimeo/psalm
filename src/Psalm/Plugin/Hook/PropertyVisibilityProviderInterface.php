@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface PropertyVisibilityProviderInterface
 {
     /**
@@ -12,9 +13,6 @@ interface PropertyVisibilityProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @return ?bool
-     */
     public static function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,
@@ -22,5 +20,5 @@ interface PropertyVisibilityProviderInterface
         bool $read_mode,
         Context $context,
         CodeLocation $code_location
-    );
+    ): ?bool;
 }

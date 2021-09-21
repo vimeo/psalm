@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ConflictingReferenceConstraint extends CodeIssue
 {
-    const ERROR_LEVEL = 7;
-    const SHORTCODE = 85;
+    public const ERROR_LEVEL = 7;
+    public const SHORTCODE = 85;
 }

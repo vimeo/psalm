@@ -1,7 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+
 use function count;
+
 use const PHP_URL_FRAGMENT;
 use const PHP_URL_HOST;
 use const PHP_URL_PASS;
@@ -10,30 +15,21 @@ use const PHP_URL_PORT;
 use const PHP_URL_QUERY;
 use const PHP_URL_SCHEME;
 use const PHP_URL_USER;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\StatementsSource;
-use Psalm\Type;
 
-class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ParseUrlReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['parse_url'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }
@@ -138,7 +134,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         }
 
         $return_type = new Type\Union([
-            new Type\Atomic\ObjectLike($component_types),
+            new Type\Atomic\TKeyedArray($component_types),
             new Type\Atomic\TFalse(),
         ]);
 

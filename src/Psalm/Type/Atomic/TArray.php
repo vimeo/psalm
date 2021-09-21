@@ -1,18 +1,22 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 use function count;
 use function get_class;
-use Psalm\Type\Atomic;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 
 /**
- * Represents an array with generic type parameters.
+ * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
  */
 class TArray extends \Psalm\Type\Atomic
 {
     use GenericTrait;
+
+    /**
+     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     */
+    public $type_params;
 
     /**
      * @var string
@@ -22,49 +26,37 @@ class TArray extends \Psalm\Type\Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param non-empty-list<\Psalm\Type\Union> $type_params
+     * @param array{\Psalm\Type\Union, \Psalm\Type\Union} $type_params
      */
     public function __construct(array $type_params)
     {
         $this->type_params = $type_params;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): string {
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -82,7 +74,7 @@ class TArray extends \Psalm\Type\Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }
@@ -90,11 +82,12 @@ class TArray extends \Psalm\Type\Atomic
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
-        return $this->getKey();
+        if (!$exact || $this->type_params[1]->isMixed()) {
+            return 'array';
+        }
+
+        return $this->toNamespacedString(null, [], null, false);
     }
 }

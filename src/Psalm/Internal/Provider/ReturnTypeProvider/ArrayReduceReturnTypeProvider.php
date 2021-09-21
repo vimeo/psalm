@@ -1,39 +1,37 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\InvalidArgument;
+use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+
 use function count;
 use function explode;
 use function in_array;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Issue\InvalidArgument;
-use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
-use Psalm\Type;
 use function strpos;
 use function strtolower;
 
-class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_reduce'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $context = $event->getContext();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }
@@ -60,12 +58,12 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof Type\Atomic\TArray
-                || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike
+                || $array_arg_types['array'] instanceof Type\Atomic\TKeyedArray
                 || $array_arg_types['array'] instanceof Type\Atomic\TList)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike) {
+            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
             } elseif ($array_arg_atomic_type instanceof Type\Atomic\TList) {
                 $array_arg_atomic_type = new Type\Atomic\TArray([
@@ -104,10 +102,10 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $reduce_return_type = Type::combineUnionTypes($closure_return_type, $reduce_return_type);
 
             if ($closure_atomic_type->params !== null) {
-                if (count($closure_atomic_type->params) < 2) {
+                if (count($closure_atomic_type->params) < 1) {
                     if (IssueBuffer::accepts(
                         new InvalidArgument(
-                            'The closure passed to array_reduce needs two params',
+                            'The closure passed to array_reduce at least one parameter',
                             new CodeLocation($statements_source, $function_call_arg)
                         ),
                         $statements_source->getSuppressedIssues()
@@ -119,7 +117,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 }
 
                 $carry_param = $closure_atomic_type->params[0];
-                $item_param = $closure_atomic_type->params[1];
+                $item_param = $closure_atomic_type->params[1] ?? null;
 
                 if ($carry_param->type
                     && (
@@ -153,7 +151,8 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getMixed();
                 }
 
-                if ($item_param->type
+                if ($item_param
+                    && $item_param->type
                     && $array_arg_atomic_type
                     && !$array_arg_atomic_type->type_params[1]->hasMixed()
                     && !UnionTypeComparator::isContainedBy(
@@ -193,8 +192,6 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             $call_map = InternalCallMapHandler::getCallMap();
 
             foreach ($mapping_function_ids as $mapping_function_id) {
-                $mapping_function_id = $mapping_function_id;
-
                 $mapping_function_id_parts = explode('&', $mapping_function_id);
 
                 $part_match_found = false;
@@ -218,9 +215,16 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $mapping_function_id_part = \substr($mapping_function_id_part, 1);
                             }
 
-                            list($callable_fq_class_name, $method_name) = explode('::', $mapping_function_id_part);
+                            [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
 
-                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                            if (in_array($callable_fq_class_name, ['self', 'static'], true)) {
+                                $callable_fq_class_name = $statements_source->getFQCLN();
+                                if ($callable_fq_class_name === null) {
+                                    continue;
+                                }
+                            }
+
+                            if ($callable_fq_class_name === 'parent') {
                                 continue;
                             }
 

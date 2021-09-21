@@ -1,10 +1,17 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Plugin\EventHandler;
 use Psalm\Plugin\Hook;
 use Psalm\Plugin\RegistrationInterface;
+
 use function class_exists;
+use function in_array;
+use function is_a;
 use function is_subclass_of;
+use function sprintf;
 
 class PluginRegistrationSocket implements RegistrationInterface
 {
@@ -15,6 +22,21 @@ class PluginRegistrationSocket implements RegistrationInterface
     private $codebase;
 
     /**
+     * @var array<string, class-string<FileScanner>>
+     */
+    private $additionalFileTypeScanners = [];
+
+    /**
+     * @var array<string, class-string<FileAnalyzer>>
+     */
+    private $additionalFileTypeAnalyzers = [];
+
+    /**
+     * @var list<string>
+     */
+    private $additionalFileExtensions = [];
+
+    /**
      * @internal
      */
     public function __construct(Config $config, Codebase $codebase)
@@ -23,115 +45,167 @@ class PluginRegistrationSocket implements RegistrationInterface
         $this->codebase = $codebase;
     }
 
-    /** @return void */
-    public function addStubFile(string $file_name)
+    public function addStubFile(string $file_name): void
     {
         $this->config->addStubFile($file_name);
     }
 
-    /**
-     * @return void
-     */
-    public function registerHooksFromClass(string $handler)
+    public function registerHooksFromClass(string $handler): void
     {
         if (!class_exists($handler, false)) {
             throw new \InvalidArgumentException('Plugins must be loaded before registration');
         }
 
-        if (is_subclass_of($handler, Hook\AfterFileAnalysisInterface::class)) {
-            $this->config->after_file_checks[$handler] = $handler;
-        }
+        $this->config->eventDispatcher->registerClass($handler);
 
-        if (is_subclass_of($handler, Hook\AfterMethodCallAnalysisInterface::class)) {
-            $this->config->after_method_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterFunctionCallAnalysisInterface::class)) {
-            $this->config->after_function_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterEveryFunctionCallAnalysisInterface::class)) {
-            $this->config->after_every_function_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterExpressionAnalysisInterface::class)) {
-            $this->config->after_expression_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterStatementAnalysisInterface::class)) {
-            $this->config->after_statement_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterClassLikeExistenceCheckInterface::class)) {
-            $this->config->after_classlike_exists_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterClassLikeAnalysisInterface::class)) {
-            $this->config->after_classlike_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterClassLikeVisitInterface::class)) {
-            $this->config->after_visit_classlikes[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\AfterCodebasePopulatedInterface::class)) {
-            $this->config->after_codebase_populated[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\BeforeFileAnalysisInterface::class)) {
-            $this->config->before_file_checks[$handler] = $handler;
-        }
-
-        if (is_subclass_of($handler, Hook\PropertyExistenceProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\PropertyExistenceProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\PropertyExistenceProviderInterface::class)
+        ) {
             $this->codebase->properties->property_existence_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\PropertyVisibilityProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\PropertyVisibilityProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\PropertyVisibilityProviderInterface::class)
+        ) {
             $this->codebase->properties->property_visibility_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\PropertyTypeProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\PropertyTypeProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\PropertyTypeProviderInterface::class)
+        ) {
             $this->codebase->properties->property_type_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\MethodExistenceProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\MethodExistenceProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\MethodExistenceProviderInterface::class)
+        ) {
             $this->codebase->methods->existence_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\MethodVisibilityProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\MethodVisibilityProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\MethodVisibilityProviderInterface::class)
+        ) {
             $this->codebase->methods->visibility_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\MethodReturnTypeProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\MethodReturnTypeProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\MethodReturnTypeProviderInterface::class)
+        ) {
             $this->codebase->methods->return_type_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\MethodParamsProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\MethodParamsProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\MethodParamsProviderInterface::class)
+        ) {
             $this->codebase->methods->params_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\FunctionExistenceProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\FunctionExistenceProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\FunctionExistenceProviderInterface::class)
+        ) {
             $this->codebase->functions->existence_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\FunctionParamsProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\FunctionParamsProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\FunctionParamsProviderInterface::class)
+        ) {
             $this->codebase->functions->params_provider->registerClass($handler);
         }
 
-        if (is_subclass_of($handler, Hook\FunctionReturnTypeProviderInterface::class)) {
+        if (is_subclass_of($handler, Hook\FunctionReturnTypeProviderInterface::class) ||
+            is_subclass_of($handler, EventHandler\FunctionReturnTypeProviderInterface::class)
+        ) {
             $this->codebase->functions->return_type_provider->registerClass($handler);
         }
+    }
 
-        if (is_subclass_of($handler, Hook\AfterAnalysisInterface::class)) {
-            $this->config->after_analysis[$handler] = $handler;
+    /**
+     * @param string $fileExtension e.g. `'html'`
+     * @param class-string<FileScanner> $className
+     */
+    public function addFileTypeScanner(string $fileExtension, string $className): void
+    {
+        if (!class_exists($className) || !is_a($className, FileScanner::class, true)) {
+            throw new \LogicException(
+                sprintf(
+                    'Class %s must be of type %s',
+                    $className,
+                    FileScanner::class
+                ),
+                1622727271
+            );
         }
-
-        if (is_subclass_of($handler, Hook\StringInterpreterInterface::class)) {
-            $this->config->string_interpreters[$handler] = $handler;
+        if (!empty($this->config->getFiletypeScanners()[$fileExtension])
+            || !empty($this->additionalFileTypeScanners[$fileExtension])
+        ) {
+            throw new \LogicException(
+                sprintf('Cannot redeclare scanner for file-type %s', $fileExtension),
+                1622727272
+            );
         }
+        $this->additionalFileTypeScanners[$fileExtension] = $className;
+        $this->addFileExtension($fileExtension);
+    }
 
-        if (is_subclass_of($handler, Hook\AfterFunctionLikeAnalysisInterface::class)) {
-            $this->config->after_functionlike_checks[$handler] = $handler;
+    /**
+     * @return array<string, class-string<FileScanner>>
+     */
+    public function getAdditionalFileTypeScanners(): array
+    {
+        return $this->additionalFileTypeScanners;
+    }
+
+    /**
+     * @param string $fileExtension e.g. `'html'`
+     * @param class-string<FileAnalyzer> $className
+     */
+    public function addFileTypeAnalyzer(string $fileExtension, string $className): void
+    {
+        if (!class_exists($className) || !is_a($className, FileAnalyzer::class, true)) {
+            throw new \LogicException(
+                sprintf(
+                    'Class %s must be of type %s',
+                    $className,
+                    FileAnalyzer::class
+                ),
+                1622727281
+            );
+        }
+        if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])
+            || !empty($this->additionalFileTypeAnalyzers[$fileExtension])
+        ) {
+            throw new \LogicException(
+                sprintf('Cannot redeclare analyzer for file-type %s', $fileExtension),
+                1622727282
+            );
+        }
+        $this->additionalFileTypeAnalyzers[$fileExtension] = $className;
+        $this->addFileExtension($fileExtension);
+    }
+
+    /**
+     * @return array<string, class-string<FileAnalyzer>>
+     */
+    public function getAdditionalFileTypeAnalyzers(): array
+    {
+        return $this->additionalFileTypeAnalyzers;
+    }
+
+    /**
+     * @return list<string> e.g. `['html', 'perl']`
+     */
+    public function getAdditionalFileExtensions(): array
+    {
+        return $this->additionalFileExtensions;
+    }
+
+    /**
+     * @param string $fileExtension e.g. `'html'`
+     */
+    private function addFileExtension(string $fileExtension): void
+    {
+        if (!in_array($fileExtension, $this->config->getFileExtensions(), true)) {
+            $this->additionalFileExtensions[] = $fileExtension;
         }
     }
 }

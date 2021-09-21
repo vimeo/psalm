@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ForbiddenEcho extends CodeIssue
 {
-    const ERROR_LEVEL = -2;
-    const SHORTCODE = 172;
+    public const ERROR_LEVEL = -2;
+    public const SHORTCODE = 172;
 }

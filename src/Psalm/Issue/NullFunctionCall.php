@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class NullFunctionCall extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 93;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 93;
 }

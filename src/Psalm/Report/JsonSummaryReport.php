@@ -6,9 +6,6 @@ use Psalm\Report;
 
 class JsonSummaryReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $type_counts = [];

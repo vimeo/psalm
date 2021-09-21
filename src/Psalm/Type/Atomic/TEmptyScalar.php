@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes a `scalar` type that is also empty.
+ */
 class TEmptyScalar extends TScalar
 {
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'empty-scalar';
     }

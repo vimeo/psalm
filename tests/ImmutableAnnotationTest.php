@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-
 class ImmutableAnnotationTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -11,7 +9,7 @@ class ImmutableAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'immutableClassGenerating' => [
@@ -451,7 +449,6 @@ class ImmutableAnnotationTest extends TestCase
                         }
 
                         /**
-                         * @psalm-pure
                          * @return mixed
                          * @psalm-return T
                          */
@@ -474,13 +471,64 @@ class ImmutableAnnotationTest extends TestCase
                         ) {}
                     }'
             ],
+            'allowMutablePropertyFetch' => [
+                '<?php
+                    class B {
+                        public int $j = 5;
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlusOther(B $b) : int {
+                            return $this->i + $b->j;
+                        }
+                    }',
+            ],
+            'allowPassingMutableIntoImmutable' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Immutable {
+                        private $item;
+
+                        public function __construct(Item $item) {
+                            $this->item = $item;
+                        }
+
+                        public function get(): int {
+                            return $this->item->get();
+                        }
+                    }
+
+                    class Item {
+                        private int $i = 0;
+
+                        public function mutate(): void {
+                            $this->i++;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->i;
+                        }
+                    }',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'immutablePropertyAssignmentInternally' => [
@@ -611,37 +659,6 @@ class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
             ],
-            'preventPassingMutableIntoImmutable' => [
-                '<?php
-                    /**
-                     * @psalm-immutable
-                     */
-                    class Immutable {
-                        private $item;
-
-                        public function __construct(Item $item) {
-                            $this->item = $item;
-                        }
-
-                        public function get(): int {
-                            return $this->item->get();
-                        }
-                    }
-
-                    class Item {
-                        private int $i = 0;
-
-                        public function mutate(): void {
-                            $this->i++;
-                        }
-
-                        /** @psalm-mutation-free */
-                        public function get(): int {
-                            return $this->i;
-                        }
-                    }',
-                'error_message' => 'ImpurePropertyAssignment',
-            ],
             'preventNonImmutableTraitInImmutableClass' => [
                 '<?php
                     trait MutableTrait {
@@ -675,29 +692,6 @@ class ImmutableAnnotationTest extends TestCase
                      */
                     final class NotReallyImmutableClass extends MutableParent {}',
                 'error_message' => 'MutableDependency'
-            ],
-            'preventAssigningArrayToImmutableProperty' => [
-                '<?php
-                    class Item {}
-
-                    /**
-                     * @psalm-immutable
-                     */
-                    class Immutable {
-                        /**
-                         * @var Item[]
-                         */
-                        private $items;
-
-                        /**
-                         * @param Item[] $items
-                         */
-                        public function __construct(array $items)
-                        {
-                            $this->items = $items;
-                        }
-                    }',
-                'error_message' => 'ImpurePropertyAssignment',
             ],
             'mutationInPropertyAssignment' => [
                 '<?php
@@ -750,6 +744,24 @@ class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'preventUnset' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        /** @var string */
+                        public $b;
+
+                        public function __construct(string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    $a = new A("hello");
+                    unset($a->b);',
+                'error_message' => 'InaccessibleProperty',
             ],
         ];
     }

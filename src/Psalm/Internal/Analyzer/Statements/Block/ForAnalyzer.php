@@ -2,15 +2,16 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+
+use function array_intersect_key;
 use function array_merge;
 use function in_array;
-use function array_intersect_key;
 
 /**
  * @internal
@@ -18,17 +19,13 @@ use function array_intersect_key;
 class ForAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Stmt\For_    $stmt
-     * @param   Context                     $context
-     *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
@@ -44,10 +41,6 @@ class ForAnalyzer
                 && \is_string($init->var->name)
                 && ($init_var_type = $statements_analyzer->node_data->getType($init->expr))
             ) {
-                if ($init_var_type->isSingleIntLiteral()) {
-                    $context->vars_in_scope['$' . $init->var->name] = Type::getInt();
-                }
-
                 $init_var_types[$init->var->name] = $init_var_type;
             }
         }
@@ -184,18 +177,6 @@ class ForAnalyzer
             $for_context->referenced_var_ids,
             $context->referenced_var_ids
         );
-
-        if ($codebase->find_unused_variables) {
-            foreach ($for_context->unreferenced_vars as $var_id => $locations) {
-                if (isset($loop_scope->referenced_var_ids[$var_id])) {
-                    $statements_analyzer->registerVariableUses($locations);
-                } elseif (isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                }
-            }
-        }
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($for_context);

@@ -4,33 +4,22 @@ namespace Psalm\Example\Plugin;
 use PhpParser;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
-use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 
 class StringChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked
      *
-     * @param  PhpParser\Node\Expr  $expr
-     * @param  Context              $context
-     * @param  FileManipulation[]   $file_replacements
-     *
      * @return null|false
      */
-    public static function afterExpressionAnalysis(
-        PhpParser\Node\Expr $expr,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    ) {
+    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
+        $expr = $event->getExpr();
+        $statements_source = $event->getStatementsSource();
+        $codebase = $event->getCodebase();
         if ($expr instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
@@ -76,8 +65,10 @@ class StringChecker implements AfterExpressionAnalysisInterface
                     return false;
                 }
 
-                return;
+                return null;
             }
         }
+
+        return null;
     }
 }

@@ -1,21 +1,23 @@
 <?php
 namespace Psalm\Tests\Traits;
 
-use function is_int;
-use const PHP_VERSION;
 use Psalm\Config;
 use Psalm\Context;
+
+use function is_int;
 use function strlen;
 use function strpos;
 use function substr;
 use function version_compare;
+
+use const PHP_VERSION;
 
 trait ValidCodeAnalysisTestTrait
 {
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    abstract public function providerValidCodeParse();
+    abstract public function providerValidCodeParse(): iterable;
 
     /**
      * @dataProvider providerValidCodeParse
@@ -47,6 +49,12 @@ trait ValidCodeAnalysisTestTrait
 
                 return;
             }
+        } elseif (strpos($test_name, 'PHP80-') !== false) {
+            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+                $this->markTestSkipped('Test case requires PHP 8.0.');
+
+                return;
+            }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
@@ -69,6 +77,9 @@ trait ValidCodeAnalysisTestTrait
         $context = new Context();
 
         $this->project_analyzer->setPhpVersion($php_version);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

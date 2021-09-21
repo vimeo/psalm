@@ -2,19 +2,23 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Exception\DocblockParseException;
-use Psalm\Internal\Taint\TaintNode;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
@@ -26,7 +30,11 @@ use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+
+use function array_merge;
+use function count;
 use function explode;
+use function reset;
 use function strtolower;
 
 /**
@@ -34,17 +42,11 @@ use function strtolower;
  */
 class ReturnAnalyzer
 {
-    /**
-     * @param  PhpParser\Node\Stmt\Return_ $stmt
-     * @param  Context                     $context
-     *
-     * @return false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
-    ) {
+    ): void {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
@@ -71,7 +73,7 @@ class ReturnAnalyzer
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($source, $stmt)
                     )
                 )) {
@@ -118,12 +120,16 @@ class ReturnAnalyzer
                     continue;
                 }
 
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                }
+
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
 
         if ($stmt->expr) {
-            $context->inside_call = true;
+            $context->inside_return = true;
 
             if ($stmt->expr instanceof PhpParser\Node\Expr\Closure
                 || $stmt->expr instanceof PhpParser\Node\Expr\ArrowFunction
@@ -136,14 +142,21 @@ class ReturnAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                return false;
+                $context->inside_return = false;
+                return;
             }
+
+            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;
 
+                if ($stmt_expr_type && $stmt_expr_type->parent_nodes) {
+                    $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                }
+
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);
-            } elseif ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            } elseif ($stmt_expr_type) {
                 $stmt_type = $stmt_expr_type;
 
                 if ($stmt_type->isNever()) {
@@ -166,11 +179,31 @@ class ReturnAnalyzer
             } else {
                 $stmt_type = Type::getMixed();
             }
+
+            $context->inside_return = false;
         } else {
             $stmt_type = Type::getVoid();
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        if ($context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                    if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                        $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->finally_scope->vars_in_scope[$var_id],
+                            $type,
+                            $statements_analyzer->getCodebase()
+                        );
+                    }
+                } else {
+                    $context->finally_scope->vars_in_scope[$var_id] = $type;
+                    $type->possibly_undefined = true;
+                    $type->possibly_undefined_from_try = true;
+                }
+            }
+        }
 
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
@@ -192,11 +225,9 @@ class ReturnAnalyzer
                     $source->getParentFQCLN()
                 );
 
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                ) {
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     self::handleTaints(
-                        $codebase,
+                        $statements_analyzer,
                         $stmt,
                         $cased_method_id,
                         $inferred_type,
@@ -224,7 +255,7 @@ class ReturnAnalyzer
                     );
 
                     if ($storage instanceof \Psalm\Storage\MethodStorage) {
-                        list($fq_class_name, $method_name) = explode('::', $cased_method_id);
+                        [$fq_class_name, $method_name] = explode('::', $cased_method_id);
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -234,7 +265,7 @@ class ReturnAnalyzer
                             $class_storage,
                             strtolower($method_name),
                             null,
-                            '$this'
+                            true
                         );
 
                         if ($found_generic_params) {
@@ -244,7 +275,8 @@ class ReturnAnalyzer
 
                             $local_return_type = clone $local_return_type;
 
-                            $local_return_type->replaceTemplateTypesWithArgTypes(
+                            TemplateInferredTypeReplacer::replace(
+                                $local_return_type,
                                 new TemplateResult([], $found_generic_params),
                                 $codebase
                             );
@@ -252,10 +284,10 @@ class ReturnAnalyzer
                     }
 
                     if ($local_return_type->isGenerator() && $storage->has_yield) {
-                        return null;
+                        return;
                     }
 
-                    if ($stmt_type->isMixed()) {
+                    if ($stmt_type->hasMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
@@ -264,7 +296,7 @@ class ReturnAnalyzer
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
-                                return false;
+                                return;
                             }
                         }
 
@@ -276,21 +308,53 @@ class ReturnAnalyzer
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                         }
 
+                        if ($stmt_type->isMixed()) {
+                            $origin_locations = [];
+
+                            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                                foreach ($stmt_type->parent_nodes as $parent_node) {
+                                    $origin_locations = array_merge(
+                                        $origin_locations,
+                                        $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                                    );
+                                }
+                            }
+
+                            $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                            $return_location = new CodeLocation($source, $stmt->expr);
+
+                            if ($origin_location && $origin_location->getHash() === $return_location->getHash()) {
+                                $origin_location = null;
+                            }
+
+                            if (IssueBuffer::accepts(
+                                new MixedReturnStatement(
+                                    'Could not infer a return type',
+                                    $return_location,
+                                    $origin_location
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return;
+                        }
+
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
-                                'Could not infer a return type',
+                                'Possibly-mixed return value',
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
-
-                        return null;
                     }
 
                     if ($local_return_type->isMixed()) {
-                        return null;
+                        return;
                     }
 
                     if (!$context->collect_initializations
@@ -309,10 +373,10 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            return;
                         }
 
-                        return null;
+                        return;
                     }
 
                     $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
@@ -364,7 +428,7 @@ class ReturnAnalyzer
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
                                 )) {
-                                    // fall throuhg
+                                    // fall through
                                 }
                             }
 
@@ -378,10 +442,11 @@ class ReturnAnalyzer
                                         new CodeLocation($source, $stmt->expr),
                                         $context->self,
                                         $context->calling_method_id,
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
+                                        new ClassLikeNameOptions(true)
                                     ) === false
                                     ) {
-                                        return false;
+                                        return;
                                     }
                                 } elseif ($local_type_part instanceof Type\Atomic\TArray
                                     && $stmt->expr instanceof PhpParser\Node\Expr\Array_
@@ -398,10 +463,11 @@ class ReturnAnalyzer
                                                         new CodeLocation($source, $item->value),
                                                         $context->self,
                                                         $context->calling_method_id,
-                                                        $statements_analyzer->getSuppressedIssues()
+                                                        $statements_analyzer->getSuppressedIssues(),
+                                                        new ClassLikeNameOptions(true)
                                                     ) === false
                                                     ) {
-                                                        return false;
+                                                        return;
                                                     }
                                                 }
                                             }
@@ -457,7 +523,7 @@ class ReturnAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            // fall throughg
+                            // fall through
                         }
                     }
                 }
@@ -478,32 +544,33 @@ class ReturnAnalyzer
                 }
             }
         }
-
-        return null;
     }
 
     private static function handleTaints(
-        \Psalm\Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
         \Psalm\Storage\FunctionLikeStorage $storage
     ) : void {
-        if (!$codebase->taint || !$stmt->expr || !$storage->location) {
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            || !$stmt->expr
+            || !$storage->location
+        ) {
             return;
         }
 
-        $method_node = TaintNode::getForMethodReturn(
+        $method_node = DataFlowNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
-            $storage->location
+            $storage->signature_return_type_location ?: $storage->location
         );
 
-        $codebase->taint->addTaintNode($method_node);
+        $statements_analyzer->data_flow_graph->addNode($method_node);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $codebase->taint->addPath(
+                $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',
@@ -535,7 +602,6 @@ class ReturnAnalyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $closure_id);
 
-        /** @psalm-suppress ArgumentTypeCoercion */
         $parent_fn_storage = $statements_analyzer
             ->getCodebase()
             ->getFunctionLikeStorage(
@@ -557,7 +623,7 @@ class ReturnAnalyzer
             return;
         }
 
-        /** @var Type\Atomic\TFn|Type\Atomic\TCallable $parent_callable_return_type */
+        /** @var Type\Atomic\TClosure|Type\Atomic\TCallable $parent_callable_return_type */
         $parent_callable_return_type = \current($parent_fn_storage->return_type->getAtomicTypes());
 
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {

@@ -2,18 +2,19 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
-use function strtolower;
 use function in_array;
+use function strtolower;
 
 /**
  * @internal
@@ -24,7 +25,6 @@ class ObjectComparator
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
      * @param  TNamedObject|TTemplateParam|TIterable  $container_type_part
      *
-     * @return bool
      */
     public static function isShallowlyContainedBy(
         Codebase $codebase,
@@ -32,7 +32,7 @@ class ObjectComparator
         Type\Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
-    ) {
+    ): bool {
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[$input_type_part->getKey(false)] = $input_type_part;
 
@@ -74,13 +74,35 @@ class ObjectComparator
                         continue;
                     }
 
-                    if (\substr($intersection_container_type->defining_class, 0, 3) === 'fn-') {
-                        foreach ($intersection_input_types as $intersection_input_type) {
-                            if ($intersection_input_type instanceof TTemplateParam
-                                && \substr($intersection_input_type->defining_class, 0, 3) === 'fn-'
+                    foreach ($intersection_input_types as $intersection_input_type) {
+                        if ($intersection_input_type instanceof TTemplateParam
+                            && (\substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
+                                || \substr($intersection_input_type->defining_class, 0, 3) === 'fn-')
+                        ) {
+                            if (\substr($intersection_input_type->defining_class, 0, 3) === 'fn-'
+                                && \substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
                                 && $intersection_input_type->defining_class
                                     !== $intersection_container_type->defining_class
                             ) {
+                                continue 2;
+                            }
+
+                            foreach ($intersection_input_type->as->getAtomicTypes() as $input_as_atomic) {
+                                if ($input_as_atomic->equals($intersection_container_type, false)) {
+                                    continue 3;
+                                }
+                            }
+                        } elseif ($intersection_input_type instanceof TTemplateParam) {
+                            $container_param = $intersection_container_type->param_name;
+                            $container_class = $intersection_container_type->defining_class;
+                            $input_class_like = $codebase->classlikes
+                                ->getStorageFor($intersection_input_type->defining_class);
+
+                            if ($codebase->classlikes->traitExists($container_class)
+                                && !\is_null($input_class_like)
+                                && isset(
+                                    $input_class_like->template_extended_params[$container_class][$container_param]
+                                )) {
                                 continue 2;
                             }
                         }
@@ -167,8 +189,8 @@ class ObjectComparator
                     && $intersection_input_type instanceof TTemplateParam
                 ) {
                     if ($intersection_container_type->param_name !== $intersection_input_type->param_name
-                        || ((string)$intersection_container_type->defining_class
-                            !== (string)$intersection_input_type->defining_class
+                        || ($intersection_container_type->defining_class
+                            !== $intersection_input_type->defining_class
                             && \substr($intersection_input_type->defining_class, 0, 3) !== 'fn-'
                             && \substr($intersection_container_type->defining_class, 0, 3) !== 'fn-')
                     ) {
@@ -177,7 +199,7 @@ class ObjectComparator
                                 $intersection_input_type->defining_class
                             );
 
-                            if (isset($input_class_storage->template_type_extends
+                            if (isset($input_class_storage->template_extended_params
                                     [$intersection_container_type->defining_class]
                                     [$intersection_container_type->param_name])
                             ) {
@@ -246,7 +268,8 @@ class ObjectComparator
                         continue 2;
                     }
 
-                    if ($codebase->classExists($intersection_input_type_lower)
+                    if (($codebase->classExists($intersection_input_type_lower)
+                            || $codebase->classlikes->enumExists($intersection_input_type_lower))
                         && $codebase->classOrInterfaceExists($intersection_container_type_lower)
                         && $codebase->classExtendsOrImplements(
                             $intersection_input_type_lower,

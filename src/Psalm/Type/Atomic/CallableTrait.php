@@ -1,24 +1,23 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
 use function array_map;
 use function count;
 use function implode;
-use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Type;
-use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 
 trait CallableTrait
 {
     /**
-     * @var array<int, FunctionLikeParameter>|null
+     * @var list<FunctionLikeParameter>|null
      */
     public $params = [];
 
@@ -28,22 +27,20 @@ trait CallableTrait
     public $return_type;
 
     /**
-     * @var bool
+     * @var ?bool
      */
     public $is_pure;
 
     /**
      * Constructs a new instance of a generic type
      *
-     * @param string                            $value
-     * @param array<int, FunctionLikeParameter> $params
-     * @param Union                             $return_type
+     * @param list<FunctionLikeParameter> $params
      */
     public function __construct(
-        $value = 'callable',
-        array $params = null,
-        Union $return_type = null,
-        bool $is_pure = false
+        string $value = 'callable',
+        ?array $params = null,
+        ?Union $return_type = null,
+        ?bool $is_pure = null
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -62,25 +59,20 @@ trait CallableTrait
         $this->return_type = $this->return_type ? clone $this->return_type : null;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return $this->__toString();
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
-     *
-     * @return string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
                 return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -99,7 +91,7 @@ trait CallableTrait
                     /**
                      * @return string
                      */
-                    function (FunctionLikeParameter $param) use ($namespace, $aliased_classes, $this_class) {
+                    function (FunctionLikeParameter $param) use ($namespace, $aliased_classes, $this_class): string {
                         if (!$param->type) {
                             $type_string = 'mixed';
                         } else {
@@ -134,25 +126,19 @@ trait CallableTrait
                 . $param_string . $return_type_string;
         }
 
-        return 'callable' . $param_string . $return_type_string;
+        return ($this->is_pure ? 'pure-' : '') . 'callable' . $param_string . $return_type_string;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
         }
@@ -160,10 +146,7 @@ trait CallableTrait
         return $this->value;
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $param_string = '';
         $return_type_string = '';
@@ -187,24 +170,25 @@ trait CallableTrait
                 . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
 
-        return $this->value . $param_string . $return_type_string;
+        return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
+            . $this->value . $param_string . $return_type_string;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getId();
     }
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        Codebase $codebase = null,
+        ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Atomic {
         $callable = clone $this;
@@ -213,7 +197,7 @@ trait CallableTrait
             foreach ($callable->params as $offset => $param) {
                 $input_param_type = null;
 
-                if (($input_type instanceof Atomic\TFn || $input_type instanceof Atomic\TCallable)
+                if (($input_type instanceof Atomic\TClosure || $input_type instanceof Atomic\TCallable)
                     && isset($input_type->params[$offset])
                 ) {
                     $input_param_type = $input_type->params[$offset]->type;
@@ -223,7 +207,7 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $param->type = TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase,
@@ -233,27 +217,27 @@ trait CallableTrait
                     $calling_class,
                     $calling_function,
                     $replace,
-                    !$add_upper_bound,
+                    !$add_lower_bound,
+                    null,
                     $depth
                 );
             }
         }
 
-        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TFn)
-            && $callable->return_type
-            && $input_type->return_type
-        ) {
-            $callable->return_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+        if ($callable->return_type) {
+            $callable->return_type = TemplateStandinTypeReplacer::replace(
                 $callable->return_type,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $input_type->return_type,
+                $input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TClosure
+                    ? $input_type->return_type
+                    : null,
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound
+                $add_lower_bound
             );
         }
 
@@ -270,17 +254,25 @@ trait CallableTrait
                     continue;
                 }
 
-                $param->type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+                TemplateInferredTypeReplacer::replace(
+                    $param->type,
+                    $template_result,
+                    $codebase
+                );
             }
         }
 
         if ($this->return_type) {
-            $this->return_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+            TemplateInferredTypeReplacer::replace(
+                $this->return_type,
+                $template_result,
+                $codebase
+            );
         }
     }
 
     /**
-     * @return array<\Psalm\Type\TypeNode>
+     * @return list<\Psalm\Type\TypeNode>
      */
     public function getChildNodes() : array
     {

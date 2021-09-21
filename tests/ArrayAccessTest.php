@@ -8,10 +8,7 @@ class ArrayAccessTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExist()
+    public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
@@ -32,10 +29,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExistWithIssetCheck()
+    public function testEnsureArrayOffsetsExistWithIssetCheck(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -55,10 +49,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testDontEnsureArrayOffsetsExist()
+    public function testDontEnsureArrayOffsetsExist(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = false;
 
@@ -76,10 +67,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray()
+    public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
 
@@ -95,10 +83,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testComplainAfterFirstIsset()
+    public function testComplainAfterFirstIsset(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
@@ -116,10 +101,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureArrayIntOffsetsExist()
+    public function testEnsureArrayIntOffsetsExist(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
@@ -140,10 +122,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray()
+    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -182,10 +161,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsNotEmpty()
+    public function testEnsureListOffsetExistsNotEmpty(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -203,10 +179,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterArrayPop()
+    public function testEnsureListOffsetExistsAfterArrayPop(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -243,10 +216,30 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueInRange()
+    public function testEnsureOffsetExistsAfterNestedIsset(): void
+    {
+        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public int $foo = 0;
+                }
+
+                /**
+                 * @param array<string, A> $value
+                 */
+                function test(array $value): int
+                {
+                    return isset($value["a"]->foo) ? $value["a"]->foo : 0;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    public function testEnsureListOffsetExistsAfterCountValueInRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -296,10 +289,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueOutOfRange()
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRange(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -322,10 +312,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan()
+    public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan(): void
     {
         \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -348,10 +335,29 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testDontWorryWhenUnionedWithPositiveInt(): void
+    {
+        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param list<string> $a
+                 * @param 0|positive-int $b
+                 */
+                function foo(array $a, int $b): void {
+                    echo $a[$b];
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'instanceOfStringOffset' => [
@@ -402,7 +408,9 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     /** @psalm-suppress UndefinedClass */
                     $a = new A();
-                    /** @psalm-suppress UndefinedClass */
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
                 'assertions' => [],
                 'error_levels' => ['MixedArgument', 'MixedArrayAccess'],
@@ -478,7 +486,7 @@ class ArrayAccessTest extends TestCase
                         echo isset($p["key"]) ? $p["key"] : "";
                     }',
             ],
-            'unsetObjectLikeOffset' => [
+            'unsetTKeyedArrayOffset' => [
                 '<?php
                     function takesInt(int $i) : void {}
                     $x = ["a" => "value"];
@@ -542,7 +550,6 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     /**
                      * @psalm-suppress MixedAssignment
-                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedOperand
                      * @psalm-suppress MixedArrayAssignment
                      * @param mixed[] $line
@@ -698,6 +705,13 @@ class ArrayAccessTest extends TestCase
             ],
             'arrayAccessOnObjectWithNullGet' => [
                 '<?php
+                    $array = new C([]);
+                    $array["key"] = [];
+                    /** @psalm-suppress PossiblyInvalidArrayAssignment */
+                    $array["key"][] = "testing";
+
+                    $c = isset($array["foo"]) ? $array["foo"] : null;
+
                     class C implements ArrayAccess
                     {
                         /**
@@ -707,7 +721,7 @@ class ArrayAccessTest extends TestCase
 
                         /**
                          * @param array<scalar|array> $array
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         final public function __construct(array $array)
                         {
@@ -732,7 +746,7 @@ class ArrayAccessTest extends TestCase
                         /**
                          * @param ?string $name
                          * @param scalar|array $value
-                         * @psalm-suppress MixedTypeCoercion
+                         * @psalm-suppress MixedArgumentTypeCoercion
                          */
                         public function offsetSet($name, $value) : void
                         {
@@ -772,14 +786,7 @@ class ArrayAccessTest extends TestCase
                         {
                             $this->__unset($offset);
                         }
-                    }
-
-                    $array = new C([]);
-                    $array["key"] = [];
-                    /** @psalm-suppress PossiblyInvalidArrayAssignment */
-                    $array["key"][] = "testing";
-
-                    $c = isset($array["foo"]) ? $array["foo"] : null;',
+                    }',
                 [
                     '$c' => 'C|null|scalar',
                 ]
@@ -787,67 +794,6 @@ class ArrayAccessTest extends TestCase
             'singleLetterOffset' => [
                 '<?php
                     ["s" => "str"]["str"[0]];',
-            ],
-            'assertConstantOffsetsInMethod' => [
-                '<?php
-                    class C {
-                        public const ARR = [
-                            "a" => ["foo" => true],
-                            "b" => []
-                        ];
-
-                        public function bar(string $key): bool {
-                            if (!array_key_exists($key, self::ARR) || !array_key_exists("foo", self::ARR[$key])) {
-                                return false;
-                            }
-
-                            return self::ARR[$key]["foo"];
-                        }
-                    }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
-            ],
-            'assertSelfClassConstantOffsetsInFunction' => [
-                '<?php
-                    namespace Ns;
-
-                    class C {
-                        public const ARR = [
-                            "a" => ["foo" => true],
-                            "b" => []
-                        ];
-
-                        public function bar(?string $key): bool {
-                            if ($key === null || !array_key_exists($key, self::ARR) || !array_key_exists("foo", self::ARR[$key])) {
-                                return false;
-                            }
-
-                            return self::ARR[$key]["foo"];
-                        }
-                    }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
-            ],
-            'assertNamedClassConstantOffsetsInFunction' => [
-                '<?php
-                    namespace Ns;
-
-                    class C {
-                        public const ARR = [
-                            "a" => ["foo" => true],
-                            "b" => [],
-                        ];
-                    }
-
-                    function bar(?string $key): bool {
-                        if ($key === null || !array_key_exists($key, C::ARR) || !array_key_exists("foo", C::ARR[$key])) {
-                            return false;
-                        }
-
-                        return C::ARR[$key]["foo"];
-                    }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'arrayAccessAfterByRefArrayOffsetAssignment' => [
                 '<?php
@@ -906,6 +852,14 @@ class ArrayAccessTest extends TestCase
                 '<?php
                     function foo(SimpleXMLElement $s) : SimpleXMLElement {
                         return $s["a"];
+                    }',
+            ],
+            'simpleXmlArrayFetchChildren' => [
+                '<?php
+                    function iterator(SimpleXMLElement $xml): iterable {
+                        foreach ($xml->children() as $img) {
+                            yield $img["src"] ?? "";
+                        }
                     }',
             ],
             'assertOnArrayAccess' => [
@@ -988,13 +942,88 @@ class ArrayAccessTest extends TestCase
 
                     if ($foo !== null) {}'
             ],
+            'accessKnownArrayWithPositiveInt' => [
+                '<?php
+                    /** @param list<int> $arr */
+                    function foo(array $arr) : void {
+                        $o = [4, 15, 18, 21, 51];
+                        $i = 0;
+                        foreach ($arr as $a) {
+                            if ($o[$i] === $a) {}
+                            $i++;
+                        }
+                    }'
+            ],
+            'arrayAccessOnArraylikeObjectOrArray' => [
+                '<?php
+                    /**
+                     * @param arraylike-object<int, string>|array<int, string> $arr
+                     */
+                    function test($arr): string {
+                        return $arr[0];
+                    }
+
+                    test(["a", "b"]);
+                    test(new ArrayObject(["a", "b"]));'
+            ],
+            'nullCoalesceArrayAccess' => [
+                '<?php
+                    /** @param ArrayAccess<int, string> $a */
+                    function foo(?ArrayAccess $a) : void {
+                        echo $a[0] ?? "default";
+                    }'
+            ],
+            'allowUnsettingNested' => [
+                '<?php
+                    /** @psalm-immutable */
+                    final class test {
+                        public function __construct(public int $value) {}
+                    }
+                    $test = new test(1);
+                    $a = [1 => $test];
+                    unset($a[$test->value]);'
+            ],
+            'arrayAssertionShouldNotBeNull' => [
+                '<?php
+                    function foo(?array $arr, string $s) : void {
+                        /**
+                         * @psalm-suppress PossiblyNullArrayAccess
+                         * @psalm-suppress MixedArrayAccess
+                         */
+                        if ($arr[$s]["b"] !== true) {
+                            return;
+                        }
+
+                        /**
+                         * @psalm-suppress MixedArgument
+                         * @psalm-suppress MixedArrayAccess
+                         * @psalm-suppress PossiblyNullArrayAccess
+                         */
+                        echo $arr[$s]["c"];
+                    }'
+            ],
+            'TransformBadOffsetToGoodOnes' => [
+                '<?php
+                    $index = 1.1;
+
+                    /** @psalm-suppress InvalidArrayOffset */
+                    $_arr1 = [$index => 5];
+
+                    $_arr2 = [];
+                    /** @psalm-suppress InvalidArrayOffset */
+                    $_arr2[$index] = 5;',
+                [
+                    '$_arr1===' => 'non-empty-array<1, 5>',
+                    '$_arr2===' => 'non-empty-array<1, 5>',
+                ]
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidArrayAccess' => [
@@ -1230,7 +1259,7 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'undefinedObjectLikeArrayOffset' => [
+            'undefinedTKeyedArrayOffset' => [
                 '<?php
                     class Example {
                         /**
@@ -1266,6 +1295,19 @@ class ArrayAccessTest extends TestCase
                     [$width, $height, $depth] = size();',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'negativeListAccess' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello(): void
+                        {
+                            $a = explode("/", "a/b/c");
+                            $x = $a[-3];
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset'
+            ]
         ];
     }
 }

@@ -10,60 +10,9 @@ class ClassLikeStorage
     use CustomMetadataTrait;
 
     /**
-     * A lookup table for public class constants
-     *
-     * @var array<string, Type\Union>
+     * @var array<string, ClassConstantStorage>
      */
-    public $public_class_constants = [];
-
-    /**
-     * A lookup table for protected class constants
-     *
-     * @var array<string, Type\Union>
-     */
-    public $protected_class_constants = [];
-
-    /**
-     * A lookup table for private class constants
-     *
-     * @var array<string, Type\Union>
-     */
-    public $private_class_constants = [];
-
-    /**
-     * A lookup table for class constant name locations
-     *
-     * @var array<string, CodeLocation>
-     */
-    public $class_constant_locations = [];
-
-    /**
-     * A lookup table for class constant statement locations
-     *
-     * @var array<string, CodeLocation>
-     */
-    public $class_constant_stmt_locations = [];
-
-    /**
-     * A lookup table for nodes of unresolvable public class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $public_class_constant_nodes = [];
-
-    /**
-     * A lookup table for nodes of unresolvable protected class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $protected_class_constant_nodes = [];
-
-    /**
-     * A lookup table for nodes of unresolvable private class constants
-     *
-     * @var array<string, \Psalm\Internal\Scanner\UnresolvedConstantComponent>
-     */
-    public $private_class_constant_nodes = [];
+    public $constants = [];
 
     /**
      * Aliases to help Psalm understand constant refs
@@ -93,18 +42,12 @@ class ClassLikeStorage
     public $internal = '';
 
     /**
-     * @var null|Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject
-     * @deprecated
-     */
-    public $mixin = null;
-
-    /**
      * @var Type\Atomic\TTemplateParam[]
      */
     public $templatedMixins = [];
 
     /**
-     * @var Type\Atomic\TNamedObject[]
+     * @var list<Type\Atomic\TNamedObject>
      */
     public $namedMixins = [];
 
@@ -112,11 +55,6 @@ class ClassLikeStorage
      * @var ?string
      */
     public $mixin_declaring_fqcln = null;
-
-    /**
-     * @var array<string, bool>
-     */
-    public $deprecated_constants = [];
 
     /**
      * @var bool
@@ -158,7 +96,7 @@ class ClassLikeStorage
     /**
      * Interfaces this class implements directly
      *
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $direct_class_interfaces = [];
 
@@ -223,6 +161,11 @@ class ClassLikeStorage
     public $final = false;
 
     /**
+     * @var bool
+     */
+    public $final_from_docblock = false;
+
+    /**
      * @var array<lowercase-string, string>
      */
     public $used_traits = [];
@@ -251,6 +194,11 @@ class ClassLikeStorage
      * @var bool
      */
     public $is_interface = false;
+
+    /**
+     * @var bool
+     */
+    public $is_enum = false;
 
     /**
      * @var bool
@@ -293,6 +241,10 @@ class ClassLikeStorage
     public $appearing_method_ids = [];
 
     /**
+     * Map from lowercase method name to list of declarations in order from parent, to grandparent, to
+     * great-grandparent, etc **including traits and interfaces**. Ancestors that don't have their own declaration are
+     * skipped.
+     *
      * @var array<lowercase-string, array<string, MethodIdentifier>>
      */
     public $overridden_method_ids = [];
@@ -348,7 +300,15 @@ class ClassLikeStorage
     public $overridden_property_ids = [];
 
     /**
-     * @var array<string, non-empty-array<string, array{Type\Union}>>|null
+     * An array holding the class template "as" types.
+     *
+     * It's the de-facto list of all templates on a given class.
+     *
+     * The name of the template is the first key. The nested array is keyed by the defining class
+     * (i.e. the same as the class name). This allows operations with the same-named template defined
+     * across multiple classes to not run into trouble.
+     *
+     * @var array<string, non-empty-array<string, Type\Union>>|null
      */
     public $template_types;
 
@@ -358,14 +318,36 @@ class ClassLikeStorage
     public $template_covariants;
 
     /**
-     * @var array<string, array<int|string, Type\Union>>|null
+     * A map of which generic classlikes are extended or implemented by this class or interface.
+     *
+     * This is only used in the populator, which poulates the $template_extended_params property below.
+     *
+     * @internal
+     *
+     * @var array<string, non-empty-array<int, Type\Union>>|null
      */
-    public $template_type_extends;
+    public $template_extended_offsets;
+
+    /**
+     * A map of which generic classlikes are extended or implemented by this class or interface.
+     *
+     * The annotation "@extends Traversable<SomeClass, SomeOtherClass>" would generate an entry of
+     *
+     * [
+     *     "Traversable" => [
+     *         "TKey" => new Union([new TNamedObject("SomeClass")]),
+     *         "TValue" => new Union([new TNamedObject("SomeOtherClass")])
+     *     ]
+     * ]
+     *
+     * @var array<string, array<string, Type\Union>>|null
+     */
+    public $template_extended_params;
 
     /**
      * @var ?int
      */
-    public $template_type_extends_count;
+    public $template_extended_count;
 
     /**
      * @var array<string, int>|null
@@ -425,9 +407,41 @@ class ClassLikeStorage
     public $preserve_constructor_signature = false;
 
     /**
-     * @param string $name
+     * @var bool
      */
-    public function __construct($name)
+    public $enforce_template_inheritance = false;
+
+    /**
+     * @var null|string
+     */
+    public $extension_requirement;
+
+    /**
+     * @var array<int, string>
+     */
+    public $implementation_requirements = [];
+
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
+    /**
+     * @var array<string, EnumCaseStorage>
+     */
+    public $enum_cases = [];
+
+    /**
+     * @var 'int'|'string'|null
+     */
+    public $enum_type;
+
+    /**
+     * @var ?string
+     */
+    public $description;
+
+    public function __construct(string $name)
     {
         $this->name = $name;
     }

@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests\Template;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
@@ -13,7 +12,7 @@ class ClassTemplateCovarianceTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'allowBoundedType' => [
@@ -48,39 +47,12 @@ class ClassTemplateCovarianceTest extends TestCase
 
                     class Bar {
                         /** @var Foo<array> */
-                        private $FooArray;
+                        private $arrayOfFoo;
 
                         public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
+                            $this->arrayOfFoo = new Foo(function(): array { return ["foo" => "bar"]; });
                         }
                     }'
-            ],
-            'specializeTypeInPropertyAssignment' => [
-                '<?php
-                    /** @template-covariant T */
-                    class Foo {
-                        /** @var \Closure():T $closure */
-                        private $closure;
-
-                        /** @param \Closure():T $closure */
-                        public function __construct($closure)
-                        {
-                            $this->closure = $closure;
-                        }
-                    }
-
-                    class Bar {
-                        /** @var Foo<array> */
-                        private $FooArray;
-
-                        public function __construct() {
-                            $this->FooArray = new Foo(function(): array { return ["foo" => "bar"]; });
-                            expectsShape($this->FooArray);
-                        }
-                    }
-
-                    /** @param Foo<array{foo: string}> $_ */
-                    function expectsShape($_): void {}',
             ],
             'allowPassingToCovariantCollectionWithoutExtends' => [
                 '<?php
@@ -331,6 +303,7 @@ class ClassTemplateCovarianceTest extends TestCase
                         private $arr = [];
 
                         /**
+                          * @no-named-arguments
                           * @param T ...$a
                           */
                         public function __construct(...$a) {
@@ -505,7 +478,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 [],
                 '7.4',
             ],
-            'extendsObjectLikeWithCovariant' => [
+            'extendsTKeyedArrayWithCovariant' => [
                 '<?php
                     /**
                      * @template-covariant T1
@@ -560,9 +533,9 @@ class ClassTemplateCovarianceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'preventCovariantParamUsage' => [

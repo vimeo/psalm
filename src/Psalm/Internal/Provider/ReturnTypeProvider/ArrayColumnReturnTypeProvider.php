@@ -1,30 +1,28 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
 
-class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+use function reset;
+
+class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_column'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || \count($call_args) < 2
+        ) {
             return Type::getMixed();
         }
 
@@ -37,26 +35,35 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && $first_arg_type->hasArray()
         ) {
             $input_array = $first_arg_type->getAtomicTypes()['array'];
-            if ($input_array instanceof Type\Atomic\ObjectLike) {
+            $row_type = null;
+            if ($input_array instanceof Type\Atomic\TKeyedArray) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
-                if ($row_type->isSingle() && $row_type->hasArray()) {
-                    $row_shape = $row_type->getAtomicTypes()['array'];
-                }
             } elseif ($input_array instanceof Type\Atomic\TArray) {
                 $row_type = $input_array->type_params[1];
-                if ($row_type->isSingle() && $row_type->hasArray()) {
-                    $row_shape = $row_type->getAtomicTypes()['array'];
-                }
             } elseif ($input_array instanceof Type\Atomic\TList) {
                 $row_type = $input_array->type_param;
-                if ($row_type->isSingle() && $row_type->hasArray()) {
+            }
+
+            if ($row_type && $row_type->isSingle()) {
+                if ($row_type->hasArray()) {
                     $row_shape = $row_type->getAtomicTypes()['array'];
+                } elseif ($row_type->hasObjectType()) {
+                    $row_shape_union = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                        $row_type,
+                        $statements_source,
+                        $event->getContext(),
+                        $event->getCodeLocation()
+                    );
+                    if ($row_shape_union->isSingle()) {
+                        $row_shape_union_parts = $row_shape_union->getAtomicTypes();
+                        $row_shape = reset($row_shape_union_parts);
+                    }
                 }
             }
 
             $input_array_not_empty = $input_array instanceof Type\Atomic\TNonEmptyList ||
                 $input_array instanceof Type\Atomic\TNonEmptyArray ||
-                $input_array instanceof Type\Atomic\ObjectLike;
+                $input_array instanceof Type\Atomic\TKeyedArray;
         }
 
         $value_column_name = null;
@@ -88,12 +95,15 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         $result_element_type = null;
         $have_at_least_one_res = false;
         // calculate results
-        if ($row_shape instanceof Type\Atomic\ObjectLike) {
+        if ($row_shape instanceof Type\Atomic\TKeyedArray) {
             if ((null !== $value_column_name) && isset($row_shape->properties[$value_column_name])) {
-                if ($input_array_not_empty) {
+                $result_element_type = $row_shape->properties[$value_column_name];
+                // When the selected key is possibly_undefined, the resulting array can be empty
+                if ($input_array_not_empty && $result_element_type->possibly_undefined !== true) {
                     $have_at_least_one_res = true;
                 }
-                $result_element_type = $row_shape->properties[$value_column_name];
+                //array_column skips undefined elements so resulting type is necessarily defined
+                $result_element_type->possibly_undefined = false;
             } else {
                 $result_element_type = Type::getMixed();
             }

@@ -1,28 +1,25 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use function array_keys;
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
+use function array_keys;
+use function count;
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
+
 class ErrorFixTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -50,13 +47,12 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
      * @param array<int, int> $error_counts
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorFix(
         array $files,
         array $error_counts,
         array $error_levels = []
-    ) {
+    ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -67,14 +63,17 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
+        $analyzed_files = [];
+
         for ($i = 0; $i < count($files); ++$i) {
             $batch = $files[$i];
 
             foreach ($batch as $file_path => $contents) {
                 $this->file_provider->registerFile($file_path, $contents);
 
-                if ($i === 0) {
+                if (!isset($analyzed_files[$file_path])) {
                     $codebase->addFilesToAnalyze([$file_path => $file_path]);
+                    $analyzed_files[$file_path] = true;
                 }
             }
 
@@ -101,7 +100,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,error_levels?:array<string,string>}>
      */
-    public function providerTestErrorFix()
+    public function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [
@@ -252,7 +251,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_counts' => [0, 1, 0],
+                'error_counts' => [0, 2, 0],
             ],
             'traitMethodRenameFirstError' => [
                 'files' => [
@@ -314,7 +313,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_counts' => [1, 0, 0],
+                'error_counts' => [2, 0, 0],
             ],
             'addSuppressions' => [
                 'files' => [
@@ -378,6 +377,94 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_counts' => [1, 0],
+            ],
+            'changeContent' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            function add(int $a, int $b): int {
+                                return $a + $b;
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            function hasMethod(object $input, string $method): bool {
+                                return (new ReflectionClass($input))
+                                    ->hasMethod($method);
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            function add(int $a, int $b): int {
+                                return $a + $b;
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'D.php' => '<?php
+                            function hasMethod(object $input, string $method): bool {
+                                return (new ReflectionClass($input))
+                                    ->hasMethod($method);
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 0, 0, 0],
+            ],
+            'missingConstructorForTwoVars' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                protected int $x;
+                                protected int $y;
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                protected int $x = 0;
+                                protected int $y;
+                            }'
+                    ],
+                ],
+                'error_counts' => [2, 1],
+            ],
+            'missingConstructorForInheritedProperties' => [
+                'files' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x;
+                                public int $y;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x = 0;
+                                public int $y;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            abstract class A {
+                                public int $x = 0;
+                                public int $y = 0;
+                            }
+
+                            class B extends A {
+                                public function __construct() {}
+                            }'
+                    ],
+                ],
+                'error_counts' => [2, 1, 0],
             ],
         ];
     }

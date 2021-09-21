@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
 use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 class TestConfig extends Config
 {
@@ -45,18 +47,22 @@ class TestConfig extends Config
         return '<?xml version="1.0"?>
                 <projectFiles>
                     <directory name="src" />
+                    <file name="tests/somefile.php" />
                     <ignoreFiles>
                         <directory name="src/Psalm/Internal/Stubs" />
                     </ignoreFiles>
                 </projectFiles>';
     }
 
-    public function getComposerFilePathForClassLike($fq_classlike_name)
+    /**
+     * @return false
+     */
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
     {
         return false;
     }
 
-    public function getProjectDirectories()
+    public function getProjectDirectories(): array
     {
         return [];
     }

@@ -1,27 +1,21 @@
 <?php
 namespace Psalm\Tests;
 
-use function is_array;
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\StatementsProvider;
-use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
 
 class AlgebraTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    public function testNegateFormula()
+    public function testNegateFormula(): void
     {
         $formula = [
-            new Clause(['$a' => ['!falsy']]),
+            new Clause(['$a' => ['!falsy']], 1, 1),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -30,7 +24,7 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']]),
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -40,17 +34,17 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $negated_formula[1]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$b' => ['!falsy']]),
+            new Clause(['$a' => ['!falsy']], 1, 1),
+            new Clause(['$b' => ['!falsy']], 1, 2),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertCount(1, $negated_formula);
-        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
+        $this->assertSame(['$b' => ['falsy'], '$a' => ['falsy']], $negated_formula[0]->possibilities);
 
         $formula = [
-            new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
+            new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']], 1, 1),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -61,10 +55,20 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $negated_formula[2]->possibilities);
     }
 
-    /**
-     * @return void
-     */
-    public function testCombinatorialExpansion()
+    public function testNegateFormulaWithUnreconcilableTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['int']], 1, 1),
+            new Clause(['$b' => ['int']], 1, 2, false, false),
+        ];
+
+        $negated_formula = Algebra::negateFormula($formula);
+
+        $this->assertCount(1, $negated_formula);
+        $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
+    }
+
+    public function testCombinatorialExpansion(): void
     {
         $dnf = '<?php ($b0 === true && $b4 === true && $b8 === true)
                   || ($b0 === true && $b1 === true && $b2 === true)
@@ -75,7 +79,9 @@ class AlgebraTest extends TestCase
                   || ($b3 === true && $b4 === true && $b5 === true)
                   || ($b6 === true && $b7 === true && $b8 === true);';
 
-        $dnf_stmt = StatementsProvider::parseStatements($dnf, '7.4')[0];
+        $has_errors = false;
+
+        $dnf_stmt = StatementsProvider::parseStatements($dnf, '7.4', $has_errors)[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $dnf_stmt);
 
@@ -83,7 +89,8 @@ class AlgebraTest extends TestCase
         $file_analyzer->context = new Context();
         $statements_analyzer = new StatementsAnalyzer($file_analyzer, new \Psalm\Internal\Provider\NodeDataProvider());
 
-        $dnf_clauses = Algebra::getFormula(
+        $dnf_clauses = FormulaGenerator::getFormula(
+            \spl_object_id($dnf_stmt->expr),
             \spl_object_id($dnf_stmt->expr),
             $dnf_stmt->expr,
             null,
@@ -97,22 +104,23 @@ class AlgebraTest extends TestCase
         $this->assertCount(23, $simplified_dnf_clauses);
     }
 
-    /**
-     * @return void
-     */
-    public function testContainsClause()
+    public function testContainsClause(): void
     {
         $this->assertTrue(
             (new Clause(
                 [
                     '$a' => ['!falsy'],
                     '$b' => ['!falsy'],
-                ]
+                ],
+                1,
+                1
             ))->contains(
                 new Clause(
                     [
                         '$a' => ['!falsy'],
-                    ]
+                    ],
+                    1,
+                    1
                 )
             )
         );
@@ -121,26 +129,27 @@ class AlgebraTest extends TestCase
             (new Clause(
                 [
                     '$a' => ['!falsy'],
-                ]
+                ],
+                1,
+                1
             ))->contains(
                 new Clause(
                     [
                         '$a' => ['!falsy'],
                         '$b' => ['!falsy'],
-                    ]
+                    ],
+                    1,
+                    1
                 )
             )
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testSimplifyCNF()
+    public function testSimplifyCNF(): void
     {
         $formula = [
-            new Clause(['$a' => ['!falsy']]),
-            new Clause(['$a' => ['falsy'], '$b' => ['falsy']]),
+            new Clause(['$a' => ['!falsy']], 1, 1),
+            new Clause(['$a' => ['falsy'], '$b' => ['falsy']], 1, 2),
         ];
 
         $simplified_formula = Algebra::simplifyCNF($formula);
@@ -150,35 +159,72 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['falsy']], $simplified_formula[1]->possibilities);
     }
 
+    public function testSimplifyCNFWithUselessTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$a' => ['falsy'], '$b' => ['!falsy']], 1, 2),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(1, $simplified_formula);
+        $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+    }
+
+    public function testSimplifyCNFWithNonUselessTerm(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$a' => ['falsy'], '$b' => ['falsy']], 1, 2),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(2, $simplified_formula);
+        $this->assertSame(['$a' => ['!falsy'], '$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+        $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $simplified_formula[1]->possibilities);
+    }
+
+    public function testSimplifyCNFWithUselessTermAndOneInMiddle(): void
+    {
+        $formula = [
+            new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']], 1, 1),
+            new Clause(['$b' => ['!falsy']], 1, 2),
+            new Clause(['$a' => ['falsy'], '$b' => ['!falsy']], 1, 3),
+        ];
+
+        $simplified_formula = Algebra::simplifyCNF($formula);
+
+        $this->assertCount(1, $simplified_formula);
+        $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
+    }
+
     public function testGroupImpossibilities() : void
     {
-        $clause1 = new \Psalm\Internal\Clause(
+        $clause1 = (new \Psalm\Internal\Clause(
             [
                 '$a' => ['=array']
             ],
+            1,
+            2,
             false,
             true,
             true,
-            [],
-            5377
-        );
+            []
+        ))->calculateNegation();
 
-        $clause1->impossibilities = [];
-
-        $clause2 = new \Psalm\Internal\Clause(
+        $clause2 = (new \Psalm\Internal\Clause(
             [
                 '$b' => ['isset']
             ],
+            1,
+            2,
             false,
             true,
             true,
-            [],
-            5377
-        );
-
-        $clause2->impossibilities = [
-            '$b' => ['!isset']
-        ];
+            []
+        ))->calculateNegation();
 
         $result_clauses = Algebra::groupImpossibilities([$clause1, $clause2]);
 

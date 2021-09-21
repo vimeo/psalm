@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+
 use function getcwd;
 use function preg_quote;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use function strpos;
+
+use const DIRECTORY_SEPARATOR;
 
 class IncludeTest extends TestCase
 {
@@ -17,14 +19,13 @@ class IncludeTest extends TestCase
      * @param bool $hoist_constants
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testValidInclude(
         array $files,
         array $files_to_check,
         $hoist_constants = false,
         array $error_levels = []
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -59,15 +60,12 @@ class IncludeTest extends TestCase
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param string $error_message
-     * @param bool $hoist_constants
-     *
-     * @return void
      */
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
         $error_message
-    ) {
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -100,7 +98,7 @@ class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>}>
      */
-    public function providerTestValidIncludes()
+    public function providerTestValidIncludes(): array
     {
         return [
             'basicRequire' => [
@@ -549,7 +547,7 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         function getEndpoints() : void {
-                            $listFile = "tests/fixtures/stubs/custom_functions.php";
+                            $listFile = "tests/fixtures/stubs/custom_functions.phpstub";
                             if (!file_exists($listFile)) {
                                 throw new RuntimeException("Endpoint list not found");
                             }
@@ -601,13 +599,35 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'noCrash' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'classes.php' => '<?php
+                        // one.php
+
+                        if (true) {
+                            class One {}
+                        }
+                        else {
+                            class One {}
+                        }
+
+                        class Two {}',
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        include("classes.php");
+
+                        new Two();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'user.php',
+                ],
+            ],
         ];
     }
 
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
-    public function providerTestInvalidIncludes()
+    public function providerTestInvalidIncludes(): array
     {
         return [
             'undefinedMethodInRequire' => [

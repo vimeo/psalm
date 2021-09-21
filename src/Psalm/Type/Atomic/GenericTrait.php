@@ -1,34 +1,24 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function array_map;
-use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidTemplateParam;
-use Psalm\Issue\MissingTemplateParam;
-use Psalm\Issue\TooManyTemplateParams;
-use Psalm\StatementsSource;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+
+use function array_map;
+use function array_values;
+use function count;
+use function implode;
 use function substr;
-use function strtolower;
 
 trait GenericTrait
 {
-    /**
-     * @var non-empty-list<Union>
-     */
-    public $type_params;
-
-    public function __toString()
+    public function __toString(): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -44,10 +34,7 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -56,32 +43,37 @@ trait GenericTrait
 
         $extra_types = '';
 
-        if ($this instanceof TNamedObject && $this->extra_types) {
-            $extra_types = '&' . implode(
-                '&',
-                array_map(
-                    function ($type) {
-                        return $type->getId(true);
-                    },
-                    $this->extra_types
-                )
-            );
+        if ($this instanceof TNamedObject) {
+            if ($this->extra_types) {
+                $extra_types = '&' . implode(
+                    '&',
+                    array_map(
+                        function ($type) {
+                            return $type->getId(true);
+                        },
+                        $this->extra_types
+                    )
+                );
+            }
+
+            if ($this->was_static) {
+                $extra_types .= '&static';
+            }
         }
 
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;
@@ -110,6 +102,28 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
+        $type_params = $this->type_params;
+
+        //no need for special format if the key is not determined
+        if ($this instanceof TArray &&
+            count($type_params) === 2 &&
+            isset($type_params[0]) &&
+            $type_params[0]->isArrayKey()
+        ) {
+            //we remove the key for display
+            unset($type_params[0]);
+            $type_params = array_values($type_params);
+        }
+
+        if ($this instanceof TArray &&
+            count($type_params) === 1 &&
+            isset($type_params[0]) &&
+            $type_params[0]->isMixed()
+        ) {
+            //when the value of an array is mixed, no need for namespaced phpdoc
+            return 'array';
+        }
+
         $extra_types = '';
 
         if ($this instanceof TNamedObject && $this->extra_types) {
@@ -119,7 +133,7 @@ trait GenericTrait
                     /**
                      * @return string
                      */
-                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class) {
+                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class): string {
                         return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                     },
                     $this->extra_types
@@ -135,10 +149,10 @@ trait GenericTrait
                         /**
                          * @return string
                          */
-                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class) {
+                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
                             return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                         },
-                        $this->type_params
+                        $type_params
                     )
                 ) .
                 '>' . $extra_types;
@@ -163,12 +177,12 @@ trait GenericTrait
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Atomic {
         if ($input_type instanceof Atomic\TList) {
@@ -177,14 +191,17 @@ trait GenericTrait
 
         $input_object_type_params = [];
 
+        $container_type_params_covariant = [];
+
         if ($input_type instanceof Atomic\TGenericObject
             && ($this instanceof Atomic\TGenericObject || $this instanceof Atomic\TIterable)
             && $codebase
         ) {
-            $input_object_type_params = UnionTemplateHandler::getMappedGenericTypeParams(
+            $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $input_type,
-                $this
+                $this,
+                $container_type_params_covariant
             );
         }
 
@@ -199,7 +216,7 @@ trait GenericTrait
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\ObjectLike) {
+            } elseif ($input_type instanceof Atomic\TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } elseif ($offset === 1) {
@@ -214,7 +231,7 @@ trait GenericTrait
             }
 
             /** @psalm-suppress PropertyTypeCoercion */
-            $atomic->type_params[$offset] = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $atomic->type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
                 $codebase,
@@ -224,7 +241,11 @@ trait GenericTrait
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
+                !($container_type_params_covariant[$offset] ?? true)
+                    && $this instanceof Atomic\TGenericObject
+                    ? $this->value
+                    : null,
                 $depth + 1
             );
         }
@@ -237,7 +258,11 @@ trait GenericTrait
         ?Codebase $codebase
     ) : void {
         foreach ($this->type_params as $offset => $type_param) {
-            $type_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+            TemplateInferredTypeReplacer::replace(
+                $type_param,
+                $template_result,
+                $codebase
+            );
 
             if ($this instanceof Atomic\TArray && $offset === 0 && $type_param->isMixed()) {
                 $this->type_params[0] = \Psalm\Type::getArrayKey();

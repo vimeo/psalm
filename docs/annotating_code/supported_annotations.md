@@ -6,23 +6,23 @@ Psalm supports a wide range of docblock annotations.
 
 Psalm uses the following PHPDoc tags to understand your code:
 
-- [`@var`](https://docs.phpdoc.org/latest/references/phpdoc/tags/var.html)
-  Used for specifying the types of properties and variables
-- [`@return`](https://docs.phpdoc.org/latest/references/phpdoc/tags/return.html)
+- [`@var`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/var.html)
+  Used for specifying the types of properties and variables@
+- [`@return`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/return.html)
   Used for specifying the return types of functions, methods and closures
-- [`@param`](https://docs.phpdoc.org/latest/references/phpdoc/tags/param.html)
+- [`@param`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/param.html)
   Used for specifying types of parameters passed to functions, methods and closures
-- [`@property`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property.html)
+- [`@property`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be accessed on an object that uses `__get` and `__set`
-- [`@property-read`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property-read.html)
+- [`@property-read`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property-read.html)
   Used to specify what properties can be read on object that uses `__get`
-- [`@property-write`](https://docs.phpdoc.org/latest/references/phpdoc/tags/property-write.html)
+- [`@property-write`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property-write.html)
   Used to specify what properties can be written on object that uses `__set`
-- [`@method`](https://docs.phpdoc.org/latest/references/phpdoc/tags/method.html)
+- [`@method`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/method.html)
   Used to specify which magic methods are available on object that uses `__call`.
-- [`@deprecated`](https://docs.phpdoc.org/latest/references/phpdoc/tags/deprecated.html)
+- [`@deprecated`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
-- [`@internal`](https://docs.phpdoc.org/latest/references/phpdoc/tags/internal.html)
+- [`@internal`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/internal.html)
    used to mark classes, functions and properties that are internal to an application or library.
 
 ### Off-label usage of the `@var` tag
@@ -51,7 +51,15 @@ function bat(): string {
 
 There are a number of custom tags that determine how Psalm treats your code.
 
-### `@param-out`
+### `@psalm-consistent-constructor`
+
+See [UnsafeInstantiation](../running_psalm/issues/UnsafeInstantiation.md)
+
+### `@psalm-consistent-templates`
+
+See [UnsafeGenericInstantiation](../running_psalm/issues/UnsafeGenericInstantiation.md)
+
+### `@param-out`, `@psalm-param-out`
 
 This is used to specify that a by-ref type is different from the one that entered. In the function below the first param can be null, but once the function has executed the by-ref value is not null.
 
@@ -68,9 +76,33 @@ function addFoo(?string &$s) : void {
 }
 ```
 
-### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`
+### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`, `@psalm-method`
 
 When specifying types in a format not supported by phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
+
+### `@psalm-ignore-var`
+
+This annotation is used to ignore the `@var` annotation written in the same docblock. Some IDEs don't fully understand complex types like generics. To take advantage of such IDE's auto-completion, you may sometimes want to use explicit `@var` annotations even when psalm can infer the type just fine. This weakens the effectiveness of type checking in many cases since the explicit `@var` annotation overrides the types inferred by psalm. As psalm ignores the `@var` annotation which is co-located with `@psalm-ignore-var`, IDEs can use the type specified by the `@var` for auto-completion, while psalm can still use its own inferred type for type checking.
+
+```php
+<?php
+/** @return iterable<array-key,\DateTime> $f */
+function getTimes(int $n): iterable {
+    while ($n--) {
+        yield new \DateTime();
+    }
+};
+/**
+ * @var \Datetime[] $times
+ * @psalm-ignore-var
+ */
+$times = getTimes(3);
+// this trace shows "iterable<array-key, DateTime>" instead of "array<array-key, Datetime>"
+/** @psalm-trace $times */
+foreach ($times as $time) {
+    echo $time->format('Y-m-d H:i:s.u') . PHP_EOL;
+}
+```
 
 ### `@psalm-suppress SomeIssueName`
 
@@ -336,6 +368,21 @@ echo Arithmetic::addCumulative(3); // outputs 3
 echo Arithmetic::addCumulative(3); // outputs 6
 ```
 
+On the other hand, `pure-callable` can be used to denote a callable which needs to be pure.
+
+```php
+/**
+ * @param pure-callable(mixed): int $callback
+ */
+function foo(callable $callback) {...}
+
+// this fails since random_int is not pure
+foo(
+    /** @param mixed $p */
+    fn($p) => random_int(1, 2)
+);
+```
+
 ### `@psalm-allow-private-mutation`
 
 Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
@@ -403,8 +450,109 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 
 See [Security Analysis annotations](../security_analysis/annotations.md).
 
+### `@psalm-type`
+
+This allows you to define an alias for another type.
+
+```php
+<?php
+/**
+ * @psalm-type PhoneType = array{phone: string}
+ */
+class Phone {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return ["phone" => "Nokia"];
+    }
+}
+```
+
+### `@psalm-import-type`
+
+You can use this annotation to import a type defined with [`@psalm-type`](#psalm-type) if it was defined somewhere else.
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone
+ */
+class User {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
+You can also alias a type when you import it:
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone as MyPhoneTypeAlias
+ */
+class User {
+    /**
+     * @psalm-return MyPhoneTypeAlias
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
+### `@psalm-require-extends`
+
+The `@psalm-require-extends` annotation allows you to define a requirements that a trait imposes on the using class.
+
+```php
+<?php
+abstract class DatabaseModel {
+  // methods, properties, etc.
+}
+
+/**
+ * @psalm-require-extends DatabaseModel
+ */
+trait SoftDeletingTrait {
+  // useful but scoped functionality, that depends on methods/properties from DatabaseModel
+}
+
+
+class MyModel extends DatabaseModel {
+  // valid
+  use SoftDeletingTrait;
+}
+
+class NormalClass {
+  // triggers an error
+  use SoftDeletingTrait;
+}
+```
+
+### `@psalm-require-implements`
+
+Behaves the same way as `@psalm-require-extends`, but for interfaces.
+
+### `@no-named-arguments`
+
+This will prevent access to the function or method tagged with named parameters (by emitting a `NamedArgumentNotAllowed` issue).
+
+Incidentally, it will change the inferred type for the following code:
+```php
+<?php
+    function a(int ...$a){
+        var_dump($a);
+    }
+```
+The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it exclude the case where the offset would be a string with the name of the parameter
+
 ## Type Syntax
 
-Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
+Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
 
 A detailed write-up is found in [Typing in Psalm](typing_in_psalm.md)

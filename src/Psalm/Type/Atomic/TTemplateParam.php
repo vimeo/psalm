@@ -1,17 +1,16 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
-use Psalm\Type;
 use Psalm\Type\Union;
-use Psalm\Storage\MethodStorage;
-use function array_map;
-use function strtolower;
 
+use function array_map;
+use function implode;
+
+/**
+ * denotes a template parameter that has been previously specified in a `@template` tag.
+ */
 class TTemplateParam extends \Psalm\Type\Atomic
 {
     use HasIntersectionTrait;
@@ -31,9 +30,6 @@ class TTemplateParam extends \Psalm\Type\Atomic
      */
     public $defining_class;
 
-    /**
-     * @param string $defining_class
-     */
     public function __construct(string $param_name, Union $extends, string $defining_class)
     {
         $this->param_name = $param_name;
@@ -41,15 +37,12 @@ class TTemplateParam extends \Psalm\Type\Atomic
         $this->defining_class = $defining_class;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->param_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
             return $this->param_name . ':' . $this->defining_class . '&' . implode('&', $this->extra_types);
@@ -58,15 +51,12 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->as->getId();
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         if ($this->extra_types) {
             return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId()
@@ -81,38 +71,30 @@ class TTemplateParam extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
+     * @param  array<lowercase-string, string> $aliased_classes
      *
      * @return null
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return null;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<lowercase-string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             return $this->as->toNamespacedString(
                 $namespace,
@@ -137,10 +119,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
         return [$this->as];
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }

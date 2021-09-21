@@ -3,244 +3,290 @@ namespace Psalm\Tests;
 
 class EnumTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
-            'enumStringOrEnumIntCorrect' => [
+            'example' => [
                 '<?php
-                    namespace Ns;
+                    interface Colourful {
+                        public function color(): string;
+                    }
 
-                    /** @psalm-param ( "foo\"with" | "bar" | 1 | 2 | 3 ) $s */
-                    function foo($s) : void {}
-                    foo("foo\"with");
-                    foo("bar");
-                    foo(1);
-                    foo(2);
-                    foo(3);',
-            ],
-            'enumStringOrEnumIntWithoutSpacesCorrect' => [
-                '<?php
-                    namespace Ns;
+                    enum Suit implements Colourful {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
 
-                    /** @psalm-param "foo\"with"|"bar"|1|2|3|4.0|4.1 $s */
-                    function foo($s) : void {}
-                    foo("foo\"with");
-                    foo("bar");
-                    foo(1);
-                    foo(2);
-                    foo(3);
-                    foo(4.0);
-                    foo(4.1);',
-            ],
-            'noRedundantConditionWithSwitch' => [
-                '<?php
-                    namespace Ns;
-
-                    /**
-                     * @psalm-param ( "foo" | "bar") $s
-                     */
-                    function foo(string $s) : void {
-                        switch ($s) {
-                          case "foo":
-                            break;
-                          case "bar":
-                            break;
+                        public function color(): string {
+                            return match($this) {
+                                Suit::Hearts, Suit::Diamonds => "Red",
+                                Suit::Clubs, Suit::Spades => "Black",
+                            };
                         }
+
+                        public function shape(): string {
+                            return "Rectangle";
+                        }
+                    }
+
+                    function paint(Colourful $c): void {}
+                    function deal(Suit $s): void {
+                        if ($s === Suit::Clubs) {
+                            echo $s->color();
+                        }
+                    }
+
+                    paint(Suit::Clubs);
+                    deal(Suit::Spades);
+
+                    Suit::Diamonds->shape();',
+                [],
+                [],
+                '8.1'
+            ],
+            'enumValue' => [
+                '<?php
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Diamonds = "d";
+                        case Clubs = "c";
+                        case Spades = "s";
+                    }
+
+                    if (Suit::Hearts->value === "h") {}',
+                [],
+                [],
+                '8.1'
+            ],
+            'enumCases' => [
+                '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    foreach (Suit::cases() as $case) {
+                        echo match($case) {
+                            Suit::Hearts, Suit::Diamonds => "Red",
+                            Suit::Clubs, Suit::Spades => "Black",
+                        };
                     }',
+                [],
+                [],
+                '8.1'
             ],
-            'classConstantCorrect' => [
+            'literalExpressionAsCaseValue' => [
                 '<?php
-                    namespace Ns;
-
-                    class C {
-                        const A1 = "bat";
-                        const B = "baz";
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
                     }
-                    /** @psalm-param "foo"|"bar"|C::A1|C::B $s */
-                    function foo($s) : void {}
-                    foo("foo");
-                    foo("bar");
-                    foo("bat");
-                    foo("baz");',
-            ],
-            'selfClassConstGoodValue' => [
-                '<?php
-                    class A {
-                        const FOO = "foo";
-                        const BAR = "bar";
-
-                        /**
-                         * @param (self::FOO | self::BAR) $s
-                         */
-                        public static function foo(string $s) : void {}
-                    }
-
-                    A::foo("foo");',
-            ],
-            'classConstants' => [
-                '<?php
-                    namespace NS {
-                        use OtherNS\C as E;
-                        class C {}
-                        class D {};
-                        /** @psalm-param C::class|D::class|E::class $s */
-                        function foo(string $s) : void {}
-                        foo(C::class);
-                        foo(D::class);
-                        foo(E::class);
-                        foo(\OtherNS\C::class);
-                    }
-
-                    namespace OtherNS {
-                        class C {}
-                    }',
+                    $z = Mask::Two->value;
+                ',
+                'assertions' => [
+                    // xxx: we should be able to do better when we reference a case explicitly, like above
+                    '$z===' => '1|2',
+                ],
+                [],
+                '8.1'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
-            'enumStringOrEnumIntIncorrectString' => [
+            'enumValueIsNot' => [
                 '<?php
-                    namespace Ns;
-
-                    /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
-                    function foo($s) : void {}
-                    foo("bat");',
-                'error_message' => 'InvalidArgument',
-            ],
-            'enumStringOrEnumIntIncorrectInt' => [
-                '<?php
-                    namespace Ns;
-
-                    /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
-                    function foo($s) : void {}
-                    foo(4);',
-                'error_message' => 'InvalidArgument',
-            ],
-            'enumStringOrEnumIntWithoutSpacesIncorrect' => [
-                '<?php
-                    namespace Ns;
-
-                    /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
-                    function foo($s) : void {}
-                    foo(4);',
-                'error_message' => 'InvalidArgument',
-            ],
-            'enumWrongFloat' => [
-                '<?php
-                    namespace Ns;
-
-                    /** @psalm-param 1.2|3.4|5.6 $s */
-                    function foo($s) : void {}
-                    foo(7.8);',
-                'error_message' => 'InvalidArgument',
-            ],
-            'classConstantIncorrect' => [
-                '<?php
-                    namespace Ns;
-
-                    class C {
-                        const A = "bat";
-                        const B = "baz";
-                    }
-                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
-                    function foo($s) : void {}
-                    foo("for");',
-                'error_message' => 'InvalidArgument',
-            ],
-            'classConstantNoClass' => [
-                '<?php
-                    namespace Ns;
-
-                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
-                    function foo($s) : void {}',
-                'error_message' => 'UndefinedDocblockClass',
-            ],
-            'selfClassConstBadValue' => [
-                '<?php
-                    class A {
-                        const FOO = "foo";
-                        const BAR = "bar";
-
-                        /**
-                         * @param (self::FOO | self::BAR) $s
-                         */
-                        public static function foo(string $s) : void {}
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Diamonds = "d";
+                        case Clubs = "c";
+                        case Spades = "s";
                     }
 
-                    A::foo("for");',
-                'error_message' => 'InvalidArgument',
+                    if (Suit::Hearts->value === "a") {}',
+                'error_message' => 'TypeDoesNotContainType',
+                [],
+                false,
+                '8.1'
             ],
-            'selfClassConstBadConst' => [
+            'enumValueNotBacked' => [
                 '<?php
-                    class A {
-                        const FOO = "foo";
-                        const BAR = "bar";
-
-                        /**
-                         * @param (self::1FOO | self::BAR) $s
-                         */
-                        public static function foo(string $s) : void {}
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'classConstantInvalidValue' => [
-                '<?php
-                    namespace NS {
-                        use OtherNS\C as E;
-                        class C {}
-                        class D {};
-                        class F {};
-                        /** @psalm-param C::class|D::class|E::class $s */
-                        function foo(string $s) : void {}
-                        foo(F::class);
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
                     }
 
-                    namespace OtherNS {
-                        class C {}
-                    }',
-                'error_message' => 'InvalidArgument',
+                    echo Suit::Hearts->value;',
+                'error_message' => 'UndefinedPropertyFetch',
+                [],
+                false,
+                '8.1'
             ],
-            'nonExistentConstantClass' => [
+            'badSuit' => [
                 '<?php
-                    /**
-                     * @return Foo::HELLO|5
-                     */
-                    function getVal()
-                    {
-                        return 5;
-                    }',
-                'error_message' => 'UndefinedDocblockClass',
-            ],
-            'nonExistentClassConstant' => [
-                '<?php
-                    class Foo {}
-                    /**
-                     * @return Foo::HELLO|5
-                     */
-                    function getVal()
-                    {
-                        return 5;
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    function foo(Suit $s): void {
+                        if ($s === Suit::Clu) {}
                     }',
                 'error_message' => 'UndefinedConstant',
+                [],
+                false,
+                '8.1'
             ],
-            'noIntToFloatEnum' => [
+            'cantCompareToSuitTwice' => [
                 '<?php
-                    /** @param 0.3|0.5 $p */
-                    function f($p): void {}
-                    f(1);',
-                'error_message' => 'InvalidArgument',
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    function foo(Suit $s): void {
+                        if ($s === Suit::Clubs)  {
+                            if ($s === Suit::Clubs) {
+                                echo "bad";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                [],
+                false,
+                '8.1'
+            ],
+            'insufficientMatches' => [
+                '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+
+                        public function color(): string {
+                            return match($this) {
+                                Suit::Hearts, Suit::Diamonds => "Red",
+                                Suit::Clubs => "Black",
+                            };
+                        }
+                    }',
+                'error_message' => 'UnhandledMatchCondition',
+                [],
+                false,
+                '8.1'
+            ],
+            'insufficientMatchesForCases' => [
+                '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Diamonds;
+                        case Clubs;
+                        case Spades;
+                    }
+
+                    foreach (Suit::cases() as $case) {
+                        echo match($case) {
+                            Suit::Hearts, Suit::Diamonds => "Red",
+                            Suit::Clubs => "Black",
+                        };
+                    }',
+                'error_message' => 'UnhandledMatchCondition',
+                [],
+                false,
+                '8.1'
+            ],
+            'invalidBackingType' => [
+                '<?php
+                    enum Status: array {}
+                ',
+                'error_message' => 'InvalidEnumBackingType',
+                [],
+                false,
+                '8.1',
+            ],
+            'duplicateValues' => [
+                '<?php
+                    enum Status: string
+                    {
+                        case Foo = "foo";
+                        case Bar = "bar";
+                        case Baz = "bar";
+                    }
+                ',
+                'error_message' => 'DuplicateEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'duplicateCases' => [
+                '<?php
+                    enum Status
+                    {
+                        case Foo;
+                        case Foo;
+                    }
+                ',
+                'error_message' => 'DuplicateEnumCase',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseWithAValueOfANonBackedEnum' => [
+                '<?php
+                    enum Status
+                    {
+                        case Foo = 1;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseWithoutAValueOfABackedEnum' => [
+                '<?php
+                    enum Status: int
+                    {
+                        case Foo;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                [],
+                false,
+                '8.1',
+            ],
+            'caseTypeMismatch' => [
+                '<?php
+                    enum Status: int
+                    {
+                        case Foo = "one";
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                [],
+                false,
+                '8.1',
             ],
         ];
     }

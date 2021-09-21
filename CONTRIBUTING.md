@@ -11,11 +11,6 @@ You can create an issue [here](https://github.com/vimeo/psalm/issues/new), but b
 * Make sure that you are using the latest version (`master`).
 * It’s by no means a requirement, but if it's a bug, and you provide demonstration code that can be pasted into https://psalm.dev, it will likely get fixed faster.
 
-## Pull Requests
+## Contributing code and documentation
 
-[Here’s a guide to the codebase you may find useful](docs/how_psalm_works.md).
-
-Before you send a pull request, make sure you follow these guidelines:
-
-* Make sure to run `composer tests` and `./psalm` to ensure that Travis builds will pass
-* Don’t forget to add tests!
+Have a look at the [contributing documentation](docs/contributing/index.md) which is [mirrored on Psalm’s website](https://psalm.dev/docs/contributing).

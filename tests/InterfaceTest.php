@@ -9,7 +9,7 @@ class InterfaceTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'extendsAndImplements' => [
@@ -303,7 +303,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'suppressMismatch' => [
+            'SKIPPED-suppressMismatch' => [
                 '<?php
                     interface I {
                         /**
@@ -553,7 +553,7 @@ class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'inheritSystemInterface' => [
+            'SKIPPED-inheritSystemInterface' => [
                 '<?php
                     interface I extends \RecursiveIterator {}
 
@@ -701,13 +701,27 @@ class InterfaceTest extends TestCase
                         return $a;
                     }'
             ],
+            'interfaceAssertionOnClassInterfaceUnion' => [
+                '<?php
+                    class SomeClass {}
+
+                    interface SomeInterface {
+                        public function doStuff(): void;
+                    }
+
+                    function takesAorB(SomeClass|SomeInterface $some): void {
+                        if ($some instanceof SomeInterface) {
+                            $some->doStuff();
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidInterface' => [
@@ -888,17 +902,17 @@ class InterfaceTest extends TestCase
             'inheritMultipleInterfacesWithConflictingDocblocks' => [
                 '<?php
                     interface I1 {
-                      /** @return string */
-                      public function foo();
+                        /** @return string */
+                        public function foo();
                     }
                     interface I2 {
-                      /** @return int */
-                      public function foo();
+                        /** @return int */
+                        public function foo();
                     }
                     class A implements I1, I2 {
-                      public function foo() {
-                        return "hello";
-                      }
+                        public function foo() {
+                            return "hello";
+                        }
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
@@ -940,6 +954,40 @@ class InterfaceTest extends TestCase
                         public function withoutAnyReturnType($s) : void;
                     }',
                 'error_message' => 'MissingParamType'
+            ],
+            'reconcileAfterClassInstanceof' => [
+                '<?php
+                    interface Base {}
+
+                    class E implements Base {
+                        public function bar() : void {}
+                    }
+
+                    function foobar(Base $foo) : void {
+                        if ($foo instanceof E) {
+                            $foo->bar();
+                        }
+
+                        $foo->bar();
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
+            ],
+            'reconcileAfterInterfaceInstanceof' => [
+                '<?php
+                    interface Base {}
+
+                    interface E extends Base {
+                        public function bar() : void;
+                    }
+
+                    function foobar(Base $foo) : void {
+                        if ($foo instanceof E) {
+                            $foo->bar();
+                        }
+
+                        $foo->bar();
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
             ],
         ];
     }

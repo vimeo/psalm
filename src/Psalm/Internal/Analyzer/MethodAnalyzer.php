@@ -2,8 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -12,24 +12,20 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
-use Psalm\Type;
-use function strtolower;
+
 use function in_array;
+use function strtolower;
 
 /**
  * @internal
+ * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\ClassMethod>
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
-    /**
-     * @var PhpParser\Node\Stmt\ClassMethod
-     */
-    protected $function;
-
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
-        MethodStorage $storage = null
+        ?MethodStorage $storage = null
     ) {
         $codebase = $source->getCodebase();
 
@@ -67,27 +63,20 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * Determines whether a given method is static or not
-     *
-     * @param  bool            $self_call
-     * @param  bool            $is_context_dynamic
-     * @param  CodeLocation    $code_location
      * @param  array<string>   $suppressed_issues
-     * @param  bool            $is_dynamic_this_method
-     *
-     * @return bool
      */
     public static function checkStatic(
         \Psalm\Internal\MethodIdentifier $method_id,
-        $self_call,
-        $is_context_dynamic,
+        bool $self_call,
+        bool $is_context_dynamic,
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
-        &$is_dynamic_this_method = false
-    ) {
+        ?bool &$is_dynamic_this_method = false
+    ): bool {
         $codebase_methods = $codebase->methods;
 
-        if ($method_id->fq_class_name === 'closure'
+        if ($method_id->fq_class_name === 'Closure'
             && $method_id->method_name === 'fromcallable'
         ) {
             return true;
@@ -98,6 +87,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if (!$method_id) {
+            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $original_method_id)) {
+                return true;
+            }
+
             throw new \LogicException('Declaring method for ' . $original_method_id . ' should not be null');
         }
 
@@ -139,11 +132,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
      * @param  lowercase-string|null  $calling_method_id
      *
-     * @return bool|null
      */
     public static function checkMethodExists(
         Codebase $codebase,
@@ -151,7 +142,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         ?string $calling_method_id = null
-    ) {
+    ): ?bool {
         if ($codebase->methods->methodExists(
             $method_id,
             $calling_method_id,
@@ -175,17 +166,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         return null;
     }
 
-    /**
-     * @param  Context          $context
-     * @param  StatementsSource $source
-     *
-     * @return bool
-     */
     public static function isMethodVisible(
         \Psalm\Internal\MethodIdentifier $method_id,
         Context $context,
         StatementsSource $source
-    ) {
+    ): bool {
         $codebase = $source->getCodebase();
 
         $fq_classlike_name = $method_id->fq_class_name;
@@ -266,21 +251,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * Check that __clone, __construct, and __destruct do not have a return type
      * hint in their signature.
-     *
-     * @param  MethodStorage $method_storage
-     * @param  CodeLocation  $code_location
-     * @return false|null
      */
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location
-    ) {
+    ): void {
         if ($method_storage->signature_return_type === null) {
-            return null;
+            return;
         }
 
         $cased_method_name = $method_storage->cased_name;
         $methodsOfInterest = ['__clone', '__construct', '__destruct'];
+
         if (in_array($cased_method_name, $methodsOfInterest)) {
             if (IssueBuffer::accepts(
                 new MethodSignatureMustOmitReturnType(
@@ -288,19 +270,12 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $code_location
                 )
             )) {
-                return false;
+                // fall through
             }
         }
-
-        return null;
     }
 
-    /**
-     * @param string|null $context_self
-     *
-     * @return \Psalm\Internal\MethodIdentifier
-     */
-    public function getMethodId($context_self = null)
+    public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
     {
         $function_name = (string)$this->function->name;
 

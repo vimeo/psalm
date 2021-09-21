@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
+
 class ValueTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -8,9 +11,9 @@ class ValueTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new \Psalm\Tests\TestConfig(),
@@ -21,13 +24,12 @@ class ValueTest extends \Psalm\Tests\TestCase
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
-        $this->project_analyzer->getCodebase()->config->parse_sql = true;
     }
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'whileCountUpdate' => [
@@ -605,6 +607,15 @@ class ValueTest extends \Psalm\Tests\TestCase
                         private $type = "easy";
                     }'
             ],
+            'supportMultipleValues' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var 0|-1|1
+                         */
+                        private $type = -1;
+                    }'
+            ],
             'typecastTrueToInt' => [
                 '<?php
                 /**
@@ -734,13 +745,164 @@ class ValueTest extends \Psalm\Tests\TestCase
                     }
                     if ($data["e"] > 0) {}'
             ],
+            'compareToNullImplicitly' => [
+                '<?php
+                    final class Foo {
+                        public const VALUE_ANY = null;
+                        public const VALUE_ONE = "one";
+
+                        /** @return self::VALUE_* */
+                        public static function getValues() {
+                            return rand(0, 1) ? null : self::VALUE_ONE;
+                        }
+                    }
+
+                    $data = Foo::getValues();
+
+                    if ($data === Foo::VALUE_ANY) {
+                        $data = "default";
+                    }
+
+                    echo strlen($data);'
+            ],
+            'negateValueInUnion' => [
+                '<?php
+                    function f(): int {
+                        $ret = 0;
+                        for ($i = 20; $i >= 0; $i--) {
+                            $ret = ($ret === 10) ? 1 : $ret + 1;
+                        }
+                        return $ret;
+                    }'
+            ],
+            'inArrayPreserveNull' => [
+                '<?php
+                    function x(?string $foo): void {
+                        if (!in_array($foo, ["foo", "bar", null], true)) {
+                            throw new Exception();
+                        }
+
+                        if ($foo) {}
+                    }',
+            ],
+            'allowCheckOnPositiveNumericInverse' => [
+                '<?php
+                    function foo(int $a): void {
+                        if (false === ($a > 1)){}
+                    }'
+            ],
+            'returnFromUnionLiteral' => [
+                '<?php
+                    /**
+                     * @return array{"a1", "a2"}
+                     */
+                    function getSupportedConsts() {
+                        return ["a1", "a2"];
+                    }
+
+                    function foo(mixed $file) : string {
+                        if (in_array($file, getSupportedConsts(), true)) {
+                            return $file;
+                        }
+
+                        return "";
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'returnFromUnionLiteralNegated' => [
+                '<?php
+                    /**
+                     * @return array{"a1", "a2"}
+                     */
+                    function getSupportedConsts() {
+                        return ["a1", "a2"];
+                    }
+
+                    function foo(mixed $file) : string {
+                        if (!in_array($file, getSupportedConsts(), true)) {
+                            return "";
+                        }
+
+                        return $file;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'inArrayInsideLoop' => [
+                '<?php
+                    class A {
+                        const ACTION_ONE = "one";
+                        const ACTION_TWO = "two";
+                        const ACTION_THREE = "two";
+                    }
+
+                    while (rand(0, 1)) {
+                        /** @var list<A::ACTION_*> */
+                        $case_actions = [];
+
+                        if (!in_array(A::ACTION_ONE, $case_actions, true)) {}
+                    }'
+            ],
+            'checkIdenticalArray' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    $array = json_decode(file_get_contents(\'php://stdin\'));
+
+                    if (is_array($array)) {
+                        $filtered = array_filter($array, fn ($value) => \is_string($value));
+
+                        if ($array === $filtered) {
+                            foreach ($array as $obj) {
+                                echo strlen($obj);
+                            }
+                        }
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
+            'zeroIsNonEmptyString' => [
+                '<?php
+                    /**
+                     * @param non-empty-string $s
+                     */
+                    function foo(string $s) : void {}
+
+                    foo("0");',
+            ],
+            'notLiteralEmptyCanBeNotEmptyString' => [
+                '<?php
+                    /**
+                     * @param non-empty-string $s
+                     */
+                    function foo(string $s) : void {}
+
+                    function takesString(string $s) : void {
+                        if ($s !== "") {
+                            foo($s);
+                        }
+                    }',
+            ],
+            'nonEmptyStringCanBeStringZero' => [
+                '<?php
+                    /**
+                     * @param non-empty-string $s
+                     */
+                    function foo(string $s) : void {
+                        if ($s === "0") {}
+                        if (empty($s)) {}
+                    }',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'neverEqualsType' => [
@@ -796,6 +958,17 @@ class ValueTest extends \Psalm\Tests\TestCase
                     $a = 4.0;
                     if ($a !== 4.1) {
                         // do something
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'inArrayRemoveNull' => [
+                '<?php
+                    function x(?string $foo, string $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+
+                        if (is_string($foo)) {}
                     }',
                 'error_message' => 'RedundantCondition',
             ],
@@ -932,6 +1105,18 @@ class ValueTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion'
+            ],
+            'stringCoercedToNonEmptyString' => [
+                '<?php
+                    /**
+                     * @param non-empty-string $name
+                     */
+                    function sayHello(string $name) : void {}
+
+                    function takeInput(string $name) : void {
+                        sayHello($name);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }

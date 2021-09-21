@@ -9,7 +9,7 @@ class ClassScopeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'accessiblePrivateMethodFromSubclass' => [
@@ -132,13 +132,27 @@ class ClassScopeTest extends TestCase
                         private function boop(): void {}
                     }',
             ],
+            'allowMethodCallToProtectedFromParent' => [
+                '<?php
+                    class A {
+                        public function __construct() {
+                            B::foo();
+                        }
+                    }
+
+                    class B extends A {
+                        protected static function foo(): void {
+                            echo "here";
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'inaccessiblePrivateMethod' => [

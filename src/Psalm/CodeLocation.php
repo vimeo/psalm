@@ -1,22 +1,24 @@
 <?php
 namespace Psalm;
 
+use PhpParser;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+
 use function explode;
 use function max;
+use function mb_strcut;
 use function min;
-use PhpParser;
 use function preg_match;
-use const PREG_OFFSET_CAPTURE;
 use function preg_quote;
 use function preg_replace;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
 use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
-use function substr;
 use function substr_count;
 use function trim;
+
+use const PREG_OFFSET_CAPTURE;
 
 class CodeLocation
 {
@@ -75,9 +77,6 @@ class CodeLocation
     public $docblock_start;
 
     /** @var int|null */
-    public $docblock_end;
-
-    /** @var int|null */
     private $docblock_start_line_number;
 
     /** @var int|null */
@@ -92,28 +91,22 @@ class CodeLocation
     /** @var null|CodeLocation */
     public $previous_location;
 
-    const VAR_TYPE = 0;
-    const FUNCTION_RETURN_TYPE = 1;
-    const FUNCTION_PARAM_TYPE = 2;
-    const FUNCTION_PHPDOC_RETURN_TYPE = 3;
-    const FUNCTION_PHPDOC_PARAM_TYPE = 4;
-    const FUNCTION_PARAM_VAR = 5;
-    const CATCH_VAR = 6;
-    const FUNCTION_PHPDOC_METHOD = 7;
+    public const VAR_TYPE = 0;
+    public const FUNCTION_RETURN_TYPE = 1;
+    public const FUNCTION_PARAM_TYPE = 2;
+    public const FUNCTION_PHPDOC_RETURN_TYPE = 3;
+    public const FUNCTION_PHPDOC_PARAM_TYPE = 4;
+    public const FUNCTION_PARAM_VAR = 5;
+    public const CATCH_VAR = 6;
+    public const FUNCTION_PHPDOC_METHOD = 7;
 
-    /**
-     * @param bool                 $single_line
-     * @param null|CodeLocation    $previous_location
-     * @param null|int             $regex_type
-     * @param null|string          $selected_text
-     */
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,
-        CodeLocation $previous_location = null,
-        $single_line = false,
-        $regex_type = null,
-        $selected_text = null
+        ?CodeLocation $previous_location = null,
+        bool $single_line = false,
+        ?int $regex_type = null,
+        ?string $selected_text = null
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
@@ -128,31 +121,23 @@ class CodeLocation
 
         $doc_comment = $stmt->getDocComment();
 
-        $this->docblock_start = $doc_comment ? $doc_comment->getFilePos() : null;
-        $this->docblock_end = $doc_comment ? $this->file_start : null;
-        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getLine() : null;
+        $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
+        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getStartLine() : null;
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
         $this->raw_line_number = $stmt->getLine();
     }
 
-    /**
-     * @param int $line
-     *
-     * @return void
-     */
-    public function setCommentLine($line)
+    public function setCommentLine(int $line): void
     {
         $this->docblock_line_number = $line;
     }
 
     /**
      * @psalm-suppress MixedArrayAccess
-     *
-     * @return void
      */
-    private function calculateRealLocation()
+    private function calculateRealLocation(): void
     {
         if ($this->have_recalculated) {
             return;
@@ -196,7 +181,7 @@ class CodeLocation
         ) {
             $preview_lines = explode(
                 "\n",
-                substr(
+                mb_strcut(
                     $file_contents,
                     $this->preview_start,
                     $this->selection_start - $this->preview_start - 1
@@ -219,7 +204,7 @@ class CodeLocation
 
             $indentation = (int)strpos($key_line, '@');
 
-            $key_line = trim(preg_replace('@\**/\s*@', '', substr($key_line, $indentation)));
+            $key_line = trim(preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
 
             $this->selection_start = $preview_offset + $indentation + $this->preview_start;
             $this->selection_end = $this->selection_start + strlen($key_line);
@@ -271,7 +256,7 @@ class CodeLocation
                     throw new \UnexpectedValueException('Unrecognised regex type ' . $this->regex_type);
             }
 
-            $preview_snippet = substr(
+            $preview_snippet = mb_strcut(
                 $file_contents,
                 $this->selection_start,
                 $this->selection_end - $this->selection_start
@@ -311,8 +296,8 @@ class CodeLocation
             }
         }
 
-        $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
-        $this->text = substr($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
+        $this->snippet = mb_strcut($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
+        $this->text = mb_strcut($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
 
         // reset preview start to beginning of line
         $this->column_from = $this->selection_start -
@@ -321,8 +306,8 @@ class CodeLocation
         $newlines = substr_count($this->text, "\n");
 
         if ($newlines) {
-            $this->column_to = $this->selection_end -
-                (int)strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents));
+            $last_newline_pos = strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents) - 1);
+            $this->column_to = $this->selection_end - (int)$last_newline_pos;
         } else {
             $this->column_to = $this->column_from + strlen($this->text);
         }
@@ -330,58 +315,40 @@ class CodeLocation
         $this->end_line_number = $this->getLineNumber() + $newlines;
     }
 
-    /**
-     * @return int
-     */
-    public function getLineNumber()
+    public function getLineNumber(): int
     {
         return $this->docblock_line_number ?: $this->raw_line_number;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndLineNumber()
+    public function getEndLineNumber(): int
     {
         $this->calculateRealLocation();
 
         return $this->end_line_number;
     }
 
-    /**
-     * @return string
-     */
-    public function getSnippet()
+    public function getSnippet(): string
     {
         $this->calculateRealLocation();
 
         return $this->snippet;
     }
 
-    /**
-     * @return string
-     */
-    public function getSelectedText()
+    public function getSelectedText(): string
     {
         $this->calculateRealLocation();
 
         return (string)$this->text;
     }
 
-    /**
-     * @return int
-     */
-    public function getColumn()
+    public function getColumn(): int
     {
         $this->calculateRealLocation();
 
         return $this->column_from;
     }
 
-    /**
-     * @return int
-     */
-    public function getEndColumn()
+    public function getEndColumn(): int
     {
         $this->calculateRealLocation();
 
@@ -391,7 +358,7 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSelectionBounds()
+    public function getSelectionBounds(): array
     {
         $this->calculateRealLocation();
 
@@ -401,19 +368,16 @@ class CodeLocation
     /**
      * @return array{0: int, 1: int}
      */
-    public function getSnippetBounds()
+    public function getSnippetBounds(): array
     {
         $this->calculateRealLocation();
 
         return [$this->preview_start, $this->preview_end];
     }
 
-    /**
-     * @return string
-     */
-    public function getHash()
+    public function getHash(): string
     {
-        return (string) $this->file_start;
+        return $this->file_name . ' ' . $this->raw_file_start . $this->raw_file_end;
     }
 
     public function getShortSummary() : string

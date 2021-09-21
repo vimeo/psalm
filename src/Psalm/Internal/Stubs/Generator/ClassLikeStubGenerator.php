@@ -3,12 +3,25 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\Stmt\VirtualClass;
+use Psalm\Node\Stmt\VirtualClassConst;
+use Psalm\Node\Stmt\VirtualClassMethod;
+use Psalm\Node\Stmt\VirtualInterface;
+use Psalm\Node\Stmt\VirtualProperty;
+use Psalm\Node\Stmt\VirtualPropertyProperty;
+use Psalm\Node\Stmt\VirtualTrait;
+use Psalm\Node\VirtualConst;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
 
 class ClassLikeStubGenerator
 {
+    /**
+     * @return PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Interface_|PhpParser\Node\Stmt\Trait_
+     */
     public static function getClassLikeNode(
         \Psalm\Codebase $codebase,
         ClassLikeStorage $storage,
@@ -27,7 +40,7 @@ class ClassLikeStubGenerator
         $template_offset = 0;
 
         foreach ($storage->template_types ?: [] as $template_name => $map) {
-            $type = array_values($map)[0][0];
+            $type = array_values($map)[0];
 
             $key = isset($storage->template_covariants[$template_offset]) ? 'template-covariant' : 'template';
 
@@ -56,11 +69,11 @@ class ClassLikeStubGenerator
                 $subnodes['extends'] = [];
 
                 foreach ($storage->direct_interface_parents as $direct_interface_parent) {
-                    $subnodes['extends'][] = new PhpParser\Node\Name\FullyQualified($direct_interface_parent);
+                    $subnodes['extends'][] = new VirtualFullyQualified($direct_interface_parent);
                 }
             }
 
-            return new PhpParser\Node\Stmt\Interface_(
+            return new VirtualInterface(
                 $classlike_name,
                 $subnodes,
                 $attrs
@@ -68,7 +81,7 @@ class ClassLikeStubGenerator
         }
 
         if ($storage->is_trait) {
-            return new PhpParser\Node\Stmt\Trait_(
+            return new VirtualTrait(
                 $classlike_name,
                 $subnodes,
                 $attrs
@@ -76,17 +89,17 @@ class ClassLikeStubGenerator
         }
 
         if ($storage->parent_class) {
-            $subnodes['extends'] = new PhpParser\Node\Name\FullyQualified($storage->parent_class);
+            $subnodes['extends'] = new VirtualFullyQualified($storage->parent_class);
         } else
 
         if ($storage->direct_class_interfaces) {
             $subnodes['implements'] = [];
             foreach ($storage->direct_class_interfaces as $direct_class_interface) {
-                $subnodes['implements'][] = new PhpParser\Node\Name\FullyQualified($direct_class_interface);
+                $subnodes['implements'][] = new VirtualFullyQualified($direct_class_interface);
             }
         }
 
-        return new PhpParser\Node\Stmt\Class_(
+        return new VirtualClass(
             $classlike_name,
             $subnodes,
             $attrs
@@ -100,57 +113,32 @@ class ClassLikeStubGenerator
     {
         $constant_nodes = [];
 
-        foreach ($storage->public_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PUBLIC
-            ) ?: Type::getMixed();
+        foreach ($storage->constants as $constant_name => $constant_storage) {
+            if ($constant_storage->unresolved_node) {
+                $type = new Type\Union([
+                    \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                        $codebase->classlikes,
+                        $constant_storage->unresolved_node
+                    )
+                ]);
+            } elseif ($constant_storage->type) {
+                $type = $constant_storage->type;
+            } else {
+                throw new \UnexpectedValueException('bad');
+            }
 
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
+            $constant_nodes[] = new VirtualClassConst(
                 [
-                    new PhpParser\Node\Const_(
+                    new VirtualConst(
                         $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
+                        StubsGenerator::getExpressionFromType($type)
                     )
                 ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC
-            );
-        }
-
-        foreach ($storage->protected_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PROTECTED
-            ) ?: Type::getMixed();
-
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
-                [
-                    new PhpParser\Node\Const_(
-                        $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
-                    )
-                ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED
-            );
-        }
-
-        foreach ($storage->private_class_constants as $constant_name => $_) {
-            $resolved_type = $codebase->classlikes->getConstantForClass(
-                $storage->name,
-                $constant_name,
-                \ReflectionProperty::IS_PRIVATE
-            ) ?: Type::getMixed();
-
-            $constant_nodes[] = new PhpParser\Node\Stmt\ClassConst(
-                [
-                    new PhpParser\Node\Const_(
-                        $constant_name,
-                        StubsGenerator::getExpressionFromType($resolved_type)
-                    )
-                ],
-                PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE
+                $constant_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    ? PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC
+                    : ($constant_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        ? PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED
+                        : PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE)
             );
         }
 
@@ -168,10 +156,10 @@ class ClassLikeStubGenerator
 
         foreach ($storage->properties as $property_name => $property_storage) {
             switch ($property_storage->visibility) {
-                case \ReflectionProperty::IS_PRIVATE:
+                case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
                     $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE;
                     break;
-                case \ReflectionProperty::IS_PROTECTED:
+                case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
                     $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED;
                     break;
                 default:
@@ -192,10 +180,10 @@ class ClassLikeStubGenerator
                 );
             }
 
-            $property_nodes[] = new PhpParser\Node\Stmt\Property(
+            $property_nodes[] = new VirtualProperty(
                 $flag | ($property_storage->is_static ? PhpParser\Node\Stmt\Class_::MODIFIER_STATIC : 0),
                 [
-                    new PhpParser\Node\Stmt\PropertyProperty(
+                    new VirtualPropertyProperty(
                         $property_name,
                         $property_storage->suggested_type
                             ? StubsGenerator::getExpressionFromType($property_storage->suggested_type)
@@ -223,7 +211,7 @@ class ClassLikeStubGenerator
     /**
      * @return list<PhpParser\Node\Stmt\ClassMethod>
      */
-    private static function getMethodNodes(ClassLikeStorage $storage) {
+    private static function getMethodNodes(ClassLikeStorage $storage): array {
         $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
         $method_nodes = [];
 
@@ -247,7 +235,7 @@ class ClassLikeStubGenerator
             $docblock = new ParsedDocblock('', []);
 
             foreach ($method_storage->template_types ?: [] as $template_name => $map) {
-                $type = array_values($map)[0][0];
+                $type = array_values($map)[0];
 
                 $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
                     $namespace_name,
@@ -289,7 +277,7 @@ class ClassLikeStubGenerator
                 );
             }
 
-            $method_nodes[] = new PhpParser\Node\Stmt\ClassMethod(
+            $method_nodes[] = new VirtualClassMethod(
                 $method_storage->cased_name,
                 [
                     'flags' => $flag

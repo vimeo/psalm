@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface PropertyExistenceProviderInterface
 {
     /**
@@ -17,14 +18,13 @@ interface PropertyExistenceProviderInterface
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
      * continue to determine if the property actually exists.
      *
-     * @return ?bool
      */
     public static function doesPropertyExist(
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
-    );
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?bool;
 }

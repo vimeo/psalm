@@ -1,37 +1,39 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Provider\FileProvider;
+use RuntimeException;
+
 use function array_filter;
 use function array_intersect;
 use function array_map;
 use function array_merge;
 use function array_reduce;
-use function explode;
+use function array_values;
 use function get_loaded_extensions;
 use function implode;
 use function ksort;
-use const LIBXML_NOBLANKS;
 use function min;
-use const PHP_VERSION;
 use function phpversion;
 use function preg_replace_callback;
-use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Provider\FileProvider;
-use RuntimeException;
 use function str_replace;
 use function strpos;
+use function trim;
 use function usort;
-use function count;
-use function array_values;
+
+use const LIBXML_NOBLANKS;
+use const PHP_VERSION;
 
 class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
      *
-     * @return int
+     *
+     * @psalm-pure
      */
-    public static function countTotalIssues(array $existingIssues)
+    public static function countTotalIssues(array $existingIssues): int
     {
         $totalIssues = 0;
 
@@ -52,30 +54,24 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
-     * @return void
      */
     public static function create(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): void {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
         self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
+     * @return array<string,array<string,array{o:int, s: list<string>}>>
      *
      * @throws Exception\ConfigException
-     *
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
@@ -88,7 +84,6 @@ class ErrorBaseline
         $baselineDoc = new \DOMDocument();
         $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
 
-        /** @var \DOMNodeList $filesElement */
         $filesElement = $baselineDoc->getElementsByTagName('files');
 
         if ($filesElement->length === 0) {
@@ -121,7 +116,7 @@ class ErrorBaseline
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {
-                    $files[$fileName][$issueType]['s'][] = $codeSample->textContent;
+                    $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
                 }
             }
         }
@@ -130,20 +125,18 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string, list<IssueData>> $issues
      *
-     * @throws Exception\ConfigException
+     * @return array<string, array<string, array{o: int, s: list<string>}>>
      *
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     * @throws Exception\ConfigException
      */
     public static function update(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
         bool $include_php_versions
-    ) {
+    ): array {
         $existingIssues = self::read($fileProvider, $baselineFile);
         $newIssues = self::countIssueTypesByFile($issues);
 
@@ -235,18 +228,15 @@ class ErrorBaseline
     }
 
     /**
-     * @param FileProvider $fileProvider
-     * @param string $baselineFile
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      *
-     * @return void
      */
     private static function writeToFile(
         FileProvider $fileProvider,
         string $baselineFile,
         array $groupedIssues,
         bool $include_php_versions
-    ) {
+    ): void {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
@@ -278,9 +268,16 @@ class ErrorBaseline
                 $issueNode = $baselineDoc->createElement($issueType);
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
+
+                \sort($existingIssueType['s']);
+
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
 
+                    /** @todo in major version release (e.g. Psalm 5) replace $selection with trim($selection)
+                     * This will be a minor BC break as baselines generated will then not be compatible with Psalm
+                     * versions from before PR https://github.com/vimeo/psalm/pull/6000
+                     */
                     $codeNode->textContent = $selection;
                     $issueNode->appendChild($codeNode);
                 }
@@ -296,8 +293,8 @@ class ErrorBaseline
         $xml = preg_replace_callback(
             '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
             /**
-            * @param array<int, string> $matches
-            */
+             * @param string[] $matches
+             */
             function (array $matches) : string {
                 return
                     '<files' .
@@ -306,7 +303,7 @@ class ErrorBaseline
                     "\n" .
                     '  php-version="' .
                     "\n    " .
-                    implode("\n    ", explode('&#10;&#9;', $matches[2])) .
+                    str_replace('&#10;&#9;', "\n    ", $matches[2]).
                     "\n" .
                     '  "' .
                     "\n" .

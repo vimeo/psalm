@@ -4,6 +4,7 @@ namespace Psalm\Internal;
 use function array_diff;
 use function array_keys;
 use function array_map;
+use function array_unique;
 use function array_values;
 use function count;
 use function implode;
@@ -11,14 +12,19 @@ use function json_encode;
 use function ksort;
 use function md5;
 use function sort;
-use function spl_object_hash;
+use function strpos;
 
 /**
  * @internal
+ *
+ * @psalm-immutable
  */
 class Clause
 {
-    /** @var ?int */
+    /** @var int */
+    public $creating_conditional_id;
+
+    /** @var int */
     public $creating_object_id;
 
     /**
@@ -66,35 +72,44 @@ class Clause
     /** @var array<string, bool> */
     public $redefined_vars = [];
 
+    /** @var string|int */
+    public $hash;
+
     /**
      * @param array<string, non-empty-list<string>>  $possibilities
-     * @param bool                          $wedge
-     * @param bool                          $reconcilable
-     * @param bool                          $generated
      * @param array<string, bool> $redefined_vars
      */
     public function __construct(
         array $possibilities,
-        $wedge = false,
-        $reconcilable = true,
-        $generated = false,
-        array $redefined_vars = [],
-        ?int $creating_object_id = null
+        int $creating_conditional_id,
+        int $creating_object_id,
+        bool $wedge = false,
+        bool $reconcilable = true,
+        bool $generated = false,
+        array $redefined_vars = []
     ) {
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
         $this->generated = $generated;
         $this->redefined_vars = $redefined_vars;
+        $this->creating_conditional_id = $creating_conditional_id;
         $this->creating_object_id = $creating_object_id;
+
+        if ($wedge || !$reconcilable) {
+            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
+        } else {
+            ksort($possibilities);
+
+            foreach ($possibilities as $i => $_) {
+                sort($possibilities[$i]);
+            }
+
+            $this->hash = md5((string) json_encode($possibilities));
+        }
     }
 
-    /**
-     * @param  Clause $other_clause
-     *
-     * @return bool
-     */
-    public function contains(Clause $other_clause)
+    public function contains(Clause $other_clause): bool
     {
         if (count($other_clause->possibilities) > count($this->possibilities)) {
             return false;
@@ -110,65 +125,162 @@ class Clause
     }
 
     /**
-     * Gets a hash of the object – will be unique if we're unable to easily reconcile this with others
-     *
-     * @return string
+     * @psalm-mutation-free
      */
-    public function getHash()
+    public function __toString(): string
     {
-        ksort($this->possibilities);
+        $clause_strings = array_map(
+            /**
+             * @param string $var_id
+             * @param non-empty-list<string> $values
+             *
+             * @return string
+             */
+            function ($var_id, $values): string {
+                if ($var_id[0] === '*') {
+                    $var_id = '<expr>';
+                }
 
-        foreach ($this->possibilities as &$possible_types) {
-            sort($possible_types);
+                $var_id_clauses = array_map(
+                    /**
+                     * @param string $value
+                     *
+                     * @return string
+                     */
+                    function ($value) use ($var_id): string {
+                        if ($value === 'falsy') {
+                            return '!' . $var_id;
+                        }
+
+                        if ($value === '!falsy') {
+                            return $var_id;
+                        }
+
+                        $negate = false;
+
+                        if ($value[0] === '!') {
+                            $negate = true;
+                            $value = \substr($value, 1);
+                        }
+
+                        if ($value[0] === '=') {
+                            $value = \substr($value, 1);
+                        }
+
+                        if ($negate) {
+                            return $var_id . ' is not ' . $value;
+                        }
+
+                        return $var_id . ' is ' . $value;
+                    },
+                    $values
+                );
+
+                if (count($var_id_clauses) > 1) {
+                    return '(' . implode(') || (', $var_id_clauses) . ')';
+                }
+
+                return $var_id_clauses[0];
+            },
+            array_keys($this->possibilities),
+            array_values($this->possibilities)
+        );
+
+        if (count($clause_strings) > 1) {
+            return '(' . implode(') || (', $clause_strings) . ')';
         }
 
-        $possibility_string = json_encode($this->possibilities);
-        if (!$possibility_string) {
-            return (string) \mt_rand(0, 10000000);
-        }
-
-        return md5($possibility_string) .
-            ($this->wedge || !$this->reconcilable ? spl_object_hash($this) : '');
+        return \reset($clause_strings);
     }
 
-    public function __toString()
+    public function makeUnique() : self
     {
-        return implode(
-            ' || ',
-            array_map(
-                /**
-                 * @param string $var_id
-                 * @param string[] $values
-                 *
-                 * @return string
-                 */
-                function ($var_id, $values) {
-                    return implode(
-                        ' || ',
-                        array_map(
-                            /**
-                             * @param string $value
-                             *
-                             * @return string
-                             */
-                            function ($value) use ($var_id) {
-                                if ($value === 'falsy') {
-                                    return '!' . $var_id;
-                                }
+        $possibilities = $this->possibilities;
 
-                                if ($value === '!falsy') {
-                                    return $var_id;
-                                }
+        foreach ($possibilities as $var_id => $var_possibilities) {
+            $possibilities[$var_id] = array_values(array_unique($var_possibilities));
+        }
 
-                                return $var_id . '==' . $value;
-                            },
-                            $values
-                        )
-                    );
-                },
-                array_keys($this->possibilities),
-                array_values($this->possibilities)
-            )
+        return new self(
+            $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            $this->generated,
+            $this->redefined_vars
         );
+    }
+
+    public function removePossibilities(string $var_id) : ?self
+    {
+        $possibilities = $this->possibilities;
+        unset($possibilities[$var_id]);
+
+        if (!$possibilities) {
+            return null;
+        }
+
+        return new self(
+            $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            $this->generated,
+            $this->redefined_vars
+        );
+    }
+
+    /**
+     * @param non-empty-list<string> $clause_var_possibilities
+     */
+    public function addPossibilities(string $var_id, array $clause_var_possibilities) : self
+    {
+        $possibilities = $this->possibilities;
+        $possibilities[$var_id] = $clause_var_possibilities;
+
+        return new self(
+            $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            $this->generated,
+            $this->redefined_vars
+        );
+    }
+
+    public function calculateNegation() : self
+    {
+        if ($this->impossibilities !== null) {
+            return $this;
+        }
+
+        $impossibilities = [];
+
+        foreach ($this->possibilities as $var_id => $possibility) {
+            $impossibility = [];
+
+            foreach ($possibility as $type) {
+                if (($type[0] !== '=' && $type[0] !== '~'
+                        && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
+                    || strpos($type, '(')
+                    || strpos($type, 'getclass-')
+                ) {
+                    $impossibility[] = \Psalm\Internal\Algebra::negateType($type);
+                }
+            }
+
+            if ($impossibility) {
+                $impossibilities[$var_id] = $impossibility;
+            }
+        }
+
+        $clause = clone $this;
+
+        $clause->impossibilities = $impossibilities;
+
+        return $clause;
     }
 }

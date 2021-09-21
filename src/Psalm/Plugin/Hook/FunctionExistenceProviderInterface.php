@@ -3,10 +3,11 @@ namespace Psalm\Plugin\Hook;
 
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface FunctionExistenceProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 
@@ -15,10 +16,9 @@ interface FunctionExistenceProviderInterface
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis
      * will continue to determine if the function actually exists.
      *
-     * @return ?bool
      */
     public static function doesFunctionExist(
         StatementsSource $statements_source,
         string $function_id
-    );
+    ): ?bool;
 }

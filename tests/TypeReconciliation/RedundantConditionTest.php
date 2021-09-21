@@ -11,7 +11,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'ignoreIssueAndAssign' => [
@@ -69,16 +69,15 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                 '<?php
                     /** @param int $i */
                     function foo($i): void {
+                        /** @psalm-suppress RedundantConditionGivenDocblockType */
                         if ($i !== null) {
+                            /** @psalm-suppress RedundantCastGivenDocblockType */
                             $i = (int) $i;
 
                             if ($i) {}
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
-                    'RedundantConditionGivenDocblockType',
-                ],
             ],
             'noRedundantConditionAfterDocblockTypeNullCheck' => [
                 '<?php
@@ -373,6 +372,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         $options = ["option" => true];
                     }
 
+                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
                     if ($option) {}',
@@ -455,15 +455,6 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }
                     if ($x) {
                         var_export($x);
-                    }',
-            ],
-            'arrayKeyExistsAccess' => [
-                '<?php
-                    /** @param array<int, string> $arr */
-                    function foo(array $arr) : void {
-                        if (array_key_exists(1, $arr)) {
-                            $a = ($arr[1] === "b") ? true : false;
-                        }
                     }',
             ],
             'noRedundantConditionStringNotFalse' => [
@@ -800,13 +791,64 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'noRedundantCastAfterCalculation' => [
+                '<?php
+                    function x(string $x): int {
+                        return (int) (hexdec($x) + 1);
+                    }',
+            ],
+            'unsetArrayWithKnownOffset' => [
+                '<?php
+                    function bar(string $f) : void {
+                        $filter = rand(0, 1) ? explode(",", $f) : [$f];
+                        unset($filter[rand(0, 1)]);
+                        if ($filter) {}
+                    }'
+            ],
+            'stringInScalar' => [
+                '<?php
+                    /**
+                     * @template T of scalar
+                     * @param T $value
+                     */
+                    function normalizeValue(bool|int|float|string $value): void
+                    {
+                        assert(is_string($value));
+                    }'
+            ],
+            'NumericCanBeFalsy' => [
+                '<?php
+                    function test(string|int|float|bool $value): bool {
+                        if (is_numeric($value) || $value === true) {
+                            if ($value) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }'
+            ],
+            'NumericCanBeNotIntOrNotFloat' => [
+                '<?php
+                    /** @param mixed $a */
+                    function a($a): void{
+                        if (is_numeric($a)) {
+                            assert(!is_float($a));
+                        }
+                    }
+                    /** @param mixed $a */
+                    function b($a): void{
+                        if (is_numeric($a)) {
+                            assert(!is_int($a));
+                        }
+                    }'
+            ]
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'ifFalse' => [
@@ -1222,7 +1264,7 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'SKIPPED-noLongerWarnsAboutRedundancyHere' => [
+            'noLongerWarnsAboutRedundancyHere' => [
                 '<?php
                     function a(bool $a, bool $b) : void {
                         if ($a || $b) {
@@ -1351,6 +1393,28 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                         if ($oc) {}
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'leftCannotBeTrue' => [
+                '<?php
+                    /** @psalm-type F = ""|"0" */
+                    /**
+                     * @param F $a
+                     * @param F $b
+                     */
+                    function foo(string $a, string $b): void {
+                        if ($a || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'rightCannotBeTrue' => [
+                '<?php
+                    /** @param false $a */
+                    function foo(bool $a): void {
+                        if (rand(0, 1) || $a) {
+                            echo "a or b";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

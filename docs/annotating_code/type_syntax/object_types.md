@@ -4,7 +4,7 @@
 
 #### Generic object types
 
-Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](templated_annotations.md).
+Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](../templated_annotations.md).
 
 #### Generators
 

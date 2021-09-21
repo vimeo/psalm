@@ -10,13 +10,9 @@ class A {
 }
 
 /** @psalm-pure */
-function filterOdd(int $i, A $a) : ?int {
-    $a->a++;
+function foo(int $i, A $a) : int {
+    $a->a = $i;
 
-    if ($i % 2 === 0 || $a->a === 2) {
-        return $i;
-    }
-
-    return null;
+    return $i;
 }
 ```

@@ -3,17 +3,8 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc;
-use function Amp\asyncCoroutine;
-use function Amp\call;
 use Amp\Promise;
 use Amp\Success;
-use function array_combine;
-use function array_keys;
-use function array_map;
-use function array_shift;
-use function array_unshift;
-use function explode;
-use function implode;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
@@ -21,20 +12,32 @@ use LanguageServerProtocol\DiagnosticSeverity;
 use LanguageServerProtocol\InitializeResult;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use LanguageServerProtocol\SaveOptions;
 use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
-use function max;
-use function parse_url;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
+use Psalm\Internal\LanguageServer\Server\Workspace;
+use Throwable;
+
+use function Amp\asyncCoroutine;
+use function Amp\call;
+use function array_combine;
+use function array_keys;
+use function array_map;
+use function array_shift;
+use function array_unshift;
+use function explode;
+use function implode;
+use function max;
+use function parse_url;
 use function rawurlencode;
 use function str_replace;
 use function strpos;
 use function substr;
-use Throwable;
 use function trim;
 use function urldecode;
 
@@ -49,6 +52,13 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @var ?Server\TextDocument
      */
     public $textDocument;
+
+    /**
+     * Handles workspace/* method calls
+     *
+     * @var ?Server\Workspace
+     */
+    public $workspace;
 
     /**
      * @var ProtocolReader
@@ -80,10 +90,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     protected $onchange_paths_to_analyze = [];
 
-    /**
-     * @param ProtocolReader  $reader
-     * @param ProtocolWriter $writer
-     */
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -97,22 +103,18 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $this->protocolReader = $reader;
         $this->protocolReader->on(
             'close',
-            /**
-             * @return void
-             */
-            function () {
+            function (): void {
                 $this->shutdown();
                 $this->exit();
             }
         );
         $this->protocolReader->on(
             'message',
-            /** @return void */
             asyncCoroutine(
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
-                function (Message $msg) {
+                function (Message $msg): \Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -170,8 +172,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            /** @return void */
-            function () {
+            function (): void {
                 $this->doAnalysis();
             }
         );
@@ -194,12 +195,12 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        string $rootPath = null,
-        int $processId = null
+        ?string $rootPath = null,
+        ?int $processId = null
     ): Promise {
         return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
-            function () use ($capabilities, $rootPath, $processId) {
+            function () {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');
 
@@ -229,9 +230,23 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     );
                 }
 
+                if ($this->workspace === null) {
+                    $this->workspace = new Workspace(
+                        $this,
+                        $codebase,
+                        $this->project_analyzer->onchange_line_limit
+                    );
+                }
+
                 $serverCapabilities = new ServerCapabilities();
 
                 $textDocumentSyncOptions = new TextDocumentSyncOptions();
+
+                $textDocumentSyncOptions->openClose = true;
+
+                $saveOptions = new SaveOptions();
+                $saveOptions->includeText = true;
+                $textDocumentSyncOptions->save = $saveOptions;
 
                 if ($this->project_analyzer->onchange_line_limit === 0) {
                     $textDocumentSyncOptions->change = TextDocumentSyncKind::NONE;
@@ -256,7 +271,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 if ($this->project_analyzer->provide_completion) {
                     $serverCapabilities->completionProvider = new CompletionOptions();
                     $serverCapabilities->completionProvider->resolveProvider = false;
-                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
+                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':',"[", "(", ",", " "];
                 }
 
                 $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
@@ -276,33 +291,23 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @psalm-suppress PossiblyUnusedMethod
      *
-     * @return void
      */
-    public function initialized()
+    public function initialized(): void
     {
         $this->clientStatus('running');
     }
 
-    /**
-     * @return void
-     */
-    public function queueTemporaryFileAnalysis(string $file_path, string $uri)
+    public function queueTemporaryFileAnalysis(string $file_path, string $uri): void
     {
         $this->onchange_paths_to_analyze[$file_path] = $uri;
     }
 
-    /**
-     * @return void
-     */
-    public function queueFileAnalysis(string $file_path, string $uri)
+    public function queueFileAnalysis(string $file_path, string $uri): void
     {
         $this->onsave_paths_to_analyze[$file_path] = $uri;
     }
 
-    /**
-     * @return void
-     */
-    public function doAnalysis()
+    public function doAnalysis(): void
     {
         $this->clientStatus('analyzing');
 
@@ -342,15 +347,14 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @param array<string, string> $uris
      *
-     * @return void
      */
-    public function emitIssues(array $uris)
+    public function emitIssues(array $uris): void
     {
         $data = \Psalm\IssueBuffer::clear();
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
-                function (IssueData $issue_data) use ($file_path) : Diagnostic {
+                function (IssueData $issue_data) : Diagnostic {
                     //$check_name = $issue->check_name;
                     $description = $issue_data->message;
                     $severity = $issue_data->severity;
@@ -414,10 +418,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
-     *
-     * @psalm-return Promise<null>
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function shutdown()
+    public function shutdown(): Promise
     {
         $this->clientStatus('closing');
         $this->verboseLog("Shutting down...");
@@ -434,9 +437,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * A notification to ask the server to exit its process.
      *
-     * @return void
      */
-    public function exit()
+    public function exit(): void
     {
         exit(0);
     }
@@ -447,18 +449,17 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      *
      * @param string $message The log message to send to the client.
      * @psalm-param 1|2|3|4 $type
-     * @param integer $type The log type:
+     * @param int $type The log type:
      *  - 1 = Error
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
-     * @return Promise
      */
-    private function verboseLog(string $message, int $type = 4): Promise
+    public function verboseLog(string $message, int $type = 4): void
     {
         if ($this->project_analyzer->language_server_verbose) {
             try {
-                return $this->client->logMessage(
+                $this->client->logMessage(
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
@@ -466,7 +467,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 // do nothing
             }
         }
-        return new Success(null);
+        new Success(null);
     }
 
     /**
@@ -476,28 +477,26 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param string $status The log message to send to the client. Should not contain colons `:`.
      * @param string|null $additional_info This is additional info that the client
      *                                       can use as part of the display message.
-     * @return Promise
      */
-    private function clientStatus(string $status, string $additional_info = null): Promise
+    private function clientStatus(string $status, ?string $additional_info = null): void
     {
         try {
             // here we send a notification to the client using the telemetry notification method
-            return $this->client->logMessage(
+            $this->client->logMessage(
                 $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
                 3,
                 'telemetry/event'
             );
         } catch (\Throwable $err) {
-            return new Success(null);
+            // do nothing
         }
+        new Success(null);
     }
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
-     * @param string $filepath
-     *
-     * @return string
+     * @psalm-pure
      */
     public static function pathToUri(string $filepath): string
     {
@@ -518,11 +517,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * Transforms URI into file path
      *
-     * @param string $uri
      *
-     * @return string
      */
-    public static function uriToPath(string $uri)
+    public static function uriToPath(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false
@@ -533,7 +530,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             throw new \InvalidArgumentException("Not a valid file URI: $uri");
         }
 
-        $filepath = urldecode((string) $fragments['path']);
+        $filepath = urldecode($fragments['path']);
 
         if (strpos($filepath, ':') !== false) {
             if ($filepath[0] === '/') {

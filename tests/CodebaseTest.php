@@ -1,25 +1,22 @@
 <?php
 namespace Psalm\Tests;
 
-use function array_values;
-use function get_class;
-use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation;
-use Psalm\FileSource;
-use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\PluginRegistrationSocket;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
+
+use function array_values;
+use function get_class;
 
 class CodebaseTest extends TestCase
 {
     /** @var Codebase */
     private $codebase;
 
-    /** @return void */
     public function setUp() : void
     {
         parent::setUp();
@@ -30,9 +27,8 @@ class CodebaseTest extends TestCase
      * @test
      * @dataProvider typeContainments
      *
-     * @return void
      */
-    public function isTypeContainedByType(string $input, string $container, bool $expected)
+    public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -61,9 +57,8 @@ class CodebaseTest extends TestCase
      * @test
      * @dataProvider typeIntersections
      *
-     * @return void
      */
-    public function canTypeBeContainedByType(string $input, string $container, bool $expected)
+    public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
         $container = Type::parseString($container);
@@ -92,11 +87,10 @@ class CodebaseTest extends TestCase
      *
      * @param array{string,string} $expected
      *
-     * @return void
      */
-    public function getKeyValueParamsForTraversableObject(string $input, array $expected)
+    public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
-        list($input) = array_values(Type::parseString($input)->getAtomicTypes());
+        [$input] = array_values(Type::parseString($input)->getAtomicTypes());
 
         $expected_key_type = Type::parseString($expected[0]);
         $expected_value_type = Type::parseString($expected[1]);
@@ -126,9 +120,8 @@ class CodebaseTest extends TestCase
     /**
      * @test
      *
-     * @return void
      */
-    public function customMetadataIsPersisted()
+    public function customMetadataIsPersisted(): void
     {
         $this->addFile(
             'somefile.php',
@@ -144,17 +137,12 @@ class CodebaseTest extends TestCase
         );
         $hook = new class implements AfterClassLikeVisitInterface {
             /**
-             * @param FileManipulation[] $file_replacements
-             *
              * @return void
              */
-            public static function afterClassLikeVisit(
-                ClassLike $stmt,
-                ClassLikeStorage $storage,
-                FileSource $statements_source,
-                Codebase $codebase,
-                array &$file_replacements = []
-            ) {
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
+            {
+                $storage = $event->getStorage();
+                $codebase = $event->getCodebase();
                 if ($storage->name === 'C') {
                     $storage->custom_metadata['a'] = 'b';
                     $storage->methods['m']->custom_metadata['c'] = 'd';
@@ -186,9 +174,8 @@ class CodebaseTest extends TestCase
     /**
      * @test
      *
-     * @return void
      */
-    public function classExtendsRejectsUnpopulatedClasslikes()
+    public function classExtendsRejectsUnpopulatedClasslikes(): void
     {
         $this->codebase->classlike_storage_provider->create('A');
         $this->codebase->classlike_storage_provider->create('B');

@@ -28,10 +28,8 @@ trait EmitterTrait
 
     /**
      * Subscribe to an event.
-     *
-     * @return void
      */
-    public function on(string $eventName, callable $callBack, int $priority = 100)
+    public function on(string $eventName, callable $callBack, int $priority = 100): void
     {
         if (!isset($this->listeners[$eventName])) {
             $this->listeners[$eventName] = [
@@ -72,14 +70,14 @@ trait EmitterTrait
     public function emit(
         string $eventName,
         array $arguments = [],
-        callable $continueCallBack = null
-    ) : bool {
-        if (\is_null($continueCallBack)) {
+        ?callable $continueCallBack = null
+    ): void {
+        if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);
                 if ($result === false) {
-                    return false;
+                    return;
                 }
             }
         } else {
@@ -91,7 +89,7 @@ trait EmitterTrait
                 /** @psalm-suppress MixedAssignment */
                 $result = \call_user_func_array($listener, $arguments);
                 if ($result === false) {
-                    return false;
+                    return;
                 }
 
                 if ($counter > 0) {
@@ -101,8 +99,6 @@ trait EmitterTrait
                 }
             }
         }
-
-        return true;
     }
 
     /**

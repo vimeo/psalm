@@ -2,18 +2,21 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use function strtolower;
+
 use function end;
+use function strtolower;
 
 /**
  * @internal
@@ -21,8 +24,8 @@ use function end;
 class CallableTypeComparator
 {
     /**
-     * @param  TCallable|Type\Atomic\TFn   $input_type_part
-     * @param  TCallable|Type\Atomic\TFn   $container_type_part
+     * @param  TCallable|Type\Atomic\TClosure   $input_type_part
+     * @param  TCallable|Type\Atomic\TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -30,6 +33,14 @@ class CallableTypeComparator
         Type\Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ) : bool {
+        if ($container_type_part->is_pure && !$input_type_part->is_pure) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
+            }
+
+            return false;
+        }
+
         if ($container_type_part->params !== null && $input_type_part->params === null) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -166,8 +177,8 @@ class CallableTypeComparator
 
                 return false;
             }
-        } elseif ($input_type_part instanceof ObjectLike) {
-            $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
+        } elseif ($input_type_part instanceof TKeyedArray) {
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
 
             if ($method_id === 'not-callable') {
                 return false;
@@ -190,7 +201,7 @@ class CallableTypeComparator
             }
         }
 
-        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part);
+        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part, null, true);
 
         if ($input_callable) {
             if (self::isContainedBy(
@@ -208,14 +219,19 @@ class CallableTypeComparator
     }
 
     /**
-     * @return ?TCallable
+     * @return TCallable|TClosure|null
      */
     public static function getCallableFromAtomic(
         Codebase $codebase,
         Type\Atomic $input_type_part,
         ?TCallable $container_type_part = null,
-        ?StatementsAnalyzer $statements_analyzer = null
-    ) : ?TCallable {
+        ?StatementsAnalyzer $statements_analyzer = null,
+        bool $expand_callable = false
+    ): ?Atomic {
+        if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
+            return $input_type_part;
+        }
+
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
             try {
                 $function_storage = $codebase->functions->getStorage(
@@ -223,10 +239,55 @@ class CallableTypeComparator
                     strtolower($input_type_part->value)
                 );
 
+                if ($expand_callable) {
+                    $params = [];
+
+                    foreach ($function_storage->params as $param) {
+                        $param = clone $param;
+
+                        if ($param->type) {
+                            $param->type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $codebase,
+                                $param->type,
+                                null,
+                                null,
+                                null,
+                                true,
+                                true,
+                                false,
+                                false,
+                                true
+                            );
+                        }
+
+                        $params[] = $param;
+                    }
+
+                    $return_type = null;
+
+                    if ($function_storage->return_type) {
+                        $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $codebase,
+                            $function_storage->return_type,
+                            null,
+                            null,
+                            null,
+                            true,
+                            true,
+                            false,
+                            false,
+                            true
+                        );
+                    }
+                } else {
+                    $return_type = $function_storage->return_type;
+                    $params = $function_storage->params;
+                }
+
                 return new TCallable(
                     'callable',
-                    $function_storage->params,
-                    $function_storage->return_type,
+                    $params,
+                    $return_type,
                     $function_storage->pure
                 );
             } catch (\UnexpectedValueException $e) {
@@ -269,8 +330,8 @@ class CallableTypeComparator
                     return $matching_callable;
                 }
             }
-        } elseif ($input_type_part instanceof ObjectLike) {
-            $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
+        } elseif ($input_type_part instanceof TKeyedArray) {
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
             if ($method_id && $method_id !== 'not-callable') {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
@@ -291,12 +352,17 @@ class CallableTypeComparator
                     return new TCallable(
                         'callable',
                         $method_storage->params,
-                        $converted_return_type
+                        $converted_return_type,
+                        $method_storage->pure
                     );
                 } catch (\UnexpectedValueException $e) {
                     // do nothing
                 }
             }
+        } elseif ($input_type_part instanceof TNamedObject
+            && $input_type_part->value === 'Closure'
+        ) {
+            return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
             && $codebase->classExists($input_type_part->value)
         ) {
@@ -306,14 +372,29 @@ class CallableTypeComparator
             );
 
             if ($codebase->methods->methodExists($invoke_id)) {
-                return new TCallable(
-                    'callable',
-                    $codebase->methods->getMethodParams($invoke_id),
-                    $codebase->methods->getMethodReturnType(
-                        $invoke_id,
-                        $input_type_part->value
-                    )
-                );
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
+
+                if ($declaring_method_id) {
+                    $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    $method_fqcln = $invoke_id->fq_class_name;
+                    $converted_return_type = null;
+                    if ($method_storage->return_type) {
+                        $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $codebase,
+                            $method_storage->return_type,
+                            $method_fqcln,
+                            $method_fqcln,
+                            null
+                        );
+                    }
+
+                    return new TCallable(
+                        'callable',
+                        $method_storage->params,
+                        $converted_return_type,
+                        $method_storage->pure
+                    );
+                }
             }
         }
 
@@ -321,11 +402,11 @@ class CallableTypeComparator
     }
 
     /** @return null|'not-callable'|\Psalm\Internal\MethodIdentifier */
-    public static function getCallableMethodIdFromObjectLike(
-        ObjectLike $input_type_part,
-        Codebase $codebase = null,
-        string $calling_method_id = null,
-        string $file_name = null
+    public static function getCallableMethodIdFromTKeyedArray(
+        TKeyedArray $input_type_part,
+        ?Codebase $codebase = null,
+        ?string $calling_method_id = null,
+        ?string $file_name = null
     ) {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
@@ -333,8 +414,7 @@ class CallableTypeComparator
             return 'not-callable';
         }
 
-        $lhs = $input_type_part->properties[0];
-        $rhs = $input_type_part->properties[1];
+        [$lhs, $rhs] = $input_type_part->properties;
 
         $rhs_low_info = $rhs->hasMixed() || $rhs->hasScalar();
 
@@ -370,6 +450,10 @@ class CallableTypeComparator
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
+                } elseif ($lhs_atomic_type instanceof Type\Atomic\TClassString
+                    && $lhs_atomic_type->as
+                ) {
+                    $class_name = $lhs_atomic_type->as;
                 }
             }
         }

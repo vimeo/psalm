@@ -2,14 +2,21 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Node\Expr\VirtualArray;
+use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\VirtualArg;
 use Psalm\Type;
+
 use function array_map;
+use function array_merge;
 
 class MissingMethodCallHandler
 {
@@ -27,9 +34,51 @@ class MissingMethodCallHandler
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
+        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
+            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $method_id->fq_class_name,
+                $method_id->method_name,
+                $stmt,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+            );
+
+            if ($return_type_candidate) {
+                if ($all_intersection_return_type) {
+                    $return_type_candidate = Type::intersectUnionTypes(
+                        $all_intersection_return_type,
+                        $return_type_candidate,
+                        $codebase
+                    ) ?: Type::getMixed();
+                }
+
+                if (!$result->return_type) {
+                    $result->return_type = $return_type_candidate;
+                } else {
+                    $result->return_type = Type::combineUnionTypes(
+                        $return_type_candidate,
+                        $result->return_type,
+                        $codebase
+                    );
+                }
+
+                CallAnalyzer::checkMethodArgs(
+                    $method_id,
+                    $stmt->args,
+                    null,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer
+                );
+
+                return null;
+            }
+        }
+
         if (isset($class_storage->pseudo_methods[$method_name_lc])) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->existent_method_ids[] = $method_id->__toString();
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
@@ -38,6 +87,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             );
 
@@ -84,51 +134,68 @@ class MissingMethodCallHandler
 
                 return null;
             }
-        } else {
+        } elseif ($all_intersection_return_type == null) {
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             );
 
             if ($class_storage->sealed_methods || $config->seal_all_methods) {
-                $result->non_existent_magic_method_ids[] = $method_id;
+                $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
                 return null;
             }
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id;
+        $result->existent_method_ids[] = $method_id->__toString();
 
         $array_values = array_map(
             /**
              * @return PhpParser\Node\Expr\ArrayItem
              */
-            function (PhpParser\Node\Arg $arg) {
-                return new PhpParser\Node\Expr\ArrayItem($arg->value);
+            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
+                return new VirtualArrayItem(
+                    $arg->value,
+                    null,
+                    false,
+                    $arg->getAttributes()
+                );
             },
             $stmt->args
         );
 
-        $old_node_data = $statements_analyzer->node_data;
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         return new AtomicCallContext(
-            new MethodIdentifier(
-                $fq_class_name,
-                '__call'
-            ),
+            new MethodIdentifier($fq_class_name, '__call'),
             [
-                new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
-                new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
-            ],
-            $old_node_data
+                new VirtualArg(
+                    new VirtualString($method_name_lc),
+                    false,
+                    false,
+                    $stmt->getAttributes()
+                ),
+                new VirtualArg(
+                    new VirtualArray(
+                        $array_values,
+                        $stmt->getAttributes()
+                    ),
+                    false,
+                    false,
+                    $stmt->getAttributes()
+                ),
+            ]
         );
     }
 
+    /**
+     * @param array<string> $all_intersection_existent_method_ids
+     */
     public static function handleMissingOrMagicMethod(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -138,6 +205,9 @@ class MissingMethodCallHandler
         Context $context,
         \Psalm\Config $config,
         ?Type\Union $all_intersection_return_type,
+        array $all_intersection_existent_method_ids,
+        ?string $intersection_method_id,
+        string $cased_method_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
         $fq_class_name = $method_id->fq_class_name;
@@ -149,7 +219,7 @@ class MissingMethodCallHandler
             && isset($class_storage->pseudo_methods[$method_name_lc])
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->existent_method_ids[] = $method_id->__toString();
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
@@ -158,6 +228,7 @@ class MissingMethodCallHandler
                 $stmt->args,
                 $pseudo_method_storage->params,
                 (string) $method_id,
+                true,
                 $context
             ) === false) {
                 return;
@@ -218,9 +289,35 @@ class MissingMethodCallHandler
             $stmt->args,
             null,
             null,
+            true,
             $context
         ) === false) {
             return;
+        }
+
+        if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+            $result->existent_method_ids = array_merge(
+                $result->existent_method_ids,
+                $all_intersection_existent_method_ids
+            );
+
+            if (!$result->return_type) {
+                $result->return_type = $all_intersection_return_type;
+            } else {
+                $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
+            }
+
+            return;
+        }
+
+        if ((!$is_interface && !$config->use_phpdoc_method_without_magic_or_parent)
+            || !isset($class_storage->pseudo_methods[$method_name_lc])
+        ) {
+            if ($is_interface) {
+                $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $cased_method_id;
+            } else {
+                $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
+            }
         }
     }
 }

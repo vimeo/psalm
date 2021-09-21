@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidPropertyFetch extends CodeIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 29;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 29;
 }

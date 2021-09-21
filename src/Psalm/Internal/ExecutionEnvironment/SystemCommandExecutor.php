@@ -15,7 +15,6 @@ final class SystemCommandExecutor
     /**
      * Execute command.
      *
-     * @param string $command
      *
      * @throws \RuntimeException
      *
@@ -23,6 +22,10 @@ final class SystemCommandExecutor
      */
     public function execute(string $command) : array
     {
+        if (!\function_exists('exec')) {
+            throw new \RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));
+        };
+
         exec($command, $result, $returnValue);
 
         if ($returnValue === 0) {

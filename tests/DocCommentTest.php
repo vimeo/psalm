@@ -3,10 +3,16 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\DocComment;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
 class DocCommentTest extends BaseTestCase
 {
+    public function setUp(): void
+    {
+        RuntimeCaches::clearAll();
+    }
+
     public function testNewLineIsAddedBetweenAnnotationsByDefault(): void
     {
         $docComment = new ParsedDocblock(

@@ -3,13 +3,11 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
+
 use function sprintf;
 
 class PylintReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';
@@ -20,9 +18,6 @@ class PylintReport extends Report
         return $output;
     }
 
-    /**
-     * @return string
-     */
     private function format(\Psalm\Internal\Analyzer\IssueData $issue_data): string
     {
         $message = sprintf(

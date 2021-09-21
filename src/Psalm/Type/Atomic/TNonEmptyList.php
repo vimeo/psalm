@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Represents a non-empty list
  */
 class TNonEmptyList extends TList
 {
@@ -13,10 +13,7 @@ class TNonEmptyList extends TList
 
     public const KEY = 'non-empty-list';
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return 'non-empty-list';
     }

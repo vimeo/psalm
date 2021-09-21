@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PsalmInternalError extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 177;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 177;
 }

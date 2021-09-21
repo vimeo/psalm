@@ -39,7 +39,7 @@ class RemoteInfo
      *
      * @return $this
      */
-    public function setName(string $name)
+    public function setName(string $name): RemoteInfo
     {
         $this->name = $name;
 
@@ -49,9 +49,8 @@ class RemoteInfo
     /**
      * Return remote name.
      *
-     * @return null|string
      */
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -63,7 +62,7 @@ class RemoteInfo
      *
      * @return $this
      */
-    public function setUrl(string $url)
+    public function setUrl(string $url): RemoteInfo
     {
         $this->url = $url;
 
@@ -73,9 +72,8 @@ class RemoteInfo
     /**
      * Return remote URL.
      *
-     * @return null|string
      */
-    public function getUrl()
+    public function getUrl(): ?string
     {
         return $this->url;
     }

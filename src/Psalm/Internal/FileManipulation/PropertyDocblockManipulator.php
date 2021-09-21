@@ -1,13 +1,15 @@
 <?php
 namespace Psalm\Internal\FileManipulation;
 
-use function array_shift;
-use function count;
-use function ltrim;
 use PhpParser\Node\Stmt\Property;
+use Psalm\Config;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+
+use function array_shift;
+use function count;
+use function ltrim;
 use function str_replace;
 use function strlen;
 use function strrpos;
@@ -18,15 +20,10 @@ use function substr;
  */
 class PropertyDocblockManipulator
 {
-    /** @var array<string, array<string, self>> */
-    private static $manipulators = [];
-
     /**
-     * Manipulators ordered by line number
-     *
      * @var array<string, array<int, self>>
      */
-    private static $ordered_manipulators = [];
+    private static $manipulators = [];
 
     /** @var Property */
     private $stmt;
@@ -70,16 +67,14 @@ class PropertyDocblockManipulator
     public static function getForProperty(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        string $property_id,
         Property $stmt
     ) : self {
-        if (isset(self::$manipulators[$file_path][$property_id])) {
-            return self::$manipulators[$file_path][$property_id];
+        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
+            return self::$manipulators[$file_path][$stmt->getLine()];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$property_id]
-            = self::$ordered_manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$stmt->getLine()]
             = new self($project_analyzer, $stmt, $file_path);
 
         return $manipulator;
@@ -92,7 +87,7 @@ class PropertyDocblockManipulator
     ) {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getFilePos() : (int)$stmt->getAttribute('startFilePos');
+        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = (int)$stmt->getAttribute('startFilePos');
 
         $codebase = $project_analyzer->getCodebase();
@@ -100,7 +95,14 @@ class PropertyDocblockManipulator
         $file_contents = $codebase->getFileContents($file_path);
 
         if (count($stmt->props) > 1) {
-            throw new \UnexpectedValueException('Cannot replace multiple properties');
+            $config = Config::getInstance();
+            if ($config->isInProjectDirs($file_path)) {
+                throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
+            }
+
+            $this->indentation = '';
+
+            return;
         }
 
         $prop = $stmt->props[0];
@@ -161,9 +163,8 @@ class PropertyDocblockManipulator
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
-     * @return string
      */
-    private function getDocblock()
+    private function getDocblock(): string
     {
         $docblock = $this->stmt->getDocComment();
 
@@ -215,11 +216,9 @@ class PropertyDocblockManipulator
     }
 
     /**
-     * @param  string $file_path
-     *
      * @return array<int, FileManipulation>
      */
-    public static function getManipulationsForFile($file_path)
+    public static function getManipulationsForFile(string $file_path): array
     {
         if (!isset(self::$manipulators[$file_path])) {
             return [];
@@ -227,7 +226,7 @@ class PropertyDocblockManipulator
 
         $file_manipulations = [];
 
-        foreach (self::$ordered_manipulators[$file_path] as $manipulator) {
+        foreach (self::$manipulators[$file_path] as $manipulator) {
             if ($manipulator->new_php_type) {
                 if ($manipulator->typehint_start && $manipulator->typehint_end) {
                     $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
@@ -271,12 +270,8 @@ class PropertyDocblockManipulator
         return $file_manipulations;
     }
 
-    /**
-     * @return void
-     */
-    public static function clearCache()
+    public static function clearCache(): void
     {
         self::$manipulators = [];
-        self::$ordered_manipulators = [];
     }
 }

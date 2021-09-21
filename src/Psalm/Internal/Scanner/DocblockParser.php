@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Scanner;
 
-use const PREG_OFFSET_CAPTURE;
 use function explode;
 use function implode;
 use function min;
@@ -16,15 +15,33 @@ use function strspn;
 use function substr;
 use function trim;
 
+use const PREG_OFFSET_CAPTURE;
+
+/**
+ * This class will parse Docblocks in order to extract known tags from them
+ */
 class DocblockParser
 {
-    public static function parse(string $docblock) : ParsedDocblock
+    /**
+     * $offsetStart is the absolute position of the docblock in the file. It'll be used to add to the position of some
+     * special tags (like `psalm-suppress`) for future uses
+     */
+    public static function parse(string $docblock, int $offsetStart) : ParsedDocblock
     {
         // Strip off comments.
         $docblock = trim($docblock);
 
-        $docblock = preg_replace('@^/\*\*@', '', $docblock);
-        $docblock = preg_replace('@\*\*?/$@', '', $docblock);
+        if (substr($docblock, 0, 3) === '/**') {
+            $docblock = substr($docblock, 3);
+        }
+
+        if (substr($docblock, -2) === '*/') {
+            $docblock = substr($docblock, 0, -2);
+
+            if (substr($docblock, -1) === '*') {
+                $docblock = substr($docblock, 0, -1);
+            }
+        }
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
@@ -62,12 +79,12 @@ class DocblockParser
                 }
             }
 
-            if (preg_match('/^[ \t]*\*?\s*@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+            if (preg_match('/^[ \t]*\*?\s*@([\w\-\\\:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
-                list($_, $type_info, $data_info) = $matches;
+                [$_, $type_info, $data_info] = $matches;
 
-                list($type) = $type_info;
-                list($data, $data_offset) = $data_info;
+                [$type] = $type_info;
+                [$data, $data_offset] = $data_info;
 
                 if (strpos($data, '*')) {
                     $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));
@@ -79,7 +96,7 @@ class DocblockParser
 
                 $data_offset += $line_offset;
 
-                $special[$type][$data_offset + 3] = $data;
+                $special[$type][$data_offset + 3 + $offsetStart] = $data;
 
                 unset($lines[$k]);
             } else {
@@ -95,7 +112,7 @@ class DocblockParser
         $min_indent = 80;
         foreach ($lines as $k => $line) {
             $indent = strspn($line, ' ');
-            if ($indent == strlen($line)) {
+            if ($indent === strlen($line)) {
                 // This line consists of only spaces. Trim it completely.
                 $lines[$k] = '';
                 continue;
@@ -219,10 +236,22 @@ class DocblockParser
             || isset($docblock->tags['psalm-var'])
             || isset($docblock->tags['phpstan-var'])
         ) {
-            $docblock->combined_tags['var']
-                = ($docblock->tags['var'] ?? [])
-                + ($docblock->tags['phpstan-var'] ?? [])
-                + ($docblock->tags['psalm-var'] ?? []);
+            if (!isset($docblock->tags['ignore-var'])
+                && !isset($docblock->tags['psalm-ignore-var'])
+            ) {
+                $docblock->combined_tags['var']
+                    = ($docblock->tags['var'] ?? [])
+                    + ($docblock->tags['phpstan-var'] ?? [])
+                    + ($docblock->tags['psalm-var'] ?? []);
+            }
+        }
+
+        if (isset($docblock->tags['param-out'])
+            || isset($docblock->tags['psalm-param-out'])
+        ) {
+            $docblock->combined_tags['param-out']
+                = ($docblock->tags['param-out'] ?? [])
+                + ($docblock->tags['psalm-param-out'] ?? []);
         }
     }
 }

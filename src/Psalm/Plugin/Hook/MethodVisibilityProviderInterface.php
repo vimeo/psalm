@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface MethodVisibilityProviderInterface
 {
     /**
@@ -12,14 +13,11 @@ interface MethodVisibilityProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @return ?bool
-     */
     public static function isMethodVisible(
         StatementsSource $source,
         string $fq_classlike_name,
         string $method_name_lowercase,
         Context $context,
-        CodeLocation $code_location = null
-    );
+        ?CodeLocation $code_location = null
+    ): ?bool;
 }

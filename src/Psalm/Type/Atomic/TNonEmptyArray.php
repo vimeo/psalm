@@ -2,7 +2,8 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Denotes array known to be non-empty of the form `non-empty-array<TKey, TValue>`.
+ * It expects an array with two elements, both union types.
  */
 class TNonEmptyArray extends TArray
 {

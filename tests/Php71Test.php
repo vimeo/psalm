@@ -9,7 +9,7 @@ class Php71Test extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'nullableReturnType' => [
@@ -235,6 +235,19 @@ class Php71Test extends TestCase
                       return $i;
                     }',
             ],
+            'iterator_to_arrayMixedKey' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @param Traversable<TKey, TValue> $traversable
+                     * @return array<TValue>
+                     */
+                    function toArray(Traversable $traversable): array
+                    {
+                        return iterator_to_array($traversable);
+                    }',
+            ],
             'noReservedWordInDocblock' => [
                 '<?php
                     /**
@@ -256,9 +269,9 @@ class Php71Test extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidPrivateClassConstFetch' => [

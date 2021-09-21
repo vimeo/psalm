@@ -9,7 +9,7 @@ class TypeAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'typeAliasBeforeClass' => [
@@ -305,13 +305,278 @@ class TypeAnnotationTest extends TestCase
                         }
                     }'
             ],
+            'usedInVarForForeach' => [
+                '<?php
+                /** @psalm-type _B=array{p1:string} */
+                function e(array $a): void
+                {
+                    /** @var _B $elt */
+                    foreach ($a as $elt) {
+                        echo $elt["p1"];
+                    }
+                }'
+            ],
+            'objectWithPropertiesAlias' => [
+                '<?php
+                    /**
+                     * @psalm-type FooStruct=string
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type FooStruct from A as F2
+                     */
+                    class B {
+                        /**
+                         * @param object{foo: F2} $a
+                         * @return object{foo: string}
+                         */
+                        public function bar($a) {
+                            return $a;
+                        }
+                    }'
+            ],
+            'sameDocBlockTypeAliasAsTypeParameterForInterface' => [
+                '<?php
+                    /** @template T */
+                    interface A {
+                        /** @return T */
+                        public function output();
+                    }
+
+                    /**
+                     * @psalm-type Foo=string
+                     * @implements A<Foo>
+                     */
+                    class C implements A {
+                        public function output() {
+                            return "hello";
+                        }
+                    }
+
+                    $instance = new C();
+                    $output = $instance->output();',
+                [
+                    '$output' => 'string',
+                ],
+            ],
+            'sameDocBlockTypeAliasAsTypeParameterForExtendedRegularClass' => [
+                '<?php
+                    /** @template T */
+                    class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @psalm-type Foo=string
+                     * @extends A<Foo>
+                     */
+                    class C extends A {}
+
+                    $instance = new C("hello");
+                    $output = $instance->value;',
+                [
+                    '$output' => 'string',
+                ],
+            ],
+            'sameDocBlockTypeAliasAsTypeParameterForExtendedAbstractClass' => [
+                '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @psalm-type Foo=string
+                     * @extends A<Foo>
+                     */
+                    class C extends A {}
+
+                    $instance = new C("hello");
+                    $output = $instance->value;',
+                [
+                    '$output' => 'string',
+                ],
+            ],
+            'importedTypeAliasAsTypeParameterForImplementation' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    interface A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @implements A<Foo>
+                     */
+                    class C implements A {}',
+            ],
+            'importedTypeAliasAsTypeParameterForExtendedClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    class A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @extends A<Foo>
+                     */
+                    class C extends A {}',
+            ],
+            'importedTypeAliasAsTypeParameterForExtendedAbstractClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    abstract class A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @extends A<Foo>
+                     */
+                    class C extends A {}',
+            ],
+            'importedTypeAliasRenamedAsTypeParameterForImplementation' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    interface A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B as NewName
+                     * @implements A<NewName>
+                     */
+                    class C implements A {}',
+            ],
+            'importedTypeAliasRenamedAsTypeParameterForExtendedClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    class A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B as NewName
+                     * @extends A<NewName>
+                     */
+                    class C extends A {}',
+            ],
+            'importedTypeAliasRenamedAsTypeParameterForExtendedAbstractClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    abstract class A {}
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B as NewName
+                     * @extends A<NewName>
+                     */
+                    class C extends A {}',
+            ],
+            'importedTypeInsideLocalTypeAliasUsedAsTypeParameter' => [
+                '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @psalm-type Foo=string
+                     */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @psalm-type Baz=Foo
+                     *
+                     * @extends A<Baz>
+                     */
+                    class C extends A {}
+
+                    $instance = new C("hello");
+                    $output = $instance->value;',
+                [
+                    '$output' => 'string',
+                ],
+            ],
+            'importedTypeWithPhpstanAnnotation' => [
+                '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @phpstan-type Foo=string
+                     */
+                    class B {}
+
+                    /**
+                     * @phpstan-import-type Foo from B
+                     * @phpstan-type Baz=Foo
+                     *
+                     * @extends A<Baz>
+                     */
+                    class C extends A {}
+
+                    $instance = new C("hello");
+                    $output = $instance->value;',
+                [
+                    '$output' => 'string',
+                ],
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidTypeAlias' => [
@@ -325,7 +590,7 @@ class TypeAnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'typeAliasInObjectLike' => [
+            'typeAliasInTKeyedArray' => [
                 '<?php
                     namespace Barrr;
 
@@ -489,6 +754,47 @@ class TypeAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'noCrashWithSelfReferencingType' => [
+                '<?php
+                    /**
+                     * @psalm-type SomeType = array{
+                     *     parent?: SomeType,
+                     *     foo?: int,
+                     * }
+                     * @psalm-param SomeType $input
+                     */
+                    function test(array $input):void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidTypeWhenNotImported' => [
+                '<?php
+
+                    /** @psalm-type Foo = string */
+                    class A {}
+
+                    /** @template T */
+                    interface B {}
+
+                    /** @implements B<Foo> */
+                    class C implements B {}',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'invalidTypeWhenNotImportedInsideAnotherTypeAlias' => [
+                '<?php
+
+                    /** @psalm-type Foo = string */
+                    class A {}
+
+                    /** @template T */
+                    interface B {}
+
+                    /**
+                     * @psalm-type Baz=Foo
+                     * @implements B<Baz>
+                     */
+                    class C implements B {}',
+                'error_message' => 'UndefinedDocblockClass',
             ],
         ];
     }

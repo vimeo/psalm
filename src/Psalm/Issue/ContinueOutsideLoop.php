@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ContinueOutsideLoop extends CodeIssue
 {
-    const ERROR_LEVEL = 7;
-    const SHORTCODE = 43;
+    public const ERROR_LEVEL = 7;
+    public const SHORTCODE = 43;
 }

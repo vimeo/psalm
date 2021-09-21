@@ -2,9 +2,11 @@
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+
 use function array_merge;
 
 /**
@@ -17,30 +19,40 @@ class ReturnTypeCollector
      *
      * @param  array<PhpParser\Node>     $stmts
      * @param  list<Type\Union>         $yield_types
-     * @param  bool                      $collapse_types
      *
      * @return list<Type\Union>    a list of return types
+     *
+     * @psalm-suppress ComplexMethod to be refactored
      */
     public static function getReturnTypes(
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         \Psalm\Internal\Provider\NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
         bool $collapse_types = false
-    ) {
+    ): array {
         $return_types = [];
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
-                    $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
-                }
-
                 if (!$stmt->expr) {
                     $return_types[] = Type::getVoid();
                 } elseif ($stmt_type = $nodes->getType($stmt)) {
                     $return_types[] = $stmt_type;
+
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
+                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
+                    $return_types[] = Type::getString();
+                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\LNumber) {
+                    $return_types[] = Type::getInt();
+                } elseif ($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) {
+                    if ((string)$stmt->expr->name === 'true') {
+                        $return_types[] = Type::getTrue();
+                    } elseif ((string)$stmt->expr->name === 'false') {
+                        $return_types[] = Type::getFalse();
+                    } elseif ((string)$stmt->expr->name === 'null') {
+                        $return_types[] = Type::getNull();
+                    }
                 } else {
                     $return_types[] = Type::getMixed();
                 }
@@ -55,36 +67,20 @@ class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
-                    || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
-            ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_
-                || $stmt instanceof PhpParser\Node\Expr\YieldFrom
-            ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt, $nodes));
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && $stmt->expr instanceof PhpParser\Node\Expr\Assign
-            ) {
-                $return_types = array_merge(
-                    $return_types,
-                    self::getReturnTypes(
-                        $codebase,
-                        $nodes,
-                        [$stmt->expr->expr],
-                        $yield_types
-                    )
-                );
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\MethodCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
-                )
-            ) {
-                foreach ($stmt->expr->args as $arg) {
-                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Assign) {
+                    $return_types = array_merge(
+                        $return_types,
+                        self::getReturnTypes(
+                            $codebase,
+                            $nodes,
+                            [$stmt->expr->expr],
+                            $yield_types
+                        )
+                    );
                 }
+
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge(
                     $return_types,
@@ -213,60 +209,7 @@ class ReturnTypeCollector
         if ($collapse_types) {
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
-                $key_type = null;
-                $value_type = null;
-
-                $yield_type = Type::combineUnionTypeArray($yield_types, null);
-
-                foreach ($yield_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\ObjectLike) {
-                        $type = $type->getGenericArrayType();
-                    }
-
-                    if ($type instanceof Type\Atomic\TList) {
-                        $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
-                    }
-
-                    if ($type instanceof Type\Atomic\TArray) {
-                        $key_type_param = $type->type_params[0];
-                        $value_type_param = $type->type_params[1];
-
-                        if (!$key_type) {
-                            $key_type = clone $key_type_param;
-                        } else {
-                            $key_type = Type::combineUnionTypes($key_type_param, $key_type);
-                        }
-
-                        if (!$value_type) {
-                            $value_type = clone $value_type_param;
-                        } else {
-                            $value_type = Type::combineUnionTypes($value_type_param, $value_type);
-                        }
-                    } elseif ($type instanceof Type\Atomic\TIterable
-                        || $type instanceof Type\Atomic\TNamedObject
-                    ) {
-                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
-                            $type,
-                            $codebase,
-                            $key_type,
-                            $value_type
-                        );
-                    }
-                }
-
-                $yield_types = [
-                    new Type\Union([
-                        new Atomic\TGenericObject(
-                            'Generator',
-                            [
-                                $key_type ?: Type::getMixed(),
-                                $value_type ?: Type::getMixed(),
-                                Type::getMixed(),
-                                $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
-                            ]
-                        ),
-                    ])
-                ];
+                $yield_types = self::processYieldTypes($codebase, $return_types, $yield_types);
             }
         }
 
@@ -274,14 +217,77 @@ class ReturnTypeCollector
     }
 
     /**
-     * @param   PhpParser\Node\Expr $stmt
-     *
+     * @param  list<Type\Union>    $return_types
+     * @param  non-empty-list<Type\Union>    $yield_types
+     * @return non-empty-list<Type\Union>
+     */
+    private static function processYieldTypes(
+        Codebase $codebase,
+        array $return_types,
+        array $yield_types
+    ) : array {
+        $key_type = null;
+        $value_type = null;
+
+        $yield_type = Type::combineUnionTypeArray($yield_types, null);
+
+        foreach ($yield_type->getAtomicTypes() as $type) {
+            if ($type instanceof Type\Atomic\TKeyedArray) {
+                $type = $type->getGenericArrayType();
+            }
+
+            if ($type instanceof Type\Atomic\TList) {
+                $type = new Type\Atomic\TArray([Type::getInt(), $type->type_param]);
+            }
+
+            if ($type instanceof Type\Atomic\TArray) {
+                [$key_type_param, $value_type_param] = $type->type_params;
+
+                if (!$key_type) {
+                    $key_type = clone $key_type_param;
+                } else {
+                    $key_type = Type::combineUnionTypes($key_type_param, $key_type);
+                }
+
+                if (!$value_type) {
+                    $value_type = clone $value_type_param;
+                } else {
+                    $value_type = Type::combineUnionTypes($value_type_param, $value_type);
+                }
+            } elseif ($type instanceof Type\Atomic\TIterable
+                || $type instanceof Type\Atomic\TNamedObject
+            ) {
+                ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                    $type,
+                    $codebase,
+                    $key_type,
+                    $value_type
+                );
+            }
+        }
+
+        return [
+            new Type\Union([
+                new Atomic\TGenericObject(
+                    'Generator',
+                    [
+                        $key_type ?: Type::getMixed(),
+                        $value_type ?: Type::getMixed(),
+                        Type::getMixed(),
+                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
+                    ]
+                ),
+            ])
+        ];
+    }
+
+    /**
      * @return  list<Type\Union>
      */
     protected static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
         \Psalm\Internal\Provider\NodeDataProvider $nodes
-    ) {
+    ): array {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;
 
@@ -319,6 +325,17 @@ class ReturnTypeCollector
             );
         } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getYieldTypeFromExpression($stmt->expr, $nodes);
+        } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall
+            || $stmt instanceof PhpParser\Node\Expr\FuncCall
+            || $stmt instanceof PhpParser\Node\Expr\StaticCall
+        ) {
+            $yield_types = [];
+
+            foreach ($stmt->args as $arg) {
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
+            }
+
+            return $yield_types;
         }
 
         return [];

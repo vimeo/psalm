@@ -9,7 +9,7 @@ class ConstantTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'constantInFunction' => [
@@ -228,6 +228,137 @@ class ConstantTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'lateConstantResolutionParentArrayPlus' => [
+                '<?php
+                    class A {
+                        public const ARR = ["a" => true];
+                    }
+
+                    class B extends A {
+                        public const ARR = parent::ARR + ["b" => true];
+                    }
+
+                    class C extends B {
+                        public const ARR = parent::ARR + ["c" => true];
+                    }
+
+                    /** @param array{a: true, b: true, c: true} $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'lateConstantResolutionParentArraySpread' => [
+                '<?php
+                    class A {
+                        public const ARR = ["a"];
+                    }
+
+                    class B extends A {
+                        public const ARR = [...parent::ARR, "b"];
+                    }
+
+                    class C extends B {
+                        public const ARR = [...parent::ARR, "c"];
+                    }
+
+                    /** @param array{"a", "b", "c"} $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'lateConstantResolutionParentStringConcat' => [
+                '<?php
+                    class A {
+                        public const STR = "a";
+                    }
+
+                    class B extends A {
+                        public const STR = parent::STR . "b";
+                    }
+
+                    class C extends B {
+                        public const STR = parent::STR . "c";
+                    }
+
+                    /** @param "abc" $foo */
+                    function foo(string $foo): void {}
+                    foo(C::STR);
+                ',
+            ],
+            'lateConstantResolutionSpreadEmptyArray' => [
+                '<?php
+                    class A {
+                        public const ARR = [];
+                    }
+
+                    class B extends A {
+                        public const ARR = [...parent::ARR];
+                    }
+
+                    class C extends B {
+                        public const ARR = [...parent::ARR];
+                    }
+
+                    /** @param array<empty, empty> $arg */
+                    function foo(array $arg): void {}
+                    foo(C::ARR);
+                ',
+            ],
+            'classConstConcatEol' => [
+                '<?php
+                    class Foo {
+                        public const BAR = "bar" . PHP_EOL;
+                    }
+
+                    $foo = Foo::BAR;
+                ',
+                'assertions' => ['$foo' => 'string'],
+            ],
+            'dynamicClassConstFetch' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    $foo = new Foo();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
+            'unsafeInferenceClassConstFetch' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace' => 'mixed'],
+            ],
+            'FinalInferenceClassConstFetch' => [
+                '<?php
+                    final class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
+            'dynamicClassConstFetchClassString' => [
+                '<?php
+                    class C {
+                        public const CC = 1;
+                    }
+
+                    $c = C::class;
+                    $d = $c::CC;',
+                'assertions' => ['$d===' => '1'],
+            ],
             'allowConstCheckForDifferentPlatforms' => [
                 '<?php
                     if ("phpdbg" === \PHP_SAPI) {}',
@@ -412,8 +543,8 @@ class ConstantTest extends TestCase
                     class A {
                         private const STRING = "x";
 
-                        public static function bar() : bool {
-                            return !defined("FOO") && strpos("x", self::STRING) === 0;
+                        public static function bar(string $s) : bool {
+                            return !defined("FOO") && strpos($s, self::STRING) === 0;
                         }
                     }'
             ],
@@ -759,24 +890,6 @@ class ConstantTest extends TestCase
                         echo A::C[$s];
                     }'
             ],
-            'arrayKeyExistsWithClassConst' => [
-                '<?php
-                    class C {}
-                    class D {}
-
-                    class A {
-                        const FLAGS = [
-                            0 => [C::class => "foo"],
-                            1 => [D::class => "bar"],
-                        ];
-
-                        private function foo(int $i) : void {
-                            if (array_key_exists(C::class, self::FLAGS[$i])) {
-                                echo self::FLAGS[$i][C::class];
-                            }
-                        }
-                    }'
-            ],
             'getClassConstantOffset' => [
                 '<?php
                     class C {
@@ -834,19 +947,6 @@ class ConstantTest extends TestCase
                     }
 
                     echo B::VALUES["there"];'
-            ],
-            'constantArrayKeyExistsWithClassConstant' => [
-                '<?php
-                    class Foo {
-                        public const F = "key";
-                    }
-
-                    /** @param array{key?: string} $a */
-                    function one(array $a): void {
-                        if (array_key_exists(Foo::F, $a)) {
-                            echo $a[Foo::F];
-                        }
-                    }'
             ],
             'internalConstWildcard' => [
                 '<?php
@@ -978,14 +1078,94 @@ class ConstantTest extends TestCase
                     '$dir===' => 'non-empty-string',
                     '$file===' => 'non-empty-string',
                 ]
-            ]
+            ],
+            'noCrashWithStaticInDocblock' => [
+                '<?php
+                    class Test {
+                        const CONST1 = 1;
+
+                        public function test(): void
+                        {
+                            /** @var static::CONST1 */
+                            $a = static::CONST1;
+                        }
+                    }'
+            ],
+            'FuncAndMethInAllContexts' => [
+                '<?php
+                    /** @return \'getMethInFunc\' */
+                    function getMethInFunc(): string{
+                        return __METHOD__;
+                    }
+
+                    /** @return \'getFuncInFunc\' */
+                    function getFuncInFunc(): string{
+                        return __FUNCTION__;
+                    }
+
+                    class A{
+                        /** @return \'A::getMethInMeth\' */
+                        function getMethInMeth(): string{
+                            return __METHOD__;
+                        }
+
+                        /** @return \'getFuncInMeth\' */
+                        function getFuncInMeth(): string{
+                            return __FUNCTION__;
+                        }
+                    }'
+            ],
+            'arrayUnpack' => [
+                '<?php
+                    class C {
+                        const A = [...[...[1]], ...[2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{1, 2}',
+                ],
+            ],
+            'keysInUnpackedArrayAreReset' => [
+                '<?php
+                    class C {
+                        const A = [...[11 => 2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{2}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterExplicitIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "z", 10 => "aa", "zz"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{10: "aa", 11: "zz", 5: "a", 6: "z"}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterNonIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "zz" => "z", "aa"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{5: "a", 6: "aa", zz: "z"}',
+                ],
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'constantDefinedInFunctionButNotCalled' => [
@@ -1197,6 +1377,37 @@ class ConstantTest extends TestCase
                     $a->foo(5);
                     ',
                 'error_message' => 'InvalidArgument'
+            ],
+            'correctMessage' => [
+                '<?php
+                    class S {
+                        public const ZERO = 0;
+                        public const ONE  = 1;
+                    }
+
+                    /**
+                     * @param S::* $s
+                     */
+                    function foo(int $s): string {
+                        return [1 => "a", 2 => "b"][$s];
+                    }',
+                'error_message' => "offset value of '1|0"
+            ],
+            'constantWithMissingClass' => [
+                '<?php
+                    class Subject
+                    {
+                        public const DATA = [
+                            MissingClass::TAG_DATA,
+                        ];
+
+                        public function execute(): void
+                        {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (self::DATA["a"]);
+                        }
+                    }',
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

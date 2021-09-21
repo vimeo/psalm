@@ -2,12 +2,16 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Issue\ImpureFunctionCall;
+use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
@@ -20,6 +24,8 @@ class ExitAnalyzer
         PhpParser\Node\Expr\Exit_ $stmt,
         Context $context
     ) : bool {
+        $expr_type = null;
+
         if ($stmt->expr) {
             $context->inside_call = true;
 
@@ -27,14 +33,10 @@ class ExitAnalyzer
                 return false;
             }
 
-            $codebase = $statements_analyzer->getCodebase();
-
-            if ($codebase->taint
-                && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-            ) {
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = Sink::getForMethodArgument(
+                $echo_param_sink = TaintSink::getForMethodArgument(
                     'exit',
                     'exit',
                     0,
@@ -44,11 +46,12 @@ class ExitAnalyzer
 
                 $echo_param_sink->taints = [
                     Type\TaintKind::INPUT_HTML,
+                    Type\TaintKind::INPUT_HAS_QUOTES,
                     Type\TaintKind::USER_SECRET,
                     Type\TaintKind::SYSTEM_SECRET
                 ];
 
-                $codebase->taint->addSink($echo_param_sink);
+                $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
@@ -63,6 +66,7 @@ class ExitAnalyzer
                     new Type\Union([new TInt(), new TString()]),
                     null,
                     'exit',
+                    null,
                     0,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     $stmt->expr,
@@ -80,6 +84,33 @@ class ExitAnalyzer
 
             $context->inside_call = false;
         }
+
+        if ($expr_type
+            && !$expr_type->isInt()
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+        ) {
+            if ($context->mutation_free || $context->external_mutation_free) {
+                $function_name = $stmt->getAttribute('kind') === PhpParser\Node\Expr\Exit_::KIND_DIE ? 'die' : 'exit';
+
+                if (IssueBuffer::accepts(
+                    new ImpureFunctionCall(
+                        'Cannot call ' . $function_name . ' with a non-integer argument from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
+            ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                $statements_analyzer->getSource()->inferred_impure = true;
+            }
+        }
+
+        $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
 
         return true;
     }

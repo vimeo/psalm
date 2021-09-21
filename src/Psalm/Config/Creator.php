@@ -1,12 +1,16 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Exception\ConfigCreationException;
+use Psalm\Internal\Composer;
+
+use function array_filter;
+use function array_keys;
 use function array_merge;
 use function array_shift;
+use function array_sum;
 use function array_unique;
 use function count;
-use const DIRECTORY_SEPARATOR;
-use function dirname;
 use function explode;
 use function file_exists;
 use function file_get_contents;
@@ -15,21 +19,19 @@ use function implode;
 use function is_array;
 use function is_dir;
 use function json_decode;
+use function ksort;
+use function max;
 use function preg_replace;
-use Psalm\Exception\ConfigCreationException;
 use function sort;
 use function str_replace;
 use function strpos;
-use function ksort;
-use function array_filter;
-use function array_sum;
-use function array_keys;
-use function max;
+
+use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
 
 class Creator
 {
-    const TEMPLATE = '<?xml version="1.0"?>
+    private const TEMPLATE = '<?xml version="1.0"?>
 <psalm
     errorLevel="1"
     resolveFromConfigFile="true"
@@ -60,11 +62,19 @@ class Creator
             self::TEMPLATE
         );
 
-        $template = str_replace(
-            '<directory name="vendor" />',
-            '<directory name="' . $vendor_dir . '" />',
-            $template
-        );
+        if (is_dir($current_dir . DIRECTORY_SEPARATOR . $vendor_dir)) {
+            $template = str_replace(
+                '<directory name="vendor" />',
+                '<directory name="' . $vendor_dir . '" />',
+                $template
+            );
+        } else {
+            $template = str_replace(
+                '<directory name="vendor" />',
+                '',
+                $template
+            );
+        }
 
         $template = str_replace(
             'errorLevel="1"',
@@ -79,10 +89,10 @@ class Creator
         string $current_dir,
         ?string $suggested_dir,
         string $vendor_dir
-    ) : void {
+    ) : \Psalm\Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 
-        \Psalm\Config::loadFromXML($current_dir, $config_contents);
+        return \Psalm\Config::loadFromXML($current_dir, $config_contents);
     }
 
     /**
@@ -122,7 +132,7 @@ class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                function ($amount) {
+                function ($amount): bool {
                     return $amount > 0.1;
                 }
             );
@@ -148,7 +158,7 @@ class Creator
     /**
      * @return non-empty-list<string>
      */
-    public static function getPaths(string $current_dir, ?string $suggested_dir)
+    public static function getPaths(string $current_dir, ?string $suggested_dir): array
     {
         $replacements = [];
 
@@ -165,7 +175,7 @@ class Creator
         } elseif (is_dir($current_dir . DIRECTORY_SEPARATOR . 'src')) {
             $replacements[] = '<directory name="src" />';
         } else {
-            $composer_json_location = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
+            $composer_json_location = Composer::getJsonFilePath($current_dir);
 
             if (!file_exists($composer_json_location)) {
                 throw new ConfigCreationException(
@@ -173,7 +183,6 @@ class Creator
                 );
             }
 
-            /** @psalm-suppress MixedAssignment */
             if (!$composer_json = json_decode(file_get_contents($composer_json_location), true)) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
@@ -198,6 +207,7 @@ class Creator
      * @return list<string>
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
+     * @psalm-suppress PossiblyUndefinedArrayOffset
      */
     private static function getPsr4Or0Paths(string $current_dir, array $composer_json) : array
     {

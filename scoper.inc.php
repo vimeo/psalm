@@ -59,7 +59,7 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/psalm.php') {
+            if ($filePath === 'src/Psalm/Internal/Cli/Psalm.php') {
                 return str_replace(
                     '\\' . $prefix . '\\PSALM_VERSION',
                     'PSALM_VERSION',
@@ -83,10 +83,6 @@ return [
         'Psalm\*',
     ],
     'files-whitelist' => [
-        'src/Psalm/Internal/PropertyMap.php',
-        'src/Psalm/Internal/CallMap.php',
-        'src/Psalm/Internal/Stubs/CoreGenericFunctions.phpstub',
-        'src/Psalm/Internal/Stubs/CoreGenericClasses.phpstub',
         'src/spl_object_id.php',
     ],
 ];

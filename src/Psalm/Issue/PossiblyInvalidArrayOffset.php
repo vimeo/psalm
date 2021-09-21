@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class PossiblyInvalidArrayOffset extends CodeIssue
 {
-    const ERROR_LEVEL = 3;
-    const SHORTCODE = 116;
+    public const ERROR_LEVEL = 3;
+    public const SHORTCODE = 116;
 }

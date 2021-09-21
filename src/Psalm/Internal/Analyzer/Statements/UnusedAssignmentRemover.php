@@ -2,21 +2,21 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
+
+use function array_key_exists;
+use function array_slice;
+use function count;
+use function is_array;
 use function is_string;
 use function strlen;
 use function substr;
-use function array_key_exists;
-use function count;
 use function token_get_all;
-use function array_slice;
-use function is_array;
 use function trim;
-use function is_null;
 
 class UnusedAssignmentRemover
 {
@@ -29,7 +29,6 @@ class UnusedAssignmentRemover
      * @param array<PhpParser\Node\Stmt>   $stmts
      * @param array<string, CodeLocation> $var_loc_map
      *
-     * @return void
      */
     public function findUnusedAssignment(
         Codebase $codebase,
@@ -39,12 +38,11 @@ class UnusedAssignmentRemover
         CodeLocation $original_location
     ): void {
         $search_result = $this->findAssignStmt($stmts, $var_id, $original_location);
-        $assign_stmt = $search_result[0];
-        $assign_exp = $search_result[1];
+        [$assign_stmt, $assign_exp] = $search_result;
         $chain_assignment = false;
 
-        if (!is_null($assign_stmt) && !is_null($assign_exp)) {
-            // Check if we have to remove assignment statemnt as expression (i.e. just "$var = ")
+        if ($assign_stmt !== null && $assign_exp !== null) {
+            // Check if we have to remove assignment statement as expression (i.e. just "$var = ")
 
             // Consider chain of assignments
             $rhs_exp = $assign_exp->expr;
@@ -64,7 +62,7 @@ class UnusedAssignmentRemover
                 $traverser->addVisitor($visitor);
                 $traverser->traverse([$rhs_exp]);
 
-                $rhs_exp_trivial = (count($visitor->getNonTrivialExpr()) == 0);
+                $rhs_exp_trivial = (count($visitor->getNonTrivialExpr()) === 0);
 
                 if ($rhs_exp_trivial) {
                     $treat_as_expr = false;
@@ -103,7 +101,7 @@ class UnusedAssignmentRemover
             }
 
             FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
-        } elseif (!is_null($assign_exp)) {
+        } elseif ($assign_exp !== null) {
             $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
             $new_file_manipulation = self::getPartialRemovalBounds(
                 $codebase,
@@ -117,13 +115,7 @@ class UnusedAssignmentRemover
         }
     }
 
-    /**
-     * @param  CodeLocation   $var_loc
-     * @param  int  $end_bound
-     * @param  bool   $assign_ref
-     * @return FileManipulation
-     */
-    private function getPartialRemovalBounds(
+    private static function getPartialRemovalBounds(
         Codebase $codebase,
         CodeLocation $var_loc,
         int $end_bound,
@@ -140,7 +132,7 @@ class UnusedAssignmentRemover
         $iter = 1;
 
         // Check if second token is just whitespace
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
             $offset_count += strlen($token_list[1][1]);
             $iter++;
         }
@@ -154,7 +146,7 @@ class UnusedAssignmentRemover
         $iter++;
 
         // Remove any whitespace following assignment operator token (e.g "=", "+=")
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
             $offset_count += strlen($token_list[$iter][1]);
             $iter++;
         }
@@ -164,7 +156,7 @@ class UnusedAssignmentRemover
             $offset_count += 1;
             $iter++;
             // Handle any whitespace after "&"
-            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) == 0) {
+            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
                 $offset_count += strlen($token_list[$iter][1]);
             }
         }
@@ -178,7 +170,6 @@ class UnusedAssignmentRemover
     /**
      * @param  PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
      * @param  array<string, CodeLocation>    $var_loc_map
-     * @return void
      */
     private function markRemovedChainAssignVar(PhpParser\Node\Expr $cur_assign, array $var_loc_map): void
     {
@@ -201,7 +192,6 @@ class UnusedAssignmentRemover
     /**
      * @param  PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
      * @param  array<string, CodeLocation> $var_loc_map
-     * @return bool
      */
     private function checkRemovableChainAssignment(PhpParser\Node\Expr $cur_assign, array $var_loc_map): bool
     {
@@ -237,14 +227,12 @@ class UnusedAssignmentRemover
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  string   $var_id
-     * @param  CodeLocation   $original_location
      * @return array{
      *          0: PhpParser\Node\Stmt|null,
      *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
      *          }
      */
-    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location)
+    private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location): array
     {
         $assign_stmt = null;
         $assign_exp = null;
@@ -257,10 +245,9 @@ class UnusedAssignmentRemover
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 $search_result = $this->findAssignExp($stmt->expr, $var_id, $original_location->raw_file_start);
 
-                $target_exp = $search_result[0];
-                $levels_taken = $search_result[1];
+                [$target_exp, $levels_taken] = $search_result;
 
-                if (!is_null($target_exp)) {
+                if ($target_exp !== null) {
                     $assign_exp_found = true;
                     $assign_exp = $target_exp;
                     $assign_stmt = $levels_taken === 1 ? $stmt : null;
@@ -330,10 +317,6 @@ class UnusedAssignmentRemover
     }
 
     /**
-     * @param  PhpParser\Node\Expr $current_node
-     * @param  string   $var_id
-     * @param  int      $var_start_loc
-     * @param  int     $search_level
      * @return array{
      *          0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
      *          1: int
@@ -344,9 +327,9 @@ class UnusedAssignmentRemover
         string $var_id,
         int $var_start_loc,
         int $search_level = 1
-    ) {
+    ): array {
         if ($current_node instanceof PhpParser\Node\Expr\Assign
-            || $current_node instanceof PhpPArser\Node\Expr\AssignOp
+            || $current_node instanceof PhpParser\Node\Expr\AssignOp
             || $current_node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             $var = $current_node->var;
@@ -366,10 +349,6 @@ class UnusedAssignmentRemover
         }
     }
 
-    /**
-     * @param  CodeLocation $var_loc
-     * @return bool
-     */
     public function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
         return array_key_exists($var_id, $this->removed_unref_vars)

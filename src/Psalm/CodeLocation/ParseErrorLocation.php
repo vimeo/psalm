@@ -2,21 +2,17 @@
 namespace Psalm\CodeLocation;
 
 use PhpParser;
+
 use function substr;
 use function substr_count;
 
 class ParseErrorLocation extends \Psalm\CodeLocation
 {
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     * @param string $file_contents
-     */
     public function __construct(
         PhpParser\Error $error,
-        $file_contents,
-        $file_path,
-        $file_name
+        string $file_contents,
+        string $file_path,
+        string $file_name
     ) {
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
         $this->file_start = (int)$error->getAttributes()['startFilePos'];

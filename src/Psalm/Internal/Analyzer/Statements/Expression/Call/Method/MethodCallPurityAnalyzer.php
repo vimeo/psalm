@@ -2,10 +2,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
@@ -23,10 +25,9 @@ class MethodCallPurityAnalyzer
         \Psalm\Storage\MethodStorage $method_storage,
         \Psalm\Storage\ClassLikeStorage $class_storage,
         Context $context,
-        \Psalm\Config $config
-    ) : bool {
-        $can_memoize = false;
-
+        \Psalm\Config $config,
+        AtomicMethodCallAnalysisResult $result
+    ) : void {
         $method_pure_compatible = $method_storage->external_mutation_free
             && $statements_analyzer->node_data->isPureCompatible($stmt->var);
 
@@ -80,21 +81,32 @@ class MethodCallPurityAnalyzer
         ) {
             if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
-                    || $method_storage->final)
+                    || $method_storage->final
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                && ($method_storage->immutable || $config->remember_property_assignments_after_call)
             ) {
                 if ($context->inside_conditional
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
                 ) {
                     /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->pure = true;
+                    $stmt->memoizable = true;
+
+                    if ($method_storage->immutable) {
+                        /** @psalm-suppress UndefinedPropertyAssignment */
+                        $stmt->pure = true;
+                    }
                 }
 
-                $can_memoize = true;
+                $result->can_memoize = true;
             }
 
-            if ($codebase->find_unused_variables && !$context->inside_conditional) {
-                if (!$context->inside_assignment && !$context->inside_call) {
+            if ($codebase->find_unused_variables
+                && !$context->inside_conditional
+                && !$context->inside_general_use
+                && !$context->inside_throw
+            ) {
+                if (!$context->inside_assignment && !$context->inside_call && !$context->inside_return) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\UnusedMethodCall(
                             'The call to ' . $cased_method_id . ' is not used',
@@ -112,12 +124,25 @@ class MethodCallPurityAnalyzer
             }
         }
 
+        if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource()->track_mutations
+            && !$method_storage->mutation_free
+            && !$method_pure_compatible
+        ) {
+            $statements_analyzer->getSource()->inferred_has_mutation = true;
+            $statements_analyzer->getSource()->inferred_impure = true;
+        }
+
         if (!$config->remember_property_assignments_after_call
             && !$method_storage->mutation_free
             && !$method_pure_compatible
         ) {
-            $context->removeAllObjectVars();
+            $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
+            if (!$method_pure_compatible) {
+                $context->removeMutableObjectVars(true);
+            }
+
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
@@ -125,14 +150,20 @@ class MethodCallPurityAnalyzer
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
 
-                $context->remove($mutation_var_id);
-
                 if ($this_property_didnt_exist) {
                     $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
+                } else {
+                    $new_type = AssignmentAnalyzer::getExpandedPropertyType(
+                        $codebase,
+                        $class_storage->name,
+                        $name,
+                        $class_storage
+                    ) ?: Type::getMixed();
+
+                    $context->vars_in_scope[$mutation_var_id] = $new_type;
+                    $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
         }
-
-        return $can_memoize;
     }
 }

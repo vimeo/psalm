@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
-use function class_exists;
-use const DIRECTORY_SEPARATOR;
 use Psalm\Context;
+
+use function class_exists;
+
+use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {
@@ -111,10 +113,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn73()
+    public function testMismatchingCovariantReturnIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -141,10 +140,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn74()
+    public function testMismatchingCovariantReturnIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -168,10 +164,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn73WithSelf()
+    public function testMismatchingCovariantReturnIn73WithSelf(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -196,10 +189,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantReturnIn74WithSelf()
+    public function testMismatchingCovariantReturnIn74WithSelf(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -221,10 +211,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantParamIn73()
+    public function testMismatchingCovariantParamIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -248,10 +235,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMismatchingCovariantParamIn74()
+    public function testMismatchingCovariantParamIn74(): void
     {
         $this->project_analyzer->setPhpVersion('7.4');
 
@@ -347,7 +331,7 @@ class MethodSignatureTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'privateArgs' => [
@@ -467,7 +451,7 @@ class MethodSignatureTest extends TestCase
                         public function test(?string $s) : string {
                             return "value";
                         }
-                        public function testIterable(?iterable $i) : array {
+                        public function testIterable(?iterable $a) : array {
                             return [];
                         }
                     }',
@@ -475,30 +459,30 @@ class MethodSignatureTest extends TestCase
             'allowVoidToNullConversion' => [
                 '<?php
                     class A {
-                      /** @return ?string */
-                      public function foo() {
-                        return rand(0, 1) ? "hello" : null;
-                      }
+                        /** @return ?string */
+                        public function foo() {
+                            return rand(0, 1) ? "hello" : null;
+                        }
                     }
 
                     class B extends A {
-                      public function foo(): void {
-                        return;
-                      }
+                        public function foo(): void {
+                            return;
+                        }
                     }
 
                     class C extends A {
-                      /** @return void */
-                      public function foo() {
-                        return;
-                      }
+                        /** @return void */
+                        public function foo() {
+                            return;
+                        }
                     }
 
                     class D extends A {
-                      /** @return null */
-                      public function foo() {
-                        return null;
-                      }
+                        /** @return null */
+                        public function foo() {
+                            return null;
+                        }
                     }',
             ],
             'allowNoChildClassPropertyWhenMixed' => [
@@ -514,7 +498,7 @@ class MethodSignatureTest extends TestCase
                         {
                             [
                                 $this->id,
-                            ] = (array) \unserialize((string) $serialized);
+                            ] = (array) \unserialize($serialized);
                         }
 
                         public function serialize() : string
@@ -605,7 +589,7 @@ class MethodSignatureTest extends TestCase
                     }
 
                     class C implements I {
-                        public function foo(I $i) : I {
+                        public function foo(I $f) : I {
                             return new C();
                         }
                     }',
@@ -830,15 +814,172 @@ class MethodSignatureTest extends TestCase
                         public function __construct() {}
                     }'
             ],
+            'allowStaticInheritance' => [
+                '<?php
+                    class A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }
+                    class B extends A {
+                        public function method(): static {
+                            return $this;
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'suppressDocblockFinal' => [
+                '<?php
+                    /**
+                     * @final
+                     */
+                    class A {
+                       public function foo(): void {}
+                    }
+
+                    /**
+                     * @psalm-suppress InvalidExtendClass
+                     */
+                    class B extends A {
+                        /**
+                         * @psalm-suppress MethodSignatureMismatch
+                         */
+                        public function foo(): void {}
+                    }'
+            ],
+            'inheritParamTypeWhenSignatureReturnTypeChanged' => [
+                '<?php
+                    class A {
+                        public function __construct(string $s) {}
+                    }
+
+                    class AChild extends A {}
+
+                    interface B  {
+                        /** @param string $data */
+                        public function create($data): A;
+                    }
+
+                    class C implements B {
+                        public function create($data): AChild {
+                            return new AChild($data);
+                        }
+                    }',
+                [],
+                [],
+                '7.4'
+            ],
+            'extendStaticReturnTypeInFinal' => [
+                '<?php
+                    final class B extends A
+                    {
+                        public static function doCretate1(): self
+                        {
+                            return self::create1();
+                        }
+
+                        public static function doCretate2(): self
+                        {
+                            return self::create2();
+                        }
+                    }
+
+                    abstract class A
+                    {
+                        final private function __construct() {}
+
+                        final protected static function create1(): static
+                        {
+                            return new static();
+                        }
+
+                        /** @return static */
+                        final protected static function create2()
+                        {
+                            return new static();
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'notExtendedStaticReturntypeInFinal' => [
+                '<?php
+                    final class X
+                    {
+                        public static function create(): static
+                        {
+                            return new self();
+                        }
+                    }'
+            ],
+            'callParentMethodFromTrait' => [
+                '<?php
+                    class MyParentClass
+                    {
+                        /** @return static */
+                        public function myMethod()
+                        {
+                            return $this;
+                        }
+                    }
+
+                    trait MyTrait
+                    {
+                        final public function myMethod() : self
+                        {
+                            return parent::myMethod();
+                        }
+                    }
+
+                    class MyChildClass extends MyParentClass
+                    {
+                        use MyTrait;
+                    }'
+            ],
+            'MixedParamInImplementation' => [
+                '<?php
+                    interface I
+                    {
+                        /**
+                         * @param mixed $a
+                         */
+                        public function a($a): void;
+                    }
+
+
+                    final class B implements I
+                    {
+                        public function a(mixed $a): void {}
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
+            'oneParam' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @param array $i
+                         */
+                        public function foo(array $i) : void;
+                    }
+
+                    class C implements I {
+                        public function foo(array $c) : void {
+                            return;
+                        }
+                    }',
+                'error_message' => 'Argument 1 of C::foo has wrong name $c, expecting $i as defined by I::foo',
+            ],
             'moreArguments' => [
                 '<?php
                     class A {
@@ -957,18 +1098,18 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
-            'disallowVoidToNullConversionSignature' => [
+            'preventVoidToNullConversionSignature' => [
                 '<?php
                     class A {
-                      public function foo(): ?string {
-                        return rand(0, 1) ? "hello" : null;
-                      }
+                        public function foo(): ?string {
+                            return rand(0, 1) ? "hello" : null;
+                        }
                     }
 
                     class B extends A {
-                      public function foo(): void {
-                        return;
-                      }
+                        public function foo(): void {
+                            return;
+                        }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
@@ -1043,7 +1184,7 @@ class MethodSignatureTest extends TestCase
                     class C {
                         use T;
 
-                        public function foo(B $b) : void {}
+                        public function foo(B $a) : void {}
                     }',
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
@@ -1213,7 +1354,10 @@ class MethodSignatureTest extends TestCase
                     }
 
                     class C implements I {
-                        /** @param array<int,float> $f */
+                        /**
+                         * @param array<int,float> $f
+                         * @psalm-suppress ParamNameMismatch
+                         */
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
@@ -1231,14 +1375,6 @@ class MethodSignatureTest extends TestCase
                         public function foo($s) : void {}
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
-            ],
-            'preventImplementingSerializableWithType' => [
-                '<?php
-                    class Foo implements \Serializable {
-                        public function unserialize(string $serialized) {}
-                        public function serialize() {}
-                    }',
-                'error_message' => 'MethodSignatureMismatch',
             ],
             'preventImplementingSerializableWithWrongDocblockType' => [
                 '<?php
@@ -1265,7 +1401,7 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                2 => ['InvalidParent'],
+                ['InvalidParent'],
             ],
             // not sure how to handle it
             'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
@@ -1277,7 +1413,7 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                2 => ['InvalidParent'],
+                ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
                 '<?php
@@ -1426,6 +1562,30 @@ class MethodSignatureTest extends TestCase
                         public function __construct(string $s) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'inheritDocblockReturnFromInterface' => [
+                '<?php
+                    interface A {
+                        /** @return ?string */
+                        function foo();
+                    }
+
+                    class C implements A {
+                        public function foo() : ?string {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'disableNamedArgumentsInDescendant' => [
+                '<?php
+                    interface Foo {
+                        public function bar(string ...$_args): void;
+                    }
+                    final class Baz implements Foo {
+                        /** @no-named-arguments */
+                        public function bar(string ...$_args): void {}
+                    }
+                ',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

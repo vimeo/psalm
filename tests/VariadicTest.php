@@ -5,6 +5,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Tests\Internal\Provider;
+
 use function dirname;
 use function getcwd;
 
@@ -12,10 +13,7 @@ class VariadicTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return                   void
-     */
-    public function testVariadicArrayBadParam()
+    public function testVariadicArrayBadParam(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -36,16 +34,16 @@ class VariadicTest extends TestCase
 
     /**
      * @throws \Psalm\Exception\ConfigException
-     * @return void
+     * @runInSeparateProcess
      */
-    public function testVariadicFunctionFromAutoloadFile()
+    public function testVariadicFunctionFromAutoloadFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
-                    autoloader="tests/fixtures/stubs/custom_functions.php"
+                    autoloader="tests/fixtures/stubs/custom_functions.phpstub"
                 >
                     <projectFiles>
                         <directory name="src" />
@@ -69,7 +67,7 @@ class VariadicTest extends TestCase
     /**
      * @return iterable<string,array{string,1?:array<string,string>,2?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'variadic' => [
@@ -101,7 +99,7 @@ class VariadicTest extends TestCase
                 '<?php
                     /**
                      * @param int ...$a_list
-                     * @return array<int, int>
+                     * @return array<array-key, int>
                      */
                     function f(int ...$a_list) {
                         return array_map(
@@ -129,12 +127,7 @@ class VariadicTest extends TestCase
         ];
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
-    private function getProjectAnalyzerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,

@@ -9,7 +9,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'ifNotUndefinedAndEmpty' => [
@@ -158,7 +158,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
-            'emptyObjectLike' => [
+            'emptyTKeyedArray' => [
                 '<?php
                     $arr = [
                         "profile" => [
@@ -317,7 +317,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                         if (empty($a) && empty($b)) {}
                     }',
             ],
-            'doubleEmptyCheckOnObjectLike' => [
+            'doubleEmptyCheckOnTKeyedArray' => [
                 '<?php
                     /**
                      * @param array{a: array, b: array} $arr
@@ -326,7 +326,7 @@ class EmptyTest extends \Psalm\Tests\TestCase
                         if (empty($arr["a"]) && empty($arr["b"])) {}
                     }',
             ],
-            'doubleEmptyCheckOnObjectLikeVariableOffsets' => [
+            'doubleEmptyCheckOnTKeyedArrayVariableOffsets' => [
                 '<?php
                     function foo(int $i, int $j) : void {
                         $arr = [];
@@ -375,13 +375,51 @@ class EmptyTest extends \Psalm\Tests\TestCase
 
                     if (empty($d[0])) {}'
             ],
+            'reconcileNonEmptyArrayKey' => [
+                '<?php
+                    /**
+                     * @param array{a?: string, b: string} $arr
+                     */
+                    function createFromString(array $arr): void
+                    {
+                        if (empty($arr["a"])) {
+                            return;
+                        }
+
+                        echo $arr["a"];
+                    }'
+            ],
+            'reconcileEmptyTwiceWithoutReturn' => [
+                '<?php
+                    function foo(array $arr): void {
+                        if (!empty($arr["a"])) {
+                        } else {
+                            if (empty($arr["dontcare"])) {}
+                        }
+
+                        if (empty($arr["a"])) {}
+                    }'
+            ],
+            'reconcileEmptyTwiceWithReturn' => [
+                '<?php
+                    function foo(array $arr): void {
+                        if (!empty($arr["a"])) {
+                        } else {
+                            if (empty($arr["dontcare"])) {
+                                return;
+                            }
+                        }
+
+                        if (empty($arr["a"])) {}
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'preventImpossibleEmpty' => [

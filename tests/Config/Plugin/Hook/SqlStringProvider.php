@@ -1,14 +1,17 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
-use Psalm\Plugin\Hook\StringInterpreterInterface;
+use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
+
 use function stripos;
 
 class SqlStringProvider implements StringInterpreterInterface
 {
-    public static function getTypeFromValue(string $value) : ?TLiteralString
+    public static function getTypeFromValue(StringInterpreterEvent $event) : ?TLiteralString
     {
+        $value = $event->getValue();
         if (stripos($value, 'select ') !== false) {
             try {
                 $parser = new \PhpMyAdmin\SqlParser\Parser($value);

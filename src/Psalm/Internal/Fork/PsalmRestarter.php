@@ -23,42 +23,30 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
      */
     private $disabledExtensions = [];
 
-    /**
-     * @param string $disabledExtension
-     *
-     * @return void
-     */
-    public function disableExtension($disabledExtension)
+    public function disableExtension(string $disabledExtension): void
     {
         $this->disabledExtensions[] = $disabledExtension;
     }
 
     /**
-     * @param mixed $isLoaded
+     * @param bool $default
      */
-    protected function requiresRestart($isLoaded)
+    protected function requiresRestart($default): bool
     {
         $this->required = (bool) array_filter(
             $this->disabledExtensions,
-            /**
-             * @param string $extension
-             *
-             * @return bool
-             */
-            function ($extension) {
+            function (string $extension): bool {
                 return extension_loaded($extension);
             }
         );
 
-        return $isLoaded || $this->required;
+        return $default || $this->required;
     }
 
     /**
      * @param mixed $command
-     *
-     * @return void
      */
-    protected function restart($command)
+    protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabledExtensions) . ').*)$/mi';

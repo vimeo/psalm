@@ -3,5 +3,5 @@ namespace Psalm\Issue;
 
 class MissingTemplateParam extends CodeIssue
 {
-    const SHORTCODE = 182;
+    public const SHORTCODE = 182;
 }

@@ -1,8 +1,10 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedMethodCall extends CodeIssue
+class MixedMethodCall extends CodeIssue implements MixedIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 15;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 15;
+
+    use MixedIssueTrait;
 }

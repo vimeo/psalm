@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class NonStaticSelfCall extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 63;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 63;
 }

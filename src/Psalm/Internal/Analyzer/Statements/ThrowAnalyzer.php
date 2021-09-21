@@ -2,12 +2,13 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidThrow;
 use Psalm\IssueBuffer;
+use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -17,18 +18,36 @@ use Psalm\Type\Union;
 class ThrowAnalyzer
 {
     /**
-     * @return  false|null
+     * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\Throw_ $stmt,
+        PhpParser\Node $stmt,
         Context $context
-    ) {
+    ) : bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
         $context->inside_throw = false;
+
+        if ($context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                    if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                        $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->finally_scope->vars_in_scope[$var_id],
+                            $type,
+                            $statements_analyzer->getCodebase()
+                        );
+                    }
+                } else {
+                    $context->finally_scope->vars_in_scope[$var_id] = $type;
+                    $type->possibly_undefined = true;
+                    $type->possibly_undefined_from_try = true;
+                }
+            }
+        }
 
         if ($context->check_classes
             && ($throw_type = $statements_analyzer->node_data->getType($stmt->expr))
@@ -65,5 +84,11 @@ class ThrowAnalyzer
                 }
             }
         }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
+            $statements_analyzer->node_data->setType($stmt, \Psalm\Type::getEmpty());
+        }
+
+        return true;
     }
 }

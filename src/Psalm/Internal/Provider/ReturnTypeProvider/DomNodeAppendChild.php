@@ -1,44 +1,38 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 
-class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
+class DomNodeAppendChild implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {
         return ['DomNode'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
-     */
-    public static function getMethodReturnType(
-        StatementsSource $source,
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location,
-        array $template_type_parameters = null,
-        string $called_fq_classlike_name = null,
-        string $called_method_name_lowercase = null
-    ) {
-        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    {
+        $source = $event->getSource();
+        $call_args = $event->getCallArgs();
+        $method_name_lowercase = $event->getMethodNameLowercase();
+
+        if ($method_name_lowercase !== 'appendchild') {
+            return null;
+        }
+
+        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 
-        if ($method_name_lowercase === 'appendchild'
-            && ($first_arg_type = $source->node_data->getType($call_args[0]->value))
+        if (($first_arg_type = $source->node_data->getType($call_args[0]->value))
             && $first_arg_type->hasObjectType()
         ) {
             return clone $first_arg_type;
         }
+
+        return null;
     }
 }

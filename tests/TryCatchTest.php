@@ -9,7 +9,7 @@ class TryCatchTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'addThrowableInterfaceType' => [
@@ -351,13 +351,149 @@ class TryCatchTest extends TestCase
                         // do nothing
                     }'
             ],
+            'notRedundantVarCheckInFinally' => [
+                '<?php
+                    $var = "a";
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception();
+                        }
+                        $var = "b";
+                    } finally {
+                        if ($var === "a") {
+                            echo $var;
+                        }
+                    }'
+            ],
+            'suppressUndefinedVarInFinally' => [
+                '<?php
+                    try {} finally {
+                        /** @psalm-suppress UndefinedGlobalVariable, MixedPropertyAssignment */
+                        $event->end = null;
+                    }',
+            ],
+            'returnsInTry' => [
+                '<?php
+                    final class A
+                    {
+                        private ?string $property = null;
+
+                        public function handle(string $arg): string
+                        {
+                            if (null !== $this->property) {
+                                return $arg;
+                            }
+
+                            try {
+                                return $arg;
+                            } finally {
+                            }
+                        }
+                    }'
+            ],
+            'finallyArgMaybeUndefined' => [
+                '<?php
+                    class TestMe {
+                        private function startTransaction(): void {
+                        }
+
+                        private function endTransaction(bool $commit): void {
+                            echo $commit ? "Committing" : "Rolling back";
+                        }
+
+                        public function doWork(): void {
+                            $this->startTransaction();
+                            try {
+                                $this->workThatMayOrMayNotThrow();
+                                $success = true;
+                            } finally {
+                                $this->endTransaction($success ?? false);
+                            }
+                        }
+
+                        private function workThatMayOrMayNotThrow(): void {}
+                    }'
+            ],
+            'finallyArgIsNotUndefinedIfSet' => [
+                '<?php
+                    function fooFunction (): string {
+                        try{
+                            $foo = "foo";
+                        } finally {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            echo $foo;
+                            $foo = "bar";
+                        }
+
+                        return $foo;
+                    }'
+            ],
+            'allowReturningPossiblyUndefinedFromTry' => [
+                '<?php
+                    function fooFunction (): string {
+                        try{
+                            $foo = "foo";
+                        } finally {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            echo $foo;
+                        }
+
+                        return $foo;
+                    }'
+            ],
+            'mixedNotUndefinedAfterTry' => [
+                '<?php
+                    /**
+                     * @return array<int, mixed>
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function fetchFromCache(mixed $m)
+                    {
+                        $data = [];
+
+                        try {
+                            $value = $m;
+                        } catch (Throwable $e) {
+                            $value = $m;
+                        }
+
+                        $data[] = $value;
+
+                        return $data;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'issetInCatch' => [
+                '<?php
+                    function foo() : void {
+                        try {
+                            $a = 0;
+                        } catch (Exception $e) {
+                            echo isset($a) ? $a : 1;
+                        }
+                    }'
+            ],
+            'issetExceptionInFinally' => [
+                '<?php
+                    try {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+                    } catch (Throwable $exception) {
+                        //throw $exception;
+                    } finally {
+                        if (isset($exception)) {}
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidCatchClass' => [
@@ -468,6 +604,30 @@ class TryCatchTest extends TestCase
                         return "hello";
                     }',
                 'error_message' => 'NullableReturnStatement'
+            ],
+            'isAlwaysDefinedInFinally' => [
+                '<?php
+                    function maybeThrows() : void {
+                        if (rand(0, 1)) {
+                            throw new UnexpectedValueException();
+                        }
+                    }
+
+                    function doTry() : void {
+                        $exception = new \Exception();
+
+                        try {
+                            maybeThrows();
+                            return;
+                        } catch (Exception $exception) {
+                            throw $exception;
+                        } finally {
+                            if ($exception) {
+                                echo "here";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition'
             ],
         ];
     }

@@ -5,10 +5,10 @@ use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\FileSource;
+use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
-use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 
 /**
  * @internal
@@ -31,29 +31,19 @@ class FileScanner implements FileSource
      */
     public $will_analyze;
 
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     * @param bool $will_analyze
-     */
-    public function __construct($file_path, $file_name, $will_analyze)
+    public function __construct(string $file_path, string $file_name, bool $will_analyze)
     {
         $this->file_path = $file_path;
         $this->file_name = $file_name;
         $this->will_analyze = $will_analyze;
     }
 
-    /**
-     * @param bool $storage_from_cache
-     *
-     * @return void
-     */
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
-        $storage_from_cache = false,
-        Progress $progress = null
-    ) {
+        bool $storage_from_cache = false,
+        ?Progress $progress = null
+    ): void {
         if ($progress === null) {
             $progress = new VoidProgress();
         }
@@ -90,7 +80,7 @@ class FileScanner implements FileSource
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            new ReflectorVisitor($codebase, $file_storage, $this)
+            new ReflectorVisitor($codebase, $this, $file_storage)
         );
 
         $traverser->traverse($stmts);
@@ -98,42 +88,27 @@ class FileScanner implements FileSource
         $file_storage->deep_scan = $this->will_analyze;
     }
 
-    /**
-     * @return string
-     */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->file_path;
     }
 
-    /**
-     * @return string
-     */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->file_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->file_path;
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->file_name;
     }
 
-    /**
-     * @return \Psalm\Aliases
-     */
-    public function getAliases()
+    public function getAliases(): \Psalm\Aliases
     {
         return new \Psalm\Aliases();
     }

@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTest
+class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'removeSingleLineVarAnnotation' => [

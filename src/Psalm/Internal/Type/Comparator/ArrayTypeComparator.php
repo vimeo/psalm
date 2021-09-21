@@ -4,15 +4,17 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
-use function array_reduce;
+
+use function array_map;
+use function range;
 
 /**
  * @internal
@@ -20,8 +22,8 @@ use function array_reduce;
 class ArrayTypeComparator
 {
     /**
-     * @param TArray|ObjectLike|TList|TClassStringMap $input_type_part
-     * @param TArray|ObjectLike|TList|TClassStringMap $container_type_part
+     * @param TArray|TKeyedArray|TList|TClassStringMap $input_type_part
+     * @param TArray|TKeyedArray|TList|TClassStringMap $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -32,7 +34,25 @@ class ArrayTypeComparator
     ) : bool {
         $all_types_contain = true;
 
-        if ($container_type_part instanceof ObjectLike
+        $is_empty_array = $input_type_part->equals(
+            new Type\Atomic\TArray([
+                new Type\Union([new Type\Atomic\TEmpty()]),
+                new Type\Union([new Type\Atomic\TEmpty()])
+            ]),
+            false
+        );
+
+        if ($is_empty_array
+            && (($container_type_part instanceof Type\Atomic\TArray
+                    && !$container_type_part instanceof Type\Atomic\TNonEmptyArray)
+                || ($container_type_part instanceof Type\Atomic\TKeyedArray
+                    && !$container_type_part->isNonEmpty())
+            )
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TKeyedArray
             && $input_type_part instanceof TArray
         ) {
             $all_string_int_literals = true;
@@ -49,9 +69,9 @@ class ArrayTypeComparator
             }
 
             if ($all_string_int_literals && $properties) {
-                $input_type_part = new ObjectLike($properties);
+                $input_type_part = new TKeyedArray($properties);
 
-                return ObjectLikeComparator::isContainedBy(
+                return KeyedArrayComparator::isContainedBy(
                     $codebase,
                     $input_type_part,
                     $container_type_part,
@@ -62,7 +82,7 @@ class ArrayTypeComparator
         }
 
         if ($container_type_part instanceof TList
-            && $input_type_part instanceof ObjectLike
+            && $input_type_part instanceof TKeyedArray
         ) {
             if ($input_type_part->is_list) {
                 $input_type_part = $input_type_part->getList();
@@ -103,13 +123,23 @@ class ArrayTypeComparator
                 || !$container_type_part instanceof TNonEmptyList;
         }
 
-        if ($container_type_part instanceof ObjectLike) {
-            $generic_container_type_part = $container_type_part->getGenericArrayType();
+        if ($container_type_part instanceof TKeyedArray) {
+            if ($container_type_part->is_list) {
+                $container_type_part = $container_type_part->getList();
 
-            $container_type_part = $generic_container_type_part;
+                return self::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $atomic_comparison_result
+                );
+            }
+
+            $container_type_part = $container_type_part->getGenericArrayType();
         }
 
-        if ($input_type_part instanceof ObjectLike) {
+        if ($input_type_part instanceof TKeyedArray) {
             $input_type_part = $input_type_part->getGenericArrayType();
         }
 
@@ -139,7 +169,22 @@ class ArrayTypeComparator
 
         if ($input_type_part instanceof TList) {
             if ($input_type_part instanceof TNonEmptyList) {
-                $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                // if the array has a known size < 10, make sure the array keys are literal ints
+                if ($input_type_part->count !== null && $input_type_part->count < 10) {
+                    $literal_ints = array_map(
+                        function ($i) {
+                            return new Type\Atomic\TLiteralInt($i);
+                        },
+                        range(0, $input_type_part->count - 1)
+                    );
+
+                    $input_type_part = new TNonEmptyArray([
+                        new Type\Union($literal_ints),
+                        clone $input_type_part->type_param
+                    ]);
+                } else {
+                    $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                }
             } else {
                 $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
             }
@@ -168,8 +213,8 @@ class ArrayTypeComparator
 
             $param_comparison_result = new TypeComparisonResult();
 
-            if (!$input_param->isEmpty() &&
-                !UnionTypeComparator::isContainedBy(
+            if (!$input_param->isEmpty()) {
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_param,
                     $container_param,
@@ -177,36 +222,38 @@ class ArrayTypeComparator
                     $input_param->ignore_falsable_issues,
                     $param_comparison_result,
                     $allow_interface_equality
-                )
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced
-                        = $param_comparison_result->type_coerced === true
-                            && $atomic_comparison_result->type_coerced !== false;
+                )) {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced
+                            = $param_comparison_result->type_coerced === true
+                                && $atomic_comparison_result->type_coerced !== false;
 
-                    $atomic_comparison_result->type_coerced_from_mixed
-                        = $param_comparison_result->type_coerced_from_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
+                        $atomic_comparison_result->type_coerced_from_mixed
+                            = $param_comparison_result->type_coerced_from_mixed === true
+                                && $atomic_comparison_result->type_coerced_from_mixed !== false;
 
-                    $atomic_comparison_result->type_coerced_from_as_mixed
-                        = $param_comparison_result->type_coerced_from_as_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
+                        $atomic_comparison_result->type_coerced_from_as_mixed
+                            = $param_comparison_result->type_coerced_from_as_mixed === true
+                                && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
 
-                    $atomic_comparison_result->to_string_cast
-                        = $param_comparison_result->to_string_cast === true
-                            && $atomic_comparison_result->to_string_cast !== false;
+                        $atomic_comparison_result->type_coerced_from_scalar
+                            = $param_comparison_result->type_coerced_from_scalar === true
+                                && $atomic_comparison_result->type_coerced_from_scalar !== false;
 
-                    $atomic_comparison_result->type_coerced_from_scalar
-                        = $param_comparison_result->type_coerced_from_scalar === true
-                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
+                        $atomic_comparison_result->scalar_type_match_found
+                            = $param_comparison_result->scalar_type_match_found === true
+                                && $atomic_comparison_result->scalar_type_match_found !== false;
+                    }
 
-                    $atomic_comparison_result->scalar_type_match_found
-                        = $param_comparison_result->scalar_type_match_found === true
-                            && $atomic_comparison_result->scalar_type_match_found !== false;
-                }
-
-                if (!$param_comparison_result->type_coerced_from_as_mixed) {
-                    $all_types_contain = false;
+                    if (!$param_comparison_result->type_coerced_from_as_mixed) {
+                        $all_types_contain = false;
+                    }
+                } else {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->to_string_cast
+                            = $atomic_comparison_result->to_string_cast === true
+                                || $param_comparison_result->to_string_cast === true;
+                    }
                 }
             }
         }
@@ -221,14 +268,6 @@ class ArrayTypeComparator
             return false;
         }
 
-        if ($all_types_contain) {
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->to_string_cast = false;
-            }
-
-            return true;
-        }
-
-        return false;
+        return $all_types_contain;
     }
 }

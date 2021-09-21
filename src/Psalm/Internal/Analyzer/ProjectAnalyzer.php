@@ -6,13 +6,17 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
-use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, ProtocolStreamWriter};
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\LanguageServer\LanguageServer;
+use Psalm\Internal\LanguageServer\ProtocolStreamReader;
+use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidReturnType;
@@ -28,64 +32,68 @@ use Psalm\Issue\PossiblyUndefinedGlobalVariable;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\RedundantCast;
+use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Issue\UnusedVariable;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Type;
-use Psalm\Issue\CodeIssue;
-use function substr;
-use function strlen;
-use function cli_set_process_title;
-use function stream_socket_client;
-use function fwrite;
-use const STDERR;
-use function stream_set_blocking;
-use function stream_socket_server;
-use const STDOUT;
-use function extension_loaded;
-use function stream_socket_accept;
-use function pcntl_fork;
-use const STDIN;
-use function microtime;
-use function array_merge;
-use function count;
-use function implode;
+
+use function array_combine;
 use function array_diff;
-use function strpos;
-use function explode;
-use function array_pop;
-use function strtolower;
-use function usort;
-use function file_exists;
+use function array_fill_keys;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_shift;
+use function cli_set_process_title;
+use function count;
+use function defined;
 use function dirname;
-use function mkdir;
-use function rename;
+use function end;
+use function explode;
+use function extension_loaded;
+use function file_exists;
+use function file_get_contents;
+use function filter_var;
+use function fwrite;
+use function implode;
+use function in_array;
+use function ini_get;
 use function is_dir;
 use function is_file;
-use const PHP_EOL;
-use function array_shift;
-use function array_combine;
-use function preg_match;
-use function array_keys;
-use function array_fill_keys;
-use function defined;
-use function trim;
-use function shell_exec;
-use function is_string;
-use function filter_var;
-use const FILTER_VALIDATE_INT;
 use function is_int;
 use function is_readable;
-use function file_get_contents;
+use function is_string;
+use function microtime;
+use function mkdir;
+use function pcntl_fork;
+use function preg_match;
+use function rename;
+use function shell_exec;
+use function stream_set_blocking;
+use function stream_socket_accept;
+use function stream_socket_client;
+use function stream_socket_server;
+use function strlen;
+use function strpos;
+use function strtolower;
+use function substr;
 use function substr_count;
-use function array_map;
-use function end;
-use Psalm\Internal\Codebase\Taint;
+use function trim;
+use function usort;
+
+use const FILTER_VALIDATE_INT;
+use const PHP_EOL;
+use const STDERR;
+use const STDIN;
+use const STDOUT;
 
 /**
  * @internal
@@ -207,7 +215,7 @@ class ProjectAnalyzer
     /**
      * @var array<int, class-string<CodeIssue>>
      */
-    const SUPPORTED_ISSUES_TO_FIX = [
+    private const SUPPORTED_ISSUES_TO_FIX = [
         InvalidFalsableReturnType::class,
         InvalidNullableReturnType::class,
         InvalidReturnType::class,
@@ -223,6 +231,8 @@ class ProjectAnalyzer
         PossiblyUndefinedVariable::class,
         PossiblyUnusedMethod::class,
         PossiblyUnusedProperty::class,
+        RedundantCast::class,
+        RedundantCastGivenDocblockType::class,
         UnusedMethod::class,
         UnusedProperty::class,
         UnusedVariable::class,
@@ -245,8 +255,6 @@ class ProjectAnalyzer
 
     /**
      * @param array<ReportOptions> $generated_report_options
-     * @param int           $threads
-     * @param string        $reports
      */
     public function __construct(
         Config $config,
@@ -254,7 +262,7 @@ class ProjectAnalyzer
         ?ReportOptions $stdout_report_options = null,
         array $generated_report_options = [],
         int $threads = 1,
-        Progress $progress = null
+        ?Progress $progress = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -319,7 +327,10 @@ class ProjectAnalyzer
                 'Composer lockfile change detected, clearing cache' . "\n"
             );
 
-            Config::removeCacheDirectory($this->config->getCacheDirectory());
+            $cache_directory = $this->config->getCacheDirectory();
+            if ($cache_directory !== null) {
+                Config::removeCacheDirectory($cache_directory);
+            }
 
             if ($this->file_reference_provider->cache) {
                 $this->file_reference_provider->cache->hasConfigChanged();
@@ -333,7 +344,10 @@ class ProjectAnalyzer
                 'Config change detected, clearing cache' . "\n"
             );
 
-            Config::removeCacheDirectory($this->config->getCacheDirectory());
+            $cache_directory = $this->config->getCacheDirectory();
+            if ($cache_directory !== null) {
+                Config::removeCacheDirectory($cache_directory);
+            }
 
             if ($this->project_cache_provider) {
                 $this->project_cache_provider->hasLockfileChanged();
@@ -343,16 +357,16 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>  $report_file_paths
-     * @param  bool   $show_info
-     * @return array<ReportOptions>
+     * @return list<ReportOptions>
      */
-    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true)
+    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
     {
         $report_options = [];
 
         $mapping = [
             'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
             'sonarqube.json' => Report::TYPE_SONARQUBE,
+            'codeclimate.json' => Report::TYPE_CODECLIMATE,
             'summary.json' => Report::TYPE_JSON_SUMMARY,
             'junit.xml' => Report::TYPE_JUNIT,
             '.xml' => Report::TYPE_XML,
@@ -361,6 +375,7 @@ class ProjectAnalyzer
             '.emacs' => Report::TYPE_EMACS,
             '.pylint' => Report::TYPE_PYLINT,
             '.console' => Report::TYPE_CONSOLE,
+            '.sarif' => Report::TYPE_SARIF,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
@@ -396,11 +411,7 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @param  string|null $address
-     * @return void
-     */
-    public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false)
+    public function server(?string $address = '127.0.0.1:12345', bool $socket_server_mode = false): void
     {
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -454,13 +465,27 @@ class ProjectAnalyzer
                 exit(1);
             }
             fwrite(STDOUT, "Server listening on $address\n");
+
+            $fork_available = true;
             if (!extension_loaded('pcntl')) {
                 fwrite(STDERR, "PCNTL is not available. Only a single connection will be accepted\n");
+                $fork_available = false;
             }
+
+            $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+            if (in_array('pcntl_fork', $disabled_functions)) {
+                fwrite(
+                    STDERR,
+                    "pcntl_fork() is disabled by php configuration (disable_functions directive)."
+                    . " Only a single connection will be accepted\n"
+                );
+                $fork_available = false;
+            }
+
             while ($socket = stream_socket_accept($tcpServer, -1)) {
                 fwrite(STDOUT, "Connection accepted\n");
                 stream_set_blocking($socket, false);
-                if (extension_loaded('pcntl')) {
+                if ($fork_available) {
                     // If PCNTL is available, fork a child process for the connection
                     // An exit notification will only terminate the child process
                     $pid = pcntl_fork();
@@ -474,8 +499,7 @@ class ProjectAnalyzer
                         $reader = new ProtocolStreamReader($socket);
                         $reader->on(
                             'close',
-                            /** @return void */
-                            function () {
+                            function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
                             }
                         );
@@ -510,31 +534,17 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return self
-     */
-    public static function getInstance()
+    public static function getInstance(): ProjectAnalyzer
     {
         return self::$instance;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return bool
-     */
-    public function canReportIssues($file_path)
+    public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);
     }
 
-    /**
-     * @param  string  $base_dir
-     * @param  bool $is_diff
-     *
-     * @return void
-     */
-    public function check($base_dir, $is_diff = false)
+    public function check(string $base_dir, bool $is_diff = false): void
     {
         $start_checks = (int)microtime(true);
 
@@ -572,6 +582,7 @@ class ProjectAnalyzer
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
+            $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -596,6 +607,7 @@ class ProjectAnalyzer
                 $file_list = array_diff($file_list, $deleted_files);
 
                 if ($file_list) {
+                    $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
                     $this->visitAutoloadFiles();
 
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
@@ -614,13 +626,9 @@ class ProjectAnalyzer
         if (!$diff_no_files) {
             $this->config->visitStubFiles($this->codebase, $this->progress);
 
-            $plugin_classes = $this->config->after_codebase_populated;
+            $event = new AfterCodebasePopulatedEvent($this->codebase);
 
-            if ($plugin_classes) {
-                foreach ($plugin_classes as $plugin_fq_class_name) {
-                    $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
-                }
-            }
+            $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
         }
 
         $this->progress->startAnalyzingFiles();
@@ -634,7 +642,7 @@ class ProjectAnalyzer
 
         if ($this->project_cache_provider && $this->parser_cache_provider) {
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->project_cache_provider->getLastRun() : $start_checks
+                $is_diff ? $this->project_cache_provider->getLastRun(\PSALM_VERSION) : $start_checks
             );
 
             if ($removed_parser_files) {
@@ -647,10 +655,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return void
-     */
-    public function consolidateAnalyzedData()
+    public function consolidateAnalyzedData(): void
     {
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
@@ -659,18 +664,12 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @return void
-     */
-    public function trackTaintedInputs()
+    public function trackTaintedInputs(): void
     {
-        $this->codebase->taint = new Taint();
+        $this->codebase->taint_flow_graph = new TaintFlowGraph();
     }
 
-    /**
-     * @return void
-     */
-    public function trackUnusedSuppressions()
+    public function trackUnusedSuppressions(): void
     {
         $this->codebase->track_unused_suppressions = true;
     }
@@ -718,9 +717,7 @@ class ProjectAnalyzer
 
                 $source_class_storage = $this->codebase->classlike_storage_provider->get($source_parts[0]);
 
-                $destination_parts = explode('\\', $destination);
-
-                array_pop($destination_parts);
+                $destination_parts = explode('\\', $destination, -1);
                 $destination_ns = implode('\\', $destination_parts);
 
                 $this->codebase->classes_to_move[strtolower($source)] = $destination;
@@ -912,10 +909,7 @@ class ProjectAnalyzer
             foreach ($migration_manipulations as $file_path => $file_manipulations) {
                 usort(
                     $file_manipulations,
-                    /**
-                     * @return int
-                     */
-                    function (FileManipulation $a, FileManipulation $b) {
+                    function (FileManipulation $a, FileManipulation $b): int {
                         if ($a->start === $b->start) {
                             if ($b->end === $a->end) {
                                 return $b->insertion_text > $a->insertion_text ? 1 : -1;
@@ -961,12 +955,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @param  string $symbol
-     *
-     * @return void
-     */
-    public function findReferencesTo($symbol)
+    public function findReferencesTo(string $symbol): void
     {
         if (!$this->stdout_report_options) {
             throw new \UnexpectedValueException('Not expecting to emit output');
@@ -994,14 +983,11 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @param  string  $dir_name
-     *
-     * @return void
-     */
-    public function checkDir($dir_name)
+    public function checkDir(string $dir_name): void
     {
         $this->file_reference_provider->loadReferenceCache();
+
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
@@ -1023,14 +1009,7 @@ class ProjectAnalyzer
         );
     }
 
-    /**
-     * @param  string $dir_name
-     * @param  Config $config
-     * @param  bool   $allow_non_project_files
-     *
-     * @return void
-     */
-    private function checkDirWithConfig($dir_name, Config $config, $allow_non_project_files = false)
+    private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1048,11 +1027,9 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  Config $config
-     *
-     * @return array<int, string>
+     * @return list<string>
      */
-    private function getAllFiles(Config $config)
+    private function getAllFiles(Config $config): array
     {
         $file_extensions = $config->getFileExtensions();
         $file_paths = [];
@@ -1067,12 +1044,7 @@ class ProjectAnalyzer
         return $file_paths;
     }
 
-    /**
-     * @param  string  $dir_name
-     *
-     * @return void
-     */
-    public function addProjectFile(string $file_path)
+    public function addProjectFile(string $file_path): void
     {
         $this->project_files[$file_path] = $file_path;
     }
@@ -1083,12 +1055,9 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string $dir_name
-     * @param  Config $config
-     *
-     * @return array<string>
+     * @return list<string>
      */
-    protected function getDiffFilesInDir($dir_name, Config $config)
+    protected function getDiffFilesInDir(string $dir_name, Config $config): array
     {
         $file_extensions = $config->getFileExtensions();
 
@@ -1098,13 +1067,13 @@ class ProjectAnalyzer
 
         $diff_files = [];
 
-        $last_run = $this->project_cache_provider->getLastRun();
+        $last_run = $this->project_cache_provider->getLastRun(\PSALM_VERSION);
 
         $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
         foreach ($file_paths as $file_path) {
             if ($config->isInProjectDirs($file_path)) {
-                if ($this->file_provider->getModifiedTime($file_path) > $last_run
+                if ($this->file_provider->getModifiedTime($file_path) >= $last_run
                     && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
                         !== $this->file_provider->getContents($file_path)
                 ) {
@@ -1117,12 +1086,10 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  Config           $config
      * @param  array<string>    $file_list
      *
-     * @return void
      */
-    private function checkDiffFilesWithConfig(Config $config, array $file_list = [])
+    private function checkDiffFilesWithConfig(Config $config, array $file_list = []): void
     {
         $files_to_scan = [];
 
@@ -1143,14 +1110,11 @@ class ProjectAnalyzer
         $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
-    /**
-     * @param  string  $file_path
-     *
-     * @return void
-     */
-    public function checkFile($file_path)
+    public function checkFile(string $file_path): void
     {
         $this->progress->debug('Checking ' . $file_path . "\n");
+
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
@@ -1178,11 +1142,13 @@ class ProjectAnalyzer
 
     /**
      * @param string[] $paths_to_check
-     * @return void
      */
-    public function checkPaths(array $paths_to_check)
+    public function checkPaths(array $paths_to_check): void
     {
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
         $this->visitAutoloadFiles();
+
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
         foreach ($paths_to_check as $path) {
             $this->progress->debug('Checking ' . $path . "\n");
@@ -1201,6 +1167,7 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
+
         $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
@@ -1215,7 +1182,10 @@ class ProjectAnalyzer
         );
 
         if ($this->stdout_report_options
-            && $this->stdout_report_options->format === Report::TYPE_CONSOLE
+            && in_array(
+                $this->stdout_report_options->format,
+                [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+            )
             && $this->codebase->collect_references
         ) {
             fwrite(
@@ -1227,10 +1197,7 @@ class ProjectAnalyzer
         }
     }
 
-    /**
-     * @return Config
-     */
-    public function getConfig()
+    public function getConfig(): Config
     {
         return $this->config;
     }
@@ -1240,7 +1207,7 @@ class ProjectAnalyzer
      *
      * @return array<string, string>
      */
-    public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true)
+    public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {
         $all_inherited_files_to_check = $diff_files;
 
@@ -1267,28 +1234,15 @@ class ProjectAnalyzer
         return array_combine($all_files_to_check, $all_files_to_check);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return bool
-     */
-    public function fileExists($file_path)
+    public function fileExists(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path);
     }
 
-    /**
-     * @param int $php_major_version
-     * @param int $php_minor_version
-     * @param bool $dry_run
-     * @param bool $safe_types
-     *
-     * @return void
-     */
     public function alterCodeAfterCompletion(
-        $dry_run = false,
-        $safe_types = false
-    ) {
+        bool $dry_run = false,
+        bool $safe_types = false
+    ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
@@ -1299,39 +1253,48 @@ class ProjectAnalyzer
     /**
      * @param array<string, string> $to_refactor
      *
-     * @return void
      */
-    public function refactorCodeAfterCompletion(array $to_refactor)
+    public function refactorCodeAfterCompletion(array $to_refactor): void
     {
         $this->to_refactor = $to_refactor;
         $this->codebase->alter_code = true;
         $this->show_issues = false;
     }
 
-    /**
-     * @return void
-     */
-    public function setPhpVersion(string $version)
+    public function setPhpVersion(string $version): void
     {
-        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[0])(\..*)?$/', $version)) {
+        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[01])(\..*)?$/', $version)) {
             throw new \UnexpectedValueException('Expecting a version number in the format x.y');
         }
 
-        list($php_major_version, $php_minor_version) = explode('.', $version);
+        [$php_major_version, $php_minor_version] = explode('.', $version);
 
-        $this->codebase->php_major_version = (int) $php_major_version;
-        $this->codebase->php_minor_version = (int) $php_minor_version;
+        $php_major_version = (int) $php_major_version;
+        $php_minor_version = (int) $php_minor_version;
+
+        if ($this->codebase->php_major_version !== $php_major_version
+            || $this->codebase->php_minor_version !== $php_minor_version
+        ) {
+            // reset lexer and parser when php version changes
+            \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+            \Psalm\Internal\Provider\StatementsProvider::clearParser();
+        }
+
+        $this->codebase->php_major_version = $php_major_version;
+        $this->codebase->php_minor_version = $php_minor_version;
     }
 
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
      *
-     * @return void
      */
-    public function setIssuesToFix(array $issues)
+    public function setIssuesToFix(array $issues): void
     {
         $supported_issues_to_fix = static::getSupportedIssuesToFix();
+
+        $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
+        $supported_issues_to_fix[] = 'MissingPureAnnotation';
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
@@ -1355,25 +1318,17 @@ class ProjectAnalyzer
     /**
      * @return array<string, bool>
      */
-    public function getIssuesToFix()
+    public function getIssuesToFix(): array
     {
         return $this->issues_to_fix;
     }
 
-    /**
-     * @return Codebase
-     */
-    public function getCodebase()
+    public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
 
-    /**
-     * @param  string $fq_class_name
-     *
-     * @return FileAnalyzer
-     */
-    public function getFileAnalyzerForClassLike($fq_class_name)
+    public function getFileAnalyzerForClassLike(string $fq_class_name): FileAnalyzer
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -1388,17 +1343,12 @@ class ProjectAnalyzer
         return $file_analyzer;
     }
 
-    /**
-     * @param  Context  $this_context
-     *
-     * @return void
-     */
     public function getMethodMutations(
         \Psalm\Internal\MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
         string $root_file_name
-    ) {
+    ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
@@ -1472,7 +1422,6 @@ class ProjectAnalyzer
      * Copyleft 2018, license: WTFPL
      * @throws \RuntimeException
      * @throws \LogicException
-     * @return int
      * @psalm-suppress ForbiddenCode
      */
     public static function getCpuCount(): int
@@ -1533,7 +1482,9 @@ class ProjectAnalyzer
     }
 
     /**
-     * @return array<string>
+     * @return array<int, string>
+     *
+     * @psalm-pure
      */
     public static function getSupportedIssuesToFix(): array
     {

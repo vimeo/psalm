@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use PhpParser;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
+
 use function abs;
 use function array_flip;
 use function array_intersect_key;
@@ -9,9 +13,6 @@ use function array_merge;
 use function count;
 use function filemtime;
 use function md5;
-use PhpParser;
-use Psalm\Progress\Progress;
-use Psalm\Progress\VoidProgress;
 use function strlen;
 use function substr;
 
@@ -56,9 +57,19 @@ class StatementsProvider
     private $changed_members = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
+     * @var array<string, bool>
+     */
+    private $errors = [];
+
+    /**
+     * @var array<string, array<int, array{int, int, int, int}>>
      */
     private $diff_map = [];
+
+    /**
+     * @var array<string, array<int, array{int, int}>>
+     */
+    private $deletion_ranges = [];
 
     /**
      * @var PhpParser\Lexer|null
@@ -72,8 +83,8 @@ class StatementsProvider
 
     public function __construct(
         FileProvider $file_provider,
-        ParserCacheProvider $parser_cache_provider = null,
-        FileStorageCacheProvider $file_storage_cache_provider = null
+        ?ParserCacheProvider $parser_cache_provider = null,
+        ?FileStorageCacheProvider $file_storage_cache_provider = null
     ) {
         $this->file_provider = $file_provider;
         $this->parser_cache_provider = $parser_cache_provider;
@@ -84,15 +95,17 @@ class StatementsProvider
     /**
      * @return list<\PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path, string $php_version, Progress $progress = null)
+    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null): array
     {
+        unset($this->errors[$file_path]);
+
         if ($progress === null) {
             $progress = new VoidProgress();
         }
 
         $from_cache = false;
 
-        $version = (string) PHP_PARSER_VERSION . $this->this_modified_time;
+        $version = PHP_PARSER_VERSION . $this->this_modified_time;
 
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
@@ -104,7 +117,9 @@ class StatementsProvider
         ) {
             $progress->debug('Parsing ' . $file_path . "\n");
 
-            $stmts = self::parseStatements($file_contents, $php_version, $file_path);
+            $has_errors = false;
+
+            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path);
 
             return $stmts ?: [];
         }
@@ -163,17 +178,20 @@ class StatementsProvider
                 }
             }
 
+            $has_errors = false;
+
             $stmts = self::parseStatements(
                 $file_contents,
                 $php_version,
+                $has_errors,
                 $file_path,
                 $existing_file_contents,
                 $existing_statements_copy,
                 $file_changes
             );
 
-            if ($existing_file_contents && $existing_statements) {
-                list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
+            if ($existing_file_contents && $existing_statements && (!$has_errors || $stmts)) {
+                [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map, $deletion_ranges]
                     = \Psalm\Internal\Diff\FileStatementsDiffer::diff(
                         $existing_statements,
                         $stmts,
@@ -187,7 +205,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($unchanged_members)
@@ -199,7 +217,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($unchanged_signature_members)
@@ -224,7 +242,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_) {
+                    function ($_): bool {
                         return true;
                     },
                     array_flip($changed_members)
@@ -258,6 +276,9 @@ class StatementsProvider
                 }
 
                 $this->diff_map[$file_path] = $diff_map;
+                $this->deletion_ranges[$file_path] = $deletion_ranges;
+            } elseif ($has_errors && !$stmts) {
+                $this->errors[$file_path] = true;
             }
 
             if ($this->file_storage_cache_provider) {
@@ -268,6 +289,7 @@ class StatementsProvider
         } else {
             $from_cache = true;
             $this->diff_map[$file_path] = [];
+            $this->deletion_ranges[$file_path] = [];
         }
 
         $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts, $from_cache);
@@ -282,7 +304,7 @@ class StatementsProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getChangedMembers()
+    public function getChangedMembers(): array
     {
         return $this->changed_members;
     }
@@ -290,9 +312,8 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_changed_members
      *
-     * @return void
      */
-    public function addChangedMembers(array $more_changed_members)
+    public function addChangedMembers(array $more_changed_members): void
     {
         $this->changed_members = array_merge($more_changed_members, $this->changed_members);
     }
@@ -300,7 +321,7 @@ class StatementsProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getUnchangedSignatureMembers()
+    public function getUnchangedSignatureMembers(): array
     {
         return $this->unchanged_signature_members;
     }
@@ -308,70 +329,98 @@ class StatementsProvider
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
      *
-     * @return void
      */
-    public function addUnchangedSignatureMembers(array $more_unchanged_members)
+    public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
         $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
     }
 
     /**
-     * @param string $file_path
-     *
-     * @return void
+     * @return array<string, bool>
      */
-    public function setUnchangedFile($file_path)
+    public function getErrors() : array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * @param array<string, bool> $errors
+     *
+     */
+    public function addErrors(array $errors): void
+    {
+        $this->errors += $errors;
+    }
+
+    public function setUnchangedFile(string $file_path): void
     {
         if (!isset($this->diff_map[$file_path])) {
             $this->diff_map[$file_path] = [];
         }
+
+        if (!isset($this->deletion_ranges[$file_path])) {
+            $this->deletion_ranges[$file_path] = [];
+        }
     }
 
     /**
-     * @return array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
+     * @return array<string, array<int, array{int, int, int, int}>>
      */
-    public function getDiffMap()
+    public function getDiffMap(): array
     {
         return $this->diff_map;
     }
 
     /**
-     * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
-     *
-     * @return void
+     * @return array<string, array<int, array{int, int}>>
      */
-    public function addDiffMap(array $diff_map)
+    public function getDeletionRanges(): array
+    {
+        return $this->deletion_ranges;
+    }
+
+    /**
+     * @param array<string, array<int, array{int, int, int, int}>> $diff_map
+     *
+     */
+    public function addDiffMap(array $diff_map): void
     {
         $this->diff_map = array_merge($diff_map, $this->diff_map);
     }
 
     /**
-     * @return void
+     * @param array<string, array<int, array{int, int}>> $deletion_ranges
+     *
      */
-    public function resetDiffs()
+    public function addDeletionRanges(array $deletion_ranges): void
+    {
+        $this->deletion_ranges = array_merge($deletion_ranges, $this->deletion_ranges);
+    }
+
+    public function resetDiffs(): void
     {
         $this->changed_members = [];
         $this->unchanged_members = [];
         $this->unchanged_signature_members = [];
         $this->diff_map = [];
+        $this->deletion_ranges = [];
     }
 
     /**
-     * @param  string  $file_contents
-     * @param  string   $file_path
      * @param  list<\PhpParser\Node\Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
      *
      * @return list<\PhpParser\Node\Stmt>
      */
     public static function parseStatements(
-        $file_contents,
+        string $file_contents,
         string $php_version,
-        $file_path = null,
-        string $existing_file_contents = null,
-        array $existing_statements = null,
-        array $file_changes = null
-    ) {
+        bool &$has_errors,
+        ?string $file_path = null,
+        ?string $existing_file_contents = null,
+        ?array $existing_statements = null,
+        ?array $file_changes = null
+    ): array {
         $attributes = [
             'comments', 'startLine', 'startFilePos', 'endFilePos',
         ];
@@ -429,6 +478,7 @@ class StatementsProvider
 
         if ($error_handler->hasErrors() && $file_path) {
             $config = \Psalm\Config::getInstance();
+            $has_errors = true;
 
             foreach ($error_handler->getErrors() as $error) {
                 if ($error->hasColumnInfo()) {
@@ -463,5 +513,10 @@ class StatementsProvider
     public static function clearLexer() : void
     {
         self::$lexer = null;
+    }
+
+    public static function clearParser(): void
+    {
+        self::$parser = null;
     }
 }

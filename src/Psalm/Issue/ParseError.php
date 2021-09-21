@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ParseError extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 173;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 173;
 }

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class DuplicateParam extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 65;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 65;
 }

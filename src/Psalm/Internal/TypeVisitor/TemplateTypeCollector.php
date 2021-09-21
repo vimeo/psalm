@@ -4,8 +4,8 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\TypeNode;
 use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 class TemplateTypeCollector extends NodeVisitor

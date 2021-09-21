@@ -1,25 +1,25 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Config;
 use Psalm\Context;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 class IssueSuppressionTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
     use Traits\InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testIssueSuppressedOnFunction()
+    public function testIssueSuppressedOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 class A {
                     /**
@@ -34,37 +34,32 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testIssueSuppressedOnStatement()
+    public function testIssueSuppressedOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress InvalidArgument */
-                echo strpos("hello", "e");'
+                echo strlen("hello");'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testUnusedSuppressAllOnFunction()
+    public function testUnusedSuppressAllOnFunction(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
+
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress all */
                 function foo(): string {
@@ -72,36 +67,29 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testUnusedSuppressAllOnStatement()
+    public function testUnusedSuppressAllOnStatement(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress all */
                 print("foo");'
         );
-
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMissingThrowsDocblockSuppressed()
+    public function testMissingThrowsDocblockSuppressed(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
@@ -118,20 +106,17 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testMissingThrowsDocblockSuppressedWithoutThrow()
+    public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
@@ -141,20 +126,17 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testMissingThrowsDocblockSuppressedDuplicate()
+    public function testMissingThrowsDocblockSuppressedDuplicate(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress MissingThrowsDocblock */
                 function example1 (): void {
@@ -165,18 +147,15 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testUncaughtThrowInGlobalScopeSuppressed()
+    public function testUncaughtThrowInGlobalScopeSuppressed(): void
     {
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
                 throw new Exception();
@@ -194,34 +173,31 @@ class IssueSuppressionTest extends TestCase
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
-    /**
-     * @return void
-     */
-    public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow()
+    public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_in_global_scope = true;
 
         $this->addFile(
-            'somefile.php',
+            getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                strlen("a");'
+                echo "hello";'
         );
 
         $context = new Context();
 
-        $this->analyzeFile('somefile.php', $context);
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'undefinedClassSimple' => [
@@ -231,6 +207,17 @@ class IssueSuppressionTest extends TestCase
                          * @psalm-suppress UndefinedClass
                          * @psalm-suppress MixedMethodCall
                          * @psalm-suppress MissingReturnType
+                         */
+                        public function b() {
+                            B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
+                        }
+                    }',
+            ],
+            'multipleIssues' => [
+                '<?php
+                    class A {
+                        /**
+                         * @psalm-suppress UndefinedClass, MixedMethodCall,MissingReturnType because reasons
                          */
                         public function b() {
                             B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
@@ -293,13 +280,46 @@ class IssueSuppressionTest extends TestCase
                         strlen(123, 456, 789);
                     }',
             ],
+            'possiblyNullSuppressedAtClassLevel' => [
+                '<?php
+                    /** @psalm-suppress PossiblyNullReference */
+                    class C {
+                        private ?DateTime $mightBeNull = null;
+
+                        public function m(): string {
+                            return $this->mightBeNull->format("");
+                        }
+                    }
+                ',
+            ],
+            'methodSignatureMismatchSuppressedAtClassLevel' => [
+                '<?php
+                    class ParentClass {
+                        /**
+                         * @psalm-suppress MissingParamType
+                         * @return mixed
+                         */
+                        public function func($var) {
+                            return $var;
+                        }
+                    }
+
+                    /** @psalm-suppress MethodSignatureMismatch */
+                    class MismatchMethod extends ParentClass {
+                        /** @return mixed */
+                        public function func(string $var) {
+                            return $var;
+                        }
+                    }
+                ',
+            ]
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedClassOneLineWithLineAfter' => [
@@ -313,7 +333,7 @@ class IssueSuppressionTest extends TestCase
                             new C();
                         }
                     }',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33 - Class or interface C',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33 - Class, interface or enum named C',
             ],
             'undefinedClassOneLineInFileAfter' => [
                 '<?php
@@ -322,7 +342,7 @@ class IssueSuppressionTest extends TestCase
                      */
                     new B();
                     new C();',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class or interface C',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class, interface or enum named C',
             ],
             'missingParamTypeShouldntPreventUndefinedClassError' => [
                 '<?php

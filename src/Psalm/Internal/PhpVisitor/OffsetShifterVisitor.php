@@ -6,7 +6,7 @@ use PhpParser;
 /**
  * Shifts all nodes in a given AST by a set amount
  */
-class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {
     /** @var int */
     private $file_offset;
@@ -14,15 +14,20 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     /** @var int */
     private $line_offset;
 
-    public function __construct(int $offset, int $line_offset)
+    /** @var array<int, int> */
+    private $extra_offsets;
+
+    /**
+     * @param array<int, int> $extra_offsets
+     */
+    public function __construct(int $offset, int $line_offset, array $extra_offsets)
     {
         $this->file_offset = $offset;
         $this->line_offset = $line_offset;
+        $this->extra_offsets = $extra_offsets;
     }
 
     /**
-     * @param  PhpParser\Node $node
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
@@ -37,14 +42,14 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                 if ($c instanceof PhpParser\Comment\Doc) {
                     $new_comments[] = new PhpParser\Comment\Doc(
                         $c->getText(),
-                        $c->getLine() + $this->line_offset,
-                        $c->getFilePos() + $this->file_offset
+                        $c->getStartLine() + $this->line_offset,
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
                     );
                 } else {
                     $new_comments[] = new PhpParser\Comment(
                         $c->getText(),
-                        $c->getLine() + $this->line_offset,
-                        $c->getFilePos() + $this->file_offset
+                        $c->getStartLine() + $this->line_offset,
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
                     );
                 }
             }
@@ -55,10 +60,14 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         /**
          * @psalm-suppress MixedOperand
          */
-        $node->setAttribute('startFilePos', $attrs['startFilePos'] + $this->file_offset);
-        /** @psalm-suppress MixedOperand */
-        $node->setAttribute('endFilePos', $attrs['endFilePos'] + $this->file_offset);
-        /** @psalm-suppress MixedOperand */
+        $node->setAttribute(
+            'startFilePos',
+            $attrs['startFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['startFilePos']] ?? 0)
+        );
+        $node->setAttribute(
+            'endFilePos',
+            $attrs['endFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['endFilePos']] ?? 0)
+        );
         $node->setAttribute('startLine', $attrs['startLine'] + $this->line_offset);
     }
 }

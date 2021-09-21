@@ -18,7 +18,7 @@ class TypeMappingVisitor extends NodeVisitorAbstract
         $this->real_type_provider = $real_type_provider;
     }
 
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): void
     {
         $origNode = $node;
 

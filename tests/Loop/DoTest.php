@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Tests\Loop;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\Traits;
+
+use const DIRECTORY_SEPARATOR;
 
 class DoTest extends \Psalm\Tests\TestCase
 {
@@ -12,7 +13,7 @@ class DoTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'doWhileVar' => [
@@ -343,13 +344,27 @@ class DoTest extends \Psalm\Tests\TestCase
 
                     if ($b) {}'
             ],
+            'regularAssignmentInsideDo' => [
+                '<?php
+                    do {
+                        $code = rand(0, 1);
+                        echo "here";
+                    } while ($code === 1);'
+            ],
+            'destructuringAssignmentInsideDo' => [
+                '<?php
+                    do {
+                        [$code] = [rand(0, 1)];
+                        echo "here";
+                    } while ($code === 1);'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'doWhileVarWithPossibleBreakWithoutDefining' => [

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidStaticInvocation extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 14;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 14;
 }

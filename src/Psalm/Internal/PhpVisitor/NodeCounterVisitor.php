@@ -6,14 +6,12 @@ use PhpParser;
 /**
  * @internal
  */
-class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract
 {
     /** @var int */
     public $count = 0;
 
     /**
-     * @param  PhpParser\Node $node
-     *
      * @return null|int
      */
     public function enterNode(PhpParser\Node $node)

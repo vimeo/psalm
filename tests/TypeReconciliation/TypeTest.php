@@ -11,7 +11,7 @@ class TypeTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'nullableMethodWithTernaryGuard' => [
@@ -242,7 +242,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     class B {
                         /** @return void */
                         public function barBar(One $one = null, Two $two = null) {
-                            if ($one !== null && ($two || 1 + 1 === 3)) {
+                            if ($one !== null && ($two || rand(0, 1))) {
                                 $one->fooFoo();
                             }
                         }
@@ -863,7 +863,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'positive-int',
                 ],
             ],
             'typedValueAssertion' => [
@@ -1057,13 +1057,59 @@ class TypeTest extends \Psalm\Tests\TestCase
                         strlen($s);
                     }'
             ],
+            'narrowWithCountToAllowNonTupleKeyedArray' => [
+                '<?php
+                    /**
+                     * @param list<string> $arr
+                     */
+                    function foo($arr): void {
+                        if (count($arr) === 2) {
+                            consume($arr);
+                        }
+                    }
+
+                    /**
+                     * @param array{0:string, 1: string} $input
+                     */
+                    function consume($input): void{}'
+            ],
+            'notDateTimeWithDateTimeInterface' => [
+                '<?php
+                    function foo(DateTimeInterface $dateTime): DateTimeInterface {
+                        $dateInterval = new DateInterval("P1D");
+
+                        if ($dateTime instanceof DateTime) {
+                            $dateTime->add($dateInterval);
+
+                            return $dateTime;
+                        } else {
+                            return $dateTime->add($dateInterval);
+                        }
+                    }
+                ',
+            ],
+            'notDateTimeImmutableWithDateTimeInterface' => [
+                '<?php
+                    function foo(DateTimeInterface $dateTime): DateTimeInterface {
+                        $dateInterval = new DateInterval("P1D");
+
+                        if ($dateTime instanceof DateTimeImmutable) {
+                            return $dateTime->add($dateInterval);
+                        } else {
+                            $dateTime->add($dateInterval);
+
+                            return $dateTime;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVariable' => [

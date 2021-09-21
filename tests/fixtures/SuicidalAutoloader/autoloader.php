@@ -1,8 +1,6 @@
 <?php
 
 use React\Promise\PromiseInterface as ReactPromise;
-use ResourceBundle;
-use Transliterator;
 use Composer\InstalledVersions;
 
 spl_autoload_register(function (string $className) {
@@ -17,6 +15,14 @@ spl_autoload_register(function (string $className) {
         'PHPUnit\Framework\Countable',
         'PHPUnit\Framework\DOMDocument',
         'PHPUnit\Framework\DOMElement',
+        'Stringable',
+
+        // https://github.com/symfony/symfony/pull/40203
+        // these are actually functions, referenced as `if (!function_exists(u::class))`
+        'Symfony\Component\String\u',
+        'Symfony\Component\String\b',
+        'Symfony\Component\String\s',
+        'Symfony\Component\Translation\t',
     ];
 
     if (in_array($className, $knownBadClasses)) {

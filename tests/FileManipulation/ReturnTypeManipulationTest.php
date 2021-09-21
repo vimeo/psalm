@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class ReturnTypeManipulationTest extends FileManipulationTest
+class ReturnTypeManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingClosureStringReturnType56' => [
@@ -17,6 +17,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     $a = /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function() {
                         return "hello";
@@ -47,6 +49,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo() {
                         return "hello";
@@ -66,6 +70,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo(): string {
                         return "hello";
@@ -95,6 +101,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return false|string
+                     *
+                     * @psalm-return \'hello\'|false
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : false;
@@ -111,6 +119,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -194,6 +204,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                      *          - `google`
                      *
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo(): string {
                       return "hello";
@@ -338,6 +350,8 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     class A {
                         /**
                          * @return string some notes
+                         *
+                         * @psalm-return \'hello\'
                          */
                         function foo() : string {
                             return "hello";
@@ -502,7 +516,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: string}
+                         * @psalm-return array{0: \'hello\'}
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -528,7 +542,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: string}
+                         * @psalm-return array{0: \'hello\'}
                          */
                         public function foo(): array {
                             return ["hello"];
@@ -557,7 +571,7 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return self
+                         * @return static
                          */
                         public function getMe() {
                             return $this;
@@ -572,6 +586,100 @@ class ReturnTypeManipulationTest extends FileManipulationTest
                     }',
                 '7.3',
                 ['LessSpecificReturnType'],
+                false,
+                true,
+            ],
+            'dontOOM' => [
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '<?php
+                    class FC {
+                        public function __invoke() : void {}
+                    }
+
+                    function foo(): string {
+                        if (rand(0, 1)) {
+                            $cb = new FC();
+                        } else {
+                            $cb = function() {};
+                        }
+                        $cb();
+                    }',
+                '7.3',
+                ['InvalidReturnType'],
+                false,
+                true,
+            ],
+            'tryCatchReturn' => [
+                '<?php
+                    function scope(){
+                        try{
+                            return func();
+                        }
+                        catch(Exception $e){
+                            return null;
+                        }
+                    }
+
+                    function func(): stdClass{
+                        return new stdClass();
+                    }',
+                '<?php
+                    function scope(): ?stdClass{
+                        try{
+                            return func();
+                        }
+                        catch(Exception $e){
+                            return null;
+                        }
+                    }
+
+                    function func(): stdClass{
+                        return new stdClass();
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'switchReturn' => [
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function get_form_fields(string $a) {
+                        switch($a){
+                            default:
+                                return [];
+                        }
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     *
+                     * @return array
+                     *
+                     * @psalm-return array<empty, empty>
+                     */
+                    function get_form_fields(string $a): array {
+                        switch($a){
+                            default:
+                                return [];
+                        }
+                    }',
+                '7.3',
+                ['MissingReturnType'],
                 false,
                 true,
             ],

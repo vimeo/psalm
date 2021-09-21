@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ImplementedParamTypeMismatch extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 199;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 199;
 }

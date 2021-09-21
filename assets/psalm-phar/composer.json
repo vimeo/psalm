@@ -3,10 +3,13 @@
 	"description": "Composer-based Psalm Phar",
 	"license": ["MIT"],
 	"require": {
-		"php": "^7.1"
+		"php": "^7.1 || ^8.0"
 	},
 	"conflict": {
 		"vimeo/psalm" : "*"
 	},
-	"bin": ["psalm.phar"]
+	"bin": ["psalm.phar"],
+	"config": {
+        "platform-check": false
+    }
 }

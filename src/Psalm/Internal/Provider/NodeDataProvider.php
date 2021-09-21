@@ -3,15 +3,20 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
-use SplObjectStorage;
 use Psalm\Type\Union;
+use SplObjectStorage;
 
 class NodeDataProvider implements \Psalm\NodeTypeProvider
 {
     /** @var SplObjectStorage<PhpParser\Node, Union> */
     private $node_types;
 
-    /** @var SplObjectStorage<PhpParser\Node, array<string, non-empty-list<non-empty-list<string>>>|null> */
+    /**
+     * @var SplObjectStorage<
+     *     PhpParser\Node,
+     *     list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
+     * >
+     */
     private $node_assertions;
 
     /** @var SplObjectStorage<PhpParser\Node, array<int, \Psalm\Storage\Assertion>> */
@@ -25,20 +30,16 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
 
     public function __construct()
     {
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_types = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_assertions = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_if_true_assertions = new SplObjectStorage();
-        /** @psalm-suppress PropertyTypeCoercion */
         $this->node_if_false_assertions = new SplObjectStorage();
     }
 
     /**
      * @param PhpParser\Node\Expr|PhpParser\Node\Name|PhpParser\Node\Stmt\Return_ $node
      */
-    public function setType($node, Union $type) : void
+    public function setType(PhpParser\NodeAbstract $node, Union $type) : void
     {
         $this->node_types[$node] = $type;
     }
@@ -46,16 +47,15 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     /**
      * @param PhpParser\Node\Expr|PhpParser\Node\Name|PhpParser\Node\Stmt\Return_ $node
      */
-    public function getType($node) : ?Union
+    public function getType(PhpParser\NodeAbstract $node) : ?Union
     {
         return $this->node_types[$node] ?? null;
     }
 
     /**
-     * @param PhpParser\Node\Expr $node
-     * @param array<string, non-empty-list<non-empty-list<string>>>|null $assertions
+     * @param list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null $assertions
      */
-    public function setAssertions($node, ?array $assertions) : void
+    public function setAssertions(PhpParser\Node\Expr $node, ?array $assertions) : void
     {
         if (!$this->cache_assertions) {
             return;
@@ -65,10 +65,9 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr $node
-     * @return array<string, non-empty-list<non-empty-list<string>>>|null
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
      */
-    public function getAssertions($node) : ?array
+    public function getAssertions(PhpParser\Node\Expr $node) : ?array
     {
         if (!$this->cache_assertions) {
             return null;
@@ -78,55 +77,61 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
-     * @param array<int, \Psalm\Storage\Assertion> $assertions
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
+     * @param array<int, \Psalm\Storage\Assertion>  $assertions
      */
-    public function setIfTrueAssertions($node, array $assertions) : void
+    public function setIfTrueAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
         $this->node_if_true_assertions[$node] = $assertions;
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
-    public function getIfTrueAssertions($node) : ?array
+    public function getIfTrueAssertions(PhpParser\Node\Expr $node) : ?array
     {
         return $this->node_if_true_assertions[$node] ?? null;
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
-     * @param array<int, \Psalm\Storage\Assertion> $assertions
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
+     * @param array<int, \Psalm\Storage\Assertion>  $assertions
      */
-    public function setIfFalseAssertions($node, array $assertions) : void
+    public function setIfFalseAssertions(PhpParser\Node\Expr $node, array $assertions) : void
     {
         $this->node_if_false_assertions[$node] = $assertions;
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $node
+     * @param PhpParser\Node\Expr\FuncCall
+     *        |PhpParser\Node\Expr\MethodCall
+     *        |PhpParser\Node\Expr\StaticCall
+     *        |PhpParser\Node\Expr\New_             $node
      * @return array<int, \Psalm\Storage\Assertion>|null
      */
-    public function getIfFalseAssertions($node) : ?array
+    public function getIfFalseAssertions(PhpParser\Node\Expr $node) : ?array
     {
         return $this->node_if_false_assertions[$node] ?? null;
     }
 
-    /**
-     * @param PhpParser\Node\Expr $node
-     */
-    public function isPureCompatible($node) : bool
+    public function isPureCompatible(PhpParser\Node\Expr $node) : bool
     {
         $node_type = self::getType($node);
 
         return ($node_type && $node_type->reference_free) || isset($node->pure);
     }
 
-    /**
-     * @param PhpParser\Node\Expr $node
-     */
-    public function clearNodeOfTypeAndAssertions($node) : void
+    public function clearNodeOfTypeAndAssertions(PhpParser\Node\Expr $node) : void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);
     }

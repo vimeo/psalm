@@ -2,16 +2,16 @@
 declare(strict_types=1);
 namespace Psalm\Internal\PhpTraverser;
 
+use PhpParser\Node;
+
 use function array_pop;
 use function array_splice;
 use function gettype;
-use PhpParser\Node;
-use PhpParser\NodeTraverserInterface;
 
 /**
  * @internal
  */
-class CustomTraverser extends \PhpParser\NodeTraverser implements NodeTraverserInterface
+class CustomTraverser extends \PhpParser\NodeTraverser
 {
     public function __construct()
     {

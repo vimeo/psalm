@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use function array_merge;
 use Psalm\Storage\ClassLikeStorage;
+
+use function array_merge;
 use function strtolower;
 
 /**
@@ -27,18 +28,15 @@ class ClassLikeStorageProvider
      */
     public $cache;
 
-    public function __construct(ClassLikeStorageCacheProvider $cache = null)
+    public function __construct(?ClassLikeStorageCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }
 
     /**
-     * @param  string $fq_classlike_name
      * @throws \InvalidArgumentException when class does not exist
-     *
-     * @return ClassLikeStorage
      */
-    public function get($fq_classlike_name)
+    public function get(string $fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
@@ -48,26 +46,14 @@ class ClassLikeStorageProvider
         return self::$storage[$fq_classlike_name_lc];
     }
 
-    /**
-     * @param  string $fq_classlike_name
-     *
-     * @return bool
-     */
-    public function has($fq_classlike_name)
+    public function has(string $fq_classlike_name): bool
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    /**
-     * @param  string  $fq_classlike_name
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
-     *
-     * @return ClassLikeStorage
-     */
-    public function exhume($fq_classlike_name, $file_path, $file_contents)
+    public function exhume(string $fq_classlike_name, ?string $file_path, ?string $file_contents): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -90,7 +76,7 @@ class ClassLikeStorageProvider
     /**
      * @return array<string, ClassLikeStorage>
      */
-    public function getAll()
+    public function getAll(): array
     {
         return self::$storage;
     }
@@ -98,7 +84,7 @@ class ClassLikeStorageProvider
     /**
      * @return array<string, ClassLikeStorage>
      */
-    public function getNew()
+    public function getNew(): array
     {
         return self::$new_storage;
     }
@@ -106,28 +92,19 @@ class ClassLikeStorageProvider
     /**
      * @param array<string, ClassLikeStorage> $more
      *
-     * @return void
      */
-    public function addMore(array $more)
+    public function addMore(array $more): void
     {
         self::$new_storage = array_merge(self::$new_storage, $more);
         self::$storage = array_merge(self::$storage, $more);
     }
 
-    /**
-     * @return void
-     */
-    public function makeNew(string $fq_classlike_name_lc)
+    public function makeNew(string $fq_classlike_name_lc): void
     {
         self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
     }
 
-    /**
-     * @param  string $fq_classlike_name
-     *
-     * @return ClassLikeStorage
-     */
-    public function create($fq_classlike_name)
+    public function create(string $fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -138,31 +115,20 @@ class ClassLikeStorageProvider
         return $storage;
     }
 
-    /**
-     * @param string $fq_classlike_name
-     *
-     * @return void
-     */
-    public function remove($fq_classlike_name)
+    public function remove(string $fq_classlike_name): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    /**
-     * @return void
-     */
-    public static function deleteAll()
+    public static function deleteAll(): void
     {
         self::$storage = [];
         self::$new_storage = [];
     }
 
-    /**
-     * @return void
-     */
-    public static function populated()
+    public static function populated(): void
     {
         self::$new_storage = [];
     }

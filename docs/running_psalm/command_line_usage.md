@@ -16,6 +16,13 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Exit status
+
+Psalm exits with status `0` when it successfully completed and found no issues,
+`1` when there was a problem running Psalm and `2` when it completed
+successfully but found some issues. Any exit status apart from those indicate
+some internal problem.
+
 ## Shepherd
 
 Psalm currently offers some GitHub integration with public projects.
@@ -30,10 +37,11 @@ Psalm has a couple of command-line options that will result in faster builds:
 
 - `--threads=[n]` to run Psalm’s analysis in a number of threads
 - `--diff` which only checks files you’ve updated since the last run (and their dependents).
-- `--diff-methods` which only checks methods you’ve updated since the last run (and their dependents).
+
+In Psalm 4 `--diff` is turned on by default (you can disable it with `--no-diff`).
 
 Data from the last run is stored in the *cache directory*, which may be set in [configuration](./configuration.md).
 If you are running Psalm on a build server, you may want to configure the server to ensure that the cache directory
 is preserved between runs.
 
-Running them together (e.g. `--threads=8 --diff --diff-methods`) will result in the fastest possible Psalm run.
+Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.

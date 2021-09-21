@@ -4,7 +4,7 @@
 
 ### Using a template repository
 
-Head over to [plugin template repository](https://github.com/weirdan/psalm-plugin-skeleton) on Github and click `Use this template` button.
+Head over to [plugin template repository](https://github.com/weirdan/psalm-plugin-skeleton) on Github, login and click `Use this template` button.
 
 ### Using skeleton project
 
@@ -34,6 +34,14 @@ Skeleton/template project includes the code to register all `.phpstub` files fro
 
 To register a stub file manually use `Psalm\Plugin\RegistrationInterface::addStubFile()`.
 
+## Registering custom scanners and analyzers
+
+In addition to XML configuration node `<fileExtensions>` plugins can register their own custom scanner
+and analyzer implementations for particular file extensions, e.g.
+
+* `Psalm\Plugin\RegistrationInterface::addFileTypeScanner('html', CustomFileScanner::class)`
+* `Psalm\Plugin\RegistrationInterface::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
+
 ## Publishing your plugin on Packagist
 
 Follow instructions on packagist.org under 'Publishing Packages' section.
@@ -50,16 +58,16 @@ Composer-based plugin is a composer package which conforms to these requirements
 
 ### Psalm API
 
-Plugins may implement one of (or more than one of) `Psalm\Plugin\Hook\*` interface(s).
+Plugins may implement one of (or more than one of) `Psalm\Plugin\EventHandler\*` interface(s).
 
 ```php
 <?php
-class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
+class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface
 {
 }
 ```
 
-`Psalm\Plugin\Hook\*` offers the following interfaces that you can implement:
+`Psalm\Plugin\EventHandler\*` offers the following interfaces that you can implement:
 
 - `AfterAnalysisInterface` - called after Psalm has completed its analysis. Use this hook if you want to do something with the analysis results.
 - `AfterClassLikeAnalysisInterface` - called after Psalm has completed its analysis of a given class.
@@ -68,7 +76,7 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 - `AfterCodebasePopulatedInterface` - called after Psalm has scanned necessary files and populated codebase data.
 - `AfterEveryFunctionCallAnalysisInterface` - called after Psalm evaluates any function call. Cannot influence the call further.
 - `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
-- `AfterFileAnalyisisInterface` - called after Psalm analyzes a file.
+- `AfterFileAnalysisInterface` - called after Psalm analyzes a file.
 - `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
 - `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
@@ -104,6 +112,14 @@ You can also specify an absolute path to your plugin:
     </plugins>
 ```
 
+### Using Xdebug
+
+As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by running Psalm as following:
+
+```console
+$ PSALM_ALLOW_XDEBUG=1 path/to/psalm
+```
+
 ## Type system
 
 Understand how Psalm handles types by [reading this guide](plugins_type_system.md).
@@ -130,5 +146,6 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 
 ## Upgrading file-based plugin to composer-based version
 
-Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
-
+Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()`
+method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()`
+method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).

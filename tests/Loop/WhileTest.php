@@ -11,7 +11,7 @@ class WhileTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'whileVar' => [
@@ -358,7 +358,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                     function foo() : void {
                         $pointers = ["hi"];
 
-                        while (rand(0, 1) && 0 < ($parent = 0)) {
+                        while (rand(0, 1) && -1 < ($parent = 0)) {
                             print $pointers[$parent];
                         }
                     }'
@@ -410,7 +410,6 @@ class WhileTest extends \Psalm\Tests\TestCase
             'possiblyUndefinedInWhile' => [
                 '<?php
                     function getRenderersForClass(string $a): void {
-                        /** @psalm-suppress MixedArgument */
                         while ($b = getString($b ?? $a)) {
                             $c = "hello";
                         }
@@ -437,7 +436,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
-            'assignToObjectLikeListPreserveListness' => [
+            'assignToTKeyedArrayListPreserveListness' => [
                 '<?php
                     /**
                      * @return non-empty-list<string>
@@ -464,13 +463,298 @@ class WhileTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'nonEmptyListIterationChangeVarWithContinue' => [
+                '<?php
+                    /** @param non-empty-list<int> $arr */
+                    function foo(array $arr) : void {
+                        while (array_shift($arr)) {
+                            if ($arr && $arr[0] === "a") {}
+
+                            if (rand(0, 1)) {
+                                $arr = array_merge($arr, ["a"]);
+                                continue;
+                            }
+
+                            echo "here";
+                        }
+                    }'
+            ],
+            'nonEmptyListIterationChangeVarWithoutContinue' => [
+                '<?php
+                    /** @param non-empty-list<int> $arr */
+                    function foo(array $arr) : void {
+                        while (array_shift($arr)) {
+                            if ($arr && $arr[0] === "a") {}
+
+                            if (rand(0, 1)) {
+                                $arr = array_merge($arr, ["a"]);
+                            }
+
+                            echo "here";
+                        }
+                    }'
+            ],
+            'propertyAssertionInsideWhile' => [
+                '<?php
+                    class Foo {
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+
+                        public function one(): bool {
+                            $has_changes = false;
+
+                            while ($this->a) {
+                                $has_changes = true;
+                                $this->alter();
+                            }
+
+                            return $has_changes;
+                        }
+
+                        public function two(): bool {
+                            $has_changes = false;
+
+                            while ($this->a || $this->b) {
+                                $has_changes = true;
+                                $this->alter();
+                            }
+
+                            return $has_changes;
+                        }
+
+                        public function three(): bool {
+                            $has_changes = false;
+
+                            while ($this->a || $this->b || $this->c) {
+                                $has_changes = true;
+                                $this->alter();
+                            }
+
+                            return $has_changes;
+                        }
+
+                        public function four(): bool {
+                            $has_changes = false;
+
+                            while (($this->a && $this->b) || $this->c) {
+                                $has_changes = true;
+                                $this->alter();
+                            }
+
+                            return $has_changes;
+                        }
+
+                        public function alter() : void {
+                            if (rand(0, 1)) {
+                                array_pop($this->a);
+                            } elseif (rand(0, 1)) {
+                                array_pop($this->a);
+                            } else {
+                                array_pop($this->c);
+                            }
+                        }
+                    }'
+            ],
+            'propertyAssertionInsideWhileNested' => [
+                '<?php
+                    class Foo {
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+
+                        public function five(): bool {
+                            $has_changes = false;
+
+                            while ($this->a || ($this->b && $this->c)) {
+                                $has_changes = true;
+                                $this->alter();
+                            }
+
+                            return $has_changes;
+                        }
+
+                        public function alter() : void {
+                            if (rand(0, 1)) {
+                                array_pop($this->a);
+                            } elseif (rand(0, 1)) {
+                                array_pop($this->a);
+                            } else {
+                                array_pop($this->c);
+                            }
+                        }
+                    }'
+            ],
+            'ifNestedInsideLoop' => [
+                '<?php
+                    function analyse(): int {
+                        $state = 1;
+
+                        while (rand(0, 1)) {
+                            if ($state === 3) {
+                                echo "here";
+                            } elseif ($state === 2) {
+                                if (rand(0, 1)) {
+                                    $state = 3;
+                                }
+                            } else {
+                                $state = 2;
+                            }
+                        }
+
+                        return $state;
+                    }'
+            ],
+            'ifNotNestedInsideLoop' => [
+                '<?php
+                    function analyse(): int {
+                        $state = 1;
+
+                        while (rand(0, 1)) {
+                            if ($state === 3) {
+                                echo "here";
+                            } elseif ($state === 2) {
+                                $state = 3;
+                            } else {
+                                $state = 2;
+                            }
+                        }
+
+                        return $state;
+                    }'
+            ],
+            'continueShouldAddToContext' => [
+                '<?php
+                    function foo() : void {
+                        $link = null;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $link = "a";
+                                continue;
+                            }
+
+                            if (rand(0, 1)) {
+                                if ($link === null) {
+                                   return;
+                                }
+
+                                continue;
+                            }
+                        }
+                    }'
+            ],
+            'continue2Returns' => [
+                '<?php
+                    function foo(): array {
+                        while (rand(0, 1)) {
+                            while (rand(0, 1)) {
+                                if (rand(0, 1)) {
+                                    continue 2;
+                                }
+
+                                return [];
+                            }
+                        }
+
+                        return [];
+                    }'
+            ],
+            'propertyTypeUpdatedInBranch' => [
+                '<?php
+                    class A
+                    {
+                        public ?int $foo = null;
+
+                        public function setFoo(): void
+                        {
+                            $this->foo = 5;
+                        }
+                    }
+
+                    function bar(A $a): void {
+                        $a->foo = null;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a->setFoo();
+                            } elseif ($a->foo !== null) {}
+                        }
+                    }'
+            ],
+            'propertyTypeUpdatedInBranchWithBreak' => [
+                '<?php
+                    class A
+                    {
+                        public ?int $foo = null;
+
+                        public function setFoo(): void
+                        {
+                            $this->foo = 5;
+                        }
+                    }
+
+                    function bar(A $a): void {
+                        $a->foo = null;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a->setFoo();
+                            } elseif ($a->foo !== null) {
+                                break;
+                            }
+                        }
+
+                        if ($a->foo !== null) {}
+                    }'
+            ],
+            'whileTrueDontHaveExitPathForReturn' => [
+                '<?php
+                    function getResultWithRetry(): string
+                    {
+                        while (new stdClass) {
+                            return "";
+                        }
+                    }'
+            ],
+            'ComplexWhileTrueDontHaveExitPathForReturn' => [
+                '<?php
+                    class Test {
+                        private int $retryAttempts = 10;
+
+                        private function getResult(): string
+                        {
+                            // return tring or throw exception whatever
+                            throw new Exception();
+                        }
+
+                        private function getResultWithRetry(): string
+                        {
+                            $attempt = 1;
+
+                            while (true) {
+                                try {
+                                    return $this->getResult();
+                                } catch (Throwable $exception) {
+                                    if ($attempt >= $this->retryAttempts) {
+                                        throw $exception;
+                                    }
+
+                                    $attempt++;
+
+                                    continue;
+                                }
+                            }
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'whileTrueNoBreak' => [

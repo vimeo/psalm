@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidScope extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 13;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 13;
 }

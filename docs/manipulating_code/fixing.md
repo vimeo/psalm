@@ -534,10 +534,10 @@ Running `vendor/bin/psalter --issues=UnusedVariable` on
 
 ```php
 <?php
-function foo() : void {
+function foo(string $s) : void {
     $a = 5;
     $b = 6;
-    $c = $d = $a + $b;
+    $c = $b += $a -= intval($s);
     echo "foo";
 }
 ```
@@ -546,9 +546,7 @@ gives
 
 ```php
 <?php
-function foo() : void {
-    $a = 5;
-    $b = 6;
+function foo(string $s) : void {
     echo "foo";
 }
 ```

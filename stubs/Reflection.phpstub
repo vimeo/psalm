@@ -1,0 +1,125 @@
+<?php
+
+/**
+ * @template-covariant T as object
+ *
+ * @property-read class-string<T> $name
+ */
+class ReflectionClass implements Reflector {
+
+    /**
+     * @var class-string<T>
+     */
+    public $name;
+
+    /**
+     * @param T|class-string<T>|interface-string<T>|trait-string $argument
+     */
+    public function __construct($argument) {}
+
+    /**
+     * @return class-string<T>
+     */
+    public function getName(): string {}
+
+    /**
+     * @param mixed ...$args
+     *
+     * @return T
+     */
+    public function newInstance(...$args): object {}
+
+    /**
+     * @param array<int, mixed> $args
+     *
+     * @return T
+     */
+    public function newInstanceArgs(array $args): object {}
+
+    /**
+     * @return T
+     */
+    public function newInstanceWithoutConstructor(): object {}
+
+    /**
+     * @return ?array<string>
+     * @psalm-ignore-nullable-return
+     */
+    public function getTraitNames(): array {}
+
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionFunction implements Reflector
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionProperty implements Reflector
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    /**
+     * @since 7.4
+     * @psalm-assert-if-true ReflectionType $this->getType()
+     */
+    public function hasType() : bool {}
+
+    /**
+     * @since 7.4
+     * @psalm-mutation-free
+     */
+    public function getType() : ?ReflectionType {}
+}
+
+class ReflectionMethod implements Reflector
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+class ReflectionClassConstant
+{
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return array<ReflectionAttribute<TClass>>
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+/**
+ * @psalm-immutable
+ */
+class ReflectionParameter {
+    /**
+     * @psalm-assert-if-true ReflectionType $this->getType()
+     */
+    public function hasType() : bool {}
+
+    public function getType() : ?ReflectionType {}
+}

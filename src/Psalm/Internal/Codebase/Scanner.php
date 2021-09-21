@@ -1,61 +1,69 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_filter;
-use function array_merge;
-use function array_pop;
-use function ceil;
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function error_reporting;
-use function explode;
-use function file_exists;
-use function min;
-use const PHP_EOL;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Progress\Progress;
+use ReflectionClass;
+
+use function array_filter;
+use function array_merge;
+use function array_pop;
+use function ceil;
+use function count;
+use function error_reporting;
+use function explode;
+use function file_exists;
+use function min;
 use function realpath;
 use function strtolower;
 use function substr;
 
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
+
 /**
  * @psalm-type  ThreadData = array{
- *     0: array<string, string>,
- *     1: array<string, string>,
- *     2: array<string, string>,
- *     3: array<string, bool>,
- *     4: array<string, bool>,
- *     5: array<string, string>,
- *     6: array<string, bool>,
- *     7: array<string, bool>,
- *     8: array<string, bool>
+ *     array<string, string>,
+ *     array<string, string>,
+ *     array<string, string>,
+ *     array<string, bool>,
+ *     array<string, bool>,
+ *     array<string, string>,
+ *     array<string, bool>,
+ *     array<string, bool>,
+ *     array<string, bool>
  * }
  *
  * @psalm-type  PoolData = array{
  *     classlikes_data:array{
- *         0:array<lowercase-string, bool>,
- *         1:array<lowercase-string, bool>,
- *         2:array<lowercase-string, bool>,
- *         3:array<string, bool>,
- *         4:array<lowercase-string, bool>,
- *         5:array<string, bool>,
- *         6:array<string, bool>
+ *         array<lowercase-string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, bool>,
+ *         array<string, bool>,
+ *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
- *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
+ *     diff_map:array<string, array<int, array{int, int, int, int}>>,
+ *     deletion_ranges:array<string, array<int, array{int, int}>>,
+ *     errors:array<string, bool>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
- *     file_storage:array<string, \Psalm\Storage\FileStorage>,
+ *     file_storage:array<lowercase-string, \Psalm\Storage\FileStorage>,
  *     new_file_content_hashes: array<string, string>,
- *     taint_data: ?\Psalm\Internal\Codebase\Taint
+ *     taint_data: ?TaintFlowGraph
  * }
  */
 
@@ -172,61 +180,38 @@ class Scanner
     /**
      * @param array<string, string> $files_to_scan
      *
-     * @return void
      */
-    public function addFilesToShallowScan(array $files_to_scan)
+    public function addFilesToShallowScan(array $files_to_scan): void
     {
         $this->files_to_scan += $files_to_scan;
     }
 
     /**
      * @param array<string, string> $files_to_scan
-     *
-     * @return void
      */
-    public function addFilesToDeepScan(array $files_to_scan)
+    public function addFilesToDeepScan(array $files_to_scan): void
     {
         $this->files_to_scan += $files_to_scan;
         $this->files_to_deep_scan += $files_to_scan;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function addFileToShallowScan($file_path)
+    public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function addFileToDeepScan($file_path)
+    public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
     }
 
-    /**
-     * @param string $file_path
-     *
-     * @return void
-     */
-    public function removeFile($file_path)
+    public function removeFile(string $file_path): void
     {
         unset($this->scanned_files[$file_path]);
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     *
-     * @return void
-     */
-    public function removeClassLike($fq_classlike_name_lc)
+    public function removeClassLike(string $fq_classlike_name_lc): void
     {
         unset(
             $this->classlike_files[$fq_classlike_name_lc],
@@ -234,23 +219,12 @@ class Scanner
         );
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function setClassLikeFilePath($fq_classlike_name_lc, $file_path)
+    public function setClassLikeFilePath(string $fq_classlike_name_lc, string $file_path): void
     {
         $this->classlike_files[$fq_classlike_name_lc] = $file_path;
     }
 
-    /**
-     * @param  string $fq_classlike_name_lc
-     *
-     * @return string
-     */
-    public function getClassLikeFilePath($fq_classlike_name_lc)
+    public function getClassLikeFilePath(string $fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
             throw new \UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
@@ -260,20 +234,14 @@ class Scanner
     }
 
     /**
-     * @param  string  $fq_classlike_name
-     * @param  string|null  $referencing_file_path
-     * @param  bool $analyze_too
-     * @param  bool $store_failure
      * @param  array<string, mixed> $phantom_classes
-     *
-     * @return void
      */
     public function queueClassLikeForScanning(
-        $fq_classlike_name,
-        $analyze_too = false,
-        $store_failure = true,
+        string $fq_classlike_name,
+        bool $analyze_too = false,
+        bool $store_failure = true,
         array $phantom_classes = []
-    ) {
+    ): void {
         if ($fq_classlike_name[0] === '\\') {
             $fq_classlike_name = substr($fq_classlike_name, 1);
         }
@@ -317,10 +285,7 @@ class Scanner
         }
     }
 
-    /**
-     * @return bool
-     */
-    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1)
+    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
         while ($this->files_to_scan || $this->classes_to_scan) {
@@ -357,13 +322,7 @@ class Scanner
         $files_to_deep_scan = $this->files_to_deep_scan;
 
         $scanner_worker =
-            /**
-             * @param int $_
-             * @param string $file_path
-             *
-             * @return void
-             */
-            function ($_, $file_path) use ($filetype_scanners, $files_to_deep_scan) {
+            function (int $_, string $file_path) use ($filetype_scanners, $files_to_deep_scan): void {
                 $this->scanFile(
                     $file_path,
                     $filetype_scanners,
@@ -426,12 +385,14 @@ class Scanner
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
+                        'deletion_ranges' => $statements_provider->getDeletionRanges(),
+                        'errors' => $statements_provider->getErrors(),
                         'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
                         'file_storage' => $codebase->file_storage_provider->getAll(),
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],
-                        'taint_data' => $codebase->taint,
+                        'taint_data' => $codebase->taint_flow_graph,
                     ];
                 }
             );
@@ -454,8 +415,13 @@ class Scanner
                 $this->codebase->statements_provider->addDiffMap(
                     $pool_data['diff_map']
                 );
-                if ($this->codebase->taint && $pool_data['taint_data']) {
-                    $this->codebase->taint->addThreadData($pool_data['taint_data']);
+                $this->codebase->statements_provider->addDeletionRanges(
+                    $pool_data['deletion_ranges']
+                );
+                $this->codebase->statements_provider->addErrors($pool_data['errors']);
+
+                if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
+                    $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
@@ -514,10 +480,7 @@ class Scanner
         return true;
     }
 
-    /**
-     * @return void
-     */
-    private function convertClassesToFilePaths(ClassLikes $classlikes)
+    private function convertClassesToFilePaths(ClassLikes $classlikes): void
     {
         $classes_to_scan = $this->classes_to_scan;
 
@@ -542,7 +505,7 @@ class Scanner
 
                     $this->progress->debug('Using reflection to get metadata for ' . $fq_classlike_name . "\n");
 
-                    /** @psalm-suppress TypeCoercion */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $reflected_class = new \ReflectionClass($fq_classlike_name);
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
@@ -576,23 +539,24 @@ class Scanner
     }
 
     /**
-     * @param  string $file_path
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
-     *
-     * @return FileScanner
      */
     private function scanFile(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
-    ) {
+        bool $will_analyze = false
+    ): void {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
         if (isset($this->scanned_files[$file_path])
             && (!$will_analyze || $this->scanned_files[$file_path])
         ) {
             throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
+        }
+
+        if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
+            // this should not happen, but might if the file was temporary
+            return;
         }
 
         $file_contents = $this->file_provider->getContents($file_path);
@@ -666,22 +630,16 @@ class Scanner
                 $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
             }
         }
-
-        return $file_scanner;
     }
 
     /**
-     * @param  string $file_path
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
-     * @param  bool   $will_analyze
-     *
-     * @return FileScanner
      */
     private function getScannerForPath(
-        $file_path,
+        string $file_path,
         array $filetype_scanners,
-        $will_analyze = false
-    ) {
+        bool $will_analyze = false
+    ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));
         $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
@@ -698,7 +656,7 @@ class Scanner
     /**
      * @return array<string, bool>
      */
-    public function getScannedFiles()
+    public function getScannedFiles(): array
     {
         return $this->scanned_files;
     }
@@ -706,12 +664,8 @@ class Scanner
     /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
-     *
-     * @param  string $fq_class_name
-     *
-     * @return bool
      */
-    private function fileExistsForClassLike(ClassLikes $classlikes, $fq_class_name)
+    private function fileExistsForClassLike(ClassLikes $classlikes, string $fq_class_name): bool
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -740,24 +694,29 @@ class Scanner
             return true;
         }
 
-        $old_level = error_reporting();
+        $reflected_class = ErrorHandler::runWithExceptionsSuppressed(
+            function () use ($fq_class_name): ?ReflectionClass {
+                $old_level = error_reporting();
+                $this->progress->setErrorReporting();
 
-        $this->progress->setErrorReporting();
+                try {
+                    $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
 
-        try {
-            $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    return new ReflectionClass($fq_class_name);
+                } catch (\Throwable $e) {
+                    // do not cache any results here (as case-sensitive filenames can screw things up)
 
-            /** @psalm-suppress TypeCoercion */
-            $reflected_class = new \ReflectionClass($fq_class_name);
-        } catch (\Throwable $e) {
-            error_reporting($old_level);
+                    return null;
+                } finally {
+                    error_reporting($old_level);
+                }
+            }
+        );
 
-            // do not cache any results here (as case-sensitive filenames can screw things up)
-
+        if (null === $reflected_class) {
             return false;
         }
-
-        error_reporting($old_level);
 
         $file_path = (string)$reflected_class->getFileName();
 
@@ -791,7 +750,7 @@ class Scanner
     /**
      * @return ThreadData
      */
-    public function getThreadData()
+    public function getThreadData(): array
     {
         return [
             $this->files_to_scan,
@@ -809,11 +768,10 @@ class Scanner
     /**
      * @param ThreadData $thread_data
      *
-     * @return void
      */
-    public function addThreadData(array $thread_data)
+    public function addThreadData(array $thread_data): void
     {
-        list(
+        [
             $files_to_scan,
             $files_to_deep_scan,
             $classes_to_scan,
@@ -823,7 +781,7 @@ class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc
-        ) = $thread_data;
+        ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
         $this->files_to_deep_scan = array_merge($files_to_deep_scan, $this->files_to_deep_scan);
@@ -839,10 +797,7 @@ class Scanner
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
     }
 
-    /**
-     * @return void
-     */
-    public function isForked()
+    public function isForked(): void
     {
         $this->is_forked = true;
     }

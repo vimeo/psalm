@@ -2,14 +2,14 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use function in_array;
+
 use function array_merge;
+use function in_array;
 
 /**
  * @internal
@@ -17,17 +17,13 @@ use function array_merge;
 class WhileAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Stmt\While_  $stmt
-     * @param   Context                     $context
-     *
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
             || ($stmt->cond instanceof PhpParser\Node\Scalar\LNumber && $stmt->cond->value > 0);
 
@@ -73,9 +69,9 @@ class WhileAnalyzer
 
             foreach ($stmt_cond_type->getAtomicTypes() as $iterator_type) {
                 if ($iterator_type instanceof Type\Atomic\TArray
-                    || $iterator_type instanceof Type\Atomic\ObjectLike
+                    || $iterator_type instanceof Type\Atomic\TKeyedArray
                 ) {
-                    if ($iterator_type instanceof Type\Atomic\ObjectLike) {
+                    if ($iterator_type instanceof Type\Atomic\TKeyedArray) {
                         if (!$iterator_type->sealed) {
                             $always_enters_loop = false;
                         }
@@ -145,36 +141,6 @@ class WhileAnalyzer
             $context->referenced_var_ids,
             $while_context->referenced_var_ids
         );
-
-        if ($codebase->find_unused_variables) {
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-            }
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-            }
-
-            $while_context->inside_conditional = true;
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $while_context);
-            $while_context->inside_conditional = false;
-
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-            }
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-            if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
-            }
-
-            $context->unreferenced_vars = $while_context->unreferenced_vars;
-        }
 
         return null;
     }

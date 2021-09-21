@@ -2,23 +2,22 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
+
 use function substr;
 
 class JsonOutputTest extends TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
-        FileAnalyzer::clearCache();
-        $this->file_provider = new Provider\FakeFileProvider();
+        RuntimeCaches::clearAll();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -46,9 +45,8 @@ class JsonOutputTest extends TestCase
      * @param int $line_number
      * @param string $error
      *
-     * @return void
      */
-    public function testJsonOutputErrors($code, $message, $line_number, $error)
+    public function testJsonOutputErrors($code, $message, $line_number, $error): void
     {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
@@ -67,7 +65,7 @@ class JsonOutputTest extends TestCase
     /**
      * @return array<string,array{string,message:string,line:int,error:string}>
      */
-    public function providerTestJsonOutputErrors()
+    public function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [
@@ -93,7 +91,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
-                'message' => 'Class or interface Badger\\Bodger does not exist',
+                'message' => 'Class, interface or enum named Badger\\Bodger does not exist',
                 'line' => 2,
                 'error' => 'Badger\\Bodger',
             ],
@@ -102,7 +100,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => 'Method fooFoo does not have a return type, expecting string',
+                'message' => 'Method fooFoo does not have a return type, expecting "hello"',
                 'line' => 2,
                 'error' => 'fooFoo',
             ],
@@ -114,7 +112,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => "The inferred type 'string(hello)' does not match the declared return type 'int' for fooFoo",
+                'message' => "The inferred type '\"hello\"' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
                 'error' => '"hello"',
             ],
@@ -123,7 +121,7 @@ class JsonOutputTest extends TestCase
                     $a = $_GET["hello"];
                     assert(is_int($a));
                     if (is_int($a)) {}',
-                'message' => "Found a redundant condition when evaluating docblock-defined type \$a and trying to reconcile type 'int' to int",
+                'message' => 'Docblock-defined type int for $a is always int',
                 'line' => 4,
                 'error' => 'is_int($a)',
             ],

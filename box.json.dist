@@ -1,15 +1,15 @@
 {
     "output" : "build/psalm.phar",
     "files": [
-        "src/command_functions.php",
-        "src/psalm.php",
-        "src/psalter.php",
-        "src/psalm-language-server.php",
-        "src/psalm_plugin.php",
-        "src/psalm-refactor.php"
+        "psalm"
     ],
     "files-bin": ["config.xsd"],
-    "directories-bin" : ["assets"],
+    "directories-bin" : [
+        "assets",
+        "dictionaries",
+        "docs/running_psalm/issues",
+        "stubs"
+    ],
     "compactors" : [
         "KevinGH\\Box\\Compactor\\PhpScoper"
     ]

@@ -49,7 +49,7 @@ class ClassTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'overrideProtectedAccessLevelToPublic' => [
@@ -412,6 +412,15 @@ class ClassTest extends TestCase
                         return $class;
                     }',
             ],
+            'allowNegatingClassExistsWithoutAutloading' => [
+                '<?php
+                    function specifyString(string $className): void{
+                        if (!class_exists($className, false)) {
+                            return;
+                        }
+                        new ReflectionClass($className);
+                    }'
+            ],
             'classExistsWithFalseArgInside' => [
                 '<?php
                     function foo(string $s) : void {
@@ -472,8 +481,21 @@ class ClassTest extends TestCase
                     action(new OldA());
                     action(new OldAChild());'
             ],
+            'classAliasStaticProperty' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public static $prop = 1;
+                    }
+                    class_alias(A::class, B::class);
+                    B::$prop = 123;'
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 '<?php
+                    namespace {
+                        class Numeric {}
+                    }
+
                     namespace Foo {
                         class Resource {}
                         class Numeric {}
@@ -523,6 +545,7 @@ class ClassTest extends TestCase
                 '<?php
                     if (class_exists(A::class)) {
                         if (method_exists(A::class, "method")) {
+                            /** @psalm-suppress MixedArgument */
                             echo A::method();
                         }
 
@@ -539,10 +562,16 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'instanceofWithPhantomClass' => [
+                '<?php
+                    if (class_exists(NS\UnknonwClass::class)) {
+                        null instanceof NS\UnknonwClass;
+                    }
+                ',
+            ],
             'extendException' => [
                 '<?php
                     class ME extends Exception {
-                        /** @var string */
                         protected $message = "hello";
                     }',
             ],
@@ -588,13 +617,44 @@ class ClassTest extends TestCase
                         return $b;
                     }'
             ],
+            'allowTraversableImplementationAlongWithIteratorAggregate' => [
+                '<?php
+                    final class C implements Traversable, IteratorAggregate {
+                        public function getIterator() {
+                            yield 1;
+                        }
+                    }
+                ',
+            ],
+            'allowTraversableImplementationAlongWithIterator' => [
+                '<?php
+                    final class C implements Traversable, Iterator {
+                        public function current() { return 1; }
+                        public function key() { return 1; }
+                        public function next() { }
+                        public function rewind() { }
+                        public function valid() { return false; }
+                    }
+                ',
+            ],
+            'allowTraversableImplementationOnAbstractClass' => [
+                '<?php
+                    abstract class C implements Traversable {}
+                ',
+            ],
+            'allowIndirectTraversableImplementationOnAbstractClass' => [
+                '<?php
+                    interface I extends Traversable {}
+                    abstract class C implements I {}
+                ',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedClass' => [
@@ -851,6 +911,19 @@ class ClassTest extends TestCase
 
                     AGrandChild::getInstance()->foo();',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventTraversableImplementation' => [
+                '<?php
+                    final class C implements Traversable {}
+                ',
+                'error_message' => 'InvalidTraversableImplementation',
+            ],
+            'preventIndirectTraversableImplementation' => [
+                '<?php
+                    interface I extends Traversable {}
+                    final class C implements I {}
+                ',
+                'error_message' => 'InvalidTraversableImplementation',
             ],
         ];
     }

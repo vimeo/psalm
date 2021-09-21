@@ -4,6 +4,23 @@ namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Node\Expr\VirtualArray;
+use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\Expr\VirtualClassConstFetch;
+use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\Scalar\VirtualDNumber;
+use Psalm\Node\Scalar\VirtualLNumber;
+use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\Stmt\VirtualFunction;
+use Psalm\Node\Stmt\VirtualNamespace;
+use Psalm\Node\VirtualConst;
+use Psalm\Node\Stmt\VirtualConst as StmtVirtualConst_;
+use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualName;
+use Psalm\Node\VirtualNullableType;
+use Psalm\Node\VirtualParam;
 use Psalm\Type;
 
 class StubsGenerator
@@ -87,9 +104,9 @@ class StubsGenerator
 
             $namespace_name = implode('\\', $name_parts);
 
-            $namespaced_nodes[$namespace_name][$fq_name] = new PhpParser\Node\Stmt\Const_(
+            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
                 [
-                    new PhpParser\Node\Const_(
+                    new VirtualConst(
                         $constant_name,
                         self::getExpressionFromType($type)
                     )
@@ -141,9 +158,9 @@ class StubsGenerator
 
                 $namespace_name = implode('\\', $name_parts);
 
-                $namespaced_nodes[$namespace_name][$fq_name] = new PhpParser\Node\Stmt\Const_(
+                $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
                     [
-                        new PhpParser\Node\Const_(
+                        new VirtualConst(
                             $constant_name,
                             self::getExpressionFromType($type)
                         )
@@ -159,8 +176,8 @@ class StubsGenerator
         foreach ($namespaced_nodes as $namespace_name => $stmts) {
             ksort($stmts);
 
-            $namespace_stmts[] = new PhpParser\Node\Stmt\Namespace_(
-                $namespace_name ? new PhpParser\Node\Name($namespace_name) : null,
+            $namespace_stmts[] = new VirtualNamespace(
+                $namespace_name ? new VirtualName($namespace_name) : null,
                 array_values($stmts),
                 ['kind' => PhpParser\Node\Stmt\Namespace_::KIND_BRACED]
             );
@@ -178,7 +195,7 @@ class StubsGenerator
         $docblock = new ParsedDocblock('', []);
 
         foreach ($function_storage->template_types ?: [] as $template_name => $map) {
-            $type = array_values($map)[0][0];
+            $type = array_values($map)[0];
 
             $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
                 $namespace_name,
@@ -220,7 +237,7 @@ class StubsGenerator
             );
         }
 
-        return new PhpParser\Node\Stmt\Function_(
+        return new VirtualFunction(
             $function_name,
             [
                 'params' => self::getFunctionParamNodes($function_storage),
@@ -244,19 +261,21 @@ class StubsGenerator
     /**
      * @return list<PhpParser\Node\Param>
      */
-    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage)
+    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage): array
     {
         $param_nodes = [];
 
         foreach ($method_storage->params as $param) {
-            $param_nodes[] = new PhpParser\Node\Param(
-                new PhpParser\Node\Expr\Variable($param->name),
-                $param->default_type
+            $param_nodes[] = new VirtualParam(
+                new VirtualVariable($param->name),
+                $param->default_type instanceof Type\Union
                     ? self::getExpressionFromType($param->default_type)
                     : null,
                 $param->signature_type
                     ? self::getParserTypeFromPsalmType($param->signature_type)
-                    : null
+                    : null,
+                $param->by_ref,
+                $param->is_variadic
             );
         }
 
@@ -264,9 +283,9 @@ class StubsGenerator
     }
 
     /**
-     * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|null
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|null
      */
-    public static function getParserTypeFromPsalmType(Type\Union $type)
+    public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
 
@@ -287,59 +306,86 @@ class StubsGenerator
                         $atomic_type->getId() . ' could not be converted to an identifier'
                     );
                 }
-                $identifier = new PhpParser\Node\Identifier($identifier_string);
+                $identifier = new VirtualIdentifier($identifier_string);
 
                 if ($nullable) {
-                    return new PhpParser\Node\NullableType($identifier);
+                    return new VirtualNullableType($identifier);
                 }
 
                 return $identifier;
             }
 
             if ($atomic_type instanceof Type\Atomic\TNamedObject) {
-                $name_node = new PhpParser\Node\Name\FullyQualified($atomic_type->value);
+                $name_node = new VirtualFullyQualified($atomic_type->value);
 
                 if ($nullable) {
-                    return new PhpParser\Node\NullableType($name_node);
+                    return new VirtualNullableType($name_node);
                 }
 
                 return $name_node;
             }
         }
+
+        return null;
     }
 
     public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier('class'));
+            }
+
             if ($atomic_type instanceof Type\Atomic\TLiteralString) {
-                return new PhpParser\Node\Scalar\String_($atomic_type->value);
+                return new VirtualString($atomic_type->value);
             }
 
             if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                return new PhpParser\Node\Scalar\LNumber($atomic_type->value);
+                return new VirtualLNumber($atomic_type->value);
             }
 
             if ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
-                return new PhpParser\Node\Scalar\DNumber($atomic_type->value);
+                return new VirtualDNumber($atomic_type->value);
             }
 
             if ($atomic_type instanceof Type\Atomic\TFalse) {
-                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('false'));
+                return new VirtualConstFetch(new VirtualName('false'));
             }
 
             if ($atomic_type instanceof Type\Atomic\TTrue) {
-                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('true'));
+                return new VirtualConstFetch(new VirtualName('true'));
             }
 
             if ($atomic_type instanceof Type\Atomic\TNull) {
-                return new PhpParser\Node\Expr\ConstFetch(new PhpParser\Node\Name('null'));
+                return new VirtualConstFetch(new VirtualName('null'));
             }
 
             if ($atomic_type instanceof Type\Atomic\TArray) {
-                return new PhpParser\Node\Expr\Array_([]);
+                return new VirtualArray([]);
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $new_items = [];
+
+                foreach ($atomic_type->properties as $property_name => $property_type) {
+                    if ($atomic_type->is_list) {
+                        $key_type = null;
+                    } elseif (\is_int($property_name)) {
+                        $key_type = new VirtualLNumber($property_name);
+                    } else {
+                        $key_type = new VirtualString($property_name);
+                    }
+
+                    $new_items[] = new VirtualArrayItem(
+                        self::getExpressionFromType($property_type),
+                        $key_type
+                    );
+                }
+
+                return new VirtualArray($new_items);
             }
         }
 
-        return new PhpParser\Node\Scalar\String_('Psalm could not infer this type');
+        return new VirtualString('Psalm could not infer this type');
     }
 }

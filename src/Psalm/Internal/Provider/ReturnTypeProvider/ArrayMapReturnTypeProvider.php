@@ -1,38 +1,43 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PhpParser;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Type\ArrayType;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
+use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Expr\VirtualStaticCall;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+
 use function array_map;
 use function count;
 use function explode;
 use function in_array;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Type\ArrayType;
-use Psalm\StatementsSource;
-use Psalm\Type;
 use function strpos;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 
-class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_map'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $context = $event->getContext();
         if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
             return Type::getMixed();
         }
@@ -60,7 +65,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             }
 
             if ($array_arg_types) {
-                return new Type\Union([new Type\Atomic\ObjectLike($array_arg_types)]);
+                return new Type\Union([new Type\Atomic\TKeyedArray($array_arg_types)]);
             }
 
             return Type::getArray();
@@ -94,7 +99,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 $generic_key_type = Type::getInt();
             }
 
-            if ($closure_types = $function_call_type->getClosureTypes()) {
+            if ($function_call_type->hasCallableType()) {
+                $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = \reset($closure_types);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
@@ -137,13 +143,13 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         if ($variable_atomic_type instanceof Type\Atomic\TTemplateParam
                             || $variable_atomic_type instanceof Type\Atomic\TTemplateParamClass
                         ) {
-                            $fake_method_call = new PhpParser\Node\Expr\StaticCall(
+                            $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
                                 []
                             );
                         } elseif ($variable_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
-                            $fake_method_call = new PhpParser\Node\Expr\StaticCall(
+                            $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
                                 []
@@ -167,13 +173,13 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            if ($array_arg_atomic_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
-                $atomic_type = new Type\Atomic\ObjectLike(
+            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray && count($call_args) === 2) {
+                $atomic_type = new Type\Atomic\TKeyedArray(
                     array_map(
                         /**
                         * @return Type\Union
                         */
-                        function (Type\Union $_) use ($mapping_return_type) {
+                        function (Type\Union $_) use ($mapping_return_type): Type\Union {
                             return clone $mapping_return_type;
                         },
                         $array_arg_atomic_type->properties
@@ -181,6 +187,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 );
                 $atomic_type->is_list = $array_arg_atomic_type->is_list;
                 $atomic_type->sealed = $array_arg_atomic_type->sealed;
+                $atomic_type->previous_key_type = $array_arg_atomic_type->previous_key_type;
+                $atomic_type->previous_value_type = $mapping_return_type;
 
                 return new Type\Union([$atomic_type]);
             }
@@ -231,7 +239,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     }
 
     /**
-     * @param-out array<string, array<array<string>>>|null $assertions
+     * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     private static function executeFakeCall(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
@@ -282,12 +290,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assertions !== null) {
-            $assertions = AssertionFinder::scrapeAssertions(
+            $anded_assertions = AssertionFinder::scrapeAssertions(
                 $fake_call,
                 null,
                 $statements_analyzer,
                 $codebase
             );
+
+            $assertions = $anded_assertions[0] ?? [];
         }
 
         $context->inside_call = $was_inside_call;
@@ -308,9 +318,9 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     }
 
     /**
-     * @param non-empty-array<string> $mapping_function_ids
-     * @param array<PhpParser\Node\Arg> $array_args
-     * @param-out array<string, array<array<string>>>|null $assertions
+     * @param non-empty-array<int, string> $mapping_function_ids
+     * @param list<PhpParser\Node\Arg> $array_args
+     * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
         \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
@@ -327,16 +337,14 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
-            $function_id_return_type = null;
-
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];
 
                 foreach ($array_args as $array_arg) {
-                    $fake_args[] = new PhpParser\Node\Arg(
-                        new PhpParser\Node\Expr\ArrayDimFetch(
+                    $fake_args[] = new VirtualArg(
+                        new VirtualArrayDimFetch(
                             $array_arg->value,
-                            new PhpParser\Node\Expr\Variable(
+                            new VirtualVariable(
                                 '__fake_offset_var__',
                                 $array_arg->value->getAttributes()
                             ),
@@ -360,12 +368,12 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                     [$callable_fq_class_name, $callable_method_name] = $method_id_parts;
 
                     if ($is_instance) {
-                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
-                            new PhpParser\Node\Expr\Variable(
+                        $fake_method_call = new VirtualMethodCall(
+                            new VirtualVariable(
                                 '__fake_method_call_var__',
                                 $function_call_arg->getAttributes()
                             ),
-                            new PhpParser\Node\Identifier(
+                            new VirtualIdentifier(
                                 $callable_method_name,
                                 $function_call_arg->getAttributes()
                             ),
@@ -373,10 +381,26 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             $function_call_arg->getAttributes()
                         );
 
+                        $lhs_instance_type = null;
+
+                        $callable_type = $statements_source->node_data->getType($function_call_arg->value);
+
+                        if ($callable_type) {
+                            foreach ($callable_type->getAtomicTypes() as $atomic_type) {
+                                if ($atomic_type instanceof Type\Atomic\TKeyedArray
+                                    && \count($atomic_type->properties) === 2
+                                    && isset($atomic_type->properties[0])
+                                ) {
+                                    $lhs_instance_type = clone $atomic_type->properties[0];
+                                }
+                            }
+                        }
+
                         $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
-                        $context->vars_in_scope['$__fake_method_call_var__'] = new Type\Union([
-                            new Type\Atomic\TNamedObject($callable_fq_class_name)
-                        ]);
+                        $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
+                            ?: new Type\Union([
+                                new Type\Atomic\TNamedObject($callable_fq_class_name)
+                            ]);
 
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
@@ -388,12 +412,12 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                         unset($context->vars_in_scope['$__fake_offset_var__']);
                         unset($context->vars_in_scope['$__method_call_var__']);
                     } else {
-                        $fake_method_call = new PhpParser\Node\Expr\StaticCall(
-                            new PhpParser\Node\Name\FullyQualified(
+                        $fake_method_call = new VirtualStaticCall(
+                            new VirtualFullyQualified(
                                 $callable_fq_class_name,
                                 $function_call_arg->getAttributes()
                             ),
-                            new PhpParser\Node\Identifier(
+                            new VirtualIdentifier(
                                 $callable_method_name,
                                 $function_call_arg->getAttributes()
                             ),
@@ -415,8 +439,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                     $function_id_return_type = $fake_method_return_type ?: Type::getMixed();
                 } else {
-                    $fake_function_call = new PhpParser\Node\Expr\FuncCall(
-                        new PhpParser\Node\Name\FullyQualified(
+                    $fake_function_call = new VirtualFuncCall(
+                        new VirtualFullyQualified(
                             $mapping_function_id_part,
                             $function_call_arg->getAttributes()
                         ),

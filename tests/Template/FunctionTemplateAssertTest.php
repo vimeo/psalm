@@ -12,7 +12,7 @@ class FunctionTemplateAssertTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'assertTemplatedType' => [
@@ -29,9 +29,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -165,9 +164,8 @@ class FunctionTemplateAssertTest extends TestCase
 
                     /**
                      * @param mixed $value
-                     * @param class-string $type
+                     * @param class-string<T> $type
                      * @template T
-                     * @template-typeof T $type
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -202,12 +200,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {
@@ -428,7 +425,7 @@ class FunctionTemplateAssertTest extends TestCase
                      * @psalm-assert-if-true iterable<mixed,T> $i
                      *
                      * @param iterable<mixed,mixed> $i
-                     * @param class-string<T> $type
+                     * @param class-string<T>|interface-string<T> $type
                      */
                     function allInstanceOf(iterable $i, string $type): bool {
                         /** @psalm-suppress MixedAssignment */
@@ -461,16 +458,16 @@ class FunctionTemplateAssertTest extends TestCase
                     /**
                       * @psalm-template ExpectedType of object
                       * @param mixed $value
-                      * @psalm-param class-string<ExpectedType> $interface
-                      * @psalm-assert ExpectedType|class-string<ExpectedType> $value
+                      * @psalm-param interface-string<ExpectedType> $interface
+                      * @psalm-assert ExpectedType|interface-string<ExpectedType> $value
                       */
                     function implementsInterface($value, $interface, string $message = ""): void {}
 
                     /**
                       * @psalm-template ExpectedType of object
                       * @param mixed $value
-                      * @psalm-param class-string<ExpectedType> $interface
-                      * @psalm-assert null|ExpectedType|class-string<ExpectedType> $value
+                      * @psalm-param interface-string<ExpectedType> $interface
+                      * @psalm-assert null|ExpectedType|interface-string<ExpectedType> $value
                       */
                     function nullOrImplementsInterface(?object $value, $interface, string $message = ""): void {}
 
@@ -718,13 +715,65 @@ class FunctionTemplateAssertTest extends TestCase
                         return $value;
                     }'
             ],
+            'noCrashOnListKeyAssertion' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @param mixed $other
+                     * @psalm-assert =T $other
+                     */
+                    function assertSame($t, $other) : void {}
+
+                    /** @param list<int> $list */
+                    function takesList(array $list) : void {
+                        foreach ($list as $i => $l) {
+                            assertSame($i, $l);
+                        }
+                    }'
+            ],
+            'assertSameOnMemoizedMethodCall' => [
+                '<?php
+                    function testValidUsername(): void {
+                        try {
+                            validateUsername("123");
+                            throw new Exception("Failed to throw exception for short username");
+                        } catch (Exception $e) {
+                            assertSame("a", $e->getMessage());
+                        }
+
+                        try {
+                            validateUsername("invalid#1");
+                        } catch (Exception $e) {
+                            assertSame("b", $e->getMessage());
+                        }
+                    }
+
+                    /**
+                     * @psalm-template ExpectedType
+                     * @psalm-param ExpectedType $expected
+                     * @psalm-param mixed $actual
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSame($expected, $actual): void {
+                        if ($actual !== $expected) {
+                            throw new Exception("Bad");
+                        }
+                    }
+
+                    function validateUsername(string $username): void {
+                        if (strlen($username) < 5) {
+                            throw new Exception("Username must be at least 5 characters long");
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'detectRedundantCondition' => [
@@ -732,12 +781,11 @@ class FunctionTemplateAssertTest extends TestCase
                     class A {}
 
                     /**
-                     * @param class-string $expected
+                     * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @param string $message
                      *
                      * @template T
-                     * @template-typeof T $expected
                      * @psalm-assert T $actual
                      */
                     function assertInstanceOf($expected, $actual) : void {
@@ -908,7 +956,45 @@ class FunctionTemplateAssertTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'dontBleedTemplateTypeInArrayAgain' => [
+                '<?php
+                    /**
+                     * @psalm-template T
+                     * @psalm-param array<T> $array
+                     * @psalm-assert array<string, T> $array
+                     */
+                    function isMap(array $array) : void {}
 
+                    /**
+                     * @param array<string> $arr
+                     */
+                    function bar(array $arr): void {
+                        isMap($arr);
+                        /** @psalm-trace $arr */
+                        $arr;
+                    }',
+                'error_message' => 'string, string',
+            ],
+            'SKIPPED-noCrashWhenOnUnparseableTemplatedAssertion' => [
+                '<?php
+                    /**
+                     * @template TCandidateKey as array-key
+                     * @param array $arr
+                     * @param TCandidateKey $key
+                     * @psalm-assert has-array-key<TCandidateKey> $arr
+                     */
+                    function keyExists(array $arr, $key) : void {
+                        if (!array_key_exists($key, $arr)) {
+                            throw new \Exception("bad");
+                        }
+                    }
+
+                    function fromArray(array $data) : void {
+                        keyExists($data, "id");
+                        if (is_string($data["id"])) {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

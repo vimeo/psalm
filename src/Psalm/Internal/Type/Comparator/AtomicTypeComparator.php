@@ -4,32 +4,35 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TEmptyMixed;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
-use function get_class;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
-use function strtolower;
 use function array_values;
 use function count;
+use function get_class;
+use function strtolower;
 
 /**
  * @internal
@@ -130,7 +133,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($input_type_part instanceof Type\Atomic\TCallableObjectLikeArray
+        if ($input_type_part instanceof Type\Atomic\TCallableKeyedArray
             && $container_type_part instanceof TArray
         ) {
             return ArrayTypeComparator::isContainedBy(
@@ -144,8 +147,8 @@ class AtomicTypeComparator
 
         if (($container_type_part instanceof Type\Atomic\TCallable
                 && $input_type_part instanceof Type\Atomic\TCallable)
-            || ($container_type_part instanceof Type\Atomic\TFn
-                && $input_type_part instanceof Type\Atomic\TFn)
+            || ($container_type_part instanceof Type\Atomic\TClosure
+                && $input_type_part instanceof Type\Atomic\TClosure)
         ) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
@@ -155,7 +158,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof Type\Atomic\TFn && $input_type_part instanceof TCallable) {
+        if ($container_type_part instanceof Type\Atomic\TClosure && $input_type_part instanceof TCallable) {
             if (CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -173,8 +176,8 @@ class AtomicTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof Type\Atomic\TFn) {
-            if (!$input_type_part instanceof Type\Atomic\TFn) {
+        if ($container_type_part instanceof Type\Atomic\TClosure) {
+            if (!$input_type_part instanceof Type\Atomic\TClosure) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_mixed = true;
@@ -191,7 +194,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TFn) {
+        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TClosure) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -219,12 +222,12 @@ class AtomicTypeComparator
             return true;
         }
 
-        if (($container_type_part instanceof ObjectLike
-                && $input_type_part instanceof ObjectLike)
+        if (($container_type_part instanceof TKeyedArray
+                && $input_type_part instanceof TKeyedArray)
             || ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part instanceof TObjectWithProperties)
         ) {
-            return ObjectLikeComparator::isContainedBy(
+            return KeyedArrayComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
                 $container_type_part,
@@ -233,13 +236,24 @@ class AtomicTypeComparator
             );
         }
 
+        if ($container_type_part instanceof TObjectWithProperties
+            && $input_type_part instanceof TObject
+            && !$input_type_part instanceof TObjectWithProperties
+            && !$input_type_part instanceof TCallableObject
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+            return false;
+        }
+
         if (($input_type_part instanceof TArray
                 || $input_type_part instanceof TList
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TClassStringMap)
             && ($container_type_part instanceof TArray
                 || $container_type_part instanceof TList
-                || $container_type_part instanceof ObjectLike
+                || $container_type_part instanceof TKeyedArray
                 || $container_type_part instanceof TClassStringMap)
         ) {
             return ArrayTypeComparator::isContainedBy(
@@ -249,6 +263,24 @@ class AtomicTypeComparator
                 $allow_interface_equality,
                 $atomic_comparison_result
             );
+        }
+
+        if (get_class($container_type_part) === TNamedObject::class
+            && $input_type_part instanceof TEnumCase
+            && $input_type_part->value === $container_type_part->value
+        ) {
+            return true;
+        }
+
+        if (get_class($input_type_part) === TNamedObject::class
+            && $container_type_part instanceof TEnumCase
+            && $input_type_part->value === $container_type_part->value
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
         }
 
         if (($input_type_part instanceof TNamedObject
@@ -324,11 +356,7 @@ class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result
                 )) {
-                    if ($allow_interface_equality
-                        || ($input_type_part instanceof TArray
-                            && !$input_type_part->type_params[1]->isEmpty())
-                        || $input_type_part instanceof ObjectLike
-                    ) {
+                    if ($allow_interface_equality) {
                         return true;
                     }
                 }
@@ -427,10 +455,10 @@ class AtomicTypeComparator
 
         if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TList
             ) {
-                if ($input_type_part instanceof ObjectLike) {
+                if ($input_type_part instanceof TKeyedArray) {
                     $input_type_part = $input_type_part->getGenericArrayType();
                 } elseif ($input_type_part instanceof TList) {
                     $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
@@ -457,8 +485,8 @@ class AtomicTypeComparator
 
                     $array_comparison_result = new TypeComparisonResult();
 
-                    if (!$input_param->isEmpty()
-                        && !UnionTypeComparator::isContainedBy(
+                    if (!$input_param->isEmpty()) {
+                        if (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $input_param,
                             $container_param,
@@ -467,24 +495,22 @@ class AtomicTypeComparator
                             $array_comparison_result,
                             $allow_interface_equality
                         )
-                        && !$array_comparison_result->type_coerced_from_scalar
-                    ) {
-                        if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
-                            $atomic_comparison_result->type_coerced_from_mixed = true;
+                            && !$array_comparison_result->type_coerced_from_scalar
+                        ) {
+                            if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
+                                $atomic_comparison_result->type_coerced_from_mixed = true;
+                            }
+                            $all_types_contain = false;
+                        } else {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->to_string_cast
+                                    = $atomic_comparison_result->to_string_cast === true
+                                        || $array_comparison_result->to_string_cast === true;
+                            }
                         }
-                        $all_types_contain = false;
                     }
                 }
-
-                if ($all_types_contain) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->to_string_cast = false;
-                    }
-
-                    return true;
-                }
-
-                return false;
+                return $all_types_contain;
             }
 
             if ($input_type_part->hasTraversableInterface($codebase)) {
@@ -495,19 +521,32 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
-                if ($codebase->classOrInterfaceExists($input_type_part->value)
-                    && $codebase->methods->methodExists(
+                if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    if ($codebase->php_major_version >= 8
+                        && ($input_type_part->value === 'Stringable'
+                            || ($codebase->classlikes->classExists($input_type_part->value)
+                                && $codebase->classlikes->classImplements($input_type_part->value, 'Stringable'))
+                            || $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable'))
+                    ) {
+                        if ($atomic_comparison_result) {
+                            $atomic_comparison_result->to_string_cast = true;
+                        }
+
+                        return true;
+                    }
+
+                    if ($codebase->methods->methodExists(
                         new \Psalm\Internal\MethodIdentifier(
                             $input_type_part->value,
                             '__tostring'
                         )
-                    )
-                ) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->to_string_cast = true;
-                    }
+                    )) {
+                        if ($atomic_comparison_result) {
+                            $atomic_comparison_result->to_string_cast = true;
+                        }
 
-                    return true;
+                        return true;
+                    }
                 }
 
                 // PHP 5.6 doesn't support this natively, so this introduces a bug *just* when checking PHP 5.6 code
@@ -534,7 +573,7 @@ class AtomicTypeComparator
                 $input_type_part instanceof TLiteralString
                 || $input_type_part instanceof TCallableString
                 || $input_type_part instanceof TArray
-                || $input_type_part instanceof ObjectLike
+                || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TList
                 || (
                     $input_type_part instanceof TNamedObject &&
@@ -557,7 +596,7 @@ class AtomicTypeComparator
             if ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part->value !== 'stdClass'
             ) {
-                return ObjectLikeComparator::isContainedByObjectWithProperties(
+                return KeyedArrayComparator::isContainedByObjectWithProperties(
                     $codebase,
                     $input_type_part,
                     $container_type_part,
@@ -591,7 +630,7 @@ class AtomicTypeComparator
 
         if ($container_type_part instanceof TNamedObject
             && $input_type_part instanceof TNamedObject
-            && $codebase->classOrInterfaceExists($input_type_part->value)
+            && $codebase->classOrInterfaceOrEnumExists($input_type_part->value)
             && (
                 (
                     $codebase->classExists($container_type_part->value)
@@ -618,5 +657,69 @@ class AtomicTypeComparator
         }
 
         return $input_type_part->getKey() === $container_type_part->getKey();
+    }
+
+    /**
+     * Does the input param atomic type match the given param atomic type
+     */
+    public static function canBeIdentical(
+        Codebase $codebase,
+        Type\Atomic $type1_part,
+        Type\Atomic $type2_part,
+        bool $allow_interface_equality = true
+    ) : bool {
+        if ((get_class($type1_part) === TList::class
+                && $type2_part instanceof Type\Atomic\TNonEmptyList)
+            || (get_class($type2_part) === TList::class
+                && $type1_part instanceof Type\Atomic\TNonEmptyList)
+        ) {
+            return UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_param,
+                $type2_part->type_param
+            );
+        }
+
+        if ((get_class($type1_part) === TArray::class
+                && $type2_part instanceof Type\Atomic\TNonEmptyArray)
+            || (get_class($type2_part) === TArray::class
+                && $type1_part instanceof Type\Atomic\TNonEmptyArray)
+        ) {
+            return UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_params[0],
+                $type2_part->type_params[0]
+            )
+            && UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->type_params[1],
+                $type2_part->type_params[1]
+            );
+        }
+
+        $first_comparison_result = new TypeComparisonResult();
+        $second_comparison_result = new TypeComparisonResult();
+
+        return (AtomicTypeComparator::isContainedBy(
+            $codebase,
+            $type1_part,
+            $type2_part,
+            $allow_interface_equality,
+            false,
+            $first_comparison_result
+        )
+            && !$first_comparison_result->to_string_cast
+        ) || (AtomicTypeComparator::isContainedBy(
+            $codebase,
+            $type2_part,
+            $type1_part,
+            $allow_interface_equality,
+            false,
+            $second_comparison_result
+        )
+            && !$second_comparison_result->to_string_cast
+        ) || ($first_comparison_result->type_coerced
+            && $second_comparison_result->type_coerced
+        );
     }
 }

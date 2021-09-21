@@ -24,11 +24,6 @@ class FileManipulation
     /** @var bool */
     public $remove_trailing_newline;
 
-    /**
-     * @param int $start
-     * @param int $end
-     * @param string $insertion_text
-     */
     public function __construct(
         int $start,
         int $end,
@@ -64,7 +59,10 @@ class FileManipulation
             }
         }
 
-        if ($this->remove_trailing_newline && $existing_contents[$this->end] === "\n") {
+        if ($this->remove_trailing_newline
+            && strlen($existing_contents) > $this->end
+            && $existing_contents[$this->end] === "\n"
+        ) {
             $newline_pos = strrpos($existing_contents, "\n", $this->start - strlen($existing_contents));
 
             $newline_pos = $newline_pos !== false ? $newline_pos + 1 : 0;

@@ -1,11 +1,14 @@
 <?php
 namespace Psalm\Storage;
 
-use function array_map;
-use function implode;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type;
+
+use function array_column;
+use function array_fill_keys;
+use function array_map;
+use function implode;
 
 abstract class FunctionLikeStorage
 {
@@ -22,11 +25,13 @@ abstract class FunctionLikeStorage
     public $stmt_location;
 
     /**
-     * @var array<int, FunctionLikeParameter>
+     * @psalm-readonly-allow-private-mutation
+     * @var list<FunctionLikeParameter>
      */
     public $params = [];
 
     /**
+     * @psalm-readonly-allow-private-mutation
      * @var array<string, bool>
      */
     public $param_lookup = [];
@@ -102,7 +107,15 @@ abstract class FunctionLikeStorage
     public $global_types = [];
 
     /**
-     * @var array<string, non-empty-array<string, array{Type\Union}>>|null
+     * An array holding the class template "as" types.
+     *
+     * It's the de-facto list of all templates on a given class.
+     *
+     * The name of the template is the first key. The nested array is keyed by a unique
+     * function identifier. This allows operations with the same-named template defined
+     * across multiple classes and/or functions to not run into trouble.
+     *
+     * @var array<string, non-empty-array<string, Type\Union>>|null
      */
     public $template_types;
 
@@ -195,6 +208,11 @@ abstract class FunctionLikeStorage
     public $removed_taints = [];
 
     /**
+     * @var array<Type\Union>
+     */
+    public $conditionally_removed_taints = [];
+
+    /**
      * @var array<int, string>
      */
     public $return_source_params = [];
@@ -204,7 +222,22 @@ abstract class FunctionLikeStorage
      */
     public $allow_named_arg_calls = true;
 
-    public function __toString()
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
+    /**
+     * @var list<array{fqn: string, params: array<int>, return: bool}>|null
+     */
+    public $proxy_calls = [];
+
+    /**
+     * @var ?string
+     */
+    public $description;
+
+    public function __toString(): string
     {
         return $this->getSignature(false);
     }
@@ -241,5 +274,26 @@ abstract class FunctionLikeStorage
         }
 
         return $visibility_text . ' ' . $symbol_text;
+    }
+
+    /**
+     * @internal
+     *
+     * @param list<FunctionLikeParameter> $params
+     */
+    public function setParams(array $params): void
+    {
+        $this->params = $params;
+        $param_names = array_column($params, 'name');
+        $this->param_lookup = array_fill_keys($param_names, true);
+    }
+
+    /**
+     * @internal
+     */
+    public function addParam(FunctionLikeParameter $param, bool $lookup_value = null): void
+    {
+        $this->params[] = $param;
+        $this->param_lookup[$param->name] = $lookup_value ?? true;
     }
 }

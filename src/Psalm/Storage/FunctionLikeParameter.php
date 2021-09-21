@@ -2,6 +2,7 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 
 class FunctionLikeParameter
@@ -49,7 +50,7 @@ class FunctionLikeParameter
     public $is_nullable;
 
     /**
-     * @var Type\Union|null
+     * @var Type\Union|UnresolvedConstantComponent|null
      */
     public $default_type;
 
@@ -84,24 +85,42 @@ class FunctionLikeParameter
     public $assert_untainted = false;
 
     /**
-     * @param string        $name
-     * @param bool       $by_ref
-     * @param Type\Union|null    $type
-     * @param CodeLocation|null  $location
-     * @param bool       $is_optional
-     * @param bool       $is_nullable
-     * @param bool       $is_variadic
-     * @param Type\Union|null    $default_type
+     * @var bool
+     */
+    public $type_inferred = false;
+
+    /**
+     * @var bool
+     */
+    public $expect_variable = false;
+
+    /**
+     * @var bool
+     */
+    public $promoted_property = false;
+
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
+    /**
+     * @var ?string
+     */
+    public $description;
+
+    /**
+     * @param Type\Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
-        $name,
+        string $name,
         bool $by_ref,
-        Type\Union $type = null,
-        CodeLocation $location = null,
-        CodeLocation $type_location = null,
-        $is_optional = true,
-        $is_nullable = false,
-        $is_variadic = false,
+        ?Type\Union $type = null,
+        ?CodeLocation $location = null,
+        ?CodeLocation $type_location = null,
+        bool $is_optional = true,
+        bool $is_nullable = false,
+        bool $is_variadic = false,
         $default_type = null
     ) {
         $this->name = $name;

@@ -96,7 +96,7 @@ Whether or not to use types as defined in docblocks. Defaults to `true`.
   useDocblockPropertyTypes="[bool]"
 >
 ```
-If not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`.
+If not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`).
 
 #### usePhpDocMethodsWithoutMagicCall
 
@@ -124,24 +124,6 @@ The PHPDoc `@property`, `@property-read` and `@property-write` annotations norma
 >
 ```
 If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
-
-#### requireVoidReturnType
-
-```xml
-<psalm
-  requireVoidReturnType="[bool]"
->
-```
-If `false`, Psalm will not complain when a function with no return types is missing an explicit `@return` annotation. Defaults to `true`.
-
-#### useAssertForType
-
-```xml
-<psalm
-  useAssertForType="[bool]"
->
-```
-Some like to use [`assert`](http://php.net/manual/en/function.assert.php) for type checks. If `true`, Psalm will process assertions inside `assert` calls. Defaults to `true`.
 
 #### rememberPropertyAssignmentsAfterCall
 
@@ -177,7 +159,7 @@ When `true`, strings can be used as classes, meaning `$some_string::someMethod()
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed arguments are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -231,6 +213,15 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
 ```
 When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
 
+#### inferPropertyTypesFromConstructor
+
+```xml
+<psalm
+  inferPropertyTypesFromConstructor="[bool]"
+>
+```
+When `true`, Psalm infers property types from assignments seen in straightforward constructors. Defaults to `true`.
+
 #### findUnusedVariablesAndParams
 ```xml
 <psalm
@@ -246,6 +237,14 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 >
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
+
+#### findUnusedPsalmSuppress
+```xml
+<psalm
+  findUnusedPsalmSuppress="[bool]"
+>
+```
+When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
 
 #### loadXdebugStub
 ```xml
@@ -264,6 +263,14 @@ Setting to `false` prevents the stub from loading.
 >
 ```
 When `true`, Psalm will complain when referencing an explicit string offset on an array e.g. `$arr['foo']` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
+
+#### ensureArrayIntOffsetsExist
+```xml
+<psalm
+  ensureArrayIntOffsetsExist="[bool]"
+>
+```
+When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
 #### phpVersion
 ```xml
@@ -284,7 +291,7 @@ This can be overridden on the command-line using the `--php-version=` flag which
 
 When `true`, Psalm will skip checking classes, variables and functions after it comes across an `include` or `require` it cannot resolve. This allows code to reference functions and classes unknown to Psalm.
 
-For backwards compatibility, this defaults to `true`, but if you do not rely on dynamically generated includes to cause classes otherwise unknown to Psalm to come into existence, it's recommended you set this to `false` in order to reliably detect errors that would be fatal to PHP at runtime.
+This defaults to `false`.
 
 #### sealAllMethods
 
@@ -305,6 +312,36 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 ```
 
 When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
+
+#### reportInfo
+
+```xml
+<psalm
+  reportInfo="[bool]"
+>
+```
+
+When `false`, Psalm will not consider issue at lower level than `errorLevel` as `info` (they will be suppressed instead). This can be a big improvement in analysis time for big projects. However, this config will prevent Psalm to count or suggest fixes for suppressed issue
+
+#### allowNamedArgumentCalls
+
+```xml
+<psalm 
+  allowNamedArgumentCalls="[bool]"
+>
+```
+
+When `false`, Psalm will not report `ParamNameMismatch` issues in your code anymore. This does not replace the use of individual `@no-named-arguments` to prevent external access to a library's method or to reduce the type to a `list` when using variadics
+
+#### triggerErrorExits
+
+```xml
+<psalm
+   triggerErrorExits="[string]"
+>
+```
+
+Describe the behavior of trigger_error. `always` means it always exits, `never` means it never exits, `default` means it exits only for `E_USER_ERROR`. Default is `default`
 
 ### Running Psalm
 
@@ -340,7 +377,7 @@ Whether or not to show issues in files that are used by your project files, but 
 ```
 The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
 
-Defaults to `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
 #### allowFileIncludes
 ```xml
@@ -376,22 +413,39 @@ Contains a list of all the directories that Psalm should inspect. You can also s
 Optional. Same format as `<projectFiles>`. Directories Psalm should load but not inspect.
 
 #### &lt;fileExtensions&gt;
-Optional.  A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
+Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
 #### &lt;plugins&gt;
-Optional.  A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
+Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
 
 #### &lt;issueHandlers&gt;
-Optional.  If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
+Optional. If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
 
 #### &lt;mockClasses&gt;
 Optional. Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 
+#### &lt;universalObjectCrates&gt;
+Optional. Do you have objects with properties that cannot be determined statically? If you want Psalm to treat all properties on a given classlike as mixed, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`. By default, `stdClass` and `SimpleXMLElement` are configured to be universal object crates.
+
 #### &lt;stubs&gt;
-Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
+Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection
+(e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm),
+you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and
+functions without the implementations.
+
+You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs).
+List out each file with `<file name="path/to/file.php" />`. In case classes to be tested use parent classes
+or interfaces defined in a stub file, this stub should be configured with attribute `preloadClasses="true"`.
+
+```xml
+<stubs>
+  <file name="path/to/file.php" />
+  <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
 
 #### &lt;ignoreExceptions&gt;
-Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
+Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
 ```xml
 <ignoreExceptions>
   <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
@@ -399,9 +453,39 @@ Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `c
 ```
 
 #### &lt;globals&gt;
-Optional.  If your codebase uses global variables that are accessed with the `global` keyword, you can declare their type.  e.g.
+Optional. If your codebase uses global variables that are accessed with the `global` keyword, you can declare their type.  e.g.
 ```xml
 <globals>
   <var name="globalVariableName" type="type" />
 </globals>
+```
+
+Some frameworks and libraries expose functionalities through e.g. `$GLOBALS[DB]->query($query)`.
+The  following configuration declares custom types for super-globals (`$GLOBALS`, `$_GET`, ...).
+
+```xml
+<globals>
+  <var name="$GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
+  <var name="$_GET" type="array{data: array<string, string>}" />     
+</globals>
+```
+
+The example above declares global variables as shown below
+
+* `$GLOBALS`
+  + `DB` of type `MyVendor\DatabaseConnection`
+  + `VIEW` of type `MyVendor\TemplateView`
+* `$_GET`
+  + `data` e.g. like `["id" => "123", "title" => "Nice"]`
+
+## Accessing Psalm configuration in plugins
+
+Plugins can access or modify the global configuration in plugins using
+[singleton Psalm\Config](https://github.com/vimeo/psalm/blob/master/src/Psalm/Config.php).
+
+```php
+$config = \Psalm\Config::getInstance();
+if (!isset($config->globals['$GLOBALS'])) {
+    $config->globals['$GLOBALS'] = 'array{data: array<string, string>}';
+}
 ```

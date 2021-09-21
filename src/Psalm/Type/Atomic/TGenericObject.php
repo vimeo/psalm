@@ -1,15 +1,24 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
+use function array_merge;
 use function count;
 use function implode;
-use Psalm\Type\Atomic;
 use function substr;
-use function array_merge;
 
+/**
+ * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
+ */
 class TGenericObject extends TNamedObject
 {
     use GenericTrait;
+
+    /**
+     * @var non-empty-list<\Psalm\Type\Union>
+     */
+    public $type_params;
 
     /** @var bool if the parameters have been remapped to another class */
     public $remapped_params = false;
@@ -18,7 +27,7 @@ class TGenericObject extends TNamedObject
      * @param string                            $value the name of the object
      * @param non-empty-list<\Psalm\Type\Union>     $type_params
      */
-    public function __construct($value, array $type_params)
+    public function __construct(string $value, array $type_params)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -28,10 +37,7 @@ class TGenericObject extends TNamedObject
         $this->type_params = $type_params;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         $s = '';
 
@@ -48,37 +54,25 @@ class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return parent::toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -89,7 +83,7 @@ class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }
@@ -97,10 +91,7 @@ class TGenericObject extends TNamedObject
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return $this->value;
     }

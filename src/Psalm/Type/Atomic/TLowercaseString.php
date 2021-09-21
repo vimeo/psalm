@@ -3,23 +3,17 @@ namespace Psalm\Type\Atomic;
 
 class TLowercaseString extends TString
 {
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'string';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'lowercase-string';
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }

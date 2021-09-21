@@ -1,14 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-use const PHP_VERSION;
-
-class UndefinedVariableManipulationTest extends FileManipulationTest
+class UndefinedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'possiblyUndefinedVariable' => [
@@ -136,7 +134,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTest
 
                         new D();
                     }',
-                PHP_VERSION,
+                '7.4',
                 [],
                 true,
             ],

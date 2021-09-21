@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class AbstractMethodCall extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 223;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 223;
 }

@@ -1,18 +1,20 @@
 <?php
 namespace Psalm\Internal\PluginManager\Command;
 
-use function array_keys;
-use function array_map;
-use function array_values;
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use function is_string;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
+use function array_keys;
+use function array_map;
+use function array_values;
+use function count;
+use function getcwd;
+use function is_string;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * @internal
@@ -28,10 +30,7 @@ class ShowCommand extends Command
         parent::__construct();
     }
 
-    /**
-     * @return void
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('show')
@@ -39,10 +38,7 @@ class ShowCommand extends Command
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
-    /**
-     * @return int
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
@@ -58,8 +54,10 @@ class ShowCommand extends Command
         $available = $plugin_list->getAvailable();
 
         $formatRow =
-            /** @param null|string $package */
-            function (string $class, $package): array {
+            /**
+             * @return array{0: null|string, 1: string}
+             */
+            function (string $class, ?string $package): array {
                 return [$package, $class];
             };
 

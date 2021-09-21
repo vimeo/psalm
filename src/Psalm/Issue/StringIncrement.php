@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class StringIncrement extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 211;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 211;
 }

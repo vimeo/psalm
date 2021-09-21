@@ -2,9 +2,11 @@
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+
 use function strpos;
 
 class ClassMoveTest extends \Psalm\Tests\TestCase
@@ -14,27 +16,21 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
+        RuntimeCaches::clearAll();
 
-        $this->file_provider = new Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
     }
 
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $input_code
-     * @param string $output_code
      * @param array<string, string> $constants_to_move
-     * @param array<string, string> $call_transforms
-     *
-     * @return void
      */
     public function testValidCode(
         string $input_code,
         string $output_code,
         array $constants_to_move
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -77,7 +73,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,array<string, string>}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'renameEmptyClass' => [
@@ -331,7 +327,7 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                         public static $one = "one";
 
                         /**
-                         * @var array<array-key, mixed>
+                         * @var array
                          */
                         public static $vars = ["one"];
                     }
@@ -712,6 +708,41 @@ class ClassMoveTest extends \Psalm\Tests\TestCase
                     }',
                 [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
+                ],
+            ],
+            'moveClassBewareOfPropertyNotSetInConstructorCheck' => [
+                '<?php
+                    namespace Foo {
+                        class Base
+                        {
+                            protected $property1;
+
+                            public function __construct()
+                            {
+                                $this->property1 = "";
+                            }
+                        }
+                    }
+                    namespace Foo {
+                        class Hello extends Base {}
+                    }',
+                '<?php
+                    namespace Foo {
+                        class Base
+                        {
+                            protected $property1;
+
+                            public function __construct()
+                            {
+                                $this->property1 = "";
+                            }
+                        }
+                    }
+                    namespace Foo\Bar {
+                        class Hello extends \Foo\Base {}
+                    }',
+                [
+                    'Foo\Hello' => 'Foo\Bar\Hello',
                 ],
             ],
         ];

@@ -13,13 +13,17 @@ It has a few features that go further than other similar tools:
 - **Property initialisation checks**<br />
   Psalm checks that all properties of a given object have values after the constructor is called.
 
-Psalm also has a few features to make it perform as well as possible on large codebases:
+- **Taint analysis**<br />
+  Psalm can [detect security vulnerabilities](https://psalm.dev/articles/detect-security-vulnerabilities-with-psalm) in your code.
+  
+- **Language Server**<br />
+  Psalm has a Language Server that’s [compatible with a range of different IDEs](https://psalm.dev/docs/running_psalm/language_server/).
 
-- **Multi-threaded mode**<br />
-  Wherever possible Psalm will run its analysis in parallel to save time. Useful for large codebases, it has a massive impact on performance.
-
-- **Incremental checks**<br />
-  When using the `--diff` command line option, Psalm will only analyse files that have changed *and* files that reference them.
+- **Automatic fixes**<br />
+  Psalm can [fix many of the issues it finds automatically](https://psalm.dev/docs/manipulating_code/fixing/).
+  
+- **Automatic refactoring**<br />
+  Psalm can also [perform simple refactors](https://psalm.dev/docs/manipulating_code/refactoring/) from the command line.
 
 ## Example output
 

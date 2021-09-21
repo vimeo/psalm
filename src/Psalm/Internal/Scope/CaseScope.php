@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Scope;
 
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 
@@ -10,11 +9,6 @@ use Psalm\Type;
  */
 class CaseScope
 {
-    /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $unreferenced_vars = [];
-
     /**
      * @var Context
      */
@@ -32,7 +26,6 @@ class CaseScope
 
     public function __destruct()
     {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->parent_context = null;
     }
 }

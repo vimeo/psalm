@@ -1,26 +1,27 @@
 <?php
 namespace Psalm\Tests;
 
-use function preg_quote;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+
+use function preg_quote;
 use function strpos;
+
+use const DIRECTORY_SEPARATOR;
 
 class UnusedVariableTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
-        $this->file_provider = new Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
@@ -30,7 +31,7 @@ class UnusedVariableTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.4');
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
@@ -40,9 +41,8 @@ class UnusedVariableTest extends TestCase
      * @param string $code
      * @param array<string> $error_levels
      *
-     * @return void
      */
-    public function testValidCode($code, array $error_levels = [])
+    public function testValidCode($code, array $error_levels = []): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -70,9 +70,8 @@ class UnusedVariableTest extends TestCase
      * @param string $error_message
      * @param array<string> $error_levels
      *
-     * @return void
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [])
+    public function testInvalidCode($code, $error_message, $error_levels = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -98,7 +97,7 @@ class UnusedVariableTest extends TestCase
     /**
      * @return array<string, array{string,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'arrayOffset' => [
@@ -152,10 +151,10 @@ class UnusedVariableTest extends TestCase
             ],
             'varRedefinedInIfWithReference' => [
                 '<?php
-                    $a = (string) "fdf";
+                    $a = (string) 5;
 
                     if (rand(0, 1)) {
-                        $a = (string) "ard";
+                        $a = (string) 6;
                     }
 
                     echo $a;',
@@ -216,14 +215,19 @@ class UnusedVariableTest extends TestCase
             ],
             'foreachReassigned' => [
                 '<?php
-                    $a = false;
+                    /**
+                     * @param list<int> $arr
+                     */
+                    function foo(array $arr) : void {
+                        $a = false;
 
-                    foreach ([1, 2, 3] as $b) {
-                        $a = true;
-                        echo $b;
-                    }
+                        foreach ($arr as $b) {
+                            $a = true;
+                            echo $b;
+                        }
 
-                    echo $a;',
+                        echo $a;
+                    }',
             ],
             'doWhileReassigned' => [
                 '<?php
@@ -431,8 +435,6 @@ class UnusedVariableTest extends TestCase
                     }
 
                     function callDangerous(): void {
-                        $s = null;
-
                         try {
                             $s = dangerous();
                         } catch (Exception $e) {
@@ -535,7 +537,6 @@ class UnusedVariableTest extends TestCase
                     'MixedAssignment',
                     'MixedMethodCall',
                     'MixedArrayOffset',
-                    'MixedTypeCoercion',
                 ],
             ],
             'globalVariableUsage' => [
@@ -733,6 +734,44 @@ class UnusedVariableTest extends TestCase
                     echo $a;
                     echo $b;',
             ],
+            'arrayVarAssignmentInFunctionAndReturned' => [
+                '<?php
+                    /**
+                     * @param array{string} $arr
+                     */
+                    function far(array $arr): string {
+                        [$a] = $arr;
+
+                        return $a;
+                    }',
+            ],
+            'arrayUnpackInForeach' => [
+                '<?php
+                    /**
+                     * @param list<array{string, string}> $arr
+                     */
+                    function far(array $arr): void {
+                        foreach ($arr as [$a, $b]) {
+                            echo $a;
+                            echo $b;
+                        }
+                    }',
+            ],
+            'arrayAssignmentInFunctionCoerced' => [
+                '<?php
+                    class A {
+                        public int $a = 0;
+                        public int $b = 1;
+
+                        function setPhpVersion(string $version): void {
+                            [$a, $b] = explode(".", $version);
+
+                            $this->a = (int) $a;
+                            $this->b = (int) $b;
+                        }
+                    }
+                    '
+            ],
             'varCheckAfterNestedAssignmentAndBreak' => [
                 '<?php
                     $a = false;
@@ -799,19 +838,23 @@ class UnusedVariableTest extends TestCase
             ],
             'echoVarWithAdditionOp' => [
                 '<?php
-                    function foo(int $i) : void {
-                        echo $i;
-                    }
                     $a = 5;
-                    foo($a += 1);',
+
+                    while (rand(0, 1)) {
+                        echo($a += 1);
+                    }',
             ],
             'echoVarWithIncrement' => [
                 '<?php
                     function foo(int $i) : void {
                         echo $i;
                     }
+
                     $a = 5;
-                    foo(++$a);',
+
+                    while (rand(0, 1)) {
+                        foo(++$a);
+                    }',
             ],
             'afterMethodExistsCheck' => [
                 '<?php
@@ -890,6 +933,16 @@ class UnusedVariableTest extends TestCase
                     $i = 0;
                     $a = function () use (&$i) : void {
                         $i = 1;
+                    };
+                    $a();
+                    /** @psalm-suppress MixedArgument */
+                    echo $i;',
+            ],
+            'regularVariableClosureUseInAddition' => [
+                '<?php
+                    $i = 0;
+                    $a = function () use ($i) : int {
+                        return $i + 1;
                     };
                     $a();',
             ],
@@ -1005,9 +1058,10 @@ class UnusedVariableTest extends TestCase
             ],
             'varPassedByRef' => [
                 '<?php
-                    function foo(array $b) : void {
-                        $a = &$b;
-                        $a["foo"] = 5;
+                    function foo(array $returned) : array {
+                        $ancillary = &$returned;
+                        $ancillary["foo"] = 5;
+                        return $returned;
                     }',
             ],
             'usedAsMethodName' => [
@@ -1227,6 +1281,7 @@ class UnusedVariableTest extends TestCase
                             $a = 4;
                             throw new Exception("bad");
                         } finally {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
                             echo $a;
                         }
                     }'
@@ -1294,15 +1349,14 @@ class UnusedVariableTest extends TestCase
             'usedInNewCall' => [
                 '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedMethodCall
-                     * @psalm-suppress MissingParamType
                      * @psalm-suppress MixedArgument
                      * @psalm-suppress PossiblyNullArgument
+                     * @param mixed $mixed
+                     * @param mixed|null $mixed_or_null
                      */
-                    function foo($a): void {
-                        $m = $_GET["m"] ?? null;
-                        $a->foo(new Exception($m));
+                    function foo($mixed, $mixed_or_null): void {
+                        $mixed->foo(new Exception($mixed_or_null));
                     }',
             ],
             'validMixedAnnotation' => [
@@ -1316,7 +1370,14 @@ class UnusedVariableTest extends TestCase
                         echo gettype($k);
                     }'
             ],
-            'byRefVariableAfterAssignment' => [
+            'byRefVariableAfterAssignmentToArray' => [
+                '<?php
+                    $a = [1, 2, 3];
+                    $b = &$a[1];
+                    $b = 5;
+                    print_r($a);'
+            ],
+            'byRefVariableAfterAssignmentToProperty' => [
                 '<?php
                     class A {
                         public string $value = "";
@@ -1383,13 +1444,35 @@ class UnusedVariableTest extends TestCase
                     $a = 0;
                     for ($i = 0; $i < 1000; $i++) {
                         if (rand(0, 1)) {
-                            $a = $a + $i;
+                            $a = $a + 1;
                             continue;
                         }
                         break;
                     }
 
                     echo $a;'
+            ],
+            'usedForVariableMinusString' => [
+                '<?php
+                    function foo(string $limit) : void {
+                        /**
+                         * @psalm-suppress InvalidOperand
+                         */
+                        for ($i = $limit; $i > 0; $i--) {
+                            echo $i . "\n";
+                        }
+                    }'
+            ],
+            'usedForVariablePlusString' => [
+                '<?php
+                    function foo(string $limit) : void {
+                        /**
+                         * @psalm-suppress InvalidOperand
+                         */
+                        for ($i = $limit; $i < 50; $i++) {
+                            echo $i . "\n";
+                        }
+                    }'
             ],
             'breakInForeachInsideSwitch' => [
                 '<?php
@@ -1407,6 +1490,37 @@ class UnusedVariableTest extends TestCase
                         }
                     }'
             ],
+            'passedByRefSimpleUndefinedBefore' => [
+                '<?php
+                    takes_ref($a);
+
+                    function takes_ref(?array &$p): void {
+                        $p = [0];
+                    }'
+            ],
+            'passedByRefSimpleDefinedBefore' => [
+                '<?php
+                    $a = [];
+                    takes_ref($a);
+
+                    function takes_ref(?array &$p): void {
+                        $p = [0];
+                    }'
+            ],
+            'passedByRefSimpleDefinedBeforeWithExtract' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        while (rand(0, 1)) {
+                            /** @psalm-suppress MixedArgument */
+                            extract($arr);
+                            $a = [];
+                            takes_ref($a);
+                        }
+                    }
+
+                    /** @param mixed $p */
+                    function takes_ref(&$p): void {}'
+            ],
             'passedByRefArrayOffset' => [
                 '<?php
                     $a = [
@@ -1418,6 +1532,7 @@ class UnusedVariableTest extends TestCase
                         takes_ref($a[$e]);
                     }
 
+                    /** @param array<string|int> $p */
                     function takes_ref(array &$p): void {
                         echo implode(",", $p);
                     }'
@@ -1435,6 +1550,14 @@ class UnusedVariableTest extends TestCase
                         } while (rand(0,1));
 
                         if ($f) {}
+                    }'
+            ],
+            'usedParamInWhileAddition' => [
+                '<?php
+                    function foo(int $index): void {
+                        while ($index++ <= 100) {
+                            //
+                        }
                     }'
             ],
             'usedParamInWhileDirectly' => [
@@ -1479,13 +1602,843 @@ class UnusedVariableTest extends TestCase
                         return $nextKey;
                     }'
             ],
+            'variableUsedIndirectly' => [
+                '<?php
+                    $a = 0;
+
+                    while (rand(0,1)){
+                        $b = $a + 1;
+                        echo $b;
+                        $a = $b;
+                    }',
+            ],
+            'arrayMapClosureWithParamType' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function(int $i) {
+                            return $i * 3;
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+            ],
+            'arrayMapClosureWithoutParamType' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function($i) {
+                            return $i * 3;
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+            ],
+            'unusedArrayAdditionWithArrayChecked' => [
+                '<?php
+                    $a = [];
+
+                    while (rand(0,1)) {
+                        $a[] = 1;
+                    }
+
+                    if ($a) {}',
+            ],
+            'usedArrayRecursiveAddition' => [
+                '<?php
+                    $a = [];
+
+                    while (rand(0,1)) {
+                        $a[] = $a;
+                    }
+
+                    print_r($a);',
+            ],
+            'usedImmutableProperty' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Clause {
+                        /**
+                         * @var array<int, int>
+                         */
+                        public $b = [];
+                    }
+
+                    function foo(Clause $c, int $var): void {
+                        $new_b = $c->b;
+
+                        if (isset($c->b[0])) {
+                            $new_b[$var] = 0;
+                        }
+
+                        if ($new_b) {}
+                    }',
+            ],
+            'arrayAssignOpAdditionInsideLoop' => [
+                '<?php
+                    /**
+                     * @param array<string, string> $arr0
+                     * @param array<string, string> $arr1
+                     * @param array<string, string> $arr2
+                     * @return void
+                     */
+                    function parp(array $arr0, array $arr1, array $arr2) {
+                        $arr3 = $arr0;
+
+                        foreach ($arr1 as $a) {
+                            echo $a;
+                            $arr3 += $arr2;
+                        }
+
+                        if ($arr3) {}
+                    }',
+            ],
+            'arrayAdditionInsideLoop' => [
+                '<?php
+                    /**
+                     * @param array<string, string> $arr0
+                     * @param array<string, string> $arr1
+                     * @param array<string, string> $arr2
+                     * @return void
+                     */
+                    function parp(array $arr0, array $arr1, array $arr2) {
+                        $arr3 = $arr0;
+
+                        foreach ($arr1 as $a) {
+                            echo $a;
+                            $arr3 = $arr3 + $arr2;
+                        }
+
+                        if ($arr3) {}
+                    }',
+            ],
+            'checkValueBeforeAdding' => [
+                '<?php
+                    class T {
+                        public bool $b = false;
+                    }
+
+                    function foo(
+                        ?T $t
+                    ): void {
+                        if (!$t) {
+                            $t = new T();
+                        } elseif (rand(0, 1)) {
+                            //
+                        }
+
+                        if ($t->b) {}
+                    }'
+            ],
+            'loopOverUnknown' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    function foo(Traversable $t) : void {
+                        foreach ($t as $u) {
+                            if ($u instanceof stdClass) {}
+                        }
+                    }'
+            ],
+            'loopWithRequire' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UnresolvableInclude
+                     */
+                    function foo(string $delta_file) : void {
+                        while (rand(0, 1)) {
+                            /**
+                             * @var array<string, mixed>
+                             */
+                            $diff_call_map = require($delta_file);
+
+                            foreach ($diff_call_map as $key => $_) {
+                                $cased_key = strtolower($key);
+                                echo $cased_key;
+                            }
+                        }
+                    }',
+            ],
+            'loopAgain' => [
+                '<?php
+                    /** @param non-empty-list<string> $lines */
+                    function parse(array $lines) : array {
+                        $last = 0;
+                        foreach ($lines as $k => $line) {
+                            if (rand(0, 1)) {
+                                $last = $k;
+                            } elseif (rand(0, 1)) {
+                                $last = 0;
+                            } elseif ($last !== 0) {
+                                $lines[$last] .= $line;
+                            }
+                        }
+
+                        return $lines;
+                    }'
+            ],
+            'necessaryVarAnnotation' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        /** @var int $key */
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
+                    }'
+            ],
+            'continuingEducation' => [
+                '<?php
+                    function breakUpPathIntoParts(): void {
+                        $b = false;
+
+                        while (rand(0, 1)) {
+                            if ($b) {
+                                if (rand(0, 1)) {
+                                    $b = 0;
+                                }
+
+                                echo "hello";
+
+                                continue;
+                            }
+
+                            $b = true;
+                        }
+                    }'
+            ],
+            'usedInBinaryOp' => [
+                '<?php
+                    function foo(int $a, int $b) : int {
+                        $a |= $b;
+                        return $a;
+                    }'
+            ],
+            'reassignedInFinally' => [
+                '<?php
+                    function getRows(int $s) : void {
+                        try {}
+                        finally {
+                            $s = $s + 3;
+                        }
+
+                        echo $s;
+                    }'
+            ],
+            'divAssignOp' => [
+                '<?php
+                    function hslToRgb(float $hue): float {
+                        $hue /= 360;
+
+                        return $hue;
+                    }'
+            ],
+            'concatAssignOp' => [
+                '<?php
+                    function hslToRgb(string $hue): string {
+                        $hue .= "hello";
+
+                        return $hue;
+                    }'
+            ],
+            'possiblyUndefinedVariableUsed' => [
+                '<?php
+                    function foo(string $a): void {
+                        if ($a === "a") {
+                            $hue = "hello";
+                        } elseif ($a === "b") {
+                            $hue = "goodbye";
+                        }
+
+                        /**
+                         * @psalm-suppress PossiblyUndefinedVariable
+                         * @psalm-suppress MixedArgument
+                         */
+                        echo $hue;
+                    }'
+            ],
+            'possiblyUndefinedVariableUsedInUnknownMethod' => [
+                '<?php
+                    function foo(string $a, object $b): void {
+                        if ($a === "a") {
+                            $hue = "hello";
+                        } elseif ($a === "b") {
+                            $hue = "goodbye";
+                        }
+
+                        /**
+                         * @psalm-suppress PossiblyUndefinedVariable
+                         * @psalm-suppress MixedMethodCall
+                         */
+                        $b->foo($hue);
+                    }'
+            ],
+            'usedAsArrayKey' => [
+                '<?php
+                    function hslToRgb(string $hue, string $lightness): array {
+                        $arr = [$hue => $lightness];
+                        return $arr;
+                    }'
+            ],
+            'assignToGlobalVar' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    function foo(array $args) : void {
+                        foreach ($args as $key => $value) {
+                            $_GET[$key] = $value;
+                        }
+                    }'
+            ],
+            'assignToArrayTwice' => [
+                '<?php
+                    function foo(string $c): void {
+                        $arr = [$c];
+                        $arr[] = 1;
+
+                        foreach ($arr as $e) {
+                            echo $e;
+                        }
+                    }'
+            ],
+            'classPropertyThing' => [
+                '<?php
+                    function foo(): string {
+                        $notice  = "i";
+                        $notice .= "j";
+                        $notice .= "k";
+                        $notice .= "l";
+                        $notice .= "m";
+                        $notice .= "n";
+                        $notice .= "o";
+                        $notice .= "p";
+                        $notice .= "q";
+                        $notice .= "r";
+                        $notice .= "s";
+
+                        return $notice;
+                    }'
+            ],
+            'usedInIsset' => [
+                '<?php
+                    function foo(int $i): void {
+                        if ($i === 0) {
+                            $j = "hello";
+                        } elseif ($i === 1) {
+                            $j = "goodbye";
+                        }
+
+                        if (isset($j)) {
+                            /** @psalm-suppress MixedArgument */
+                            echo $j;
+                        }
+                    }'
+            ],
+            'byRefNestedArrayParam' => [
+                '<?php
+                    function foo(array &$arr): void {
+                        $b = 5;
+                        $arr[0] = $b;
+                    }'
+            ],
+            'byRefNestedArrayInForeach' => [
+                '<?php
+                    function foo(array $arr): array {
+                        /**
+                         * @psalm-suppress MixedAssignment
+                         * @psalm-suppress MixedArrayAssignment
+                         */
+                        foreach ($arr as &$element) {
+                            $b = 5;
+                            $element[0] = $b;
+                        }
+
+                        return $arr;
+                    }'
+            ],
+            'instantArrayAssignment' => [
+                '<?php
+                    function foo(string $b) : array {
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $arr["foo"] = $b;
+
+                        return $arr;
+                    }',
+            ],
+            'explodeSource' => [
+                '<?php
+                    $start = microtime();
+                    $start = explode(" ", $start);
+                    /**
+                     * @psalm-suppress InvalidOperand
+                     */
+                    $start = $start[1] + $start[0];
+                    echo $start;'
+            ],
+            'csvByRefForeach' => [
+                '<?php
+                    function foo(string $value) : array {
+                        $arr = str_getcsv($value);
+
+                        foreach ($arr as &$element) {
+                            $element = $element ?: "foo";
+                        }
+
+                        return $arr;
+                    }'
+            ],
+            'memoryFree' => [
+                '<?php
+                    function verifyLoad(string $free) : void {
+                        $free = explode("\n", $free);
+
+                        $parts_mem = preg_split("/\s+/", $free[1]);
+
+                        $free_mem = $parts_mem[3];
+                        $total_mem = $parts_mem[1];
+
+                        /** @psalm-suppress InvalidOperand */
+                        $used_mem  = ($total_mem - $free_mem) / $total_mem;
+
+                        echo $used_mem;
+                    }'
+            ],
+            'returnNotBool' => [
+                '<?php
+                    function verifyLoad(bool $b) : bool {
+                        $c = !$b;
+                        return $c;
+                    }'
+            ],
+            'sourcemaps' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     * @psalm-suppress MixedArgument
+                     * @param iterable<mixed, int> $keys
+                     */
+                    function foo(iterable $keys, int $colno) : void {
+                        $i = 0;
+                        $key = 0;
+                        $index = 0;
+
+                        foreach ($keys as $index => $key) {
+                            if ($key === $colno) {
+                                $i = $index;
+                                break;
+                            } elseif ($key > $colno) {
+                                $i = $index;
+                                break;
+                            }
+                        }
+
+                        echo $i;
+                        echo $index;
+                        echo $key;
+                    }'
+            ],
+            'whileLoopVarUpdatedInWhileLoop' => [
+                '<?php
+                    /** @param non-empty-list<int> $arr */
+                    function foo(array $arr) : void {
+                        while ($a = array_pop($arr)) {
+                            if ($a === 4) {
+                                $arr = array_merge($arr, ["a", "b", "c"]);
+                                continue;
+                            }
+
+                            echo "here";
+                        }
+                    }'
+            ],
+            'usedThroughParamByRef' => [
+                '<?php
+                    $arr = [];
+
+                    $populator = function(array &$arr): void {
+                        $arr[] = 5;
+                    };
+
+                    $populator($arr);
+
+                    print_r($arr);'
+            ],
+            'maybeUndefinedCheckedWithEmpty' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (empty($maybe_undefined)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithEmptyOrRand' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (empty($maybe_undefined) || rand(0, 1)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithNotIsset' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        if (!isset($maybe_undefined)) {
+                            $maybe_undefined = [0];
+                        }
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'maybeUndefinedCheckedWithImplicitIsset' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (rand(0, 1)) {
+                            $maybe_undefined = $arr;
+                        }
+
+                        /** @psalm-suppress MixedAssignment */
+                        $maybe_undefined = $maybe_undefined ?? [0];
+
+                        print_r($maybe_undefined);
+                    }'
+            ],
+            'usedInGlobalAfterAssignOp' => [
+                '<?php
+                    $total = 0;
+                    $foo = &$total;
+
+                    $total = 5;
+
+                    echo $foo;'
+            ],
+            'takesByRefThing' => [
+                '<?php
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $c = 5;
+                        }
+
+                        takesByRef($c);
+                        echo $c;
+                    }
+
+                    /**
+                     * @psalm-param-out int $c
+                     */
+                    function takesByRef(?int &$c) : void {
+                        $c = 7;
+                    }'
+            ],
+            'clips' => [
+                '<?php declare(strict_types=1);
+                    function foo(array $clips) : void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($clips as &$clip) {
+                            /** @psalm-suppress MixedArgument */
+                            if (!empty($clip)) {
+                                $legs = explode("/", $clip);
+                                $clip_id = $clip = $legs[1];
+
+                                if ((is_numeric($clip_id) || $clip = (new \Exception($clip_id)))) {}
+
+                                print_r($clips);
+                            }
+                        }
+                    }'
+            ],
+            'validator' => [
+                '<?php
+                    /**
+                     * @param bool $b
+                     */
+                    function validate($b, string $source) : void {
+                        /**
+                         * @psalm-suppress DocblockTypeContradiction
+                         * @psalm-suppress MixedAssignment
+                         */
+                        if (!is_bool($b)) {
+                            $source = $b;
+                        }
+
+                        print_r($source);
+                    }'
+            ],
+            'implicitSpread' => [
+                '<?php
+                    function validate(bool $b, bool $c) : void {
+                        $d = [$b, $c];
+                        print_r(...$d);
+                    }'
+            ],
+            'explicitSpread' => [
+                '<?php
+                    function f(): array {
+                        $s = [1, 2, 3];
+                        $b = ["a", "b", "c"];
+
+                        $r = [...$s, ...$b];
+                        return $r;
+                    }'
+            ],
+            'funcGetArgs' => [
+                '<?php
+                    function validate(bool $b, bool $c) : void {
+                        /** @psalm-suppress MixedArgument */
+                        print_r(...func_get_args());
+                    }'
+            ],
+            'nullCoalesce' => [
+                '<?php
+                    function foo (?bool $b, int $c): void {
+                        $b ??= $c;
+
+                        echo $b;
+                    }'
+            ],
+            'arrowFunctionImplicitlyUsedVar' => [
+                '<?php
+                    function test(Exception $e): callable {
+                        return fn() => $e->getMessage();
+                    }'
+            ],
+            'useImmutableGetIteratorInForeach' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A implements IteratorAggregate
+                    {
+                        /**
+                         * @return Iterator<int>
+                         */
+                        public function getIterator() {
+                            yield from [1, 2, 3];
+                        }
+                    }
+
+                    $a = new A();
+
+                    foreach ($a as $v) {
+                        echo $v;
+                    }'
+            ],
+            'castToBoolAndDouble' => [
+                '<?php
+                    function string_to_bool(string $a): bool {
+                        $b = (bool)$a;
+                        return $b;
+                    }
+
+                    function string_to_float(string $a): float {
+                        $b = (float)$a;
+                        return $b;
+                    }'
+            ],
+            'allowUseByRef' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedReturnStatement
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function foo(array $data) : array {
+                        $output = [];
+
+                        array_map(
+                            function (array $row) use (&$output) {
+                                $output = $row;
+                            },
+                            $data
+                        );
+
+                        return $output;
+                    }'
+            ],
+            'allowedUseByRefArrayAssignment' => [
+                '<?php
+                    $output_rows = [];
+
+                    $a = function() use (&$output_rows) : void {
+                        $output_row = 5;
+                        /** @psalm-suppress MixedArrayAssignment */
+                        $output_rows[] = $output_row;
+                    };
+                    $a();
+
+                    print_r($output_rows);'
+            ],
+            'usedInAssignOpToByRef' => [
+                '<?php
+                    function foo(int &$d): void  {
+                        $l = 4;
+                        $d += $l;
+                    }',
+            ],
+            'mixedArrayAccessMighBeObject' => [
+                '<?php
+                    function takesResults(array $arr) : void {
+                        /**
+                         * @psalm-suppress MixedAssignment
+                         */
+                        foreach ($arr as $item) {
+                            /**
+                             * @psalm-suppress MixedArrayAccess
+                             * @psalm-suppress MixedArrayAssignment
+                             */
+                            $item[0] = $item[1];
+                        }
+                    }'
+            ],
+            'usedThrow' => [
+                '<?php
+                    function f(Exception $e): void {
+                        throw $e;
+                    }
+                ',
+            ],
+            'usedThrowInReturnedCallable' => [
+                '<?php
+                    function createFailingFunction(RuntimeException $exception): Closure
+                    {
+                        return static function () use ($exception): void {
+                            throw $exception;
+                        };
+                    }
+                ',
+            ],
+            'usedInIntCastInAssignment' => [
+                '<?php
+                    /** @return mixed */
+                    function f() {
+                        $a = random_int(0, 10) >= 5 ? true : false;
+
+                        $b = (int) $a;
+
+                        return $b;
+                    }
+                '
+            ],
+            'promotedPropertiesAreNeverMarkedAsUnusedParams' => [
+                '<?php
+                    class Container {
+                        private function __construct(
+                            public float $value
+                        ) {}
+
+                        public static function fromValue(float $value): self {
+                            return new self($value);
+                        }
+                    }'
+            ],
+            'noUnusedVariableDefinedInBranchOfIf' => [
+                '<?php
+                    abstract class Foo {
+                        abstract function validate(): bool|string;
+                        abstract function save(): bool|string;
+
+                        function bar(): int {
+                            if (($result = $this->validate()) && ($result = $this->save())) {
+                                return 0;
+                            } elseif (is_string($result)) {
+                                return 1;
+                            } else {
+                                return 2;
+                            }
+                        }
+                    }'
+            ],
+            'concatWithUnknownProperty' => [
+                '<?php
+                    /** @param array<string> $key */
+                    function foo(object $a, string $k) : string {
+                        $sortA = "";
+
+                        /** @psalm-suppress MixedOperand */
+                        $sortA .= $a->$k;
+
+                        return $sortA;
+                    }'
+            ],
+            'varDocblockVariableIsUsedByRef' => [
+                '<?php
+                    /** @param array<string|int> $arr */
+                    function foo(array $arr) : string {
+                        /** @var string $val */
+                        foreach ($arr as &$val) {
+                            $val = urlencode($val);
+                        }
+                        return implode("/", $arr);
+                    }'
+            ],
+            'initVariableInOffset'  => [
+                '<?php
+                    $a = [
+                        $b = "b" => $b,
+                    ];
+
+                    foreach ($a as $key => $value) {
+                        echo $key . " " . $value;
+                    }',
+            ],
+            'intAndBitwiseNotOperator' => [
+                '<?php
+                    function foo() : int
+                    {
+                        $bitmask = 0x1;
+                        $bytes = 2;
+                        $ret = $bytes | ~$bitmask;
+                        return $ret;
+                    }'
+            ],
+            'stringAndBitwiseAndOperator' => [
+                '<?php
+                    function randomBits() : string
+                    {
+                        $bitmask = \chr(0xFF >> 1);
+
+                        $randomBytes    = random_bytes(1);
+                        $randomBytes[0] = $randomBytes[0] & $bitmask;
+
+                        return $randomBytes;
+                    }'
+            ],
+            'globalChangeValue' => [
+                '<?php
+                    function setProxySettingsFromEnv(): void {
+                        global $a;
+
+                        $a = false;
+                    }'
+            ],
         ];
     }
 
     /**
      * @return array<string,array{string,error_message:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): array
     {
         return [
             'simpleUnusedVariable' => [
@@ -2058,7 +3011,7 @@ class UnusedVariableTest extends TestCase
                             $i = $i;
                         }
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
             ],
             'detectUnusedVariableInsideLoopAfterAssignmentWithAddition' => [
                 '<?php
@@ -2067,7 +3020,7 @@ class UnusedVariableTest extends TestCase
                             $i = $i + 1;
                         }
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
             ],
             'detectUnusedVariableInsideLoopCalledInFunction' => [
                 '<?php
@@ -2168,7 +3121,30 @@ class UnusedVariableTest extends TestCase
                         }
                         return 4;
                     }',
-                'error_message' => 'UnusedVariable',
+                'error_message' => 'UnusedForeachValue',
+            ],
+            'conditionalForeachWithUnusedValue' => [
+                '<?php
+                    if (rand(0, 1) > 0) {
+                        foreach ([1, 2, 3] as $val) {}
+                    }
+                ',
+                'error_message' => 'UnusedForeachValue',
+            ],
+            'doubleForeachWithInnerUnusedValue' => [
+                '<?php
+                    /**
+                     * @param non-empty-list<list<int>> $arr
+                     * @return list<int>
+                     */
+                    function f(array $arr): array {
+                        foreach ($arr as $elt) {
+                            foreach ($elt as $subelt) {}
+                        }
+                        return $elt;
+                    }
+                ',
+                'error_message' => 'UnusedForeachValue'
             ],
             'defineInBothBranchesOfConditional' => [
                 '<?php
@@ -2215,6 +3191,226 @@ class UnusedVariableTest extends TestCase
                         echo $s;
                     }',
                 'error_message' => 'UnnecessaryVarAnnotation',
+            ],
+            'arrowFunctionUnusedVariable' => [
+                '<?php
+                    function f(callable $c): void {
+                        $c(22);
+                    }
+
+                    f(
+                        fn(int $p)
+                            =>
+                            ++$p
+                    );',
+                'error_message' => 'UnusedVariable',
+            ],
+            'arrowFunctionUnusedParam' => [
+                '<?php
+                    function f(callable $c): void {
+                        $c(22);
+                    }
+
+                    f(
+                        fn(int $p)
+                            =>
+                            0
+                    );',
+                'error_message' => 'UnusedClosureParam',
+            ],
+            'unusedFunctionParamWithDefault' => [
+                '<?php
+                    function foo(bool $b = false) : void {}',
+                'error_message' => 'UnusedParam',
+            ],
+            'arrayMapClosureWithParamTypeNoUse' => [
+                '<?php
+                    $a = [1, 2, 3];
+
+                    $b = array_map(
+                        function(int $i) {
+                            return rand(0, 5);
+                        },
+                        $a
+                    );
+
+                    foreach ($b as $c) {
+                        echo $c;
+                    }',
+                'error_message' => 'UnusedClosureParam',
+            ],
+            'noUseOfInstantArrayAssignment' => [
+                '<?php
+                    function foo() : void {
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $arr["foo"] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'expectsNonNullAndPassedPossiblyNull' => [
+                '<?php
+                    /**
+                     * @param mixed|null $mixed_or_null
+                     */
+                    function foo($mixed_or_null): Exception {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        return new Exception($mixed_or_null);
+                    }',
+                'error_message' => 'PossiblyNullArgument'
+            ],
+            'useArrayAssignmentNeverUsed' => [
+                '<?php
+                    $data = [];
+
+                    return function () use ($data) {
+                        $data[] = 1;
+                    };',
+                'error_message' => 'UnusedVariable',
+            ],
+            'warnAboutOriginalBadArray' => [
+                '<?php
+                    function takesArray(array $arr) : void {
+                        foreach ($arr as $a) {}
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+            ],
+            'warnAboutOriginalBadFunctionCall' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutOriginalBadStaticCall' => [
+                '<?php
+                    class A {
+                        public static function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = A::makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+            ],
+            'warnAboutOriginalBadInstanceCall' => [
+                '<?php
+                    class A {
+                        public function makeArray() : array {
+                            return ["hello"];
+                        }
+                    }
+
+                    $arr = (new A)->makeArray();
+
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+            ],
+            'warnAboutDocblockReturnType' => [
+                '<?php
+                    /** @return array[] */
+                    function makeArray() : array {
+                        return [["hello"]];
+                    }
+
+                    $arr = makeArray();
+
+                    foreach ($arr as $some_arr) {
+                        foreach ($some_arr as $a) {
+                            echo $a;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+            ],
+            'warnAboutMixedArgument' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ($arr as $a) {
+                        echo $a;
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutMixedMethodCall' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    $arr = makeArray();
+
+                    /** @psalm-suppress MixedAssignment */
+                    foreach ($arr as $a) {
+                        $a->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutMixedReturnStatement' => [
+                '<?php
+                    function makeArray() : array {
+                        return ["hello"];
+                    }
+
+                    function foo() : string {
+                        $arr = makeArray();
+
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($arr as $a) {
+                            return $a;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+            ],
+            'warnAboutIterableKeySource' => [
+                '<?php
+                    function foo(iterable $arr) : void {
+                        foreach ($arr as $key => $_) {}
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
+            ],
+            'warnAboutMixedKeySource' => [
+                '<?php
+                    /** @param mixed $arr */
+                    function foo($arr) : void {
+                        foreach ($arr as $key => $_) {}
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+            ],
+            'warnAboutMixedArgumentTypeCoercionSource' => [
+                '<?php
+                    /** @param array<string> $arr */
+                    function takesArrayOfString(array $arr) : void {
+                        foreach ($arr as $a) {
+                            echo $a;
+                        }
+                    }
+
+                    /** @param mixed $a */
+                    function takesArray($a) : void {
+                        $arr = [$a];
+                        takesArrayOfString($arr);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, parent type array{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
             ],
         ];
     }

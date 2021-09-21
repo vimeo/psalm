@@ -5,6 +5,6 @@ namespace Psalm\Issue;
 
 class UndefinedTrace extends CodeIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 225;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 225;
 }

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class ImplementedReturnTypeMismatch extends CodeIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 123;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 123;
 }

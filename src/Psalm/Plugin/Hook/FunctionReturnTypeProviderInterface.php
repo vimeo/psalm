@@ -7,10 +7,11 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 
@@ -19,9 +20,7 @@ interface FunctionReturnTypeProviderInterface
      * return but another plugin may be able to determine the type, return null. Otherwise return a mixed union type
      * if something should be returned, but can't be more specific.
      *
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
+     * @param  list<PhpParser\Node\Arg>    $call_args
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,
@@ -29,5 +28,5 @@ interface FunctionReturnTypeProviderInterface
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    );
+    ): ?Type\Union;
 }

@@ -2,15 +2,13 @@
 namespace Psalm\Report;
 
 use Psalm\Config;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Report;
-use Psalm\Internal\Analyzer\TaintNodeData;
+
 use function substr;
 
 class ConsoleReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';
@@ -33,11 +31,12 @@ class ConsoleReport extends Report
             $issue_string .= 'INFO';
         }
 
-        $issue_reference = ' (see ' . $issue_data->link . ')';
+        $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
         $issue_string .= ': ' . $issue_data->type
             . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
             . ' - ' . $issue_data->message . $issue_reference . "\n";
+
 
         if ($issue_data->taint_trace) {
             $issue_string .= $this->getTaintSnippets($issue_data->taint_trace);
@@ -56,18 +55,26 @@ class ConsoleReport extends Report
             }
         }
 
+        if ($issue_data->other_references) {
+            if ($this->show_snippet) {
+                $issue_string .= "\n";
+            }
+
+            $issue_string .= $this->getTaintSnippets($issue_data->other_references);
+        }
+
         return $issue_string;
     }
 
     /**
-     * @param non-empty-list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     private function getTaintSnippets(array $taint_trace) : string
     {
         $snippets = '';
 
         foreach ($taint_trace as $node_data) {
-            if ($node_data instanceof TaintNodeData) {
+            if ($node_data instanceof DataFlowNodeData) {
                 $snippets .= '  ' . $node_data->label
                     . ' - ' . $node_data->file_name
                     . ':' . $node_data->line_from

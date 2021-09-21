@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Tests\Template;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
+
+use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateTest extends TestCase
 {
@@ -13,9 +14,89 @@ class ClassTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
+            'cachingIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new CachingIterator($arrayIterator);
+                    $next = $decoratorIterator->hasNext();
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
+                    '$next' => 'bool',
+                ],
+            ],
+            'infiniteIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new InfiniteIterator($arrayIterator);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
+                ],
+            ],
+            'limitIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new LimitIterator($arrayIterator, 1, 1);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
+                ],
+            ],
+            'callbackFilterIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new CallbackFilterIterator(
+                        $arrayIterator,
+                        static function (string $value): bool {return "a" === $value;}
+                    );
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
+                ],
+            ],
+            'noRewindIterator' => [
+                '<?php
+
+                    $input = range("a", "z");
+
+                    $arrayIterator = new ArrayIterator($input);
+                    $decoratorIterator = new NoRewindIterator($arrayIterator);
+                    $key = $decoratorIterator->key();
+                    $value = $decoratorIterator->current();
+                ',
+                'assertions' => [
+                    '$key' => 'int|null',
+                    '$value' => 'null|string',
+                ],
+            ],
             'classTemplate' => [
                 '<?php
                     class A {}
@@ -31,8 +112,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -50,7 +130,10 @@ class ClassTemplateTest extends TestCase
 
                     $at = "A";
 
-                    /** @var Foo<A> */
+                    /**
+                     * @var Foo<A>
+                     * @psalm-suppress ArgumentTypeCoercion
+                     */
                     $afoo = new Foo($at);
                     $afoo_bar = $afoo->bar();
 
@@ -77,7 +160,6 @@ class ClassTemplateTest extends TestCase
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
                     'DocblockTypeContradiction',
-                    'TypeCoercion',
                 ],
             ],
             'classTemplateSelfs' => [
@@ -90,8 +172,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -162,8 +243,7 @@ class ClassTemplateTest extends TestCase
                         public $T;
 
                         /**
-                         * @param class-string $T
-                         * @template-typeof T $T
+                         * @param class-string<T> $T
                          */
                         public function __construct(string $T) {
                             $this->T = $T;
@@ -319,6 +399,7 @@ class ClassTemplateTest extends TestCase
                      * @template TKey as array-key
                      * @template TValue
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class ArrayCollection {
                         /** @var array<TKey,TValue> */
@@ -911,7 +992,7 @@ class ClassTemplateTest extends TestCase
                     '$id' => 'array-key',
                 ],
             ],
-            'templateObjectLikeValues' => [
+            'templateTKeyedArrayValues' => [
                 '<?php
                     /**
                      * @template TKey
@@ -966,7 +1047,7 @@ class ClassTemplateTest extends TestCase
 
                     $c = new C();',
                 'assertions' => [
-                    '$c===' => 'C<string(hello)>',
+                    '$c===' => 'C<"hello">',
                 ],
             ],
             'SKIPPED-templateDefaultConstant' => [
@@ -1397,6 +1478,43 @@ class ClassTemplateTest extends TestCase
                     '$a_or_b' => 'A|B',
                 ],
             ],
+            'doNotCombineTypesWhenMemoized' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T
+                     */
+                    class C {
+                        /**
+                         * @var T
+                         */
+                        private $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @return T
+                         * @psalm-mutation-free
+                         */
+                        public function get() {
+                            return $this->t;
+                        }
+                    }
+
+                    /** @var C<A>|C<B> $random_collection **/
+                    $a_or_b = $random_collection->get();',
+                [
+                    '$random_collection' => 'C<A>|C<B>',
+                    '$a_or_b' => 'A|B',
+                ],
+            ],
             'inferClosureParamTypeFromContext' => [
                 '<?php
                     /**
@@ -1515,14 +1633,7 @@ class ClassTemplateTest extends TestCase
                          * @return scalar|array|object|null
                          */
                         public function __get(string $property) {
-                            return $this->data[$property] ?? null;
-                        }
-
-                        /**
-                         * @param scalar|array|object|null $value
-                         */
-                        public function __set(string $property, $value) {
-                            $this->data[$property] = $value;
+                            return isset($this->data[$property]) ? $this->data[$property] : null;
                         }
                     }',
             ],
@@ -1775,14 +1886,16 @@ class ClassTemplateTest extends TestCase
                      */
                     class Foo {
                         /**
-                         * @psalm-return callable(): ?T
+                         * @psalm-return callable(T): ?T
                          */
                         public function bar() {
                             return
-                                /** @psalm-return ?T */
-                                function() {
-                                    /** @psalm-var ?T */
-                                    $data = null;
+                                /**
+                                 * @param T $data
+                                 * @return ?T
+                                 */
+                                function($data) {
+                                    $data = rand(0, 1) ? $data : null;
                                     return $data;
                                 };
                         }
@@ -1825,6 +1938,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template T
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class Foo {
                         /** @var T */
@@ -1906,7 +2020,8 @@ class ClassTemplateTest extends TestCase
             ],
             'yieldFromGenericObjectNotExtendingIterator' => [
                 '<?php
-                    class Foo{}
+                    /** @extends \ArrayObject<int, int> */
+                    class Foo extends \ArrayObject {}
 
                     class A {
                         /**
@@ -2153,6 +2268,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template T
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class ArrayCollection {
                         /** @var list<T> */
@@ -2178,7 +2294,26 @@ class ClassTemplateTest extends TestCase
                     /** @param ArrayCollection<int> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
-                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));'
+                    /** @param ArrayCollection<int|string> $ints */
+                    function takesIntsOrStrings(ArrayCollection $ints) :void {}
+
+                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));
+
+                    /** @return ($s is "string" ? string : int) */
+                    function foo(string $s) {
+                        if ($s === "string") {
+                            return "hello";
+                        }
+                        return 5;
+                    }
+
+                    takesIntsOrStrings((new ArrayCollection([ "a", "bc" ]))->map("foo"));
+
+                    /**
+                     * @template T
+                     * @extends ArrayCollection<T>
+                     */
+                    class LazyArrayCollection extends ArrayCollection {}'
             ],
             'weakReferenceIsTyped' => [
                 '<?php
@@ -2260,40 +2395,6 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
-            'nullableTemplateAs' => [
-                '<?php
-                    /**
-                     * @template T of null|array
-                     */
-                    class Foo
-                    {
-                        private ?\ArrayObject $arrayObject;
-
-                        public function __construct(?\ArrayObject $arrayObject)
-                        {
-                            $this->arrayObject = $arrayObject;
-                        }
-
-                        /**
-                         * @psalm-assert-if-true Foo<array> $this
-                         * @psalm-assert-if-true ArrayObject $this->arrayObject
-                         */
-                        public function hasArray(): bool
-                        {
-                            return $this->arrayObject instanceof \ArrayObject;
-                        }
-
-                        /** @return T */
-                        public function toMaybeArray()
-                        {
-                            if ($this->hasArray()) {
-                                return $this->arrayObject->getArrayCopy();
-                            }
-
-                            return null;
-                        }
-                    }'
-            ],
             'uasortCallableInMethod' => [
                 '<?php
                     class C {
@@ -2313,21 +2414,18 @@ class ClassTemplateTest extends TestCase
             'intersectOnTOfObject' => [
                 '<?php
                     /**
-                     * @psalm-template InterceptedObjectType of object
+                     * @psalm-template TO of object
                      */
-                    interface AccessInterceptorInterface
-                    {
+                    interface A {
                         /**
-                         * @psalm-param Closure(
-                         *   InterceptedObjectType&AccessInterceptorInterface
-                         * ) : mixed $prefixInterceptor
+                         * @psalm-param Closure(TO&A):mixed $c
                          */
-                        public function setMethodPrefixInterceptor(Closure $prefixInterceptor = null) : void;
+                        public function setClosure(Closure $c): void;
                     }
 
-                    function foo(AccessInterceptorInterface $i) : void {
-                        $i->setMethodPrefixInterceptor(
-                            function(AccessInterceptorInterface $i) : string {
+                    function foo(A $i) : void {
+                        $i->setClosure(
+                            function(A $i) : string {
                                 return "hello";
                             }
                         );
@@ -2774,7 +2872,7 @@ class ClassTemplateTest extends TestCase
             ],
             'multipleMatchingObjectsInUnion' => [
                 '<?php
-                    /** @template T */
+                    /** @template-covariant T */
                     interface Container {
                         /** @return T */
                         public function get();
@@ -2926,13 +3024,566 @@ class ClassTemplateTest extends TestCase
                         }
                     }'
             ],
+            'flippedParamsMethodInside' => [
+                '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @return Traversable<A, B> */
+                        public abstract function getTraversable() : Traversable;
+
+                        /**
+                         * @param Foo<B, A> $flipped
+                         * @return Traversable<B, A>
+                         */
+                        public function getFlippedTraversable(Foo $flipped): Traversable
+                        {
+                            return $flipped->getTraversable();
+                        }
+                    }'
+            ],
+            'flippedParamsMethodOutside' => [
+                '<?php
+                    /**
+                     * @template B
+                     * @template A
+                     * @param Foo<B, A> $flipped
+                     * @return Traversable<B, A>
+                     */
+                    function getFlippedTraversable(Foo $flipped): Traversable {
+                        return $flipped->getTraversable();
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @return Traversable<A, B> */
+                        public abstract function getTraversable() : Traversable;
+                    }'
+            ],
+            'flippedParamsPropertyInside' => [
+                '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @var Traversable<A, B> */
+                        public $traversable;
+
+                        /**
+                         * @param Foo<B, A> $flipped
+                         * @return Traversable<B, A>
+                         */
+                        public function getFlippedTraversable(Foo $flipped): Traversable
+                        {
+                            return $flipped->traversable;
+                        }
+                    }'
+            ],
+            'flippedParamsPropertyOutside' => [
+                '<?php
+                    /**
+                     * @template B
+                     * @template A
+                     * @param Foo<B, A> $flipped
+                     * @return Traversable<B, A>
+                     */
+                    function getFlippedTraversable(Foo $flipped): Traversable {
+                        return $flipped->traversable;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    abstract class Foo
+                    {
+                        /** @var Traversable<A, B> */
+                        public $traversable;
+                    }'
+            ],
+            'simpleTemplate' => [
+                '<?php
+                    /** @template T */
+                    interface F {}
+
+                    /** @param F<mixed> $f */
+                    function takesFMixed(F $f) : void {}
+
+                    function sendsF(F $f) : void {
+                        takesFMixed($f);
+                    }'
+            ],
+            'arrayCollectionMapInternal' => [
+                '<?php
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
+                     */
+                    class ArrayCollection
+                    {
+                        /** @psalm-var array<TKey,T> */
+                        private $elements;
+
+                        /** @psalm-param array<TKey,T> $elements */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * @template TNewKey of array-key
+                         * @template TNew
+                         * @psalm-param array<TNewKey, TNew> $elements
+                         * @psalm-return static<TNewKey, TNew>
+                         */
+                        protected static function createFrom(array $elements)
+                        {
+                            return new static($elements);
+                        }
+
+                        /**
+                         * @psalm-template U
+                         * @psalm-param Closure(T=):U $func
+                         * @psalm-return static<TKey, U>
+                         */
+                        public function map(Closure $func)
+                        {
+                            $new_elements = array_map($func, $this->elements);
+                            return self::createFrom($new_elements);
+                        }
+                    }'
+            ],
+            'arrayCollectionMapExternal' => [
+                '<?php
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     * @psalm-consistent-constructor
+                     */
+                    class ArrayCollection
+                    {
+                        /** @psalm-var array<TKey,T> */
+                        private $elements;
+
+                        /** @psalm-param array<TKey,T> $elements */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * @psalm-template U
+                         * @psalm-param Closure(T=):U $func
+                         * @psalm-return ArrayCollection<TKey, U>
+                         */
+                        public function map(Closure $func)
+                        {
+                            $new_elements = array_map($func, $this->elements);
+                            return Creator::createFrom($new_elements);
+                        }
+                    }
+
+                    class Creator {
+                        /**
+                         * @template TNewKey of array-key
+                         * @template TNew
+                         * @psalm-param array<TNewKey, TNew> $elements
+                         * @psalm-return ArrayCollection<TNewKey, TNew>
+                         */
+                        public static function createFrom(array $elements) {
+                            return new ArrayCollection($elements);
+                        }
+                    }'
+            ],
+            'templateWithClassConstants' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of self::A|self::B|self::C
+                     */
+                    final class Foo
+                    {
+                        public const A = "aa";
+                        public const B = "bb";
+                        public const C = "cc";
+
+                        /**
+                         * @psalm-var T $level
+                         */
+                        private string $level;
+
+                        /**
+                         * @psalm-param T $level
+                         */
+                        public function __construct(string $level)
+                        {
+                            $this->level = $level;
+                        }
+                    }
+
+                    /**
+                     * @psalm-return Foo<Foo::A>
+                     */
+                    function getFooA(): Foo {
+                        return new Foo(Foo::A);
+                    }'
+            ],
+            'callTemplatedMethodOnSameClass' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    class Mapper {
+                        /**
+                         * @param T $e
+                         * @return T
+                         */
+                        public function foo($e) {
+                            return $e;
+                        }
+
+                        /**
+                         * @param T $e
+                         * @return T
+                         */
+                        public function passthru($e) {
+                            return $this->foo($e);
+                        }
+                    }'
+            ],
+            'templatedStaticUnion' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-templates
+                     */
+                    abstract class A {
+                        /**
+                          * @var T
+                          */
+                        private $v;
+
+                        /**
+                          * @param T $v
+                          */
+                        final public function __construct($v) {
+                            $this->v = $v;
+                        }
+
+                        /**
+                          * @return static<T>
+                          */
+                        public function foo(): A {
+                            if (rand(0, 1)) {
+                                return new static($this->v);
+                            } else {
+                                return new static($this->v);
+                            }
+                        }
+                    }'
+            ],
+            'templatedTypeWithLimitGoesIntoTemplatedType' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    function takesA(A $a) : void {}
+
+                    function foo(A $a) : void {
+                        takesA($a);
+                    }',
+            ],
+            'templateIsAComplexMultilineType' => [
+                '<?php
+                /**
+                 * @template T of array{
+                 *    a: string,
+                 *    b: int
+                 * }
+                 */
+                class MyContainer {
+                    /** @var T */
+                    private $value;
+                    /** @param T $value */
+                    public function __construct($value) {
+                        $this->value = $value;
+                    }
+                    /** @return T */
+                    public function getValue() {
+                      return $this->value;
+                    }
+                }'
+            ],
+            'newWithoutInferredTemplate' => [
+                '<?php
+                    /**
+                     * @psalm-template T2 of object
+                     */
+                    final class Foo {}
+
+                    $f = new Foo();',
+                [
+                    '$f' => 'Foo<object>'
+                ]
+            ],
+            'PHP80-weakmapIsGeneric' => [
+                '<?php
+                    /** @param WeakMap<Throwable,int> $wm */
+                    function isCountable(WeakMap $wm): int {
+                        return count($wm);
+                    }
+
+                    /**
+                     * @param WeakMap<Throwable,int> $wm
+                     * @return array{Throwable,int}
+                     */
+                    function isTraverable(WeakMap $wm): array {
+                        foreach ($wm as $k => $v) {
+                            return [$k, $v];
+                        }
+                        throw new RuntimeException;
+                    }
+
+                    /**
+                     * @param WeakMap<Throwable,int> $wm
+                     * @return Traversable<Throwable,int>
+                     */
+                    function hasAggregateIterator(WeakMap $wm): Traversable {
+                        return $wm->getIterator();
+                    }
+
+                    /**
+                     * @param WeakMap<Throwable,int> $wm
+                     */
+                    function readsLikeAnArray(WeakMap $wm): int {
+                        $ex = new Exception;
+                        if (isset($wm[$ex])) {
+                            return $wm[$ex];
+                        }
+                        throw new RuntimeException;
+                    }
+
+                    /**
+                     * @param WeakMap<Throwable,int> $wm
+                     */
+                    function writesLikeAnArray(WeakMap $wm): void {
+                        $ex = new Exception;
+                        $wm[$ex] = 42;
+                    }
+                ',
+            ],
+            'combineTwoTemplatedArrays' => [
+                '<?php
+                    /** @template T */
+                    class Option
+                    {
+                        /** @param T $v */
+                        public function __construct(private $v) {}
+
+                        /**
+                         * @template E
+                         * @param E $else
+                         * @return T|E
+                         */
+                        public function getOrElse($else)
+                        {
+                           return rand(0, 1) === 1 ? $this->v : $else;
+                        }
+                    }
+
+                    $opt = new Option([1, 3]);
+
+                    $b = $opt->getOrElse([2, 4])[0];',
+                [
+                    '$b===' => '1|2'
+                ]
+            ],
+            'generaliseTemplatedString' => [
+                '<?php
+                    /** @template TData */
+                    class Container {
+                        /** @var TData */
+                        public $data;
+
+                        /** @param TData $data */
+                        public function __construct($data) {
+                            $this->data = $data;
+                        }
+                    }
+
+                    /** @param Container<string> $r */
+                    function takesContainer(Container $r): void {
+                        $r->data = "David";
+                    }
+
+                    $me = new Container("Matthew");
+
+                    takesContainer($me);
+
+                    if ($me->data === "David") {}'
+            ],
+            'generaliseTemplatedArray' => [
+                '<?php
+                    /** @template TData */
+                    class Container {
+                        /** @var TData */
+                        public $data;
+
+                        /** @param TData $data */
+                        public function __construct($data) {
+                            $this->data = $data;
+                        }
+                    }
+
+                    /** @param Container<array{name: string}> $r */
+                    function takesContainer(Container $r): void {
+                        $r->data = ["name" => "David"];
+                    }
+
+                    $me = new Container(["name" => "Matthew"]);
+
+                    takesContainer($me);
+
+                    if ($me->data["name"] === "David") {}'
+            ],
+            'allowCovariantBoundsMismatchSameContainers' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Collection $c, Collection $d): Dog|Cat {
+                        return foo($c, $d);
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param Collection<T> $d
+                     * @return T
+                     */
+                    function foo(Collection $c, Collection $d): object {
+                        return rand(0, 1) ? $c->get() : $d->get();
+                    }',
+            ],
+            'allowCovariantBoundsMismatchDifferentContainers' => [
+                '<?php
+                    /**
+                     * @param Collection1<Dog> $c
+                     * @param Collection2<Cat> $d
+                     */
+                    function bar(Collection1 $c, Collection2 $d): Dog|Cat {
+                        return foo($c, $d);
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection1 {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection2 {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection1<T> $c
+                     * @param Collection2<T> $d
+                     * @return T
+                     */
+                    function foo(Collection1 $c, Collection2 $d): object {
+                        return rand(0, 1) ? $c->get() : $d->get();
+                    }',
+            ],
+            'allowCovariantBoundsMismatchContainerAndObject' => [
+                '<?php
+                    /**
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Dog $c, Collection $d): Dog|Cat {
+                        $animal = foo($c, $d);
+                        if ($animal instanceof Dog) {}
+                        if ($animal instanceof Cat) {}
+                        return $animal;
+                    }
+
+                    /** @template-covariant T of object */
+                    interface Collection {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param T $c
+                     * @param Collection<T> $d
+                     * @return T
+                     */
+                    function foo(object $c, Collection $d): object {
+                        return rand(0, 1) ? $c : $d->get();
+                    }',
+            ],
+            'allowCompatibleGenerics' => [
+                '<?php
+                    /** @template T of object */
+                    interface A {}
+
+                    /** @template T of object */
+                    interface B {}
+
+                    /**
+                     * @template T of object
+                     * @param A<T> $a
+                     * @param B<T> $b
+                     */
+                    function foo(A $a, B $b): void {}
+
+                    /**
+                     * @param A<stdClass> $a
+                     * @param B<stdClass> $b
+                     */
+                    function bar(A $a, B $b): void {
+                        foo($a, $b);
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'restrictTemplateInputWithClassString' => [
@@ -3218,7 +3869,7 @@ class ClassTemplateTest extends TestCase
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);
 
                     $mario->ame = "Luigi";',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects string(height)|string(id)|string(name), string(ame) provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects "height"|"id"|"name", "ame" provided',
             ],
             'specialiseTypeBeforeReturning' => [
                 '<?php
@@ -3436,6 +4087,253 @@ class ClassTemplateTest extends TestCase
                     /** @param IteratorAggregate<int, Bar> $t */
                     function foo(IteratorAggregate $t) : void {
                         consume($t);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'preventPassingToBoundParam' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Container
+                    {
+                        /** @var T */
+                        private $t;
+
+                        /** @param T $t */
+                        public function __construct($t)
+                        {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @param T $t
+                         * @return T
+                         */
+                        protected function makeNew($t)
+                        {
+                            return $t;
+                        }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         */
+                        public function map($u) : void
+                        {
+                            $this->makeNew($u);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'bindRedirectedTemplate' => [
+                '<?php
+                    /**
+                     * @template TIn
+                     * @template TOut
+                     */
+                    final class Map
+                    {
+                        /** @param Closure(TIn): TOut $c */
+                        public function __construct(private Closure $c) {}
+
+                        /**
+                         * @template TIn2 as list<TIn>
+                         * @param TIn2 $in
+                         * @return list<TOut>
+                         */
+                        public function __invoke(array $in) : array {
+                            return array_map(
+                                $this->c,
+                                $in
+                            );
+                        }
+                    }
+
+                    $m = new Map(fn(int $num) => (string) $num);
+                    $m(["a"]);',
+                'error_message' => 'InvalidScalarArgument',
+                [],
+                false,
+                '8.0'
+            ],
+            'bindClosureParamAccurately' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    interface Collection {
+                        /**
+                         * @template T
+                         * @param Closure(TValue):T $func
+                         * @return Collection<TKey,T>
+                         */
+                        public function map(Closure $func);
+
+                    }
+
+                    /**
+                     * @param Collection<int, string> $c
+                     */
+                    function f(Collection $c): void {
+                        $fn = function(int $_p): bool { return true; };
+                        $c->map($fn);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'limitTemplateTypeWithSameName' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    function takesA(A $a) : void {}
+
+                    /** @param A<stdClass> $a */
+                    function foo(A $a) : void {
+                        takesA($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'limitTemplateTypeExtended' => [
+                '<?php
+
+                    /**
+                     * @template T as object
+                     */
+                    abstract class A {}
+
+                    /**
+                     * @extends A<stdClass>
+                     */
+                    class AChild extends A {}
+
+                    function takesA(A $a) : void {}
+
+                    $child = new AChild();
+                    takesA($child);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'noCrashTemplatedClosure' => [
+                '<?php
+                    /**
+                     * @template TCallback as Closure():string
+                     */
+                    class A {
+                        /** @var TCallback */
+                        private $callback;
+
+                        /** @param TCallback $callback */
+                        public function __construct(Closure $callback) {
+                            $this->callback = $callback;
+                        }
+
+                        /** @param TCallback $callback */
+                        public function setCallback(Closure $callback): void {
+                            $this->callback = $callback;
+                        }
+                    }
+                    $a = new A(function() { return "a";});
+                    $a->setCallback(function() { return "b";});',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'preventBoundsMismatchDifferentContainers' => [
+                '<?php
+                    /**
+                     * @param Collection1<Dog> $c
+                     * @param Collection2<Cat> $d
+                     */
+                    function bar(Collection1 $c, Collection2 $d): void {
+                        foo($c, $d);
+                    }
+
+                    /** @template T of object */
+                    interface Collection1 {
+                        /** @param T $item */
+                        public function add(object $item): void;
+                    }
+
+                    /** @template T of object */
+                    interface Collection2 {
+                        /** @param T $item */
+                        public function add(object $item): void;
+
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection1<T> $c
+                     * @param Collection2<T> $d
+                     */
+                    function foo(Collection1 $c, Collection2 $d): void {
+                        $c->add($d->get());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'preventBoundsMismatchSameContainers' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     * @param Collection<Cat> $d
+                     */
+                    function bar(Collection $c, Collection $d): void {
+                        foo($c, $d);
+                    }
+
+                    /** @template T of object */
+                    interface Collection {
+                        /** @param T $item */
+                        public function add(object $item): void;
+
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param Collection<T> $d
+                     */
+                    function foo(Collection $c, Collection $d): void {
+                        $c->add($d->get());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'preventBoundsMismatchDifferentBoundLevels' => [
+                '<?php
+                    /**
+                     * @param Collection<Dog> $c
+                     */
+                    function bar(Collection $c): void {
+                        foo($c, new Cat());
+                    }
+
+                    /** @template T of object */
+                    interface Collection {
+                        /** @param T $item */
+                        public function add(object $item): void;
+                    }
+
+                    class Cat {}
+                    class Dog {}
+
+                    /**
+                     * @template T of object
+                     * @param Collection<T> $c
+                     * @param T $d
+                     */
+                    function foo(Collection $c, object $d): void {
+                        $c->add($d);
                     }',
                 'error_message' => 'InvalidArgument',
             ],

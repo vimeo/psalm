@@ -1,48 +1,48 @@
 <?php
 namespace Psalm\Plugin;
 
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+
 use function array_filter;
+use function array_merge;
+use function array_values;
 use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function function_exists;
+use function fwrite;
+use function json_encode;
+use function parse_url;
+use function strlen;
+use function var_export;
+
 use const CURLINFO_HEADER_OUT;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
-use function function_exists;
-use function fwrite;
-use function json_encode;
-use function parse_url;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use Psalm\Codebase;
-use Psalm\Internal\Analyzer\IssueData;
-use Psalm\SourceControl\SourceControlInfo;
 use const STDERR;
-use function strlen;
-use function var_export;
-use function count;
-use function array_merge;
-use function array_values;
 
-class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
+class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
      *
      * @param array<string, list<IssueData>> $issues
-     *
-     * @return void
      */
     public static function afterAnalysis(
-        Codebase $codebase,
-        array $issues,
-        array $build_info,
-        SourceControlInfo $source_control_info = null
-    ) {
+        AfterAnalysisEvent $event
+    ): void {
+        $codebase = $event->getCodebase();
+        $issues = $event->getIssues();
+        $build_info = $event->getBuildInfo();
+        $source_control_info = $event->getSourceControlInfo();
+
         if (!function_exists('curl_init')) {
             fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
 
@@ -70,6 +70,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
+                'level' => \Psalm\Config::getInstance()->level
             ];
 
             $payload = json_encode($data);
@@ -126,11 +127,16 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
     }
 
     /**
-     * @param resource $ch
+     * @param mixed $ch
+     *
+     * @psalm-pure
      */
     public static function getCurlErrorMessage($ch) : string
     {
-        /** @var array */
+        /**
+         * @psalm-suppress MixedArgument
+         * @var array
+         */
         $curl_info = curl_getinfo($ch);
 
         if (isset($curl_info['ssl_verify_result'])
@@ -206,6 +212,9 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             return '';
         }
 
+        /**
+         * @psalm-suppress MixedArgument
+         */
         return var_export(curl_getinfo($ch), true);
     }
 }

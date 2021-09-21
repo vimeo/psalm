@@ -12,6 +12,6 @@ class A {
 
 function assignToA(string $s) {
     $a = new A();
-    $a->foo = strpos("haystack", $s);
+    $a->foo = strpos($s, "haystack");
 }
 ```

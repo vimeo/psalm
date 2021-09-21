@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface MethodParamsProviderInterface
 {
     /**
@@ -14,16 +15,16 @@ interface MethodParamsProviderInterface
     public static function getClassLikeNames() : array;
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getMethodParams(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args = null,
-        StatementsSource $statements_source = null,
-        Context $context = null,
-        CodeLocation $code_location = null
-    );
+        ?array $call_args = null,
+        ?StatementsSource $statements_source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array;
 }

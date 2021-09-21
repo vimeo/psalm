@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use Psalm\Aliases;
+use Psalm\Exception\TypeParseTreeException;
+
 use function array_push;
 use function array_splice;
 use function array_unshift;
@@ -9,8 +12,6 @@ use function in_array;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
-use Psalm\Aliases;
-use Psalm\Exception\TypeParseTreeException;
 use function str_split;
 use function strlen;
 use function strpos;
@@ -21,7 +22,7 @@ class TypeTokenizer
     /**
      * @var array<string, bool>
      */
-    const PSALM_RESERVED_WORDS = [
+    public const PSALM_RESERVED_WORDS = [
         'int' => true,
         'string' => true,
         'float' => true,
@@ -34,19 +35,28 @@ class TypeTokenizer
         'array' => true,
         'non-empty-array' => true,
         'non-empty-string' => true,
+        'non-falsy-string' => true,
         'iterable' => true,
         'null' => true,
         'mixed' => true,
         'numeric-string' => true,
         'class-string' => true,
+        'interface-string' => true,
+        'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,
-        'trait-string' => true,
-        'mysql-escaped-string' => true,
-        'html-escaped-string' => true,
+        'callable-object' => true,
+        'stringable-object' => true,
+        'pure-callable' => true,
+        'pure-Closure' => true,
+        'mysql-escaped-string' => true, // deprecated
+        'html-escaped-string' => true, // deprecated
+        'literal-string' => true,
+        'non-empty-literal-string' => true,
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,
+        'literal-int' => true,
         'boolean' => true,
         'integer' => true,
         'double' => true,
@@ -60,6 +70,7 @@ class TypeTokenizer
         'no-return' => true,
         'never-return' => true,
         'never-returns' => true,
+        'never' => true,
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,
@@ -69,6 +80,10 @@ class TypeTokenizer
         'class-string-map' => true,
         'open-resource' => true,
         'closed-resource' => true,
+        'associative-array' => true,
+        'arraylike-object' => true,
+        'int-mask' => true,
+        'int-mask-of' => true,
     ];
 
     /**
@@ -77,12 +92,15 @@ class TypeTokenizer
     private static $memoized_tokens = [];
 
     /**
-     * @param  string $string_type
-     * @param  bool   $ignore_space
+     * Tokenises a type string into an array of tuples where the first element
+     * contains the string token and the second element contains its offset,
      *
-     * @return list<array{0: string, 1: int}>
+     * @return list<array{string, int}>
+     *
+     * @psalm-suppress ComplexMethod
+     * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
-    public static function tokenize($string_type, $ignore_space = true)
+    public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
         $type_tokens = [['', 0]];
         $was_char = false;
@@ -123,6 +141,7 @@ class TypeTokenizer
             ) {
                 $type_tokens[++$rtc] = [$char . 's', $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
+                $was_char = false;
                 continue;
             } elseif ($was_char) {
                 $type_tokens[++$rtc] = ['', $i];
@@ -280,10 +299,10 @@ class TypeTokenizer
     }
 
     /**
-     * @param  string $type_string
-     * @param  array{int,int}|null   $php_version
+     * @param array{int,int}|null   $php_version
      *
-     * @return string
+     *
+     * @psalm-pure
      */
     public static function fixScalarTerms(
         string $type_string,
@@ -327,17 +346,17 @@ class TypeTokenizer
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
      *
-     * @return list<array{0: string, 1: int}>
+     * @return list<array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
         string $string_type,
         Aliases $aliases,
-        array $template_type_map = null,
-        array $type_aliases = null,
+        ?array $template_type_map = null,
+        ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
         bool $allow_assertions = false
-    ) {
+    ): array {
         $type_tokens = self::tokenize($string_type);
 
         for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
@@ -361,9 +380,12 @@ class TypeTokenizer
 
             if ($string_type_token[0][0] === '"'
                 || $string_type_token[0][0] === '\''
-                || $string_type_token[0] === '0'
-                || preg_match('/[1-9]/', $string_type_token[0][0])
+                || preg_match('/[0-9]/', $string_type_token[0][0])
             ) {
+                continue;
+            }
+
+            if ($string_type_token[0][0] === '-' && is_numeric($string_type_token[0])) {
                 continue;
             }
 
@@ -444,9 +466,11 @@ class TypeTokenizer
                 continue;
             }
 
-            if ($string_type_token[0] === 'func_num_args()') {
+            if ($string_type_token[0] === 'func_num_args()' || $string_type_token[0] === 'PHP_MAJOR_VERSION') {
                 continue;
             }
+
+            $type_tokens[$i][2] = $string_type_token[0];
 
             if (isset($type_aliases[$string_type_token[0]])) {
                 $type_alias = $type_aliases[$string_type_token[0]];
@@ -472,7 +496,7 @@ class TypeTokenizer
             }
         }
 
-        /** @var list<array{0: string, 1: int}> */
+        /** @var list<array{0: string, 1: int, 2?: string}> */
         return $type_tokens;
     }
 

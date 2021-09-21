@@ -1,23 +1,26 @@
 <?php
 namespace Psalm\Tests;
 
-use const LIBXML_NOBLANKS;
 use Prophecy\Argument;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\RuntimeCaches;
+
+use const LIBXML_NOBLANKS;
 
 class ErrorBaselineTest extends TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy */
     private $fileProvider;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
         $this->fileProvider = $this->prophesize(FileProvider::class);
     }
 
@@ -55,6 +58,34 @@ class ErrorBaselineTest extends TestCase
             ],
             'sample/sample-file2.php' => [
                 'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],
+            ],
+        ];
+
+        $this->assertSame(
+            $expectedParsedBaseline,
+            ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
+        );
+    }
+
+    public function testLoadShouldIgnoreLineEndingsInIssueSnippet(): void
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->fileExists($baselineFilePath)->willReturn(true);
+        $this->fileProvider->getContents($baselineFilePath)->willReturn(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            <files>
+              <file src=\"sample/sample-file.php\">
+                <MixedAssignment occurrences=\"1\">
+                  <code>foo\r</code>
+                </MixedAssignment>
+              </file>
+            </files>"
+        );
+
+        $expectedParsedBaseline = [
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 1, 's' => ['foo']],
             ],
         ];
 
@@ -134,7 +165,7 @@ class ErrorBaselineTest extends TestCase
 
                 return true;
             })
-        )->willReturn(null);
+        );
 
         ErrorBaseline::create(
             $this->fileProvider->reveal(),
@@ -290,8 +321,8 @@ class ErrorBaselineTest extends TestCase
         /** @var \DOMElement[] $files */
         $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
 
-        $file1 = $files[0];
-        $file2 = $files[1];
+        [$file1, $file2] = $files;
+
         $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
         $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 
@@ -338,7 +369,7 @@ class ErrorBaselineTest extends TestCase
               </file>
             </files>'
         );
-        $this->fileProvider->setContents(Argument::cetera())->willReturn(null);
+        $this->fileProvider->setContents(Argument::cetera());
 
         $newIssues = [
             'sample/sample-file.php' => [

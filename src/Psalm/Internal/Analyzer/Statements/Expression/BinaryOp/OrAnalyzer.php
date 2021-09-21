@@ -2,21 +2,28 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
-use function array_merge;
+use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualIf;
+use Psalm\Type;
+use Psalm\Type\Reconciler;
+
 use function array_diff_key;
 use function array_filter;
-use function array_values;
 use function array_map;
+use function array_merge;
+use function array_values;
 
 /**
  * @internal
@@ -30,11 +37,11 @@ class OrAnalyzer
         bool $from_stmt = false
     ) : bool {
         if ($from_stmt) {
-            $fake_if_stmt = new PhpParser\Node\Stmt\If_(
-                new PhpParser\Node\Expr\BooleanNot($stmt->left, $stmt->left->getAttributes()),
+            $fake_if_stmt = new VirtualIf(
+                new VirtualBooleanNot($stmt->left, $stmt->left->getAttributes()),
                 [
                     'stmts' => [
-                        new PhpParser\Node\Stmt\Expression(
+                        new VirtualExpression(
                             $stmt->right
                         )
                     ]
@@ -42,19 +49,21 @@ class OrAnalyzer
                 $stmt->getAttributes()
             );
 
-            return IfAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
+            return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $post_leaving_if_context = null;
+
         if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-            && !($stmt->left instanceof PhpParser\Node\Expr\BooleanNot
-                && $stmt->left->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd)
+            || !$stmt->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || !$stmt->left->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
         ) {
             $if_scope = new \Psalm\Internal\Scope\IfScope();
 
             try {
-                $if_conditional_scope = IfAnalyzer::analyzeIfConditional(
+                $if_conditional_scope = IfConditionalAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->left,
                     $context,
@@ -66,7 +75,11 @@ class OrAnalyzer
                 $left_context = $if_conditional_scope->if_context;
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
-                $left_assigned_var_ids = $if_conditional_scope->cond_assigned_var_ids;
+                $left_assigned_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
+
+                if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+                    $post_leaving_if_context = clone $context;
+                }
             } catch (\Psalm\Exception\ScopeAnalysisException $e) {
                 return false;
             }
@@ -75,6 +88,8 @@ class OrAnalyzer
             $context->referenced_var_ids = [];
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
+
+            $post_leaving_if_context = clone $context;
 
             $left_context = clone $context;
             $left_context->parent_context = $context;
@@ -99,20 +114,20 @@ class OrAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables) {
-                $context->unreferenced_vars = $left_context->unreferenced_vars;
-            }
-
             $left_referenced_var_ids = $left_context->referenced_var_ids;
             $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
             $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+            $left_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $left_context->assigned_var_ids);
 
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
-        $left_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->left),
+        $left_cond_id = \spl_object_id($stmt->left);
+
+        $left_clauses = FormulaGenerator::getFormula(
+            $left_cond_id,
+            $left_cond_id,
             $stmt->left,
             $context->self,
             $statements_analyzer,
@@ -123,9 +138,10 @@ class OrAnalyzer
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             try {
-                $negated_left_clauses = Algebra::getFormula(
-                    \spl_object_id($stmt->left),
-                    new PhpParser\Node\Expr\BooleanNot($stmt->left),
+                $negated_left_clauses = FormulaGenerator::getFormula(
+                    $left_cond_id,
+                    $left_cond_id,
+                    new VirtualBooleanNot($stmt->left),
                     $context->self,
                     $statements_analyzer,
                     $codebase,
@@ -142,8 +158,8 @@ class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                    function ($c) use ($reconciled_expression_clauses): bool {
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -167,7 +183,7 @@ class OrAnalyzer
 
         $negated_type_assertions = Algebra::getTruthsFromFormula(
             $clauses_for_right_analysis,
-            \spl_object_id($stmt->left),
+            $left_cond_id,
             $left_referenced_var_ids,
             $active_negated_type_assertions
         );
@@ -175,6 +191,19 @@ class OrAnalyzer
         $changed_var_ids = [];
 
         $right_context = clone $context;
+
+        if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && $left_assigned_var_ids
+            && $post_leaving_if_context
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->left,
+                $post_leaving_if_context,
+                $right_context,
+                $left_assigned_var_ids
+            );
+        }
 
         if ($negated_type_assertions) {
             // while in an or, we allow scope to boil over to support
@@ -188,7 +217,8 @@ class OrAnalyzer
                 $statements_analyzer,
                 [],
                 $left_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                !$context->inside_negation
             );
             $right_context->vars_in_scope = $right_vars_in_scope;
         }
@@ -202,7 +232,7 @@ class OrAnalyzer
                 $context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )
@@ -214,7 +244,7 @@ class OrAnalyzer
                 $context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )
@@ -223,8 +253,66 @@ class OrAnalyzer
 
         $right_context->if_context = null;
 
+        $pre_referenced_var_ids = $right_context->referenced_var_ids;
+        $right_context->referenced_var_ids = [];
+
+        $pre_assigned_var_ids = $right_context->assigned_var_ids;
+        $right_context->assigned_var_ids = [];
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
+        }
+
+        $right_referenced_var_ids = $right_context->referenced_var_ids;
+        $right_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
+
+        $right_assigned_var_ids = $right_context->assigned_var_ids;
+        $right_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $right_assigned_var_ids);
+
+        $right_cond_id = \spl_object_id($stmt->right);
+
+        $right_clauses = FormulaGenerator::getFormula(
+            $right_cond_id,
+            $right_cond_id,
+            $stmt->right,
+            $context->self,
+            $statements_analyzer,
+            $codebase
+        );
+
+        $clauses_for_right_analysis = Context::removeReconciledClauses(
+            $clauses_for_right_analysis,
+            $right_assigned_var_ids
+        )[0];
+
+        $combined_right_clauses = Algebra::simplifyCNF(
+            array_merge($clauses_for_right_analysis, $right_clauses)
+        );
+
+        $active_right_type_assertions = [];
+
+        $right_type_assertions = Algebra::getTruthsFromFormula(
+            $combined_right_clauses,
+            $right_cond_id,
+            $right_referenced_var_ids,
+            $active_right_type_assertions
+        );
+
+        if ($right_type_assertions) {
+            $right_changed_var_ids = [];
+
+            Reconciler::reconcileKeyedTypes(
+                $right_type_assertions,
+                $active_right_type_assertions,
+                $right_context->vars_in_scope,
+                $right_changed_var_ids,
+                $right_referenced_var_ids,
+                $statements_analyzer,
+                [],
+                $left_context->inside_loop,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->right),
+                $context->inside_negation
+            );
         }
 
         if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
@@ -270,23 +358,6 @@ class OrAnalyzer
             $right_context->assigned_var_ids
         );
 
-        if ($codebase->find_unused_variables) {
-            foreach ($right_context->unreferenced_vars as $var_id => $locations) {
-                if (!isset($context->unreferenced_vars[$var_id])) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } else {
-                    $new_locations = array_diff_key(
-                        $locations,
-                        $context->unreferenced_vars[$var_id]
-                    );
-
-                    if ($new_locations) {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                }
-            }
-        }
-
         if ($context->if_context) {
             $if_context = $context->if_context;
 
@@ -298,7 +369,11 @@ class OrAnalyzer
                         $codebase
                     );
                 } elseif (isset($left_context->vars_in_scope[$var_id])) {
-                    $if_context->vars_in_scope[$var_id] = $left_context->vars_in_scope[$var_id];
+                    $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $left_context->vars_in_scope[$var_id],
+                        $codebase
+                    );
                 }
             }
 
@@ -311,10 +386,6 @@ class OrAnalyzer
                 $context->assigned_var_ids,
                 $if_context->assigned_var_ids
             );
-
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
 
             $if_context->updateChecks($context);
         }

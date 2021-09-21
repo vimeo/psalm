@@ -1,19 +1,31 @@
 <?php
 namespace Psalm\Tests;
 
-use function define;
-use function defined;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use function ini_set;
-use function method_exists;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Type\Union;
 use RuntimeException;
+use Throwable;
+
+use function array_filter;
+use function count;
+use function define;
+use function defined;
+use function getcwd;
+use function ini_set;
+use function is_string;
+use function method_exists;
+
+use const ARRAY_FILTER_USE_KEY;
+use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
 {
@@ -23,18 +35,18 @@ class TestCase extends BaseTestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    /** @var Provider\FakeFileProvider */
+    /** @var FakeFileProvider */
     protected $file_provider;
 
-    /**
-     * @return void
-     */
+    /** @var Config */
+    protected $testConfig;
+
     public static function setUpBeforeClass() : void
     {
         ini_set('memory_limit', '-1');
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '2.0.0');
+            define('PSALM_VERSION', '4.0.0');
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
@@ -45,28 +57,20 @@ class TestCase extends BaseTestCase
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
-    /**
-     * @return Config
-     */
     protected function makeConfig() : Config
     {
         return new TestConfig();
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
+        RuntimeCaches::clearAll();
 
-        \Psalm\Internal\Provider\StatementsProvider::clearLexer();
+        $this->file_provider = new FakeFileProvider();
 
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
-
-        $config = $this->makeConfig();
+        $this->testConfig = $this->makeConfig();
 
         $providers = new Providers(
             $this->file_provider,
@@ -74,27 +78,25 @@ class TestCase extends BaseTestCase
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
-            $config,
+            $this->testConfig,
             $providers
         );
-
-
 
         $this->project_analyzer->setPhpVersion('7.4');
     }
 
     public function tearDown() : void
     {
-        FileAnalyzer::clearCache();
+        unset($this->project_analyzer, $this->file_provider, $this->testConfig);
+        RuntimeCaches::clearAll();
     }
 
     /**
      * @param string $file_path
      * @param string $contents
      *
-     * @return void
      */
-    public function addFile($file_path, $contents)
+    public function addFile($file_path, $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
@@ -102,13 +104,16 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  string         $file_path
-     * @param  \Psalm\Context $context
      *
-     * @return void
      */
-    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true)
+    public function analyzeFile($file_path, \Psalm\Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
         $codebase = $this->project_analyzer->getCodebase();
+
+        if ($taint_flow_tracking) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
+
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
 
         $codebase->scanFiles();
@@ -128,8 +133,8 @@ class TestCase extends BaseTestCase
         );
         $file_analyzer->analyze($context);
 
-        if ($codebase->taint) {
-            $codebase->taint->connectSinksAndSources();
+        if ($codebase->taint_flow_graph) {
+            $codebase->taint_flow_graph->connectSinksAndSources();
         }
 
         if ($track_unused_suppressions) {
@@ -140,9 +145,8 @@ class TestCase extends BaseTestCase
     /**
      * @param  bool $withDataSet
      *
-     * @return string
      */
-    protected function getTestName($withDataSet = true)
+    protected function getTestName($withDataSet = true): string
     {
         $name = parent::getName($withDataSet);
         /**
@@ -174,6 +178,49 @@ class TestCase extends BaseTestCase
             self::assertMatchesRegularExpression($pattern, $string, $message);
         } else {
             parent::assertRegExp($pattern, $string, $message);
+        }
+    }
+    
+    public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
+    {
+        $validKeys = array_filter($array, 'is_string', ARRAY_FILTER_USE_KEY);
+        self::assertTrue(count($array) === count($validKeys), $message);
+    }
+    
+    public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
+    {
+        $isZeroOrString = /** @param mixed $key */ function ($key): bool {
+            return $key === 0 || is_string($key);
+        };
+        $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
+        self::assertTrue(count($array) === count($validKeys), $message);
+    }
+    
+    public static function assertArrayValuesAreArrays(array $array, string $message = ''): void
+    {
+        $validValues = array_filter($array, 'is_array');
+        self::assertTrue(count($array) === count($validValues), $message);
+    }
+    
+    public static function assertArrayValuesAreStrings(array $array, string $message = ''): void
+    {
+        $validValues = array_filter($array, 'is_string');
+        self::assertTrue(count($array) === count($validValues), $message);
+    }
+    
+    public static function assertStringIsParsableType(string $type, string $message = ''): void
+    {
+        if ($type === '') {
+            //    Ignore empty types for now, as these are quite common for pecl libraries
+            self::assertTrue(true);
+        } else {
+            $union = null;
+            try {
+                $tokens = TypeTokenizer::tokenize($type);
+                $union = TypeParser::parseTokens($tokens);
+            } catch (Throwable $_e) {
+            }
+            self::assertInstanceOf(Union::class, $union, $message);
         }
     }
 }

@@ -37,12 +37,12 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *    namespacedName attribute, as usual.)
      *
      * @param ErrorHandler $errorHandler Error handler
-     * @param array<int, array{0: int, 1: int, 2: int, 3: int}> $offset_map
+     * @param array<int, array{int, int, int, int}> $offset_map
      */
-    public function __construct(ErrorHandler $errorHandler, array $offset_map = null)
+    public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
         if ($offset_map) {
-            foreach ($offset_map as list(, , $b_s, $b_e)) {
+            foreach ($offset_map as [, , $b_s, $b_e]) {
                 if ($this->start_change === null) {
                     $this->start_change = $b_s;
                 }
@@ -54,14 +54,14 @@ class SimpleNameResolver extends NodeVisitorAbstract
         $this->nameContext = new NameContext($errorHandler);
     }
 
-    public function beforeTraverse(array $nodes)
+    public function beforeTraverse(array $nodes): ?array
     {
         $this->nameContext->startNamespace();
 
         return null;
     }
 
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): ?int
     {
         if ($node instanceof Stmt\Namespace_) {
             $this->nameContext->startNamespace($node->name);
@@ -83,7 +83,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $attrs = $node->getAttributes();
 
             if ($cs = $node->getComments()) {
-                $attrs['startFilePos'] = $cs[0]->getFilePos();
+                $attrs['startFilePos'] = $cs[0]->getStartFilePos();
             }
 
             if ($attrs['endFilePos'] < $this->start_change
@@ -139,12 +139,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return null;
     }
 
-    /**
-     * @param int $type
-     *
-     * @return void
-     */
-    private function addAlias(Stmt\UseUse $use, $type, Name $prefix = null)
+    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null): void
     {
         // Add prefix for group uses
         /** @var Name $name */
@@ -162,10 +157,8 @@ class SimpleNameResolver extends NodeVisitorAbstract
 
     /**
      * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
-     *
-     * @return void
      */
-    private function resolveSignature($node)
+    private function resolveSignature(PhpParser\NodeAbstract $node): void
     {
         foreach ($node->params as $param) {
             $param->type = $this->resolveType($param->type);
@@ -180,7 +173,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
      */
-    private function resolveType($node)
+    private function resolveType($node): ?Node
     {
         if ($node instanceof Node\NullableType) {
             /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
@@ -203,7 +196,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return Name Resolved name, or original name with attribute
      */
-    protected function resolveName(Name $name, $type)
+    protected function resolveName(Name $name, int $type): Name
     {
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {
@@ -213,18 +206,12 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return $name;
     }
 
-    /**
-     * @return Name
-     */
-    protected function resolveClassName(Name $name)
+    protected function resolveClassName(Name $name): Name
     {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
     }
 
-    /**
-     * @return void
-     */
-    protected function resolveTrait(Stmt\Trait_ $node)
+    protected function resolveTrait(Stmt\Trait_ $node): void
     {
         $resolvedName = Name::concat($this->nameContext->getNamespace(), (string) $node->name);
 

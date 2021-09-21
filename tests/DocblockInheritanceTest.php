@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use Psalm\Config;
-use Psalm\Context;
-
 class DocblockInheritanceTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -13,7 +9,7 @@ class DocblockInheritanceTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'inheritParentReturnDocbblock' => [
@@ -104,13 +100,59 @@ class DocblockInheritanceTest extends TestCase
                         }
                     }'
             ],
+            'inheritCorrectReturnTypeOnInterface' => [
+                '<?php
+                    interface A {
+                        /**
+                         * @return A
+                         */
+                        public function map(): A;
+                    }
+
+                    interface B extends A {
+                        /**
+                         * @return B
+                         */
+                        public function map(): A;
+                    }
+
+                    function takesB(B $f) : B {
+                        return $f->map();
+                    }'
+            ],
+            'inheritCorrectReturnTypeOnClass' => [
+                '<?php
+                    interface A {
+                        /**
+                         * @return A
+                         */
+                        public function map(): A;
+                    }
+
+                    interface B extends A {
+                        /**
+                         * @return B
+                         */
+                        public function map(): A;
+                    }
+
+                    class F implements B {
+                        public function map(): A {
+                            return new F();
+                        }
+                    }
+
+                    function takesF(F $f) : B {
+                        return $f->map();
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'automaticInheritDoc' => [

@@ -2,40 +2,42 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Type\TypeCombination;
-use Psalm\Internal\Type\UnionTemplateHandler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
-use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Type;
-use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
-use function strtolower;
-use function strpos;
-use function explode;
-use function count;
+
 use function array_filter;
 use function assert;
-use Psalm\Internal\Type\TypeExpander;
+use function count;
+use function explode;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal
@@ -43,19 +45,15 @@ use Psalm\Internal\Type\TypeExpander;
 class ArrayFunctionArgumentsAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer              $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg> $args
-     * @param   string                         $method_id
-     *
-     * @return  false|null
      */
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         array $args,
-        $method_id,
+        string $method_id,
         bool $check_functions
-    ) {
+    ): void {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
         $array_arg_types = [];
@@ -71,7 +69,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var ObjectLike|TArray|TList|null
+             * @var TKeyedArray|TArray|TList|null
              */
             $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && ($types = $arg_value_type->getAtomicTypes())
@@ -79,7 +77,7 @@ class ArrayFunctionArgumentsAnalyzer
                 ? $types['array']
                 : null;
 
-            if ($array_arg_type instanceof ObjectLike) {
+            if ($array_arg_type instanceof TKeyedArray) {
                 $array_arg_type = $array_arg_type->getGenericArrayType();
             }
 
@@ -122,9 +120,7 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                      $statements_analyzer
-     * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   Context                                 $context
+     * @param   list<PhpParser\Node\Arg>          $args
      *
      * @return  false|null
      */
@@ -133,7 +129,7 @@ class ArrayFunctionArgumentsAnalyzer
         array $args,
         Context $context,
         bool $is_push
-    ) {
+    ): ?bool {
         $array_arg = $args[0]->value;
 
         $unpacked_args = array_filter(
@@ -144,7 +140,7 @@ class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($is_push && !$unpacked_args) {
-            for ($i = 1; $i < count($args); $i++) {
+            for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
                 $was_inside_assignment = $context->inside_assignment;
 
                 $context->inside_assignment = true;
@@ -165,7 +161,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                 ArrayAssignmentAnalyzer::analyze(
                     $statements_analyzer,
-                    new PhpParser\Node\Expr\ArrayDimFetch(
+                    new VirtualArrayDimFetch(
                         $args[0]->value,
                         null,
                         $args[$i]->value->getAttributes()
@@ -178,7 +174,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $statements_analyzer->node_data = $old_node_data;
             }
 
-            return;
+            return null;
         }
 
         $context->inside_call = true;
@@ -191,7 +187,7 @@ class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
-        for ($i = 1; $i < count($args); $i++) {
+        for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $args[$i]->value,
@@ -206,13 +202,13 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
             $objectlike_list = null;
 
-            if ($array_type instanceof ObjectLike) {
+            if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
                     $objectlike_list = clone $array_type;
                 }
@@ -254,7 +250,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $arg_value_type = clone $arg_value_type;
 
                     foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
-                        if ($arg_value_atomic_type instanceof ObjectLike) {
+                        if ($arg_value_atomic_type instanceof TKeyedArray) {
                             $was_list = $arg_value_atomic_type->is_list;
 
                             $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
@@ -319,13 +315,11 @@ class ArrayFunctionArgumentsAnalyzer
 
         $context->inside_call = false;
 
-        return;
+        return null;
     }
 
     /**
-     * @param   StatementsAnalyzer                      $statements_analyzer
-     * @param   array<int, PhpParser\Node\Arg>          $args
-     * @param   Context                                 $context
+     * @param   list<PhpParser\Node\Arg>          $args
      *
      * @return  false|null
      */
@@ -333,7 +327,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context
-    ) {
+    ): ?bool {
         $context->inside_call = true;
         $array_arg = $args[0]->value;
 
@@ -356,7 +350,7 @@ class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[2])) {
-            return;
+            return null;
         }
 
         $length_arg = $args[2]->value;
@@ -370,7 +364,7 @@ class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[3])) {
-            return;
+            return null;
         }
 
         $replacement_arg = $args[3]->value;
@@ -406,11 +400,11 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
-            if ($array_type instanceof ObjectLike) {
+            if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
                     $array_type = new TNonEmptyList($array_type->getGenericValueType());
                 } else {
@@ -431,11 +425,11 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|ObjectLike|TList
+             * @var TArray|TKeyedArray|TList
              */
             $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
 
-            if ($replacement_array_type instanceof ObjectLike) {
+            if ($replacement_array_type instanceof TKeyedArray) {
                 $was_list = $replacement_array_type->is_list;
 
                 $replacement_array_type = $replacement_array_type->getGenericArrayType();
@@ -449,7 +443,7 @@ class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
+            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type]);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
@@ -460,7 +454,7 @@ class ArrayFunctionArgumentsAnalyzer
                 false
             );
 
-            return;
+            return null;
         }
 
         $array_type = Type::getArray();
@@ -473,17 +467,16 @@ class ArrayFunctionArgumentsAnalyzer
             $context,
             false
         );
+
+        return null;
     }
 
-    /**
-     * @return void
-     */
     public static function handleByRefArrayAdjustment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
         Context $context,
         bool $is_array_shift
-    ) {
+    ): void {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -499,7 +492,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_atomic_types = $array_type->getAtomicTypes();
 
                 foreach ($array_atomic_types as $array_atomic_type) {
-                    if ($array_atomic_type instanceof ObjectLike) {
+                    if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list) {
                             $array_atomic_type = clone $array_atomic_type;
 
@@ -518,7 +511,7 @@ class ArrayFunctionArgumentsAnalyzer
                             }
                         }
 
-                        if ($array_atomic_type instanceof ObjectLike) {
+                        if ($array_atomic_type instanceof TKeyedArray) {
                             $array_atomic_type = $array_atomic_type->getGenericArrayType();
                         }
                     }
@@ -540,7 +533,6 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
-                        $context->removeDescendents($var_id, $array_type);
                     } elseif ($array_atomic_type instanceof TNonEmptyList) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
                             if ($array_atomic_type->count === 0) {
@@ -558,37 +550,33 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_type->addType($array_atomic_type);
-                        $context->removeDescendents($var_id, $array_type);
                     }
                 }
 
+                $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
     }
 
     /**
-     * @param  string   $method_id
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count [description]
      * @param  (TArray|null)[] $array_arg_types
      *
-     * @return void
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
-        $max_closure_param_count,
+        int $min_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$closure_type instanceof Type\Atomic\TFn) {
+        if (!$closure_type instanceof Type\Atomic\TClosure) {
             if ($method_id === 'array_map') {
                 return;
             }
@@ -618,7 +606,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $function_id_parts = explode('&', $function_id);
 
                     foreach ($function_id_parts as $function_id_part) {
-                        list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
+                        [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
 
                         switch ($callable_fq_class_name) {
                             case 'self':
@@ -653,7 +641,7 @@ class ArrayFunctionArgumentsAnalyzer
                             continue;
                         }
 
-                        $closure_types[] = new Type\Atomic\TFn(
+                        $closure_types[] = new Type\Atomic\TClosure(
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed()
@@ -706,7 +694,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $closure_types[] = $callmap_callables[0];
                         }
                     } else {
-                        $closure_types[] = new Type\Atomic\TFn(
+                        $closure_types[] = new Type\Atomic\TClosure(
                             'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed()
@@ -737,24 +725,19 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  Type\Atomic\TFn|Type\Atomic\TCallable $closure_type
-     * @param  string   $method_id
-     * @param  int      $min_closure_param_count
-     * @param  int      $max_closure_param_count
+     * @param  Type\Atomic\TClosure|Type\Atomic\TCallable $closure_type
      * @param  (TArray|null)[] $array_arg_types
-     *
-     * @return void
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        $method_id,
+        string $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
-        $min_closure_param_count,
-        $max_closure_param_count,
+        int $min_closure_param_count,
+        int $max_closure_param_count,
         array $array_arg_types
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $closure_params = $closure_type->params;
@@ -844,11 +827,11 @@ class ArrayFunctionArgumentsAnalyzer
 
                 foreach ($closure_param_type->getTemplateTypes() as $template_type) {
                     $template_result->template_types[$template_type->param_name] = [
-                        ($template_type->defining_class) => [$template_type->as]
+                        ($template_type->defining_class) => $template_type->as
                     ];
                 }
 
-                $closure_param_type = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+                $closure_param_type = TemplateStandinTypeReplacer::replace(
                     $closure_param_type,
                     $template_result,
                     $codebase,
@@ -859,7 +842,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $context->calling_method_id ?: $context->calling_function_id
                 );
 
-                $closure_type->return_type->replaceTemplateTypesWithArgTypes(
+                $closure_type->replaceTemplateTypesWithArgTypes(
                     $template_result,
                     $codebase
                 );
@@ -888,7 +871,7 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
                         new MixedArgumentTypeCoercion(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -900,7 +883,7 @@ class ArrayFunctionArgumentsAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new ArgumentTypeCoercion(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -922,7 +905,7 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->scalar_type_match_found) {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -934,7 +917,7 @@ class ArrayFunctionArgumentsAnalyzer
                 } elseif ($types_can_be_identical) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArgument(
-                            'First parameter of closure passed to function ' . $method_id . ' expects '
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', possibly different type '
                                 . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
@@ -946,7 +929,7 @@ class ArrayFunctionArgumentsAnalyzer
                     }
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
-                        'First parameter of closure passed to function ' . $method_id . ' expects ' .
+                        'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                             $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                         new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                         $method_id

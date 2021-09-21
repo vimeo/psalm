@@ -21,18 +21,15 @@ abstract class SourceAnalyzer implements StatementsSource
         $this->source = null;
     }
 
-    /**
-     * @return Aliases
-     */
-    public function getAliases()
+    public function getAliases(): Aliases
     {
         return $this->source->getAliases();
     }
 
     /**
-     * @return array<string, string>
+     * @return array<lowercase-string, string>
      */
-    public function getAliasedClassesFlipped()
+    public function getAliasedClassesFlipped(): array
     {
         return $this->source->getAliasedClassesFlipped();
     }
@@ -40,110 +37,70 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlippedReplaceable()
+    public function getAliasedClassesFlippedReplaceable(): array
     {
         return $this->source->getAliasedClassesFlippedReplaceable();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getFQCLN()
+    public function getFQCLN(): ?string
     {
         return $this->source->getFQCLN();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getClassName()
+    public function getClassName(): ?string
     {
         return $this->source->getClassName();
     }
 
-    /**
-     * @return string|null
-     */
-    public function getParentFQCLN()
+    public function getParentFQCLN(): ?string
     {
         return $this->source->getParentFQCLN();
     }
 
-    /**
-     * @return string
-     */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->source->getFileName();
     }
 
-    /**
-     * @return string
-     */
-    public function getFilePath()
+    public function getFilePath(): string
     {
         return $this->source->getFilePath();
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFileName()
+    public function getRootFileName(): string
     {
         return $this->source->getRootFileName();
     }
 
-    /**
-     * @return string
-     */
-    public function getRootFilePath()
+    public function getRootFilePath(): string
     {
         return $this->source->getRootFilePath();
     }
 
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     *
-     * @return void
-     */
-    public function setRootFilePath($file_path, $file_name)
+    public function setRootFilePath(string $file_path, string $file_name): void
     {
         $this->source->setRootFilePath($file_path, $file_name);
     }
 
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasParentFilePath($file_path)
+    public function hasParentFilePath(string $file_path): bool
     {
         return $this->source->hasParentFilePath($file_path);
     }
 
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasAlreadyRequiredFilePath($file_path)
+    public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return $this->source->hasAlreadyRequiredFilePath($file_path);
     }
 
-    /**
-     * @return int
-     */
-    public function getRequireNesting()
+    public function getRequireNesting(): int
     {
         return $this->source->getRequireNesting();
     }
 
     /**
-     * @return StatementsSource
+     * @psalm-mutation-free
      */
-    public function getSource()
+    public function getSource(): StatementsSource
     {
         return $this->source;
     }
@@ -153,66 +110,65 @@ abstract class SourceAnalyzer implements StatementsSource
      *
      * @return array<string>
      */
-    public function getSuppressedIssues()
+    public function getSuppressedIssues(): array
     {
         return $this->source->getSuppressedIssues();
     }
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function addSuppressedIssues(array $new_issues)
+    public function addSuppressedIssues(array $new_issues): void
     {
         $this->source->addSuppressedIssues($new_issues);
     }
 
     /**
      * @param array<int, string> $new_issues
-     *
-     * @return void
      */
-    public function removeSuppressedIssues(array $new_issues)
+    public function removeSuppressedIssues(array $new_issues): void
     {
         $this->source->removeSuppressedIssues($new_issues);
     }
 
-    /**
-     * @return null|string
-     */
-    public function getNamespace()
+    public function getNamespace(): ?string
     {
         return $this->source->getNamespace();
     }
 
-    /**
-     * @return bool
-     */
-    public function isStatic()
+    public function isStatic(): bool
     {
         return $this->source->isStatic();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase() : Codebase
     {
         return $this->source->getCodebase();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getProjectAnalyzer() : ProjectAnalyzer
     {
         return $this->source->getProjectAnalyzer();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFileAnalyzer() : FileAnalyzer
     {
         return $this->source->getFileAnalyzer();
     }
 
     /**
-     * @return array<string, array<string, array{Type\Union}>>|null
+     * @return array<string, array<string, Type\Union>>|null
      */
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
     }

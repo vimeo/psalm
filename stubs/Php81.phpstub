@@ -1,0 +1,11 @@
+<?php
+namespace {
+    interface UnitEnum {
+        /** @return non-empty-list<static> */
+        public static function cases(): array;
+    }
+}
+
+namespace FTP {
+    final class Connection {}
+}

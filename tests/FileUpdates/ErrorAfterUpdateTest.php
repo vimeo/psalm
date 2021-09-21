@@ -1,29 +1,26 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use function array_keys;
-use function array_pop;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use function preg_quote;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
+use function array_keys;
+use function array_pop;
+use function getcwd;
+use function preg_quote;
+
+use const DIRECTORY_SEPARATOR;
+
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
 
@@ -49,13 +46,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorAfterUpdate(
         array $file_stages,
         string $error_message,
         array $error_levels = []
-    ) {
+    ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 
@@ -102,7 +98,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
-    public function providerTestInvalidUpdates()
+    public function providerTestInvalidUpdates(): array
     {
         return [
             'invalidateParentCaller' => [
@@ -171,7 +167,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -190,7 +186,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -213,7 +209,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -231,7 +227,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new B)->foo();',
+                            echo (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -264,7 +260,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new C)->existingMethod();',
+                            echo (new C)->existingMethod();',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -294,7 +290,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public function newMethod() : void {}
                             }
 
-                            (new C)->existingMethod();
+                            echo (new C)->existingMethod();
                             // newly-added call, removed in the next code block
                             (new C)->newMethod();',
                     ],
@@ -324,7 +320,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
                             }
 
-                            (new C)->existingMethod();',
+                            echo (new C)->existingMethod();',
                     ],
                 ],
                 'error_message' => 'NullableReturnStatement',
@@ -652,7 +648,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                             class A {}
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -683,7 +680,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public function foo() : void {}
                             }
 
-                            $a = new A();',
+                            $a = new A();
+                            print_r($a);',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedMethod',
@@ -809,7 +807,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo = "hello";
                             }
 
-                            $a = new A();',
+                            print_r(new A());',
                     ],
                 ],
                 'error_message' => 'PossiblyUnusedProperty',
@@ -911,6 +909,43 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'invalidateChildMethodWhenSignatureChanges' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }
+
+                            class AChild extends A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo(string $s = "") : void {
+                                    echo $s;
+                                }
+                            }
+
+                            class AChild extends A {
+                                public function foo(string $s) : void {
+                                    echo $s;
+                                }
+                            }',
+                    ],
+                ],
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

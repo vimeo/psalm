@@ -2,10 +2,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Context;
 use Psalm\Type;
+
 use function strtolower;
 
 class YieldFromAnalyzer
@@ -26,6 +28,24 @@ class YieldFromAnalyzer
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+            $key_type = null;
+            $value_type = null;
+            $always_non_empty_array = true;
+            if (ForeachAnalyzer::checkIteratorType(
+                $statements_analyzer,
+                $stmt,
+                $stmt->expr,
+                $stmt_expr_type,
+                $statements_analyzer->getCodebase(),
+                $context,
+                $key_type,
+                $value_type,
+                $always_non_empty_array
+            ) === false
+            ) {
+                return false;
+            }
+            
             $yield_from_type = null;
 
             foreach ($stmt_expr_type->getAtomicTypes() as $atomic_type) {
@@ -37,7 +57,7 @@ class YieldFromAnalyzer
                         $yield_from_type = clone $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof Type\Atomic\TArray) {
                         $yield_from_type = clone $atomic_type->type_params[1];
-                    } elseif ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                    } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                         $yield_from_type = $atomic_type->getGenericValueType();
                     }
                 } else {

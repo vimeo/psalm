@@ -1,23 +1,29 @@
 <?php
 namespace Psalm\Tests;
 
-use function preg_quote;
 use Prophecy\Argument;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\PluginManager\PluginListFactory;
+use Psalm\Internal\RuntimeCaches;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;
 
+use function preg_quote;
+
 /** @group PluginManager */
 class PsalmPluginTest extends TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy */
     private $plugin_list;
+
     /** @var ObjectProphecy */
     private $plugin_list_factory;
 
@@ -26,6 +32,7 @@ class PsalmPluginTest extends TestCase
 
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
         $this->plugin_list = $this->prophesize(PluginList::class);
         $this->plugin_list_factory = $this->prophesize(PluginListFactory::class);
         $this->plugin_list_factory->__invoke(Argument::any(), Argument::any())->willReturn($this->plugin_list->reveal());
@@ -48,10 +55,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function showsNoticesWhenTheresNoPlugins()
+    public function showsNoticesWhenTheresNoPlugins(): void
     {
         $show_command = new CommandTester($this->app->find('show'));
         $show_command->execute([]);
@@ -62,10 +68,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function showsEnabledPlugins()
+    public function showsEnabledPlugins(): void
     {
         $this->plugin_list->getEnabled()->willReturn(['a\b\c' => 'vendor/package']);
 
@@ -78,10 +83,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function showsAvailablePlugins()
+    public function showsAvailablePlugins(): void
     {
         $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
 
@@ -94,10 +98,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function passesExplicitConfigToPluginListFactory()
+    public function passesExplicitConfigToPluginListFactory(): void
     {
         $this->plugin_list_factory->__invoke(Argument::any(), '/a/b/c')->willReturn($this->plugin_list->reveal());
 
@@ -108,10 +111,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function showsColumnHeaders()
+    public function showsColumnHeaders(): void
     {
         $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
         $this->plugin_list->getAvailable()->willReturn(['c\d\e' => 'another-vendor/package']);
@@ -126,11 +128,10 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @dataProvider commands
      * @test
      */
-    public function listsCommands(string $command)
+    public function listsCommands(string $command): void
     {
         $list_command = new CommandTester($this->app->find('list'));
         $list_command->execute([]);
@@ -139,11 +140,10 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @dataProvider commands
      * @test
      */
-    public function showsHelpForCommand(string $command)
+    public function showsHelpForCommand(string $command): void
     {
         $help_command = new CommandTester($this->app->find('help'));
         $help_command->execute(['command_name' => $command]);
@@ -152,10 +152,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function requiresPluginNameToEnable()
+    public function requiresPluginNameToEnable(): void
     {
         $enable_command = new CommandTester($this->app->find('enable'));
         $this->expectExceptionMessage('missing: "pluginName"');
@@ -163,10 +162,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function enableComplainsWhenPassedUnresolvablePlugin()
+    public function enableComplainsWhenPassedUnresolvablePlugin(): void
     {
         $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new \InvalidArgumentException);
 
@@ -181,10 +179,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function enableComplainsWhenPassedAlreadyEnabledPlugin()
+    public function enableComplainsWhenPassedAlreadyEnabledPlugin(): void
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
@@ -203,10 +200,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function enableReportsSuccessWhenItEnablesPlugin()
+    public function enableReportsSuccessWhenItEnablesPlugin(): void
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
@@ -227,10 +223,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function requiresPluginNameToDisable()
+    public function requiresPluginNameToDisable(): void
     {
         $disable_command = new CommandTester($this->app->find('disable'));
         $this->expectExceptionMessage('missing: "pluginName"');
@@ -238,10 +233,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function disableComplainsWhenPassedUnresolvablePlugin()
+    public function disableComplainsWhenPassedUnresolvablePlugin(): void
     {
         $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new \InvalidArgumentException);
 
@@ -256,10 +250,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function disableComplainsWhenPassedNotEnabledPlugin()
+    public function disableComplainsWhenPassedNotEnabledPlugin(): void
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {
@@ -278,10 +271,9 @@ class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function disableReportsSuccessWhenItDisablesPlugin()
+    public function disableReportsSuccessWhenItDisablesPlugin(): void
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
             function (array $_args, ObjectProphecy $plugin_list): string {

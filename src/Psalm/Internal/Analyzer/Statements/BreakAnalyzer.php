@@ -2,9 +2,9 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Context;
 use Psalm\Type;
 
 class BreakAnalyzer
@@ -17,8 +17,6 @@ class BreakAnalyzer
         $loop_scope = $context->loop_scope;
 
         $leaving_switch = true;
-
-        $codebase = $statements_analyzer->getCodebase();
 
         if ($loop_scope) {
             if ($context->break_types
@@ -41,9 +39,7 @@ class BreakAnalyzer
                 $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
             } else {
                 foreach ($redefined_vars as $var => $type) {
-                    if ($type->hasMixed()) {
-                        $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
-                    } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
+                    if (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
                         $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
                             $type,
                             $loop_scope->possibly_redefined_loop_parent_vars[$var]
@@ -69,16 +65,22 @@ class BreakAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables && !$leaving_switch) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($loop_scope->unreferenced_vars[$var_id])) {
-                        $loop_scope->unreferenced_vars[$var_id] += $locations;
+            if ($context->finally_scope) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                        if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                            $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $context->finally_scope->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
                     } else {
-                        $loop_scope->unreferenced_vars[$var_id] = $locations;
+                        $context->finally_scope->vars_in_scope[$var_id] = $type;
+                        $type->possibly_undefined = true;
+                        $type->possibly_undefined_from_try = true;
                     }
                 }
-
-                $loop_scope->referenced_var_ids += $context->referenced_var_ids;
             }
         }
 
@@ -97,15 +99,6 @@ class BreakAnalyzer
                         );
                     } else {
                         $case_scope->break_vars[$var_id] = $type;
-                    }
-                }
-            }
-            if ($codebase->find_unused_variables) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($case_scope->unreferenced_vars[$var_id])) {
-                        $case_scope->unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $case_scope->unreferenced_vars[$var_id] = $locations;
                     }
                 }
             }

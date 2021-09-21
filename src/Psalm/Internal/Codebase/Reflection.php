@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_merge;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -10,6 +9,8 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+
+use function array_merge;
 use function strtolower;
 
 /**
@@ -41,10 +42,7 @@ class Reflection
         self::$builtin_functions = [];
     }
 
-    /**
-     * @return void
-     */
-    public function registerClass(\ReflectionClass $reflected_class)
+    public function registerClass(\ReflectionClass $reflected_class): void
     {
         $class_name = $reflected_class->name;
 
@@ -68,7 +66,6 @@ class Reflection
         $storage->abstract = $reflected_class->isAbstract();
         $storage->is_interface = $reflected_class->isInterface();
 
-        /** @psalm-suppress PropertyTypeCoercion */
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
 
         if ($reflected_parent_class) {
@@ -83,9 +80,8 @@ class Reflection
 
             $storage->class_implements = $parent_storage->class_implements;
 
-            $storage->public_class_constants = $parent_storage->public_class_constants;
-            $storage->protected_class_constants = $parent_storage->protected_class_constants;
-            $parent_class_name_lc = $parent_class_name_lc;
+            $storage->constants = $parent_storage->constants;
+
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
                 $parent_storage->parent_classes
@@ -154,7 +150,11 @@ class Reflection
         $class_constants = $reflected_class->getConstants();
 
         foreach ($class_constants as $name => $value) {
-            $storage->public_class_constants[$name] = ClassLikeAnalyzer::getTypeFromValue($value);
+            $storage->constants[$name] = new \Psalm\Storage\ClassConstantStorage(
+                ClassLikeAnalyzer::getTypeFromValue($value),
+                ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                null
+            );
         }
 
         if ($reflected_class->isInterface()) {
@@ -171,8 +171,8 @@ class Reflection
 
         if ($class_name_lower === 'generator') {
             $storage->template_types = [
-                'TKey' => ['Generator' => [Type::getMixed()]],
-                'TValue' => ['Generator' => [Type::getMixed()]],
+                'TKey' => ['Generator' => Type::getMixed()],
+                'TValue' => ['Generator' => Type::getMixed()],
             ];
         }
 
@@ -219,12 +219,7 @@ class Reflection
         }
     }
 
-    /**
-     * @param \ReflectionMethod $method
-     *
-     * @return void
-     */
-    public function extractReflectionMethodInfo(\ReflectionMethod $method)
+    public function extractReflectionMethodInfo(\ReflectionMethod $method): void
     {
         $method_name_lc = strtolower($method->getName());
 
@@ -285,7 +280,7 @@ class Reflection
         $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
-            $storage->params = [];
+            $storage->setParams([]);
 
             foreach ($callables[0]->params as $param) {
                 if ($param->type) {
@@ -293,19 +288,18 @@ class Reflection
                 }
             }
 
-            $storage->params = $callables[0]->params;
+            $storage->setParams($callables[0]->params);
 
             $storage->return_type = $callables[0]->return_type;
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
             $params = $method->getParameters();
 
-            $storage->params = [];
+            $storage->setParams([]);
 
             foreach ($params as $param) {
                 $param_array = $this->getReflectionParamData($param);
-                $storage->params[] = $param_array;
-                $storage->param_lookup[$param->name] = true;
+                $storage->addParam($param_array);
             }
         }
 
@@ -318,21 +312,16 @@ class Reflection
         }
     }
 
-    /**
-     * @param  \ReflectionParameter $param
-     *
-     * @return FunctionLikeParameter
-     */
-    private function getReflectionParamData(\ReflectionParameter $param)
+    private function getReflectionParamData(\ReflectionParameter $param): FunctionLikeParameter
     {
         $param_type = self::getPsalmTypeFromReflectionType($param->getType());
-        $param_name = (string)$param->getName();
+        $param_name = $param->getName();
 
-        $is_optional = (bool)$param->isOptional();
+        $is_optional = $param->isOptional();
 
         $parameter = new FunctionLikeParameter(
             $param_name,
-            (bool)$param->isPassedByReference(),
+            $param->isPassedByReference(),
             $param_type,
             null,
             null,
@@ -351,7 +340,7 @@ class Reflection
      *
      * @return false|null
      */
-    public function registerFunction($function_id)
+    public function registerFunction(string $function_id): ?bool
     {
         try {
             $reflection_function = new \ReflectionFunction($function_id);
@@ -359,7 +348,7 @@ class Reflection
             $callmap_callable = null;
 
             if (isset(self::$builtin_functions[$function_id])) {
-                return;
+                return null;
             }
 
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
@@ -377,14 +366,14 @@ class Reflection
                 && $callmap_callable->params !== null
                 && $callmap_callable->return_type !== null
             ) {
-                $storage->params = $callmap_callable->params;
+                $storage->setParams($callmap_callable->params);
                 $storage->return_type = $callmap_callable->return_type;
             } else {
                 $reflection_params = $reflection_function->getParameters();
 
                 foreach ($reflection_params as $param) {
                     $param_obj = $this->getReflectionParamData($param);
-                    $storage->params[] = $param_obj;
+                    $storage->addParam($param_obj);
                 }
 
                 if ($reflection_return_type = $reflection_function->getReturnType()) {
@@ -406,33 +395,47 @@ class Reflection
         } catch (\ReflectionException $e) {
             return false;
         }
+
+        return null;
     }
 
-    public static function getPsalmTypeFromReflectionType(\ReflectionType $reflection_type = null) : Type\Union
+    public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type = null) : Type\Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
         }
 
-        $suffix = '';
-
-        if ($reflection_type->allowsNull()) {
-            $suffix = '|null';
+        /**
+         * @psalm-suppress UndefinedClass,TypeDoesNotContainType
+         */
+        if ($reflection_type instanceof \ReflectionNamedType) {
+            $type = $reflection_type->getName();
+        } elseif ($reflection_type instanceof \ReflectionUnionType) {
+            /** @psalm-suppress MixedArgument */
+            $type = \implode(
+                '|',
+                \array_map(
+                    function (\ReflectionNamedType $reflection) {
+                        return $reflection->getName();
+                    },
+                    $reflection_type->getTypes()
+                )
+            );
+        } else {
+            throw new \LogicException('Unexpected reflection class ' . \get_class($reflection_type) . ' found.');
         }
 
-        return Type::parseString($reflection_type->getName() . $suffix);
+        if ($reflection_type->allowsNull()) {
+            $type .= '|null';
+        }
+
+        return Type::parseString($type);
     }
 
-    /**
-     * @param string $fq_class_name
-     * @param string $parent_class
-     *
-     * @return void
-     */
     private function registerInheritedMethods(
-        $fq_class_name,
-        $parent_class
-    ) {
+        string $fq_class_name,
+        string $parent_class
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 
@@ -455,12 +458,11 @@ class Reflection
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
      *
-     * @return void
      */
     private function registerInheritedProperties(
-        $fq_class_name,
-        $parent_class
-    ) {
+        string $fq_class_name,
+        string $parent_class
+    ): void {
         $parent_storage = $this->storage_provider->get($parent_class);
         $storage = $this->storage_provider->get($fq_class_name);
 
@@ -501,28 +503,26 @@ class Reflection
         }
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     * @return bool
-     */
-    public function hasFunction($function_id)
+    public function hasFunction(string $function_id): bool
     {
         return isset(self::$builtin_functions[$function_id]);
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     * @return FunctionStorage
-     */
-    public function getFunctionStorage($function_id)
+    public function getFunctionStorage(string $function_id): FunctionStorage
     {
         if (isset(self::$builtin_functions[$function_id])) {
             return self::$builtin_functions[$function_id];
         }
 
         throw new \UnexpectedValueException('Expecting to have a function for ' . $function_id);
+    }
+
+    /**
+     * @return array<string, FunctionStorage>
+     */
+    public function getFunctions(): array
+    {
+        return self::$builtin_functions;
     }
 
     public static function clearCache() : void

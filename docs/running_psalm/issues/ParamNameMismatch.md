@@ -56,7 +56,7 @@ Alternatively you can ignore this issue by adding a `@no-named-arguments` annota
 <?php
 
 class A {
-    /** @no-named-params */
+    /** @no-named-arguments */
     public function foo(string $str, bool $b = false) : void {}
 }
 

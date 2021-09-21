@@ -11,7 +11,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
@@ -36,80 +36,11 @@ class ScopeTest extends \Psalm\Tests\TestCase
 
                     echo $badge;',
             ],
-            'assignmentInIf' => [
-                '<?php
-                    if ($row = (rand(0, 10) ? [5] : null)) {
-                        echo $row[0];
-                    }',
-            ],
-            'negatedAssignmentInIf' => [
-                '<?php
-                    if (!($row = (rand(0, 10) ? [5] : null))) {
-                        // do nothing
-                    }
-                    else {
-                        echo $row[0];
-                    }',
-            ],
-            'assignInElseIf' => [
-                '<?php
-                    if (rand(0, 10) > 5) {
-                        echo "hello";
-                    } elseif ($row = (rand(0, 10) ? [5] : null)) {
-                        echo $row[0];
-                    }',
-            ],
-            'ifNotEqualsFalse' => [
-                '<?php
-                    if (($row = rand(0,10) ? [1] : false) !== false) {
-                       echo $row[0];
-                    }',
-            ],
-            'ifNotEqualsNull' => [
-                '<?php
-                    if (($row = rand(0,10) ? [1] : null) !== null) {
-                       echo $row[0];
-                    }',
-            ],
-            'ifNullNotEquals' => [
-                '<?php
-                    if (null !== ($row = rand(0,10) ? [1] : null)) {
-                       echo $row[0];
-                    }',
-            ],
-            'ifNullEquals' => [
-                '<?php
-                    if (null === ($row = rand(0,10) ? [1] : null)) {
-
-                    } else {
-                        echo $row[0];
-                    }',
-            ],
-            'passedByRefInIf' => [
-                '<?php
-                    if (preg_match("/bad/", "badger", $matches)) {
-                        echo (string)$matches[0];
-                    }',
-            ],
-            'passByRefInIfCheckAfter' => [
-                '<?php
-                    if (!preg_match("/bad/", "badger", $matches)) {
-                        exit();
-                    }
-                    echo (string)$matches[0];',
-            ],
-            'passByRefInIfWithBoolean' => [
-                '<?php
-                    $a = (bool)rand(0, 1);
-                    if ($a && preg_match("/bad/", "badger", $matches)) {
-                        echo (string)$matches[0];
-                    }',
-            ],
             'passByRefInVarWithBoolean' => [
                 '<?php
                     $a = preg_match("/bad/", "badger", $matches) > 0;
                     if ($a) {
-                        echo (string)$matches[1];
+                        echo $matches[1];
                     }',
             ],
             'functionExists' => [
@@ -171,11 +102,14 @@ class ScopeTest extends \Psalm\Tests\TestCase
             ],
             'repeatAssertionWithOther' => [
                 '<?php
-                    $a = rand(0, 10) ? "hello" : null;
+                    function getString() : string {
+                        return "hello";
+                    }
+                    $a = rand(0, 10) ? getString() : null;
 
                     if (rand(0, 10) > 1 || is_string($a)) {
                         if (is_string($a)) {
-                            echo strpos("e", $a);
+                            echo strpos($a, "e");
                         }
                     }',
                 'assertions' => [
@@ -258,21 +192,27 @@ class ScopeTest extends \Psalm\Tests\TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
-            'bleedElseifAssignedVarsIntoElseScope' => [
+            'psalmVarThisInTemplate' => [
                 '<?php
-                    if (rand(0, 1) === 0) {
-                        $foo = 0;
-                    } elseif ($foo = rand(0, 10)) {}
-
-                    echo substr("banana", $foo);',
+                    $e = new Exception(); // necessary to trick Psalm’s scanner for test
+                    /** @var Exception $this */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+            ],
+            'psalmVarThisAbsoluteClassInTemplate' => [
+                '<?php
+                    $e = new Exception(); // necessary to trick Psalm’s scanner for test
+                    /** @var \Exception $this */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVarInIf' => [

@@ -1,25 +1,33 @@
 <?php
 namespace Psalm;
 
-use function array_filter;
 use Psalm\Internal\Analyzer\IssueData;
+
+use function array_filter;
+use function htmlspecialchars;
+
+use const ENT_QUOTES;
+use const ENT_XML1;
 
 abstract class Report
 {
-    const TYPE_COMPACT = 'compact';
-    const TYPE_CONSOLE = 'console';
-    const TYPE_PYLINT = 'pylint';
-    const TYPE_JSON = 'json';
-    const TYPE_JSON_SUMMARY = 'json-summary';
-    const TYPE_SONARQUBE = 'sonarqube';
-    const TYPE_EMACS = 'emacs';
-    const TYPE_XML = 'xml';
-    const TYPE_JUNIT = 'junit';
-    const TYPE_CHECKSTYLE = 'checkstyle';
-    const TYPE_TEXT = 'text';
-    const TYPE_GITHUB_ACTIONS = 'github';
+    public const TYPE_COMPACT = 'compact';
+    public const TYPE_CONSOLE = 'console';
+    public const TYPE_PYLINT = 'pylint';
+    public const TYPE_JSON = 'json';
+    public const TYPE_JSON_SUMMARY = 'json-summary';
+    public const TYPE_SONARQUBE = 'sonarqube';
+    public const TYPE_EMACS = 'emacs';
+    public const TYPE_XML = 'xml';
+    public const TYPE_JUNIT = 'junit';
+    public const TYPE_CHECKSTYLE = 'checkstyle';
+    public const TYPE_TEXT = 'text';
+    public const TYPE_GITHUB_ACTIONS = 'github';
+    public const TYPE_PHP_STORM = 'phpstorm';
+    public const TYPE_SARIF = 'sarif';
+    public const TYPE_CODECLIMATE = 'codeclimate';
 
-    const SUPPORTED_OUTPUT_TYPES = [
+    public const SUPPORTED_OUTPUT_TYPES = [
         self::TYPE_COMPACT,
         self::TYPE_CONSOLE,
         self::TYPE_PYLINT,
@@ -32,6 +40,9 @@ abstract class Report
         self::TYPE_CHECKSTYLE,
         self::TYPE_TEXT,
         self::TYPE_GITHUB_ACTIONS,
+        self::TYPE_PHP_STORM,
+        self::TYPE_SARIF,
+        self::TYPE_CODECLIMATE,
     ];
 
     /**
@@ -63,9 +74,6 @@ abstract class Report
     /**
      * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
-     * @param bool $use_color
-     * @param bool $show_snippet
-     * @param bool $show_info
      */
     public function __construct(
         array $issues_data,
@@ -95,8 +103,10 @@ abstract class Report
         $this->total_expression_count = $total_expression_count;
     }
 
-    /**
-     * @return string
-     */
+    protected function xmlEncode(string $data): string
+    {
+        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
+
     abstract public function create(): string;
 }

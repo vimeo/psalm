@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UndefinedFunction extends FunctionIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 21;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 21;
 }

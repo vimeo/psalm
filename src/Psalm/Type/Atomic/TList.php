@@ -1,19 +1,22 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function get_class;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\UnionTemplateHandler;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function get_class;
+
 /**
- * Represents an array where we know its key values
+ * Represents an array that has some particularities:
+ * - its keys are integers
+ * - they start at 0
+ * - they are consecutive and go upwards (no negative int)
  */
 class TList extends \Psalm\Type\Atomic
 {
@@ -22,7 +25,7 @@ class TList extends \Psalm\Type\Atomic
      */
     public $type_param;
 
-    const KEY = 'list';
+    public const KEY = 'list';
 
     /**
      * Constructs a new instance of a list
@@ -32,13 +35,13 @@ class TList extends \Psalm\Type\Atomic
         $this->type_param = $type_param;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param . '>';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param->getId() . '>';
@@ -50,16 +53,15 @@ class TList extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($use_phpdoc_format) {
             return (new TArray([Type::getInt(), $this->type_param]))
                 ->toNamespacedString(
@@ -83,28 +85,24 @@ class TList extends \Psalm\Type\Atomic
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
-    public function toPhpString($namespace, array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): string {
         return 'array';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'array';
     }
@@ -113,12 +111,12 @@ class TList extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
         bool $replace = true,
-        bool $add_upper_bound = false,
+        bool $add_lower_bound = false,
         int $depth = 0
     ) : Atomic {
         $list = clone $this;
@@ -133,7 +131,7 @@ class TList extends \Psalm\Type\Atomic
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = clone $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\ObjectLike) {
+            } elseif ($input_type instanceof Atomic\TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {
@@ -147,7 +145,7 @@ class TList extends \Psalm\Type\Atomic
                 $input_type_param = clone $input_type->type_param;
             }
 
-            $type_param = UnionTemplateHandler::replaceTemplateTypesWithStandins(
+            $type_param = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
                 $codebase,
@@ -157,7 +155,8 @@ class TList extends \Psalm\Type\Atomic
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_upper_bound,
+                $add_lower_bound,
+                null,
                 $depth + 1
             );
 
@@ -173,31 +172,33 @@ class TList extends \Psalm\Type\Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ) : void {
-        $this->type_param->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+        TemplateInferredTypeReplacer::replace(
+            $this->type_param,
+            $template_result,
+            $codebase
+        );
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
         }
 
-        if (!$this->type_param->equals($other_type->type_param)) {
+        if (!$this->type_param->equals($other_type->type_param, $ensure_source_equality)) {
             return false;
         }
 
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
-        return 'list';
+        if (!$exact || $this->type_param->isMixed()) {
+            return 'list';
+        }
+
+        return $this->toNamespacedString(null, [], null, false);
     }
 
     public function getChildNodes() : array

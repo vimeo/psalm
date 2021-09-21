@@ -3,6 +3,7 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
+
 use function array_pop;
 use function explode;
 use function strlen;
@@ -25,9 +26,7 @@ class Message
     /**
      * Parses a message
      *
-     * @param string $msg
      *
-     * @return Message
      * @psalm-suppress UnusedMethod
      */
     public static function parse(string $msg): Message
@@ -46,10 +45,9 @@ class Message
     }
 
     /**
-     * @param \AdvancedJsonRpc\Message $body
      * @param string[] $headers
      */
-    public function __construct(MessageBody $body = null, array $headers = [])
+    public function __construct(?MessageBody $body = null, array $headers = [])
     {
         $this->body = $body;
         if (!isset($headers['Content-Type'])) {

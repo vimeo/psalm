@@ -9,7 +9,7 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'twoVarLogicSimple' => [
@@ -234,38 +234,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                             // do something
                         } elseif ($a === "bar") {
                             // can never get here
-                        }
-                    }',
-            ],
-            'repeatedSet' => [
-                '<?php
-                    function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
-                            return;
-                        }
-
-                        if (rand(0, 1)) {
-                            $a = rand(0, 1) ? "hello" : null;
-
-                            if ($a) {
-
-                            }
-                        }
-                    }',
-            ],
-            'repeatedSetInsideWhile' => [
-                '<?php
-                    function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
-                            return;
-                        } else {
-                            while (rand(0, 1)) {
-                                $a = rand(0, 1) ? "hello" : null;
-                            }
-
-                            if ($a) {
-
-                            }
                         }
                     }',
             ],
@@ -564,16 +532,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
 
                     if ($a->foo === "somestring") {}',
             ],
-            'propertyFetchAfterNotNullCheckInElseif' => [
-                '<?php
-                    class A {
-                        /** @var ?string */
-                        public $foo;
-                    }
-
-                    if (rand(0, 10) > 5) {
-                    } elseif (($a = rand(0, 1) ? new A : null) && $a->foo) {}',
-            ],
             'noParadoxForGetopt' => [
                 '<?php
                     $options = getopt("t:");
@@ -716,14 +674,6 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                                 $foo->bar();
                             }
                         }
-                    }',
-            ],
-            'noParadoxAfterConditionalAssignment' => [
-                '<?php
-                    if ($a = rand(0, 5)) {
-                        echo $a;
-                    } elseif ($a = rand(0, 5)) {
-                        echo $a;
                     }',
             ],
             'callWithNonNullInTernary' => [
@@ -1027,13 +977,138 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                             || ($i && $j);
                     }'
             ],
+            'fineCheck' => [
+                '<?php
+                    function foo(bool $b, bool $c) : void {
+                        if ((!$b || rand(0, 1)) && (!$c || rand(0, 1))) {}
+                    }'
+            ],
+            'noParadoxInTernary' => [
+                '<?php
+                    function foo(?bool $b) : string {
+                        return $b ? "a" : ($b === null ? "foo" : "b");
+                    }',
+            ],
+            'cancelOutSameStatement' => [
+                '<?php
+                    function edit(?string $a, ?string $b): string {
+                        if ((!$a && !$b) || ($a && !$b)) {
+                            return "";
+                        }
+
+                        return $b;
+                    }'
+            ],
+            'cancelOutDifferentStatement' => [
+                '<?php
+                    function edit(?string $a, ?string $b): string {
+                        if (!$a && !$b) {
+                            return "";
+                        }
+
+                        if ($a && !$b) {
+                            return "";
+                        }
+
+                        return $b;
+                    }'
+            ],
+            'moreChecks' => [
+                '<?php
+                    class B {}
+                    class C {}
+
+                    function foo(?B $b, ?C $c): B|C {
+                        if (!$b && !$c) {
+                            throw new Exception("bad");
+                        }
+
+                        if ($b && $c) {
+                            return rand(0, 1) ? $b : $c;
+                        }
+
+                        if ($b) {
+                            return $b;
+                        }
+
+                        return $c;
+                    }'
+            ],
+            'dependentType' => [
+                '<?php
+                    class A {
+                        public function isValid() : bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function foo() : void {}
+                    }
+
+                    function takesA(?A $a) : void {
+                        $is_valid_a = $a && $a->isValid();
+
+                        if ($is_valid_a) {
+                            $a->foo();
+                        }
+                    }'
+            ],
+            'assignSameName' => [
+                '<?php
+                    function foo(string $value): string {
+                        $value = "yes" === $value;
+                        return !$value ? "foo" : "bar";
+                    }'
+            ],
+            'dependentTypeUsedAfterCall' => [
+                '<?php
+                    function a(string $_b): void {}
+
+                    function foo(?string $c): string {
+                        $iftrue = $c !== null;
+
+                        if ($c !== null) {
+                            a($c);
+                        }
+
+                        if ($iftrue) {
+                            return $c;
+                        }
+
+                        return "";
+                    }'
+            ],
+            'notNullAfterSuccessfulNullsafeMethodCall' => [
+                '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if ($x?->a()) {
+                            echo $x->b();
+                        }
+                    }',
+                [],
+                [],
+                '8.1',
+            ],
+            'narrowedTypeAfterIdenticalCheckWithOtherType' => [
+                '<?php
+                    function a(int $a, ?int $b = null): void
+                    {
+                        if ($a === $b) {
+                            throw new InvalidArgumentException(sprintf("a can not be the same as b (b: %s).", $b));
+                        }
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'threeVarLogicWithChange' => [
@@ -1227,6 +1302,66 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                     } elseif ($from !== null) {
                     } elseif ($to !== null) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'paradoxInTernary' => [
+                '<?php
+                    function foo(string $input) : string {
+                        return $input === "a" ? "bar" : ($input === "a" ? "foo" : "b");
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'mismatchingChecks' => [
+                '<?php
+                    function doesntFindBug(?string $old, ?string $new): void {
+                        if (empty($old) && empty($new)) {
+                            return;
+                        }
+
+                        if (($old && empty($new)) || ($new && empty($old))) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'dependentTypeInvalidated' => [
+                '<?php
+                    class A {
+                        public function isValid() : bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function foo() : void {}
+                    }
+
+                    function takesA(?A $a) : void {
+                        $is_valid_a = $a && $a->isValid();
+
+                        if (rand(0, 1)) {
+                            $is_valid_a = false;
+                        }
+
+                        if ($is_valid_a) {
+                            $a->foo();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'stillNullAfterNullsafeMethodCall' => [
+                '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if (!($x?->a())) {
+                            echo $x->b();
+                        }
+                    }',
+                'error_message' => 'NullReference',
+                [],
+                false,
+                '8.1',
             ],
         ];
     }

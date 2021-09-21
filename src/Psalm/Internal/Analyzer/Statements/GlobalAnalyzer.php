@@ -2,13 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+
 use function is_string;
 
 class GlobalAnalyzer
@@ -48,7 +50,7 @@ class GlobalAnalyzer
                         $context->vars_possibly_in_scope[$var_id] = true;
                     } else {
                         $context->vars_in_scope[$var_id] =
-                            $global_context && $global_context->hasVariable($var_id, $statements_analyzer)
+                            $global_context && $global_context->hasVariable($var_id)
                                 ? clone $global_context->vars_in_scope[$var_id]
                                 : VariableFetchAnalyzer::getGlobalType($var_id);
 
@@ -56,6 +58,24 @@ class GlobalAnalyzer
 
                         $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
                     }
+                    $assignment_node = DataFlowNode::getForAssignment(
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $var)
+                    );
+                    $context->vars_in_scope[$var_id]->parent_nodes = [
+                        $assignment_node->id => $assignment_node,
+                    ];
+                    $context->vars_from_global[$var_id] = true;
+                    $statements_analyzer->registerVariable(
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $var),
+                        $context->branch_point
+                    );
+                    $statements_analyzer->getCodebase()->analyzer->addNodeReference(
+                        $statements_analyzer->getFilePath(),
+                        $var,
+                        $var_id
+                    );
                 }
             }
         }

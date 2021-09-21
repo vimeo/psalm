@@ -6,23 +6,24 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface FunctionParamsProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<lowercase-string>
      */
     public static function getFunctionIds() : array;
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  list<PhpParser\Node\Arg>    $call_args
      *
-     * @return ?array<\Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getFunctionParams(
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
-    );
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array;
 }

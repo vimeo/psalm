@@ -4,8 +4,12 @@ namespace Psalm\Type\Atomic;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
+use function strpos;
 use function strtolower;
 
+/**
+ * Represents an offset of a class constant array.
+ */
 class TKeyOfClassConstant extends Scalar
 {
     /** @var string */
@@ -14,78 +18,54 @@ class TKeyOfClassConstant extends Scalar
     /** @var string */
     public $const_name;
 
-    /**
-     * @param string $fq_classlike_name
-     * @param string $const_name
-     */
-    public function __construct($fq_classlike_name, $const_name)
+    public function __construct(string $fq_classlike_name, string $const_name)
     {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->const_name = $const_name;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
         return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return $this->getKey();
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
-     *
-     * @return string
+     * @param array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->fq_classlike_name === 'static') {
             return 'key-of<static::' . $this->const_name . '>';
         }
@@ -102,7 +82,7 @@ class TKeyOfClassConstant extends Scalar
             ) . '::' . $this->const_name . '>';
         }
 
-        if (!$namespace && stripos($this->fq_classlike_name, '\\') === false) {
+        if (!$namespace && strpos($this->fq_classlike_name, '\\') === false) {
             return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
         }
 
@@ -117,10 +97,7 @@ class TKeyOfClassConstant extends Scalar
         return 'key-of<\\' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
     }

@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class LessSpecificImplementedReturnType extends CodeIssue
 {
-    const ERROR_LEVEL = 5;
-    const SHORTCODE = 166;
+    public const ERROR_LEVEL = 5;
+    public const SHORTCODE = 166;
 }

@@ -6,9 +6,10 @@ You can define your own taint sources with an annotation or a plugin.
 
 You can use the annotation `@psalm-taint-source <taint-type>` to indicate a function or method that provides user input.
 
-In the below example the `input` taint type is specified as a standin for the four input taints `text`, `html`, `sql` and `shell`.
+In the below example the `input` taint type is specified as a standin for input taints as defined in [Psalm\Type\TaintKindGroup](https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/TaintKindGroup.php).
 
 ```php
+<?php
 /**
  * @psalm-taint-source input
  */
@@ -25,12 +26,11 @@ For example this plugin treats all variables named `$bad_data` as taint sources.
 namespace Some\Ns;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Type\TaintKindGroup;
 
 class BadSqlTainter implements AfterExpressionAnalysisInterface
@@ -40,20 +40,16 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
      *
      * @param  PhpParser\Node\Expr  $expr
      * @param  Context              $context
-     * @param  string[]             $suppressed_issues
      * @param  FileManipulation[]   $file_replacements
      *
      * @return void
      */
-    public static function afterExpressionAnalysis(
-        PhpParser\Node\Expr $expr,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = []
-    ) {
+    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
+        $expr = $event->getExpr();
+        $statements_source = $event->getStatementsSource();
+        $codebase = $event->getCodebase();
         if ($expr instanceof PhpParser\Node\Expr\Variable
-            && $expr->name === '$bad_data'
+            && $expr->name === 'bad_data'
         ) {
             $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);
 

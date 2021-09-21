@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Issue\DeprecatedMethod;
@@ -12,7 +12,6 @@ use Psalm\IssueBuffer;
 class MethodCallProhibitionAnalyzer
 {
     /**
-     * @param  CodeLocation $code_location
      * @param  string[]     $suppressed_issues
      *
      * @return false|null
@@ -24,7 +23,7 @@ class MethodCallProhibitionAnalyzer
         ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) {
+    ): ?bool {
         $codebase_methods = $codebase->methods;
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
@@ -57,7 +56,7 @@ class MethodCallProhibitionAnalyzer
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)
                             . ' is internal to ' . $storage->internal
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($context->self ?: 'root namespace'),
                         $code_location,
                         (string) $method_id
                     ),

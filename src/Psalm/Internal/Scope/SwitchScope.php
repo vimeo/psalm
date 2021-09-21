@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Scope;
 
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Internal\Clause;
 use Psalm\Type;
 
@@ -42,22 +41,12 @@ class SwitchScope
     public $leftover_case_equality_expr = null;
 
     /**
-     * @var array<int, Clause>
+     * @var list<Clause>
      */
     public $negated_clauses = [];
-
-    /**
-     * @var array<string, array<string, CodeLocation>>
-     */
-    public $new_unreferenced_vars = [];
 
     /**
      * @var array<string, bool>|null
      */
     public $new_assigned_var_ids = null;
-
-    /**
-     * @var array<string, bool>
-     */
-    public $new_possibly_assigned_var_ids = [];
 }

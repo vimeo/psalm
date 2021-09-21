@@ -9,7 +9,7 @@ class InternalAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'internalMethodWithCall' => [
@@ -524,9 +524,9 @@ class InternalAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'internalMethodWithCall' => [
@@ -548,7 +548,24 @@ class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalMethod',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from B\Bat',
+            ],
+            'internalMethodWithCallFromRootNamespace' => [
+                '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace {
+                        \A\Foo::barBar();
+                    }',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from root namespace',
             ],
             'internalClassWithStaticCall' => [
                 '<?php
@@ -956,6 +973,21 @@ class InternalAnnotationTest extends TestCase
 
                     ',
                 'error_message' => 'psalm-internal annotation used without specifying namespace',
+            ],
+            'internalConstructor' => [
+                '<?php
+                    namespace A {
+                        class C {
+                            /** @internal */
+                            public function __construct() {}
+                        }
+                    }
+                    namespace B {
+                        use A\C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalMethod',
             ],
         ];
     }

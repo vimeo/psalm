@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+
 use const DIRECTORY_SEPARATOR;
 
 class MagicPropertyTest extends TestCase
@@ -10,10 +11,7 @@ class MagicPropertyTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testPhpDocPropertyWithoutGet()
+    public function testPhpDocPropertyWithoutGet(): void
     {
         Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
 
@@ -36,7 +34,7 @@ class MagicPropertyTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'propertyDocblock' => [
@@ -697,13 +695,45 @@ class MagicPropertyTest extends TestCase
                         }
                     }'
             ],
+            'propertyReadIsExpanded' => [
+                '<?php
+                    /** @property self::TYPE_* $type */
+                    class A {
+                        public const TYPE_A = 1;
+                        public const TYPE_B = 2;
+
+                        public function __get(string $_prop) {}
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value) {}
+                    }
+                    $a = (new A)->type;
+                ',
+                'assertions' => [
+                    '$a===' => '1|2',
+                ],
+            ],
+            'propertyWriteIsExpanded' => [
+                '<?php
+                    /** @property self::TYPE_* $type */
+                    class A {
+                        public const TYPE_A = 1;
+                        public const TYPE_B = 2;
+
+                        public function __get(string $_prop) {}
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value) {}
+                    }
+                    $a = (new A);
+                    $a->type = A::TYPE_B;
+                ',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'annotationWithoutGetter' => [
@@ -1115,6 +1145,14 @@ class MagicPropertyTest extends TestCase
                         $o->bar = "hello";
                     }',
                 'error_message' => 'UndefinedMagicPropertyAssignment',
+            ],
+            'propertyDocblockOnProperty' => [
+                '<?php
+                    class A { 
+                       /** @property string[] */ 
+                      public array $arr; 
+                    }',
+                'error_message' => 'InvalidDocblock'
             ],
         ];
     }

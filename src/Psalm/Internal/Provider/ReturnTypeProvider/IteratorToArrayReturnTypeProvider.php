@@ -1,18 +1,20 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use function assert;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
-use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\StatementsSource;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type;
 
-class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+use function array_shift;
+use function assert;
+
+class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return [
@@ -20,29 +22,32 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
         ];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $function_id = $event->getFunctionId();
+        $context = $event->getContext();
+        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 
-        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
-            && $first_arg_type->hasObjectType()
-        ) {
+        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))) {
             $key_type = null;
             $value_type = null;
 
             $codebase = $statements_source->getCodebase();
 
-            foreach ($first_arg_type->getAtomicTypes() as $call_arg_atomic_type) {
+            $atomic_types = $first_arg_type->getAtomicTypes();
+
+            while ($call_arg_atomic_type = array_shift($atomic_types)) {
+                if ($call_arg_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                    $atomic_types = \array_merge($atomic_types, $call_arg_atomic_type->as->getAtomicTypes());
+                    continue;
+                }
+
                 if ($call_arg_atomic_type instanceof Type\Atomic\TNamedObject
                     && AtomicTypeComparator::isContainedBy(
                         $codebase,
@@ -85,6 +90,15 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
 
                 if ($key_type->hasMixed()) {
                     $key_type = Type::getArrayKey();
+                }
+
+                if ($key_type->isSingle() && $key_type->hasTemplate()) {
+                    $template_types = $key_type->getTemplateTypes();
+                    $template_type = array_shift($template_types);
+                    if ($template_type->as->hasMixed()) {
+                        $template_type->as = Type::getArrayKey();
+                        $key_type = new Type\Union([$template_type]);
+                    }
                 }
 
                 return new Type\Union([

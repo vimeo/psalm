@@ -4,6 +4,6 @@ namespace Psalm\Issue;
 
 class InvalidTypeImport extends CodeIssue
 {
-    const ERROR_LEVEL = 7;
-    const SHORTCODE = 233;
+    public const ERROR_LEVEL = 7;
+    public const SHORTCODE = 233;
 }

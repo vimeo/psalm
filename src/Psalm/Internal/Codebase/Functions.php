@@ -1,22 +1,26 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
-use function array_shift;
-use function explode;
-use function implode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Type\Atomic\TNamedObject;
+
+use function array_shift;
+use function explode;
+use function implode;
+use function is_bool;
+use function rtrim;
 use function strpos;
 use function strtolower;
 use function substr;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Internal\MethodIdentifier;
 
 /**
  * @internal
@@ -140,22 +144,12 @@ class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
-    /**
-     * @param string $function_id
-     *
-     * @return void
-     */
-    public function addGlobalFunction($function_id, FunctionStorage $storage)
+    public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
-    /**
-     * @param  string  $function_id
-     *
-     * @return bool
-     */
-    public function hasStubbedFunction($function_id)
+    public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
     }
@@ -163,19 +157,18 @@ class Functions
     /**
      * @return array<string, FunctionStorage>
      */
-    public function getAllStubbedFunctions()
+    public function getAllStubbedFunctions(): array
     {
         return self::$stubbed_functions;
     }
 
     /**
      * @param lowercase-string $function_id
-     * @return bool
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
         string $function_id
-    ) {
+    ): bool {
         if ($this->existence_provider->has($function_id)) {
             $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
 
@@ -205,7 +198,7 @@ class Functions
         $predefined_functions = $statements_analyzer->getCodebase()->config->getPredefinedFunctions();
 
         if (isset($predefined_functions[$function_id])) {
-            /** @psalm-suppress TypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion */
             if ($this->reflection->registerFunction($function_id) === false) {
                 return false;
             }
@@ -218,11 +211,10 @@ class Functions
 
     /**
      * @param  non-empty-string         $function_name
-     * @param  StatementsSource         $source
      *
      * @return non-empty-string
      */
-    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source)
+    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string
     {
         if ($function_name[0] === '\\') {
             $function_name = substr($function_name, 1);
@@ -264,12 +256,113 @@ class Functions
     }
 
     /**
-     * @param  string $function_id
-     * @param  string $file_path
-     *
-     * @return bool
+     * @return array<lowercase-string,FunctionStorage>
      */
-    public static function isVariadic(Codebase $codebase, $function_id, $file_path)
+    public function getMatchingFunctionNames(
+        string $stub,
+        int $offset,
+        string $file_path,
+        Codebase $codebase
+    ) : array {
+        if ($stub[0] === '*') {
+            $stub = substr($stub, 1);
+        }
+
+        $fully_qualified = false;
+
+        if ($stub[0] === '\\') {
+            $fully_qualified = true;
+            $stub = substr($stub, 1);
+            $stub_namespace = '';
+        } else {
+            // functions can reference either the current namespace or root-namespaced
+            // equivalents. We therefore want to make both candidates.
+            [$stub_namespace, $stub] = explode('-', $stub);
+        }
+
+        /** @var array<lowercase-string, FunctionStorage> */
+        $matching_functions = [];
+
+        $file_storage = $this->file_storage_provider->get($file_path);
+
+        $current_namespace_aliases = null;
+        foreach ($file_storage->namespace_aliases as $namespace_start => $namespace_aliases) {
+            if ($namespace_start < $offset) {
+                $current_namespace_aliases = $namespace_aliases;
+                break;
+            }
+        }
+
+        // We will search all functions for several patterns. This will
+        // be for all used namespaces, the global namespace and matched
+        // used functions.
+        $match_function_patterns = [
+            $stub . '*',
+        ];
+
+        if ($stub_namespace) {
+            $match_function_patterns[] = $stub_namespace . '\\' . $stub . '*';
+        }
+
+        if ($current_namespace_aliases) {
+            foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
+                if (strpos($alias_name, $stub) === 0) {
+                    try {
+                        $match_function_patterns[] = $function_name;
+                    } catch (\Exception $e) {
+                    }
+                }
+            }
+
+            if (!$fully_qualified) {
+                foreach ($current_namespace_aliases->uses as $namespace_name) {
+                    $match_function_patterns[] = $namespace_name . '\\' . $stub . '*';
+                }
+            }
+        }
+
+        $function_map = $file_storage->functions
+            + $this->getAllStubbedFunctions()
+            + $this->reflection->getFunctions()
+            + $codebase->config->getPredefinedFunctions();
+
+        foreach ($function_map as $function_name => $function) {
+            foreach ($match_function_patterns as $pattern) {
+                $pattern_lc = \strtolower($pattern);
+
+                if (substr($pattern, -1, 1) === '*') {
+                    if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
+                        continue;
+                    }
+                } elseif ($function_name !== $pattern) {
+                    continue;
+                }
+                if (is_bool($function)) {
+                    /** @var callable-string $function_name */
+                    if ($this->reflection->registerFunction($function_name) === false) {
+                        continue;
+                    }
+                    $function = $this->reflection->getFunctionStorage($function_name);
+                }
+
+                if ($function->cased_name) {
+                    $cased_name_parts = \explode('\\', $function->cased_name);
+                    $pattern_parts = \explode('\\', $pattern);
+
+                    if (\end($cased_name_parts)[0] !== \end($pattern_parts)[0]) {
+                        continue;
+                    }
+                }
+
+                /** @var lowercase-string $function_name */
+                $matching_functions[$function_name] = $function;
+            }
+        }
+
+        return $matching_functions;
+    }
+
+    public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
 
@@ -287,7 +380,7 @@ class Functions
     }
 
     /**
-     * @param ?array<int, \PhpParser\Node\Arg> $args
+     * @param ?list<\PhpParser\Node\Arg> $args
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
@@ -298,16 +391,18 @@ class Functions
     ) : bool {
         $impure_functions = [
             // file io
-            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_put_contents',
+            'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_get_contents', 'file_put_contents',
             'opendir', 'readdir', 'closedir', 'rewinddir', 'scandir',
-            'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek',
+            'fopen', 'fread', 'fwrite', 'fclose', 'touch', 'fpassthru', 'fputs', 'fscanf', 'fseek', 'flock',
             'ftruncate', 'fprintf', 'symlink', 'mkdir', 'unlink', 'rename', 'rmdir', 'popen', 'pclose',
-            'fgetcsv', 'fputcsv', 'umask', 'finfo_close', 'readline_add_history', 'stream_set_timeout',
-            'fgets', 'fflush', 'move_uploaded_file',
+            'fgetcsv', 'fputcsv', 'umask', 'finfo_open', 'finfo_close', 'finfo_file', 'readline_add_history',
+            'stream_set_timeout', 'fgets', 'fflush', 'move_uploaded_file', 'file_exists', 'realpath', 'glob',
+            'is_readable', 'is_dir', 'is_file',
 
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
-            'socket_set_option', 'stream_set_write_buffer',
+            'socket_set_option', 'stream_set_write_buffer', 'stream_socket_enable_crypto', 'stream_copy_to_stream',
+            'stream_wrapper_register',
 
             // meta calls
             'call_user_func', 'call_user_func_array', 'define', 'create_function',
@@ -316,7 +411,7 @@ class Functions
             'header', 'header_remove', 'http_response_code', 'setcookie',
 
             // output buffer
-            'ob_start', 'ob_end_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
+            'ob_start', 'ob_end_clean', 'ob_get_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
             'ob_implicit_flush', 'vprintf',
 
             // mcrypt
@@ -362,7 +457,7 @@ class Functions
             'set_error_handler', 'user_error', 'trigger_error', 'restore_error_handler',
             'date_default_timezone_set', 'assert_options', 'setlocale',
             'set_exception_handler', 'set_time_limit', 'putenv', 'spl_autoload_register',
-            'microtime', 'array_rand',
+            'spl_autoload_unregister', 'microtime', 'array_rand', 'set_include_path',
 
             // logging
             'openlog', 'syslog', 'error_log', 'define_syslog_variables',
@@ -370,18 +465,18 @@ class Functions
             // session
             'session_id', 'session_decode', 'session_name', 'session_set_cookie_params',
             'session_set_save_handler', 'session_regenerate_id', 'mb_internal_encoding',
-            'session_start',
+            'session_start', 'session_cache_limiter',
 
             // ldap
             'ldap_set_option',
 
             // iterators
-            'rewind', 'iterator_apply',
+            'rewind', 'iterator_apply', 'iterator_to_array',
 
             // mysqli
             'mysqli_select_db', 'mysqli_dump_debug_info', 'mysqli_kill', 'mysqli_multi_query',
             'mysqli_next_result', 'mysqli_options', 'mysqli_ping', 'mysqli_query', 'mysqli_report',
-            'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set',
+            'mysqli_rollback', 'mysqli_savepoint', 'mysqli_set_charset', 'mysqli_ssl_set', 'mysqli_close',
 
             // script execution
             'ignore_user_abort',
@@ -391,6 +486,16 @@ class Functions
 
             // bcmath
             'bcscale',
+
+            // json
+            'json_last_error',
+
+            // opcache
+            'opcache_compile_file', 'opcache_get_configuration', 'opcache_get_status',
+            'opcache_invalidate', 'opcache_is_script_cached', 'opcache_reset',
+
+            //gettext
+            'bindtextdomain',
         ];
 
         if (\in_array(strtolower($function_id), $impure_functions, true)) {
@@ -407,6 +512,10 @@ class Functions
 
         if ($function_id === 'assert') {
             $must_use = false;
+            return true;
+        }
+
+        if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
             return true;
         }
 
@@ -432,7 +541,7 @@ class Functions
             }
         }
 
-        $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+        $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
             $codebase,
             $function_id,
             $args ?: [],
@@ -450,15 +559,19 @@ class Functions
             || (isset($args[0]) && !$args[0]->value instanceof \PhpParser\Node\Expr\Closure);
 
         foreach ($function_callable->params as $i => $param) {
-            if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
-                foreach ($param->type->getAtomicTypes() as $possible_callable) {
-                    $possible_callable = \Psalm\Internal\Type\Comparator\CallableTypeComparator::getCallableFromAtomic(
-                        $codebase,
-                        $possible_callable
-                    );
+            if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
+                $arg_type = $type_provider->getType($args[$i]->value);
 
-                    if ($possible_callable && !$possible_callable->is_pure) {
-                        return false;
+                if ($arg_type) {
+                    foreach ($arg_type->getAtomicTypes() as $possible_callable) {
+                        $possible_callable = CallableTypeComparator::getCallableFromAtomic(
+                            $codebase,
+                            $possible_callable
+                        );
+
+                        if ($possible_callable && !$possible_callable->is_pure) {
+                            return false;
+                        }
                     }
                 }
             }

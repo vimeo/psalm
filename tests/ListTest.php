@@ -11,7 +11,7 @@ class ListTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'simpleVars' => [
@@ -72,13 +72,21 @@ class ListTest extends TestCase
                     '$c' => 'mixed',
                 ],
             ],
+            'explicitLiteralKey' => [
+                '<?php
+                    /** @param list<int> $a */
+                    function takesList($a): void {}
+
+                    $a = [1, 1 => 2, 3];
+                    takesList($a);',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'thisVarWithBadType' => [
@@ -98,6 +106,20 @@ class ListTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
+            'explicitVariableKey' => [
+                '<?php
+                    /** @param list<int> $a */
+                    function takesList($a): void {}
+
+                    /** @return array-key */
+                    function getKey() {
+                        return 0;
+                    }
+
+                    $a = [getKey() => 1];
+                    takesList($a);',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }

@@ -9,7 +9,7 @@ class GeneratorTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'generator' => [
@@ -252,13 +252,47 @@ class GeneratorTest extends TestCase
                     }
                     echo json_encode(iterator_to_array(getIteratorOrAggregate()));'
             ],
+            'yieldNonExistentClass' => [
+                '<?php
+                    class T {
+                        private const FACTORIES = [
+                            ClassNotExisting::class,
+                        ];
+
+                        function f() : Generator {
+                            foreach (self::FACTORIES as $f) {
+                                if (class_exists($f)) {
+                                    yield new $f();
+                                }
+                            }
+                        }
+                    }',
+                [],
+                ['UndefinedClass']
+            ],
+            'fillTemplatesForIteratorFromGenerator' => [
+                '<?php
+                    /**
+                     * @return Generator<int, string>
+                     */
+                    function generator(): Generator
+                    {
+                        yield "test";
+                    }
+
+                    $iterator = new NoRewindIterator(generator());
+                    ',
+                'assertions' => [
+                    '$iterator' => 'NoRewindIterator<int, string>',
+                ]
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'shouldWarnAboutNoGeneratorReturn' => [
@@ -295,6 +329,63 @@ class GeneratorTest extends TestCase
                         return null;
                     }',
                 'error_message' => 'NullableReturnStatement',
+            ],
+            'invalidIterator' => [
+                '<?php
+                    function example() : int {
+                        return 0;
+                    }
+
+                    function example2() : Generator {
+                        yield from example();
+                    }',
+                'error_message' => 'InvalidIterator',
+            ],
+            'rawObjectIteration' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+                    function example() : Generator {
+                        $arr = new A;
+
+                        yield from $arr;
+                    }',
+                'error_message' => 'RawObjectIteration',
+            ],
+            'possibleRawObjectIteration' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+
+                    class B extends A {}
+
+                    function bar(A $a): void {}
+
+                    function gen() : Generator {
+                        $arr = [];
+
+                        if (rand(0, 10) > 5) {
+                            $arr[] = new A;
+                        } else {
+                            $arr = new B;
+                        }
+
+                        yield from $arr;
+                    }',
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
+            'possibleRawObjectIterationFromIsset' => [
+                '<?php
+                    function foo(array $a) : Generator {
+                        if (isset($a["a"]["b"])) {
+                            yield from $a["a"];
+                        }
+                    }',
+                'error_message' => 'PossibleRawObjectIteration',
             ],
         ];
     }

@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
-use function array_merge;
 use Psalm\Storage\FileStorage;
+
+use function array_merge;
 use function strtolower;
 
 /**
@@ -14,7 +15,7 @@ class FileStorageProvider
      * A list of data useful to analyse files
      * Storing this statically is much faster (at least in PHP 7.2.1)
      *
-     * @var array<string, FileStorage>
+     * @var array<lowercase-string, FileStorage>
      */
     private static $storage = [];
 
@@ -31,17 +32,12 @@ class FileStorageProvider
      */
     public $cache;
 
-    public function __construct(FileStorageCacheProvider $cache = null)
+    public function __construct(?FileStorageCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return FileStorage
-     */
-    public function get($file_path)
+    public function get(string $file_path): FileStorage
     {
         $file_path = strtolower($file_path);
 
@@ -52,23 +48,12 @@ class FileStorageProvider
         return self::$storage[$file_path];
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function remove($file_path)
+    public function remove(string $file_path): void
     {
         unset(self::$storage[strtolower($file_path)]);
     }
 
-    /**
-     * @param  string $file_path
-     * @param  string $file_contents
-     *
-     * @return bool
-     */
-    public function has($file_path, string $file_contents = null)
+    public function has(string $file_path, ?string $file_contents = null): bool
     {
         $file_path = strtolower($file_path);
 
@@ -97,9 +82,9 @@ class FileStorageProvider
     }
 
     /**
-     * @return array<string, FileStorage>
+     * @return array<lowercase-string, FileStorage>
      */
-    public function getAll()
+    public function getAll(): array
     {
         return self::$storage;
     }
@@ -107,28 +92,21 @@ class FileStorageProvider
     /**
      * @return array<string, FileStorage>
      */
-    public function getNew()
+    public function getNew(): array
     {
         return self::$new_storage;
     }
 
     /**
-     * @param array<string, FileStorage> $more
-     *
-     * @return void
+     * @param array<lowercase-string, FileStorage> $more
      */
-    public function addMore(array $more)
+    public function addMore(array $more): void
     {
         self::$new_storage = array_merge(self::$new_storage, $more);
         self::$storage = array_merge(self::$storage, $more);
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return FileStorage
-     */
-    public function create($file_path)
+    public function create(string $file_path): FileStorage
     {
         $file_path_lc = strtolower($file_path);
 
@@ -139,18 +117,12 @@ class FileStorageProvider
         return $storage;
     }
 
-    /**
-     * @return void
-     */
-    public static function deleteAll()
+    public static function deleteAll(): void
     {
         self::$storage = [];
     }
 
-    /**
-     * @return void
-     */
-    public static function populated()
+    public static function populated(): void
     {
         self::$new_storage = [];
     }

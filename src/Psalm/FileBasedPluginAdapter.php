@@ -3,8 +3,9 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use function reset;
 use SimpleXMLElement;
+
+use function reset;
 
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {
@@ -30,13 +31,8 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 
     /**
      * @psalm-suppress PossiblyUnusedParam
-     *
-     * @param  Plugin\RegistrationInterface $registration
-     * @param  SimpleXMLElement|null        $config
-     *
-     * @return  void
      */
-    public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
+    public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);
 

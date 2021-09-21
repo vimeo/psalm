@@ -15,9 +15,9 @@ class PropertyStorage
     public $is_static;
 
     /**
-     * @var int
+     * @var ClassLikeAnalyzer::VISIBILITY_*
      */
-    public $visibility = 0;
+    public $visibility = 1;
 
     /**
      * @var CodeLocation|null
@@ -85,6 +85,26 @@ class PropertyStorage
      * @var ?string
      */
     public $getter_method = null;
+
+    /**
+     * @var bool
+     */
+    public $is_promoted = false;
+
+    /**
+     * @var list<AttributeStorage>
+     */
+    public $attributes = [];
+
+    /**
+     * @var array<int, string>
+     */
+    public $suppressed_issues = [];
+
+    /**
+     * @var ?string
+     */
+    public $description;
 
     public function getInfo() : string
     {

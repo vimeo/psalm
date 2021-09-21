@@ -2,25 +2,27 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 
 class UnsetAnalyzer
 {
-    /**
-     * @return void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,
         Context $context
-    ) {
+    ): void {
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
+
             ExpressionAnalyzer::analyze($statements_analyzer, $var, $context);
+
+            $context->inside_general_use = $was_inside_general_use;
 
             $var_id = ExpressionIdentifier::getArrayVarId(
                 $var,
@@ -43,12 +45,13 @@ class UnsetAnalyzer
                     $root_type = clone $context->vars_in_scope[$root_var_id];
 
                     foreach ($root_type->getAtomicTypes() as $atomic_root_type) {
-                        if ($atomic_root_type instanceof Type\Atomic\ObjectLike) {
+                        if ($atomic_root_type instanceof Type\Atomic\TKeyedArray) {
                             if ($var->dim instanceof PhpParser\Node\Scalar\String_
                                 || $var->dim instanceof PhpParser\Node\Scalar\LNumber
                             ) {
                                 if (isset($atomic_root_type->properties[$var->dim->value])) {
                                     unset($atomic_root_type->properties[$var->dim->value]);
+                                    $root_type->bustCache(); //remove id cache
                                 }
 
                                 if (!$atomic_root_type->properties) {
@@ -79,8 +82,10 @@ class UnsetAnalyzer
                                 $atomic_root_type->sealed = false;
 
                                 $root_type->addType(
-                                    $atomic_root_type->getGenericArrayType()
+                                    $atomic_root_type->getGenericArrayType(false)
                                 );
+
+                                $atomic_root_type->is_list = false;
                             }
                         } elseif ($atomic_root_type instanceof Type\Atomic\TNonEmptyArray) {
                             $root_type->addType(

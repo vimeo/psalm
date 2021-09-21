@@ -4,6 +4,7 @@ namespace Psalm\Plugin\Hook;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface MethodExistenceProviderInterface
 {
     /**
@@ -15,13 +16,11 @@ interface MethodExistenceProviderInterface
      * Use this hook for informing whether or not a method exists on a given object. If you know the method does
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
      * continue to determine if the method actually exists.
-     *
-     * @return ?bool
      */
     public static function doesMethodExist(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        StatementsSource $source = null,
-        CodeLocation $code_location = null
-    );
+        ?StatementsSource $source = null,
+        ?CodeLocation $code_location = null
+    ): ?bool;
 }

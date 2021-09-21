@@ -1,28 +1,25 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use function array_keys;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+
+use function array_keys;
+use function getcwd;
 use function strpos;
+
+use const DIRECTORY_SEPARATOR;
 
 class CachedStorageTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
 
@@ -42,10 +39,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->setPhpVersion('7.3');
     }
 
-    /**
-     * @return void
-     */
-    public function testValidInclude()
+    public function testValidInclude(): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

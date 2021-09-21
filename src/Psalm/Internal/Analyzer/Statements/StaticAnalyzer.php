@@ -11,21 +11,16 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+
 use function is_string;
 
 class StaticAnalyzer
 {
-    /**
-     * @param   PhpParser\Node\Stmt\Static_ $stmt
-     * @param   Context                     $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Static_ $stmt,
         Context $context
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->mutation_free) {
@@ -65,7 +60,7 @@ class StaticAnalyzer
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\MissingDocblockType(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer, $var)
                         )
                     )) {
@@ -74,7 +69,7 @@ class StaticAnalyzer
                 } catch (DocblockParseException $e) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            (string)$e->getMessage(),
+                            $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         )
                     )) {
@@ -134,7 +129,7 @@ class StaticAnalyzer
                     } catch (\UnexpectedValueException $e) {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
-                                (string)$e->getMessage(),
+                                $e->getMessage(),
                                 new CodeLocation($statements_analyzer, $var)
                             )
                         )) {
@@ -150,7 +145,7 @@ class StaticAnalyzer
 
             if ($var->default) {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $var->default, $context) === false) {
-                    return false;
+                    return;
                 }
 
                 if ($comment_type
@@ -176,14 +171,10 @@ class StaticAnalyzer
             if ($context->check_variables) {
                 $context->vars_in_scope[$var_id] = $comment_type ? clone $comment_type : Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
-                $context->assigned_var_ids[$var_id] = true;
+                $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $statements_analyzer->byref_uses[$var_id] = true;
 
                 $location = new CodeLocation($statements_analyzer, $var);
-
-                if ($codebase->find_unused_variables) {
-                    $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                }
 
                 $statements_analyzer->registerVariable(
                     $var_id,
@@ -192,7 +183,5 @@ class StaticAnalyzer
                 );
             }
         }
-
-        return null;
     }
 }

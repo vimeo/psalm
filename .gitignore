@@ -11,5 +11,4 @@
 /vendor-bin/*/vendor/
 /tests/fixtures/symlinktest/*
 
-.idea/inspectionProfiles/Project_Default.xml
-.idea/workspace.xml
+.idea/

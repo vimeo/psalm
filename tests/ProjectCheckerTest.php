@@ -1,22 +1,26 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Progress\EchoProgress;
+
 use function define;
 use function defined;
-use const DIRECTORY_SEPARATOR;
 use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
 use function ob_get_clean;
 use function ob_start;
-use Psalm\Codebase;
-use Psalm\Config;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
-use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\Progress\EchoProgress;
+use function realpath;
+
+use const DIRECTORY_SEPARATOR;
 
 class ProjectCheckerTest extends TestCase
 {
@@ -26,15 +30,12 @@ class ProjectCheckerTest extends TestCase
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '2.0.0');
+            define('PSALM_VERSION', '4.0.0');
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
@@ -42,21 +43,13 @@ class ProjectCheckerTest extends TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        $this->file_provider = new Provider\FakeFileProvider();
+        RuntimeCaches::clearAll();
+        $this->file_provider = new FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
-    private function getProjectAnalyzerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
@@ -73,10 +66,7 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheck()
+    public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -112,17 +102,14 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testAfterCodebasePopulatedIsInvoked()
+    public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
             /** @var bool */
             public static $called = false;
 
             /** @return void */
-            public static function afterCodebasePopulated(Codebase $codebase)
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;
             }
@@ -142,7 +129,7 @@ class ProjectCheckerTest extends TestCase
 
         $hook_class = get_class($hook);
 
-        $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = $hook_class;
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
@@ -151,10 +138,7 @@ class ProjectCheckerTest extends TestCase
         $this->assertTrue($hook::$called);
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckAfterNoChange()
+    public function testCheckAfterNoChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -198,10 +182,7 @@ class ProjectCheckerTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckAfterFileChange()
+    public function testCheckAfterFileChange(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -266,10 +247,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckDir()
+    public function testCheckDir(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -301,10 +279,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckPaths()
+    public function testCheckPaths(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -321,9 +296,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 
@@ -339,10 +316,7 @@ class Bat
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testCheckFile()
+    public function testCheckFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -359,9 +333,11 @@ class Bat
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
+        // checkPaths expects absolute paths,
+        // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            'tests/fixtures/DummyProject/Bar.php',
-            'tests/fixtures/DummyProject/SomeTrait.php'
+            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 

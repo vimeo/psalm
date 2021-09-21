@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InvalidReturnType extends CodeIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 11;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 11;
 }

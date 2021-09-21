@@ -3,77 +3,40 @@ namespace Psalm;
 
 interface StatementsSource extends FileSource
 {
+    public function getNamespace(): ?string;
+
     /**
-     * @return null|string
+     * @return array<lowercase-string, string>
      */
-    public function getNamespace();
+    public function getAliasedClassesFlipped(): array;
 
     /**
      * @return array<string, string>
      */
-    public function getAliasedClassesFlipped();
+    public function getAliasedClassesFlippedReplaceable(): array;
+
+    public function getFQCLN(): ?string;
+
+    public function getClassName(): ?string;
+
+    public function getParentFQCLN(): ?string;
 
     /**
-     * @return array<string, string>
+     * @return array<string, array<string, Type\Union>>|null
      */
-    public function getAliasedClassesFlippedReplaceable();
+    public function getTemplateTypeMap(): ?array;
 
-    /**
-     * @return string|null
-     */
-    public function getFQCLN();
+    public function setRootFilePath(string $file_path, string $file_name): void;
 
-    /**
-     * @return string|null
-     */
-    public function getClassName();
+    public function hasParentFilePath(string $file_path): bool;
 
-    /**
-     * @return string|null
-     */
-    public function getParentFQCLN();
+    public function hasAlreadyRequiredFilePath(string $file_path): bool;
 
-    /**
-     * @return array<string, array<string, array{Type\Union}>>|null
-     */
-    public function getTemplateTypeMap();
+    public function getRequireNesting(): int;
 
-    /**
-     * @param string $file_path
-     * @param string $file_name
-     *
-     * @return void
-     */
-    public function setRootFilePath($file_path, $file_name);
+    public function isStatic(): bool;
 
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasParentFilePath($file_path);
-
-    /**
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    public function hasAlreadyRequiredFilePath($file_path);
-
-    /**
-     * @return int
-     */
-    public function getRequireNesting();
-
-    /**
-     * @return bool
-     */
-    public function isStatic();
-
-    /**
-     * @return StatementsSource|null
-     */
-    public function getSource();
+    public function getSource(): StatementsSource;
 
     public function getCodebase() : Codebase;
 
@@ -82,21 +45,17 @@ interface StatementsSource extends FileSource
      *
      * @return array<string>
      */
-    public function getSuppressedIssues();
+    public function getSuppressedIssues(): array;
 
     /**
-     * @param array<int, string> $new_issues
-     *
-     * @return void
+     * @param list<string> $new_issues
      */
-    public function addSuppressedIssues(array $new_issues);
+    public function addSuppressedIssues(array $new_issues): void;
 
     /**
-     * @param array<int, string> $new_issues
-     *
-     * @return void
+     * @param list<string> $new_issues
      */
-    public function removeSuppressedIssues(array $new_issues);
+    public function removeSuppressedIssues(array $new_issues): void;
 
     public function getNodeTypeProvider() : NodeTypeProvider;
 }

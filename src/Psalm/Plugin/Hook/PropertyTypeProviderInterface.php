@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use PhpParser;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface PropertyTypeProviderInterface
 {
     /**
@@ -13,16 +13,11 @@ interface PropertyTypeProviderInterface
      */
     public static function getClassLikeNames() : array;
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
-     */
     public static function getPropertyType(
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null
-    );
+        ?StatementsSource $source = null,
+        ?Context $context = null
+    ): ?Type\Union;
 }

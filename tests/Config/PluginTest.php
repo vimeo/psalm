@@ -1,47 +1,52 @@
 <?php
 namespace Psalm\Tests\Config;
 
-use PhpParser\Node\Expr\FuncCall;
 use PHPUnit\Framework\MockObject\MockObject;
-use Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Stmt\ClassLike;
+use Psalm\Codebase;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\FileSource;
+use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
+use Psalm\PluginRegistrationSocket;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
+use Psalm\Type\Union;
+
 use function define;
 use function defined;
-use const DIRECTORY_SEPARATOR;
 use function dirname;
 use function get_class;
 use function getcwd;
 use function microtime;
-use Psalm\Codebase;
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\IncludeCollector;
-use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
-use Psalm\PluginRegistrationSocket;
-use Psalm\Tests\Internal\Provider;
-use Psalm\Tests\TestConfig;
-use function sprintf;
-use function ob_start;
 use function ob_end_clean;
+use function ob_start;
+use function sprintf;
+
+use const DIRECTORY_SEPARATOR;
 
 class PluginTest extends \Psalm\Tests\TestCase
 {
     /** @var TestConfig */
     protected static $config;
 
-    /** @var ?\Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_analyzer;
-
-    /**
-     * @return void
-     */
     public static function setUpBeforeClass() : void
     {
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '2.0.0');
+            define('PSALM_VERSION', '4.0.0');
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
@@ -49,21 +54,13 @@ class PluginTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
-        FileAnalyzer::clearCache();
-        $this->file_provider = new Provider\FakeFileProvider();
+        RuntimeCaches::clearAll();
+        $this->file_provider = new FakeFileProvider();
     }
 
-    /**
-     * @param  Config $config
-     *
-     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
-     */
-    private function getProjectAnalyzerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
@@ -76,10 +73,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testStringAnalyzerPlugin()
+    public function testStringAnalyzerPlugin(): void
     {
         $this->expectExceptionMessage('InvalidClass');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -113,10 +107,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testStringAnalyzerPluginWithClassConstant()
+    public function testStringAnalyzerPluginWithClassConstant(): void
     {
         $this->expectExceptionMessage('InvalidClass');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -154,10 +145,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testStringAnalyzerPluginWithClassConstantConcat()
+    public function testStringAnalyzerPluginWithClassConstantConcat(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -197,10 +185,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEchoAnalyzerPluginWithJustHtml()
+    public function testEchoAnalyzerPluginWithJustHtml(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -231,10 +216,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEchoAnalyzerPluginWithUnescapedConcatenatedString()
+    public function testEchoAnalyzerPluginWithUnescapedConcatenatedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -272,10 +254,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEchoAnalyzerPluginWithUnescapedString()
+    public function testEchoAnalyzerPluginWithUnescapedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -312,10 +291,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testEchoAnalyzerPluginWithEscapedString()
+    public function testEchoAnalyzerPluginWithEscapedString(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -364,10 +340,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testFileAnalyzerPlugin()
+    public function testFileAnalyzerPlugin(): void
     {
         require_once __DIR__ . '/Plugin/FilePlugin.php';
 
@@ -389,11 +362,11 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $codebase = $this->project_analyzer->getCodebase();
-        $this->assertEmpty($codebase->config->before_file_checks);
-        $this->assertEmpty($codebase->config->after_file_checks);
+        $this->assertEmpty($codebase->config->eventDispatcher->before_file_checks);
+        $this->assertEmpty($codebase->config->eventDispatcher->after_file_checks);
         $codebase->config->initializePlugins($this->project_analyzer);
-        $this->assertCount(1, $codebase->config->before_file_checks);
-        $this->assertCount(1, $codebase->config->after_file_checks);
+        $this->assertCount(1, $codebase->config->eventDispatcher->before_file_checks);
+        $this->assertCount(1, $codebase->config->eventDispatcher->after_file_checks);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -415,10 +388,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testFloatCheckerPlugin()
+    public function testFloatCheckerPlugin(): void
     {
         $this->expectExceptionMessage('NoFloatAssignment');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -453,10 +423,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testFloatCheckerPluginIssueSuppressionByConfig()
+    public function testFloatCheckerPluginIssueSuppressionByConfig(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -494,10 +461,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testFloatCheckerPluginIssueSuppressionByDocblock()
+    public function testFloatCheckerPluginIssueSuppressionByDocblock(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -531,10 +495,9 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
-    public function testInheritedHookHandlersAreCalled()
+    public function testInheritedHookHandlersAreCalled(): void
     {
-        require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.php';
+        require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.phpstub';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -556,12 +519,11 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
         $this->assertContains(
             'ExtendingPlugin',
-            $this->project_analyzer->getCodebase()->config->after_function_checks
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_function_checks
         );
     }
 
-    /** @return void */
-    public function testAfterCodebasePopulatedHookIsLoaded()
+    public function testAfterCodebasePopulatedHookIsLoaded(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -579,7 +541,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $hook = new class implements AfterCodebasePopulatedInterface {
             /** @return void */
-            public static function afterCodebasePopulated(Codebase $codebase)
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }
         };
@@ -592,12 +554,87 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->assertContains(
             get_class($hook),
-            $this->project_analyzer->getCodebase()->config->after_codebase_populated
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated
         );
     }
 
-    /** @return void */
-    public function testPropertyProviderHooks()
+    public function testAfterMethodCallAnalysisLegacyHookIsLoaded(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $hook = new class implements AfterMethodCallAnalysisInterface {
+            public static function afterMethodCallAnalysis(
+                Expr $expr,
+                string $method_id,
+                string $appearing_method_id,
+                string $declaring_method_id,
+                Context $context,
+                StatementsSource $statements_source,
+                Codebase $codebase,
+                array &$file_replacements = [],
+                Union &$return_type_candidate = null
+            ): void {
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterMethodCallAnalysisHandlers());
+    }
+
+    public function testAfterClassLikeAnalysisLegacyHookIsLoaded(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $hook = new class implements AfterClassLikeVisitInterface {
+            public static function afterClassLikeVisit(
+                ClassLike $stmt,
+                ClassLikeStorage $storage,
+                FileSource $statements_source,
+                Codebase $codebase,
+                array &$file_replacements = []
+            ): void {
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterClassLikeVisitHandlers());
+    }
+
+    public function testPropertyProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
@@ -636,8 +673,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
-    public function testMethodProviderHooksValidArg()
+    public function testMethodProviderHooksValidArg(): void
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
@@ -671,14 +707,23 @@ class PluginTest extends \Psalm\Tests\TestCase
                 class Foo2 implements I {
                     public function id(): int { return 1; }
                 }
-                class Foo {}
+
+                /**
+                 * @method static int magicMethod(string $s)  this method return type gets overridden
+                 */
+                class Foo {
+                    public function __call(string $method_name, array $args) {}
+                    public static function __callStatic(string $method_name, array $args) {}
+                }
 
                 function i(I $i): void {}
 
                 $foo = new Foo();
 
                 echo $foo->magicMethod("hello");
+                echo strlen($foo->magicMethod("hello"));
                 echo $foo::magicMethod("hello");
+                echo strlen($foo::magicMethod("hello"));
 
                 $foo2 = $foo->magicMethod2("test");
                 $foo2->id();
@@ -689,8 +734,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
-    public function testFunctionProviderHooks()
+    public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
@@ -724,8 +768,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return void */
-    public function testSqlStringProviderHooks()
+    public function testSqlStringProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
 
@@ -766,10 +809,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         }
     }
 
-    /**
-     * @return void
-     */
-    public function testPropertyProviderHooksInvalidAssignment()
+    public function testPropertyProviderHooksInvalidAssignment(): void
     {
         $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -810,10 +850,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testMethodProviderHooksInvalidArg()
+    public function testMethodProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -845,19 +882,18 @@ class PluginTest extends \Psalm\Tests\TestCase
             '<?php
                 namespace Ns;
 
-                class Foo {}
+                class Foo {
+                    public function __call(string $method_name, array $args) {}
+                }
 
                 $foo = new Foo();
-                echo $foo->magicMethod(5);'
+                echo strlen($foo->magicMethod(5));'
         );
 
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testFunctionProviderHooksInvalidArg()
+    public function testFunctionProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
         $this->expectException(\Psalm\Exception\CodeException::class);
@@ -893,10 +929,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testAfterAnalysisHooks()
+    public function testAfterAnalysisHooks(): void
     {
         require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';
 
@@ -929,10 +962,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         ob_end_clean();
     }
 
-    /**
-     * @return void
-     */
-    public function testPluginFilenameCanBeAbsolute()
+    public function testPluginFilenameCanBeAbsolute(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1015,20 +1045,16 @@ class PluginTest extends \Psalm\Tests\TestCase
                 self::$m = $m;
             }
 
-            public static function afterEveryFunctionCallAnalysis(
-                FuncCall $expr,
-                string $function_id,
-                Context $context,
-                StatementsSource $statements_source,
-                Codebase $codebase
-            ): void {
+            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
+            {
+                $function_id = $event->getFunctionId();
                 /** @psalm-suppress UndefinedInterfaceMethod */
                 self::$m->check($function_id);
             }
         };
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-        $this->project_analyzer->getCodebase()->config->after_every_function_checks[] = get_class($plugin);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -1044,6 +1070,77 @@ class PluginTest extends \Psalm\Tests\TestCase
             a();
             '
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testRemoveTaints(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/SafeArrayKeyChecker.php" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            /**
+             * @psalm-taint-sink html $build
+             */
+            function output(array $build) {}
+
+            $build = [
+                "nested" => [
+                    "safe_key" => $_GET["input"],
+                ],
+            ];
+            output($build);'
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            /**
+             * @psalm-taint-sink html $build
+             */
+            function output(array $build) {}
+
+            $build = [
+                "nested" => [
+                    "safe_key" => $_GET["input"],
+                    "a" => $_GET["input"],
+                ],
+            ];
+            output($build);'
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessageRegExp('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());
     }

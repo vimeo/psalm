@@ -9,6 +9,6 @@ class A {
     public function foo(int $i) : void {}
 }
 class B extends A {
-    public function foo(string $s) : void {}
+    public function foo(string $i) : void {}
 }
 ```

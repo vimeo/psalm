@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class MissingReturnTypeTest extends FileManipulationTest
+class MissingReturnTypeTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingVoidReturnType56' => [
@@ -50,6 +50,8 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return string
+                     *
+                     * @psalm-return \'hello\'
                      */
                     function foo() {
                         return "hello";
@@ -79,6 +81,8 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -95,6 +99,8 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
@@ -153,7 +159,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: string}
+                     * @psalm-return array{0: \'hello\'}
                      */
                     function foo() {
                         return ["hello"];
@@ -171,7 +177,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: string}
+                     * @psalm-return array{0: \'hello\'}
                      */
                     function foo(): array {
                         return ["hello"];
@@ -180,7 +186,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnType70' => [
+            'addMissingTKeyedArrayReturnType70' => [
                 '<?php
                     function foo() {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -189,7 +195,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: string, b?: string}
+                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -198,7 +204,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeWithEmptyArray' => [
+            'addMissingTKeyedArrayReturnTypeWithEmptyArray' => [
                 '<?php
                     function foo() {
                         if (rand(0, 1)) {
@@ -214,7 +220,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?: int, b?: int}
+                     * @psalm-return array{a?: 1, b?: 2}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -230,7 +236,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeWithNestedArrays' => [
+            'addMissingTKeyedArrayReturnTypeWithNestedArrays' => [
                 '<?php
                     function foo() {
                         return [
@@ -251,7 +257,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return ((int|int[])[]|int)[]
                      *
-                     * @psalm-return array{a: int, b: int, c: array{a: int, b: int, c: array{a: int, b: int, c: int}}}
+                     * @psalm-return array{a: 1, b: 2, c: array{a: 1, b: 2, c: array{a: 1, b: 2, c: 3}}}
                      */
                     function foo(): array {
                         return [
@@ -272,7 +278,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingObjectLikeReturnTypeSeparateStatements70' => [
+            'addMissingTKeyedArrayReturnTypeSeparateStatements70' => [
                 '<?php
                     function foo() {
                         if (rand(0, 1)) {
@@ -289,7 +295,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: string, b?: string}
+                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -325,7 +331,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<array-key, string>
+                     * @psalm-return array<string>
                      */
                     function bar(): array {
                         return foo();
@@ -353,7 +359,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<array-key, string>
+                     * @psalm-return array<string>
                      */
                     function bar() {
                         return foo();
@@ -448,6 +454,9 @@ class MissingReturnTypeTest extends FileManipulationTest
                     }',
                 '<?php
                     class A {
+                        /**
+                         * @return static
+                         */
                         public function foo(): self {
                             return $this;
                         }
@@ -529,6 +538,8 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function foo() {
                       if (rand(0, 1)) {
@@ -540,6 +551,8 @@ class MissingReturnTypeTest extends FileManipulationTest
 
                     /**
                      * @return null|string
+                     *
+                     * @psalm-return \'hello\'|null
                      */
                     function bar() {
                       if (rand(0, 1)) {
@@ -650,7 +663,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return self
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -659,7 +672,7 @@ class MissingReturnTypeTest extends FileManipulationTest
 
                     class B extends A {
                         /**
-                         * @return self
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -687,7 +700,7 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '<?php
                     class A {
                         /**
-                         * @return self
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -698,7 +711,7 @@ class MissingReturnTypeTest extends FileManipulationTest
 
                     class C extends B {
                         /**
-                         * @return self
+                         * @return static
                          */
                         public function foo() {
                             return $this;
@@ -889,6 +902,191 @@ class MissingReturnTypeTest extends FileManipulationTest
                 '7.3',
                 ['MissingReturnType'],
                 false,
+            ],
+            'staticReturn5.6' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        /**
+                         * @return static
+                         */
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '5.6',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'staticReturn7.0' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        /**
+                         * @return static
+                         */
+                        public function sayHello(): self
+                        {
+                            return $this;
+                        }
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'staticReturn8.0' => [
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello()
+                        {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class HelloWorld
+                    {
+                        public function sayHello(): static
+                        {
+                            return $this;
+                        }
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'arrayKeyReturn' => [
+                '<?php
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                '<?php
+                    /**
+                     * @return (int|string)|null
+                     *
+                     * @psalm-return array-key|null
+                     */
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnIntOrString' => [
+                '<?php
+                    function scope(int $i, string $s) {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '<?php
+                    function scope(int $i, string $s): int|string {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnIntOrString80' => [
+                '<?php
+                    function scope(int $i, string $s) {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '<?php
+                    function scope(int $i, string $s): int|string {
+                        return rand(0, 1) ? $i : $s;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnExtendedAnonymClass' => [
+                '<?php
+                    class A {}
+
+                    function f()
+                    {
+                        $a = new class extends A {};
+                        /** @psalm-trace $a */;
+                        return $a;
+                    }',
+                '<?php
+                    class A {}
+
+                    function f(): A
+                    {
+                        $a = new class extends A {};
+                        /** @psalm-trace $a */;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'returnExtendedAnonymClassOld' => [
+                '<?php
+                    class A {}
+
+                    function f()
+                    {
+                        return new class extends A {};
+                    }',
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return A
+                     */
+                    function f()
+                    {
+                        return new class extends A {};
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'never' => [
+                '<?php
+                    function f() {
+                        exit(1);
+                    }
+                ',
+                '<?php
+                    /**
+                     * @return never
+                     */
+                    function f() {
+                        exit(1);
+                    }
+                ',
+                '5.6',
+                ['MissingReturnType'],
+                false,
+                true,
             ],
         ];
     }

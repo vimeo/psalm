@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UndefinedThisPropertyFetch extends PropertyIssue
 {
-    const ERROR_LEVEL = 6;
-    const SHORTCODE = 41;
+    public const ERROR_LEVEL = 6;
+    public const SHORTCODE = 41;
 }

@@ -1,60 +1,48 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes the `mixed` type, used when you don’t know the type of an expression.
+ */
 class TMixed extends \Psalm\Type\Atomic
 {
     /** @var bool */
     public $from_loop_isset = false;
 
-    /**
-     * @param bool $from_loop_isset
-     */
-    public function __construct($from_loop_isset = false)
+    public function __construct(bool $from_loop_isset = false)
     {
         $this->from_loop_isset = $from_loop_isset;
     }
 
-    public function __toString()
+    public function __toString(): string
+    {
+        return 'mixed';
+    }
+
+    public function getKey(bool $include_extra = true): string
     {
         return 'mixed';
     }
 
     /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
-    {
-        return 'mixed';
-    }
-
-    /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return null|string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
-        return null;
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
+        return $php_major_version >= 8 ? 'mixed' : null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
-        return false;
+        return $php_major_version >= 8;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
     }

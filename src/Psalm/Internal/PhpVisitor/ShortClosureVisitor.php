@@ -6,29 +6,26 @@ use PhpParser;
 /**
  * @internal
  */
-class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, bool>
      */
     protected $used_variables = [];
 
-    /**
-     * @param  PhpParser\Node $node
-     *
-     * @return null|int
-     */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\Variable && \is_string($node->name)) {
             $this->used_variables['$' . $node->name] = true;
-        };
+        }
+
+        return null;
     }
 
     /**
      * @return array<string, bool>
      */
-    public function getUsedVariables()
+    public function getUsedVariables(): array
     {
         return $this->used_variables;
     }

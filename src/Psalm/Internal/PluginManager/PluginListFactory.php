@@ -1,11 +1,14 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use Psalm\Internal\Composer;
+
 use function array_filter;
-use const DIRECTORY_SEPARATOR;
 use function json_encode;
 use function rtrim;
 use function urlencode;
+
+use const DIRECTORY_SEPARATOR;
 
 class PluginListFactory
 {
@@ -21,9 +24,13 @@ class PluginListFactory
         $this->psalm_root = $psalm_root;
     }
 
-    public function __invoke(string $current_dir, string $config_file_path = null): PluginList
+    public function __invoke(string $current_dir, ?string $config_file_path = null): PluginList
     {
-        $config_file = new ConfigFile($current_dir, $config_file_path);
+        try {
+            $config_file = new ConfigFile($current_dir, $config_file_path);
+        } catch (\RuntimeException $exception) {
+            $config_file = null;
+        }
         $composer_lock = new ComposerLock($this->findLockFiles());
 
         return new PluginList($config_file, $composer_lock);
@@ -42,13 +49,13 @@ class PluginListFactory
         if ($this->psalm_root === $this->project_root) {
             // managing plugins for psalm itself
             $composer_lock_filenames = [
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
             ];
         } else {
             $composer_lock_filenames = [
-                rtrim($this->project_root, DIRECTORY_SEPARATOR) . '/composer.lock',
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../../composer.lock',
-                rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/composer.lock',
+                Composer::getLockFilePath(rtrim($this->project_root, DIRECTORY_SEPARATOR)),
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../..'),
+                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
             ];
         }
 

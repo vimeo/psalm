@@ -1,21 +1,22 @@
 <?php
 namespace Psalm\Tests\Traits;
 
-use function is_int;
-use const PHP_VERSION;
-use function preg_quote;
-use function preg_replace;
 use Psalm\Config;
 use Psalm\Context;
+
+use function is_int;
+use function preg_quote;
 use function strpos;
 use function version_compare;
+
+use const PHP_VERSION;
 
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    abstract public function providerInvalidCodeParse();
+    abstract public function providerInvalidCodeParse(): iterable;
 
     /**
      * @dataProvider providerInvalidCodeParse
@@ -39,6 +40,12 @@ trait InvalidCodeAnalysisTestTrait
         if (strpos($test_name, 'PHP71-') !== false) {
             if (version_compare(PHP_VERSION, '7.1.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.1.');
+
+                return;
+            }
+        } elseif (strpos($test_name, 'PHP80-') !== false) {
+            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+                $this->markTestSkipped('Test case requires PHP 8.0.');
 
                 return;
             }
@@ -69,7 +76,7 @@ trait InvalidCodeAnalysisTestTrait
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
+        // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(\Psalm\Exception\CodeException::class);
 
@@ -78,6 +85,9 @@ trait InvalidCodeAnalysisTestTrait
         } else {
             $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
         }
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
 
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());

@@ -1,15 +1,11 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Clause;
 use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
 
 class ReconcilerTest extends \Psalm\Tests\TestCase
 {
@@ -19,9 +15,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /** @var StatementsAnalyzer */
     protected $statements_analyzer;
 
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
@@ -35,8 +28,11 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
 
         $this->addFile('newfile.php', '
             <?php
+            class SomeClass {}
+            class SomeChildClass extends SomeClass {}
             class A {}
-            class B extends A {}
+            class B {}
+            interface SomeInterface {}
         ');
         $this->project_analyzer->getCodebase()->scanFiles();
     }
@@ -44,17 +40,12 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @dataProvider providerTestReconcilation
      *
-     * @param string $expected
-     * @param string $type
-     * @param string $string
-     *
-     * @return void
      */
-    public function testReconcilation($expected, $type, $string)
+    public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
     {
         $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
-            $type,
-            Type::parseString($string),
+            $assertion,
+            Type::parseString($original_type),
             null,
             $this->statements_analyzer,
             false,
@@ -62,7 +53,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
         );
 
         $this->assertSame(
-            $expected,
+            $expected_type,
             $reconciled->getId()
         );
 
@@ -75,9 +66,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      * @param string $input
      * @param string $container
      *
-     * @return void
      */
-    public function testTypeIsContainedBy($input, $container)
+    public function testTypeIsContainedBy($input, $container): void
     {
         $this->assertTrue(
             UnionTypeComparator::isContainedBy(
@@ -91,38 +81,40 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{string,string,string}>
      */
-    public function providerTestReconcilation()
+    public function providerTestReconcilation(): array
     {
         return [
-            'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
-            'notNullWithObjectPipeNull' => ['MyObject', '!null', 'MyObject|null'],
-            'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
+            'notNullWithObject' => ['SomeClass', '!null', 'SomeClass'],
+            'notNullWithObjectPipeNull' => ['SomeClass', '!null', 'SomeClass|null'],
+            'notNullWithSomeClassPipeFalse' => ['SomeClass|false', '!null', 'SomeClass|false'],
             'notNullWithMixed' => ['mixed', '!null', 'mixed'],
 
-            'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
-            'notEmptyWithMyObjectPipeNull' => ['MyObject', '!falsy', 'MyObject|null'],
-            'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!falsy', 'MyObject|false'],
+            'notEmptyWithSomeClass' => ['SomeClass', '!falsy', 'SomeClass'],
+            'notEmptyWithSomeClassPipeNull' => ['SomeClass', '!falsy', 'SomeClass|null'],
+            'notEmptyWithSomeClassPipeFalse' => ['SomeClass', '!falsy', 'SomeClass|false'],
             'notEmptyWithMixed' => ['non-empty-mixed', '!falsy', 'mixed'],
             // @todo in the future this should also work
-            //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!falsy', 'MyObject|bool'],
+            //'notEmptyWithSomeClassFalseTrue' => ['SomeClass|true', '!falsy', 'SomeClass|bool'],
 
-            'nullWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
+            'nullWithSomeClassPipeNull' => ['null', 'null', 'SomeClass|null'],
             'nullWithMixed' => ['null', 'null', 'mixed'],
 
-            'falsyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
-            'falsyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
-            'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
+            'falsyWithSomeClass' => ['mixed', 'falsy', 'SomeClass'],
+            'falsyWithSomeClassPipeFalse' => ['false', 'falsy', 'SomeClass|false'],
+            'falsyWithSomeClassPipeBool' => ['false', 'falsy', 'SomeClass|bool'],
             'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
             'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['null|string()|string(0)', 'falsy', 'string|null'],
+            'falsyWithStringOrNull' => ['""|"0"|null', 'falsy', 'string|null'],
             'falsyWithScalarOrNull' => ['empty-scalar', 'falsy', 'scalar'],
 
-            'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
-            'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
-            'notMyObjectWithMyObjectAPipeMyObjectB' => ['MyObjectB', '!MyObjectA', 'MyObjectA|MyObjectB'],
+            'notSomeClassWithSomeClassPipeBool' => ['bool', '!SomeClass', 'SomeClass|bool'],
+            'notSomeClassWithSomeClassPipeNull' => ['null', '!SomeClass', 'SomeClass|null'],
+            'notSomeClassWithAPipeB' => ['B', '!A', 'A|B'],
+            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', '!DateTime', 'DateTimeInterface'],
+            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', '!DateTimeImmutable', 'DateTimeInterface'],
 
-            'myObjectWithMyObjectPipeBool' => ['MyObject', 'MyObject', 'MyObject|bool'],
-            'myObjectWithMyObjectAPipeMyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
+            'myObjectWithSomeClassPipeBool' => ['SomeClass', 'SomeClass', 'SomeClass|bool'],
+            'myObjectWithAPipeB' => ['A', 'A', 'A|B'],
 
             'array' => ['array<array-key, mixed>', 'array', 'array|null'],
 
@@ -133,32 +125,38 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'nullableClassString' => ['null', 'falsy', '?class-string'],
             'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
             'mixedOrNullFalsy' => ['empty-mixed|null', 'falsy', 'mixed|null'],
-            'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<A>|null'],
-            'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<A>|null'],
-            'nullableClassStringTruthy' => ['class-string<A>', '!falsy', 'class-string<A>|null'],
+            'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<SomeClass>|null'],
+            'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<SomeClass>|null'],
+            'nullableClassStringTruthy' => ['class-string<SomeClass>', '!falsy', 'class-string<SomeClass>|null'],
             'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
             'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
             'callableToCallableArray' => ['callable-array{0: class-string|object, 1: string}', 'array', 'callable'],
+            'SmallKeyedArrayAndCallable' => ['array{test: string}', 'array{test: string}', 'callable'],
+            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', 'array{foo: string, test: string, thing: string}', 'callable'],
             'callableOrArrayToCallableArray' => ['array<array-key, mixed>', 'array', 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
+            'iterableAndObject' => ['Traversable<int, string>', 'object', 'iterable<int, string>'],
+            'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
+            'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
+            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', 'SomeInterface', 'SomeClass|SomeInterface'],
         ];
     }
 
     /**
      * @return array<string,array{string,string}>
      */
-    public function providerTestTypeIsContainedBy()
+    public function providerTestTypeIsContainedBy(): array
     {
         return [
             'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
             'arrayContainsWithArrayOfExceptions' => ['array<Exception>', 'array'],
             'arrayOfIterable' => ['array', 'iterable'],
-            'arrayOfIterableWithType' => ['array<A>', 'iterable<A>'],
-            'arrayOfIterableWithSubclass' => ['array<B>', 'iterable<A>'],
-            'arrayOfSubclassOfParent' => ['array<B>', 'array<A>'],
-            'subclassOfParent' => ['B', 'A'],
+            'arrayOfIterableWithType' => ['array<SomeClass>', 'iterable<SomeClass>'],
+            'arrayOfIterableWithSubclass' => ['array<SomeChildClass>', 'iterable<SomeClass>'],
+            'arrayOfSubclassOfParent' => ['array<SomeChildClass>', 'array<SomeClass>'],
+            'subclassOfParent' => ['SomeChildClass', 'SomeClass'],
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
             'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
@@ -168,6 +166,14 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
                 'array<empty, empty>',
                 'array{a?: string, b?: string}',
+            ],
+            'literalNumericStringInt' => [
+                '"0"',
+                'numeric',
+            ],
+            'literalNumericString' => [
+                '"10.03"',
+                'numeric',
             ],
         ];
     }

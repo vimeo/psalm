@@ -4,6 +4,9 @@ You can run Psalm in at different levels of strictness from 1 to 8.
 
 Level 1 is the most strict, level 8 is the most lenient.
 
+When no level is explicitly defined, psalm defaults to level 2.
+In case `totallyTyped` is enabled, psalm defaults to level 1.
+
 Some issues are [always treated as errors](#always-treated-as-errors). These are issues with a very low probability of false-positives.
 
 At [level 1](#errors-that-only-appear-at-level-1) all issues (except those emitted for opt-in features) that Psalm can find are treated as errors. Those issues include any situation where Psalm cannot infer the type of a given expression.
@@ -19,22 +22,31 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 ## Always treated as errors
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
+ - [ComplexFunction](issues/ComplexFunction.md)
+ - [ComplexMethod](issues/ComplexMethod.md)
+ - [ConfigIssue](issues/ConfigIssue.md)
  - [DuplicateArrayKey](issues/DuplicateArrayKey.md)
  - [DuplicateClass](issues/DuplicateClass.md)
  - [DuplicateFunction](issues/DuplicateFunction.md)
  - [DuplicateMethod](issues/DuplicateMethod.md)
  - [DuplicateParam](issues/DuplicateParam.md)
  - [EmptyArrayAccess](issues/EmptyArrayAccess.md)
+ - [ExtensionRequirementViolation](issues/ExtensionRequirementViolation.md)
+ - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
  - [ImpureByReferenceAssignment](issues/ImpureByReferenceAssignment.md)
  - [ImpureFunctionCall](issues/ImpureFunctionCall.md)
  - [ImpureMethodCall](issues/ImpureMethodCall.md)
  - [ImpurePropertyAssignment](issues/ImpurePropertyAssignment.md)
+ - [ImpurePropertyFetch](issues/ImpurePropertyFetch.md)
  - [ImpureStaticProperty](issues/ImpureStaticProperty.md)
  - [ImpureStaticVariable](issues/ImpureStaticVariable.md)
+ - [ImpureVariable](issues/ImpureVariable.md)
  - [InaccessibleClassConstant](issues/InaccessibleClassConstant.md)
  - [InaccessibleMethod](issues/InaccessibleMethod.md)
  - [InaccessibleProperty](issues/InaccessibleProperty.md)
  - [InterfaceInstantiation](issues/InterfaceInstantiation.md)
+ - [InvalidAttribute](issues/InvalidAttribute.md)
+ - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidGlobal](issues/InvalidGlobal.md)
  - [InvalidParamDefault](issues/InvalidParamDefault.md)
  - [InvalidParent](issues/InvalidParent.md)
@@ -49,8 +61,8 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)
- - [NoValue](issues/NoValue.md)
  - [NonStaticSelfCall](issues/NonStaticSelfCall.md)
+ - [NoValue](issues/NoValue.md)
  - [NullArrayAccess](issues/NullArrayAccess.md)
  - [NullFunctionCall](issues/NullFunctionCall.md)
  - [NullIterator](issues/NullIterator.md)
@@ -61,6 +73,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
  - [TooFewArguments](issues/TooFewArguments.md)
+ - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)
  - [UndefinedConstant](issues/UndefinedConstant.md)
  - [UndefinedDocblockClass](issues/UndefinedDocblockClass.md)
@@ -86,6 +99,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedArrayOffset](issues/MixedArrayOffset.md)
  - [MixedArrayTypeCoercion](issues/MixedArrayTypeCoercion.md)
  - [MixedAssignment](issues/MixedAssignment.md)
+ - [MixedClone](issues/MixedClone.md)
  - [MixedFunctionCall](issues/MixedFunctionCall.md)
  - [MixedInferredReturnType](issues/MixedInferredReturnType.md)
  - [MixedMethodCall](issues/MixedMethodCall.md)
@@ -98,8 +112,8 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
  - [MutableDependency](issues/MutableDependency.md)
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
+ - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [Trace](issues/Trace.md)
- - [UndefinedTrace](issues/UndefinedTrace.md)
 
 ## Errors ignored at level 3 and higher
 
@@ -116,7 +130,6 @@ These issues are treated as errors at level 2 and below.
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidStringClass](issues/InvalidStringClass.md)
- - [MisplacedRequiredParam](issues/MisplacedRequiredParam.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
@@ -128,7 +141,9 @@ These issues are treated as errors at level 2 and below.
  - [RawObjectIteration](issues/RawObjectIteration.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
+ - [UndefinedTrace](issues/UndefinedTrace.md)
  - [UnresolvableInclude](issues/UnresolvableInclude.md)
+ - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
 
 ## Errors ignored at level 4 and higher
 
@@ -170,7 +185,6 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
  - [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
- - [TypeCoercion](issues/TypeCoercion.md)
 
 ## Errors ignored at level 5 and higher
 
@@ -185,6 +199,7 @@ These issues are treated as errors at level 4 and below.
  - [InternalMethod](issues/InternalMethod.md)
  - [InternalProperty](issues/InternalProperty.md)
  - [InvalidDocblock](issues/InvalidDocblock.md)
+ - [InvalidLiteralArgument](issues/InvalidLiteralArgument.md)
  - [InvalidOperand](issues/InvalidOperand.md)
  - [InvalidScalarArgument](issues/InvalidScalarArgument.md)
  - [InvalidToString](issues/InvalidToString.md)
@@ -194,6 +209,7 @@ These issues are treated as errors at level 4 and below.
  - [NoInterfaceProperties](issues/NoInterfaceProperties.md)
  - [PossibleRawObjectIteration](issues/PossibleRawObjectIteration.md)
  - [RedundantCondition](issues/RedundantCondition.md)
+ - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
  - [StringIncrement](issues/StringIncrement.md)
  - [TooManyArguments](issues/TooManyArguments.md)
  - [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
@@ -206,6 +222,7 @@ These issues are treated as errors at level 4 and below.
 
 These issues are treated as errors at level 5 and below.
 
+ - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
  - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
  - [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
  - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
@@ -229,6 +246,7 @@ These issues are treated as errors at level 6 and below.
  - [InvalidFunctionCall](issues/InvalidFunctionCall.md)
  - [InvalidIterator](issues/InvalidIterator.md)
  - [InvalidMethodCall](issues/InvalidMethodCall.md)
+ - [InvalidNamedArgument](issues/InvalidNamedArgument.md)
  - [InvalidPropertyAssignment](issues/InvalidPropertyAssignment.md)
  - [InvalidPropertyAssignmentValue](issues/InvalidPropertyAssignmentValue.md)
  - [InvalidPropertyFetch](issues/InvalidPropertyFetch.md)
@@ -253,9 +271,12 @@ These issues are treated as errors at level 7 and below.
  - [CircularReference](issues/CircularReference.md)
  - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
  - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
+ - [InvalidTypeImport](issues/InvalidTypeImport.md)
  - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
+ - [ParamNameMismatch](issues/ParamNameMismatch.md)
  - [ReservedWord](issues/ReservedWord.md)
+ - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
  - [UninitializedProperty](issues/UninitializedProperty.md)
 
 
@@ -267,12 +288,29 @@ These issues are treated as errors at level 7 and below.
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)
  - [PossiblyUnusedParam](issues/PossiblyUnusedParam.md)
  - [PossiblyUnusedProperty](issues/PossiblyUnusedProperty.md)
+ - [TaintedCallable](issues/TaintedCallable.md)
+ - [TaintedCookie](issues/TaintedCookie.md)
+ - [TaintedCustom](issues/TaintedCustom.md)
+ - [TaintedEval](issues/TaintedEval.md)
+ - [TaintedFile](issues/TaintedFile.md)
+ - [TaintedHeader](issues/TaintedHeader.md)
+ - [TaintedHtml](issues/TaintedHtml.md)
+ - [TaintedInclude](issues/TaintedInclude.md)
  - [TaintedInput](issues/TaintedInput.md)
+ - [TaintedLdap](issues/TaintedLdap.md)
+ - [TaintedShell](issues/TaintedShell.md)
+ - [TaintedSql](issues/TaintedSql.md)
+ - [TaintedSSRF](issues/TaintedSSRF.md)
+ - [TaintedSystemSecret](issues/TaintedSystemSecret.md)
+ - [TaintedUnserialize](issues/TaintedUnserialize.md)
+ - [TaintedUserSecret](issues/TaintedUserSecret.md)
  - [UncaughtThrowInGlobalScope](issues/UncaughtThrowInGlobalScope.md)
  - [UnevaluatedCode](issues/UnevaluatedCode.md)
  - [UnnecessaryVarAnnotation](issues/UnnecessaryVarAnnotation.md)
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
+ - [UnusedConstructor](issues/UnusedConstructor.md)
+ - [UnusedForeachValue](issues/UnusedForeachValue.md)
  - [UnusedMethod](issues/UnusedMethod.md)
  - [UnusedParam](issues/UnusedParam.md)
  - [UnusedProperty](issues/UnusedProperty.md)

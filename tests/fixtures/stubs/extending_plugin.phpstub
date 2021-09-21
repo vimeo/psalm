@@ -1,0 +1,6 @@
+<?php
+require_once __DIR__ . '/base_plugin.phpstub';
+
+class ExtendingPlugin extends BasePlugin
+{
+}

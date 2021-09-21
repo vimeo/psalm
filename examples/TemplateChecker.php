@@ -6,11 +6,14 @@ use Psalm;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Node\Stmt\VirtualClass;
+use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
@@ -18,12 +21,12 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
-    public function analyze(Context $file_context = null, $preserve_analyzers = false, Context $global_context = null)
+    public function analyze(?Context $file_context = null, ?Context $global_context = null): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $stmts = $codebase->getStatementsForFile($this->file_path);
 
-        if (empty($stmts)) {
+        if ($stmts === []) {
             return;
         }
 
@@ -45,6 +48,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
+                /** @psalm-suppress ArgumentTypeCoercion */
                 $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $matches[1]));
 
                 $this_params = $this->checkMethod($method_id, $first_stmt, $codebase);
@@ -72,9 +76,6 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     }
 
     /**
-     * @param  \Psalm\Internal\MethodIdentifier         $method_id
-     * @param  PhpParser\Node $stmt
-     *
      * @return Context|false
      */
     private function checkMethod(\Psalm\Internal\MethodIdentifier $method_id, PhpParser\Node $stmt, Codebase $codebase)
@@ -86,7 +87,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             null,
             null,
             [],
-            true
+            new ClassLikeNameOptions(true)
         ) === false
         ) {
             return false;
@@ -132,12 +133,10 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     }
 
     /**
-     * @param  Context $context
      * @param  array<PhpParser\Node\Stmt> $stmts
      *
-     * @return void
      */
-    protected function checkWithViewClass(Context $context, array $stmts)
+    protected function checkWithViewClass(Context $context, array $stmts): void
     {
         $pseudo_method_stmts = [];
 
@@ -151,9 +150,9 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $pseudo_method_name = preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
 
-        $class_method = new PhpParser\Node\Stmt\ClassMethod($pseudo_method_name, ['stmts' => []]);
+        $class_method = new VirtualClassMethod($pseudo_method_name, ['stmts' => []]);
 
-        $class = new PhpParser\Node\Stmt\Class_(self::VIEW_CLASS);
+        $class = new VirtualClass(self::VIEW_CLASS);
 
         $class_analyzer = new ClassAnalyzer($class, $this, self::VIEW_CLASS);
 

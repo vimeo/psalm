@@ -1,68 +1,43 @@
 # Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
 version: 2.1
 executors:
-  php-72:
-    docker:
-      - image: thecodingmachine/php:7.2-v2-cli
   php-74:
     docker:
-      - image: thecodingmachine/php:7.4-v3-cli
+      - image: thecodingmachine/php:7.4-v4-cli
+  php-80:
+    docker:
+      - image: thecodingmachine/php:8.0-v4-cli
 jobs:
-  install-and-self-analyse:
-    executor: php-72
+  "Code Style Analysis":
+    executor: php-74
     steps:
       - checkout
+
       - run: date "+%F" > /tmp/cachekey; cat composer.json >> /tmp/cachekey
+
       - restore_cache:
           keys:
-            - composer-v2-{{ checksum "/tmp/cachekey" }}
-            # fallback to using the latest cache if no exact match is found (See https://circleci.com/docs/2.0/caching/)
-            - composer-v2-
-      - restore_cache:
-          keys:
-            - psalm-cache-{{ checksum "/tmp/cachekey" }} # speeds up run with --diff and --diff-methods
+            - composer-v4
+
       - run: composer update
+
       - save_cache:
-          key: composer-v2-{{ checksum "/tmp/cachekey" }}
+          key: composer-v4
           paths:
-            - vendor
-      - save_cache:
-          key: psalm-cache-{{ checksum "/tmp/cachekey" }}
-          paths:
-            - /tmp/psalm
-      - run:
-          name: Static analysis
-          command: php -dextension=pcntl.so ./psalm --threads=10 --diff --diff-methods
+            - /home/docker/.composer/cache/files
+            - /home/docker/.composer/cache/vcs
+
       - persist_to_workspace:
           root: /home/docker/project/
           paths:
             - .
-  "Code Style Analysis":
-    executor: php-72
-    steps:
-      - attach_workspace:
-          at: /home/docker/project/
+
       - run:
           name: Code Style Analysis with PHPCS
           command: vendor/bin/phpcs
-  test:
-    executor: php-72
-    steps:
-      - attach_workspace:
-            at: /home/docker/project/
-      - run:
-          name: PHPUnit test
-          command: php vendor/bin/phpunit --log-junit build/phpunit/phpunit.xml
-      - store_test_results:
-          path: build/
-      - store_artifacts:
-          path: build/phpunit
-      - persist_to_workspace:
-          root: /home/docker/project/
-          paths:
-            - .
+
   phar-build:
-    executor: php-72
+    executor: php-74
     steps:
       - attach_workspace:
           at: /home/docker/project/
@@ -85,7 +60,7 @@ jobs:
           paths:
             - build/psalm.phar
   test-with-real-projects:
-    executor: php-74
+    executor: php-80
     steps:
       - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
       - attach_workspace:
@@ -94,29 +69,19 @@ jobs:
           name: Analyse PHPUnit
           command: bin/test-with-real-projects.sh phpunit
       - run:
-          name: Analyse Collections
-          command: bin/test-with-real-projects.sh collections
-      - run:
-          name: Analyse ProxyManager
-          command: bin/test-with-real-projects.sh proxymanager
-      - run:
           name: Analyse Psl
           command: bin/test-with-real-projects.sh psl
+      - run:
+          name: Analyse Collections
+          command: bin/test-with-real-projects.sh collections
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
   Welcome:
     jobs:
-      - install-and-self-analyse
-      - test:
-          requires:
-            - install-and-self-analyse
-      - "Code Style Analysis":
-          requires:
-            - install-and-self-analyse
+      - "Code Style Analysis"
       - phar-build:
           requires:
-            - test
             - "Code Style Analysis"
       - test-with-real-projects:
           requires:

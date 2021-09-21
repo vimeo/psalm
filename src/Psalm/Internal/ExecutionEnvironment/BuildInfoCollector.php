@@ -3,6 +3,7 @@ namespace Psalm\Internal\ExecutionEnvironment;
 
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
+
 use function explode;
 
 /**
@@ -61,6 +62,7 @@ class BuildInfoCollector
      * "TRAVIS", "TRAVIS_JOB_ID" must be set.
      *
      * @return $this
+     *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
     protected function fillTravisCi() : self
@@ -73,7 +75,7 @@ class BuildInfoCollector
             $this->readEnv['TRAVIS'] = $this->env['TRAVIS'];
             $this->readEnv['TRAVIS_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-            $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'];
+            $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'] ?? '';
 
             $repo_slug = (string) $this->env['TRAVIS_REPO_SLUG'];
 
@@ -136,8 +138,9 @@ class BuildInfoCollector
      *
      * "APPVEYOR", "APPVEYOR_BUILD_NUMBER" must be set.
      *
-     * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     *
+     * @return $this
      */
     protected function fillAppVeyor() : self
     {
@@ -208,8 +211,9 @@ class BuildInfoCollector
      *
      * "JENKINS_URL", "BUILD_NUMBER" must be set.
      *
-     * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
+     *
+     * @return $this
      */
     protected function fillScrutinizer() : self
     {
@@ -245,7 +249,7 @@ class BuildInfoCollector
      * @return $this
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
-    protected function fillGithubActions()
+    protected function fillGithubActions(): BuildInfoCollector
     {
         if (isset($this->env['GITHUB_ACTIONS'])) {
             $this->env['CI_NAME'] = 'github-actions';

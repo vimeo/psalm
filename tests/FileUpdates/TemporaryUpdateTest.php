@@ -1,31 +1,27 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use function array_keys;
-use function array_map;
-use function array_shift;
-use function count;
-use const DIRECTORY_SEPARATOR;
-use function end;
-use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
 
+use function array_keys;
+use function array_shift;
+use function count;
+use function end;
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
+
 class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
@@ -53,7 +49,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testErrorFix(
         array $file_stages,
@@ -61,7 +56,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
         array $error_levels = [],
         bool $test_save = true,
         bool $check_unused_code = false
-    ) {
+    ): void {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->diff_methods = true;
 
@@ -130,7 +125,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             $this->assertSame($error_positions[$i + 1], $found_positions, 'stage ' . ($i + 2));
         }
 
-        if ($test_save) {
+        if ($test_save && $file_stages) {
             $last_file_stage = end($file_stages);
 
             foreach ($last_file_stage as $file_path => $_) {
@@ -162,7 +157,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>, test_save?:bool}>
      */
-    public function providerTestErrorFix()
+    public function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [
@@ -796,6 +791,216 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[197], []],
             ],
+            'changeUseShouldInvalidateBadNew' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    public function foo() : void {
+                                        new B();
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    public function foo() : void {
+                                        new B();
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[247], []],
+            ],
+            'changeUseShouldInvalidateBadReturn' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    public function foo() : ?B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    public function foo() : ?B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[196], []],
+            ],
+            'changeUseShouldInvalidateBadDocblockReturn' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    /** @return ?B */
+                                    public function foo() {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    /** @return ?B */
+                                    public function foo() {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[184], []],
+            ],
+            'changeUseShouldInvalidateBadParam' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    public function foo(B $b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    public function foo(B $b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[192], []],
+            ],
+            'changeUseShouldInvalidateBadDocblockParam' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A {
+                                    /** @param B $b */
+                                    public function foo($b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A {
+                                    /** @param B $b */
+                                    public function foo($b) : void {}
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[183], []],
+            ],
+            'changeUseShouldInvalidateBadExtends' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz\B;
+
+                                class A extends B {}
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar\B;
+
+                                class A extends B {}
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[142], []],
+            ],
             'fixMissingProperty' => [
                 [
                     [
@@ -921,7 +1126,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[], [238], [], [238], []],
+                'error_positions' => [[], [238, 231], [], [238, 231], []],
             ],
             'traitMethodRenameSameFile' => [
                 [
@@ -1011,7 +1216,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[], [238], [], [238], []],
+                'error_positions' => [[], [238, 231], [], [238, 231], []],
             ],
             'duplicateMethodThenRemove' => [
                 [
@@ -1615,6 +1820,96 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 [],
                 false,
                 true
+            ],
+            'syntaxErrorFixed' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    //foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[347, 452, 538], [500, 500]],
+            ],
+            'updateExampleWithSyntaxErrorThen' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    //foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public static function foo() : void {
+                                    $a = 5;
+                                    foreach ([1, 2, 3] as $b) {
+                                        echo $b;
+                                    }
+                                    echo $a;
+                                }
+
+                                public static function bar() : void {
+                                    echo $a;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[500, 500], [347, 452, 538], [500, 500]],
             ],
         ];
     }

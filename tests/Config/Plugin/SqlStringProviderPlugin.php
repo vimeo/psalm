@@ -7,8 +7,7 @@ use SimpleXMLElement;
 /** @psalm-suppress UnusedClass */
 class SqlStringProviderPlugin implements \Psalm\Plugin\PluginEntryPointInterface
 {
-    /** @return void */
-    public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
+    public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
         require_once __DIR__ . '/Hook/SqlStringProvider.php';
         require_once __DIR__ . '/Hook/StringProvider/TSqlSelectString.php';

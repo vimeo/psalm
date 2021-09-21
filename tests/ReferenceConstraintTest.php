@@ -9,7 +9,7 @@ class ReferenceConstraintTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'functionParameterNoViolation' => [
@@ -157,13 +157,35 @@ class ReferenceConstraintTest extends TestCase
 
                     addValue($foo["a"]);'
             ],
+            'paramOutArrayDefaultNullWithThrow' => [
+                '<?php
+                    /**
+                     * @param-out array{errors: int}|null $info
+                     */
+                    function idnToAsci(?array &$info = null): void {
+                        if (rand(0, 1)) {
+                            $info = null;
+                        }
+
+                        throw new \UnexpectedValueException();
+                    }'
+            ],
+            'specificArrayWalkBehavior' => [
+                '<?php
+                    function withArrayWalk(array &$val): void {
+                        array_walk($val, /** @param mixed $arg */ function (&$arg): void {});
+                    }
+                    function withArrayWalkRecursive(array &$val): void {
+                        array_walk_recursive($val, /** @param mixed $arg */ function (&$arg): void {});
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'functionParameterViolation' => [

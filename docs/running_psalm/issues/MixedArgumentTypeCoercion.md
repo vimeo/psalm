@@ -12,3 +12,14 @@ function foo(array $a) : void {
 /** @param string[] $a */
 function takesStringArray(array $a) : void {}
 ```
+
+This can happen with variadic arguments when `@no-named-arguments` is not specified:
+
+```php
+<?php
+
+/** @param list<int> $args */
+function foo(int ...$args): array {
+    return $args; // $args is array<array-key, int> since it can have named arguments
+}
+```

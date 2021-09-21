@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class InternalProperty extends PropertyIssue
 {
-    const ERROR_LEVEL = 4;
-    const SHORTCODE = 176;
+    public const ERROR_LEVEL = 4;
+    public const SHORTCODE = 176;
 }

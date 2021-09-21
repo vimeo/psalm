@@ -11,13 +11,11 @@ class IssueData
 
     /**
      * @var int
-     * @readonly
      */
     public $line_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $line_to;
 
@@ -59,25 +57,21 @@ class IssueData
 
     /**
      * @var int
-     * @readonly
      */
     public $from;
 
     /**
      * @var int
-     * @readonly
      */
     public $to;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_from;
 
     /**
      * @var int
-     * @readonly
      */
     public $snippet_to;
 
@@ -111,49 +105,46 @@ class IssueData
     public $link;
 
     /**
-     * @var ?list<TaintNodeData|array{label: string, entry_path_type: string}>
+     * @var ?list<DataFlowNodeData|array{label: string, entry_path_type: string}>
      */
     public $taint_trace;
 
     /**
-     * @param string $severity
-     * @param int $line_from
-     * @param int $line_to
-     * @param string $type
-     * @param string $message
-     * @param string $file_name
-     * @param string $file_path
-     * @param string $snippet
-     * @param string $selected_text
-     * @param int $from
-     * @param int $to
-     * @param int $snippet_from
-     * @param int $snippet_to
-     * @param int $column_from
-     * @param int $column_to
-     * @param int $error_level
-     * @param int $shortcode
-     * @param ?list<TaintNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @var ?list<DataFlowNodeData>
+     */
+    public $other_references;
+
+    /**
+     * @var ?string
+     * @readonly
+     */
+    public $dupe_key;
+
+    /**
+     * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @param ?list<DataFlowNodeData> $other_references
      */
     public function __construct(
-        $severity,
-        $line_from,
-        $line_to,
-        $type,
-        $message,
-        $file_name,
-        $file_path,
-        $snippet,
-        $selected_text,
-        $from,
-        $to,
-        $snippet_from,
-        $snippet_to,
-        $column_from,
-        $column_to,
-        $shortcode = 0,
-        $error_level = -1,
-        $taint_trace = null
+        string $severity,
+        int $line_from,
+        int $line_to,
+        string $type,
+        string $message,
+        string $file_name,
+        string $file_path,
+        string $snippet,
+        string $selected_text,
+        int $from,
+        int $to,
+        int $snippet_from,
+        int $snippet_to,
+        int $column_from,
+        int $column_to,
+        int $shortcode = 0,
+        int $error_level = -1,
+        ?array $taint_trace = null,
+        array $other_references = null,
+        ?string $dupe_key = null
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;
@@ -172,7 +163,9 @@ class IssueData
         $this->column_to = $column_to;
         $this->shortcode = $shortcode;
         $this->error_level = $error_level;
-        $this->link = 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT);
+        $this->link = $shortcode ? 'https://psalm.dev/' . \str_pad((string) $shortcode, 3, "0", \STR_PAD_LEFT) : '';
         $this->taint_trace = $taint_trace;
+        $this->other_references = $other_references;
+        $this->dupe_key = $dupe_key;
     }
 }

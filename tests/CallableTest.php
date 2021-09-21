@@ -9,7 +9,7 @@ class CallableTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'byRefUseVar' => [
@@ -56,6 +56,9 @@ class CallableTest extends TestCase
                         fn(string $a) => $a . "blah",
                         $bar
                     );',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'varReturnType' => [
                 '<?php
@@ -76,6 +79,8 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                 ],
+                'error_levels' => [],
+                '7.4',
             ],
             'varCallableParamReturnType' => [
                 '<?php
@@ -111,6 +116,9 @@ class CallableTest extends TestCase
                     function foo() {
                         return fn(string $a): string => $a . "blah";
                     }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'callable' => [
                 '<?php
@@ -840,13 +848,29 @@ class CallableTest extends TestCase
 
                     foo(["a", "b"]);'
             ],
+            'abstractInvokeInTrait' => [
+                '<?php
+                    function testFunc(callable $func) : void {}
+
+                    trait TestTrait {
+                        abstract public function __invoke() : void;
+
+                        public function apply() : void {
+                            testFunc($this);
+                        }
+                    }
+
+                    abstract class TestClass {
+                        use TestTrait;
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedCallableClass' => [
@@ -1137,6 +1161,63 @@ class CallableTest extends TestCase
                     $a = "";
                     $a();',
                 'error_message' => 'InvalidFunctionCall',
+            ],
+            'ImpureFunctionCall' => [
+                '<?php
+                    /**
+                     * @psalm-template T
+                     *
+                     * @psalm-param array<int, T> $values
+                     * @psalm-param (callable(T): numeric) $num_func
+                     *
+                     * @psalm-return null|T
+                     *
+                     * @psalm-pure
+                     */
+                    function max_by(array $values, callable $num_func)
+                    {
+                        $max = null;
+                        $max_num = null;
+                        foreach ($values as $value) {
+                            $value_num = $num_func($value);
+                            if (null === $max_num || $value_num >= $max_num) {
+                                $max = $value;
+                                $max_num = $value_num;
+                            }
+                        }
+
+                        return $max;
+                    }
+
+                    $c = max_by([1, 2, 3], static function(int $a): int {
+                        return $a + mt_rand(0, $a);
+                    });
+
+                    echo $c;
+                ',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'constructCallableFromClassStringArray' => [
+                '<?php
+                    interface Foo {
+                        public function bar() : int;
+                    }
+
+                    /**
+                     * @param callable():string $c
+                     */
+                    function takesCallableReturningString(callable $c) : void {
+                        $c();
+                    }
+
+                    /**
+                     * @param class-string<Foo> $c
+                     */
+                    function foo(string $c) : void {
+                        takesCallableReturningString([$c, "bar"]);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

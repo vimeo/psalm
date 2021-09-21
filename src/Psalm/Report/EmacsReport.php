@@ -3,13 +3,11 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Report;
+
 use function sprintf;
 
 class EmacsReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '';

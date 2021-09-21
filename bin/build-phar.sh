@@ -10,8 +10,13 @@ php $DIR/improve_class_alias.php
 
 vendor/bin/box compile
 
-if [[ "$GPG_ENCRYPTION" != '' ]] ; then
-    echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
-    gpg --batch --yes --import keys.asc
-    echo $SIGNING_KEY | gpg --passphrase-fd 0 -u 8A03EA3B385DBAA1 --armor --detach-sig build/psalm.phar
+if [[ "$GPG_SIGNING" != '' ]] ; then
+    if [[ "$GPG_SECRET_KEY" != '' ]] ; then
+        echo "Load secret key into gpg"
+        echo "$GPG_SECRET_KEY" | gpg --import --no-tty --batch --yes
+    fi
+
+    echo "Sign Phar"
+
+    echo "$GPG_PASSPHRASE" | gpg --command-fd 0 --passphrase-fd 0 --pinentry-mode loopback -u 12CE0F1D262429A5 --batch --detach-sign --armor --output build/psalm.phar.asc build/psalm.phar
 fi

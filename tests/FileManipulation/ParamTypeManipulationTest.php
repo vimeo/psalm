@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class ParamTypeManipulationTest extends FileManipulationTest
+class ParamTypeManipulationTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'fixMismatchingDocblockParamType70' => [
@@ -70,6 +70,9 @@ class ParamTypeManipulationTest extends FileManipulationTest
                     (new C)->fooFoo("hello");',
                 '<?php
                     class C {
+                        /**
+                         * @param string $a
+                         */
                         public function fooFoo(string $a): void {}
                     }
 
@@ -184,6 +187,9 @@ class ParamTypeManipulationTest extends FileManipulationTest
                     (new D)->fooFoo("hello");',
                 '<?php
                     class C {
+                        /**
+                         * @param string $a
+                         */
                         public function fooFoo(string $a): void {}
                     }
 
@@ -223,6 +229,9 @@ class ParamTypeManipulationTest extends FileManipulationTest
                     (new C)->foo($a);',
                 '<?php
                     class C {
+                        /**
+                         * @param string $bar
+                         */
                         public function foo(string &$bar) : void {
                             $bar .= " me";
                         }

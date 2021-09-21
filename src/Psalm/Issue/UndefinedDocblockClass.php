@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class UndefinedDocblockClass extends ClassIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 200;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 200;
 }

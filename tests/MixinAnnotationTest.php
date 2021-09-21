@@ -1,10 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-use Psalm\Config;
-use Psalm\Context;
-
 class MixinAnnotationTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -13,7 +9,7 @@ class MixinAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
@@ -281,6 +277,7 @@ class MixinAnnotationTest extends TestCase
 
                     /**
                      * @psalm-suppress MissingConstructor
+                     * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
 
@@ -514,6 +511,7 @@ class MixinAnnotationTest extends TestCase
 
                     /**
                      * @psalm-suppress MissingConstructor
+                     * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
 
@@ -558,20 +556,47 @@ class MixinAnnotationTest extends TestCase
                      */
                     class Bar
                     {
-                    
+
                     }
 
                     $bar = new Bar();
 
                     $bar->foo();'
             ],
+            'templatedMixinBindStatic' => [
+                '<?php
+                    /**
+                     * @template-covariant TModel of Model
+                     */
+                    class QueryBuilder {
+                        /**
+                         * @return list<TModel>
+                         */
+                        public function getInner() {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @mixin QueryBuilder<static>
+                     */
+                    abstract class Model {}
+
+                    class FooModel extends Model {}
+
+                    $f = new FooModel();
+                    $g = $f->getInner();',
+                [
+                    '$g' => 'list<FooModel>',
+                ]
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedMixinClass' => [

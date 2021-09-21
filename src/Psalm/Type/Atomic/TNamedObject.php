@@ -1,17 +1,18 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use function substr;
-use function array_map;
-use function strtolower;
 
+use function array_map;
+use function implode;
+use function substr;
+
+/**
+ * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ */
 class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;
@@ -27,9 +28,15 @@ class TNamedObject extends Atomic
     public $was_static = false;
 
     /**
+     * Whether or not this type can represent a child of the class named in $value
+     * @var bool
+     */
+    public $definite_class = false;
+
+    /**
      * @param string $value the name of the object
      */
-    public function __construct($value, bool $was_static = false)
+    public function __construct(string $value, bool $was_static = false, bool $definite_class = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -37,17 +44,15 @@ class TNamedObject extends Atomic
 
         $this->value = $value;
         $this->was_static = $was_static;
+        $this->definite_class = $definite_class;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getKey();
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
             return $this->value . '&' . implode('&', $this->extra_types);
@@ -56,7 +61,7 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->value . '&' . implode(
@@ -74,19 +79,15 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<lowercase-string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         if ($this->value === 'static') {
             return 'static';
         }
@@ -98,36 +99,40 @@ class TNamedObject extends Atomic
             $use_phpdoc_format
         );
 
-        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true)
-            . $intersection_types;
+        return Type::getStringFromFQCLN(
+            $this->value,
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            true,
+            $this->was_static
+        ) . $intersection_types;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string, string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         if ($this->value === 'static') {
-            return null;
+            return $php_major_version >= 8 ? 'static' : null;
+        }
+
+        if ($this->was_static) {
+            return $php_major_version >= 8 ? 'static' : 'self';
         }
 
         return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
-        return $this->value !== 'static';
+        return ($this->value !== 'static' && $this->was_static === false) || $php_major_version >= 8;
     }
 
     public function replaceTemplateTypesWithArgTypes(

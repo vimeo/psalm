@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use function microtime;
 use PhpParser;
+
+use function microtime;
 
 class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvider
 {
@@ -30,7 +31,7 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     {
     }
 
-    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash)
+    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash): ?array
     {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
@@ -43,13 +44,9 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string   $file_content_hash
-     * @param  string   $file_path
-     * @param mixed $file_modified_time
-     *
      * @return list<PhpParser\Node\Stmt>|null
      */
-    public function loadExistingStatementsFromCache($file_path)
+    public function loadExistingStatementsFromCache(string $file_path): ?array
     {
         if (isset($this->statements_cache[$file_path])) {
             return $this->statements_cache[$file_path];
@@ -59,26 +56,17 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
     }
 
     /**
-     * @param  string                           $file_path
-     * @param  string                           $file_content_hash
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     * @param  bool                             $touch_only
      *
-     * @return void
      */
-    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);
         $this->file_content_hash[$file_path] = $file_content_hash;
     }
 
-    /**
-     * @param  string   $file_path
-     *
-     * @return string|null
-     */
-    public function loadExistingFileContentsFromCache($file_path)
+    public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         if (isset($this->file_contents_cache[$file_path])) {
             return $this->file_contents_cache[$file_path];
@@ -87,18 +75,12 @@ class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCachePr
         return null;
     }
 
-    /**
-     * @param  string  $file_path
-     * @param  string  $file_contents
-     *
-     * @return void
-     */
-    public function cacheFileContents($file_path, $file_contents)
+    public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;
     }
 
-    public function saveFileContentHashes()
+    public function saveFileContentHashes(): void
     {
     }
 }

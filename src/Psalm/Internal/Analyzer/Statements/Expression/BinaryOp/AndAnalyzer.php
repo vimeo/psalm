@@ -2,18 +2,22 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type\Algebra;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
-use function array_merge;
+
 use function array_diff_key;
 use function array_filter;
-use function array_values;
 use function array_map;
+use function array_merge;
+use function array_values;
 
 /**
  * @internal
@@ -27,11 +31,11 @@ class AndAnalyzer
         bool $from_stmt = false
     ) : bool {
         if ($from_stmt) {
-            $fake_if_stmt = new PhpParser\Node\Stmt\If_(
+            $fake_if_stmt = new VirtualIf(
                 $stmt->left,
                 [
                     'stmts' => [
-                        new PhpParser\Node\Stmt\Expression(
+                        new VirtualExpression(
                             $stmt->right
                         )
                     ]
@@ -39,7 +43,7 @@ class AndAnalyzer
                 $stmt->getAttributes()
             );
 
-            return IfAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
+            return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
         }
 
         $pre_referenced_var_ids = $context->referenced_var_ids;
@@ -60,8 +64,11 @@ class AndAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $left_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->left),
+        $left_cond_id = \spl_object_id($stmt->left);
+
+        $left_clauses = FormulaGenerator::getFormula(
+            $left_cond_id,
+            $left_cond_id,
             $stmt->left,
             $context->self,
             $statements_analyzer,
@@ -90,8 +97,8 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    function ($c) use ($reconciled_expression_clauses) {
-                        return !\in_array($c->getHash(), $reconciled_expression_clauses);
+                    function ($c) use ($reconciled_expression_clauses): bool {
+                        return !\in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
@@ -110,7 +117,7 @@ class AndAnalyzer
 
         $left_type_assertions = Algebra::getTruthsFromFormula(
             $simplified_clauses,
-            \spl_object_id($stmt->left),
+            $left_cond_id,
             $left_referenced_var_ids,
             $active_left_assertions
         );
@@ -129,9 +136,10 @@ class AndAnalyzer
                 $changed_var_ids,
                 $left_referenced_var_ids,
                 $statements_analyzer,
-                [],
+                $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                $context->inside_negation
             );
 
             $right_context->vars_in_scope = $right_vars_in_scope;
@@ -153,10 +161,6 @@ class AndAnalyzer
             $right_context->referenced_var_ids,
             $left_context->referenced_var_ids
         );
-
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = $right_context->unreferenced_vars;
-        }
 
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
@@ -194,15 +198,11 @@ class AndAnalyzer
                 $if_context->assigned_var_ids
             );
 
-            if ($codebase->find_unused_variables) {
-                $if_context->unreferenced_vars = $context->unreferenced_vars;
-            }
-
             $if_context->reconciled_expression_clauses = array_merge(
                 $if_context->reconciled_expression_clauses,
                 array_map(
                     function ($c) {
-                        return $c->getHash();
+                        return $c->hash;
                     },
                     $partitioned_clauses[1]
                 )

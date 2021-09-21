@@ -2,12 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\Sink;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -25,12 +28,10 @@ class PrintAnalyzer
             return false;
         }
 
-        if ($codebase->taint
-            && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-        ) {
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $print_param_sink = Sink::getForMethodArgument(
+            $print_param_sink = TaintSink::getForMethodArgument(
                 'print',
                 'print',
                 0,
@@ -40,11 +41,12 @@ class PrintAnalyzer
 
             $print_param_sink->taints = [
                 Type\TaintKind::INPUT_HTML,
+                Type\TaintKind::INPUT_HAS_QUOTES,
                 Type\TaintKind::USER_SECRET,
                 Type\TaintKind::SYSTEM_SECRET
             ];
 
-            $codebase->taint->addSink($print_param_sink);
+            $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
@@ -54,6 +56,7 @@ class PrintAnalyzer
                 Type::getString(),
                 null,
                 'print',
+                null,
                 0,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                 $stmt->expr,
@@ -78,6 +81,25 @@ class PrintAnalyzer
                 $statements_analyzer->getSuppressedIssues()
             )) {
                 // continue
+            }
+        }
+
+        if (!$context->collect_initializations && !$context->collect_mutations) {
+            if ($context->mutation_free || $context->external_mutation_free) {
+                if (IssueBuffer::accepts(
+                    new ImpureFunctionCall(
+                        'Cannot call print from a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
+                && $statements_analyzer->getSource()->track_mutations
+            ) {
+                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                $statements_analyzer->getSource()->inferred_impure = true;
             }
         }
 

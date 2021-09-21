@@ -7,9 +7,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
-use function count;
-use function is_string;
+
 use function array_fill;
+use function count;
 
 /**
  * @internal
@@ -17,7 +17,7 @@ use function array_fill;
 class GenericTypeComparator
 {
     /**
-     * @param TGenericObject|Titerable $container_type_part
+     * @param TGenericObject|TIterable $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -27,6 +27,7 @@ class GenericTypeComparator
         ?TypeComparisonResult $atomic_comparison_result = null
     ) : bool {
         $all_types_contain = true;
+        $container_was_iterable = false;
 
         if ($container_type_part instanceof TIterable
             && !$container_type_part->extra_types
@@ -36,6 +37,8 @@ class GenericTypeComparator
                 'Traversable',
                 $container_type_part->type_params
             );
+
+            $container_was_iterable = true;
         }
 
         if (!$input_type_part instanceof TGenericObject && !$input_type_part instanceof TIterable) {
@@ -47,24 +50,10 @@ class GenericTypeComparator
                 $container_class = $container_type_part->value;
 
                 // attempt to transform it
-                if (isset($class_storage->template_type_extends[$container_class])) {
-                    $extends_list = $class_storage->template_type_extends[$container_class];
-
-                    $generic_params = [];
-
-                    foreach ($extends_list as $key => $value) {
-                        if (is_string($key)) {
-                            $generic_params[] = $value;
-                        }
-                    }
-
-                    if (!$generic_params) {
-                        return false;
-                    }
-
+                if (!empty($class_storage->template_extended_params[$container_class])) {
                     $input_type_part = new TGenericObject(
                         $input_type_part->value,
-                        $generic_params
+                        \array_values($class_storage->template_extended_params[$container_class])
                     );
                 }
             }
@@ -88,7 +77,7 @@ class GenericTypeComparator
 
         $container_type_params_covariant = [];
 
-        $input_type_params = \Psalm\Internal\Type\UnionTemplateHandler::getMappedGenericTypeParams(
+        $input_type_params = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
             $input_type_part,
             $container_type_part,
@@ -146,7 +135,8 @@ class GenericTypeComparator
                             && $atomic_comparison_result->type_coerced_from_mixed !== false;
 
                     $atomic_comparison_result->type_coerced_from_as_mixed
-                        = $param_comparison_result->type_coerced_from_as_mixed === true
+                        = !$container_was_iterable
+                            && $param_comparison_result->type_coerced_from_as_mixed === true
                             && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
 
                     $atomic_comparison_result->to_string_cast
@@ -162,7 +152,9 @@ class GenericTypeComparator
                             && $atomic_comparison_result->scalar_type_match_found !== false;
                 }
 
-                if (!$param_comparison_result->type_coerced_from_as_mixed) {
+                // if the container was an iterable then there was no mapping
+                // from a template type
+                if ($container_was_iterable || !$param_comparison_result->type_coerced_from_as_mixed) {
                     $all_types_contain = false;
                 }
             } elseif (!$input_type_part instanceof TIterable
@@ -170,9 +162,7 @@ class GenericTypeComparator
                 && !$container_param->hasTemplate()
                 && !$input_param->hasTemplate()
             ) {
-                if ($input_param->hasEmptyArray()
-                    || $input_param->hasLiteralValue()
-                ) {
+                if ($input_param->containsAnyLiteral()) {
                     if ($atomic_comparison_result) {
                         if (!$atomic_comparison_result->replacement_atomic_type) {
                             $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;

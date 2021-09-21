@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests\FileManipulation;
 
-class MissingPropertyTypeTest extends FileManipulationTest
+class MissingPropertyTypeTest extends FileManipulationTestCase
 {
     /**
      * @return array<string,array{string,string,string,string[],bool,5?:bool}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): array
     {
         return [
             'addMissingUnionType56' => [
@@ -26,6 +26,8 @@ class MissingPropertyTypeTest extends FileManipulationTest
                     class A {
                         /**
                          * @var int|string
+                         *
+                         * @psalm-var \'hello\'|4
                          */
                         public $v;
 
@@ -56,6 +58,8 @@ class MissingPropertyTypeTest extends FileManipulationTest
                     class A {
                         /**
                          * @var int|null
+                         *
+                         * @psalm-var 4|null
                          */
                         public $v;
 
@@ -84,6 +88,8 @@ class MissingPropertyTypeTest extends FileManipulationTest
                     class A {
                         /**
                          * @var int|null
+                         *
+                         * @psalm-var 4|null
                          */
                         public $v;
 
@@ -139,6 +145,8 @@ class MissingPropertyTypeTest extends FileManipulationTest
                     class A {
                         /**
                          * @var int|string
+                         *
+                         * @psalm-var \'hello\'|4
                          */
                         public $v;
 

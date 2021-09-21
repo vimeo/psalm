@@ -26,14 +26,12 @@ class MethodParamTree extends \Psalm\Internal\Type\ParseTree
      */
     public $name;
 
-    /**
-     * @param string $name
-     * @param bool $byref
-     * @param bool $variadic
-     * @param \Psalm\Internal\Type\ParseTree|null $parent
-     */
-    public function __construct($name, $byref, $variadic, \Psalm\Internal\Type\ParseTree $parent = null)
-    {
+    public function __construct(
+        string $name,
+        bool $byref,
+        bool $variadic,
+        ?\Psalm\Internal\Type\ParseTree $parent = null
+    ) {
         $this->name = $name;
         $this->byref = $byref;
         $this->variadic = $variadic;

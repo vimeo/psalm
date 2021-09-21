@@ -1,41 +1,40 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Type;
+use Psalm\Type\Reconciler;
+
 use function array_map;
 use function count;
 use function is_string;
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Issue\InvalidReturnType;
-use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
-use Psalm\Type;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 
-class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
+class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
 {
+    /**
+     * @return array<lowercase-string>
+     */
     public static function getFunctionIds() : array
     {
         return ['array_filter'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     */
-    public static function getFunctionReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
-    ) : Type\Union {
-        if (!$statements_source instanceof StatementsAnalyzer) {
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    {
+        $statements_source = $event->getStatementsSource();
+        $call_args = $event->getCallArgs();
+        $context = $event->getContext();
+        $code_location = $event->getCodeLocation();
+        if (!$statements_source instanceof StatementsAnalyzer
+            || !$call_args
+        ) {
             return Type::getMixed();
         }
 
@@ -46,7 +45,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
                 || $array_atomic_type instanceof Type\Atomic\TList)
             ? $array_atomic_type
             : null;
@@ -64,6 +63,53 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
         } else {
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();
+
+            if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
+                $had_one = count($first_arg_array->properties) === 1;
+
+                $first_arg_array = clone $first_arg_array;
+
+                $new_properties = \array_filter(
+                    array_map(
+                        function ($keyed_type) use ($statements_source, $context) {
+                            $prev_keyed_type = $keyed_type;
+
+                            $keyed_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+                                '!falsy',
+                                clone $keyed_type,
+                                '',
+                                $statements_source,
+                                $context->inside_loop,
+                                [],
+                                null,
+                                $statements_source->getSuppressedIssues()
+                            );
+
+                            $keyed_type->possibly_undefined = ($prev_keyed_type->hasInt()
+                                    && !$prev_keyed_type->hasLiteralInt())
+                                || $prev_keyed_type->hasFloat()
+                                || $prev_keyed_type->getId() !== $keyed_type->getId();
+
+                            return $keyed_type;
+                        },
+                        $first_arg_array->properties
+                    ),
+                    function ($keyed_type) {
+                        return !$keyed_type->isEmpty();
+                    }
+                );
+
+                if (!$new_properties) {
+                    return Type::getEmptyArray();
+                }
+
+                $first_arg_array->properties = $new_properties;
+
+                $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
+                $first_arg_array->sealed = false;
+
+                return new Type\Union([$first_arg_array]);
+            }
         }
 
         if (!isset($call_args[1])) {
@@ -78,7 +124,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                 $statements_source->getSuppressedIssues()
             );
 
-            if ($first_arg_array instanceof Type\Atomic\ObjectLike
+            if ($first_arg_array instanceof Type\Atomic\TKeyedArray
                 && $first_arg_array->is_list
                 && $key_type->isSingleIntLiteral()
                 && $key_type->getSingleIntLiteral()->value === 0
@@ -97,7 +143,20 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             if ($key_type->getLiteralInts()) {
                 $key_type->addType(new Type\Atomic\TInt);
             }
-        } elseif (!isset($call_args[2])) {
+
+            if (!$inner_type->getAtomicTypes()) {
+                return Type::getEmptyArray();
+            }
+
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    $key_type,
+                    $inner_type,
+                ]),
+            ]);
+        }
+
+        if (!isset($call_args[2])) {
             $function_call_arg = $call_args[1];
 
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
@@ -169,9 +228,12 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     return Type::getArray();
                 }
 
-                if (count($function_call_arg->value->getStmts()) === 1 && count($function_call_arg->value->params)) {
+                /** @var list<PhpParser\Node\Stmt> */
+                $function_call_stmts = $function_call_arg->value->getStmts();
+
+                if (count($function_call_stmts) === 1 && count($function_call_arg->value->params)) {
                     $first_param = $function_call_arg->value->params[0];
-                    $stmt = $function_call_arg->value->getStmts()[0];
+                    $stmt = $function_call_stmts[0];
 
                     if ($first_param->variadic === false
                         && $first_param->var instanceof PhpParser\Node\Expr\Variable
@@ -181,11 +243,24 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     ) {
                         $codebase = $statements_source->getCodebase();
 
-                        $assertions = AssertionFinder::scrapeAssertions(
-                            $stmt->expr,
-                            null,
-                            $statements_source,
-                            $codebase
+                        $cond_object_id = \spl_object_id($stmt->expr);
+
+                        try {
+                            $filter_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                                $cond_object_id,
+                                $cond_object_id,
+                                $stmt->expr,
+                                $context->self,
+                                $statements_source,
+                                $codebase
+                            );
+                        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                            $filter_clauses = [];
+                        }
+
+                        $assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
+                            $filter_clauses,
+                            $cond_object_id
                         );
 
                         if (isset($assertions['$' . $first_param->var->name])) {

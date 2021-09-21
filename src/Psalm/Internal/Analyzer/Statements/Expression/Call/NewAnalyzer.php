@@ -2,32 +2,39 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Taint\TaintNode;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\TooManyArguments;
-use Psalm\Issue\UnsafeInstantiation;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UnsafeGenericInstantiation;
+use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function in_array;
-use function strtolower;
-use function implode;
+
+use function array_map;
 use function array_values;
-use function is_string;
+use function implode;
+use function in_array;
+use function preg_match;
+use function reset;
+use function strtolower;
 
 /**
  * @internal
@@ -57,7 +64,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
+                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                        false
                     );
                 }
 
@@ -102,268 +110,27 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $stmt->class,
                     $codebase->classlikes->classExists($fq_class_name)
                         ? $fq_class_name
-                        : '*' . implode('\\', $stmt->class->parts)
+                        : '*'
+                            . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                                ? '\\'
+                                : $statements_analyzer->getNamespace() . '-')
+                            . implode('\\', $stmt->class->parts)
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_analyzer->analyze([$stmt->class], $context);
             $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
         } else {
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
-
-            if ($stmt_class_type = $statements_analyzer->node_data->getType($stmt->class)) {
-                $has_single_class = $stmt_class_type->isSingleStringLiteral();
-
-                if ($has_single_class) {
-                    $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
-                } else {
-                    if (self::checkMethodArgs(
-                        null,
-                        $stmt->args,
-                        null,
-                        $context,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer
-                    ) === false) {
-                        return false;
-                    }
-                }
-
-                $new_type = null;
-
-                foreach ($stmt_class_type->getAtomicTypes() as $lhs_type_part) {
-                    if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
-                        if (!$statements_analyzer->node_data->getType($stmt)) {
-                            $new_type_part = new Type\Atomic\TTemplateParam(
-                                $lhs_type_part->param_name,
-                                $lhs_type_part->as_type
-                                    ? new Type\Union([$lhs_type_part->as_type])
-                                    : Type::getObject(),
-                                $lhs_type_part->defining_class
-                            );
-
-                            if (!$lhs_type_part->as_type) {
-                                if (IssueBuffer::accepts(
-                                    new MixedMethodCall(
-                                        'Cannot call constructor on an unknown class',
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            }
-
-                            if ($new_type) {
-                                $new_type = Type::combineUnionTypes(
-                                    $new_type,
-                                    new Type\Union([$new_type_part])
-                                );
-                            } else {
-                                $new_type = new Type\Union([$new_type_part]);
-                            }
-
-                            if ($lhs_type_part->as_type
-                                && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
-                            ) {
-                                $as_storage = $codebase->classlike_storage_provider->get(
-                                    $lhs_type_part->as_type->value
-                                );
-
-                                if (!$as_storage->preserve_constructor_signature) {
-                                    if (IssueBuffer::accepts(
-                                        new UnsafeInstantiation(
-                                            'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
-                                                . ' with "new $class_name" as'
-                                                . ' its constructor might change in child classes',
-                                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-                                }
-                            }
-                        }
-
-                        if ($lhs_type_part->as_type) {
-                            $codebase->methods->methodExists(
-                                new \Psalm\Internal\MethodIdentifier(
-                                    $lhs_type_part->as_type->value,
-                                    '__construct'
-                                ),
-                                $context->calling_method_id,
-                                $codebase->collect_locations
-                                    ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
-                                $statements_analyzer,
-                                $statements_analyzer->getFilePath()
-                            );
-                        }
-
-                        continue;
-                    }
-
-                    if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
-                        || $lhs_type_part instanceof Type\Atomic\TClassString
-                        || $lhs_type_part instanceof Type\Atomic\GetClassT
-                    ) {
-                        if (!$statements_analyzer->node_data->getType($stmt)) {
-                            if ($lhs_type_part instanceof Type\Atomic\TClassString) {
-                                $generated_type = $lhs_type_part->as_type
-                                    ? clone $lhs_type_part->as_type
-                                    : new Type\Atomic\TObject();
-
-                                if ($lhs_type_part->as_type
-                                    && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
-                                ) {
-                                    $as_storage = $codebase->classlike_storage_provider->get(
-                                        $lhs_type_part->as_type->value
-                                    );
-
-                                    if (!$as_storage->preserve_constructor_signature) {
-                                        if (IssueBuffer::accepts(
-                                            new UnsafeInstantiation(
-                                                'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
-                                                    . ' with "new $class_name" as'
-                                                    . ' its constructor might change in child classes',
-                                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                            ),
-                                            $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
-                                    }
-                                }
-                            } elseif ($lhs_type_part instanceof Type\Atomic\GetClassT) {
-                                $generated_type = new Type\Atomic\TObject();
-
-                                if ($lhs_type_part->as_type->hasObjectType()
-                                    && $lhs_type_part->as_type->isSingle()
-                                ) {
-                                    foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
-                                        if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
-                                            $generated_type = new Type\Atomic\TNamedObject(
-                                                $typeof_type_atomic->value
-                                            );
-                                        }
-                                    }
-                                }
-                            } else {
-                                $generated_type =  new Type\Atomic\TNamedObject(
-                                    $lhs_type_part->value
-                                );
-                            }
-
-                            if ($lhs_type_part instanceof Type\Atomic\TClassString) {
-                                $can_extend = true;
-                            }
-
-                            if ($generated_type instanceof Type\Atomic\TObject) {
-                                if (IssueBuffer::accepts(
-                                    new MixedMethodCall(
-                                        'Cannot call constructor on an unknown class',
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            }
-
-                            if ($new_type) {
-                                $new_type = Type::combineUnionTypes(
-                                    $new_type,
-                                    new Type\Union([$generated_type])
-                                );
-                            } else {
-                                $new_type = new Type\Union([$generated_type]);
-                            }
-                        }
-
-                        continue;
-                    }
-
-                    if ($lhs_type_part instanceof Type\Atomic\TString) {
-                        if ($config->allow_string_standin_for_class
-                            && !$lhs_type_part instanceof Type\Atomic\TNumericString
-                        ) {
-                            // do nothing
-                        } elseif (IssueBuffer::accepts(
-                            new InvalidStringClass(
-                                'String cannot be used as a class',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } elseif ($lhs_type_part instanceof Type\Atomic\TMixed
-                        || $lhs_type_part instanceof Type\Atomic\TTemplateParam
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new MixedMethodCall(
-                                'Cannot call constructor on an unknown class',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
-                        && $stmt_class_type->ignore_falsable_issues
-                    ) {
-                        // do nothing
-                    } elseif ($lhs_type_part instanceof Type\Atomic\TNull
-                        && $stmt_class_type->ignore_nullable_issues
-                    ) {
-                        // do nothing
-                    } elseif (IssueBuffer::accepts(
-                        new UndefinedClass(
-                            'Type ' . $lhs_type_part . ' cannot be called as a class',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            (string)$lhs_type_part
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    if ($new_type) {
-                        $new_type = Type::combineUnionTypes(
-                            $new_type,
-                            Type::getObject()
-                        );
-                    } else {
-                        $new_type = Type::getObject();
-                    }
-                }
-
-                if (!$has_single_class) {
-                    if ($new_type) {
-                        $statements_analyzer->node_data->setType($stmt, $new_type);
-                    }
-
-                    ArgumentsAnalyzer::analyze(
-                        $statements_analyzer,
-                        $stmt->args,
-                        null,
-                        null,
-                        $context
-                    );
-
-                    return true;
-                }
-            } else {
-                ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->args,
-                    null,
-                    null,
-                    $context
-                );
-
-                return true;
-            }
+            self::analyzeConstructorExpression(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $stmt,
+                $stmt->class,
+                $config,
+                $fq_class_name,
+                $can_extend
+            );
         }
 
         if ($fq_class_name) {
@@ -387,6 +154,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -399,14 +167,14 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues(),
-                    false
+                    $statements_analyzer->getSuppressedIssues()
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
                         $stmt->args,
                         null,
                         null,
+                        true,
                         $context
                     );
 
@@ -428,10 +196,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             }
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name);
+                $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
+                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
-                $result_atomic_type = new TNamedObject($fq_class_name);
-                $result_atomic_type->was_static = $from_static;
+                //if the class is a Name, it can't represent a child
+                $definite_class = $stmt->class instanceof PhpParser\Node\Name;
+                $result_atomic_type = new TNamedObject($fq_class_name, $from_static, $definite_class);
             }
 
             $statements_analyzer->node_data->setType(
@@ -442,121 +212,545 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
-                $storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                if ($from_static && !$storage->preserve_constructor_signature) {
-                    if (IssueBuffer::accepts(
-                        new UnsafeInstantiation(
-                            'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
-                                . ' its constructor might change in child classes',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                // if we're not calling this constructor via new static()
-                if ($storage->abstract && !$can_extend) {
-                    if (IssueBuffer::accepts(
-                        new AbstractInstantiation(
-                            'Unable to instantiate a abstract class ' . $fq_class_name,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return true;
-                    }
-                }
-
-                if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string) $context->self)) {
-                    if (IssueBuffer::accepts(
-                        new DeprecatedClass(
-                            $fq_class_name . ' is marked deprecated',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $fq_class_name
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-
-                if ($context->self
-                    && !$context->collect_initializations
-                    && !$context->collect_mutations
-                    && !NamespaceAnalyzer::isWithin($context->self, $storage->internal)
-                ) {
-                    if (IssueBuffer::accepts(
-                        new InternalClass(
-                            $fq_class_name . ' is internal to ' . $storage->internal
-                                . ' but called from ' . $context->self,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $fq_class_name
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__construct');
-
-                if ($codebase->methods->methodExists(
-                    $method_id,
-                    $context->calling_method_id,
-                    $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                self::analyzeNamedConstructor(
                     $statements_analyzer,
-                    $statements_analyzer->getFilePath()
+                    $codebase,
+                    $stmt,
+                    $context,
+                    $fq_class_name,
+                    $from_static,
+                    $can_extend
+                );
+            } else {
+                ArgumentsAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt->args,
+                    null,
+                    null,
+                    true,
+                    $context
+                );
+            }
+        }
+
+        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+            $context->removeMutableObjectVars();
+        }
+
+        return true;
+    }
+
+    private static function analyzeNamedConstructor(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+        string $fq_class_name,
+        bool $from_static,
+        bool $can_extend
+    ): void {
+        $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        if ($from_static) {
+            if (!$storage->preserve_constructor_signature) {
+                if (IssueBuffer::accepts(
+                    new UnsafeInstantiation(
+                        'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
+                        . ' its constructor might change in child classes',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
-                    if ($codebase->store_node_types
-                        && !$context->collect_initializations
-                        && !$context->collect_mutations
+                    // fall through
+                }
+            } elseif ($storage->template_types
+                && !$storage->enforce_template_inheritance
+            ) {
+                $source = $statements_analyzer->getSource();
+
+                if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
+                    $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+                    if ($function_storage->return_type
+                        && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
                     ) {
-                        ArgumentMapPopulator::recordArgumentPositions(
-                            $statements_analyzer,
-                            $stmt,
-                            $codebase,
+                        if (IssueBuffer::accepts(
+                            new UnsafeGenericInstantiation(
+                                'Cannot safely instantiate generic class ' . $fq_class_name
+                                    . ' with "new static" as'
+                                    . ' its generic parameters may be constrained in child classes.',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+            }
+        }
+
+        // if we're not calling this constructor via new static()
+        if ($storage->abstract && !$can_extend) {
+            if (IssueBuffer::accepts(
+                new AbstractInstantiation(
+                    'Unable to instantiate a abstract class ' . $fq_class_name,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return;
+            }
+        }
+
+        if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
+            if (IssueBuffer::accepts(
+                new DeprecatedClass(
+                    $fq_class_name . ' is marked deprecated',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+
+        if ($context->self
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+            && !NamespaceAnalyzer::isWithin($context->self, $storage->internal)
+        ) {
+            if (IssueBuffer::accepts(
+                new InternalClass(
+                    $fq_class_name . ' is internal to ' . $storage->internal
+                    . ' but called from ' . $context->self,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+        $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__construct');
+
+        if ($codebase->methods->methodExists(
+            $method_id,
+            $context->calling_method_id,
+            $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+            $statements_analyzer,
+            $statements_analyzer->getFilePath()
+        )) {
+            if ($codebase->store_node_types
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
+                ArgumentMapPopulator::recordArgumentPositions(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    (string)$method_id
+                );
+            }
+
+            $template_result = new \Psalm\Internal\Type\TemplateResult([], []);
+
+            if (self::checkMethodArgs(
+                $method_id,
+                $stmt->args,
+                $template_result,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer
+            ) === false) {
+                return;
+            }
+
+            if (Method\MethodVisibilityAnalyzer::analyze(
+                $method_id,
+                $context,
+                $statements_analyzer->getSource(),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
+            ) === false) {
+                return;
+            }
+
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            if ($declaring_method_id) {
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                $namespace = $statements_analyzer->getNamespace() ?: '';
+                if (!NamespaceAnalyzer::isWithin(
+                    $namespace,
+                    $method_storage->internal
+                )) {
+                    if (IssueBuffer::accepts(
+                        new InternalMethod(
+                            'Constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id)
+                            . ' is internal to ' . $method_storage->internal
+                            . ' but called from ' . ($namespace ?: 'root namespace'),
+                            new CodeLocation($statements_analyzer, $stmt),
                             (string) $method_id
-                        );
-                    }
-
-                    $template_result = new \Psalm\Internal\Type\TemplateResult([], []);
-
-                    if (self::checkMethodArgs(
-                        $method_id,
-                        $stmt->args,
-                        $template_result,
-                        $context,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer
-                    ) === false) {
-                        return false;
-                    }
-
-                    if (Method\MethodVisibilityAnalyzer::analyze(
-                        $method_id,
-                        $context,
-                        $statements_analyzer->getSource(),
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
                         $statements_analyzer->getSuppressedIssues()
-                    ) === false) {
-                        return false;
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+                    if ($context->pure) {
+                        if (IssueBuffer::accepts(
+                            new ImpureMethodCall(
+                                'Cannot call an impure constructor from a pure context',
+                                new CodeLocation($statements_analyzer, $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } elseif ($statements_analyzer->getSource()
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        && $statements_analyzer->getSource()->track_mutations
+                    ) {
+                        $statements_analyzer->getSource()->inferred_has_mutation = true;
+                        $statements_analyzer->getSource()->inferred_impure = true;
+                    }
+                }
+
+                $generic_params = $template_result->lower_bounds;
+
+                if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
+                    self::applyAssertionsToContext(
+                        $stmt->class,
+                        null,
+                        $method_storage->assertions,
+                        $stmt->args,
+                        $generic_params,
+                        $context,
+                        $statements_analyzer
+                    );
+                }
+
+                if ($method_storage->if_true_assertions) {
+                    $statements_analyzer->node_data->setIfTrueAssertions(
+                        $stmt,
+                        \array_map(
+                            function ($assertion) use ($generic_params, $codebase) {
+                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
+                            },
+                            $method_storage->if_true_assertions
+                        )
+                    );
+                }
+
+                if ($method_storage->if_false_assertions) {
+                    $statements_analyzer->node_data->setIfFalseAssertions(
+                        $stmt,
+                        \array_map(
+                            function ($assertion) use ($generic_params, $codebase) {
+                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
+                            },
+                            $method_storage->if_false_assertions
+                        )
+                    );
+                }
+            }
+
+            $generic_param_types = null;
+
+            if ($storage->template_types) {
+                foreach ($storage->template_types as $template_name => $base_type) {
+                    if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
+                        $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $template_result->lower_bounds[$template_name][$fq_class_name],
+                            $codebase
+                        );
+                    } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
+                        $generic_param_type = self::getGenericParamForOffset(
+                            $fq_class_name,
+                            $template_name,
+                            $storage->template_extended_params,
+                            array_map(
+                                function ($type_map) use ($codebase) {
+                                    return array_map(
+                                        function ($bounds) use ($codebase) {
+                                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                                $bounds,
+                                                $codebase
+                                            );
+                                        },
+                                        $type_map
+                                    );
+                                },
+                                $template_result->lower_bounds
+                            )
+                        );
+                    } else {
+                        if ($fq_class_name === 'SplObjectStorage') {
+                            $generic_param_type = Type::getEmpty();
+                        } else {
+                            $generic_param_type = clone array_values($base_type)[0];
+                        }
                     }
 
-                    if ($context->pure) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                    $generic_param_type->had_template = true;
 
-                        if ($declaring_method_id) {
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    $generic_param_types[] = $generic_param_type;
+                }
+            }
 
-                            if (!$method_storage->external_mutation_free && !$context->inside_throw) {
+            if ($generic_param_types) {
+                $result_atomic_type = new Type\Atomic\TGenericObject(
+                    $fq_class_name,
+                    $generic_param_types
+                );
+
+                $result_atomic_type->was_static = $from_static;
+
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    new Type\Union([$result_atomic_type])
+                );
+            }
+        } elseif ($stmt->args) {
+            if (IssueBuffer::accepts(
+                new TooManyArguments(
+                    'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name . '::__construct'
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        } elseif ($storage->template_types) {
+            $result_atomic_type = new Type\Atomic\TGenericObject(
+                $fq_class_name,
+                array_values(
+                    array_map(
+                        function ($map) {
+                            return clone reset($map);
+                        },
+                        $storage->template_types
+                    )
+                )
+            );
+
+            $result_atomic_type->was_static = $from_static;
+
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Type\Union([$result_atomic_type])
+            );
+        }
+
+        if ($storage->external_mutation_free) {
+            /** @psalm-suppress UndefinedPropertyAssignment */
+            $stmt->external_mutation_free = true;
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            if ($stmt_type) {
+                $stmt_type->reference_free = true;
+            }
+        }
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+        ) {
+            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $method_storage = null;
+
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            if ($declaring_method_id) {
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+            }
+
+            if ($storage->external_mutation_free
+                || ($method_storage && $method_storage->specialize_call)
+            ) {
+                $method_source = DataFlowNode::getForMethodReturn(
+                    (string)$method_id,
+                    $fq_class_name . '::__construct',
+                    $storage->location,
+                    $code_location
+                );
+            } else {
+                $method_source = DataFlowNode::getForMethodReturn(
+                    (string)$method_id,
+                    $fq_class_name . '::__construct',
+                    $storage->location
+                );
+            }
+
+            $statements_analyzer->data_flow_graph->addNode($method_source);
+
+            $stmt_type->parent_nodes = [$method_source->id => $method_source];
+        }
+    }
+
+    private static function analyzeConstructorExpression(
+        StatementsAnalyzer $statements_analyzer,
+        \Psalm\Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        PhpParser\Node\Expr $stmt_class,
+        \Psalm\Config $config,
+        ?string &$fq_class_name,
+        bool &$can_extend
+    ): void {
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt_class, $context);
+        $context->inside_general_use = $was_inside_general_use;
+
+        $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class);
+
+        if (!$stmt_class_type) {
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                null,
+                true,
+                $context
+            );
+
+            return;
+        }
+
+        $has_single_class = $stmt_class_type->isSingleStringLiteral();
+
+        if ($has_single_class) {
+            $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
+        } else {
+            if (self::checkMethodArgs(
+                null,
+                $stmt->args,
+                null,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer
+            ) === false) {
+                return;
+            }
+        }
+
+        $new_type = null;
+
+        $stmt_class_types = $stmt_class_type->getAtomicTypes();
+
+        while ($stmt_class_types) {
+            $lhs_type_part = \array_shift($stmt_class_types);
+
+            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+                $stmt_class_types = \array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
+                continue;
+            }
+
+            if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
+                if (!$statements_analyzer->node_data->getType($stmt)) {
+                    $new_type_part = new Type\Atomic\TTemplateParam(
+                        $lhs_type_part->param_name,
+                        $lhs_type_part->as_type
+                            ? new Type\Union([$lhs_type_part->as_type])
+                            : Type::getObject(),
+                        $lhs_type_part->defining_class
+                    );
+
+                    if (!$lhs_type_part->as_type) {
+                        if (IssueBuffer::accepts(
+                            new MixedMethodCall(
+                                'Cannot call constructor on an unknown class',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    if ($new_type) {
+                        $new_type = Type::combineUnionTypes(
+                            $new_type,
+                            new Type\Union([$new_type_part])
+                        );
+                    } else {
+                        $new_type = new Type\Union([$new_type_part]);
+                    }
+
+                    if ($lhs_type_part->as_type
+                        && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                    ) {
+                        $as_storage = $codebase->classlike_storage_provider->get(
+                            $lhs_type_part->as_type->value
+                        );
+
+                        if (!$as_storage->preserve_constructor_signature) {
+                            if (IssueBuffer::accepts(
+                                new UnsafeInstantiation(
+                                    'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
+                                    . ' with "new $class_name" as'
+                                    . ' its constructor might change in child classes',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+                }
+
+                if ($lhs_type_part->as_type) {
+                    $codebase->methods->methodExists(
+                        new \Psalm\Internal\MethodIdentifier(
+                            $lhs_type_part->as_type->value,
+                            '__construct'
+                        ),
+                        $context->calling_method_id,
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                        $statements_analyzer,
+                        $statements_analyzer->getFilePath()
+                    );
+                }
+
+                continue;
+            }
+
+            if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
+                || $lhs_type_part instanceof Type\Atomic\TClassString
+                || $lhs_type_part instanceof Type\Atomic\TDependentGetClass
+            ) {
+                if (!$statements_analyzer->node_data->getType($stmt)) {
+                    if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                        $generated_type = $lhs_type_part->as_type
+                            ? clone $lhs_type_part->as_type
+                            : new Type\Atomic\TObject();
+
+                        if ($lhs_type_part->as_type
+                            && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                        ) {
+                            $as_storage = $codebase->classlike_storage_provider->get(
+                                $lhs_type_part->as_type->value
+                            );
+
+                            if (!$as_storage->preserve_constructor_signature) {
                                 if (IssueBuffer::accepts(
-                                    new ImpureMethodCall(
-                                        'Cannot call an impure constructor from a pure context',
-                                        new CodeLocation($statements_analyzer, $stmt)
+                                    new UnsafeInstantiation(
+                                        'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
+                                        . ' with "new $class_name" as'
+                                        . ' its constructor might change in child classes',
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
                                 )) {
@@ -564,177 +758,123 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 }
                             }
                         }
+                    } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass) {
+                        $generated_type = new Type\Atomic\TObject();
+
+                        if ($lhs_type_part->as_type->hasObjectType()
+                            && $lhs_type_part->as_type->isSingle()
+                        ) {
+                            foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
+                                if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
+                                    $generated_type = new Type\Atomic\TNamedObject(
+                                        $typeof_type_atomic->value
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        $generated_type = new Type\Atomic\TNamedObject(
+                            $lhs_type_part->value
+                        );
                     }
 
-                    $generic_param_types = null;
+                    if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                        $can_extend = true;
+                    }
 
-                    if ($storage->template_types) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-                        $declaring_fq_class_name = $declaring_method_id
-                            ? $declaring_method_id->fq_class_name
-                            : $fq_class_name;
-
-                        foreach ($storage->template_types as $template_name => $base_type) {
-                            if (isset($template_result->upper_bounds[$template_name][$fq_class_name])) {
-                                $generic_param_type
-                                    = $template_result->upper_bounds[$template_name][$fq_class_name][0];
-                            } elseif ($storage->template_type_extends && $template_result->upper_bounds) {
-                                $generic_param_type = self::getGenericParamForOffset(
-                                    $declaring_fq_class_name,
-                                    $template_name,
-                                    $storage->template_type_extends,
-                                    $template_result->upper_bounds
-                                );
-                            } else {
-                                $generic_param_type = array_values($base_type)[0][0];
-                            }
-
-                            $generic_param_type->had_template = true;
-
-                            $generic_param_types[] = $generic_param_type;
+                    if ($generated_type instanceof Type\Atomic\TObject) {
+                        if (IssueBuffer::accepts(
+                            new MixedMethodCall(
+                                'Cannot call constructor on an unknown class',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
                         }
                     }
 
-                    if ($generic_param_types) {
-                        $result_atomic_type = new Type\Atomic\TGenericObject(
-                            $fq_class_name,
-                            $generic_param_types
-                        );
-
-                        $result_atomic_type->was_static = $from_static;
-
-                        $statements_analyzer->node_data->setType(
-                            $stmt,
-                            new Type\Union([$result_atomic_type])
-                        );
-                    }
-                } elseif ($stmt->args) {
-                    if (IssueBuffer::accepts(
-                        new TooManyArguments(
-                            'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $fq_class_name . '::__construct'
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                if ($storage->external_mutation_free) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->external_mutation_free = true;
-                    $stmt_type = $statements_analyzer->node_data->getType($stmt);
-
-                    if ($stmt_type) {
-                        $stmt_type->reference_free = true;
-                    }
-                }
-
-                if ($codebase->taint
-                    && $codebase->config->trackTaintsInPath($statements_analyzer->getFilePath())
-                    && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                    && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
-                ) {
-                    $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                    $method_storage = null;
-
-                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-                    if ($declaring_method_id) {
-                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
-                    }
-
-                    if ($storage->external_mutation_free
-                        || ($method_storage && $method_storage->specialize_call)
-                    ) {
-                        $method_source = TaintNode::getForMethodReturn(
-                            (string) $method_id,
-                            $fq_class_name . '::__construct',
-                            $storage->location,
-                            $code_location
+                    if ($new_type) {
+                        $new_type = Type::combineUnionTypes(
+                            $new_type,
+                            new Type\Union([$generated_type])
                         );
                     } else {
-                        $method_source = TaintNode::getForMethodReturn(
-                            (string) $method_id,
-                            $fq_class_name . '::__construct',
-                            $storage->location
-                        );
+                        $new_type = new Type\Union([$generated_type]);
                     }
-
-                    $codebase->taint->addTaintNode($method_source);
-
-                    $stmt_type->parent_nodes = [$method_source];
                 }
-            } else {
-                ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->args,
-                    null,
-                    null,
-                    $context
+
+                continue;
+            }
+
+            if ($lhs_type_part instanceof Type\Atomic\TString) {
+                if ($config->allow_string_standin_for_class
+                    && !$lhs_type_part instanceof Type\Atomic\TNumericString
+                ) {
+                    // do nothing
+                } elseif (IssueBuffer::accepts(
+                    new InvalidStringClass(
+                        'String cannot be used as a class',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($lhs_type_part instanceof Type\Atomic\TMixed) {
+                if (IssueBuffer::accepts(
+                    new MixedMethodCall(
+                        'Cannot call constructor on an unknown class',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
+                && $stmt_class_type->ignore_falsable_issues
+            ) {
+                // do nothing
+            } elseif ($lhs_type_part instanceof Type\Atomic\TNull
+                && $stmt_class_type->ignore_nullable_issues
+            ) {
+                // do nothing
+            } elseif (IssueBuffer::accepts(
+                new UndefinedClass(
+                    'Type ' . $lhs_type_part . ' cannot be called as a class',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    (string)$lhs_type_part
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            if ($new_type) {
+                $new_type = Type::combineUnionTypes(
+                    $new_type,
+                    Type::getObject()
                 );
+            } else {
+                $new_type = Type::getObject();
             }
         }
 
-
-
-        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeAllObjectVars();
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  string $template_name
-     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
-     * @param  array<string, array<string, array{Type\Union}>>  $found_generic_params
-     * @return Type\Union
-     */
-    private static function getGenericParamForOffset(
-        string $fq_class_name,
-        string $template_name,
-        array $template_type_extends,
-        array $found_generic_params,
-        bool $mapped = false
-    ) {
-        if (isset($found_generic_params[$template_name][$fq_class_name])) {
-            if (!$mapped && isset($template_type_extends[$fq_class_name][$template_name])) {
-                foreach ($template_type_extends[$fq_class_name][$template_name]->getAtomicTypes() as $t) {
-                    if ($t instanceof Type\Atomic\TTemplateParam) {
-                        if ($t->param_name !== $template_name) {
-                            return $t->as;
-                        }
-                    }
-                }
+        if (!$has_single_class) {
+            if ($new_type) {
+                $statements_analyzer->node_data->setType($stmt, $new_type);
             }
 
-            return $found_generic_params[$template_name][$fq_class_name][0];
-        }
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                null,
+                true,
+                $context
+            );
 
-        foreach ($template_type_extends as $type_map) {
-            foreach ($type_map as $extended_template_name => $extended_type) {
-                foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
-                    if (is_string($extended_template_name)
-                        && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
-                        && $extended_atomic_type->param_name === $template_name
-                        && $extended_template_name !== $template_name
-                    ) {
-                        return self::getGenericParamForOffset(
-                            $fq_class_name,
-                            $extended_template_name,
-                            $template_type_extends,
-                            $found_generic_params,
-                            true
-                        );
-                    }
-                }
-            }
+            return;
         }
-
-        return Type::getMixed();
     }
 }

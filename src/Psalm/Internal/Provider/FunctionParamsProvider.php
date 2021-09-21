@@ -4,69 +4,94 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Plugin\Hook\FunctionParamsProviderInterface;
+use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
+use Psalm\Plugin\Hook\FunctionParamsProviderInterface as LegacyFunctionParamsProviderInterface;
 use Psalm\StatementsSource;
+
+use function is_subclass_of;
 use function strtolower;
 
 class FunctionParamsProvider
 {
     /**
      * @var array<
-     *   string,
+     *   lowercase-string,
+     *   array<\Closure(FunctionParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
+     * >
+     */
+    private static $handlers = [];
+
+    /**
+     * @var array<
+     *   lowercase-string,
      *   array<\Closure(
      *     StatementsSource,
      *     string,
-     *     array<PhpParser\Node\Arg>,
+     *     list<PhpParser\Node\Arg>,
      *     ?Context=,
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
-    private static $handlers = [];
+    private static $legacy_handlers = [];
 
     public function __construct()
     {
         self::$handlers = [];
+        self::$legacy_handlers = [];
     }
 
     /**
-     * @param  class-string<FunctionParamsProviderInterface> $class
-     *
-     * @return void
+     * @param class-string<LegacyFunctionParamsProviderInterface>|class-string<FunctionParamsProviderInterface> $class
      */
-    public function registerClass(string $class)
+    public function registerClass(string $class): void
     {
-        $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
+        if (is_subclass_of($class, LegacyFunctionParamsProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
 
-        foreach ($class::getFunctionIds() as $function_id) {
-            /** @psalm-suppress MixedTypeCoercion */
-            $this->registerClosure($function_id, $callable);
+            foreach ($class::getFunctionIds() as $function_id) {
+                $this->registerLegacyClosure($function_id, $callable);
+            }
+        } elseif (is_subclass_of($class, FunctionParamsProviderInterface::class, true)) {
+            $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
+
+            foreach ($class::getFunctionIds() as $function_id) {
+                $this->registerClosure($function_id, $callable);
+            }
         }
     }
 
     /**
-     * @param  \Closure(
-     *     StatementsSource,
-     *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     ?Context=,
-     *     ?CodeLocation=
-     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
-     *
-     * @return void
+     * @param  \Closure(FunctionParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c)
+    public function registerClosure(string $fq_classlike_name, \Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
+    /**
+     * @param \Closure(
+     *     StatementsSource,
+     *     string,
+     *     list<PhpParser\Node\Arg>,
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
+     */
+    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    {
+        self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
+    }
+
     public function has(string $fq_classlike_name) : bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
+            isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
+     * @param list<PhpParser\Node\Arg>  $call_args
      *
      * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
@@ -74,10 +99,25 @@ class FunctionParamsProvider
         StatementsSource $statements_source,
         string $function_id,
         array $call_args,
-        Context $context = null,
-        CodeLocation $code_location = null
-    ) {
-        foreach (self::$handlers[strtolower($function_id)] as $class_handler) {
+        ?Context $context = null,
+        ?CodeLocation $code_location = null
+    ): ?array {
+        foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
+            $event = new FunctionParamsProviderEvent(
+                $statements_source,
+                $function_id,
+                $call_args,
+                $context,
+                $code_location
+            );
+            $result = $class_handler($event);
+
+            if ($result) {
+                return $result;
+            }
+        }
+
+        foreach (self::$legacy_handlers[strtolower($function_id)] ?? [] as $class_handler) {
             $result = $class_handler(
                 $statements_source,
                 $function_id,

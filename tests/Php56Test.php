@@ -4,12 +4,11 @@ namespace Psalm\Tests;
 class Php56Test extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'constArray' => [
@@ -28,6 +27,11 @@ class Php56Test extends TestCase
                         const THREE = self::TWO + 1;
                         const ONE_THIRD = self::ONE / self::THREE;
                         const SENTENCE = "The value of THREE is " . self::THREE;
+                        const SHIFT = self::ONE >> 2;
+                        const SHIFT2 = self::ONE << 1;
+                        const BITAND = 1 & 1;
+                        const BITOR = 1 | 1;
+                        const BITXOR = 1 ^ 1;
 
                         /** @var int */
                         public $four = self::ONE + self::THREE;
@@ -47,122 +51,46 @@ class Php56Test extends TestCase
                     $c1_3rd = C::ONE_THIRD;
                     $c_sentence = C::SENTENCE;
                     $cf = (new C)->f();
-                    $c4 = (new C)->four;',
+                    $c4 = (new C)->four;
+                    $shift = C::SHIFT;
+                    $shift2 = C::SHIFT2;
+                    $bitand = C::BITAND;
+                    $bitor = C::BITOR;
+                    $bitxor = C::BITXOR;',
                 'assertions' => [
                     '$c1' => 'int',
-                    '$c2' => 'int',
-                    '$c3' => 'int',
+                    '$c2===' => '2',
+                    '$c3===' => '3',
                     '$c1_3rd' => 'float|int',
                     '$c_sentence' => 'string',
                     '$cf' => 'int',
                     '$c4' => 'int',
+                    '$shift' => 'int',
+                    '$shift2' => 'int',
+                    '$bitand' => 'int',
+                    '$bitor' => 'int',
+                    '$bitxor' => 'int',
                 ],
             ],
             'constFeatures' => [
                 '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
+                    const BITWISE = ONE & 2;
+                    const SHIFT = ONE << 2;
+                    const SHIFT2 = PHP_INT_MAX << 1;
 
                     $one = ONE;
-                    $two = TWO;',
+                    $two = TWO;
+                    $bitwise = BITWISE;
+                    $shift = SHIFT;
+                    $shift2 = SHIFT2;',
                 'assertions' => [
                     '$one' => 'int',
                     '$two' => 'int',
-                ],
-            ],
-            'argumentUnpacking' => [
-                '<?php
-                    /**
-                     * @return int
-                     * @param int $a
-                     * @param int $b
-                     * @param int $c
-                     */
-                    function add($a, $b, $c) {
-                        return $a + $b + $c;
-                    }
-
-                    $operators = [2, 3];
-                    echo add(1, ...$operators);',
-            ],
-            'arrayPushArgumentUnpackingWithGoodArg' => [
-                '<?php
-                    $a = ["foo"];
-                    $b = ["foo", "bar"];
-
-                    array_push($a, ...$b);',
-                'assertions' => [
-                    '$a' => 'non-empty-list<string>',
-                ],
-            ],
-            'arrayMergeArgumentUnpacking' => [
-                '<?php
-                    $a = [[1, 2]];
-                    $b = array_merge([], ...$a);',
-                'assertions' => [
-                    '$b' => 'array{0: int, 1: int}',
-                ],
-            ],
-            'preserveTypesWhenUnpacking' => [
-                '<?php
-                    /**
-                     * @return array<int,array<int,string>>
-                     */
-                    function getData(): array
-                    {
-                        return [
-                            ["a", "b"],
-                            ["c", "d"]
-                        ];
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f1(): array
-                    {
-                        $data = getData();
-                        return array_merge($data[0], $data[1]);
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f2(): array
-                    {
-                        $data = getData();
-                        return array_merge(...$data);
-                    }
-
-                    /**
-                     * @return array<int,string>
-                     */
-                    function f3(): array
-                    {
-                        $data = getData();
-                        return array_merge([], ...$data);
-                    }',
-            ],
-            'unpackArg' => [
-                '<?php
-                    function Foo(string $a, string ...$b) : void {}
-
-                    /** @return array<int, string> */
-                    function Baz(string ...$c) {
-                        Foo(...$c);
-                        return $c;
-                    }',
-            ],
-            'unpackByRefArg' => [
-                '<?php
-                    function example (int &...$x): void {}
-                    $y = 0;
-                    example($y);
-                    $z = [0];
-                    example(...$z);',
-                'assertions' => [
-                    '$y' => 'int',
-                    '$z' => 'array<int, int>',
+                    '$bitwise' => 'int',
+                    '$shift' => 'int',
+                    '$shift2' => 'int',
                 ],
             ],
             'exponentiation' => [
@@ -248,25 +176,6 @@ class Php56Test extends TestCase
 
                         yield "goodbye";
                     }',
-            ],
-        ];
-    }
-
-    /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
-     */
-    public function providerInvalidCodeParse()
-    {
-        return [
-            'arrayPushArgumentUnpackingWithBadArg' => [
-                '<?php
-                    $a = [];
-                    $b = "hello";
-
-                    $a[] = "foo";
-
-                    array_push($a, ...$b);',
-                'error_message' => 'InvalidArgument',
             ],
         ];
     }

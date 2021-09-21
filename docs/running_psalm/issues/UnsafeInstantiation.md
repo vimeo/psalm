@@ -1,6 +1,6 @@
 # UnsafeInstantiation
 
-Emitted when an attempt is made to instantiate a class without a constructor that's final:
+Emitted when an attempt is made to instantiate a class using `new static` or similar without a constructor that's final:
 
 ```php
 <?php

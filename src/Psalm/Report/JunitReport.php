@@ -4,12 +4,10 @@ namespace Psalm\Report;
 use DOMDocument;
 use DOMElement;
 use Psalm\Config;
-use Psalm\Report;
 use Psalm\Internal\Analyzer\IssueData;
-use const ENT_XML1;
-use const ENT_QUOTES;
+use Psalm\Report;
+
 use function count;
-use function htmlspecialchars;
 use function trim;
 
 /**
@@ -20,13 +18,9 @@ use function trim;
  */
 class JunitReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $errors = 0;
-        $warnings = 0;
         $tests = 0;
 
         $ndata = [];
@@ -35,13 +29,12 @@ class JunitReport extends Report
             $is_error = $error->severity === Config::REPORT_ERROR;
             $is_warning = $error->severity === Config::REPORT_INFO;
 
+            if (!$is_error && !$is_warning) {
+                continue;
+            }
+
             if ($is_error) {
                 $errors++;
-            } elseif ($is_warning) {
-                $warnings++;
-            } else {
-                // currently this never happens
-                continue;
             }
 
             $tests++;
@@ -153,9 +146,9 @@ class JunitReport extends Report
     /**
      * @param  list<IssueData> $failures
      *
-     * @return array<string, list<IssueData>>
+     * @return array<string, non-empty-list<IssueData>>
      */
-    private function groupByType(array $failures)
+    private function groupByType(array $failures): array
     {
         $nfailures = [];
 
@@ -166,15 +159,12 @@ class JunitReport extends Report
         return $nfailures;
     }
 
-    /**
-     * @param  IssueData  $data
-     */
     private function dataToOutput(IssueData $data): string
     {
-        $ret = 'message: ' . htmlspecialchars(trim($data->message), ENT_XML1 | ENT_QUOTES) . "\n";
+        $ret = 'message: ' . $this->xmlEncode(trim($data->message)) . "\n";
         $ret .= 'type: ' . trim($data->type) . "\n";
-        $ret .= 'snippet: ' . htmlspecialchars(trim($data->snippet), ENT_XML1 | ENT_QUOTES) . "\n";
-        $ret .= 'selected_text: ' . trim($data->selected_text) . "\n";
+        $ret .= 'snippet: ' . $this->xmlEncode(trim($data->snippet)) . "\n";
+        $ret .= 'selected_text: ' . $this->xmlEncode(trim($data->selected_text)) . "\n";
         $ret .= 'line: ' . $data->line_from . "\n";
         $ret .= 'column_from: ' . $data->column_from . "\n";
         $ret .= 'column_to: ' . $data->column_to . "\n";

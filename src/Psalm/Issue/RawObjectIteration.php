@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class RawObjectIteration extends CodeIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 111;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 111;
 }

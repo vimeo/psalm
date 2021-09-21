@@ -1,15 +1,19 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
+use Psalm\Internal\RuntimeCaches;
 
 /** @group PluginManager */
 class PluginListTest extends \Psalm\Tests\TestCase
 {
+    use ProphecyTrait;
+
     /** @var ObjectProphecy<ConfigFile> */
     private $config_file;
 
@@ -21,6 +25,8 @@ class PluginListTest extends \Psalm\Tests\TestCase
 
     public function setUp() : void
     {
+        RuntimeCaches::clearAll();
+
         $this->config = $this->prophesize(Config::class);
         $this->config->getPluginClasses()->willReturn([]);
 
@@ -32,10 +38,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function pluginsPresentInConfigAreEnabled()
+    public function pluginsPresentInConfigAreEnabled(): void
     {
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
@@ -51,10 +56,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function pluginsPresentInPackageLockOnlyAreAvailable()
+    public function pluginsPresentInPackageLockOnlyAreAvailable(): void
     {
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
@@ -73,10 +77,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function pluginsPresentInPackageLockAndConfigHavePluginPackageName()
+    public function pluginsPresentInPackageLockAndConfigHavePluginPackageName(): void
     {
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
@@ -94,20 +97,18 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function canFindPluginClassByClassName()
+    public function canFindPluginClassByClassName(): void
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
         $this->assertSame('a\b\c', $plugin_list->resolvePluginClass('a\b\c'));
     }
 
     /**
-     * @return void
      * @test
      */
-    public function canFindPluginClassByPackageName()
+    public function canFindPluginClassByPackageName(): void
     {
         $this->composer_lock->getPlugins()->willReturn([
             'vendor/package' => 'a\b\c',
@@ -118,10 +119,26 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function enabledPackageIsEnabled()
+    public function canShowAvailablePluginsWithoutAConfigFile(): void
+    {
+        $this->composer_lock->getPlugins()->willReturn([
+            'vendor/package' => 'a\b\c',
+            'another-vendor/another-package' => 'c\d\e',
+        ]);
+        $plugin_list = new PluginList(null, $this->composer_lock->reveal());
+
+        $this->assertSame([
+            'a\b\c' => 'vendor/package',
+            'c\d\e' => 'another-vendor/another-package',
+        ], $plugin_list->getAvailable());
+    }
+
+    /**
+     * @test
+     */
+    public function enabledPackageIsEnabled(): void
     {
         $this->config->getPluginClasses()->willReturn([
             ['class' => 'a\b\c', 'config' => null],
@@ -133,10 +150,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function errorsOutWhenTryingToResolveUnknownPlugin()
+    public function errorsOutWhenTryingToResolveUnknownPlugin(): void
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
         $this->expectException(\InvalidArgumentException::class);
@@ -145,10 +161,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function pluginsAreEnabledInConfigFile()
+    public function pluginsAreEnabledInConfigFile(): void
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
 
@@ -158,10 +173,9 @@ class PluginListTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function pluginsAreDisabledInConfigFile()
+    public function pluginsAreDisabledInConfigFile(): void
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
 

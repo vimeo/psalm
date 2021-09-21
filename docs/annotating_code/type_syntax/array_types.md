@@ -36,7 +36,7 @@ You can also specify that an array is non-empty with the special type `non-empty
 
 ### PHPDoc syntax
 
-PHPDoc [allows you to specify](https://phpdoc.org/docs/latest/references/phpdoc/types.html#arrays) the  type of values a generic array holds with the annotation:
+PHPDoc [allows you to specify](https://docs.phpdoc.org/latest/guide/references/phpdoc/types.html#arrays) the  type of values a generic array holds with the annotation:
 ```php
 /** @return ValueType[] */
 ```
@@ -49,9 +49,11 @@ Generic arrays encompass both _associative arrays_ and _lists_.
 
 (Psalm 3.6+)
 
-Psalm supports a `list` type that represents continuous, integer-indexed arrays like `["red", "yellow", "blue"]` .
+Psalm supports a `list` type that represents continuous, integer-indexed arrays like `["red", "yellow", "blue"]`.
 
-These arrays have the property `$arr === array_values($arr)`, and represent a large percentage of all array usage in PHP applications.
+A frequent way to create a list is with the `$arr[] =` notation.
+
+These arrays will return true to `array_is_list($arr)`(PHP 8.1+) and represent a large percentage of all array usage in PHP applications.
 
 A `list` type is of the form `list<SomeType>`,  where `SomeType` is any permitted [union type](union_types.md) supported by Psalm.
 
@@ -92,7 +94,7 @@ takesList([1 => "hello"]); // triggers warning in Psalm
 
 ## Object-like arrays
 
-Psalm supports a special format for arrays where the key offsets are known: object-like arrays.
+Psalm supports a special format for arrays where the key offsets are known: object-like arrays, also known as **array shapes**.
 
 Given an array
 
@@ -118,3 +120,18 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 ```php
 /** @return array{optional?: string, bar: int} */
 ```
+
+## Callable arrays
+
+An array holding a callable, like PHP's native `call_user_func()` and friends supports it:
+
+```php
+<?php
+
+$callable = ['myClass', 'aMethod'];
+$callable = [$object, 'aMethod'];
+```
+
+## non-empty-array
+
+An array which is not allowed to be empty.

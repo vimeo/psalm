@@ -11,22 +11,21 @@
     throwExceptionOnError="0"
     findUnusedCode="true"
     ensureArrayStringOffsetsExist="true"
-    ensureArrayIntOffsetsExist="false"
+    ensureArrayIntOffsetsExist="true"
     resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
+    limitMethodComplexity="true"
+    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="src"/>
         <directory name="tests"/>
         <directory name="examples"/>
         <ignoreFiles>
-            <file name="src/Psalm/Internal/CallMap.php"/>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <file name="src/spl_object_id.php"/>
-            <file name="src/Psalm/Internal/Stubs/*.php"/>
-            <file name="src/Psalm/Internal/Stubs/*.phpstub"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
@@ -51,15 +50,20 @@
         <DeprecatedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
-                <referencedMethod name="PhpParser\Comment::getFilePos" />
-                <referencedMethod name="PhpParser\Comment::getLine" />
             </errorLevel>
         </DeprecatedMethod>
         <DeprecatedClass>
             <errorLevel type="suppress">
                 <referencedClass name="PackageVersions\Versions"/>
+                <referencedClass name="Psalm\Plugin\Hook\*" />
             </errorLevel>
         </DeprecatedClass>
+
+        <DeprecatedInterface>
+            <errorLevel type="suppress">
+                <referencedClass name="Psalm\Plugin\Hook\*" />
+            </errorLevel>
+        </DeprecatedInterface>
 
         <UnusedParam>
             <errorLevel type="suppress">
@@ -71,35 +75,17 @@
             <errorLevel type="suppress">
                 <directory name="examples"/>
             </errorLevel>
-            <errorLevel type="info">
-                <directory name="src/Psalm/Type/Atomic"/>
-            </errorLevel>
         </PossiblyUnusedParam>
 
         <UnusedClass>
             <errorLevel type="suppress">
                 <directory name="examples"/>
                 <directory name="src/Psalm/Internal/Fork" />
+                <directory name="src/Psalm/Node" />
                 <file name="src/Psalm/Plugin/Shepherd.php" />
                 <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
         </UnusedClass>
-
-        <UnusedProperty>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php"/>
-            </errorLevel>
-        </UnusedProperty>
-
-        <PossiblyUnusedProperty>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/LanguageServer/LanguageClient.php"/>
-                <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
-                <file name="src/Psalm/Type/Atomic/TCallableArray.php"/>
-                <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php"/>
-                <file name="src/Psalm/Storage/PropertyStorage.php"/>
-            </errorLevel>
-        </PossiblyUnusedProperty>
 
         <MissingConstructor>
             <errorLevel type="suppress">
@@ -107,12 +93,22 @@
             </errorLevel>
         </MissingConstructor>
 
+        <PossiblyUndefinedIntArrayOffset>
+            <errorLevel type="suppress">
+                <directory name="src/Psalm/Internal/ExecutionEnvironment" />
+                <directory name="tests"/>
+            </errorLevel>
+        </PossiblyUndefinedIntArrayOffset>
+
         <MissingThrowsDocblock errorLevel="info"/>
 
-        <PossiblyUnusedMethod>
-            <errorLevel type="info">
-                <file name="src/Psalm/Internal/Provider/FileReferenceProvider.php" />
+        <PossiblyUnusedProperty>
+            <errorLevel type="suppress">
+                <file name="src/Psalm/Report.php"/>
             </errorLevel>
+        </PossiblyUnusedProperty>
+
+        <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="src/Psalm/Plugin"/>
                 <directory name="src/Psalm/SourceControl/Git/"/>
@@ -148,5 +144,23 @@
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedStringArrayOffset>
+
+        <MixedPropertyTypeCoercion>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </MixedPropertyTypeCoercion>
+
+        <PropertyTypeCoercion>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </PropertyTypeCoercion>
+
+        <MixedAssignment>
+            <errorLevel type="suppress">
+                <directory name="vendor/nikic/php-parser" />
+            </errorLevel>
+        </MixedAssignment>
     </issueHandlers>
 </psalm>

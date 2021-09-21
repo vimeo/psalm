@@ -2,13 +2,14 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+
 use function count;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
  */
-class TraitFinder extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class TraitFinder extends PhpParser\NodeVisitorAbstract
 {
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private $matching_trait_nodes = [];
@@ -21,10 +22,9 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract implements PhpParser\Nod
     }
 
     /**
-     * @param  PhpParser\Node $node
      * @param  bool $traverseChildren
      *
-     * @return null|int|PhpParser\Node
+     * @return int|null
      */
     public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
     {

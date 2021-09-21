@@ -9,7 +9,7 @@ class IssetTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'issetWithSimpleAssignment' => [
@@ -130,7 +130,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         unset($foo, $bar);
                     }',
             ],
-            'issetObjectLike' => [
+            'issetTKeyedArray' => [
                 '<?php
                     $arr = [
                         "profile" => [
@@ -613,20 +613,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         throw new \Exception("bad");
                     }'
             ],
-            'arrayKeyExistsOnStringArrayShouldInformArrayness' => [
-                '<?php
-                    /**
-                     * @param string[] $a
-                     * @return array{b: string}
-                     */
-                    function foo(array $a) {
-                        if (array_key_exists("b", $a)) {
-                            return $a;
-                        }
 
-                        throw new \Exception("bad");
-                    }'
-            ],
             'issetOnArrayTwice' => [
                 '<?php
                     function foo(array $options): void {
@@ -698,7 +685,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                     class B extends P {}
                     class C extends P {}'
             ],
-            'issetCreateObjectLikeWithType' => [
+            'issetCreateTKeyedArrayWithType' => [
                 '<?php
                     function foo(array $options): void {
                         if (isset($options["a"])) {
@@ -782,6 +769,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         public $foo;
 
                         public function init() : void {
+                            /** @psalm-suppress RedundantPropertyInitializationCheck */
                             if (isset($this->foo)) {
                                 return;
                             }
@@ -898,7 +886,6 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }
 
                     /**
-                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];'
@@ -966,13 +953,66 @@ class IssetTest extends \Psalm\Tests\TestCase
                         assert($dt);
                     }'
             ],
+            'issetOnNullableMixed' => [
+                '<?php
+                    function processParam(mixed $param) : void {
+                        if (rand(0, 1)) {
+                            $param = null;
+                        }
+
+                        if (isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'assertComplex' => [
+                '<?php
+                    function returnsInt(?int $a, ?int $b): int {
+                        assert($a !== null || $b !== null);
+                        return isset($a) ? $a : $b;
+                    }'
+            ],
+            'assertComplexWithNullCoalesce' => [
+                '<?php
+                    function returnsInt(?int $a, ?int $b): int {
+                        assert($a !== null || $b !== null);
+                        return $a ?? $b;
+                    }'
+            ],
+            'nullCoalesceSimpleArrayOffset' => [
+                '<?php
+                    function a(array $arr) : void {
+                        /** @psalm-suppress MixedArgument */
+                        echo isset($arr["a"]["b"]) ? $arr["a"]["b"] : 0;
+                    }
+
+                    function b(array $arr) : void {
+                        /** @psalm-suppress MixedArgument */
+                        echo $arr["a"]["b"] ?? 0;
+                    }'
+            ],
+            'coalescePreserveContext' => [
+                '<?php
+                    function foo(array $test) : void {
+                        /** @psalm-suppress MixedArgument */
+                        echo $test[0] ?? ( $test[0] = 1 );
+                        /** @psalm-suppress MixedArgument */
+                        echo $test[0];
+                    }'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'complainAboutBadCallInIsset' => [
@@ -992,7 +1032,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'NullArrayAccess',
             ],
-            'issetAdditionalVarWithSealedObjectLike' => [
+            'issetAdditionalVarWithSealedTKeyedArray' => [
                 '<?php
                     class Example {
                         const FOO = "foo";
@@ -1043,7 +1083,7 @@ class IssetTest extends \Psalm\Tests\TestCase
                         }
                         return "bar";
                     }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainNull'
             ],
             'issetOnArrayOfArraysReturningString' => [
                 '<?php
@@ -1075,6 +1115,34 @@ class IssetTest extends \Psalm\Tests\TestCase
                         echo $arr["b"];
                     }',
                 'error_message' => 'PossiblyInvalidArrayAccess',
+            ],
+            'issetOnStaticProperty' => [
+                '<?php
+                    class Singleton {
+                        private static self $instance;
+                        public function getInstance(): self {
+                            if (isset(self::$instance)) {
+                                return self::$instance;
+                            }
+                            return self::$instance = new self();
+                        }
+                        private function __construct() {}
+                    }',
+                'error_message' => 'RedundantPropertyInitializationCheck',
+            ],
+            'negatedIssetOnStaticProperty' => [
+                '<?php
+                    class Singleton {
+                        private static self $instance;
+                        public function getInstance(): self {
+                            if (!isset(self::$instance)) {
+                                self::$instance = new self();
+                            }
+                            return self::$instance;
+                        }
+                        private function __construct() {}
+                    }',
+                'error_message' => 'RedundantPropertyInitializationCheck',
             ],
         ];
     }

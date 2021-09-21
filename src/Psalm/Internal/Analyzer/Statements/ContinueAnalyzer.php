@@ -2,29 +2,35 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
 class ContinueAnalyzer
 {
-    /**
-     * @return false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
-    ) {
+    ): void {
+        $count = $stmt->num
+            && $stmt->num instanceof PhpParser\Node\Scalar\LNumber
+            ? $stmt->num->value
+            : 1;
+
         $loop_scope = $context->loop_scope;
 
-        $leaving_switch = true;
+        if ($count === 2 && isset($loop_scope->loop_parent_context->loop_scope)) {
+            $loop_scope = $loop_scope->loop_parent_context->loop_scope;
+        }
 
-        $codebase = $statements_analyzer->getCodebase();
+        if ($count === 3 && isset($loop_scope->loop_parent_context->loop_scope)) {
+            $loop_scope = $loop_scope->loop_parent_context->loop_scope;
+        }
 
         if ($loop_scope === null) {
             if (!$context->break_types) {
@@ -35,20 +41,16 @@ class ContinueAnalyzer
                     ),
                     $statements_analyzer->getSource()->getSuppressedIssues()
                 )) {
-                    return false;
+                    return;
                 }
             }
         } else {
             if ($context->break_types
                 && \end($context->break_types) === 'switch'
-                && (!$stmt->num
-                    || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber
-                    || $stmt->num->value < 2
-                )
+                && $count < 2
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {
-                $leaving_switch = false;
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
             }
 
@@ -70,9 +72,7 @@ class ContinueAnalyzer
             }
 
             foreach ($redefined_vars as $var => $type) {
-                if ($type->hasMixed()) {
-                    $loop_scope->possibly_redefined_loop_vars[$var] = $type;
-                } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                if (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
                     $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
                         $type,
                         $loop_scope->possibly_redefined_loop_vars[$var]
@@ -82,32 +82,21 @@ class ContinueAnalyzer
                 }
             }
 
-            if ($codebase->find_unused_variables && (!$context->case_scope || $stmt->num)) {
-                foreach ($context->unreferenced_vars as $var_id => $locations) {
-                    if (isset($loop_scope->unreferenced_vars[$var_id])) {
-                        $loop_scope->unreferenced_vars[$var_id] += $locations;
+            if ($context->finally_scope) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (isset($context->finally_scope->vars_in_scope[$var_id])) {
+                        if ($context->finally_scope->vars_in_scope[$var_id] !== $type) {
+                            $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $context->finally_scope->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
                     } else {
-                        $loop_scope->unreferenced_vars[$var_id] = $locations;
+                        $context->finally_scope->vars_in_scope[$var_id] = $type;
+                        $type->possibly_undefined = true;
+                        $type->possibly_undefined_from_try = true;
                     }
-
-                    if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
-                    } else {
-                        $loop_scope->possibly_unreferenced_vars[$var_id] = $locations;
-                    }
-                }
-
-                $loop_scope->referenced_var_ids += $context->referenced_var_ids;
-            }
-        }
-
-        $case_scope = $context->case_scope;
-        if ($case_scope && $codebase->find_unused_variables && $leaving_switch) {
-            foreach ($context->unreferenced_vars as $var_id => $locations) {
-                if (isset($case_scope->unreferenced_vars[$var_id])) {
-                    $case_scope->unreferenced_vars[$var_id] += $locations;
-                } else {
-                    $case_scope->unreferenced_vars[$var_id] = $locations;
                 }
             }
         }

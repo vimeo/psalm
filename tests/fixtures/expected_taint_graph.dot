@@ -1,0 +1,15 @@
+digraph Taints {
+	"$_GET:src/FileWithErrors.php:345" -> "$_GET['abc']-src/FileWithErrors.php:345-349"
+	"$_GET['abc']-src/FileWithErrors.php:345-349" -> "coalesce-src/FileWithErrors.php:345-363"
+	"$s-src/FileWithErrors.php:109-110" -> "variable-use" -> "acme\sampleproject\bar"
+	"$s-src/FileWithErrors.php:162-163" -> "variable-use" -> "acme\sampleproject\baz"
+	"$s-src/FileWithErrors.php:215-216" -> "variable-use" -> "acme\sampleproject\bat"
+	"$s-src/FileWithErrors.php:269-270" -> "variable-use" -> "acme\sampleproject\bang"
+	"acme\sampleproject\bang#1" -> "$s-src/FileWithErrors.php:269-270"
+	"acme\sampleproject\bar#1" -> "$s-src/FileWithErrors.php:109-110"
+	"acme\sampleproject\bat#1" -> "$s-src/FileWithErrors.php:215-216"
+	"acme\sampleproject\baz#1" -> "$s-src/FileWithErrors.php:162-163"
+	"acme\sampleproject\foo#1" -> "$s-src/FileWithErrors.php:57-58"
+	"call to echo-src/FileWithErrors.php:335-364" -> "echo#1-src/filewitherrors.php:330"
+	"coalesce-src/FileWithErrors.php:345-363" -> "call to echo-src/FileWithErrors.php:335-364"
+}

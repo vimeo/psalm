@@ -2,50 +2,37 @@
 namespace Psalm\Example\Plugin;
 
 use PhpParser;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\IssueBuffer;
-use Psalm\Issue\TypeCoercion;
-use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
-use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
-use Psalm\StatementsSource;
-use Psalm\Type\Union;
+use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use function explode;
+use function strtolower;
+use function end;
 
 /**
- * Prevents any assignment to a float value
+ * Checks that functions and methods are correctly-cased
  */
 class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
-    /**
-     * @param  MethodCall|StaticCall $expr
-     * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
-     */
-    public static function afterMethodCallAnalysis(
-        Expr $expr,
-        string $method_id,
-        string $appearing_method_id,
-        string $declaring_method_id,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = [],
-        Union &$return_type_candidate = null
-    ) {
+    public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
+    {
+        $expr = $event->getExpr();
+        $codebase = $event->getCodebase();
+        $declaring_method_id = $event->getDeclaringMethodId();
+        $statements_source = $event->getStatementsSource();
         if (!$expr->name instanceof PhpParser\Node\Identifier) {
             return;
         }
 
         try {
+            /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $declaring_method_id));
             $function_storage = $codebase->methods->getStorage($method_id);
 
@@ -76,18 +63,13 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     /**
      * @param non-empty-string $function_id
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
-    public static function afterFunctionCallAnalysis(
-        FuncCall $expr,
-        string $function_id,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array &$file_replacements = [],
-        Union &$return_type_candidate = null
-    ) {
+    public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
+    {
+        $expr = $event->getExpr();
+        $codebase = $event->getCodebase();
+        $statements_source = $event->getStatementsSource();
+        $function_id = $event->getFunctionId();
         if ($expr->name instanceof PhpParser\Node\Expr) {
             return;
         }
@@ -123,5 +105,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     }
 }
 
-class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue {
+class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue
+{
 }

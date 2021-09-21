@@ -1,8 +1,9 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
-use function count;
 use PhpParser;
+
+use function count;
 use function preg_replace;
 use function reset;
 use function strlen;
@@ -15,9 +16,9 @@ use function substr_count;
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
  */
-class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4:int}> */
+    /** @var array<int, array{int, int, int, int, int}> */
     private $offset_map;
 
     /** @var bool */
@@ -41,7 +42,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     /** @var PhpParser\ErrorHandler\Collecting */
     private $error_handler;
 
-    /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4:int}> $offset_map */
+    /** @param array<int, array{int, int, int, int, int}> $offset_map */
     public function __construct(
         PhpParser\Parser $parser,
         PhpParser\ErrorHandler\Collecting $error_handler,
@@ -59,7 +60,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
     }
 
     /**
-     * @param  PhpParser\Node $node
      * @param  bool $traverseChildren
      *
      * @return null|int|PhpParser\Node
@@ -70,7 +70,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
-            $stmt_start_pos = $cs[0]->getFilePos();
+            $stmt_start_pos = $cs[0]->getStartFilePos();
         } else {
             $stmt_start_pos = $attrs['startFilePos'];
         }
@@ -82,7 +82,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
         $line_offset = 0;
 
-        foreach ($this->offset_map as list($a_s, $a_e, $b_s, $b_e, $line_diff)) {
+        foreach ($this->offset_map as [$a_s, $a_e, $b_s, $b_e, $line_diff]) {
             if ($a_s > $stmt_end_pos) {
                 break;
             }
@@ -107,7 +107,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             ) {
                 if ($node instanceof PhpParser\Node\Stmt\ClassMethod) {
                     if ($a_s >= $stmt_start_pos && $a_e <= $stmt_end_pos) {
-                        foreach ($this->offset_map as list($a_s2, $a_e2, $b_s2, $b_e2)) {
+                        foreach ($this->offset_map as [$a_s2, $a_e2, $b_s2, $b_e2]) {
                             if ($a_s2 > $stmt_end_pos) {
                                 break;
                             }
@@ -159,6 +159,47 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         $fake_class = '<?php class _ {' . $method_contents . '}';
 
+                        $extra_characters = [];
+
+                        // To avoid a parser error during completion we replace
+                        //
+                        // Foo::
+                        // if (...) {}
+                        //
+                        // with
+                        //
+                        // Foo::;
+                        // if (...) {}
+                        //
+                        // When we insert the extra semicolon we have to keep track of the places
+                        // we inserted it, and then shift the AST node offsets accordingly after parsing
+                        // is complete.
+                        //
+                        // If anyone's unlucky enough to have a static method named "if" with a newline
+                        // before the method name e.g.
+                        //
+                        // Foo::
+                        // if(...);
+                        //
+                        // This transformation will break that.
+                        \preg_match_all(
+                            '/(->|::)(\n\s*(if|list)\s*\()/',
+                            $fake_class,
+                            $matches,
+                            \PREG_OFFSET_CAPTURE | \PREG_SET_ORDER
+                        );
+
+                        foreach ($matches as $match) {
+                            $fake_class = \substr_replace(
+                                $fake_class,
+                                $match[1][0] . ';' . $match[2][0],
+                                $match[0][1],
+                                \strlen($match[0][0])
+                            );
+
+                            $extra_characters[] = $match[2][1];
+                        }
+
                         $replacement_stmts = $this->parser->parse(
                             $fake_class,
                             $error_handler
@@ -182,9 +223,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             // changes "): {" to ") {"
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
 
-                            // allows autocompletion
-                            $hacky_class_fix = preg_replace('/(->|::)(\n\s*if\s*\()/', '~;$2', $hacky_class_fix);
-
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(
                                     $hacky_class_fix,
@@ -204,10 +242,25 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         $replacement_stmts = $replacement_stmts[0]->stmts;
 
+                        $extra_offsets = [];
+
+                        foreach ($extra_characters as $extra_offset) {
+                            $l = strlen($fake_class);
+
+                            for ($i = $extra_offset; $i < $l; $i++) {
+                                if (isset($extra_offsets[$i])) {
+                                    $extra_offsets[$i]--;
+                                } else {
+                                    $extra_offsets[$i] = -1;
+                                }
+                            }
+                        }
+
                         $renumbering_traverser = new PhpParser\NodeTraverser;
                         $position_shifter = new \Psalm\Internal\PhpVisitor\OffsetShifterVisitor(
                             $stmt_start_pos - 15,
-                            $current_line
+                            $current_line,
+                            $extra_offsets
                         );
                         $renumbering_traverser->addVisitor($position_shifter);
                         $replacement_stmts = $renumbering_traverser->traverse($replacement_stmts);
@@ -217,7 +270,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                 if ($error->hasColumnInfo()) {
                                     /** @var array{startFilePos: int, endFilePos: int} */
                                     $error_attrs = $error->getAttributes();
-                                    /** @psalm-suppress MixedOperand */
                                     $error = new PhpParser\Error(
                                         $error->getRawMessage(),
                                         [
@@ -284,21 +336,20 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                         if ($c instanceof PhpParser\Comment\Doc) {
                             $new_comments[] = new PhpParser\Comment\Doc(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         } else {
                             $new_comments[] = new PhpParser\Comment(
                                 $c->getText(),
-                                $c->getLine() + $line_offset,
-                                $c->getFilePos() + $start_offset
+                                $c->getStartLine() + $line_offset,
+                                $c->getStartFilePos() + $start_offset
                             );
                         }
                     }
 
                     $node->setAttribute('comments', $new_comments);
 
-                    /** @psalm-suppress MixedOperand */
                     $node->setAttribute('startFilePos', $attrs['startFilePos'] + $start_offset);
                 } else {
                     $node->setAttribute('startFilePos', $stmt_start_pos + $start_offset);
@@ -310,7 +361,6 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
 
             if ($line_offset !== 0) {
-                /** @psalm-suppress MixedOperand */
                 $node->setAttribute('startLine', $attrs['startLine'] + $line_offset);
             }
 
@@ -325,7 +375,10 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
         return $this->must_rescan || $this->non_method_changes;
     }
 
-    private function balanceBrackets(string $fake_class) : string
+    /**
+     * @psalm-pure
+     */
+    private static function balanceBrackets(string $fake_class) : string
     {
         $tokens = \token_get_all($fake_class);
 

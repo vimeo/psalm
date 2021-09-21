@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Issue;
 
-class MissingPropertyType extends CodeIssue
+class MissingPropertyType extends PropertyIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 45;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 45;
 }

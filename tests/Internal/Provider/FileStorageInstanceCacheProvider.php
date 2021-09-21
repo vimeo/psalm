@@ -2,35 +2,25 @@
 namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Storage\FileStorage;
+
 use function strtolower;
 
 class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStorageCacheProvider
 {
-    /** @var array<string, FileStorage> */
+    /** @var array<lowercase-string, FileStorage> */
     private $cache = [];
 
     public function __construct()
     {
     }
 
-    /**
-     * @param  string $file_contents
-     *
-     * @return void
-     */
-    public function writeToCache(FileStorage $storage, $file_contents)
+    public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $file_path = strtolower($storage->file_path);
         $this->cache[$file_path] = $storage;
     }
 
-    /**
-     * @param  string $file_path
-     * @param  string $file_contents
-     *
-     * @return FileStorage|null
-     */
-    public function getLatestFromCache($file_path, $file_contents)
+    public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         $cached_value = $this->loadFromCache(strtolower($file_path));
 
@@ -41,22 +31,12 @@ class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStor
         return $cached_value;
     }
 
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function removeCacheForFile($file_path)
+    public function removeCacheForFile(string $file_path): void
     {
         unset($this->cache[strtolower($file_path)]);
     }
 
-    /**
-     * @param  string  $file_path
-     *
-     * @return FileStorage|null
-     */
-    private function loadFromCache($file_path)
+    private function loadFromCache(string $file_path): ?FileStorage
     {
         return $this->cache[strtolower($file_path)] ?? null;
     }

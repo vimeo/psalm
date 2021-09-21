@@ -1,16 +1,6 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-use function is_array;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
-use Psalm\Internal\Clause;
-use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
-
 class ConditionalTest extends \Psalm\Tests\TestCase
 {
     use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -19,7 +9,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'intIsMixed' => [
@@ -533,19 +523,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function has_mix_of_fields($array) : void {
                         print_field($array);
                     }',
-            ],
-            'numericOrStringPropertySet' => [
-                '<?php
-                    /**
-                     * @param string|null $b
-                     */
-                    function foo($b = null) : void {
-                        if (is_numeric($b) || is_string($b)) {
-                            takesNullableString($b);
-                        }
-                    }
-
-                    function takesNullableString(?string $s) : void {}',
             ],
             'falsyScalar' => [
                 '<?php
@@ -1121,13 +1098,13 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         public function foo() : void {}
                     }
                     function bar(A $a) : void {
-                        if (false === (!$a instanceof B || !$a instanceof C)) {
+                        if (false === ($a instanceof B || $a instanceof C)) {
                             return;
                         }
                         $a->foo();
                     }
                     function baz(A $a) : void {
-                        if ((!$a instanceof B || !$a instanceof C) === false) {
+                        if (($a instanceof B || $a instanceof C) === false) {
                             return;
                         }
                         $a->foo();
@@ -1417,22 +1394,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return $ret;
                     }',
             ],
-            'assertTypeNarrowedByNestedIsset' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MixedMethodCall
-                     * @psalm-suppress MixedArgument
-                     */
-                    function foo(array $array = []): void {
-                        if (array_key_exists("a", $array)) {
-                            echo $array["a"];
-                        }
-
-                        if (array_key_exists("b", $array)) {
-                            echo $array["b"]->format("Y-m-d");
-                        }
-                    }',
-            ],
             'assertCheckOnNonZeroArrayOffset' => [
                 '<?php
                     /**
@@ -1495,28 +1456,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         if (empty($arr["a"])) {}
 
                         if ($c && $c["a"] !== "b") {}
-                    }',
-            ],
-            'assertOnRemainderOfArray' => [
-                '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     * @psalm-suppress MixedReturnStatement
-                     */
-                    function foo(string $file_name) : int {
-                        while ($data = getData()) {
-                            if (is_numeric($data[0])) {
-                                for ($i = 1; $i < count($data); $i++) {
-                                    return $data[$i];
-                                }
-                            }
-                        }
-
-                        return 5;
-                    }
-
-                    function getData() : ?array {
-                        return rand(0, 1) ? ["a", "b", "c"] : null;
                     }',
             ],
             'notEmptyCheck' => [
@@ -1764,34 +1703,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
-            'assertArrayKeyExistsRefinesType' => [
-                '<?php
-                    class Foo {
-                        /** @var array<int,string> */
-                        public const DAYS = [
-                            1 => "mon",
-                            2 => "tue",
-                            3 => "wed",
-                            4 => "thu",
-                            5 => "fri",
-                            6 => "sat",
-                            7 => "sun",
-                        ];
-
-                        /** @param key-of<self::DAYS> $dayNum*/
-                        private static function doGetDayName(int $dayNum): string {
-                            return self::DAYS[$dayNum];
-                        }
-
-                        /** @throws LogicException */
-                        public static function getDayName(int $dayNum): string {
-                            if (! array_key_exists($dayNum, self::DAYS)) {
-                                throw new \LogicException();
-                            }
-                            return self::doGetDayName($dayNum);
-                        }
-                    }'
-            ],
             'assertPropertiesOfElseStatement' => [
                 '<?php
                     class C {
@@ -1865,112 +1776,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         return false;
                     }'
             ],
-            'assertVarRedefinedInIfWithAnd' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithAnd($value): O {
-                        if (is_string($value) && ($value = rand(0, 1) ? new O : null) !== null) {
-                            return $value;
-                        }
-
-                        return new O();
-                    }'
-            ],
-            'assertVarRedefinedInIfWithAndAndMethodCall' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function anotherExampleWithAnd($value): O {
-                        if (is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo()) {
-                            return $value;
-                        }
-
-                        return new O();
-                    }'
-            ],
-            'SKIPPED-assertVarRedefinedInIfWithOr' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr($value): O {
-                        if (!is_string($value) || ($value = rand(0, 1) ? new O : null) === null) {
-                            return new O();
-                        }
-
-                        return $value;
-                    }'
-            ],
-            'assertVarRedefinedInIfWithExtraIf' => [
-                '<?php
-                    class O {}
-
-                    /**
-                     * @param mixed $value
-                     */
-                    function exampleWithOr($value): O {
-                        if (!is_string($value)) {
-                            return new O();
-                        }
-
-                        if (($value = rand(0, 1) ? new O : null) === null) {
-                            return new O();
-                        }
-
-                        return $value;
-                    }'
-            ],
-            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /** @var mixed */
-                    $value = $_GET["foo"];
-
-                    $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
-                [
-                    '$a' => 'bool',
-                ]
-            ],
-            'SKIPPED-assertVarRedefinedInOpWithOr' => [
-                '<?php
-                    class O {
-                        public function foo() : bool { return true; }
-                    }
-
-                    /** @var mixed */
-                    $value = $_GET["foo"];
-
-                    $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
-                [
-                    '$a' => 'bool',
-                ]
-            ],
-            'assertVarInOrAfterAnd' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends A {}
-
-                    function takesA(A $a): void {}
-
-                    function foo(?A $a, ?A $b): void {
-                        $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
-                    }'
-            ],
             'assertVarAfterNakedBinaryOp' => [
                 '<?php
                     class A {
@@ -1980,71 +1785,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function foo(A $a, A $b): void {
                         $c = !$a->b && !$b->b;
                         echo $a->b ? 1 : 0;
-                    }'
-            ],
-            'assertAssertionsWithCreation' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends A {}
-
-                    function getA(A $a): ?A {
-                        return rand(0, 1) ? $a : null;
-                    }
-
-                    function foo(?A $a, ?A $c): void {
-                        $c = $a && ($b = getA($a)) && $c ? 1 : 0;
-                    }'
-            ],
-            'definedInBothBranchesOfConditional' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        $a = null;
-                        if (($a = getA()) || ($a = getA())) {
-                            $a->foo();
-                        }
-                    }'
-            ],
-            'definedInConditionalAndCheckedInSubbranch' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        if (($a = getA()) || rand(0, 1)) {
-                            if ($a) {
-                                $a->foo();
-                            }
-                        }
-                    }'
-            ],
-            'definedInRhsOfConditionalInNegation' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(): void {
-                        if (rand(0, 1) && ($a = getA()) !== null) {
-                            $a->foo();
-                        }
                     }'
             ],
             'literalStringComparisonInIf' => [
@@ -2087,24 +1827,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         } else {
                             if ($t === "b" || $b) {}
                         }
-                    }'
-            ],
-            'definedInOrRHS' => [
-                '<?php
-                    class A {
-                        public function foo() : void {}
-                    }
-
-                    function getA(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                    }
-
-                    function foo(bool $b): void {
-                        $a = null;
-                        if (!$b || !($a = getA())) {
-                            return;
-                        }
-                        $a->foo();
                     }'
             ],
             'assertOnArrayThings' => [
@@ -2170,6 +1892,10 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                             ) {}
                         }
                     }'
+            ],
+            'manyNestedWedgeAssertions' => [
+                '<?php
+                    if (rand(0, 1) && rand(0, 1)) {}'
             ],
             'assertionAfterAssertionInsideBooleanNot' => [
                 '<?php
@@ -2245,22 +1971,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         assert(is_string($v) || is_object($v));
 
                         return $v;
-                    }'
-            ],
-            'possiblyDefinedVarInAssertion' => [
-                '<?php
-                    class A {
-                        public function test() : bool { return true; }
-                    }
-
-                    function getMaybeA() : ?A { return rand(0, 1) ? new A : null; }
-
-                    function foo() : void {
-                        if (rand(0, 10) && ($a = getMaybeA()) && !$a->test()) {
-                            return;
-                        }
-
-                        echo isset($a);
                     }'
             ],
             'assertOnVarStaticClassKey' => [
@@ -2374,32 +2084,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                             return static::$cache[$k1][$k2];
                         }
-                    }'
-            ],
-            'orWithAssignment' => [
-                '<?php
-                    function maybeString(): ?string {
-                        return rand(0, 10) > 4 ? "test" : null;
-                    }
-
-                    function test(): string {
-                        $foo = maybeString();
-                        ($foo !== null) || ($foo = "");
-
-                        return $foo;
-                    }'
-            ],
-            'andWithAssignment' => [
-                '<?php
-                    function maybeString(): ?string {
-                        return rand(0, 10) > 4 ? "test" : null;
-                    }
-
-                    function test(): string {
-                        $foo = maybeString();
-                        ($foo === null) && ($foo = "");
-
-                        return $foo;
                     }'
             ],
             'isNotTraversable' => [
@@ -2522,24 +2206,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
 
                         return 0;
                     }',
-            ],
-            'assertHardConditionalWithString' => [
-                '<?php
-                    interface Converter {
-                        function maybeConvert(string $value): ?SomeObject;
-                    }
-
-                    interface SomeObject {
-                        function isValid(): bool;
-                    }
-
-                    function exampleWithOr(Converter $converter, string $value): SomeObject {
-                        if (($value = $converter->maybeConvert($value)) === null || !$value->isValid()) {
-                            throw new Exception();
-                        }
-
-                        return $value; // $value is SomeObject here and cannot be a string
-                    }'
             ],
             'nonEmptyStringFromConcat' => [
                 '<?php
@@ -2785,39 +2451,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }',
             ],
-            'applyTruthyAssertionsToRightHandSideOfAssignment' => [
-                '<?php
-                    function takesAString(string $name): void {}
-
-                    function randomReturn(): ?string {
-                        return rand(1,2) === 1 ? "foo" : null;
-                    }
-
-                    $name = randomReturn();
-
-                    if ($foo = ($name !== null)) {
-                        takesAString($name);
-                    }'
-            ],
-            'maintainTruthinessInsideAssignment' => [
-                '<?php
-                    class C {
-                        public function foo() : void {}
-                    }
-
-                    class B {
-                        public ?C $c = null;
-                    }
-
-                    function updateBackgroundClip(?B $b): void {
-                        if (!$b || !($a = $b->c)) {
-                            // do something
-                        } else {
-                            /** @psalm-suppress MixedMethodCall */
-                            $a->foo();
-                        }
-                    }'
-            ],
             'getClassInterfaceCanBeClass' => [
                 '<?php
                     interface Id {}
@@ -2828,13 +2461,269 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'nullsafePropertyAccess' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            public ?self $next
+                        ) {}
+                    }
+
+                    function skipOne(IntLinkedList $l) : ?int {
+                        return $l->next?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->next?->next?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'nullsafeMethodCall' => [
+                '<?php
+                    class IntLinkedList {
+                        public function __construct(
+                            public int $value,
+                            private ?self $next
+                        ) {}
+
+                        public function getNext() : ?self {
+                            return $this->next;
+                        }
+                    }
+
+                    function skipOne(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->value;
+                    }
+
+                    function skipTwo(IntLinkedList $l) : ?int {
+                        return $l->getNext()?->getNext()?->value;
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'onlySingleErrorForEarlyExit' => [
+                '<?php
+                    class App {
+                        public function bar(int $i) : bool {
+                            return $i === 5;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument, MissingParamType */
+                    function bar(App $foo, $arr) : void {
+                        /** @psalm-suppress TypeDoesNotContainNull */
+                        if ($foo === null || $foo->bar($arr)) {
+                            return;
+                        }
+                    }'
+            ],
+            'nonRedundantConditionAfterThing' => [
+                '<?php
+                    class U {
+                        public function takes(self $u) : bool {
+                            return true;
+                        }
+                    }
+
+                    function bar(?U $a, ?U $b) : void {
+                        if ($a === null
+                            || ($b !== null && $a->takes($b))
+                            || $b === null
+                        ) {}
+                    }'
+            ],
+            'usedAssertedVarButNotWithStrongerTypeGuarantee' => [
+                '<?php
+                    function broken(bool $b, ?User $u) : void {
+                        if ($b || (rand(0, 1) && (!$u || takesUser($u)))) {
+                            return;
+                        }
+
+                        if ($u) {}
+                    }
+
+                    class User {}
+
+                    function takesUser(User $a) : bool {
+                        return true;
+                    }'
+            ],
+            'negateIsNull' => [
+                '<?php
+                    function scope(?string $str): string{
+                        if (is_null($str) === false){
+                            return $str;
+                        }
+
+                        return "";
+                    }'
+            ],
+            'strictIntFloatComparison' => [
+                '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @psalm-suppress MismatchingDocblockReturnType
+                     * @return ($bar is int ? list<int> : list<float>)
+                     */
+                    function foo($bar): string {}
+
+                    /** @var int */
+                    $baz = 1;
+                    $a = foo($baz);
+
+                    /** @var float */
+                    $baz = 1.;
+                    $b = foo($baz);
+
+                    /** @var int|float */
+                    $baz = 1;
+                    $c = foo($baz);
+                ',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                    '$b' => 'list<float>',
+                    '$c' => 'list<float|int>',
+                ],
+            ],
+            'negateTypeInGenericContext' => [
+                '<?php
+
+                 /**
+                  * @template T
+                  */
+                 final class Valid {}
+                 final class Invalid {}
+
+                 /**
+                  * @template T
+                  *
+                  * @param Valid<T>|Invalid $val
+                  * @psalm-assert-if-true Valid<T> $val
+                  */
+                 function isValid($val): bool
+                 {
+                     return $val instanceof Valid;
+                 }
+
+                 /**
+                  * @template T
+                  * @param Valid<T>|Invalid $val
+                  */
+                 function genericContext($val): void
+                 {
+                     $takesValid =
+                         /** @param Valid<T> $_valid */
+                         function ($_valid): void {};
+
+                     $takesInvalid =
+                         /** @param Invalid $_invalid */
+                         function ($_invalid): void {};
+
+                     isValid($val) ? $takesValid($val) : $takesInvalid($val);
+                 }'
+            ],
+            'reconcileMoreThanOneGenericObject' => [
+                '<?php
+
+                 final class Invalid {}
+
+                 /**
+                  * @template T
+                  */
+                 final class Valid {}
+
+                 /**
+                  * @template T
+                  *
+                  * @param Invalid|Valid<T> $val
+                  * @psalm-assert-if-true Valid<T> $val
+                  */
+                 function isValid($val): bool
+                 {
+                     return $val instanceof Valid;
+                 }
+
+                 /**
+                  * @template T
+                  * @param Valid<T>|Invalid $val1
+                  * @param Valid<T>|Invalid $val2
+                  * @param Valid<T>|Invalid $val3
+                  */
+                 function inGenericContext($val1, $val2, $val3): void
+                 {
+                     $takesValid =
+                          /** @param Valid<T> $_valid */
+                          function ($_valid): void {};
+
+                     if (isValid($val1) && isValid($val2) && isValid($val3)) {
+                         $takesValid($val1);
+                         $takesValid($val2);
+                         $takesValid($val3);
+                     }
+                 }'
+            ],
+            'ternaryRedefineAllVars' => [
+                '<?php
+                    $_a = null;
+                    $b = rand(0,1) ? "" : "a";
+                    $b === "a" ? $_a = "Y" : $_a = "N";',
+                'assertions' => [
+                    '$_a===' => '"N"|"Y"',
+                ]
+            ],
+            'nullErasureWithSmallerAndGreater' => [
+                '<?php
+                    function getIntOrNull(): ?int{return null;}
+                    $a = getIntOrNull();
+
+                    if ($a < 0) {
+                        echo $a + 3;
+                    }
+
+                    if ($a <= 0) {
+                        /** @psalm-suppress PossiblyNullOperand */
+                        echo $a + 3;
+                    }
+
+                    if ($a > 0) {
+                        echo $a + 3;
+                    }
+
+                    if ($a >= 0) {
+                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        echo $a + 3;
+                    }
+
+                    if (0 < $a) {
+                        echo $a + 3;
+                    }
+
+                    if (0 <= $a) {
+                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        echo $a + 3;
+                    }
+
+                    if (0 > $a) {
+                        echo $a + 3;
+                    }
+
+                    if (0 >= $a) {
+                        /** @psalm-suppress PossiblyNullOperand */
+                        echo $a + 3;
+                    }
+                    ',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'makeNonNullableNull' => [
@@ -2886,24 +2775,6 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'dontEraseNullAfterLessThanCheck' => [
-                '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
-
-                    if ($a < -1) {
-                        echo $a + 3;
-                    }',
-                'error_message' => 'PossiblyNullOperand',
-            ],
-            'dontEraseNullAfterGreaterThanCheck' => [
-                '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
-
-                    if (0 > $a) {
-                      echo $a + 3;
-                    }',
-                'error_message' => 'PossiblyNullOperand',
             ],
             'nonRedundantConditionGivenDocblockType' => [
                 '<?php
@@ -3117,7 +2988,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function foo(?string $s) : string {
                         return ((string) $s) ?? "bar";
                     }',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'RedundantCondition'
             ],
             'allowEmptyScalarAndNonEmptyScalarAssertions1' => [
                 '<?php
@@ -3182,7 +3053,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function test(App $app) : void {
                         if ($app || rand(0, 1)) {}
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RedundantCondition',
             ],
             'nonEmptyString' => [
                 '<?php
@@ -3205,6 +3076,13 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                 '<?php
                     function foo(Exception $e) : void {
                         if (get_class($e) == "InvalidArgumentException") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'falsyValuesInIf' => [
+                '<?php
+                    if (0) {
+                        echo 123;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],

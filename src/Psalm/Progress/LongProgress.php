@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Progress;
 
-use const PHP_EOL;
 use function floor;
 use function sprintf;
 use function str_repeat;
 use function strlen;
+
+use const PHP_EOL;
 
 class LongProgress extends Progress
 {

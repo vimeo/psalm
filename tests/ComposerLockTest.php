@@ -1,20 +1,49 @@
 <?php
 namespace Psalm\Tests;
 
-use function json_encode;
 use Psalm\Internal\PluginManager\ComposerLock;
+
+use function json_encode;
 
 /** @group PluginManager */
 class ComposerLockTest extends TestCase
 {
     /**
-     * @return void
      * @test
      */
-    public function pluginIsPackageOfTypePsalmPlugin()
+    public function packageIsPsalmPlugin(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[])]);
-        $this->assertTrue($lock->isPlugin($this->pluginEntry('vendor/package', 'Some\Class')));
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'type' => 'psalm-plugin',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'type' => 'library',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
+        $this->assertTrue($lock->isPlugin([
+            'name' => 'vendor/package',
+            'extra' => [
+                'psalm' => [
+                    'pluginClass' => 'Some\Class'
+                ]
+            ]
+        ]), 'Non-plugin should not be considered a plugin');
+
         // counterexamples
 
         $this->assertFalse($lock->isPlugin([]), 'Non-package should not be considered a plugin');
@@ -31,10 +60,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function seesNonDevPlugins()
+    public function seesNonDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [
@@ -49,10 +77,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function seesDevPlugins()
+    public function seesDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
             'packages' => [],
@@ -67,10 +94,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function skipsNonPlugins()
+    public function skipsNonPlugins(): void
     {
         $nonPlugin = (object)[
             'name' => 'vendor/package',
@@ -85,10 +111,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnInvalidJson()
+    public function failsOnInvalidJson(): void
     {
         $lock = new ComposerLock(['data:application/json,[']);
 
@@ -97,10 +122,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnNonObjectJson()
+    public function failsOnNonObjectJson(): void
     {
         $lock = new ComposerLock(['data:application/json,null']);
 
@@ -109,10 +133,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnMissingPackagesEntry()
+    public function failsOnMissingPackagesEntry(): void
     {
         $noPackagesFile = $this->jsonFile((object)[
             'packages-dev' => [],
@@ -123,10 +146,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @return void
      * @test
      */
-    public function failsOnMissingPackagesDevEntry()
+    public function failsOnMissingPackagesDevEntry(): void
     {
         $noPackagesDevFile = $this->jsonFile((object)[
             'packages' => [],
@@ -169,6 +191,9 @@ class ComposerLockTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private function pluginEntry(string $package_name, string $package_class): array
     {
         return [
@@ -182,7 +207,11 @@ class ComposerLockTest extends TestCase
         ];
     }
 
-    /** @param mixed $data */
+    /**
+     * @param mixed $data
+     *
+     * @psalm-pure
+     */
     private function jsonFile($data): string
     {
         return 'data:application/json,' . json_encode($data);

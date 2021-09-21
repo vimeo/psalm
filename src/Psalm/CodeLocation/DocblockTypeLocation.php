@@ -3,9 +3,6 @@ namespace Psalm\CodeLocation;
 
 class DocblockTypeLocation extends \Psalm\CodeLocation
 {
-    /** @var int */
-    public $raw_line_number;
-
     public function __construct(
         \Psalm\FileSource $file_source,
         int $file_start,

@@ -1,19 +1,25 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
+use function array_merge;
 use function count;
 use function implode;
-use Psalm\CodeLocation;
-use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
-use Psalm\Type\Atomic;
 use function substr;
-use function array_merge;
 
+/**
+ * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ */
 class TIterable extends Atomic
 {
     use HasIntersectionTrait;
     use GenericTrait;
+
+    /**
+     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     */
+    public $type_params;
 
     /**
      * @var string
@@ -30,7 +36,7 @@ class TIterable extends Atomic
      */
     public function __construct(array $type_params = [])
     {
-        if ($type_params) {
+        if (count($type_params) === 2) {
             $this->has_docblock_params = true;
             $this->type_params = $type_params;
         } else {
@@ -38,10 +44,7 @@ class TIterable extends Atomic
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
             // do nothing
@@ -50,15 +53,12 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return 'iterable';
     }
 
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
@@ -74,45 +74,33 @@ class TIterable extends Atomic
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getId();
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return $php_major_version > 7
             || ($php_major_version === 7 && $php_minor_version >= 1)
             ? 'iterable'
             : null;
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
 
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -123,7 +111,7 @@ class TIterable extends Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
                 return false;
             }
         }

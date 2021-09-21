@@ -16,10 +16,8 @@ interface EmitterInterface
 {
     /**
      * Subscribe to an event.
-     *
-     * @return void
      */
-    public function on(string $eventName, callable $callBack, int $priority = 100);
+    public function on(string $eventName, callable $callBack, int $priority = 100): void;
 
     /**
      * Emits an event.
@@ -47,8 +45,8 @@ interface EmitterInterface
     public function emit(
         string $eventName,
         array $arguments = [],
-        callable $continueCallBack = null
-    ) : bool;
+        ?callable $continueCallBack = null
+    ) : void;
 
     /**
      * Returns the list of listeners for an event.

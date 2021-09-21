@@ -1,52 +1,42 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
+ */
 class TCallableObject extends TObject
 {
-    public function __toString()
+    public function __toString(): string
+    {
+        return 'callable-object';
+    }
+
+    public function getKey(bool $include_extra = true): string
     {
         return 'callable-object';
     }
 
     /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
-    {
-        return 'callable-object';
-    }
-
-    /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return null|string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
-        return $php_major_version >= 7 && $php_minor_version >= 2 ? 'object' : null;
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
+        return $php_major_version > 7
+            || ($php_major_version === 7 && $php_minor_version >= 2)
+            ? 'object' : null;
     }
 
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
 
-    /**
-     * @return string
-     */
-    public function getAssertionString()
+    public function getAssertionString(bool $exact = false): string
     {
         return 'object';
     }

@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests\Template;
 
-use const DIRECTORY_SEPARATOR;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
@@ -12,10 +11,10 @@ class ConditionalReturnTypeTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
-            'conditionalReturnType' => [
+            'conditionalReturnTypeSimple' => [
                 '<?php
 
                     class A {
@@ -144,9 +143,9 @@ class ConditionalReturnTypeTest extends TestCase
                     $int = add(rand(0, 1) ? null : 1, 1);',
                 [
                     '$int' => 'int',
-                    '$float1' => 'float',
+                    '$float1' => 'float|int',
                     '$float2' => 'float',
-                    '$float3' => 'float',
+                    '$float3' => 'float|int',
                 ]
             ],
             'possiblyNullArgumentStillMatchesType' => [
@@ -572,6 +571,7 @@ class ConditionalReturnTypeTest extends TestCase
                      * @template E
                      * @implements AInterface<E>
                      * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
                      */
                     class BClass implements AInterface {
                         protected string $type;
@@ -598,7 +598,6 @@ class ConditionalReturnTypeTest extends TestCase
                      * @template T of mixed|false|null
                      * @param T $i
                      * @return (T is false ? no-return : T is null ? no-return : T)
-                     * @psalm-suppress LessSpecificReturnType
                      */
                     function orThrow($i) {
                         if ($i === false || $i === null) {
@@ -620,6 +619,196 @@ class ConditionalReturnTypeTest extends TestCase
 
                             return [""];
                         }
+                    }'
+            ],
+            'stringOrClassStringT' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param literal-string|class-string<T> $name
+                     * @return ($name is class-string ? T : mixed)
+                     */
+                    function get(string $name) {
+                        return;
+                    }
+
+                    $lowercase_a = "a";
+
+                    /** @var class-string $class_string */
+                    $class_string = "b";
+
+                    /** @psalm-suppress MixedAssignment */
+                    $expect_mixed = get($lowercase_a);
+                    $expect_object = get($class_string);
+
+                    $expect_a_object = get(A::class);
+
+                    /** @psalm-suppress MixedAssignment */
+                    $expect_mixed_from_literal = get("LiteralDirect");',
+                [
+                    '$expect_mixed' => 'mixed',
+                    '$expect_object' => 'object',
+                    '$expect_a_object' => 'A',
+                    '$expect_mixed_from_literal' => 'mixed',
+                ]
+            ],
+            'isArryCheckOnTemplate' => [
+                '<?php
+                    /**
+                     * @template TResult as string|list<string>
+                     * @param TResult $result
+                     * @return (TResult is array ? list<string> : string)
+                     */
+                    function recursion($result) {
+                        if (\is_array($result)) {
+                            return $result;
+                        }
+
+                        return strtoupper($result);
+                    }'
+            ],
+            'optional' => [
+                '<?php
+                    class User {
+                        public string $name = "Dave";
+                    }
+
+                    /** @return User|NullObject */
+                    function takesNullableUser(?User $user) {
+                        return optional($user);
+                    }
+
+                    class NullObject {
+                        /**
+                         * @return null
+                         */
+                        public function __call(string $_name, array $args) {
+                            return null;
+                        }
+
+                        /**
+                         * @return null
+                         */
+                        public function __get(string $s) {
+                            return null;
+                        }
+
+                        public function __set(string $_name, string $_value) : void {
+                        }
+                    }
+
+                    /**
+                     * @template TVar as object|null
+                     * @param TVar $var
+                     * @return (TVar is object ? TVar : NullObject)
+                     */
+                    function optional($var) {
+                        if ($var) {
+                            return $var;
+                        }
+
+                        return new NullObject();
+                    }'
+            ],
+            'reconcileCallableFunctionTemplateParam' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template TOptionalClosure as (callable():T)|null
+                     * @param TOptionalClosure $cb
+                     * @return (TOptionalClosure is null ? int : T)
+                     */
+                    function f($cb) {
+                        if (is_callable($cb)) {
+                            return $cb();
+                        }
+
+                        return 1;
+                    }'
+            ],
+            'reconcileCallableClassTemplateParam' => [
+                '<?php
+                    class C {
+                        /**
+                         * @template T
+                         * @template TOptionalClosure as (callable():T)|null
+                         * @param TOptionalClosure $cb
+                         * @return (TOptionalClosure is null ? int : T)
+                         */
+                        public static function f($cb) {
+                            if (is_callable($cb)) {
+                                return $cb();
+                            }
+
+                            return 1;
+                        }
+                    }'
+            ],
+            'classConstantDefault' => [
+                '<?php
+                    class Request {
+                        const SOURCE_GET = "GET";
+                        const SOURCE_POST = "POST";
+                        const SOURCE_BODY = "BODY";
+
+                        private function getBody() : string {
+                            return "";
+                        }
+
+                        /**
+                         * @template TSource as self::SOURCE_*
+                         * @param TSource $source
+                         * @return (TSource is "BODY" ? object|list : array)
+                         * @psalm-taint-source
+                         */
+                        public function getParams(
+                            string $source = self::SOURCE_GET
+                        ) {
+                            if ($source === "GET") {
+                                return $_GET;
+                            }
+
+                            if ($source === "POST") {
+                                throw new \UnexpectedValueException("bad");
+                            }
+
+                            /** @psalm-suppress MixedAssignment */
+                            $decoded = json_decode($this->getBody(), false);
+
+                            if (!is_object($decoded) && !is_array($decoded)) {
+                                throw new \UnexpectedValueException("bad");
+                            }
+
+                            return $decoded;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    echo (new Request)->getParams()["a"];
+
+                    /** @psalm-suppress MixedArgument */
+                    echo (new Request)->getParams(Request::SOURCE_GET)["a"];'
+            ],
+            'conditionalArrayValues' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TIterable of ?iterable<TValue>
+                     * @param TIterable $iterable
+                     * @return (TIterable is null ? null : list<TValue>)
+                     */
+                    function toList(?iterable $iterable): ?array {
+                        if (null === $iterable) {
+                            return null;
+                        }
+
+                        if (is_array($iterable)) {
+                            return array_values($iterable);
+                        }
+
+                        return iterator_to_array($iterable, false);
                     }'
             ],
         ];

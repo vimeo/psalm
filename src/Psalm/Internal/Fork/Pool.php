@@ -3,20 +3,23 @@ namespace Psalm\Internal\Fork;
 
 use function array_fill_keys;
 use function array_keys;
+use function array_map;
 use function array_pop;
 use function array_values;
 use function base64_decode;
 use function base64_encode;
 use function count;
-use function error_log;
 use function error_get_last;
+use function error_log;
 use function explode;
 use function extension_loaded;
 use function fclose;
 use function feof;
 use function fread;
 use function fwrite;
+use function get_class;
 use function gettype;
+use function in_array;
 use function ini_get;
 use function intval;
 use function pcntl_fork;
@@ -24,26 +27,27 @@ use function pcntl_waitpid;
 use function pcntl_wexitstatus;
 use function pcntl_wifsignaled;
 use function pcntl_wtermsig;
-use const PHP_EOL;
-use const PHP_VERSION;
 use function posix_get_last_error;
 use function posix_kill;
 use function posix_strerror;
 use function serialize;
-use const SIGALRM;
-use const STREAM_IPPROTO_IP;
-use const STREAM_PF_UNIX;
 use function stream_select;
 use function stream_set_blocking;
-use const STREAM_SOCK_STREAM;
 use function stream_socket_pair;
+use function stripos;
 use function strlen;
 use function strpos;
-use function stripos;
 use function substr;
 use function unserialize;
 use function usleep;
 use function version_compare;
+
+use const PHP_EOL;
+use const PHP_VERSION;
+use const SIGALRM;
+use const STREAM_IPPROTO_IP;
+use const STREAM_PF_UNIX;
+use const STREAM_SOCK_STREAM;
 
 /**
  * Adapted with relatively few changes from
@@ -56,8 +60,8 @@ use function version_compare;
  */
 class Pool
 {
-    const EXIT_SUCCESS = 0;
-    const EXIT_FAILURE = 1;
+    private const EXIT_SUCCESS = 0;
+    private const EXIT_FAILURE = 1;
 
     /** @var int[] */
     private $child_pid_list = [];
@@ -112,6 +116,13 @@ class Pool
             echo
                 'The pcntl & posix extensions must be loaded in order for Psalm to be able to use multiple processes.'
                 . PHP_EOL;
+            exit(1);
+        }
+
+        $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('pcntl_fork', $disabled_functions)) {
+            echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
+                . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
             exit(1);
         }
 
@@ -208,9 +219,9 @@ class Pool
         } catch (\Throwable $t) {
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
-            /** @psalm-suppress MixedArgument on Windows, for some reason */
             $process_done_message = new ForkProcessErrorMessage(
-                $t->getMessage() . "\nStack trace in the forked worker:\n" . $t->getTraceAsString()
+                get_class($t) . " " . $t->getMessage()
+                . "\nStack trace in the forked worker:\n". $t->getTraceAsString()
             );
         }
 
@@ -219,7 +230,7 @@ class Pool
         $bytes_to_write = strlen($serialized_message);
         $bytes_written = 0;
 
-        while ($bytes_written < $bytes_to_write) {
+        while ($bytes_written < $bytes_to_write && !feof($write_stream)) {
             // attempt to write the remaining unsent part
             $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
@@ -245,7 +256,7 @@ class Pool
      */
     private static function streamForParent(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The parent will not use the write channel, so it
         // must be closed to prevent deadlock.
@@ -271,7 +282,7 @@ class Pool
      */
     private static function streamForChild(array $sockets)
     {
-        list($for_read, $for_write) = $sockets;
+        [$for_read, $for_write] = $sockets;
 
         // The while will not use the read channel, so it must
         // be closed to prevent deadlock.
@@ -285,11 +296,12 @@ class Pool
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
      *
-     * @return array
      *
      * @psalm-suppress MixedAssignment
+     *
+     * @return list<mixed>
      */
-    private function readResultsFromChildren()
+    private function readResultsFromChildren(): array
     {
         // Create an array of all active streams, indexed by
         // resource id.
@@ -345,6 +357,14 @@ class Pool
                                 ($this->task_done_closure)($message->data);
                             }
                         } elseif ($message instanceof ForkProcessErrorMessage) {
+                            // Kill all children
+                            foreach ($this->child_pid_list as $child_pid) {
+                                /**
+                                 * @psalm-suppress UndefinedConstant - does not exist on windows
+                                 * @psalm-suppress MixedArgument
+                                 */
+                                posix_kill($child_pid, \SIGTERM);
+                            }
                             throw new \Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));
@@ -372,42 +392,50 @@ class Pool
     /**
      * Wait for all child processes to complete
      *
-     * @return array
+     * @return list<mixed>
      */
     public function wait(): array
     {
-        // Read all the streams from child processes into an array.
-        $content = $this->readResultsFromChildren();
+        $ignore_return_code = false;
+        try {
+            // Read all the streams from child processes into an array.
+            $content = $this->readResultsFromChildren();
+        } catch (\Throwable $e) {
+            // If children were killed because one of them threw an exception we don't care about return codes.
+            $ignore_return_code = true;
+            // PHP guarantees finally is run even after throwing
+            throw $e;
+        } finally {
+            // Wait for all children to return
+            foreach ($this->child_pid_list as $child_pid) {
+                $process_lookup = posix_kill($child_pid, 0);
 
-        // Wait for all children to return
-        foreach ($this->child_pid_list as $child_pid) {
-            $process_lookup = posix_kill($child_pid, 0);
+                $status = 0;
 
-            $status = 0;
+                if ($process_lookup) {
+                    /**
+                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     * @psalm-suppress MixedArgument
+                     */
+                    posix_kill($child_pid, SIGALRM);
 
-            if ($process_lookup) {
-                /**
-                 * @psalm-suppress UndefinedConstant - does not exist on windows
-                 * @psalm-suppress MixedArgument
-                 */
-                posix_kill($child_pid, SIGALRM);
-
-                if (pcntl_waitpid($child_pid, $status) < 0) {
-                    error_log(posix_strerror(posix_get_last_error()));
+                    if (pcntl_waitpid($child_pid, $status) < 0) {
+                        error_log(posix_strerror(posix_get_last_error()));
+                    }
                 }
-            }
 
-            // Check to see if the child died a graceful death
-            if (pcntl_wifsignaled($status)) {
-                $return_code = pcntl_wexitstatus($status);
-                $term_sig = pcntl_wtermsig($status);
+                // Check to see if the child died a graceful death
+                if (!$ignore_return_code && pcntl_wifsignaled($status)) {
+                    $return_code = pcntl_wexitstatus($status);
+                    $term_sig = pcntl_wtermsig($status);
 
-                /**
-                 * @psalm-suppress UndefinedConstant - does not exist on windows
-                 */
-                if ($term_sig !== SIGALRM) {
-                    $this->did_have_error = true;
-                    error_log("Child terminated with return code $return_code and signal $term_sig");
+                    /**
+                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     */
+                    if ($term_sig !== SIGALRM) {
+                        $this->did_have_error = true;
+                        error_log("Child terminated with return code $return_code and signal $term_sig");
+                    }
                 }
             }
         }
@@ -418,9 +446,8 @@ class Pool
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
      *
-     * @return  bool
      */
-    public function didHaveError()
+    public function didHaveError(): bool
     {
         return $this->did_have_error;
     }

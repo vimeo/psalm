@@ -10,19 +10,15 @@ use Psalm\Issue\UndefinedInterface;
  */
 class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
-    /**
-     * @param PhpParser\Node\Stmt\Interface_ $interface
-     * @param string                         $fq_interface_name
-     */
-    public function __construct(PhpParser\Node\Stmt\Interface_ $interface, SourceAnalyzer $source, $fq_interface_name)
-    {
+    public function __construct(
+        PhpParser\Node\Stmt\Interface_ $interface,
+        SourceAnalyzer $source,
+        string $fq_interface_name
+    ) {
         parent::__construct($interface, $source, $fq_interface_name);
     }
 
-    /**
-     * @return void
-     */
-    public function analyze()
+    public function analyze(): void
     {
         if (!$this->class instanceof PhpParser\Node\Stmt\Interface_) {
             throw new \LogicException('Something went badly wrong');
@@ -93,6 +89,16 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+
+        foreach ($class_storage->attributes as $attribute) {
+            AttributeAnalyzer::analyze(
+                $this,
+                $attribute,
+                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+                1,
+                $class_storage
+            );
+        }
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {

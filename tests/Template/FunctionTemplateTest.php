@@ -12,7 +12,7 @@ class FunctionTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'validTemplatedType' => [
@@ -583,20 +583,8 @@ class FunctionTemplateTest extends TestCase
                          * @param int|false $x
                          */
                         function($x): void {},
-                        [strpos("str", "str")]
+                        [rand(0, 1) ? 5 : false]
                     );',
-            ],
-            'ignoreTooManyArrayArgs' => [
-                '<?php
-
-                    function takesArray(array $arr) : void {}
-
-                    /**
-                     * @psalm-suppress TooManyTemplateParams
-                     * @var array<int, int, int>
-                     */
-                    $b = [1, 2, 3];
-                    takesArray($b);',
             ],
             'functionTemplateUnionType' => [
                 '<?php
@@ -966,7 +954,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     /**
-                     * @return Generator<array<int>>
+                     * @return Generator<int, array<int>>
                      */
                     function genIters(): Generator {
                         yield [1,2,3];
@@ -1065,7 +1053,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function toArray(iterable $iter): array {
                         $data = [];
-                        foreach ($iter as $key => $val) {
+                        foreach ($iter as $val) {
                             $data[] = $val;
                         }
                         return $data;
@@ -1075,11 +1063,11 @@ class FunctionTemplateTest extends TestCase
                      * @template T
                      * @template U
                      * @param callable(T): U $predicate
-                     * @return callable(iterable<T>): iterable<U>
+                     * @return callable(iterable<int, T>): iterable<int, U>
                      */
                     function map(callable $predicate): callable {
                         return
-                        /** @param iterable<T> $iter */
+                        /** @param iterable<int, T> $iter */
                         function(iterable $iter) use ($predicate): iterable {
                             foreach ($iter as $key => $value) {
                                 yield $key => $predicate($value);
@@ -1091,7 +1079,7 @@ class FunctionTemplateTest extends TestCase
                     function _test(array $strings): void {}
                     $a =  map([A::class, "dup"])(["a", "b", "c"]);',
                 [
-                    '$a' => 'iterable<mixed, string>'
+                    '$a' => 'iterable<int, string>'
                 ]
             ],
             'testClosureCallableInference' => [
@@ -1103,7 +1091,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function toArray(iterable $iter): array {
                         $data = [];
-                        foreach ($iter as $key => $val) {
+                        foreach ($iter as $val) {
                             $data[] = $val;
                         }
                         return $data;
@@ -1113,11 +1101,11 @@ class FunctionTemplateTest extends TestCase
                      * @template T
                      * @template U
                      * @param callable(T): U $predicate
-                     * @return callable(iterable<T>): iterable<U>
+                     * @return callable(iterable<int, T>): iterable<int, U>
                      */
                     function map(callable $predicate): callable {
                         return
-                        /** @param iterable<T> $iter */
+                        /** @param iterable<int, T> $iter */
                         function(iterable $iter) use ($predicate): iterable {
                             foreach ($iter as $key => $value) {
                                 yield $key => $predicate($value);
@@ -1134,7 +1122,7 @@ class FunctionTemplateTest extends TestCase
                         }
                     )(["a", "b", "c"]);',
                 [
-                    '$a' => 'iterable<mixed, string>'
+                    '$a' => 'iterable<int, string>'
                 ]
             ],
             'possiblyNullMatchesTemplateType' => [
@@ -1337,13 +1325,237 @@ class FunctionTemplateTest extends TestCase
                 [],
                 '7.4'
             ],
+            'mixedDoesntSwallowNull' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @param E $e
+                     * @param mixed $d
+                     * @return ?E
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function reduce_values($e, $d) {
+                        if (rand(0, 1)) {
+                            $c = $e;
+                        } elseif (rand(0, 1)) {
+                            /** @psalm-suppress MixedAssignment */
+                            $c = $d;
+                        } else {
+                            $c = null;
+                        }
+
+                        /** @psalm-suppress MixedReturnStatement */
+                        return $c;
+                    }'
+            ],
+            'mixedDoesntSwallowNullProgressive' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @param E $e
+                     * @param mixed $d
+                     * @return ?E
+                     * @psalm-suppress MixedInferredReturnType
+                     */
+                    function reduce_values($e, $d)
+                    {
+                        if (rand(0, 1)) {
+                            $d = $e;
+                        }
+
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress MixedReturnStatement */
+                            return $d;
+                        }
+
+                        return null;
+                    }'
+            ],
+            'inferIterableArrayKeyAfterIsArrayCheck' => [
+                '<?php
+                    /**
+                     * @template Key
+                     * @template Element
+                     * @psalm-param iterable<Key, Element> $input
+                     * @psalm-return Iterator<Key, Element>
+                     */
+                    function to_iterator(iterable $input): Iterator
+                    {
+                        if (\is_array($input)) {
+                            return new \ArrayIterator($input);
+                        } elseif ($input instanceof Iterator) {
+                            return $input;
+                        } else {
+                            return new \IteratorIterator($input);
+                        }
+                    }'
+            ],
+            'doublyNestedFunctionTemplates' => [
+                '<?php
+                    /**
+                     * @psalm-template Tk
+                     * @psalm-template Tv
+                     *
+                     * @psalm-param iterable<Tk, Tv>                $iterable
+                     * @psalm-param (callable(Tk, Tv): bool)|null   $predicate
+                     *
+                     * @psalm-return iterable<Tk, Tv>
+                     */
+                    function filter_with_key(iterable $iterable, ?callable $predicate = null): iterable
+                    {
+                        return (static function () use ($iterable, $predicate): Generator {
+                            $predicate = $predicate ??
+                                /**
+                                 * @psalm-param Tk $_k
+                                 * @psalm-param Tv $v
+                                 *
+                                 * @return bool
+                                 */
+                                function($_k, $v) { return (bool) $v; };
+
+                            foreach ($iterable as $k => $v) {
+                                if ($predicate($k, $v)) {
+                                    yield $k => $v;
+                                }
+                            }
+                        })();
+                    }'
+            ],
+            'allowClosureParamLowerBoundAndUpperBound' => [
+                '<?php
+                    class Foo {}
+
+                    /**
+                     * @template TParam as Foo
+                     * @psalm-param Closure(TParam): void $func
+                     * @psalm-return Closure(TParam): TParam
+                     */
+                    function takesClosure(callable $func): callable {
+                        return
+                            /**
+                             * @psalm-param TParam $value
+                             * @psalm-return TParam
+                             */
+                            function ($value) use ($func) {
+                                $func($value);
+                                return $value;
+                            };
+                    }
+
+                    $value = takesClosure(function(Foo $foo) : void {})(new Foo());'
+            ],
+            'subtractTemplatedNull' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T|null $var
+                     * @return T
+                     */
+                    function notNull($var) {
+                        if ($var === null) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    function takesNullableString(?string $s) : string {
+                        return notNull($s);
+                    }'
+            ],
+            'subtractTemplatedInt' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param T|int $var
+                     * @return T
+                     */
+                    function notNull($var) {
+                        if (\is_int($var)) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    function takesNullableString(string|int $s) : string {
+                        return notNull($s);
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'templateChildClass' => [
+                '<?php
+                    /** @template T */
+                    class Collection {
+                        /**
+                         * @param T $t
+                         */
+                        private function add($t) : void {}
+
+                        /**
+                         * @template TChild as T
+                         * @param TChild $default
+                         *
+                         * @return TChild
+                         */
+                        public function get($default)
+                        {
+                            $this->add($default);
+
+                            return $default;
+                        }
+                    }'
+            ],
+            'isArrayCheckOnTemplated' => [
+                '<?php
+                    /**
+                     * @template TIterable of iterable
+                     */
+                    function toList(iterable $iterable): void {
+                        if (is_array($iterable)) {}
+                    }'
+            ],
+            'SKIPPED-transformNestedTemplateWherePossible' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TArray of non-empty-array<TValue>
+                     * @param TArray $arr
+                     * @return TValue
+                     */
+                    function toList(array $arr): array {
+                        return reset($arr);
+                    }'
+            ],
+            'callTemplatedFunctionWithTemplatedClassString' => [
+                '<?php
+                    /**
+                     * @template Ta of object
+                     * @psalm-param Ta $obj
+                     * @return Ta
+                     */
+                    function a(string $str, object $obj) {
+                        $class = get_class($obj);
+                        return deserialize_object($str, $class);
+                    }
+
+                    /**
+                     * @psalm-template Tb
+                     * @psalm-param class-string<Tb> $type
+                     * @psalm-return Tb
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function deserialize_object(string $data, string $type) {}'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidTemplatedType' => [
@@ -1877,6 +2089,63 @@ class FunctionTemplateTest extends TestCase
 
                     createProxy(A::class, \'Ns\foo\')->bar();',
                 'error_message' => 'InvalidArgument'
+            ],
+            'preventBadArraySubtyping' => [
+                '<?php
+                    /**
+                     * @template T as array{a: int}
+                     * @return T
+                     */
+                    function foo() : array {
+                        $b = ["a" => 123];
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'modifyTemplatedShape' => [
+                '<?php
+                    /**
+                     * @template T as array{a: int}
+                     * @param T $s
+                     * @return T
+                     */
+                    function foo(array $s) : array {
+                        $s["a"] = 123;
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'preventArrayOverwriting' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @return T
+                     */
+                    function foo(array $b) : array {
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'catchIssueInTemplatedFunctionInsideClass' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Container {
+                        /** @param T $value */
+                        public function take($value): void;
+                    }
+
+                    class Foo {
+                        /**
+                         * @template T
+                         * @param Container<T> $c
+                         */
+                        function jsonFromEntityCollection(Container $c): void {
+                            $c->take("foo");
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

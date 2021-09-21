@@ -2,13 +2,14 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\CodeLocation;
-use Psalm\Context;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -25,20 +26,17 @@ use Psalm\Issue\IfThisIsMismatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+
+use function array_reduce;
 use function count;
 use function is_string;
-use function array_reduce;
+use function strtolower;
 
 /**
  * @internal
  */
 class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Expr\MethodCall  $stmt
-     * @param   Context                         $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
@@ -49,20 +47,29 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $context->inside_call = true;
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+        $existing_stmt_var_type = null;
+
+        if (!$real_method_call) {
+            $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+        }
+
+        if ($existing_stmt_var_type) {
+            $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+        } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
         }
 
         $context->inside_call = $was_inside_call;
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-            $was_inside_call = $context->inside_call;
             $context->inside_call = true;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
             }
-            $context->inside_call = $was_inside_call;
         }
+
+        $context->inside_call = $was_inside_call;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_analyzer->getFQCLN()) {
@@ -84,7 +91,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $statements_analyzer
         );
 
-        $class_type = $lhs_var_id && $context->hasVariable($lhs_var_id, $statements_analyzer)
+        $class_type = $lhs_var_id && $context->hasVariable($lhs_var_id)
             ? $context->vars_in_scope[$lhs_var_id]
             : null;
 
@@ -100,6 +107,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt->args,
                 null,
                 null,
+                true,
                 $context
             ) === false) {
                 return false;
@@ -129,6 +137,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $stmt->name instanceof PhpParser\Node\Identifier
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
+            && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
+            && !self::hasNullsafe($stmt->var)
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
@@ -176,6 +186,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $stmt,
                 $codebase,
                 $context,
+                $class_type,
                 $lhs_type_part,
                 $lhs_type_part instanceof Type\Atomic\TNamedObject
                     || $lhs_type_part instanceof Type\Atomic\TTemplateParam
@@ -189,6 +200,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Type\Union
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
+            }
+        }
+        if (!$stmt->args && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {
+            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
+                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
+
+                if (isset($context->vars_in_scope[$method_var_id])) {
+                    $result->return_type = clone $context->vars_in_scope[$method_var_id];
+                } elseif ($result->return_type !== null) {
+                    $context->vars_in_scope[$method_var_id] = $result->return_type;
+                    $context->vars_in_scope[$method_var_id]->has_mutations = false;
+                }
+
+                if ($result->can_memoize) {
+                    /** @psalm-suppress UndefinedPropertyAssignment */
+                    $stmt->memoizable = true;
+                }
             }
         }
 
@@ -408,40 +436,47 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if ($lhs_var_id) {
-            // TODO: Always defined? Always correct?
-            $method_id = $result->existent_method_ids[0];
-            if ($method_id instanceof MethodIdentifier) {
-                // TODO: When should a method have a storage?
-                if ($codebase->methods->hasStorage($method_id)) {
-                    $storage = $codebase->methods->getStorage($method_id);
-                    if ($storage->if_this_is_type
-                        && !TypeAnalyzer::isContainedBy(
-                            $codebase,
-                            $storage->if_this_is_type,
-                            $class_type
-                        )
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new IfThisIsMismatch(
-                                'Class is not ' . (string) $storage->if_this_is_type
-                                . ' as required by psalm-if-this-is',
-                                new CodeLocation($source, $stmt->name)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // keep going
-                        }
-                    }
-                    if ($storage->self_out_type) {
-                        $self_out_type = $storage->self_out_type;
-                        $context->vars_in_scope[$lhs_var_id] = $self_out_type;
+            $method_id = MethodIdentifier::wrap($result->existent_method_ids[0]);
+            // TODO: When should a method have a storage?
+            if ($codebase->methods->hasStorage($method_id)) {
+                $storage = $codebase->methods->getStorage($method_id);
+                if ($storage->if_this_is_type
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $storage->if_this_is_type,
+                        $class_type
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new IfThisIsMismatch(
+                            'Class is not ' . (string) $storage->if_this_is_type
+                            . ' as required by psalm-if-this-is',
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // keep going
                     }
                 }
-            } else {
-                // TODO: When is method_id a string?
+                if ($storage->self_out_type) {
+                    $self_out_type = $storage->self_out_type;
+                    $context->vars_in_scope[$lhs_var_id] = $self_out_type;
+                }
             }
         }
 
         return true;
+    }
+
+    public static function hasNullsafe(PhpParser\Node\Expr $expr) : bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\MethodCall
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            return self::hasNullsafe($expr->var);
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch;
     }
 }

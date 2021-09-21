@@ -3,6 +3,9 @@ namespace Psalm\Internal\Codebase;
 
 class ReferenceMapGenerator
 {
+    /**
+     * @return array<string, string>
+     */
     public static function getReferenceMap(
         \Psalm\Internal\Provider\ClassLikeStorageProvider $classlike_storage_provider,
         array $expected_references

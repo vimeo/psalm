@@ -1,5 +1,8 @@
 <?php
+
 namespace Psalm\Tests;
+
+use const DIRECTORY_SEPARATOR;
 
 class AssertAnnotationTest extends TestCase
 {
@@ -9,7 +12,7 @@ class AssertAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'implictAssertInstanceOfB' => [
@@ -1241,7 +1244,7 @@ class AssertAnnotationTest extends TestCase
             'convertConstStringType' => [
                 '<?php
                     class A {
-                        const T1  = 1;
+                        const T1 = 1;
                         const T2 = 2;
 
                         /**
@@ -1257,20 +1260,275 @@ class AssertAnnotationTest extends TestCase
                         }
                     }
 
-
                     function takesA(int $a) : void {
                         if (A::isValid($a)) {
                             A::bar($a);
                         }
                     }'
             ],
+            'multipleAssertIfTrueOnSameVariable' => [
+                '<?php
+                    class A {}
+
+                    function foo(string|null|A $a) : A {
+                        if (isComputed($a)) {
+                            return $a;
+                        }
+
+                        throw new Exception("bad");
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $value
+                     * @psalm-assert-if-true !string $value
+                     */
+                    function isComputed(mixed $value): bool {
+                        return $value !== null && !is_string($value);
+                    }',
+                [],
+                [],
+                '8.0'
+            ],
+            'assertStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert int self::$q */
+                        private static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertIfTrueStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert-if-true int self::$q */
+                        private static function prefillQ(): bool {
+                            if (rand(0,1)) {
+                                self::$q = 123;
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        public static function getQ(): int {
+                            if (self::prefillQ()) {
+                                return self::$q;
+                            }
+                            return -1;
+                        }
+                    }
+                ?>'
+            ],
+            'assertIfFalseStaticSelf' => [
+                '<?php
+                    final class C {
+                        /** @var null|int */
+                        private static $q = null;
+
+                        /** @psalm-assert-if-false int self::$q */
+                        private static function prefillQ(): bool {
+                            if (rand(0,1)) {
+                                self::$q = 123;
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        public static function getQ(): int {
+                            if (self::prefillQ()) {
+                                return -1;
+                            }
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertStaticByInheritedMethod' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        protected static $q = null;
+
+                        /** @psalm-assert int self::$q */
+                        protected static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+                    }
+
+                    class B extends A {
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertInheritedStatic' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        protected static $q = null;
+                    }
+
+                    class B extends A {
+                        /** @psalm-assert int self::$q */
+                        protected static function prefillQ(): void {
+                            self::$q = 123;
+                        }
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return self::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'assertStaticOnUnrelatedClass' => [
+                '<?php
+                    class A {
+                        /** @var null|int */
+                        public static $q = null;
+                    }
+
+                    class B {
+                        /** @psalm-assert int A::$q */
+                        private static function prefillQ(): void {
+                            A::$q = 123;
+                        }
+                        public static function getQ(): int {
+                            self::prefillQ();
+                            return A::$q;
+                        }
+                    }
+                ?>'
+            ],
+            'implicitComplexAssertionNoCrash' => [
+                '<?php
+                    class Foo {
+                        private string $status = "";
+
+                        public function assertValidStatusTransition(string $status): void
+                        {
+                            if (
+                                ("canceled" === $this->status && "complete" === $status)
+                                || ("canceled" === $this->status && "pending" === $status)
+                                || ("complete" === $this->status && "canceled" === $status)
+                                || ("complete" === $this->status && "pending" === $status)
+                            ) {
+                                throw new \LogicException();
+                            }
+                        }
+                    }'
+            ],
+            'assertArrayIteratorIsIterableOfStrings' => [
+                '<?php
+                    /**
+                     * @psalm-assert iterable<string> $value
+                     * @param mixed $value
+                     *
+                     * @return void
+                     */
+                    function assertAllString($value) : void {
+                        throw new \Exception(\var_export($value, true));
+                    }
+
+                    /**
+                     * @param ArrayIterator<string, mixed> $value
+                     *
+                     * @return ArrayIterator<string, string>
+                     */
+                    function preserveContainerAllArrayIterator($value) {
+                        assertAllString($value);
+                        return $value;
+                    }'
+            ],
+            'implicitReflectionParameterAssertion' => [
+                '<?php
+                    $method = new ReflectionMethod(stdClass::class);
+                    $parameters = $method->getParameters();
+                    foreach ($parameters as $parameter) {
+                        if ($parameter->hasType()) {
+                            $parameter->getType()->__toString();
+                        }
+                    }',
+            ],
+            'withHasTypeCall' => [
+                '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Param {
+                        /**
+                         * @psalm-assert-if-true ReflectionType $this->getType()
+                         */
+                        public function hasType() : bool {
+                            return true;
+                        }
+
+                        public function getType() : ?ReflectionType {
+                            return null;
+                        }
+                    }
+
+                    function takesParam(Param $p) : void {
+                        if ($p->hasType()) {
+                            echo $p->getType()->__toString();
+                        }
+                    }',
+            ],
+            'assertTemplatedIterable' => [
+                '<?php
+                    class Foo{}
+
+                    /**
+                     * @param array<Foo> $foos
+                     * @return array<Foo>
+                     */
+                    function foo(array $foos) : array {
+                        allIsInstanceOf($foos, Foo::class);
+                        return $foos;
+                    }
+
+                    /**
+                     * @template ExpectedType of object
+                     *
+                     * @param mixed $value
+                     * @param class-string<ExpectedType> $class
+                     * @psalm-assert iterable<ExpectedType> $value
+                     */
+                    function allIsInstanceOf($value, $class): void {}'
+            ],
+            'implicitReflectionPropertyAssertion' => [
+                '<?php
+                    $class = new ReflectionClass(stdClass::class);
+                    $properties = $class->getProperties();
+                    foreach ($properties as $property) {
+                        if ($property->hasType()) {
+                            $property->getType()->allowsNull();
+                        }
+                    }',
+                    [],
+                    [],
+                    '7.4'
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'assertInstanceOfMultipleInterfaces' => [
@@ -1455,7 +1713,8 @@ class AssertAnnotationTest extends TestCase
 
                         if ($bar) {}
                     }',
-                'error_message' => 'RedundantCondition - src/somefile.php:19:29',
+                'error_message' => 'RedundantConditionGivenDocblockType - src'
+                                    . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
                 '<?php
@@ -1504,6 +1763,29 @@ class AssertAnnotationTest extends TestCase
                         public static function foo($value);
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'assertNotEmptyOnBool' => [
+                '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert !empty $value
+                     */
+                    function assertNotEmpty($value) : void {}
+
+                    function foo(bool $bar) : void {
+                        assertNotEmpty($bar);
+                        if ($bar) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'withoutHasTypeCall' => [
+                '<?php
+                    $method = new ReflectionMethod(stdClass::class);
+                    $parameters = $method->getParameters();
+                    foreach ($parameters as $parameter) {
+                        $parameter->getType()->__toString();
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
         ];
     }

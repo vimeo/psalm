@@ -1,22 +1,15 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
+ */
 class TTemplateParamClass extends TClassString
 {
     /**
      * @var string
      */
     public $param_name;
-
-    /**
-     * @var string
-     */
-    public $as;
-
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
 
     /**
      * @var string
@@ -35,76 +28,55 @@ class TTemplateParamClass extends TClassString
         $this->defining_class = $defining_class;
     }
 
-    /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
+    public function getKey(bool $include_extra = true): string
+    {
+        return 'class-string<' . $this->param_name . '>';
+    }
+
+    public function __toString(): string
+    {
+        return 'class-string<' . $this->param_name . '>';
+    }
+
+    public function getId(bool $nested = false): string
+    {
+        return 'class-string<' . $this->param_name . ':' . $this->defining_class
+            . ' as ' . ($this->as_type ? $this->as_type->getId() : $this->as) . '>';
+    }
+
+    public function getAssertionString(bool $exact = false): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
 
     /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return 'class-string<' . $this->param_name . '>';
-    }
-
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
-    {
-        return 'class-string<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as . '>';
-    }
-
-    /**
-     * @return string
-     */
-    public function getAssertionString()
-    {
-        return 'class-string<' . $this->param_name . '>';
-    }
-
-    /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return string|null
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return 'string';
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }
 
     /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  bool          $use_phpdoc_format
+     * @param  array<lowercase-string, string> $aliased_classes
      *
-     * @return string
      */
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) {
+    ): string {
         return $this->param_name . '::class';
     }
 

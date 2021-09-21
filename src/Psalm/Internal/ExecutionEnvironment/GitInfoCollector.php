@@ -1,13 +1,14 @@
 <?php
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use Psalm\SourceControl\Git\CommitInfo;
+use Psalm\SourceControl\Git\GitInfo;
+use Psalm\SourceControl\Git\RemoteInfo;
+
 use function array_keys;
 use function array_unique;
 use function count;
 use function explode;
-use Psalm\SourceControl\Git\CommitInfo;
-use Psalm\SourceControl\Git\GitInfo;
-use Psalm\SourceControl\Git\RemoteInfo;
 use function range;
 use function strpos;
 use function trim;
@@ -98,9 +99,9 @@ class GitInfoCollector
      *
      * @throws \RuntimeException
      *
-     * @return RemoteInfo[]
+     * @return list<RemoteInfo>
      */
-    protected function collectRemotes()
+    protected function collectRemotes(): array
     {
         $remotesResult = $this->executor->execute('git remote -v');
 
@@ -113,7 +114,7 @@ class GitInfoCollector
 
         foreach ($remotesResult as $result) {
             if (strpos($result, ' ') !== false) {
-                list($remote) = explode(' ', $result, 2);
+                [$remote] = explode(' ', $result, 2);
 
                 $results[] = $remote;
             }
@@ -127,7 +128,7 @@ class GitInfoCollector
 
         foreach ($results as $result) {
             if (strpos($result, "\t") !== false) {
-                list($name, $url) = explode("\t", $result, 2);
+                [$name, $url] = explode("\t", $result, 2);
 
                 $remote = new RemoteInfo();
                 $remotes[] = $remote->setName(trim($name))->setUrl(trim($url));

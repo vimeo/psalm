@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use const DIRECTORY_SEPARATOR;
-
 class PureAnnotationTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
@@ -11,24 +9,18 @@ class PureAnnotationTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'simplePureFunction' => [
                 '<?php
                     namespace Bar;
 
-                    class A {
-                        public int $a = 5;
-                    }
-
                     /** @psalm-pure */
-                    function filterOdd(int $i, A $a) : ?int {
-                        if ($i % 2 === 0 || $a->a === 2) {
+                    function filterOdd(int $i) : ?int {
+                        if ($i % 2 === 0) {
                             return $i;
                         }
-
-                        $a = new A();
 
                         return null;
                     }',
@@ -166,7 +158,7 @@ class PureAnnotationTest extends TestCase
                         }
                     }',
             ],
-            'sortFunction' => [
+            'sortFunctionPure' => [
                 '<?php
                     /**
                      * @psalm-pure
@@ -181,6 +173,38 @@ class PureAnnotationTest extends TestCase
 
                         return $ar[0] ?? 0;
                     }',
+            ],
+            'exitFunctionWithNoArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit;
+                    }
+                ',
+            ],
+            'exitFunctionWithIntegerArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit(0);
+                    }
+                ',
+            ],
+            'dieFunctionWithNoArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die;
+                    }
+                ',
+            ],
+            'dieFunctionWithIntegerArgumentIsPure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die(0);
+                    }
+                ',
             ],
             'allowPureToString' => [
                 '<?php
@@ -341,17 +365,61 @@ class PureAnnotationTest extends TestCase
                         public function foo() : void {}
 
                         public function doSomething(): void {
-                            if ($this->checkNotNullNested() && $this->other->foo()) {}
+                            $this->checkNotNullNested();
+                            $this->other->foo();
                         }
+                    }'
+            ],
+            'allowPropertyAccessOnImmutableClass' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public int $a;
+
+                        public function __construct(int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if ($a->a % 2 === 0) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
+            'allowPureInConstrucctorThis' => [
+                '<?php
+                    class Port {
+                       private int $portNumber;
+
+                       public function __construct(int $portNumber) {
+                          if (!$this->isValidPort($portNumber)) {
+                             throw new Exception();
+                          }
+
+                          $this->portNumber = $portNumber;
+                       }
+
+                       /**
+                        * @psalm-pure
+                        */
+                       private function isValidPort(int $portNumber): bool {
+                          return $portNumber >= 1 && $portNumber <= 1000;
+                       }
                     }'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'impurePropertyAssignment' => [
@@ -364,7 +432,7 @@ class PureAnnotationTest extends TestCase
 
                     /** @psalm-pure */
                     function filterOdd(int $i, A $a) : ?int {
-                        $a->a++;
+                        $a->a = $i;
 
                         if ($i % 2 === 0 || $a->a === 2) {
                             return $i;
@@ -505,6 +573,33 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
+            'printFunctionIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        print("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'exitFunctionWithNonIntegerArgumentIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        exit("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'dieFunctionWithNonIntegerArgumentIsImpure' => [
+                '<?php
+                    /** @psalm-pure */
+                    function foo(): void {
+                        die("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'impureByRef' => [
                 '<?php
                     /**
@@ -597,6 +692,117 @@ class PureAnnotationTest extends TestCase
                         return count($countable);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'propertyFetchIsNotPure' => [
+                '<?php
+                    class A {
+                        public string $foo = "hello";
+
+                        /** @psalm-pure */
+                        public static function getFoo(A $a) : string {
+                            return $a->foo;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'preventPropertyAccessOnMutableClass' => [
+                '<?php
+                    namespace Bar;
+
+                    class A {
+                        public int $a;
+
+                        public function __construct(int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if ($a->a % 2 === 0) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'preventIssetOnMutableClassKnownProperty' => [
+                '<?php
+                    namespace Bar;
+
+                    class A {
+                        public ?int $a;
+
+                        public function __construct(?int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if (isset($a->a)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'preventIssetOnMutableClassUnknownProperty' => [
+                '<?php
+                    namespace Bar;
+
+                    class A {
+                        public ?int $a;
+
+                        public function __construct(?int $a) {
+                            $this->a = $a;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function filterOdd(A $a) : bool {
+                        if (isset($a->b)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'impureThis' => [
+                '<?php
+                    class A {
+                        public int $a = 5;
+
+                        /**
+                         * @psalm-pure
+                         */
+                        public function foo() : self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'iterableIsNotPure' => [
+                '<?php
+                    namespace Test;
+
+                    /**
+                     * @param iterable<string> $pieces
+                     *
+                     * @psalm-pure
+                     */
+                    function foo(iterable $pieces): string
+                    {
+                        foreach ($pieces as $piece) {
+                            return $piece;
+                        }
+
+                        return "jello";
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
         ];
     }

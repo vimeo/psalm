@@ -30,7 +30,7 @@ class ArrayType
      */
     public static function infer(Type\Atomic $type): ?self
     {
-        if ($type instanceof Type\Atomic\ObjectLike) {
+        if ($type instanceof Type\Atomic\TKeyedArray) {
             return new self(
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),

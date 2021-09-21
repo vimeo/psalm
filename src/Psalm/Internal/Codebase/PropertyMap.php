@@ -9,23 +9,23 @@ use function strtolower;
 class PropertyMap
 {
     /**
-     * @var array<string, array<string, string>>|null
+     * @var array<lowercase-string, array<string, string>>|null
      */
     private static $property_map;
 
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<string, string>>
+     * @return array<lowercase-string, array<string, string>>
      */
-    public static function getPropertyMap()
+    public static function getPropertyMap(): array
     {
         if (self::$property_map !== null) {
             return self::$property_map;
         }
 
         /** @var array<string, array<string, string>> */
-        $property_map = require_once(__DIR__ . '/../PropertyMap.php');
+        $property_map = require(\dirname(__DIR__, 4) . '/dictionaries/PropertyMap.php');
 
         self::$property_map = [];
 
@@ -37,12 +37,7 @@ class PropertyMap
         return self::$property_map;
     }
 
-    /**
-     * @param   string $class_name
-     *
-     * @return  bool
-     */
-    public static function inPropertyMap($class_name)
+    public static function inPropertyMap(string $class_name): bool
     {
         return isset(self::getPropertyMap()[strtolower($class_name)]);
     }

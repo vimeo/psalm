@@ -1,15 +1,12 @@
 <?php
 namespace Psalm\Report;
 
-use function htmlspecialchars;
 use Psalm\Report;
+
 use function sprintf;
 
 class CheckstyleReport extends Report
 {
-    /**
-     * {@inheritdoc}
-     */
     public function create(): string
     {
         $output = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -23,13 +20,13 @@ class CheckstyleReport extends Report
                 $issue_data->message
             );
 
-            $output .= '<file name="' . htmlspecialchars($issue_data->file_name) . '">' . "\n";
+            $output .= '<file name="' . $this->xmlEncode($issue_data->file_name) . '">' . "\n";
             $output .= ' ';
             $output .= '<error';
             $output .= ' line="' . $issue_data->line_from . '"';
             $output .= ' column="' . $issue_data->column_from . '"';
             $output .= ' severity="' . $issue_data->severity . '"';
-            $output .= ' message="' . htmlspecialchars($message) . '"';
+            $output .= ' message="' . $this->xmlEncode($message) . '"';
             $output .= '/>' . "\n";
             $output .= '</file>' . "\n";
         }

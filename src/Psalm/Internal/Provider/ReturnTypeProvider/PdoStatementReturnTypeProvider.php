@@ -1,35 +1,21 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\StatementsSource;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 
-class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
+class PdoStatementReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {
         return ['PDOStatement'];
     }
 
-    /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     *
-     * @return ?Type\Union
-     */
-    public static function getMethodReturnType(
-        StatementsSource $source,
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location,
-        array $template_type_parameters = null,
-        string $called_fq_classlike_name = null,
-        string $called_method_name_lowercase = null
-    ) {
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    {
+        $source = $event->getSource();
+        $call_args = $event->getCallArgs();
+        $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'fetch'
             && \class_exists('PDO')
             && isset($call_args[0])
@@ -39,20 +25,26 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
             $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
 
             switch ($fetch_mode) {
-                case \PDO::FETCH_ASSOC: // array<string,scalar>|false
+                case \PDO::FETCH_ASSOC: // array<string,scalar|null>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getString(),
-                            Type::getScalar(),
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
                         ]),
                         new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_BOTH: // array<array-key,scalar>|false
+                case \PDO::FETCH_BOTH: // array<array-key,scalar|null>|false
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             Type::getArrayKey(),
-                            Type::getScalar()
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
                         ]),
                         new Type\Atomic\TFalse(),
                     ]);
@@ -86,9 +78,14 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
                         new Type\Atomic\TFalse(),
                     ]);
 
-                case \PDO::FETCH_NUM: // list<scalar>|false
+                case \PDO::FETCH_NUM: // list<scalar|null>|false
                     return new Type\Union([
-                        new Type\Atomic\TList(Type::getScalar()),
+                        new Type\Atomic\TList(
+                            new Type\Union([
+                                new Type\Atomic\TScalar(),
+                                new Type\Atomic\TNull()
+                            ])
+                        ),
                         new Type\Atomic\TFalse(),
                     ]);
 
@@ -99,5 +96,7 @@ class PdoStatementReturnTypeProvider implements \Psalm\Plugin\Hook\MethodReturnT
                     ]);
             }
         }
+
+        return null;
     }
 }

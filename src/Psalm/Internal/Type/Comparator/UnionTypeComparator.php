@@ -3,15 +3,17 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
-use function get_class;
+use Psalm\Type\Atomic\TTemplateParam;
+
 use function array_merge;
 
 /**
@@ -29,13 +31,17 @@ class UnionTypeComparator
         bool $ignore_null = false,
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
-        bool $allow_interface_equality = false
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true
     ) : bool {
         if ($union_comparison_result) {
             $union_comparison_result->scalar_type_match_found = true;
         }
 
-        if ($input_type->possibly_undefined && !$container_type->possibly_undefined) {
+        if ($input_type->possibly_undefined
+            && !$input_type->possibly_undefined_from_try
+            && !$container_type->possibly_undefined
+        ) {
             return false;
         }
 
@@ -64,6 +70,28 @@ class UnionTypeComparator
                 continue;
             }
 
+            if ($input_type_part instanceof Type\Atomic\TClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $codebase,
+                    $input_type_part,
+                    $input_type_part->fq_classlike_name,
+                    $input_type_part->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    if (!$expanded instanceof Atomic\TClassConstant) {
+                        $input_atomic_types[] = $expanded;
+                        continue;
+                    }
+                } else {
+                    $input_atomic_types = array_merge($expanded, $input_atomic_types);
+                    continue;
+                }
+            }
+
             $type_match_found = false;
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
@@ -79,6 +107,15 @@ class UnionTypeComparator
                 && ($container_type->hasInt() && $container_type->hasString())
             ) {
                 continue;
+            }
+
+            if ($input_type_part instanceof Atomic\TIntRange && $container_type->hasInt()) {
+                if (IntegerRangeComparator::isContainedByUnion(
+                    $input_type_part,
+                    $container_type
+                )) {
+                    continue;
+                }
             }
 
             foreach ($container_type->getAtomicTypes() as $container_type_part) {
@@ -107,7 +144,7 @@ class UnionTypeComparator
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
-                    true,
+                    $allow_float_int_equality,
                     $atomic_comparison_result
                 );
 
@@ -258,15 +295,16 @@ class UnionTypeComparator
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @param  ?Type\Union  $input_type
-     * @param  Type\Union   $container_type
      *
-     * @return bool
      */
     public static function isContainedByInPhp(
         ?Type\Union $input_type,
         Type\Union $container_type
-    ) {
+    ): bool {
+        if ($container_type->isMixed()) {
+            return true;
+        }
+
         if (!$input_type) {
             return false;
         }
@@ -297,69 +335,16 @@ class UnionTypeComparator
     }
 
     /**
-     * Used for comparing docblock types to signature types before we know about all types
-     *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
-     */
-    public static function isSimplyContainedBy(
-        Type\Union $input_type,
-        Type\Union $container_type
-    ) : bool {
-        if ($input_type->getId() === $container_type->getId()) {
-            return true;
-        }
-
-        if ($input_type->isNullable() && !$container_type->isNullable()) {
-            return false;
-        }
-
-        $input_type_not_null = clone $input_type;
-        $input_type_not_null->removeType('null');
-
-        $container_type_not_null = clone $container_type;
-        $container_type_not_null->removeType('null');
-
-        foreach ($input_type->getAtomicTypes() as $input_key => $input_type_part) {
-            foreach ($container_type->getAtomicTypes() as $container_key => $container_type_part) {
-                if (get_class($container_type_part) === TNamedObject::class
-                    && $input_type_part instanceof TNamedObject
-                    && $input_type_part->value === $container_type_part->value
-                ) {
-                    continue 2;
-                }
-
-                if ($input_key === $container_key) {
-                    continue 2;
-                }
-            }
-
-            return false;
-        }
-
-
-
-        return true;
-    }
-
-    /**
      * Does the input param type match the given param type
-     *
-     * @param  Type\Union   $input_type
-     * @param  Type\Union   $container_type
-     * @param  bool         $ignore_null
-     * @param  bool         $ignore_false
-     *
-     * @return bool
      */
     public static function canBeContainedBy(
         Codebase $codebase,
         Type\Union $input_type,
         Type\Union $container_type,
-        $ignore_null = false,
-        $ignore_false = false,
+        bool $ignore_null = false,
+        bool $ignore_false = false,
         array &$matching_input_keys = []
-    ) {
+    ): bool {
         if ($container_type->hasMixed()) {
             return true;
         }
@@ -402,13 +387,13 @@ class UnionTypeComparator
     /**
      * Can any part of the $type1 be equal to any part of $type2
      *
-     * @return bool
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
         Type\Union $type1,
-        Type\Union $type2
-    ) {
+        Type\Union $type2,
+        bool $allow_interface_equality = true
+    ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
         }
@@ -419,29 +404,37 @@ class UnionTypeComparator
 
         foreach ($type1->getAtomicTypes() as $type1_part) {
             foreach ($type2->getAtomicTypes() as $type2_part) {
-                $first_comparison_result = new TypeComparisonResult();
-                $second_comparison_result = new TypeComparisonResult();
+                //special cases for TIntRange because it can contain a part of the other type.
+                //For exemple int<0,1> and positive-int can be identical but none contain the other
+                if (($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TPositiveInt)) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        TIntRange::convertToIntRange($type2_part),
+                        $type1_part
+                    );
+                    return $intersection_range !== null;
+                }
 
-                $either_contains = (AtomicTypeComparator::isContainedBy(
+                if ($type2_part instanceof Atomic\TIntRange && $type1_part instanceof Atomic\TPositiveInt) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        TIntRange::convertToIntRange($type1_part),
+                        $type2_part
+                    );
+                    return $intersection_range !== null;
+                }
+
+                if ($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TIntRange) {
+                    $intersection_range = TIntRange::intersectIntRanges(
+                        $type1_part,
+                        $type2_part
+                    );
+                    return $intersection_range !== null;
+                }
+
+                $either_contains = AtomicTypeComparator::canBeIdentical(
                     $codebase,
                     $type1_part,
                     $type2_part,
-                    true,
-                    false,
-                    $first_comparison_result
-                )
-                    && !$first_comparison_result->to_string_cast
-                ) || (AtomicTypeComparator::isContainedBy(
-                    $codebase,
-                    $type2_part,
-                    $type1_part,
-                    true,
-                    false,
-                    $second_comparison_result
-                )
-                    && !$second_comparison_result->to_string_cast
-                ) || ($first_comparison_result->type_coerced
-                    && $second_comparison_result->type_coerced
+                    $allow_interface_equality
                 );
 
                 if ($either_contains) {

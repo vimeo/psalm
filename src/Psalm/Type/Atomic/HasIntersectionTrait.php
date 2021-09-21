@@ -1,14 +1,14 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use function array_map;
-use function implode;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\StatementsSource;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+
+use function array_map;
+use function implode;
 
 trait HasIntersectionTrait
 {
@@ -18,7 +18,7 @@ trait HasIntersectionTrait
     public $extra_types;
 
     /**
-     * @param  array<string, string> $aliased_classes
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     private function getNamespacedIntersectionTypes(
         ?string $namespace,
@@ -43,7 +43,7 @@ trait HasIntersectionTrait
                     $aliased_classes,
                     $this_class,
                     $use_phpdoc_format
-                ) {
+                ): string {
                     return $extra_type->toNamespacedString(
                         $namespace,
                         $aliased_classes,
@@ -84,16 +84,18 @@ trait HasIntersectionTrait
 
         foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TTemplateParam
-                && isset($template_result->upper_bounds[$extra_type->param_name][$extra_type->defining_class])
+                && isset($template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class])
             ) {
-                $template_type = clone $template_result->upper_bounds
-                    [$extra_type->param_name][$extra_type->defining_class][0];
+                $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class],
+                    $codebase
+                );
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[$template_type_part->getKey()] = clone $template_type_part;
                     } elseif ($template_type_part instanceof TTemplateParam) {
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                        $new_types[$template_type_part->getKey()] = clone $template_type_part;
                     }
                 }
             } else {

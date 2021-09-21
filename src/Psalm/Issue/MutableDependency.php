@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MutableDependency extends CodeIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 222;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 222;
 }

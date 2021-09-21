@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use function microtime;
-use PhpParser;
-
 class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
 {
     /**
@@ -15,28 +12,17 @@ class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
     {
     }
 
-    /**
-     * @return int
-     */
-    public function getLastRun()
+    public function getLastRun(string $psalm_version): int
     {
         return $this->last_run;
     }
 
-    /**
-     * @param float $start_time
-     *
-     * @return void
-     */
-    public function processSuccessfulRun($start_time)
+    public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $this->last_run = (int) $start_time;
     }
 
-    /**
-     * @return bool
-     */
-    public function canDiffFiles()
+    public function canDiffFiles(): bool
     {
         return $this->last_run > 0;
     }

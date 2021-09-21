@@ -2,23 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IssueBuffer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Node\Expr\VirtualIsset;
+use Psalm\Node\Expr\VirtualTernary;
+use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Type;
-use Psalm\Type\Algebra;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Type\AssertionReconciler;
-use function array_merge;
-use function array_intersect_key;
-use function array_values;
-use function array_map;
-use function array_keys;
-use function preg_match;
-use function preg_quote;
+
+use function substr;
 
 /**
  * @internal
@@ -27,250 +19,69 @@ class CoalesceAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\BinaryOp $stmt,
+        PhpParser\Node\Expr\BinaryOp\Coalesce $stmt,
         Context $context
     ) : bool {
-        $t_if_context = clone $context;
+        $left_expr = $stmt->left;
 
-        $codebase = $statements_analyzer->getCodebase();
+        $root_expr = $left_expr;
 
-        $if_clauses = Algebra::getFormula(
-            \spl_object_id($stmt),
-            $stmt,
-            $context->self,
-            $statements_analyzer,
-            $codebase
+        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $root_expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $root_expr = $root_expr->var;
+        }
+
+        if ($root_expr instanceof PhpParser\Node\Expr\FuncCall
+            || $root_expr instanceof PhpParser\Node\Expr\MethodCall
+            || $root_expr instanceof PhpParser\Node\Expr\StaticCall
+            || $root_expr instanceof PhpParser\Node\Expr\Cast
+            || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
+
+            $cloned = clone $context;
+            $cloned->inside_isset = true;
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
+
+            $condition_type = $statements_analyzer->node_data->getType($left_expr) ?: Type::getMixed();
+
+            if ($root_expr !== $left_expr) {
+                $condition_type->possibly_undefined = true;
+            }
+
+            $context->vars_in_scope[$left_var_id] = $condition_type;
+
+            $left_expr = new VirtualVariable(
+                substr($left_var_id, 1),
+                $left_expr->getAttributes()
+            );
+        }
+
+        $ternary = new VirtualTernary(
+            new VirtualIsset(
+                [$left_expr],
+                $stmt->left->getAttributes()
+            ),
+            $left_expr,
+            $stmt->right,
+            $stmt->getAttributes()
         );
 
-        $mixed_var_ids = [];
+        $old_node_data = $statements_analyzer->node_data;
 
-        foreach ($context->vars_in_scope as $var_id => $type) {
-            if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
+        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
-        $if_clauses = array_values(
-            array_map(
-                /**
-                 * @return \Psalm\Internal\Clause
-                 */
-                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids) {
-                    $keys = array_keys($c->possibilities);
+        $ternary_type = $statements_analyzer->node_data->getType($ternary) ?: Type::getMixed();
 
-                    $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+        $statements_analyzer->node_data = $old_node_data;
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new \Psalm\Internal\Clause([], true);
-                            }
-                        }
-                    }
-
-                    return $c;
-                },
-                $if_clauses
-            )
-        );
-
-        $ternary_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
-
-        $negated_clauses = Algebra::negateFormula($if_clauses);
-
-        $negated_if_types = Algebra::getTruthsFromFormula($negated_clauses);
-
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses);
-
-        $changed_var_ids = [];
-
-        if ($reconcilable_if_types) {
-            $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-                $reconcilable_if_types,
-                [],
-                $t_if_context->vars_in_scope,
-                $changed_var_ids,
-                [],
-                $statements_analyzer,
-                [],
-                $t_if_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left)
-            );
-
-            foreach ($context->vars_in_scope as $var_id => $_) {
-                if (isset($t_if_vars_in_scope_reconciled[$var_id])) {
-                    $t_if_context->vars_in_scope[$var_id] = $t_if_vars_in_scope_reconciled[$var_id];
-                }
-            }
-        }
-
-        if (!self::hasArrayDimFetch($stmt->left)) {
-            // check first if the variable was good
-
-            IssueBuffer::startRecording();
-
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, clone $context);
-
-            IssueBuffer::clearRecordingLevel();
-            IssueBuffer::stopRecording();
-
-            $naive_type = $statements_analyzer->node_data->getType($stmt->left);
-
-            if ($naive_type
-                && !$naive_type->possibly_undefined
-                && !$naive_type->hasMixed()
-                && !$naive_type->isNullable()
-            ) {
-                $var_id = ExpressionIdentifier::getVarId($stmt->left, $context->self);
-
-                if (!$var_id
-                    || ($var_id !== '$_SESSION' && $var_id !== '$_SERVER' && !isset($changed_var_ids[$var_id]))
-                ) {
-                    if ($naive_type->from_docblock) {
-                        if (IssueBuffer::accepts(
-                            new \Psalm\Issue\DocblockTypeContradiction(
-                                $naive_type->getId() . ' does not contain null',
-                                new CodeLocation($statements_analyzer, $stmt->left)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new \Psalm\Issue\TypeDoesNotContainType(
-                                $naive_type->getId() . ' is always defined and non-null',
-                                new CodeLocation($statements_analyzer, $stmt->left)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-            }
-        }
-
-        $t_if_context->inside_isset = true;
-
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $t_if_context) === false) {
-            return false;
-        }
-
-        $t_if_context->inside_isset = false;
-
-        foreach ($t_if_context->vars_in_scope as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $context->vars_in_scope[$var_id],
-                    $type,
-                    $codebase
-                );
-            } else {
-                $context->vars_in_scope[$var_id] = $type;
-            }
-        }
-
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $t_if_context->referenced_var_ids
-        );
-
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = array_intersect_key(
-                $t_if_context->unreferenced_vars,
-                $context->unreferenced_vars
-            );
-        }
-
-        $t_else_context = clone $context;
-
-        if ($negated_if_types) {
-            $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-                $negated_if_types,
-                [],
-                $t_else_context->vars_in_scope,
-                $changed_var_ids,
-                [],
-                $statements_analyzer,
-                [],
-                $t_else_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->right)
-            );
-
-            $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
-        }
-
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $t_else_context) === false) {
-            return false;
-        }
-
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $t_else_context->referenced_var_ids
-        );
-
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = array_intersect_key(
-                $t_else_context->unreferenced_vars,
-                $context->unreferenced_vars
-            );
-        }
-
-        $lhs_type = null;
-
-        if ($stmt_left_type = $statements_analyzer->node_data->getType($stmt->left)) {
-            $if_return_type_reconciled = AssertionReconciler::reconcile(
-                'isset',
-                clone $stmt_left_type,
-                '',
-                $statements_analyzer,
-                $context->inside_loop,
-                [],
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
-            );
-
-            $lhs_type = clone $if_return_type_reconciled;
-        }
-
-        $stmt_right_type = null;
-
-        if (!$lhs_type || !($stmt_right_type = $statements_analyzer->node_data->getType($stmt->right))) {
-            $stmt_type = Type::getMixed();
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-        } else {
-            $stmt_type = Type::combineUnionTypes(
-                $lhs_type,
-                $stmt_right_type,
-                $codebase
-            );
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-        }
+        $statements_analyzer->node_data->setType($stmt, $ternary_type);
 
         return true;
-    }
-
-    private static function hasArrayDimFetch(PhpParser\Node\Expr $expr) : bool
-    {
-        if ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return true;
-        }
-
-        if ($expr instanceof PhpParser\Node\Expr\PropertyFetch
-            || $expr instanceof PhpParser\Node\Expr\MethodCall
-        ) {
-            return self::hasArrayDimFetch($expr->var);
-        }
-
-        return false;
     }
 }

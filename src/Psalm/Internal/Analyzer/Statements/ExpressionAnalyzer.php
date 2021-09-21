@@ -2,41 +2,39 @@
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Config;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
-use Psalm\Config;
-use Psalm\Context;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Type;
+
+use function get_class;
 use function in_array;
 use function strtolower;
-use function get_class;
 
 /**
  * @internal
  */
 class ExpressionAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer   $statements_analyzer
-     * @param   PhpParser\Node\Expr $stmt
-     * @param   Context             $context
-     * @param   bool                $array_assignment
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
         bool $array_assignment = false,
-        Context $global_context = null,
+        ?Context $global_context = null,
         bool $from_stmt = false
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
@@ -65,38 +63,41 @@ class ExpressionAnalyzer
             $assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
             if ($assertions === null) {
+                $negate = $context->inside_negation;
+
+                while ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+                    $stmt = $stmt->expr;
+                    $negate = !$negate;
+                }
+
                 Expression\AssertionFinder::scrapeAssertions(
                     $stmt,
                     $context->self,
                     $statements_analyzer,
                     $codebase,
-                    false,
+                    $negate,
                     true,
                     false
                 );
             }
         }
 
-        $plugin_classes = $codebase->config->after_expression_checks;
+        $event = new AfterExpressionAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            []
+        );
 
-        if ($plugin_classes) {
-            $file_manipulations = [];
+        if ($codebase->config->eventDispatcher->dispatchAfterExpressionAnalysis($event) === false) {
+            return false;
+        }
 
-            foreach ($plugin_classes as $plugin_fq_class_name) {
-                if ($plugin_fq_class_name::afterExpressionAnalysis(
-                    $stmt,
-                    $context,
-                    $statements_analyzer,
-                    $codebase,
-                    $file_manipulations
-                ) === false) {
-                    return false;
-                }
-            }
+        $file_manipulations = $event->getFileReplacements();
 
-            if ($file_manipulations) {
-                FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-            }
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
         return true;
@@ -341,6 +342,29 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                foreach ($stmt->parts as $part) {
+                    if ($part instanceof PhpParser\Node\Expr\Variable) {
+                        if (self::analyze($statements_analyzer, $part, $context) === false) {
+                            break;
+                        }
+
+                        $expr_type = $statements_analyzer->node_data->getType($part);
+                        if ($expr_type === null) {
+                            break;
+                        }
+
+                        foreach ($expr_type->parent_nodes as $parent_node) {
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $parent_node,
+                                new DataFlowNode('variable-use', 'variable use', null),
+                                'variable-use'
+                            );
+                        }
+                    }
+                }
+            }
+
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
                     'Use of shell_exec',
@@ -373,6 +397,24 @@ class ExpressionAnalyzer
             return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
+        $php_major_version = $statements_analyzer->getCodebase()->php_major_version;
+        $php_minor_version = $statements_analyzer->getCodebase()->php_minor_version;
+
+        if ($stmt instanceof PhpParser\Node\Expr\Match_ && $php_major_version >= 8) {
+            return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $php_major_version >= 8) {
+            return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if (($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
+            && $php_major_version >= 8
+        ) {
+            return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Error) {
             // do nothing
             return true;
@@ -380,7 +422,8 @@ class ExpressionAnalyzer
 
         if (IssueBuffer::accepts(
             new UnrecognizedExpression(
-                'Psalm does not understand ' . get_class($stmt),
+                'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
+                $php_major_version . ' ' . $php_minor_version,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             ),
             $statements_analyzer->getSuppressedIssues()
@@ -391,12 +434,7 @@ class ExpressionAnalyzer
         return false;
     }
 
-    /**
-     * @param  string  $fq_class_name
-     *
-     * @return bool
-     */
-    public static function isMock($fq_class_name)
+    public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
     }

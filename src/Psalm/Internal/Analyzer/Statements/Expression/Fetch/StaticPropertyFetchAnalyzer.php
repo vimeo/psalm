@@ -2,33 +2,34 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPropertyFetch;
+use Psalm\Node\Expr\VirtualStaticPropertyFetch;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function strtolower;
-use function in_array;
+
 use function count;
 use function explode;
+use function in_array;
+use function strtolower;
 
 /**
  * @internal
  */
 class StaticPropertyFetchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer                       $statements_analyzer
-     * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
-     * @param   Context                                 $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
@@ -38,8 +39,6 @@ class StaticPropertyFetchAnalyzer
             self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
             return true;
         }
-
-        $fq_class_name = null;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -77,7 +76,8 @@ class StaticPropertyFetchAnalyzer
             ) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
+                    'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                    false
                 );
             }
 
@@ -97,8 +97,7 @@ class StaticPropertyFetchAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues(),
-                    false
+                    $statements_analyzer->getSuppressedIssues()
                 ) !== true) {
                     return false;
                 }
@@ -186,9 +185,15 @@ class StaticPropertyFetchAnalyzer
             )) {
                 // fall through
             }
+        } elseif ($statements_analyzer->getSource()
+                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource()->track_mutations
+        ) {
+            $statements_analyzer->getSource()->inferred_has_mutation = true;
+            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
-        if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
+        if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
             // we don't need to check anything
@@ -250,16 +255,6 @@ class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        if (ClassLikeAnalyzer::checkPropertyVisibility(
-            $property_id,
-            $context,
-            $statements_analyzer,
-            new CodeLocation($statements_analyzer->getSource(), $stmt),
-            $statements_analyzer->getSuppressedIssues()
-        ) === false) {
-            return false;
-        }
-
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $prop_name,
             true,
@@ -267,6 +262,51 @@ class StaticPropertyFetchAnalyzer
         );
 
         if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+        $property = $class_storage->properties[$prop_name];
+
+        if (!$property->is_static) {
+            if ($context->inside_isset) {
+                return true;
+            }
+
+            if ($context->inside_assignment) {
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyAssignment(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new UndefinedPropertyFetch(
+                        'Static property ' . $property_id . ' is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            return true;
+        }
+
+        if (ClassLikeAnalyzer::checkPropertyVisibility(
+            $property_id,
+            $context,
+            $statements_analyzer,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            $statements_analyzer->getSuppressedIssues()
+        ) === false) {
             return false;
         }
 
@@ -284,12 +324,12 @@ class StaticPropertyFetchAnalyzer
             if (!$moved_class) {
                 foreach ($codebase->property_transforms as $original_pattern => $transformation) {
                     if ($declaring_property_id === $original_pattern) {
-                        list($old_declaring_fq_class_name) = explode('::$', $declaring_property_id);
-                        list($new_fq_class_name, $new_property_name) = explode('::$', $transformation);
+                        [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
+                        [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
 
                         $file_manipulations = [];
 
-                        if (strtolower($new_fq_class_name) !== strtolower($old_declaring_fq_class_name)) {
+                        if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
                             $file_manipulations[] = new \Psalm\FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
@@ -313,9 +353,6 @@ class StaticPropertyFetchAnalyzer
                 }
             }
         }
-
-        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
-        $property = $class_storage->properties[$prop_name];
 
         if ($var_id) {
             if ($property->type) {
@@ -357,11 +394,17 @@ class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) : void {
+        $was_inside_general_use = $context->inside_general_use;
+
+        $context->inside_general_use = true;
+
         ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt_class,
             $context
         );
+
+        $context->inside_general_use = $was_inside_general_use;
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
 
@@ -382,12 +425,12 @@ class StaticPropertyFetchAnalyzer
                     : null);
 
             if ($string_type) {
-                $new_stmt_name = new PhpParser\Node\Name\FullyQualified(
+                $new_stmt_name = new VirtualFullyQualified(
                     $string_type,
                     $stmt_class->getAttributes()
                 );
 
-                $fake_static_property = new PhpParser\Node\Expr\StaticPropertyFetch(
+                $fake_static_property = new VirtualStaticPropertyFetch(
                     $new_stmt_name,
                     $stmt->name,
                     $stmt->getAttributes()
@@ -400,14 +443,14 @@ class StaticPropertyFetchAnalyzer
             } else {
                 $fake_var_name = '__fake_var_' . (string) $stmt->getAttribute('startFilePos');
 
-                $fake_var = new PhpParser\Node\Expr\Variable(
+                $fake_var = new VirtualVariable(
                     $fake_var_name,
                     $stmt_class->getAttributes()
                 );
 
                 $context->vars_in_scope['$' . $fake_var_name] = new Type\Union([$class_atomic_type]);
 
-                $fake_instance_property = new PhpParser\Node\Expr\PropertyFetch(
+                $fake_instance_property = new VirtualPropertyFetch(
                     $fake_var,
                     $stmt->name,
                     $stmt->getAttributes()
@@ -416,7 +459,9 @@ class StaticPropertyFetchAnalyzer
                 InstancePropertyFetchAnalyzer::analyze(
                     $statements_analyzer,
                     $fake_instance_property,
-                    $context
+                    $context,
+                    false,
+                    true
                 );
 
                 $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property)

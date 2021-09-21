@@ -1,44 +1,35 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\CodeLocation;
-use Psalm\StatementsSource;
-
+/**
+ * Denotes the `resource` type (e.g. a file handle).
+ */
 class TResource extends \Psalm\Type\Atomic
 {
-    public function __toString()
+    public function __toString(): string
+    {
+        return 'resource';
+    }
+
+    public function getKey(bool $include_extra = true): string
     {
         return 'resource';
     }
 
     /**
-     * @return string
-     */
-    public function getKey(bool $include_extra = true)
-    {
-        return 'resource';
-    }
-
-    /**
-     * @param  string|null   $namespace
-     * @param  array<string> $aliased_classes
-     * @param  string|null   $this_class
-     * @param  int           $php_major_version
-     * @param  int           $php_minor_version
-     *
-     * @return null|string
+     * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
-        $namespace,
+        ?string $namespace,
         array $aliased_classes,
-        $this_class,
-        $php_major_version,
-        $php_minor_version
-    ) {
+        ?string $this_class,
+        int $php_major_version,
+        int $php_minor_version
+    ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp()
+    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
     }

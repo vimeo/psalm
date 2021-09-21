@@ -2,8 +2,8 @@
 
 namespace Psalm\Internal\Scanner;
 
-use function trim;
 use function explode;
+use function trim;
 
 class ParsedDocblock
 {
@@ -38,7 +38,7 @@ class ParsedDocblock
 
         $trimmed_description = trim($this->description);
 
-        if (!empty($trimmed_description)) {
+        if ($trimmed_description !== '') {
             $description_lines = explode("\n", $this->description);
 
             foreach ($description_lines as $line) {
@@ -47,7 +47,7 @@ class ParsedDocblock
         }
 
         if ($this->tags) {
-            if (!empty($trimmed_description)) {
+            if ($trimmed_description !== '') {
                 $doc_comment_text .= $left_padding . ' *' . "\n";
             }
 
@@ -62,7 +62,7 @@ class ParsedDocblock
                 }
 
                 foreach ($lines as $line) {
-                    $doc_comment_text .= $left_padding . ' * @' . $type . ' ' . $line . "\n";
+                    $doc_comment_text .= $left_padding . ' * @' . $type . ($line !== '' ? ' ' . $line : '') . "\n";
                 }
 
                 $last_type = $type;
@@ -82,10 +82,14 @@ class ParsedDocblock
     /**
      * Sets whether a new line should be added between the annotations or not.
      *
-     * @param bool $should
      */
     public static function addNewLineBetweenAnnotations(bool $should = true): void
     {
         static::$shouldAddNewLineBetweenAnnotations = $should;
+    }
+
+    public static function resetNewlineBetweenAnnotations(): void
+    {
+        static::$shouldAddNewLineBetweenAnnotations = true;
     }
 }

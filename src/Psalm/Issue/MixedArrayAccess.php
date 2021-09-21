@@ -1,8 +1,10 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedArrayAccess extends CodeIssue
+class MixedArrayAccess extends CodeIssue implements MixedIssue
 {
-    const ERROR_LEVEL = 1;
-    const SHORTCODE = 51;
+    public const ERROR_LEVEL = 1;
+    public const SHORTCODE = 51;
+
+    use MixedIssueTrait;
 }

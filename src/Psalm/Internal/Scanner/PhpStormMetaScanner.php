@@ -2,15 +2,17 @@
 namespace Psalm\Internal\Scanner;
 
 use PhpParser;
-use Psalm\Context;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
-use function strtolower;
+
+use function count;
 use function implode;
 use function is_string;
-use function strpos;
 use function str_replace;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal
@@ -18,11 +20,14 @@ use function str_replace;
 class PhpStormMetaScanner
 {
     /**
-     * @param  array<PhpParser\Node\Arg> $args
-     * @return void
+     * @param  list<PhpParser\Node\Arg> $args
      */
-    public static function handleOverride(array $args, Codebase $codebase)
+    public static function handleOverride(array $args, Codebase $codebase): void
     {
+        if (count($args) < 2) {
+            return;
+        }
+
         $identifier = $args[0]->value;
 
         if (!$args[1]->value instanceof PhpParser\Node\Expr\FuncCall
@@ -90,22 +95,20 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $fq_classlike_name,
-                        string $method_name,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        MethodReturnTypeProviderEvent $event
                     ) use (
                         $map,
                         $offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
+                        $statements_analyzer = $event->getSource();
+                        $call_args = $event->getCallArgs();
+                        $method_name = $event->getMethodNameLowercase();
+                        $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -148,22 +151,19 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $fq_classlike_name,
-                        string $method_name,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        MethodReturnTypeProviderEvent $event
                     ) use (
-                        $map,
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
+                        $statements_analyzer = $event->getSource();
+                        $call_args = $event->getCallArgs();
+                        $method_name = $event->getMethodNameLowercase();
+                        $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -188,22 +188,19 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     /**
-                     * @param array<PhpParser\Node\Arg> $call_args
-                     * @return ?Type\Union
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $fq_classlike_name,
-                        string $method_name,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        MethodReturnTypeProviderEvent $event
                     ) use (
-                        $map,
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ) {
+                    ): ?Type\Union {
+                        $statements_analyzer = $event->getSource();
+                        $call_args = $event->getCallArgs();
+                        $method_name = $event->getMethodNameLowercase();
+                        $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -221,11 +218,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
@@ -247,7 +244,7 @@ class PhpStormMetaScanner
             && $identifier->args
             && $identifier->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
-            $function_id = implode('\\', $identifier->name->parts);
+            $function_id = strtolower(implode('\\', $identifier->name->parts));
 
             if ($map) {
                 $offset = $identifier->args[0]->value->value;
@@ -256,18 +253,17 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $function_id,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        FunctionReturnTypeProviderEvent $event
                     ) use (
                         $map,
                         $offset
                     ) : Type\Union {
+                        $statements_analyzer = $event->getStatementsSource();
+                        $call_args = $event->getCallArgs();
+                        $function_id = $event->getFunctionId();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -311,18 +307,16 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $function_id,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        FunctionReturnTypeProviderEvent $event
                     ) use (
-                        $map,
                         $type_offset
                     ) : Type\Union {
+                        $statements_analyzer = $event->getStatementsSource();
+                        $call_args = $event->getCallArgs();
+                        $function_id = $event->getFunctionId();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -347,18 +341,16 @@ class PhpStormMetaScanner
                     $function_id,
                     /**
                      * @param non-empty-string $function_id
-                     * @param array<PhpParser\Node\Arg> $call_args
+                     * @param list<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        \Psalm\StatementsSource $statements_analyzer,
-                        string $function_id,
-                        array $call_args,
-                        Context $_context,
-                        CodeLocation $_code_location
+                        FunctionReturnTypeProviderEvent $event
                     ) use (
-                        $map,
                         $element_type_offset
                     ) : Type\Union {
+                        $statements_analyzer = $event->getStatementsSource();
+                        $call_args = $event->getCallArgs();
+                        $function_id = $event->getFunctionId();
                         if (!$statements_analyzer instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
                             return Type::getMixed();
                         }
@@ -370,11 +362,11 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\ObjectLike|Type\Atomic\TList
+                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 

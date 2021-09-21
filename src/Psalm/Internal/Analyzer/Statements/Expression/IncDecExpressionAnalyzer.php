@@ -2,15 +2,18 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use PhpParser\Node\Expr\{PostInc, PostDec, PreInc, PreDec};
+use PhpParser\Node\Expr\PostDec;
+use PhpParser\Node\Expr\PostInc;
+use PhpParser\Node\Expr\PreDec;
+use PhpParser\Node\Expr\PreInc;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\CodeLocation;
-use Psalm\Context;
-use Psalm\Issue\ImpurePropertyAssignment;
-use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualMinus;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
-use function strpos;
 
 class IncDecExpressionAnalyzer
 {
@@ -39,18 +42,19 @@ class IncDecExpressionAnalyzer
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
         if ($stmt instanceof PostInc || $stmt instanceof PostDec) {
-            $statements_analyzer->node_data->setType($stmt, $stmt_var_type ?: Type::getMixed());
+            $statements_analyzer->node_data->setType($stmt, $stmt_var_type ?? Type::getMixed());
         }
 
         if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $stmt_var_type->hasString()
+            && ($stmt instanceof PostInc || $stmt instanceof PreInc)
         ) {
             $return_type = null;
 
-            $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
-            BinaryOp\NonDivArithmeticOpAnalyzer::analyze(
+            BinaryOp\ArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,
@@ -60,30 +64,27 @@ class IncDecExpressionAnalyzer
                 $context
             );
 
-            $stmt_type = clone $stmt_var_type;
+            $result_type = $return_type ?? Type::getMixed();
+            $statements_analyzer->node_data->setType($stmt, $result_type);
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            BinaryOpAnalyzer::addDataFlow(
+                $statements_analyzer,
+                $stmt,
+                $stmt->var,
+                $fake_right_expr,
+                'inc'
+            );
 
             $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
 
             $codebase = $statements_analyzer->getCodebase();
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $stmt_type;
+                $context->vars_in_scope[$var_id] = $result_type;
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
-                    $location = new CodeLocation($statements_analyzer, $stmt->var);
-                    $context->assigned_var_ids[$var_id] = true;
+                    $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');
                     $context->possibly_assigned_var_ids[$var_id] = true;
-
-                    if (!$context->inside_isset) {
-                        $statements_analyzer->registerVariableAssignment(
-                            $var_id,
-                            $location
-                        );
-
-                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
-                    }
                 }
 
                 // removes dependent vars from $context
@@ -95,19 +96,21 @@ class IncDecExpressionAnalyzer
                 );
             }
         } else {
-            $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
 
             $operation = $stmt instanceof PostInc || $stmt instanceof PreInc
-                ? new PhpParser\Node\Expr\BinaryOp\Plus(
+                ? new VirtualPlus(
                     $stmt->var,
-                    $fake_right_expr
+                    $fake_right_expr,
+                    $stmt->var->getAttributes()
                 )
-                : new PhpParser\Node\Expr\BinaryOp\Minus(
+                : new VirtualMinus(
                     $stmt->var,
-                    $fake_right_expr
+                    $fake_right_expr,
+                    $stmt->var->getAttributes()
                 );
 
-            $fake_assignment = new PhpParser\Node\Expr\Assign(
+            $fake_assignment = new VirtualAssign(
                 $stmt->var,
                 $operation,
                 $stmt->getAttributes()

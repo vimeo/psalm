@@ -1,6 +1,9 @@
 <?php
 namespace Psalm;
 
+use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Scanner\ParsedDocblock;
+
 use function array_filter;
 use function explode;
 use function implode;
@@ -8,22 +11,20 @@ use function in_array;
 use function min;
 use function preg_match;
 use function preg_match_all;
-use const PREG_OFFSET_CAPTURE;
 use function preg_replace;
-use const PREG_SET_ORDER;
-use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Exception\DocblockParseException;
 use function rtrim;
 use function str_repeat;
 use function str_replace;
 use function strlen;
-use function strpos;
+use function strspn;
 use function substr;
 use function trim;
 
+use const PREG_SET_ORDER;
+
 class DocComment
 {
-    private const PSALM_ANNOTATIONS = [
+    public const PSALM_ANNOTATIONS = [
         'return', 'param', 'template', 'var', 'type',
         'template-covariant', 'property', 'property-read', 'property-write', 'method',
         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
@@ -35,7 +36,9 @@ class DocComment
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
-        'taint-unescape', 'self-out', 'if-this-is', 'consistent-constructor'
+        'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
+        'require-extends', 'require-implements', 'param-out', 'ignore-var',
+        'consistent-templates', 'if-this-is',
     ];
 
     /**
@@ -44,17 +47,16 @@ class DocComment
      * Taken from advanced api docmaker, which was taken from
      * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
      *
-     * @param  string  $docblock
-     * @param  int     $line_number
-     * @param  bool    $preserve_format
-     *
      * @return array Array of the main comment and specials
+     *
      * @psalm-return array{description:string, specials:array<string, array<int, string>>}
      * @psalm-suppress PossiblyUnusedMethod
      *
-     * @deprecated use parsePreservingLength instead
+     * @deprecated use parsePreservingLength instead, going to be removed in Psalm 5
+     *
+     * @psalm-pure
      */
-    public static function parse($docblock, $line_number = null, $preserve_format = false)
+    public static function parse(string $docblock, ?int $line_number = null, bool $preserve_format = false): array
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -97,7 +99,7 @@ class DocComment
         if ($preserve_format) {
             foreach ($lines as $m => $line) {
                 if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
-                    list($full_match, $type, $data) = $matches;
+                    [$full_match, $type, $data] = $matches;
 
                     $docblock = str_replace($full_match, '', $docblock);
 
@@ -105,7 +107,7 @@ class DocComment
                         $special[$type] = [];
                     }
 
-                    $line_number = $line_map && isset($line_map[$full_match]) ? $line_map[$full_match] : (int)$m;
+                    $line_number = $line_map && isset($line_map[$full_match]) ? $line_map[$full_match] : $m;
 
                     $special[$type][$line_number] = rtrim($data);
                 }
@@ -116,15 +118,14 @@ class DocComment
             // Parse @specials.
             if (preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER)) {
                 $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
-                /** @var string[] $match */
                 foreach ($matches as $m => $match) {
-                    list($_, $type, $data) = $match;
+                    [$_, $type, $data] = $match;
 
                     if (empty($special[$type])) {
                         $special[$type] = [];
                     }
 
-                    $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : (int)$m;
+                    $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : $m;
 
                     $special[$type][$line_number] = $data;
                 }
@@ -137,8 +138,8 @@ class DocComment
         $min_indent = 80;
         $indent = 0;
         foreach (array_filter(explode("\n", $docblock)) as $line) {
-            for ($ii = 0; $ii < strlen($line); ++$ii) {
-                if ($line[$ii] != ' ') {
+            for ($ii = 0, $iiMax = strlen($line); $ii < $iiMax; ++$ii) {
+                if ($line[$ii] !== ' ') {
                     break;
                 }
                 ++$indent;
@@ -176,13 +177,13 @@ class DocComment
 
     /**
      * Parse a docblock comment into its parts.
-     *
-     * @param  \PhpParser\Comment\Doc  $docblock
-     * @param  bool    $preserve_format
      */
     public static function parsePreservingLength(\PhpParser\Comment\Doc $docblock) : ParsedDocblock
     {
-        $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse($docblock->getText());
+        $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse(
+            $docblock->getText(),
+            $docblock->getStartFilePos()
+        );
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
             if (substr($special_key, 0, 6) === 'psalm-') {
@@ -199,5 +200,42 @@ class DocComment
         }
 
         return $parsed_docblock;
+    }
+
+    /**
+     * @psalm-pure
+     * @return array<int,string>
+     */
+    public static function parseSuppressList(string $suppress_entry): array
+    {
+        preg_match(
+            '/
+                (?(DEFINE)
+                    # either a single issue or comma separated list of issues
+                    (?<issue_list> (?&issue) \s* , \s* (?&issue_list) | (?&issue) )
+
+                    # definition of a single issue
+                    (?<issue> [A-Za-z0-9_-]+ )
+                )
+                ^ (?P<issues> (?&issue_list) ) (?P<description> .* ) $
+            /xm',
+            $suppress_entry,
+            $matches
+        );
+
+        if (!isset($matches['issues'])) {
+            return [];
+        }
+
+        $issue_offset = 0;
+        $ret = [];
+
+        foreach (explode(',', $matches['issues']) as $suppressed_issue) {
+            $issue_offset += strspn($suppressed_issue, "\t\n\f\r ");
+            $ret[$issue_offset] = trim($suppressed_issue);
+            $issue_offset += strlen($suppressed_issue) + 1;
+        }
+
+        return $ret;
     }
 }

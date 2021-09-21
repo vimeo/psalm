@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class DeprecatedProperty extends PropertyIssue
 {
-    const ERROR_LEVEL = 2;
-    const SHORTCODE = 99;
+    public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 99;
 }

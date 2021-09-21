@@ -2,14 +2,11 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Represents a non-empty array
+ * Denotes a string, that is also non-empty (every string except '')
  */
 class TNonEmptyString extends TString
 {
-    /**
-     * @return string
-     */
-    public function getId(bool $nested = false)
+    public function getId(bool $nested = false): string
     {
         return 'non-empty-string';
     }

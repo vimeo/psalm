@@ -2,42 +2,37 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
+
+use function array_merge;
 use function count;
 use function in_array;
-use function array_merge;
 
 /**
  * @internal
  */
 class SwitchAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer               $statements_analyzer
-     * @param   PhpParser\Node\Stmt\Switch_     $stmt
-     * @param   Context                         $context
-     *
-     * @return  false|null
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context
-    ) {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $context->inside_conditional = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
-            return false;
+            return;
         }
+
         $context->inside_conditional = false;
 
         $switch_var_id = ExpressionIdentifier::getArrayVarId(
@@ -76,7 +71,7 @@ class SwitchAnalyzer
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
-            $case_actions = $case_action_map[$i] = ScopeAnalyzer::getFinalControlActions(
+            $case_actions = $case_action_map[$i] = ScopeAnalyzer::getControlActions(
                 $case->stmts,
                 $statements_analyzer->node_data,
                 $config->exit_functions,
@@ -91,6 +86,8 @@ class SwitchAnalyzer
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
                 }
+            } elseif (count($case_actions) !== 1) {
+                $last_case_exit_type = 'hybrid';
             }
 
             $case_exit_types[$i] = $last_case_exit_type;
@@ -102,11 +99,16 @@ class SwitchAnalyzer
 
         $statements_analyzer->node_data->cache_assertions = false;
 
+        $all_options_returned = true;
+
         for ($i = 0, $l = count($stmt->cases); $i < $l; $i++) {
             $case = $stmt->cases[$i];
 
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
+            if ($case_exit_type !== 'return_throw') {
+                $all_options_returned = false;
+            }
 
             $case_actions = $case_action_map[$i];
 
@@ -128,7 +130,7 @@ class SwitchAnalyzer
                 $switch_scope
             ) === false
             ) {
-                return false;
+                return;
             }
         }
 
@@ -187,6 +189,7 @@ class SwitchAnalyzer
                 foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
                     if (!isset($switch_scope->redefined_vars[$var_id])
                         && !isset($switch_scope->new_vars_in_scope[$var_id])
+                        && isset($context->vars_in_scope[$var_id])
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
@@ -200,7 +203,12 @@ class SwitchAnalyzer
             $stmt->allMatched = true;
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $context->vars_in_scope[$var_id]
+                    );
+                }
             }
         }
 
@@ -208,29 +216,12 @@ class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
-        if ($codebase->find_unused_variables) {
-            foreach ($switch_scope->new_unreferenced_vars as $var_id => $locations) {
-                if (($all_options_matched && isset($switch_scope->new_assigned_var_ids[$var_id]))
-                    || !isset($context->vars_in_scope[$var_id])
-                ) {
-                    $context->unreferenced_vars[$var_id] = $locations;
-                } elseif (isset($switch_scope->new_possibly_assigned_var_ids[$var_id])) {
-                    if (!isset($context->unreferenced_vars[$var_id])) {
-                        $context->unreferenced_vars[$var_id] = $locations;
-                    } else {
-                        $context->unreferenced_vars[$var_id] += $locations;
-                    }
-                } else {
-                    $statements_analyzer->registerVariableUses($locations);
-                }
-            }
-        }
-
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
             $switch_scope->new_vars_possibly_in_scope
         );
 
-        return null;
+        //a switch can't return in all options without a default
+        $context->has_returned = $all_options_returned && $has_default;
     }
 }

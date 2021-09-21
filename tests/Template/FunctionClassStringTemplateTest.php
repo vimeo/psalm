@@ -12,15 +12,14 @@ class FunctionClassStringTemplateTest extends TestCase
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'callStaticMethodOnTemplatedClassName' => [
                 '<?php
                     /**
                      * @template T
-                     * @param class-string $class
-                     * @template-typeof T $class
+                     * @param class-string<T> $class
                      */
                     function foo(string $class, array $args) : void {
                         $class::bar($args);
@@ -62,7 +61,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 '<?php
                     /**
                      * @template T as iterable
-                     * @param T::class $class
+                     * @param class-string<T> $class
                      */
                     function foo(string $class) : void {
                         $a = new $class();
@@ -157,7 +156,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
@@ -187,7 +186,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress TypeCoercion
+                     * @psalm-suppress ArgumentTypeCoercion
                      */
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
@@ -237,7 +236,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as object
                      * @template S as object
                      * @param array<T> $a
-                     * @param class-string<S> $type
+                     * @param interface-string<S> $type
                      * @return array<T&S>
                      */
                     function filter(array $a, string $type): array {
@@ -266,7 +265,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @template T as object
                      * @template S as object
                      * @param T $item
-                     * @param class-string<S> $type
+                     * @param interface-string<S> $type
                      * @return T&S
                      */
                     function filter($item, string $type) {
@@ -703,9 +702,9 @@ class FunctionClassStringTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'copyScopedClassInFunction' => [
@@ -790,6 +789,48 @@ class FunctionClassStringTemplateTest extends TestCase
 
                     f(C::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'bindToClassString' => [
+                '<?php
+                    /**
+                     * @template TClass as object
+                     *
+                     * @param class-string<TClass> $className
+                     * @param TClass $realInstance
+                     *
+                     * @return Closure(TClass) : void
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function createInitializer(string $className, object $realInstance) : Closure {}
+
+                    function foo(object $realInstance) : void {
+                        $className = get_class($realInstance);
+                        /** @psalm-trace $i */
+                        $i = createInitializer($className, $realInstance);
+                    }',
+                'error_message' => 'Closure(object):void'
+            ],
+            'preventClassStringInPlaceOfTemplatedClassString' => [
+                '<?php
+                    class ImageFile {}
+                    class MusicFile {}
+
+                    /**
+                     * @template T of object
+                     */
+                    interface FileManager {
+                        /**
+                         * @param class-string<T> $instance
+                         * @return T
+                         */
+                        public function create(string $instance) : object;
+                    }
+
+                    /** @param FileManager<ImageFile> $m */
+                    function foo(FileManager $m) : void {
+                        $m->create(MusicFile::class);
+                    }',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }

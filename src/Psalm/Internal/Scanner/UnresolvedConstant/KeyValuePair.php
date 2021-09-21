@@ -4,6 +4,9 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
+/**
+ * @psalm-immutable
+ */
 class KeyValuePair extends UnresolvedConstantComponent
 {
     /** @var ?UnresolvedConstantComponent */

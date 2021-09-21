@@ -2,7 +2,7 @@
 
 Psalm now has built-in Language Server Compatibility support so you can run it in your favourite IDE.
 
-It currently supports diagnostics (i.e. finding errors and warnings), go-to-definition and hover.
+It currently supports diagnostics (i.e. finding errors and warnings), go-to-definition and hover, with limited support for autocompletion (PRs are welcome!).
 
 It works well in a variety of editors (listed alphabetically):
 
@@ -47,16 +47,15 @@ In the "Timeouts" tab you can adjust the initialization timeout. This is importa
 
 ## Sublime Text
 
-I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config:
-
+I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config(Package Settings > LSP > Settings):
 ```json
-        "psalm":
-        {
+    "clients": {
+        "psalm": {
             "command": ["php", "vendor/bin/psalm-language-server"],
-            "scopes": ["source.php", "embedding.php"],
-            "syntaxes": ["Packages/PHP/PHP.sublime-syntax"],
-            "languageId": "php"
+            "selector": "source.php | embedding.php",
+            "enabled": true
         }
+    }
 ```
 
 ## Vim & Neovim
@@ -79,7 +78,7 @@ This is the config I used (for Vim):
 au User lsp_setup call lsp#register_server({
      \ 'name': 'psalm-language-server',
      \ 'cmd': {server_info->[expand('vendor/bin/psalm-language-server')]},
-     \ 'whitelist': ['php'],
+     \ 'allowlist': ['php'],
      \ })
 ```
 

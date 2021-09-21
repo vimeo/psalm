@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class NoValue extends CodeIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 179;
+    public const ERROR_LEVEL = -1;
+    public const SHORTCODE = 179;
 }

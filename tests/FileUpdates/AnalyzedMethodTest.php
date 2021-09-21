@@ -1,28 +1,25 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use function array_keys;
-use const DIRECTORY_SEPARATOR;
-use function getcwd;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestConfig;
+
+use function array_keys;
+use function getcwd;
 use function strpos;
+
+use const DIRECTORY_SEPARATOR;
 
 class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 {
-    /**
-     * @return void
-     */
     public function setUp() : void
     {
         parent::setUp();
 
-        FileAnalyzer::clearCache();
-
-        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+        $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
 
@@ -49,7 +46,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
      * @param array<string, string> $end_files
      * @param array<string, string> $error_levels
      *
-     * @return void
      */
     public function testValidInclude(
         array $start_files,
@@ -57,7 +53,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
         array $error_levels = []
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -109,7 +105,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
     /**
      * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,4?:array<string,string>}>
      */
-    public function providerTestValidUpdates()
+    public function providerTestValidUpdates(): array
     {
         return [
             'basicRequire' => [
@@ -1187,8 +1183,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo;
+                            private ?string $foo;
 
                             public function __construct() {}
 
@@ -1202,8 +1197,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo
+                            private ?string $foo
 
                             public function __construct() {}
 
@@ -1214,13 +1208,14 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
+                        'foo\a::bar' => 1
                     ],
                 ],
             ],
@@ -1230,8 +1225,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo
+                            private ?string $foo
 
                             public function __construct() {}
 
@@ -1245,8 +1239,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         namespace Foo;
 
                         class A {
-                            /** @var string|null */
-                            private $foo;
+                            private ?string $foo;
 
                             public function __construct() {}
 
@@ -1257,13 +1250,14 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
+                        'foo\a::__construct' => 2,
+                        'foo\a::bar' => 1
                     ],
                 ],
             ],
@@ -1326,5 +1320,41 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
             ],
         ];
+    }
+
+    public function testFileMapsUpdated(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->file_provider->registerFile('somefile.php', '
+            <?php
+
+            function foo() : void {
+            }
+
+            foo();
+        ');
+
+        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $maps = $codebase->analyzer->getMapsForFile('somefile.php');
+
+        $this->assertNotEmpty($maps[0]);
+
+        $this->file_provider->setOpenContents('somefile.php', '');
+
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $updated_maps = $codebase->analyzer->getMapsForFile('somefile.php');
+
+        $this->assertSame([], $updated_maps[0]);
+        $this->assertSame([], $updated_maps[1]);
+        $this->assertSame([], $updated_maps[2]);
     }
 }

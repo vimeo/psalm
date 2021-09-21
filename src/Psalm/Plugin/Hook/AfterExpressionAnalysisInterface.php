@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/** @deprecated going to be removed in Psalm 5 */
 interface AfterExpressionAnalysisInterface
 {
     /**
@@ -22,5 +23,5 @@ interface AfterExpressionAnalysisInterface
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    );
+    ): ?bool;
 }

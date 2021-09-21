@@ -4,32 +4,29 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use function strpos;
-use function is_string;
-use function in_array;
-use function strtolower;
+
 use function array_map;
-use function current;
+use function in_array;
+use function is_string;
+use function preg_match;
+use function strpos;
+use function strtolower;
 
 /**
  * @internal
+ * @extends FunctionLikeAnalyzer<PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction>
  */
 class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     /**
-     * @var PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction
-     */
-    protected $function;
-
-    /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
-     * @param SourceAnalyzer               $source   [description]
      */
     public function __construct(PhpParser\Node\FunctionLike $function, SourceAnalyzer $source)
     {
@@ -45,7 +42,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
-    public function getTemplateTypeMap()
+    public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
     }
@@ -53,7 +50,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return non-empty-lowercase-string
      */
-    public function getClosureId()
+    public function getClosureId(): string
     {
         return strtolower($this->getFilePath())
             . ':' . $this->function->getLine()
@@ -78,9 +75,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         $use_context = new Context($context->self);
-        $use_context->mutation_free = $context->mutation_free;
-        $use_context->external_mutation_free = $context->external_mutation_free;
-        $use_context->pure = $context->pure;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -126,8 +120,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
-        $byref_uses = [];
-
         if ($stmt instanceof PhpParser\Node\Expr\Closure) {
             foreach ($stmt->uses as $use) {
                 if (!is_string($use->var->name)) {
@@ -136,22 +128,43 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_var_id = '$' . $use->var->name;
 
-                if ($use->byRef) {
-                    $byref_uses[$use_var_id] = true;
-                }
-
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
+                if (!$context->hasVariable($use_var_id) && $use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 
+                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                    && $context->hasVariable($use_var_id)
+                ) {
+                    $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
+                    foreach ($parent_nodes as $parent_node) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            new DataFlowNode('closure-use', 'closure use', null),
+                            'closure-use'
+                        );
+                    }
+                }
+
                 $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id, $statements_analyzer) && !$use->byRef
+                    $context->hasVariable($use_var_id) && !$use->byRef
                     ? clone $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
+                if ($use->byRef) {
+                    $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                }
+
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
+
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
+                        $use_context->vars_in_scope[$var_id] = clone $type;
+                        $use_context->vars_possibly_in_scope[$var_id] = true;
+                    }
+                }
             }
         } else {
             $traverser = new PhpParser\NodeTraverser;
@@ -162,10 +175,21 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
             $traverser->traverse($stmt->getStmts());
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
-                $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id, $statements_analyzer)
-                    ? clone $context->vars_in_scope[$use_var_id]
-                    : Type::getMixed();
+                if ($context->hasVariable($use_var_id)) {
+                    $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
+
+                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                        $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
+                        foreach ($parent_nodes as $parent_node) {
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $parent_node,
+                                new DataFlowNode('closure-use', 'closure use', null),
+                                'closure-use'
+                            );
+                        }
+                    }
+                }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
             }
@@ -173,7 +197,19 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         $use_context->calling_method_id = $context->calling_method_id;
 
-        $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_uses);
+        $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false);
+
+        if ($closure_analyzer->inferred_impure
+            && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+        ) {
+            $statements_analyzer->getSource()->inferred_impure = true;
+        }
+
+        if ($closure_analyzer->inferred_has_mutation
+            && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+        ) {
+            $statements_analyzer->getSource()->inferred_has_mutation = true;
+        }
 
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getClosure());
@@ -183,17 +219,13 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Closure $stmt
-     * @param   Context                     $context
-     *
      * @return  false|null
      */
     public static function analyzeClosureUses(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
-    ) {
+    ): ?bool {
         $param_names = array_map(
             function (PhpParser\Node\Param $p) : string {
                 if (!$p->var instanceof PhpParser\Node\Expr\Variable
@@ -225,7 +257,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
             }
 
-            if (!$context->hasVariable($use_var_id, $statements_analyzer)) {
+            if (!$context->hasVariable($use_var_id)) {
                 if ($use_var_id === '$argv' || $use_var_id === '$argc') {
                     continue;
                 }
@@ -242,7 +274,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         );
                     }
 
-                    return;
+                    return null;
                 }
 
                 if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
@@ -292,9 +324,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
+                $new_type = Type::getMixed();
+                $new_type->parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+
                 $context->remove($use_var_id);
 
-                $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                $context->vars_in_scope[$use_var_id] = $new_type;
             }
         }
 

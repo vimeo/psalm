@@ -9,13 +9,14 @@ use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+
+use function array_reverse;
+use function array_shift;
+use function is_string;
+use function reset;
+use function strlen;
 use function substr;
 use function token_get_all;
-use function array_reverse;
-use function is_string;
-use function strlen;
-use function array_shift;
-use function reset;
 
 class ArgumentMapPopulator
 {

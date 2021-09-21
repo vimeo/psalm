@@ -2,34 +2,33 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Context;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
-use Psalm\Type\Algebra;
-use function in_array;
-use function array_values;
+
 use function array_filter;
 use function array_keys;
+use function array_merge;
+use function array_values;
+use function in_array;
 use function preg_match;
 use function preg_quote;
-use function array_merge;
 
 /**
  * @internal
  */
 class DoAnalyzer
 {
-    /**
-     * @return void
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context
-    ) {
+    ): void {
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
 
@@ -52,8 +51,11 @@ class DoAnalyzer
             }
         }
 
-        $while_clauses = Algebra::getFormula(
-            \spl_object_id($stmt->cond),
+        $cond_id = \spl_object_id($stmt->cond);
+
+        $while_clauses = FormulaGenerator::getFormula(
+            $cond_id,
+            $cond_id,
             $stmt->cond,
             $context->self,
             $statements_analyzer,
@@ -63,8 +65,7 @@ class DoAnalyzer
         $while_clauses = array_values(
             array_filter(
                 $while_clauses,
-                /** @return bool */
-                function (Clause $c) use ($mixed_var_ids) {
+                function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -83,7 +84,7 @@ class DoAnalyzer
         );
 
         if (!$while_clauses) {
-            $while_clauses = [new Clause([], true)];
+            $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
         }
 
         LoopAnalyzer::analyze(
@@ -156,10 +157,6 @@ class DoAnalyzer
             $context->referenced_var_ids,
             $do_context->referenced_var_ids
         );
-
-        if ($codebase->find_unused_variables) {
-            $context->unreferenced_vars = $loop_scope->loop_context->unreferenced_vars;
-        }
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);

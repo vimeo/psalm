@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use function class_exists;
+
 use const DIRECTORY_SEPARATOR;
 
 class BinaryOperationTest extends TestCase
@@ -83,10 +84,7 @@ class BinaryOperationTest extends TestCase
         $this->assertSame($assertions, $actual_vars);
     }
 
-    /**
-     * @return void
-     */
-    public function testStrictTrueEquivalence()
+    public function testStrictTrueEquivalence(): void
     {
         $config = \Psalm\Config::getInstance();
         $config->strict_binary_operands = true;
@@ -109,10 +107,33 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new \Psalm\Context());
     }
 
+    public function testStringFalseInequivalence(): void
+    {
+        $config = \Psalm\Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function returnsABool(): bool {
+                    return rand(1, 2) === 1;
+                }
+
+                if (returnsABool() !== false) {
+                    echo "hi!";
+                }'
+        );
+
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectExceptionMessage('RedundantIdentityWithTrue');
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function providerValidCodeParse()
+    public function providerValidCodeParse(): iterable
     {
         return [
             'regularAddition' => [
@@ -134,12 +155,14 @@ class BinaryOperationTest extends TestCase
                     $a = 25 % 2;
                     $b = 25.4 % 2;
                     $c = 25 % 2.5;
-                    $d = 25.5 % 2.5;',
+                    $d = 25.5 % 2.5;
+                    $e = 25 % 1;',
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'int',
                     '$c' => 'int',
                     '$d' => 'int',
+                    '$e' => 'int',
                 ],
             ],
             'numericAddition' => [
@@ -157,6 +180,134 @@ class BinaryOperationTest extends TestCase
             'concatenationWithNumberInWeakMode' => [
                 '<?php
                     $a = "hi" . 5;',
+            ],
+            'concatenationWithTwoLiteralInt' => [
+                '<?php
+                    $a = 7 . 5;',
+                'assertions' => [
+                    '$a' => 'string',//will contain "75"
+                ]
+            ],
+            'concatenationWithTwoInt' => [
+                '<?php
+                    /**
+                     * @param positive-int|0 $b
+                     * @return numeric-string
+                     */
+                    function scope(int $a, int $b): string{
+                        return $a . $b;
+                    }',
+            ],
+            'concatenateUnion' => [
+                '<?php
+                    $arr = ["foobar" => false, "foobaz" => true, "barbaz" => true];
+                    $foo = random_int(0, 1) ? "foo" : "bar";
+                    $foo .= "baz";
+                    $val = $arr[$foo];
+                ',
+                'assertions' => ['$val' => 'true'],
+            ],
+            'concatenateLiteralIntAndString' => [
+                '<?php
+                    $arr = ["foobar" => false, "foo123" => true];
+                    $foo = "foo";
+                    $foo .= 123;
+                    $val = $arr[$foo];
+                ',
+                'assertions' => ['$val' => 'true'],
+            ],
+            'concatenateNonEmptyResultsInNonEmpty' => [
+                '<?php
+                    /** @param non-empty-lowercase-string $arg */
+                    function foobar($arg): string
+                    {
+                        return $arg;
+                    }
+
+                    $foo = rand(0, 1) ? "a" : "b";
+                    $bar = rand(0, 1) ? "c" : "d";
+                    $baz = $foo . $bar;
+                    foobar($baz);
+                ',
+            ],
+            'concatenateEmptyWithNonemptyCast' => [
+                '<?php
+                    class A
+                    {
+                        /** @psalm-return non-empty-lowercase-string */
+                        public function __toString(): string
+                        {
+                            return "foo";
+                        }
+                    }
+
+                    /** @param non-empty-lowercase-string $arg */
+                    function foo($arg): string
+                    {
+                        return $arg;
+                    }
+
+                    $bar = new A();
+                    foo("" . $bar);
+                ',
+            ],
+            'concatenateNegativeIntLeftSideIsNumeric' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return int
+                     */
+                    function foo(string $bar): int
+                    {
+                        return (int) $bar;
+                    }
+
+                    foo(foo("-123") . 456);
+                ',
+            ],
+            'castToIntPreserveNarrowerIntType' => [
+                '<?php
+                    /**
+                     * @param positive-int $i
+                     * @return positive-int
+                     */
+                    function takesAnInt(int $i) {
+                        /** @psalm-suppress RedundantCast */
+                        return (int)$i;
+                    }
+                ',
+            ],
+            'concatenateFloatWithInt' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return numeric-string
+                     */
+                    function foo(string $bar): string
+                    {
+                        return $bar;
+                    }
+
+                    foo(-123.456 . 789);
+                ',
+            ],
+            'concatenateIntIsLowercase' => [
+                '<?php
+                    /**
+                     * @param non-empty-lowercase-string $bar
+                     * @return non-empty-lowercase-string
+                     */
+                    function foobar(string $bar): string
+                    {
+                        return $bar;
+                    }
+
+                    /** @var lowercase-string */
+                    $foo = "abc";
+                    /** @var int */
+                    $bar = 123;
+                    foobar($foo . $bar);
+                ',
             ],
             'possiblyInvalidAdditionOnBothSides' => [
                 '<?php
@@ -183,10 +334,19 @@ class BinaryOperationTest extends TestCase
                     '$f' => 'string',
                 ],
             ],
+            'ComplexLiteralBitwise' => [
+                '<?php
+                    /**
+                     * @return 7
+                     */
+                    function scope(){
+                        return 1 | 2 | 4 | (1 & 0);
+                    }',
+            ],
             'booleanXor' => [
                 '<?php
-                    $a = true ^ false;
-                    $b = false ^ false;
+                    $a = 4 ^ 1;
+                    $b = 3 ^ 1;
                     $c = (true xor false);
                     $d = (false xor false);',
                 'assertions' => [
@@ -219,10 +379,8 @@ class BinaryOperationTest extends TestCase
             ],
             'exponent' => [
                 '<?php
-                    $a = "x" ^ "y";
-                    $b = 4 ^ 5;',
+                    $b = 4 ** 5;',
                 'assertions' => [
-                    '$a' => 'string',
                     '$b' => 'int',
                 ],
             ],
@@ -248,12 +406,27 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'string',
                 ],
             ],
+            'stringIncrementWithCheck' => [
+                '<?php
+                    /** @psalm-suppress StringIncrement */
+                    for($a = "a"; $a != "z"; $a++){
+                        if($a === "b"){
+                            echo "b reached";
+                        }
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
             'nullCoalescingAssignment' => [
                 '<?php
                     function foo(?string $s): string {
                         $s ??= "Hello";
                         return $s;
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'nullCoalescingArrayAssignment' => [
                 '<?php
@@ -266,7 +439,10 @@ class BinaryOperationTest extends TestCase
                         foreach ($arr as $a) {
                             $b[0] ??= $a;
                         }
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                '7.4',
             ],
             'addArrays' => [
                 '<?php
@@ -278,13 +454,265 @@ class BinaryOperationTest extends TestCase
                         return $opts + ["host" => 5];
                     }'
             ],
+            'addIntToZero' => [
+                '<?php
+                    $tick = 0;
+
+                    test($tick + 1);
+
+                    $tick++;
+
+                    test($tick);
+
+                    /**
+                     * @psalm-param positive-int $tickedTimes
+                     */
+                    function test(int $tickedTimes): void {}'
+            ],
+            'numericPlusIntegerIsIntOrFloat' => [
+                '<?php
+                    /** @param numeric-string $s */
+                    function foo(string $s) : void {
+                        $s = $s + 1;
+                        if (is_int($s)) {}
+                    }'
+            ],
+            'interpolatedStringNotEmpty' => [
+                '<?php
+                    /**
+                     * @psalm-param non-empty-string $i
+                     */
+                    function func($i): string
+                    {
+                        return $i;
+                    }
+
+                    function foo(string $a) : void {
+                        func("asdasdasd $a");
+                    }'
+            ],
+            'spaceshipOpIsLiteralUnionType' => [
+                '<?php
+                    /**
+                     * @psalm-param -1|0|1 $i
+                     */
+                     function onlyZeroOrPlusMinusOne(int $i): int {
+                         return $i;
+                     }
+
+                     /**
+                      * @psalm-param mixed $a
+                      * @psalm-param mixed $b
+                      */
+                     function foo($a, $b): void {
+                         onlyZeroOrPlusMinusOne($a <=> $b);
+                     }'
+            ],
+            'notAlwaysPositiveBitOperations' => [
+                '<?php
+
+                    $a = 1;
+                    $b = 1;
+                    $c = 32;
+                    $d = 64;
+                    $e = 2;
+
+                    if (0 === ($a ^ $b)) {
+                        echo "Actually, zero\n";
+                    }
+
+                    if (0 === ($a & $e)) {
+                        echo "Actually, zero\n";
+                    }
+
+                    if (0 === ($a >> $b)) {
+                        echo "Actually, zero\n";
+                    }
+
+                    if (8 === PHP_INT_SIZE) {
+                        if (0 === ($a << $d)) {
+                            echo "Actually, zero\n";
+                        }
+                    } else {
+                        if (0 === ($a << $c)) {
+                            echo "Actually, zero\n";
+                        }
+                    }'
+            ],
+            'IntOverflowMul' => [
+                '<?php
+                    $a = (1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024);',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
+            'IntOverflowPow' => [
+                '<?php
+                    $a = 2 ** 80;',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
+            'IntOverflowPlus' => [
+                '<?php
+                    $a = 2**62 - 1 + 2**62;
+                    $b = 2**62 + 2**62 - 1; // plus results in a float',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'float',
+                ],
+            ],
+            'IntOverflowPowSub' => [
+                '<?php
+                    $a = 2 ** 63;',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
+            'IntOverflowSub' => [
+                '<?php
+                    $a = (1 << 63) - (1 << 20);',
+                'assertions' => [
+                    '$a' => 'float'
+                ],
+            ],
+            'literalConcatCreatesLiteral' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return $s1 . $s2;
+                    }',
+            ],
+            'literalConcatCreatesLiteral2' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @return literal-string
+                     */
+                    function foo(string $s1): string {
+                        return $s1 . 2;
+                    }',
+            ],
+            'encapsedStringIncludingLiterals' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'encapsedStringIncludingLiterals2' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @return literal-string
+                     */
+                    function foo(string $s1): string {
+                        $s2 = 2;
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'literalIntConcatCreatesLiteral' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s1
+                     * @param  literal-int $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, int $s2): string {
+                        return $s1 . $s2;
+                    }',
+            ],
+            'literalIntConcatCreatesLiteral2' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @return literal-string
+                     */
+                    function foo(int $s1): string {
+                        return "foo" . $s1;
+                    }',
+            ],
+            'numericWithInt' => [
+                '<?php
+                    /** @return numeric */
+                    function getNumeric(){
+                        return 1;
+                    }
+                    $a = getNumeric();
+                    $a++;
+                    $b = getNumeric() * 2;
+                    $c = 1 - getNumeric();
+                    $d = 2;
+                    $d -= getNumeric();
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                    '$c' => 'float|int',
+                    '$d' => 'float|int',
+                ],
+            ],
+            'encapsedStringWithIntIncludingLiterals' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @param  literal-int $s2
+                     * @return literal-string
+                     */
+                    function foo(int $s1, int $s2): string {
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'encapsedStringWithIntIncludingLiterals2' => [
+                '<?php
+                    /**
+                     * @param  literal-int $s1
+                     * @return literal-string
+                     */
+                    function foo(int $s1): string {
+                        $s2 = "foo";
+                        return "Hello $s1 $s2";
+                    }',
+            ],
+            'NumericStringIncrement' => [
+                '<?php
+                    function scope(array $a): int|float {
+                        $offset = array_search("foo", $a);
+                        if(is_numeric($offset)){
+                            return $offset++;
+                        }
+                        else{
+                            return 0;
+                        }
+                    }',
+            ],
+            'NumericStringIncrementLiteral' => [
+                '<?php
+                    $a = "123";
+                    $b = "123";
+                    $a++;
+                    ++$b;
+                    ',
+                'assertions' => [
+                    '$a' => 'float|int',
+                    '$b' => 'float|int',
+                ],
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
      */
-    public function providerInvalidCodeParse()
+    public function providerInvalidCodeParse(): iterable
     {
         return [
             'badAddition' => [
@@ -305,6 +733,21 @@ class BinaryOperationTest extends TestCase
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
                 'strict_mode' => true,
+            ],
+            'concatenateNegativeIntRightSideIsNotNumeric' => [
+                '<?php
+                    /**
+                     * @param numeric-string $bar
+                     * @return int
+                     */
+                    function foo(string $bar): int
+                    {
+                        return (int) $bar;
+                    }
+
+                    foo(foo("123") . foo("-456"));
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'addArrayToNumber' => [
                 '<?php
@@ -394,6 +837,28 @@ class BinaryOperationTest extends TestCase
                         }
                     }',
                     'error_message' => 'TypeDoesNotContainType',
+            ],
+            'literalConcatWithStringCreatesString' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return $s1 . $s2;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'encapsedConcatWithStringCreatesString' => [
+                '<?php
+                    /**
+                     * @param  literal-string $s2
+                     * @return literal-string
+                     */
+                    function foo(string $s1, string $s2): string {
+                        return "hello $s1 $s2";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

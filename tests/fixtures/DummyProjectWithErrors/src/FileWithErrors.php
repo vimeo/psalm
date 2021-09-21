@@ -21,3 +21,8 @@ function bat(string $s) : string {
 function bang(string $s) : string {
     return $s;
 }
+
+function boom(): void
+{
+    echo (string) ($_GET['abc'] ?? 'z');
+}

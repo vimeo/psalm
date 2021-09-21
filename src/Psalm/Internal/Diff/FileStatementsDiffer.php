@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Internal\Diff;
 
+use PhpParser;
+
 use function array_merge;
 use function end;
 use function get_class;
-use PhpParser;
 use function substr;
 
 /**
@@ -14,29 +15,33 @@ class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
-     *
-     * @param string $a_code
-     * @param string $b_code
-     * @param array<int, PhpParser\Node\Stmt> $a
-     * @param array<int, PhpParser\Node\Stmt> $b
+     * @param list<PhpParser\Node\Stmt> $a
+     * @param list<PhpParser\Node\Stmt> $b
      *
      * @return array{
-     *      0: array<int, string>,
-     *      1: array<int, string>,
-     *      2: array<int, string>,
-     *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
+     *      0: list<string>,
+     *      1: list<string>,
+     *      2: list<string>,
+     *      3: list<array{int, int, int, int}>,
+     *      4: list<array{int, int}>
      * }
      */
-    public static function diff(array $a, array $b, $a_code, $b_code)
+    public static function diff(array $a, array $b, string $a_code, string $b_code): array
     {
-        list($trace, $x, $y, $bc) = self::calculateTrace(
+        [$trace, $x, $y, $bc] = self::calculateTrace(
             /**
              * @param string $a_code
              * @param string $b_code
              *
              * @return bool
              */
-            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code, bool &$body_change = false) {
+            function (
+                PhpParser\Node\Stmt $a,
+                PhpParser\Node\Stmt $b,
+                $a_code,
+                $b_code,
+                bool &$body_change = false
+            ): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }
@@ -82,6 +87,7 @@ class FileStatementsDiffer extends AstDiffer
         $keep_signature = [];
         $add_or_delete = [];
         $diff_map = [];
+        $deletion_ranges = [];
 
         foreach ($diff as $diff_elem) {
             if ($diff_elem->type === DiffElem::TYPE_KEEP) {
@@ -100,6 +106,7 @@ class FileStatementsDiffer extends AstDiffer
                     $keep_signature = array_merge($keep_signature, $namespace_keep[1]);
                     $add_or_delete = array_merge($add_or_delete, $namespace_keep[2]);
                     $diff_map = array_merge($diff_map, $namespace_keep[3]);
+                    $deletion_ranges = array_merge($deletion_ranges, $namespace_keep[4]);
                 } elseif (($diff_elem->old instanceof PhpParser\Node\Stmt\Class_
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Class_)
                     || ($diff_elem->old instanceof PhpParser\Node\Stmt\Interface_
@@ -119,6 +126,7 @@ class FileStatementsDiffer extends AstDiffer
                     $keep_signature = array_merge($keep_signature, $class_keep[1]);
                     $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
                     $diff_map = array_merge($diff_map, $class_keep[3]);
+                    $deletion_ranges = array_merge($deletion_ranges, $class_keep[4]);
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_
@@ -133,6 +141,19 @@ class FileStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
                     }
+                } elseif ($diff_elem->old instanceof PhpParser\Node
+                    && !$diff_elem->old instanceof PhpParser\Node\Stmt\Namespace_
+                ) {
+                    if ($doc = $diff_elem->old->getDocComment()) {
+                        $start = $doc->getStartFilePos();
+                    } else {
+                        $start = (int)$diff_elem->old->getAttribute('startFilePos');
+                    }
+
+                    $deletion_ranges[] = [
+                        $start,
+                        (int)$diff_elem->old->getAttribute('endFilePos')
+                    ];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_ADD) {
                 if ($diff_elem->new instanceof PhpParser\Node\Stmt\Use_
@@ -151,6 +172,6 @@ class FileStatementsDiffer extends AstDiffer
             }
         }
 
-        return [$keep, $keep_signature, $add_or_delete, $diff_map];
+        return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
     }
 }

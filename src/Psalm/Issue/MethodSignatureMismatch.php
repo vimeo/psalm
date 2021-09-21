@@ -3,6 +3,6 @@ namespace Psalm\Issue;
 
 class MethodSignatureMismatch extends CodeIssue
 {
-    const ERROR_LEVEL = 7;
-    const SHORTCODE = 42;
+    public const ERROR_LEVEL = 7;
+    public const SHORTCODE = 42;
 }

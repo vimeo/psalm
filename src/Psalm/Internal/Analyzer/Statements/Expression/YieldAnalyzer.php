@@ -2,15 +2,15 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -19,11 +19,6 @@ use Psalm\Type;
 
 class YieldAnalyzer
 {
-    /**
-     * @param   StatementsAnalyzer           $statements_analyzer
-     * @param   PhpParser\Node\Expr\Yield_  $stmt
-     * @param   Context                     $context
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Yield_ $stmt,
@@ -46,7 +41,7 @@ class YieldAnalyzer
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
-                        (string)$e->getMessage(),
+                        $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     )
                 )) {
@@ -102,11 +97,15 @@ class YieldAnalyzer
                             'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
                             $type_location
                         ),
-                        [],
+                        $statements_analyzer->getSuppressedIssues(),
                         true
                     )) {
                         // fall through
                     }
+                }
+
+                if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -143,11 +142,15 @@ class YieldAnalyzer
 
         foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
             if ($expression_atomic_type instanceof Type\Atomic\TNamedObject) {
+                if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
+                    continue;
+                }
+
                 $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
 
                 if ($classlike_storage->yield) {
                     if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
-                        $yield_candidate_type = InstancePropertyFetchAnalyzer::localizePropertyType(
+                        $yield_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             clone $classlike_storage->yield,
                             $expression_atomic_type,
