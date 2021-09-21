@@ -443,8 +443,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($storage->if_this_is_type
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $storage->if_this_is_type,
-                        $class_type
+                        $class_type,
+                        $storage->if_this_is_type
                     )
                 ) {
                     if (IssueBuffer::accepts(
