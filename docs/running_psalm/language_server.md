@@ -29,7 +29,13 @@ This is the config I used:
 
 ## PhpStorm
 
-I've got it working with `gtache/intellij-lsp` plugin ([Jetbrains-approved version](https://plugins.jetbrains.com/plugin/10209-lsp-support), [latest version](https://github.com/gtache/intellij-lsp/releases/tag/v1.6.0)).
+### Native Support
+
+As of PhpStorm 2020.3 support for psalm is supported and on by default, you can read more about that [here](https://www.jetbrains.com/help/phpstorm/using-psalm.html)
+
+### With LSP
+
+Alternatively, psalm works with `gtache/intellij-lsp` plugin ([Jetbrains-approved version](https://plugins.jetbrains.com/plugin/10209-lsp-support), [latest version](https://github.com/gtache/intellij-lsp/releases/tag/v1.6.0)).
 
 Setup is done via a GUI.
 
