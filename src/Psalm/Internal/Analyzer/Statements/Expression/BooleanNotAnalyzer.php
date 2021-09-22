@@ -26,19 +26,19 @@ class BooleanNotAnalyzer
 
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
+        $stmt_type = Type::getBool();
         if ($expr_type) {
             if ($expr_type->isAlwaysTruthy()) {
                 $stmt_type = Type::getFalse();
             } elseif ($expr_type->isAlwaysFalsy()) {
                 $stmt_type = Type::getTrue();
-            } else {
-                $stmt_type = Type::getBool();
             }
 
             $stmt_type->from_docblock = $expr_type->from_docblock;
             $stmt_type->parent_nodes = $expr_type->parent_nodes;
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
+
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         return $result;
     }
