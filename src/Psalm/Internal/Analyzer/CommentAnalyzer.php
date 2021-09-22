@@ -110,7 +110,7 @@ class CommentAnalyzer
                 );
                 $description = $parsed_docblock->description;
 
-                if ($line_parts && $line_parts[0]) {
+                if ($line_parts[0]) {
                     $type_start = $offset;
                     $type_end = $type_start + strlen($line_parts[0]);
 

@@ -132,7 +132,7 @@ class ArgumentsAnalyzer
 
             $by_ref_type = null;
 
-            if ($by_ref && $param) {
+            if ($by_ref) {
                 $by_ref_type = $param->type ? clone $param->type : Type::getMixed();
             }
 
