@@ -144,6 +144,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                 $key_type->addType(new Type\Atomic\TInt);
             }
 
+            /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
             if (!$inner_type->getAtomicTypes()) {
                 return Type::getEmptyArray();
             }
@@ -296,6 +297,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
             ]);
         }
 
+        /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
         if (!$inner_type->getAtomicTypes()) {
             return Type::getEmptyArray();
         }

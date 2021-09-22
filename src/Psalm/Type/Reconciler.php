@@ -208,6 +208,7 @@ class Reconciler
                         $negated
                     );
 
+                    /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
                     if (!$result_type_candidate->getAtomicTypes()) {
                         $result_type_candidate->addType(new TEmpty);
                     }
@@ -1092,6 +1093,7 @@ class Reconciler
             }
         }
 
+        /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
         if (!$key_type->getAtomicTypes()) {
             // this should ideally prompt some sort of error
             $key_type->addType(new Type\Atomic\TArrayKey());
