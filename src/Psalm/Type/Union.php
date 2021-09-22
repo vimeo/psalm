@@ -1010,6 +1010,10 @@ class Union implements TypeNode
 
     public function isAlwaysTruthy(): bool
     {
+        if ($this->possibly_undefined || $this->possibly_undefined_from_try) {
+            return false;
+        }
+
         foreach ($this->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTrue) {
                 continue;
