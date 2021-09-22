@@ -398,7 +398,7 @@ class FileFilter
                 $config['referencedVariable'][]['name'] = strtolower((string)$referenced_variable['name']);
             }
         }
-        var_dump($config);
+
         return static::loadFromArray($config, $base_dir, $inclusive);
     }
 
