@@ -1200,7 +1200,7 @@ class TypeAlgebraTest extends \Psalm\Tests\TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 '<?php
