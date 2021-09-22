@@ -978,7 +978,7 @@ class Union implements TypeNode
             if ($atomic_type instanceof Type\Atomic\TLiteralString &&
                 ($atomic_type->value === '' || $atomic_type->value === '0')
             ) {
-                    continue;
+                continue;
             }
 
             if ($atomic_type instanceof Type\Atomic\TNull) {
@@ -1068,7 +1068,7 @@ class Union implements TypeNode
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as $property) {
                     if ($property->possibly_undefined === false) {
-                        continue;
+                        continue 2;
                     }
                 }
             }
