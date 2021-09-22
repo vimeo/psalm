@@ -59,6 +59,7 @@
  - [InvalidClone](issues/InvalidClone.md)
  - [InvalidDocblock](issues/InvalidDocblock.md)
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
+ - [InvalidEnumBackingType](issues/InvalidEnumBackingType.md)
  - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidFunctionCall](issues/InvalidFunctionCall.md)

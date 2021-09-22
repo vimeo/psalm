@@ -387,25 +387,6 @@ class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
             ],
-            'createClassOfTypeFromStringUsingIsSubclassOfString' => [
-                '<?php
-                    class A {}
-
-                    /**
-                     * @return class-string<A> $s
-                     */
-                    function foo(string $s) : string {
-                        if (!class_exists($s)) {
-                            throw new \UnexpectedValueException("bad");
-                        }
-
-                        if (!is_subclass_of($s, "\A")) {
-                            throw new \UnexpectedValueException("bad");
-                        }
-
-                        return $s;
-                    }',
-            ],
             'checkSubclassOfAbstract' => [
                 '<?php
                     interface Foo {
@@ -476,6 +457,23 @@ class ClassLikeStringTest extends TestCase
                             return null;
                         }
                     }',
+            ],
+            'instanceofClassStringNotLiteral' => [
+                '<?php
+                    final class Z {
+                    /**
+                     * @psalm-var class-string<stdClass> $class
+                     */
+                    private string $class = stdClass::class;
+
+                    public function go(object $object): ?stdClass {
+                        $a = $this->class;
+                        if ($object instanceof $a) {
+                            return $object;
+                        }
+                        return null;
+                    }
+                }'
             ],
             'returnTemplatedClassString' => [
                 '<?php

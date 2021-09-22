@@ -226,6 +226,8 @@
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DuplicateEnumCase" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="DuplicateEnumCaseValue" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
@@ -265,6 +267,8 @@
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblockParamName" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidEnumBackingType" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidEnumCaseValue" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidExtendClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFalsableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />

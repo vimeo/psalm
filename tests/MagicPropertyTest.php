@@ -1146,6 +1146,14 @@ class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMagicPropertyAssignment',
             ],
+            'propertyDocblockOnProperty' => [
+                '<?php
+                    class A { 
+                       /** @property string[] */ 
+                      public array $arr; 
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
         ];
     }
 }

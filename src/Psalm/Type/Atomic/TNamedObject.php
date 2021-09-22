@@ -28,9 +28,15 @@ class TNamedObject extends Atomic
     public $was_static = false;
 
     /**
+     * Whether or not this type can represent a child of the class named in $value
+     * @var bool
+     */
+    public $definite_class = false;
+
+    /**
      * @param string $value the name of the object
      */
-    public function __construct(string $value, bool $was_static = false)
+    public function __construct(string $value, bool $was_static = false, bool $definite_class = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -38,6 +44,7 @@ class TNamedObject extends Atomic
 
         $this->value = $value;
         $this->was_static = $was_static;
+        $this->definite_class = $definite_class;
     }
 
     public function __toString(): string

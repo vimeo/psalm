@@ -12,6 +12,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TString;
 
 class UnaryPlusMinusAnalyzer
@@ -45,6 +46,37 @@ class UnaryPlusMinusAnalyzer
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
                         $type_part->value = -$type_part->value;
+                    }
+
+                    if ($type_part instanceof Type\Atomic\TIntRange
+                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                    ) {
+                        //we'll have to inverse min and max bound and negate any literal
+                        $old_min_bound = $type_part->min_bound;
+                        $old_max_bound = $type_part->max_bound;
+                        if ($old_min_bound === null) {
+                            //min bound is null, max bound will be null
+                            $type_part->max_bound = null;
+                        } elseif ($old_min_bound === 0) {
+                            $type_part->max_bound = 0;
+                        } else {
+                            $type_part->max_bound = -$old_min_bound;
+                        }
+
+                        if ($old_max_bound === null) {
+                            //max bound is null, min bound will be null
+                            $type_part->min_bound = null;
+                        } elseif ($old_max_bound === 0) {
+                            $type_part->min_bound = 0;
+                        } else {
+                            $type_part->min_bound = -$old_max_bound;
+                        }
+                    }
+
+                    if ($type_part instanceof Type\Atomic\TPositiveInt
+                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                    ) {
+                        $type_part = new TIntRange(null, -1);
                     }
 
                     $acceptable_types[] = $type_part;

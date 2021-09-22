@@ -97,7 +97,7 @@ class YieldAnalyzer
                             'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
                             $type_location
                         ),
-                        [],
+                        $statements_analyzer->getSuppressedIssues(),
                         true
                     )) {
                         // fall through

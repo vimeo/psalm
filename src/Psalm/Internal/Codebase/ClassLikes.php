@@ -321,11 +321,7 @@ class ClassLikes
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
-        $fq_class_name_lc = strtolower($fq_class_name);
-
-        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
-        }
+        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if ($code_location) {
             if ($calling_method_id) {
@@ -392,11 +388,7 @@ class ClassLikes
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
-        $fq_class_name_lc = strtolower($fq_class_name);
-
-        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
-        }
+        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
@@ -463,11 +455,7 @@ class ClassLikes
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
-        $fq_class_name_lc = strtolower($fq_class_name);
-
-        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
-        }
+        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_enums_lc[$fq_class_name_lc])
             || !$this->existing_enums_lc[$fq_class_name_lc]
@@ -530,11 +518,7 @@ class ClassLikes
 
     public function hasFullyQualifiedTraitName(string $fq_class_name, ?CodeLocation $code_location = null): bool
     {
-        $fq_class_name_lc = strtolower($fq_class_name);
-
-        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
-        }
+        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
             !$this->existing_traits_lc[$fq_class_name_lc]
@@ -622,15 +606,14 @@ class ClassLikes
      */
     public function classExtends(string $fq_class_name, string $possible_parent, bool $from_api = false): bool
     {
-        $fq_class_name_lc = strtolower($fq_class_name);
+        $unaliased_fq_class_name = $this->getUnAliasedName($fq_class_name);
+        $unaliased_fq_class_name_lc = strtolower($unaliased_fq_class_name);
 
-        if ($fq_class_name_lc === 'generator') {
+        if ($unaliased_fq_class_name_lc === 'generator') {
             return false;
         }
 
-        $fq_class_name = $this->classlike_aliases[$fq_class_name_lc] ?? $fq_class_name;
-
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+        $class_storage = $this->classlike_storage_provider->get($unaliased_fq_class_name);
 
         if ($from_api && !$class_storage->populated) {
             throw new UnpopulatedClasslikeException($fq_class_name);
@@ -666,16 +649,28 @@ class ClassLikes
             return false;
         }
 
-        if (isset($this->classlike_aliases[$fq_class_name])) {
-            $fq_class_name = $this->classlike_aliases[$fq_class_name];
-        }
+        $fq_class_name = $this->getUnAliasedName($fq_class_name);
 
         if (!$this->classlike_storage_provider->has($fq_class_name)) {
             return false;
         }
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
-        return isset($class_storage->class_implements[$interface_id]);
+        if (isset($class_storage->class_implements[$interface_id])) {
+            return true;
+        }
+
+        foreach ($class_storage->class_implements as $implementing_interface_lc => $_) {
+            $aliased_interface_lc = strtolower(
+                $this->getUnAliasedName($implementing_interface_lc)
+            );
+
+            if ($aliased_interface_lc === $interface_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function interfaceExists(
@@ -838,7 +833,12 @@ class ClassLikes
             return $alias_name;
         }
 
-        return $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
+        $result = $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
+        if ($result === $alias_name) {
+            return $result;
+        }
+
+        return $this->getUnAliasedName($result);
     }
 
     public function consolidateAnalyzedData(Methods $methods, ?Progress $progress, bool $find_unused_code): void

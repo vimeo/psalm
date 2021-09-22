@@ -66,7 +66,7 @@ class FileStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= $this->config->hash;
+        $this->modified_timestamps .= $this->config->computeHash();
     }
 
     public function writeToCache(FileStorage $storage, string $file_contents): void

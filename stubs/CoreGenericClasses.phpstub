@@ -426,15 +426,15 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
 
 interface Serializable {
     /**
-     * @return string the string representation of the object or null
+     * @return null|string
      */
     public function serialize();
 
     /**
-     * @param string $serialized <p>
+     * @param string $data
      * @return void
      */
-    public function unserialize($serialized);
+    public function unserialize($data);
 }
 
 /**

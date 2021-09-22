@@ -794,7 +794,7 @@ class ValueTest extends \Psalm\Tests\TestCase
             'returnFromUnionLiteral' => [
                 '<?php
                     /**
-                     * @return list<"a1"|"a2">
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -814,7 +814,7 @@ class ValueTest extends \Psalm\Tests\TestCase
             'returnFromUnionLiteralNegated' => [
                 '<?php
                     /**
-                     * @return list<"a1"|"a2">
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -958,6 +958,17 @@ class ValueTest extends \Psalm\Tests\TestCase
                     $a = 4.0;
                     if ($a !== 4.1) {
                         // do something
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'inArrayRemoveNull' => [
+                '<?php
+                    function x(?string $foo, string $bar): void {
+                        if (!in_array($foo, [$bar], true)) {
+                            throw new Exception();
+                        }
+
+                        if (is_string($foo)) {}
                     }',
                 'error_message' => 'RedundantCondition',
             ],

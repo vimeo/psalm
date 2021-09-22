@@ -1216,6 +1216,10 @@ class Analyzer
             return;
         }
 
+        if ($this->mixed_counts[$file_path][0] === 0) {
+            return;
+        }
+
         --$this->mixed_counts[$file_path][0];
     }
 
@@ -1403,7 +1407,7 @@ class Analyzer
                 [$path_mixed_count, $path_nonmixed_count] = $this->mixed_counts[$file_path];
 
                 if ($path_mixed_count + $path_nonmixed_count) {
-                    $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)
+                    $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 3)
                         . '% ' . $this->config->shortenFileName($file_path)
                         . ' (' . $path_mixed_count . ' mixed)' . "\n";
                 }

@@ -10,7 +10,7 @@ This could lead to a potential Cross Site Scripting (XSS) vulnerability. Using a
 - Exfiltrate sensitive information by reading the DOM
 - Keylog entries on the website (e.g. fake login form)
 
-Wheter this is exploitable or not depends on a few conditions:
+Whether this is exploitable or not depends on a few conditions:
 
 - Is an executable mimetype set? (e.g. `text/html`)
 - Is the content served inline or as attachment? (`Content-Disposition`)

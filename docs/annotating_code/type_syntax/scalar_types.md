@@ -58,8 +58,8 @@ Examples:
 
 - `"hello " . "world"`
 - `"hello " . Person::DEFAULT_NAME`
-- `implode([', ', ["one", "two"])`
-- `implode([', ', [1, 2, 3])`
+- `implode(', ', ["one", "two"])`
+- `implode(', ', [1, 2, 3])`
 - `"hello " . <another literal-string>`
 
 Strings that don't pass this type check:

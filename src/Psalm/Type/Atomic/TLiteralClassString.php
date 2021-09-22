@@ -13,11 +13,15 @@ use function strtolower;
 class TLiteralClassString extends TLiteralString
 {
     /**
-     * @param string $value string
+     * Whether or not this type can represent a child of the class named in $value
+     * @var bool
      */
-    public function __construct(string $value)
+    public $definite_class = false;
+
+    public function __construct(string $value, bool $definite_class = false)
     {
-        $this->value = $value;
+        parent::__construct($value);
+        $this->definite_class = $definite_class;
     }
 
     public function __toString(): string

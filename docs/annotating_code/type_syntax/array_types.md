@@ -49,9 +49,11 @@ Generic arrays encompass both _associative arrays_ and _lists_.
 
 (Psalm 3.6+)
 
-Psalm supports a `list` type that represents continuous, integer-indexed arrays like `["red", "yellow", "blue"]` .
+Psalm supports a `list` type that represents continuous, integer-indexed arrays like `["red", "yellow", "blue"]`.
 
-These arrays have the property `$arr === array_values($arr)`, and represent a large percentage of all array usage in PHP applications.
+A frequent way to create a list is with the `$arr[] =` notation.
+
+These arrays will return true to `array_is_list($arr)`(PHP 8.1+) and represent a large percentage of all array usage in PHP applications.
 
 A `list` type is of the form `list<SomeType>`,  where `SomeType` is any permitted [union type](union_types.md) supported by Psalm.
 

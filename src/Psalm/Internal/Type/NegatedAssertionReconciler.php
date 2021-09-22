@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -47,7 +48,8 @@ class NegatedAssertionReconciler extends Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
+        bool $inside_loop
     ): Type\Union {
         $is_equality = $is_strict_equality || $is_loose_equality;
 
@@ -154,6 +156,38 @@ class NegatedAssertionReconciler extends Reconciler
             } elseif ($assertion === 'array-key-exists') {
                 return Type::getEmpty();
             } elseif (substr($assertion, 0, 9) === 'in-array-') {
+                $assertion = substr($assertion, 9);
+                $new_var_type = null;
+                try {
+                    $new_var_type = Type::parseString($assertion);
+                } catch (TypeParseTreeException $e) {
+                }
+
+                if ($new_var_type) {
+                    $intersection = Type::intersectUnionTypes(
+                        $new_var_type,
+                        $existing_var_type,
+                        $statements_analyzer->getCodebase()
+                    );
+
+                    if ($intersection === null) {
+                        if ($key && $code_location) {
+                            self::triggerIssueForImpossible(
+                                $existing_var_type,
+                                $existing_var_type->getId(),
+                                $key,
+                                '!' . $assertion,
+                                true,
+                                $negated,
+                                $code_location,
+                                $suppressed_issues
+                            );
+                        }
+
+                        $failed_reconciliation = 2;
+                    }
+                }
+
                 return $existing_var_type;
             } elseif (substr($assertion, 0, 14) === 'has-array-key-') {
                 return $existing_var_type;
@@ -178,7 +212,8 @@ class NegatedAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $is_equality,
-                $is_strict_equality
+                $is_strict_equality,
+                $inside_loop
             );
 
             if ($simple_negated_type) {

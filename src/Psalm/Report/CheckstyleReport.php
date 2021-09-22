@@ -3,7 +3,6 @@ namespace Psalm\Report;
 
 use Psalm\Report;
 
-use function htmlspecialchars;
 use function sprintf;
 
 class CheckstyleReport extends Report
@@ -21,13 +20,13 @@ class CheckstyleReport extends Report
                 $issue_data->message
             );
 
-            $output .= '<file name="' . htmlspecialchars($issue_data->file_name) . '">' . "\n";
+            $output .= '<file name="' . $this->xmlEncode($issue_data->file_name) . '">' . "\n";
             $output .= ' ';
             $output .= '<error';
             $output .= ' line="' . $issue_data->line_from . '"';
             $output .= ' column="' . $issue_data->column_from . '"';
             $output .= ' severity="' . $issue_data->severity . '"';
-            $output .= ' message="' . htmlspecialchars($message) . '"';
+            $output .= ' message="' . $this->xmlEncode($message) . '"';
             $output .= '/>' . "\n";
             $output .= '</file>' . "\n";
         }

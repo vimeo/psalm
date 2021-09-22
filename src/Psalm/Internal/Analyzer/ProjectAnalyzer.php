@@ -1445,7 +1445,7 @@ class ProjectAnalyzer
             return 1;
         }
 
-        if (!extension_loaded('pcntl')) {
+        if (!extension_loaded('pcntl') || !\function_exists('shell_exec')) {
             return 1;
         }
 

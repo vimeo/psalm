@@ -314,6 +314,51 @@ class ConstantTest extends TestCase
                 ',
                 'assertions' => ['$foo' => 'string'],
             ],
+            'dynamicClassConstFetch' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    $foo = new Foo();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
+            'unsafeInferenceClassConstFetch' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace' => 'mixed'],
+            ],
+            'FinalInferenceClassConstFetch' => [
+                '<?php
+                    final class Foo
+                    {
+                        public const BAR = "bar";
+                    }
+
+                    /** @var Foo $foo */
+                    $foo = new stdClass();
+                    $_trace = $foo::BAR;',
+                'assertions' => ['$_trace===' => '"bar"'],
+            ],
+            'dynamicClassConstFetchClassString' => [
+                '<?php
+                    class C {
+                        public const CC = 1;
+                    }
+
+                    $c = C::class;
+                    $d = $c::CC;',
+                'assertions' => ['$d===' => '1'],
+            ],
             'allowConstCheckForDifferentPlatforms' => [
                 '<?php
                     if ("phpdbg" === \PHP_SAPI) {}',
@@ -1069,6 +1114,50 @@ class ConstantTest extends TestCase
                             return __FUNCTION__;
                         }
                     }'
+            ],
+            'arrayUnpack' => [
+                '<?php
+                    class C {
+                        const A = [...[...[1]], ...[2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{1, 2}',
+                ],
+            ],
+            'keysInUnpackedArrayAreReset' => [
+                '<?php
+                    class C {
+                        const A = [...[11 => 2]];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{2}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterExplicitIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "z", 10 => "aa", "zz"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{10: "aa", 11: "zz", 5: "a", 6: "z"}',
+                ],
+            ],
+            'arrayKeysSequenceContinuesAfterNonIntKey' => [
+                '<?php
+                    class C {
+                        const A = [5 => "a", "zz" => "z", "aa"];
+                    }
+                    $arr = C::A;
+                ',
+                'assertions' => [
+                    '$arr===' => 'array{5: "a", 6: "aa", zz: "z"}',
+                ],
             ],
         ];
     }

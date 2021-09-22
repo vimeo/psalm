@@ -245,14 +245,18 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
 
                         $cond_object_id = \spl_object_id($stmt->expr);
 
-                        $filter_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
-                            $cond_object_id,
-                            $cond_object_id,
-                            $stmt->expr,
-                            $context->self,
-                            $statements_source,
-                            $codebase
-                        );
+                        try {
+                            $filter_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                                $cond_object_id,
+                                $cond_object_id,
+                                $stmt->expr,
+                                $context->self,
+                                $statements_source,
+                                $codebase
+                            );
+                        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                            $filter_clauses = [];
+                        }
 
                         $assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
                             $filter_clauses,

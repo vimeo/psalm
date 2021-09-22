@@ -198,11 +198,13 @@ class DocumentationTest extends TestCase
      * @param bool $check_references
      *
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false): void
+    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
+
+        $this->project_analyzer->setPhpVersion($php_version);
 
         if ($check_references) {
             $this->project_analyzer->getCodebase()->reportUnusedCode();
@@ -242,13 +244,15 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string[],bool}>
+     * @return array<string,array{string,string,string[],bool,string}>
      */
     public function providerInvalidCodeParse(): array
     {
         $invalid_code_data = [];
 
         foreach (self::getCodeBlocksFromDocs() as $issue_name => $blocks) {
+            $php_version = '8.0';
+            $ignored_issues = [];
             switch ($issue_name) {
                 case 'MissingThrowsDocblock':
                     continue 2;
@@ -300,8 +304,12 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
-                default:
-                    $ignored_issues = [];
+                case 'InvalidEnumBackingType':
+                case 'InvalidEnumCaseValue':
+                case 'DuplicateEnumCase':
+                case 'DuplicateEnumCaseValue':
+                    $php_version = '8.1';
+                    break;
             }
 
             $invalid_code_data[$issue_name] = [
@@ -311,6 +319,7 @@ class DocumentationTest extends TestCase
                 strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
+                $php_version
             ];
         }
 

@@ -57,6 +57,29 @@ You can also [define your own taint sinks](custom_taint_sinks.md).
 
 Nobody likes to wade through a ton of false-positives – [here’s a guide to avoiding them](avoiding_false_positives.md).
 
+## Limitations
+
+Taint Analysis relies on not making any mistakes when escaping values, e.g.
+
+```php
+$sql = 'SELECT * FROM users WHERE id = ' . $mysqli->real_escape_string((string) $_GET['id']);
+
+$html = "
+  <img src=" . htmlentities((string) $_GET['img']) . " alt='' />
+  <a href='" . htmlentities((string) $_GET['a1']) . "'>Link 1</a>
+  <a href='" . htmlentities((string) $_GET['a2']) . "'>Line 2</a>";
+
+// Details:
+//    $id  = 'id'                   - Missing quotes
+//    $img = '/ onerror=alert(1)'   - Missing quotes
+//    $a1  = 'javascript:alert(1)'  - Normal inline JavaScript
+//    $a2  = '/' onerror='alert(1)' - Pre PHP 8.1, single quotes are not escaped by default
+// Test:
+//    /?id=id&img=%2F+onerror%3Dalert%281%29&a1=javascript%3Aalert%281%29&a2=%2F%27+onerror%3D%27alert%281%29
+```
+
+To avoid these issues, use Parameterised Queries for SQL and Commands (e.g. `exec`); and a context-aware templating engine for HTML. Then use the [literal-string](https://psalm.dev/docs/annotating_code/type_syntax/scalar_types/#literal-string) type to ensure sensitive strings are defined in your application (i.e. have been written by a developer).
+
 ## Using Baseline With Taint Analysis
 
 Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.
@@ -73,7 +96,7 @@ Psalm supports the [SARIF](http://docs.oasis-open.org/sarif/sarif/v2.0/csprd01/s
 
 Alternatively, the generated SARIF file can be manually uploaded as described in [the GitHub documentation](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/uploading-a-sarif-file-to-github).
 
-The results will then be avaible in the "Security" tab of your repository.
+The results will then be available in the "Security" tab of your repository.
 
 ### Other SARIF compatible software
 

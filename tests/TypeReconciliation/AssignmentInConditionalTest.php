@@ -383,7 +383,7 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
             'repeatedSet' => [
                 '<?php
                     function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
+                        if ($a = rand(0, 1) ? "1" : null) {
                             return;
                         }
 
@@ -399,7 +399,7 @@ class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
             'repeatedSetInsideWhile' => [
                 '<?php
                     function foo(): void {
-                        if ($a = rand(0, 1) ? "" : null) {
+                        if ($a = rand(0, 1) ? "1" : null) {
                             return;
                         } else {
                             while (rand(0, 1)) {

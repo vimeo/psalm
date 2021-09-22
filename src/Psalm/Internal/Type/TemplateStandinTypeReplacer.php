@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
+use function is_a;
 use function reset;
 use function strpos;
 use function substr;
@@ -57,6 +58,7 @@ class TemplateStandinTypeReplacer
                 }
             }
 
+            /** @psalm-suppress RedundantCondition can be empty after removing above */
             if ($new_input_type->getAtomicTypes()) {
                 $input_type = $new_input_type;
             }
@@ -483,6 +485,12 @@ class TemplateStandinTypeReplacer
                         $atomic_input_type->as
                     )
                 );
+                continue;
+            }
+
+            if (is_a($input_key, $key, true)) {
+                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
+                continue;
             }
         }
 

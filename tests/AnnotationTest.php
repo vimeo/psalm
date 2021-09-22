@@ -11,6 +11,13 @@ class AnnotationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+    }
+
     public function testPhpStormGenericsWithValidArrayIteratorArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -18,7 +25,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function takesString(string $s): void {}
+                function takesString(string $_s): void {}
 
                 /** @param ArrayIterator|string[] $i */
                 function takesArrayIteratorOfString(ArrayIterator $i): void {
@@ -41,7 +48,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function takesString(string $s): void {}
+                function takesString(string $_s): void {}
 
                 /** @param Traversable|string[] $i */
                 function takesTraversableOfString(Traversable $i): void {
@@ -106,7 +113,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function takesString(string $s): void {}
+                function takesString(string $_s): void {}
 
                 /** @param iterable|string[] $i */
                 function takesArrayIteratorOfString(iterable $i): void {
@@ -129,7 +136,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function takesInt(int $s): void {}
+                function takesInt(int $_s): void {}
 
                 /** @param ArrayIterator|string[] $i */
                 function takesArrayIteratorOfString(ArrayIterator $i): void {
@@ -186,10 +193,10 @@ class AnnotationTest extends TestCase
             'somefile.php',
             '<?php
                 /**
-                 * @param array $arr
+                 * @param array $_arr
                  * @return void
                  */
-                function foo($arr = false) {}
+                function foo($_arr = false) {}
                 foo(false);
                 foo(["hello"]);'
         );
@@ -221,11 +228,11 @@ class AnnotationTest extends TestCase
         return [
             'nopType' => [
                 '<?php
-                    $a = "hello";
+                    $_a = "hello";
 
-                    /** @var int $a */',
+                    /** @var int $_a */',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$_a' => 'int',
                 ],
             ],
             'validDocblockReturn' => [
@@ -266,7 +273,10 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @param mixed $b */
                     function foo($b): void {
-                        /** @var array */
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var array
+                         */
                         $a = (array)$b;
                         if (is_array($a)) {
                             // do something
@@ -316,7 +326,7 @@ class AnnotationTest extends TestCase
                         return rand(0, 1) ? new A(): null;
                     }
 
-                    function takeA(A $a): void { }
+                    function takeA(A $_a): void { }
 
                     $a = makeA();
                     $a->foo();
@@ -326,10 +336,10 @@ class AnnotationTest extends TestCase
             'invalidDocblockParamSuppress' => [
                 '<?php
                     /**
-                     * @param int $bar
+                     * @param int $_bar
                      * @psalm-suppress MismatchingDocblockParamType
                      */
-                    function fooFoo(array $bar): void {
+                    function fooFoo(array $_bar): void {
                     }',
             ],
             'differentDocblockParamClassSuppress' => [
@@ -338,10 +348,10 @@ class AnnotationTest extends TestCase
                     class B {}
 
                     /**
-                     * @param B $bar
+                     * @param B $_bar
                      * @psalm-suppress MismatchingDocblockParamType
                      */
-                    function fooFoo(A $bar): void {
+                    function fooFoo(A $_bar): void {
                     }',
             ],
             'varDocblock' => [
@@ -349,7 +359,7 @@ class AnnotationTest extends TestCase
                     /** @var array<Exception> */
                     $a = [];
 
-                    $a[0]->getMessage();',
+                    echo $a[0]->getMessage();',
             ],
             'ignoreVarDocblock' => [
                 '<?php
@@ -424,14 +434,14 @@ class AnnotationTest extends TestCase
             ],
             'psalmParam' => [
                 '<?php
-                    function takesInt(int $a): void {}
+                    function takesInt(int $_a): void {}
 
                     /**
                      * @psalm-param  array<int, string> $a
                      * @param string[] $a
                      */
                     function foo(array $a): void {
-                        foreach ($a as $key => $value) {
+                        foreach ($a as $key => $_value) {
                             takesInt($key);
                         }
                     }',
@@ -449,42 +459,42 @@ class AnnotationTest extends TestCase
                         return ["hello" => new stdClass, "goodbye" => new stdClass];
                     }
 
-                    $a = null;
-                    $b = null;
+                    $_a = null;
+                    $_b = null;
 
                     /**
-                     * @var string $key
-                     * @var stdClass $value
+                     * @var string $_key
+                     * @var stdClass $_value
                      */
-                    foreach (foo() as $key => $value) {
-                        $a = $key;
-                        $b = $value;
+                    foreach (foo() as $_key => $_value) {
+                        $_a = $_key;
+                        $_b = $_value;
                     }',
                 'assertions' => [
-                    '$a' => 'null|string',
-                    '$b' => 'null|stdClass',
+                    '$_a' => 'null|string',
+                    '$_b' => 'null|stdClass',
                 ],
             ],
             'allowOptionalParamsToBeEmptyArray' => [
                 '<?php
-                    /** @param array{b?: int, c?: string} $a */
-                    function foo(array $a = []) : void {}',
+                    /** @param array{b?: int, c?: string} $_a */
+                    function foo(array $_a = []) : void {}',
             ],
             'allowEmptyVarAnnotation' => [
                 '<?php
                     /**
-                     * @param $x
+                     * @param $_x
                      */
-                    function example(array $x) : void {}',
+                    function example(array $_x) : void {}',
             ],
             'allowCapitalisedNamespacedString' => [
                 '<?php
                     namespace Foo;
 
                     /**
-                     * @param String $x
+                     * @param String $_x
                      */
-                    function example(string $x) : void {}',
+                    function example(string $_x) : void {}',
             ],
             'megaClosureAnnotationWithoutSpacing' => [
                 '<?php
@@ -569,8 +579,8 @@ class AnnotationTest extends TestCase
                 '<?php
                     namespace ns;
 
-                    /** @param ?\stdClass $s */
-                    function foo($s) : void {
+                    /** @param ?\stdClass $_s */
+                    function foo($_s) : void {
                     }
 
                     foo(null);
@@ -590,10 +600,10 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorAnnotation' => [
                 '<?php
-                    /** @param string[] $s */
-                    function foo(string ...$s) : void {}
-                    /** @param string ...$s */
-                    function bar(string ...$s) : void {}
+                    /** @param string[] $_s */
+                    function foo(string ...$_s) : void {}
+                    /** @param string ...$_s */
+                    function bar(string ...$_s) : void {}
                     foo("hello", "goodbye");
                     bar("hello", "goodbye");
                     foo(...["hello", "goodbye"]);
@@ -658,8 +668,8 @@ class AnnotationTest extends TestCase
                         return null;
                     }
 
-                    /** @param CoolType $a **/
-                    function bar ($a) : void { }
+                    /** @param CoolType $_a **/
+                    function bar ($_a) : void { }
 
                     bar(foo());',
             ],
@@ -685,8 +695,8 @@ class AnnotationTest extends TestCase
                     class A {}
                     class B {}
 
-                    /** @param CoolType $a **/
-                    function bar ($a) : void { }
+                    /** @param CoolType $_a **/
+                    function bar ($_a) : void { }
 
                     bar(foo());',
             ],
@@ -713,8 +723,8 @@ class AnnotationTest extends TestCase
                     class A {}
                     class B {}
 
-                    /** @param CoolType $a **/
-                    function bar ($a) : void { }
+                    /** @param CoolType $_a **/
+                    function bar ($_a) : void { }
 
                     bar(foo());',
             ],
@@ -742,8 +752,8 @@ class AnnotationTest extends TestCase
                         return null;
                     }
 
-                    /** @param CoolType $a **/
-                    function bar ($a) : void { }
+                    /** @param CoolType $_a **/
+                    function bar ($_a) : void { }
 
                     bar(foo());',
             ],
@@ -774,7 +784,10 @@ class AnnotationTest extends TestCase
                      * @return _A
                      */
                     function f($p) {
-                        /** @var _A */
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var _A
+                         */
                         $r = $p;
                         return $r;
                     }',
@@ -793,7 +806,7 @@ class AnnotationTest extends TestCase
                     }
 
                     /** @var A $a1 */
-                    [$a1, $a2] = foo();
+                    [$a1, $_a2] = foo();
 
                     $a1->bar();',
             ],
@@ -908,11 +921,11 @@ class AnnotationTest extends TestCase
             'extraneousDocblockParamName' => [
                 '<?php
                     /**
-                     * @param string $foo
+                     * @param string $_foo
                      * @param string[] $bar
-                     * @param string[] $barb
+                     * @param string[] $_barb
                      */
-                    function f(string $foo, array $barb): void {}',
+                    function f(string $_foo, array $_barb): void {}',
             ],
             'nonEmptyArray' => [
                 '<?php
@@ -1007,9 +1020,9 @@ class AnnotationTest extends TestCase
                      *    foo:string,
                      *    bar:string,
                      *    baz:string,
-                     * } $foo
+                     * } $_foo
                      */
-                    $foo = ["foo" => "", "bar" => "", "baz" => ""];',
+                    $_foo = ["foo" => "", "bar" => "", "baz" => ""];',
             ],
             'returnNumber' => [
                 '<?php
@@ -1132,17 +1145,17 @@ class AnnotationTest extends TestCase
             ],
             'arrayWithKeySlashesAndNewline' => [
                 '<?php
-                    $arr = ["foo\\bar\nbaz" => "literal"];',
+                    $_arr = ["foo\\bar\nbaz" => "literal"];',
                 [
-                    '$arr' => 'array{\'foo\\\\bar\nbaz\': string}'
+                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}'
                 ]
             ],
             'doubleSpaceBeforeAt' => [
                 '<?php
                     /**
-                     *  @param string $c
+                     *  @param string $_c
                      */
-                    function foo($c) : void {}'
+                    function foo($_c) : void {}'
             ],
             'throwsAnnotationWithBarAndSpace' => [
                 '<?php
@@ -1161,7 +1174,7 @@ class AnnotationTest extends TestCase
                         }
                     }
 
-                    function takesString(string $s): void {}'
+                    function takesString(string $_s): void {}'
             ],
             'noCrashWithoutAssignment' => [
                 '<?php
@@ -1232,6 +1245,50 @@ class AnnotationTest extends TestCase
                     function testBad(string $v): void {
                         echo $v;
                     }'
+            ],
+            'UnnecessaryVarAnnotationSuppress' => [
+                '<?php
+                    /** @psalm-consistent-constructor */
+                    final class Foo{}
+                    /**
+                     * @param class-string $class
+                     */
+                    function foo(string $class): Foo {
+                        if (!is_subclass_of($class, Foo::class)) {
+                            throw new \LogicException();
+                        }
+
+                        /**
+                         * @psalm-suppress UnnecessaryVarAnnotation
+                         * @var Foo $instance
+                         */
+                        $instance = new $class();
+
+                        return $instance;
+                    }',
+            ],
+            'suppressNonInvariantDocblockPropertyType' => [
+                '<?php
+                    class Vendor
+                    {
+                        /**
+                         * @var array
+                         */
+                        public array $config = [];
+                        public function getConfig(): array {return $this->config;}
+                    }
+
+                    class A extends Vendor
+                    {
+                        /**
+                         * @var string[]
+                         * @psalm-suppress NonInvariantDocblockPropertyType
+                         */
+                        public array $config = [];
+                    }
+                    $a = new Vendor();
+                    $_b = new A();
+                    echo (string)($a->getConfig()[0]??"");'
             ],
         ];
     }
@@ -1671,15 +1728,15 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorArrayAnnotationBadArg' => [
                 '<?php
-                    /** @param string[] $s */
-                    function foo(string ...$s) : void {}
+                    /** @param string[] $_s */
+                    function foo(string ...$_s) : void {}
                     foo(5);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'spreadOperatorArrayAnnotationBadSpreadArg' => [
                 '<?php
-                    /** @param string[] $s */
-                    function foo(string ...$s) : void {}
+                    /** @param string[] $_s */
+                    function foo(string ...$_s) : void {}
                     foo(...[5]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
