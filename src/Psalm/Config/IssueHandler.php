@@ -45,6 +45,13 @@ class IssueHandler
         return $handler;
     }
 
+    public function setCustomLevels(array $customLevels, string $base_dir): void
+    {
+        foreach ($customLevels as $customLevel) {
+            $this->custom_levels[] = ErrorLevelFileFilter::loadFromArray($customLevel, $base_dir, true);
+        }
+    }
+
     public function setErrorLevel(string $error_level): void
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {

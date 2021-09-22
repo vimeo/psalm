@@ -1169,6 +1169,12 @@ class Config
         $this->composer_class_loader = $loader;
     }
 
+    public function setAdvancedErrorLevel(string $issue_key, array $config): void
+    {
+        $this->issue_handlers[$issue_key] = new IssueHandler();
+        $this->issue_handlers[$issue_key]->setCustomLevels($config, $this->base_dir);
+    }
+
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
