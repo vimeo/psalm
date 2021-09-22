@@ -1069,6 +1069,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TResource) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as $property) {
                     if ($property->possibly_undefined === false) {
