@@ -985,6 +985,18 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TEmptyMixed) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TEmptyNumeric) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TEmptyScalar) {
+                continue;
+            }
+
             if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isAlwaysFalsy()) {
                 continue;
             }
@@ -1033,7 +1045,11 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonFalsyString) {
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyString) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyNonspecificLiteralString) {
                 continue;
             }
 
@@ -1066,6 +1082,10 @@ class Union implements TypeNode
             }
 
             if ($atomic_type instanceof Type\Atomic\TClassString) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TTraitString) {
                 continue;
             }
 
