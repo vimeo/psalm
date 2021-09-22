@@ -185,14 +185,17 @@ class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-if-this-is'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                if (count($line_parts) > 0) {
-                    $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
-                    $info->if_this_is = [
-                        'type' => str_replace("\n", '', $line_parts[0]),
-                        'line_number' => $comment->getStartLine() + substr_count($comment_text, "\n", 0, $offset - $comment->getStartFilePos()),
-                    ];
-                }
+                $info->if_this_is = [
+                    'type' => str_replace("\n", '', $line_parts[0]),
+                    'line_number' => $comment->getStartLine() + substr_count(
+                        $comment->getText(),
+                        "\n",
+                        0,
+                        $offset - $comment->getStartFilePos()
+                    ),
+                ];
             }
         }
 
