@@ -10,6 +10,7 @@ use function explode;
 use function glob;
 use function in_array;
 use function is_dir;
+use function is_iterable;
 use function preg_match;
 use function preg_replace;
 use function readlink;
@@ -108,11 +109,11 @@ class FileFilter
             foreach ($config['directory'] as $directory) {
                 $directory_path = (string) ($directory['name'] ?? '');
                 $ignore_type_stats = strtolower(
-                        isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
-                    ) === 'true';
+                    isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
+                ) === 'true';
                 $declare_strict_types = strtolower(
-                        isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
-                    ) === 'true';
+                    isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
+                ) === 'true';
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_directory_path = $directory_path;
@@ -347,8 +348,8 @@ class FileFilter
                 $config['directory'][] = [
                     'name' => (string) $directory['name'],
                     'ignoreTypeStats' => strtolower(
-                            isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
-                        ) === 'true',
+                        isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
+                    ) === 'true',
 
                     'useStrictTypes' => strtolower(
                         isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
