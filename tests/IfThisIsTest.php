@@ -117,30 +117,36 @@ class IfThisIsTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'blocksWithoutConvert' => [
+            'failsWithWrongTemplate1' => [
                 '<?php
-                    interface I {
-                        /**
-                         * @return void
-                         */
-                        public function test();
+                
+                /**
+                 * @template T
+                 */
+                class a {
+                    /**
+                     * @var T
+                     */
+                    private $data;
+                    /**
+                     * @param T $data
+                     */
+                    public function __construct($data) {
+                        $this->data = $data;
                     }
-
-                    class F implements I
-                    {
-                        /**
-                         * @psalm-if-this-is I
-                         * @return void
-                         */
-                        public function test() {}
+                    /**
+                     * @psalm-if-this-is a<int>
+                     */
+                    public function test(): void {
                     }
+                }
 
-                    $f = new F();
-                    $f->test();
+                $i = new a("test");
+                $i->test();
                 ',
                 'error_message' => 'IfThisIsMismatch'
             ],
-            'failsWithWrongTemplate' => [
+            'failsWithWrongTemplate2' => [
                 '<?php
                 class Frozen {}
                 class Unfrozen {}
