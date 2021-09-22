@@ -399,7 +399,7 @@ class FileFilter
             }
         }
 
-        return static::loadFromArray($config, $base_dir, $inclusive);
+        return self::loadFromArray($config, $base_dir, $inclusive);
     }
 
     private static function isRegularExpression(string $string) : bool
