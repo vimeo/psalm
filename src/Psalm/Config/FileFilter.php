@@ -103,9 +103,10 @@ class FileFilter
 
         $filter = new static($inclusive);
 
-        if (is_iterable($config['directory'] ?? false)) {
+        if (isset($config['directory']) && is_iterable($config['directory'])) {
+            /** @var array $directory */
             foreach ($config['directory'] as $directory) {
-                $directory_path = (string) $directory['name'] ?? '';
+                $directory_path = (string) ($directory['name'] ?? '');
                 $ignore_type_stats = strtolower(
                         isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
                     ) === 'true';
@@ -170,13 +171,13 @@ class FileFilter
 
                     throw new ConfigException(
                         'Could not resolve config path to ' . $base_dir
-                        . DIRECTORY_SEPARATOR . (string)$directory['name']
+                        . DIRECTORY_SEPARATOR . $directory_path
                     );
                 }
 
                 if (!is_dir($directory_path)) {
                     throw new ConfigException(
-                        $base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']
+                        $base_dir . DIRECTORY_SEPARATOR . $directory_path
                         . ' is not a directory'
                     );
                 }
@@ -219,9 +220,10 @@ class FileFilter
             }
         }
 
-        if (is_iterable($config['file'] ?? false)) {
+        if (isset($config['file']) && is_iterable($config['file'])) {
+            /** @var array $file */
             foreach ($config['file'] as $file) {
-                $file_path = (string) $file['name'] ?? '';
+                $file_path = (string) ($file['name'] ?? '');
 
                 if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_file_path = $file_path;
@@ -274,9 +276,10 @@ class FileFilter
             }
         }
 
-        if (is_iterable($config['referencedClass'] ?? false)) {
+        if (isset($config['referencedClass']) && is_iterable($config['referencedClass'])) {
+            /** @var array $referenced_class */
             foreach ($config['referencedClass'] as $referenced_class) {
-                $class_name = strtolower((string)$referenced_class['name'] ?? '');
+                $class_name = strtolower((string) ($referenced_class['name'] ?? ''));
 
                 if (strpos($class_name, '*') !== false) {
                     $regex = '/' . \str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
@@ -287,9 +290,10 @@ class FileFilter
             }
         }
 
-        if (is_iterable($config['referencedMethod'] ?? false)) {
+        if (isset($config['referencedMethod']) && is_iterable($config['referencedMethod'])) {
+            /** @var array $referenced_method */
             foreach ($config['referencedMethod'] as $referenced_method) {
-                $method_id = (string)$referenced_method['name'] ?? '';
+                $method_id = (string) ($referenced_method['name'] ?? '');
 
                 if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
                     throw new ConfigException(
@@ -301,21 +305,24 @@ class FileFilter
             }
         }
 
-        if (is_iterable($config['referencedFunction'] ?? false)) {
+        if (isset($config['referencedFunction']) && is_iterable($config['referencedFunction'])) {
+            /** @var array $referenced_function */
             foreach ($config['referencedFunction'] as $referenced_function) {
-                $filter->method_ids[] = strtolower((string)$referenced_function['name'] ?? '');
+                $filter->method_ids[] = strtolower((string) ($referenced_function['name'] ?? ''));
             }
         }
 
-        if (is_iterable($config['referencedProperty'] ?? false)) {
+        if (isset($config['referencedProperty']) && is_iterable($config['referencedProperty'])) {
+            /** @var array $referenced_property */
             foreach ($config['referencedProperty'] as $referenced_property) {
-                $filter->property_ids[] = strtolower((string)$referenced_property['name'] ?? '');
+                $filter->property_ids[] = strtolower((string) ($referenced_property['name'] ?? ''));
             }
         }
 
-        if (is_iterable($config['referencedVariable'] ?? false)) {
+        if (isset($config['referencedVariable']) && is_iterable($config['referencedVariable'])) {
+            /** @var array $referenced_variable */
             foreach ($config['referencedVariable'] as $referenced_variable) {
-                $filter->var_names[] = strtolower((string)$referenced_variable['name'] ?? '');
+                $filter->var_names[] = strtolower((string) ($referenced_variable['name'] ?? ''));
             }
         }
 

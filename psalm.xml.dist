@@ -125,6 +125,7 @@
                 <referencedMethod name="Psalm\Codebase::createClassLikeStorage"/>
                 <referencedMethod name="Psalm\Codebase::isVariadic"/>
                 <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef"/>
+                <referencedMethod name="Psalm\Config::setAdvancedErrorLevel"/>
             </errorLevel>
         </PossiblyUnusedMethod>
 

@@ -47,6 +47,7 @@ class IssueHandler
 
     public function setCustomLevels(array $customLevels, string $base_dir): void
     {
+        /** @var array $customLevel */
         foreach ($customLevels as $customLevel) {
             $this->custom_levels[] = ErrorLevelFileFilter::loadFromArray($customLevel, $base_dir, true);
         }
