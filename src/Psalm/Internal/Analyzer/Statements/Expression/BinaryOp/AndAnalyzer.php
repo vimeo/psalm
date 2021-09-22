@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -61,6 +62,8 @@ class AndAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
             return false;
         }
+
+        IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -156,6 +159,8 @@ class AndAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
         $context->referenced_var_ids = array_merge(
             $right_context->referenced_var_ids,

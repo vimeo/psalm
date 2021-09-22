@@ -100,6 +100,8 @@ class OrAnalyzer
                 return false;
             }
 
+            IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
+
             foreach ($left_context->vars_in_scope as $var_id => $type) {
                 if (!isset($context->vars_in_scope[$var_id])) {
                     if (isset($left_context->assigned_var_ids[$var_id])) {
@@ -262,6 +264,8 @@ class OrAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
         $right_referenced_var_ids = $right_context->referenced_var_ids;
         $right_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
