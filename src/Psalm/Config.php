@@ -2112,7 +2112,6 @@ class Config
             return null;
         }
 
-        /** @var array<string, array<int, string>> */
         $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
 
         // PSR-4 lookup
