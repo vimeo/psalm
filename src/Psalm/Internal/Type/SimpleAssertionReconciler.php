@@ -1592,16 +1592,19 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $assertion_value = (int)$assertion;
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Atomic\TIntRange) {
-                $existing_var_type->removeType($atomic_type->getKey());
-                if ($atomic_type->min_bound === null) {
-                    $atomic_type->min_bound = $assertion_value;
-                } else {
-                    $atomic_type->min_bound = Atomic\TIntRange::getNewHighestBound(
-                        $assertion_value,
-                        $atomic_type->min_bound
-                    );
+                if ($atomic_type->contains($assertion_value)) {
+                    //the assertion is contained in the current range, we'll adapt the range
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->min_bound === null) {
+                        $atomic_type->min_bound = $assertion_value;
+                    } else {
+                        $atomic_type->min_bound = Atomic\TIntRange::getNewHighestBound(
+                            $assertion_value,
+                            $atomic_type->min_bound
+                        );
+                    }
+                    $existing_var_type->addType($atomic_type);
                 }
-                $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
                 $new_range = new Atomic\TIntRange($assertion_value, null);
                 if (!$new_range->contains($atomic_type->value)) {
@@ -1638,13 +1641,16 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $assertion_value = (int)$assertion;
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Atomic\TIntRange) {
-                $existing_var_type->removeType($atomic_type->getKey());
-                if ($atomic_type->max_bound === null) {
-                    $atomic_type->max_bound = $assertion_value;
-                } else {
-                    $atomic_type->max_bound = min($atomic_type->max_bound, $assertion_value);
+                if ($atomic_type->contains($assertion_value)) {
+                    //the assertion is contained in the current range, we'll adapt the range
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->max_bound === null) {
+                        $atomic_type->max_bound = $assertion_value;
+                    } else {
+                        $atomic_type->max_bound = min($atomic_type->max_bound, $assertion_value);
+                    }
+                    $existing_var_type->addType($atomic_type);
                 }
-                $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
                 $new_range = new Atomic\TIntRange(null, $assertion_value);
                 if (!$new_range->contains($atomic_type->value)) {
