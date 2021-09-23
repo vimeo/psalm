@@ -39,7 +39,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
 
     /**
      * @dataProvider providerTestReconcilation
-     *
      */
     public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
     {
@@ -181,6 +180,63 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'literalNumericString' => [
                 '"10.03"',
                 'numeric',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider constantAssertions
+     */
+    public function testReconciliationOfClassConstantInAssertions(string $assertion, string $expected_type): void
+    {
+        $this->addFile(
+            'psalm-assert.php',
+            '
+            <?php
+            class Foo
+            {
+                const BAR = \'bar\';
+                const BAZ = \'baz\';
+                const QOO = Foo::BAR;
+            }
+            '
+        );
+        $this->project_analyzer->getCodebase()->scanFiles();
+
+        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+            $assertion,
+            new Type\Union([
+                new Type\Atomic\TLiteralString(''),
+            ]),
+            null,
+            $this->statements_analyzer,
+            false,
+            []
+        );
+
+        $this->assertSame(
+            $expected_type,
+            $reconciled->getId()
+        );
+    }
+
+    /**
+     * @return array<non-empty-string,array{non-empty-string,string}>
+     */
+    public function constantAssertions(): array
+    {
+        return [
+            'single-constant' => [
+                'class-constant(Foo::BAR)',
+                '"bar"',
+            ],
+            'referencing-constant' => [
+                'class-constant(Foo::QOO)',
+                '"bar"',
+            ],
+            'wildcard-constant' => [
+                'Foo::*',
+                '"bar"|"baz"',
             ],
         ];
     }
