@@ -220,8 +220,10 @@ class Pool
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
             $process_done_message = new ForkProcessErrorMessage(
-                get_class($t) . " " . $t->getMessage()
-                . "\nStack trace in the forked worker:\n". $t->getTraceAsString()
+                get_class($t) . ' ' . $t->getMessage() . "\n" .
+                "Emitted in " . $t->getFile() . ":" . $t->getLine() . "\n" .
+                "Stack trace in the forked worker:\n" .
+                $t->getTraceAsString()
             );
         }
 
