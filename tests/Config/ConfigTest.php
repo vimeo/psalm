@@ -550,6 +550,231 @@ class ConfigTest extends \Psalm\Tests\TestCase
         );
     }
 
+    public function testIssueHandlerSetDynamically(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->setAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'suppress',
+                'directory' => [['name' => 'tests']]
+            ],
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']]
+            ]
+        ], 'info');
+        $config->setAdvancedErrorLevel('UndefinedClass', [
+            [
+                'type' => 'suppress',
+                'referencedClass' => [
+                    ['name' => 'Psalm\Badger'],
+                    ['name' => 'Psalm\*Actor'],
+                    ['name' => '*MagicFactory'],
+                ]
+            ]
+        ]);
+        $config->setAdvancedErrorLevel('UndefinedMethod', [
+            [
+                'type' => 'suppress',
+                'referencedMethod' => [
+                    ['name' => 'Psalm\Bodger::find1'],
+                    ['name' => '*::find2'],
+                ]
+            ]
+        ]);
+        $config->setAdvancedErrorLevel('UndefinedFunction', [
+            [
+                'type' => 'suppress',
+                'referencedFunction' => [
+                    ['name' => 'fooBar']
+                ]
+            ]
+        ]);
+        $config->setAdvancedErrorLevel('PossiblyInvalidArgument', [
+            [
+                'type' => 'suppress',
+                'directory' => [
+                    ['name' => 'tests'],
+                ]
+            ],
+            [
+                'type' => 'info',
+                'directory' => [
+                    ['name' => 'examples'],
+                ]
+            ]
+        ]);
+        $config->setAdvancedErrorLevel('UndefinedPropertyFetch', [
+            [
+                'type' => 'suppress',
+                'referencedProperty' => [
+                    ['name' => 'Psalm\Bodger::$find3']
+                ]
+            ]
+        ]);
+        $config->setAdvancedErrorLevel('UndefinedGlobalVariable', [
+            [
+                'type' => 'suppress',
+                'referencedVariable' => [
+                    ['name' => 'a']
+                ]
+            ]
+        ]);
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php')
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'PossiblyInvalidArgument',
+                realpath('src/psalm.php')
+            )
+        );
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'PossiblyInvalidArgument',
+                realpath('examples/TemplateChecker.php')
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\Badger'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\BadActor'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\GoodActor'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\MagicFactory'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\Bodger'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Bodger::find1'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Bodger::find2'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Badger::find2'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                'Psalm\Bodger::$find3'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                'Psalm\Bodger::$find4'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedFunction',
+                'fooBar'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedFunction',
+                'foobar'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'a'
+            )
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForVariable(
+                'UndefinedGlobalVariable',
+                'b'
+            )
+        );
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
