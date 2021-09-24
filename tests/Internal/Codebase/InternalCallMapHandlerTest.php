@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests\Internal;
+namespace Psalm\Tests\Internal\Codebase;
 
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 
