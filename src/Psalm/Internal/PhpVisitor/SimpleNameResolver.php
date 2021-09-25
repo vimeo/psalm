@@ -9,6 +9,7 @@ use PhpParser\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeVisitorAbstract;
 
