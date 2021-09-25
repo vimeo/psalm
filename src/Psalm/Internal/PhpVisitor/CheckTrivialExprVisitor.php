@@ -48,9 +48,9 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             }
 
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     public function enterNode(PhpParser\Node $node): ?int
@@ -60,12 +60,13 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             if ($this->checkNonTrivialExpr($node)) {
                 $this->non_trivial_expr[] = $node;
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
-            } elseif ($node instanceof PhpParser\Node\Expr\ClassConstFetch
+            }
+
+            if ($node instanceof PhpParser\Node\Expr\ClassConstFetch
                 || $node instanceof PhpParser\Node\Expr\ConstFetch
                 || $node instanceof PhpParser\Node\Expr\Error
                 || $node instanceof PhpParser\Node\Expr\PropertyFetch
-                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            ) {
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
             }
         }

@@ -1036,7 +1036,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->isNullable() && $property->type->from_docblock) {
+            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
                 continue;
             }
 
@@ -1359,131 +1359,131 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 return false;
-            } else {
-                if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
+            }
+
+            if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
+                if (IssueBuffer::accepts(
+                    new UndefinedTrait(
+                        'Trait ' . $fq_trait_name . ' has wrong casing',
+                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            $fq_trait_name_resolved = $codebase->classlikes->getUnAliasedName($fq_trait_name);
+            $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
+
+            if ($trait_storage->deprecated) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedTrait(
+                        'Trait ' . $fq_trait_name . ' is deprecated',
+                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($trait_storage->extension_requirement !== null) {
+                $extension_requirement = $codebase->classlikes->getUnAliasedName(
+                    $trait_storage->extension_requirement
+                );
+                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
+
+                if (!$extensionRequirementMet) {
                     if (IssueBuffer::accepts(
-                        new UndefinedTrait(
-                            'Trait ' . $fq_trait_name . ' has wrong casing',
+                        new ExtensionRequirementViolation(
+                            $fq_trait_name . ' requires using class to extend ' . $extension_requirement
+                                . ', but ' . $storage->name . ' does not',
                             new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
+                        // fall through
+                    }
+                }
+            }
+
+            foreach ($trait_storage->implementation_requirements as $implementation_requirement) {
+                $implementation_requirement = $codebase->classlikes->getUnAliasedName($implementation_requirement);
+                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
+
+                if (!$implementationRequirementMet) {
+                    if (IssueBuffer::accepts(
+                        new ImplementationRequirementViolation(
+                            $fq_trait_name . ' requires using class to implement '
+                                . $implementation_requirement . ', but ' . $storage->name . ' does not',
+                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                        ),
+                        $storage->suppressed_issues + $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if ($storage->mutation_free && !$trait_storage->mutation_free) {
+                if (IssueBuffer::accepts(
+                    new MutableDependency(
+                        $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
+                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
+            $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
+            $trait_aliases = $trait_storage->aliases;
+            if ($trait_aliases === null) {
+                continue;
+            }
+
+            $trait_analyzer = new TraitAnalyzer(
+                $trait_node,
+                $trait_file_analyzer,
+                $fq_trait_name_resolved,
+                $trait_aliases
+            );
+
+            foreach ($trait_node->stmts as $trait_stmt) {
+                if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                    $trait_method_analyzer = $this->analyzeClassMethod(
+                        $trait_stmt,
+                        $storage,
+                        $trait_analyzer,
+                        $class_context,
+                        $global_context
+                    );
+
+                    if ($trait_stmt->name->name === '__construct') {
+                        $constructor_analyzer = $trait_method_analyzer;
+                    }
+                } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                    if ($this->analyzeTraitUse(
+                        $trait_aliases,
+                        $trait_stmt,
+                        $project_analyzer,
+                        $storage,
+                        $class_context,
+                        $global_context,
+                        $constructor_analyzer,
+                        $trait_analyzer
+                    ) === false) {
                         return false;
                     }
-
-                    continue;
                 }
-
-                $fq_trait_name_resolved = $codebase->classlikes->getUnAliasedName($fq_trait_name);
-                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
-
-                if ($trait_storage->deprecated) {
-                    if (IssueBuffer::accepts(
-                        new DeprecatedTrait(
-                            'Trait ' . $fq_trait_name . ' is deprecated',
-                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                if ($trait_storage->extension_requirement !== null) {
-                    $extension_requirement = $codebase->classlikes->getUnAliasedName(
-                        $trait_storage->extension_requirement
-                    );
-                    $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
-
-                    if (!$extensionRequirementMet) {
-                        if (IssueBuffer::accepts(
-                            new ExtensionRequirementViolation(
-                                $fq_trait_name . ' requires using class to extend ' . $extension_requirement
-                                    . ', but ' . $storage->name . ' does not',
-                                new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
-                            ),
-                            $storage->suppressed_issues + $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                foreach ($trait_storage->implementation_requirements as $implementation_requirement) {
-                    $implementation_requirement = $codebase->classlikes->getUnAliasedName($implementation_requirement);
-                    $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
-
-                    if (!$implementationRequirementMet) {
-                        if (IssueBuffer::accepts(
-                            new ImplementationRequirementViolation(
-                                $fq_trait_name . ' requires using class to implement '
-                                    . $implementation_requirement . ', but ' . $storage->name . ' does not',
-                                new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
-                            ),
-                            $storage->suppressed_issues + $this->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-
-                if ($storage->mutation_free && !$trait_storage->mutation_free) {
-                    if (IssueBuffer::accepts(
-                        new MutableDependency(
-                            $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
-                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
-
-                $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
-                $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
-                $trait_aliases = $trait_storage->aliases;
-                if ($trait_aliases === null) {
-                    continue;
-                }
-
-                $trait_analyzer = new TraitAnalyzer(
-                    $trait_node,
-                    $trait_file_analyzer,
-                    $fq_trait_name_resolved,
-                    $trait_aliases
-                );
-
-                foreach ($trait_node->stmts as $trait_stmt) {
-                    if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                        $trait_method_analyzer = $this->analyzeClassMethod(
-                            $trait_stmt,
-                            $storage,
-                            $trait_analyzer,
-                            $class_context,
-                            $global_context
-                        );
-
-                        if ($trait_stmt->name->name === '__construct') {
-                            $constructor_analyzer = $trait_method_analyzer;
-                        }
-                    } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                        if ($this->analyzeTraitUse(
-                            $trait_aliases,
-                            $trait_stmt,
-                            $project_analyzer,
-                            $storage,
-                            $class_context,
-                            $global_context,
-                            $constructor_analyzer,
-                            $trait_analyzer
-                        ) === false) {
-                            return false;
-                        }
-                    }
-                }
-
-                $trait_file_analyzer->clearSourceBeforeDestruction();
             }
+
+            $trait_file_analyzer->clearSourceBeforeDestruction();
         }
 
         $class_context->include_location = $previous_context_include_location;

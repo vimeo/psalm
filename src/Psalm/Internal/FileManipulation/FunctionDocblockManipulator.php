@@ -229,7 +229,7 @@ class FunctionDocblockManipulator
                 continue;
             }
 
-            if ($chars[$i] === '\\' || preg_match('/\w/', $char)) {
+            if ($char === '\\' || preg_match('/\w/', $char)) {
                 if ($this->return_typehint_start === null) {
                     $this->return_typehint_start = $i + $end_bracket_position + 1;
                 }

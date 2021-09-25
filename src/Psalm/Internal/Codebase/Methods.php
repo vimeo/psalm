@@ -955,9 +955,7 @@ class Methods
             return false;
         }
 
-        $storage = $this->getStorage($method_id);
-
-        return $storage->returns_by_ref;
+        return $this->getStorage($method_id)->returns_by_ref;
     }
 
     /**

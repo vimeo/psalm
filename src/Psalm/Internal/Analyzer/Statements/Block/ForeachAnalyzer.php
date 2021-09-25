@@ -369,7 +369,9 @@ class ForeachAnalyzer
             }
 
             return false;
-        } elseif ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
+        }
+
+        if ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
             if (IssueBuffer::accepts(
                 new PossiblyNullIterator(
                     'Cannot iterate over nullable var ' . $iterator_type,

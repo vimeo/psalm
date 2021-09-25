@@ -147,8 +147,8 @@ class Populator
 
         $this->progress->debug('FileStorage is populated' . "\n");
 
-        $this->classlike_storage_provider->populated();
-        $this->file_storage_provider->populated();
+        ClassLikeStorageProvider::populated();
+        FileStorageProvider::populated();
     }
 
     private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = []): void

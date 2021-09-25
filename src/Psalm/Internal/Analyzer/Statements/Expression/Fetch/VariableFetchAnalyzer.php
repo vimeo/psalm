@@ -557,9 +557,7 @@ class VariableFetchAnalyzer
         }
 
         if (self::isSuperGlobal($var_id)) {
-            $type = Type::getArray();
-
-            return $type;
+            return Type::getArray();
         }
 
         return Type::getMixed();

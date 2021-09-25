@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
@@ -476,7 +477,7 @@ class ArgumentsAnalyzer
             if ($function_storage) {
                 $is_variadic = $function_storage->variadic;
             } elseif (is_string($method_id)) {
-                $is_variadic = $codebase->functions->isVariadic(
+                $is_variadic = Functions::isVariadic(
                     $codebase,
                     strtolower($method_id),
                     $statements_analyzer->getRootFilePath()

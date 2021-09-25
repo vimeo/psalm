@@ -301,16 +301,24 @@ class ConstantTypeResolver
     {
         if (\is_string($value)) {
             return new Type\Atomic\TLiteralString($value);
-        } elseif (\is_int($value)) {
-            return new Type\Atomic\TLiteralInt($value);
-        } elseif (\is_float($value)) {
-            return new Type\Atomic\TLiteralFloat($value);
-        } elseif ($value === false) {
-            return new Type\Atomic\TFalse;
-        } elseif ($value === true) {
-            return new Type\Atomic\TTrue;
-        } else {
-            return new Type\Atomic\TNull;
         }
+
+        if (\is_int($value)) {
+            return new Type\Atomic\TLiteralInt($value);
+        }
+
+        if (\is_float($value)) {
+            return new Type\Atomic\TLiteralFloat($value);
+        }
+
+        if ($value === false) {
+            return new Type\Atomic\TFalse;
+        }
+
+        if ($value === true) {
+            return new Type\Atomic\TTrue;
+        }
+
+        return new Type\Atomic\TNull;
     }
 }

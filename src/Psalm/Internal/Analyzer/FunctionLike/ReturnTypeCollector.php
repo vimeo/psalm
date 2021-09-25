@@ -312,23 +312,30 @@ class ReturnTypeCollector
             }
 
             return [Type::getMixed()];
-        } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             if ($stmt_expr_type = $nodes->getType($stmt->expr)) {
                 return [$stmt_expr_type];
             }
 
             return [Type::getMixed()];
-        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             return array_merge(
                 self::getYieldTypeFromExpression($stmt->left, $nodes),
                 self::getYieldTypeFromExpression($stmt->right, $nodes)
             );
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getYieldTypeFromExpression($stmt->expr, $nodes);
-        } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             || $stmt instanceof PhpParser\Node\Expr\FuncCall
-            || $stmt instanceof PhpParser\Node\Expr\StaticCall
-        ) {
+            || $stmt instanceof PhpParser\Node\Expr\StaticCall) {
             $yield_types = [];
 
             foreach ($stmt->args as $arg) {

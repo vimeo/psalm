@@ -53,14 +53,16 @@ class IntegerRangeComparator
         if (isset($container_atomic_types['int'])) {
             if (get_class($container_atomic_types['int']) === TInt::class) {
                 return true;
-            } elseif (get_class($container_atomic_types['int']) === TPositiveInt::class) {
+            }
+
+            if (get_class($container_atomic_types['int']) === TPositiveInt::class) {
                 if ($input_type_part->isPositive()) {
                     return true;
-                } else {
-                    //every positive integer is satisfied by the positive-int int container so we reduce the range
-                    $reduced_range->max_bound = 0;
-                    unset($container_atomic_types['int']);
                 }
+
+                //every positive integer is satisfied by the positive-int int container so we reduce the range
+                $reduced_range->max_bound = 0;
+                unset($container_atomic_types['int']);
             } else {
                 throw new \UnexpectedValueException('Should not happen: unknown int key');
             }

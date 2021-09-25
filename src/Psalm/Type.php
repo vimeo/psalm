@@ -546,8 +546,10 @@ abstract class Type
         Codebase $codebase
     ): ?Union {
         $intersection_performed = false;
+        $type_1_mixed = $type_1->isMixed();
+        $type_2_mixed = $type_2->isMixed();
 
-        if ($type_1->isMixed() && $type_2->isMixed()) {
+        if ($type_1_mixed && $type_2_mixed) {
             $combined_type = Type::getMixed();
         } else {
             $both_failed_reconciliation = false;
@@ -562,10 +564,10 @@ abstract class Type
                 return $type_1;
             }
 
-            if ($type_1->isMixed() && !$type_2->isMixed()) {
+            if ($type_1_mixed && !$type_2_mixed) {
                 $combined_type = clone $type_2;
                 $intersection_performed = true;
-            } elseif (!$type_1->isMixed() && $type_2->isMixed()) {
+            } elseif ($type_2_mixed) {
                 $combined_type = clone $type_1;
                 $intersection_performed = true;
             } else {

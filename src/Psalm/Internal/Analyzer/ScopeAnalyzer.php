@@ -86,9 +86,7 @@ class ScopeAnalyzer
 
         $control_actions = [];
 
-        for ($i = 0, $c = count($stmts); $i < $c; ++$i) {
-            $stmt = $stmts[$i];
-
+        foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
                 $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
                 ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)

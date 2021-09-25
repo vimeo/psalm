@@ -1155,9 +1155,10 @@ class AssertionFinder
                 }
 
                 return [$instanceof_class];
-            } elseif ($this_class_name
-                && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
-            ) {
+            }
+
+            if ($this_class_name
+                && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))) {
                 if ($stmt->class->parts[0] === 'static') {
                     return ['=' . $this_class_name . '&static'];
                 }

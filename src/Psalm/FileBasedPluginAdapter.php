@@ -57,8 +57,6 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
-        $fq_class_name = reset($declared_classes);
-
-        return $fq_class_name;
+        return reset($declared_classes);
     }
 }

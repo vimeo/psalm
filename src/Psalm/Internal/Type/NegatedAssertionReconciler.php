@@ -153,9 +153,13 @@ class NegatedAssertionReconciler extends Reconciler
                 }
 
                 return Type::getNull();
-            } elseif ($assertion === 'array-key-exists') {
+            }
+
+            if ($assertion === 'array-key-exists') {
                 return Type::getEmpty();
-            } elseif (substr($assertion, 0, 9) === 'in-array-') {
+            }
+
+            if (substr($assertion, 0, 9) === 'in-array-') {
                 $assertion = substr($assertion, 9);
                 $new_var_type = null;
                 try {
@@ -189,7 +193,9 @@ class NegatedAssertionReconciler extends Reconciler
                 }
 
                 return $existing_var_type;
-            } elseif (substr($assertion, 0, 14) === 'has-array-key-') {
+            }
+
+            if (substr($assertion, 0, 14) === 'has-array-key-') {
                 return $existing_var_type;
             }
         }

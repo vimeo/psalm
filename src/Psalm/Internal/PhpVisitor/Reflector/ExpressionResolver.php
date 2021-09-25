@@ -117,11 +117,17 @@ class ExpressionResolver
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             if (strtolower($stmt->name->parts[0]) === 'false') {
                 return new UnresolvedConstant\ScalarValue(false);
-            } elseif (strtolower($stmt->name->parts[0]) === 'true') {
+            }
+
+            if (strtolower($stmt->name->parts[0]) === 'true') {
                 return new UnresolvedConstant\ScalarValue(true);
-            } elseif (strtolower($stmt->name->parts[0]) === 'null') {
+            }
+
+            if (strtolower($stmt->name->parts[0]) === 'null') {
                 return new UnresolvedConstant\ScalarValue(null);
-            } elseif ($stmt->name->parts[0] === '__NAMESPACE__') {
+            }
+
+            if ($stmt->name->parts[0] === '__NAMESPACE__') {
                 return new UnresolvedConstant\ScalarValue($aliases->namespace);
             }
 

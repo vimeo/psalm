@@ -95,11 +95,7 @@ class ForAnalyzer
 
         foreach ($stmt->cond as $cond) {
             if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
-                foreach ($cond_type->getAtomicTypes() as $iterator_type) {
-                    $always_enters_loop = $iterator_type instanceof Type\Atomic\TTrue;
-
-                    break;
-                }
+                $always_enters_loop = $cond_type->isAlwaysTruthy();
             }
 
             if (\count($stmt->init) === 1
