@@ -517,15 +517,11 @@ class IfAnalyzer
             }
 
             foreach ($possibly_redefined_vars as $var => $type) {
-                if (isset($if_scope->possibly_redefined_vars[$var])) {
-                    $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
-                        $type,
-                        $if_scope->possibly_redefined_vars[$var],
-                        $codebase
-                    );
-                } else {
-                    $if_scope->possibly_redefined_vars[$var] = $type;
-                }
+                $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
+                    $type,
+                    $if_scope->possibly_redefined_vars[$var] ?? null,
+                    $codebase
+                );
             }
         }
     }

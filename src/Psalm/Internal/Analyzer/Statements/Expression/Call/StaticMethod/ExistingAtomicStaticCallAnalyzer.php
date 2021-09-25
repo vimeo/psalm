@@ -420,14 +420,11 @@ class ExistingAtomicStaticCallAnalyzer
             $context
         );
 
-        if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                Type::combineUnionTypes($stmt_type, $return_type_candidate)
-            );
-        } else {
-            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-        }
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            Type::combineUnionTypes($stmt_type, $return_type_candidate)
+        );
 
         if ($codebase->store_node_types
             && !$context->collect_initializations

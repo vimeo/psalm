@@ -42,14 +42,10 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         foreach ($call_args as $arg) {
             if ($array_arg_type = $nodeTypeProvider->getType($arg->value)) {
-                if (!$return_type) {
-                    $return_type = $array_arg_type;
-                } else {
-                    $return_type = \Psalm\Type::combineUnionTypes(
-                        $return_type,
-                        $array_arg_type
-                    );
-                }
+                $return_type = \Psalm\Type::combineUnionTypes(
+                    $return_type,
+                    $array_arg_type
+                );
             } else {
                 return Type::getMixed();
             }

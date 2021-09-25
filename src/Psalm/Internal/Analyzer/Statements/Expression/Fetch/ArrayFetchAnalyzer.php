@@ -179,14 +179,11 @@ class ArrayFetchAnalyzer
                     }
                 }
 
-                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                    $statements_analyzer->node_data->setType(
-                        $stmt,
-                        Type::combineUnionTypes($stmt_type, Type::getNull())
-                    );
-                } else {
-                    $statements_analyzer->node_data->setType($stmt, Type::getNull());
-                }
+                $stmt_type = $statements_analyzer->node_data->getType($stmt);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, Type::getNull())
+                );
 
                 return true;
             }
@@ -566,11 +563,7 @@ class ArrayFetchAnalyzer
 
                 if ($in_assignment) {
                     if ($replacement_type) {
-                        if ($array_access_type) {
-                            $array_access_type = Type::combineUnionTypes($array_access_type, $replacement_type);
-                        } else {
-                            $array_access_type = clone $replacement_type;
-                        }
+                        $array_access_type = Type::combineUnionTypes($array_access_type, clone $replacement_type);
                     } else {
                         if (IssueBuffer::accepts(
                             new PossiblyNullArrayAssignment(
@@ -599,11 +592,7 @@ class ArrayFetchAnalyzer
                         }
                     }
 
-                    if ($array_access_type) {
-                        $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNull());
-                    } else {
-                        $array_access_type = Type::getNull();
-                    }
+                    $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNull());
                 }
 
                 continue;
@@ -1086,14 +1075,10 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if ($array_access_type) {
-            return Type::combineUnionTypes(
-                $array_access_type,
-                Type::getMixed($type instanceof TEmpty)
-            );
-        }
-
-        return Type::getMixed($type instanceof TEmpty);
+        return Type::combineUnionTypes(
+            $array_access_type,
+            Type::getMixed($type instanceof TEmpty)
+        );
     }
 
     /**
@@ -1378,14 +1363,10 @@ class ArrayFetchAnalyzer
             );
         }
 
-        if (!$array_access_type) {
-            $array_access_type = $type->type_params[1];
-        } else {
-            $array_access_type = Type::combineUnionTypes(
-                $array_access_type,
-                $type->type_params[1]
-            );
-        }
+        $array_access_type = Type::combineUnionTypes(
+            $array_access_type,
+            $type->type_params[1]
+        );
 
         if ($array_access_type->isEmpty()
             && !$array_type->hasMixed()
@@ -1495,15 +1476,11 @@ class ArrayFetchAnalyzer
                     );
                 }
 
-                if (!$array_access_type) {
-                    $array_access_type = $expected_value_param_get;
-                } else {
-                    $array_access_type = Type::combineUnionTypes(
-                        $array_access_type,
-                        $expected_value_param_get,
-                        $codebase
-                    );
-                }
+                $array_access_type = Type::combineUnionTypes(
+                    $array_access_type,
+                    $expected_value_param_get,
+                    $codebase
+                );
             }
         }
     }
@@ -1541,35 +1518,23 @@ class ArrayFetchAnalyzer
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
-                        if (isset($type->properties[$key_value])) {
-                            $type->properties[$key_value] = Type::combineUnionTypes(
-                                $type->properties[$key_value],
-                                $replacement_type
-                            );
-                        } else {
-                            $type->properties[$key_value] = $replacement_type;
-                        }
-                    }
-
-                    if (!$array_access_type) {
-                        $array_access_type = clone $type->properties[$key_value];
-                    } else {
-                        $array_access_type = Type::combineUnionTypes(
-                            $array_access_type,
-                            $type->properties[$key_value]
+                        $type->properties[$key_value] = Type::combineUnionTypes(
+                            $type->properties[$key_value] ?? null,
+                            $replacement_type
                         );
                     }
+
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        clone $type->properties[$key_value]
+                    );
                 } elseif ($in_assignment) {
                     $type->properties[$key_value] = new Type\Union([new TEmpty]);
 
-                    if (!$array_access_type) {
-                        $array_access_type = clone $type->properties[$key_value];
-                    } else {
-                        $array_access_type = Type::combineUnionTypes(
-                            $array_access_type,
-                            $type->properties[$key_value]
-                        );
-                    }
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        clone $type->properties[$key_value]
+                    );
                 } elseif ($type->previous_value_type) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
                         self::checkLiteralStringArrayOffset(
@@ -1699,23 +1664,15 @@ class ArrayFetchAnalyzer
                         $array_type->addType($type);
                     }
 
-                    if (!$array_access_type) {
-                        $array_access_type = clone $generic_params;
-                    } else {
-                        $array_access_type = Type::combineUnionTypes(
-                            $array_access_type,
-                            $generic_params
-                        );
-                    }
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        clone $generic_params
+                    );
                 } else {
-                    if (!$array_access_type) {
-                        $array_access_type = $type->getGenericValueType();
-                    } else {
-                        $array_access_type = Type::combineUnionTypes(
-                            $array_access_type,
-                            $type->getGenericValueType()
-                        );
-                    }
+                    $array_access_type = Type::combineUnionTypes(
+                        $array_access_type,
+                        $type->getGenericValueType()
+                    );
                 }
 
                 $has_valid_offset = true;
@@ -1794,14 +1751,10 @@ class ArrayFetchAnalyzer
             );
         }
 
-        if (!$array_access_type) {
-            $array_access_type = $type->type_param;
-        } else {
-            $array_access_type = Type::combineUnionTypes(
-                $array_access_type,
-                $type->type_param
-            );
-        }
+        $array_access_type = Type::combineUnionTypes(
+            $array_access_type,
+            $type->type_param
+        );
     }
 
     private static function handleArrayAccessOnNamedObject(
@@ -1945,14 +1898,10 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if (!$array_access_type) {
-            $array_access_type = $call_array_access_type;
-        } else {
-            $array_access_type = Type::combineUnionTypes(
-                $array_access_type,
-                $call_array_access_type
-            );
-        }
+        $array_access_type = Type::combineUnionTypes(
+            $array_access_type,
+            $call_array_access_type
+        );
     }
 
     /**
@@ -2041,14 +1990,10 @@ class ArrayFetchAnalyzer
         } else {
             $has_valid_offset = true;
 
-            if (!$array_access_type) {
-                $array_access_type = Type::getSingleLetter();
-            } else {
-                $array_access_type = Type::combineUnionTypes(
-                    $array_access_type,
-                    Type::getSingleLetter()
-                );
-            }
+            $array_access_type = Type::combineUnionTypes(
+                $array_access_type,
+                Type::getSingleLetter()
+            );
         }
     }
 

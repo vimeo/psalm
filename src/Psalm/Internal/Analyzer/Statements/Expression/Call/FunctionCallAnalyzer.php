@@ -599,7 +599,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     } else {
                         $statements_analyzer->node_data->setType(
                             $real_stmt,
-                            $var_type_part->return_type ?: Type::getMixed()
+                            $var_type_part->return_type ?? Type::getMixed()
                         );
                     }
 
@@ -819,14 +819,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType(
                 $real_stmt,
                 Type::combineUnionTypes(
-                    $fake_method_call_type ?: Type::getMixed(),
+                    $fake_method_call_type ?? Type::getMixed(),
                     $stmt_type
                 )
             );
         } else {
             $statements_analyzer->node_data->setType(
                 $real_stmt,
-                $fake_method_call_type ?: Type::getMixed()
+                $fake_method_call_type ?? Type::getMixed()
             );
         }
     }

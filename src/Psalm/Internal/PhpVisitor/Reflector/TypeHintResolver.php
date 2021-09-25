@@ -44,11 +44,7 @@ class TypeHintResolver
                     $php_minor_version
                 );
 
-                if (!$type) {
-                    $type = $resolved_type;
-                } else {
-                    $type = Type::combineUnionTypes($resolved_type, $type);
-                }
+                $type = Type::combineUnionTypes($resolved_type, $type);
             }
 
             return $type;

@@ -158,15 +158,11 @@ class YieldAnalyzer
                             $classlike_storage
                         );
 
-                        if ($yield_type) {
-                            $yield_type = Type::combineUnionTypes(
-                                $yield_type,
-                                $yield_candidate_type,
-                                $codebase
-                            );
-                        } else {
-                            $yield_type = $yield_candidate_type;
-                        }
+                        $yield_type = Type::combineUnionTypes(
+                            $yield_type,
+                            $yield_candidate_type,
+                            $codebase
+                        );
                     } else {
                         $yield_type = Type::getMixed();
                     }

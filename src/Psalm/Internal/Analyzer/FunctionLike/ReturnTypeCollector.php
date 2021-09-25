@@ -243,17 +243,8 @@ class ReturnTypeCollector
             if ($type instanceof Type\Atomic\TArray) {
                 [$key_type_param, $value_type_param] = $type->type_params;
 
-                if (!$key_type) {
-                    $key_type = clone $key_type_param;
-                } else {
-                    $key_type = Type::combineUnionTypes($key_type_param, $key_type);
-                }
-
-                if (!$value_type) {
-                    $value_type = clone $value_type_param;
-                } else {
-                    $value_type = Type::combineUnionTypes($value_type_param, $value_type);
-                }
+                $key_type = Type::combineUnionTypes(clone $key_type_param, $key_type);
+                $value_type = Type::combineUnionTypes(clone $value_type_param, $value_type);
             } elseif ($type instanceof Type\Atomic\TIterable
                 || $type instanceof Type\Atomic\TNamedObject
             ) {

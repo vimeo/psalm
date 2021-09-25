@@ -844,17 +844,13 @@ class AtomicStaticCallAnalyzer
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-            if (!$stmt_type) {
-                $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-            } else {
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    Type::combineUnionTypes(
-                        $return_type_candidate,
-                        $stmt_type
-                    )
-                );
-            }
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes(
+                    $return_type_candidate,
+                    $stmt_type
+                )
+            );
         }
 
         return null;

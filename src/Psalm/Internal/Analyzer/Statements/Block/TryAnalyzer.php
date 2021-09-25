@@ -89,17 +89,11 @@ class TryAnalyzer
 
         if ($try_context->finally_scope) {
             foreach ($context->vars_in_scope as $var_id => $type) {
-                if (isset($try_context->finally_scope->vars_in_scope[$var_id])) {
-                    if ($try_context->finally_scope->vars_in_scope[$var_id] !== $type) {
-                        $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $try_context->finally_scope->vars_in_scope[$var_id],
-                            $type,
-                            $statements_analyzer->getCodebase()
-                        );
-                    }
-                } else {
-                    $try_context->finally_scope->vars_in_scope[$var_id] = $type;
-                }
+                $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $try_context->finally_scope->vars_in_scope[$var_id] ?? null,
+                    $type,
+                    $statements_analyzer->getCodebase()
+                );
             }
         }
 

@@ -689,17 +689,12 @@ class ArgumentAnalyzer
 
                 if ($declaring_method_id) {
                     $id_lc = strtolower((string) $declaring_method_id);
-                    if (!isset($codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset])) {
-                        $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
-                            = clone $input_type;
-                    } else {
-                        $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
-                            = Type::combineUnionTypes(
-                                $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset],
-                                clone $input_type,
-                                $codebase
-                            );
-                    }
+                    $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
+                        = Type::combineUnionTypes(
+                            $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
+                            clone $input_type,
+                            $codebase
+                        );
                 }
             }
 

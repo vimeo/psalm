@@ -94,17 +94,15 @@ class AtomicPropertyFetchAnalyzer
         if ($lhs_type_part instanceof TObjectWithProperties
             && isset($lhs_type_part->properties[$prop_name])
         ) {
-            if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    Type::combineUnionTypes(
-                        $lhs_type_part->properties[$prop_name],
-                        $stmt_type
-                    )
-                );
-            } else {
-                $statements_analyzer->node_data->setType($stmt, $lhs_type_part->properties[$prop_name]);
-            }
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes(
+                    $lhs_type_part->properties[$prop_name],
+                    $stmt_type
+                )
+            );
 
             return;
         }
@@ -472,14 +470,11 @@ class AtomicPropertyFetchAnalyzer
             $class_property_type->has_mutations = false;
         }
 
-        if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                Type::combineUnionTypes($class_property_type, $stmt_type)
-            );
-        } else {
-            $statements_analyzer->node_data->setType($stmt, $class_property_type);
-        }
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            Type::combineUnionTypes($class_property_type, $stmt_type)
+        );
     }
 
     public static function checkPropertyDeprecation(
@@ -646,14 +641,11 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer->node_data = $old_data_provider;
 
             if ($fake_method_call_type) {
-                if ($stmt_type = $statements_analyzer->node_data->getType($stmt)) {
-                    $statements_analyzer->node_data->setType(
-                        $stmt,
-                        Type::combineUnionTypes($fake_method_call_type, $stmt_type)
-                    );
-                } else {
-                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
-                }
+                $stmt_type = $statements_analyzer->node_data->getType($stmt);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($fake_method_call_type, $stmt_type)
+                );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }

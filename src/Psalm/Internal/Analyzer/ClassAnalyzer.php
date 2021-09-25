@@ -1539,13 +1539,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $suggested_type = $property_storage->suggested_type;
 
         if (isset($this->inferred_property_types[$property_name])) {
-            $suggested_type = $suggested_type
-                ? Type::combineUnionTypes(
-                    $suggested_type,
-                    $this->inferred_property_types[$property_name],
-                    $codebase
-                )
-                : $this->inferred_property_types[$property_name];
+            $suggested_type = Type::combineUnionTypes(
+                $suggested_type,
+                $this->inferred_property_types[$property_name] ?? null,
+                $codebase
+            );
         }
 
         if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {

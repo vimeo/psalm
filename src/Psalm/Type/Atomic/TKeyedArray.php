@@ -219,11 +219,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
 
         $key_type->possibly_undefined = false;
 
-        if ($this->previous_key_type) {
-            $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
-        }
-
-        return $key_type;
+        return Type::combineUnionTypes($this->previous_key_type, $key_type);
     }
 
     public function getGenericValueType(): Union
@@ -231,16 +227,10 @@ class TKeyedArray extends \Psalm\Type\Atomic
         $value_type = null;
 
         foreach ($this->properties as $property) {
-            if ($value_type === null) {
-                $value_type = clone $property;
-            } else {
-                $value_type = Type::combineUnionTypes($property, $value_type);
-            }
+            $value_type = Type::combineUnionTypes(clone $property, $value_type);
         }
 
-        if ($this->previous_value_type) {
-            $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
-        }
+        $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
 
         $value_type->possibly_undefined = false;
 
@@ -263,11 +253,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
                 $key_types[] = new Type\Atomic\TLiteralString($key);
             }
 
-            if ($value_type === null) {
-                $value_type = clone $property;
-            } else {
-                $value_type = Type::combineUnionTypes($property, $value_type);
-            }
+            $value_type = Type::combineUnionTypes(clone $property, $value_type);
 
             if (!$property->possibly_undefined) {
                 $has_defined_keys = true;
@@ -276,13 +262,8 @@ class TKeyedArray extends \Psalm\Type\Atomic
 
         $key_type = TypeCombiner::combine($key_types);
 
-        if ($this->previous_value_type) {
-            $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
-        }
-
-        if ($this->previous_key_type) {
-            $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
-        }
+        $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
+        $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
 
         $value_type->possibly_undefined = false;
 

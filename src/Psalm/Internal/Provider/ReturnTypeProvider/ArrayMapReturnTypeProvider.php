@@ -463,15 +463,11 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                 }
             }
 
-            if (!$mapping_return_type) {
-                $mapping_return_type = $function_id_return_type;
-            } else {
-                $mapping_return_type = Type::combineUnionTypes(
-                    $function_id_return_type,
-                    $mapping_return_type,
-                    $codebase
-                );
-            }
+            $mapping_return_type = Type::combineUnionTypes(
+                $function_id_return_type,
+                $mapping_return_type,
+                $codebase
+            );
         }
 
         return $mapping_return_type;
