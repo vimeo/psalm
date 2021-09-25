@@ -32,8 +32,6 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
-     *
-     * @param array<string, list<IssueData>> $issues
      */
     public static function afterAnalysis(
         AfterAnalysisEvent $event
