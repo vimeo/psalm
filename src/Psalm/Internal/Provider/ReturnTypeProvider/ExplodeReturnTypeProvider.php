@@ -15,9 +15,6 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionRe
         return ['explode'];
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
-     */
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
     {
         $statements_source = $event->getStatementsSource();
