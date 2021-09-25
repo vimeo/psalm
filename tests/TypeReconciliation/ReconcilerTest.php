@@ -193,6 +193,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'psalm-assert.php',
             '
             <?php
+            namespace ReconciliationTest;
             class Foo
             {
                 const BAR = \'bar\';
