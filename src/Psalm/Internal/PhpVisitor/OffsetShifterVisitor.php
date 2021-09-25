@@ -69,5 +69,7 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
             $attrs['endFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['endFilePos']] ?? 0)
         );
         $node->setAttribute('startLine', $attrs['startLine'] + $this->line_offset);
+
+        return null;
     }
 }
