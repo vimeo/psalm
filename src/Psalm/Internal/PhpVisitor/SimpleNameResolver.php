@@ -8,8 +8,11 @@ use PhpParser\ErrorHandler;
 use PhpParser\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\UnionType;
 use PhpParser\NodeVisitorAbstract;
 
 /**
@@ -167,16 +170,14 @@ class SimpleNameResolver extends NodeVisitorAbstract
     }
 
     /**
-     * @param  PhpParser\Node|string|null $node
-     *
-     * @return null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType
-     * @psalm-suppress InvalidReturnType
-     * @psalm-suppress InvalidReturnStatement
+     * @template T of Node|null
+     * @param T $node
+     * @return ($node is NullableType ? NullableType : ($node is Name ? Name : T))
+     * @psalm-suppress LessSpecificReturnType
      */
-    private function resolveType($node): ?Node
+    private function resolveType(?Node $node): ?Node
     {
         if ($node instanceof Node\NullableType) {
-            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
             $node->type = $this->resolveType($node->type);
 
             return $node;
