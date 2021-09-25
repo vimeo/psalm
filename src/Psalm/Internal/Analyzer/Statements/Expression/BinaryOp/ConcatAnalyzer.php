@@ -36,7 +36,7 @@ use function strlen;
 class ConcatAnalyzer
 {
     /**
-     * @param  Type\Union|null       &$result_type
+     * @param Type\Union|null $result_type
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
