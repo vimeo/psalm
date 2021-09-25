@@ -100,7 +100,7 @@ class ConstFetchAnalyzer
 
     public static function getGlobalConstType(
         Codebase $codebase,
-        ?string $fq_const_name,
+        string $fq_const_name,
         string $const_name
     ): ?Type\Union {
         if ($const_name === 'STDERR'

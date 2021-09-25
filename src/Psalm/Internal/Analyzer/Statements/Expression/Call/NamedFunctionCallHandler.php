@@ -439,7 +439,7 @@ class NamedFunctionCallHandler
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
-        ?string $function_id,
+        string $function_id,
         Context $context
     ) : void {
         $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;

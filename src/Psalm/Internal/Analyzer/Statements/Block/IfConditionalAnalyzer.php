@@ -34,7 +34,7 @@ class IfConditionalAnalyzer
         Context $outer_context,
         Codebase $codebase,
         IfScope $if_scope,
-        ?int $branch_point
+        int $branch_point
     ): IfConditionalScope {
         $entry_clauses = [];
 

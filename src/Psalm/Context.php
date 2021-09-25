@@ -741,7 +741,7 @@ class Context
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
-    public function hasVariable(?string $var_name): bool
+    public function hasVariable(string $var_name): bool
     {
         if (!$var_name) {
             return false;

@@ -443,7 +443,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $return_type_candidate,
             $all_intersection_return_type,
-            $method_name_lc,
             $codebase
         );
     }
@@ -518,28 +517,19 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     private static function updateResultReturnType(
         AtomicMethodCallAnalysisResult $result,
-        ?Type\Union $return_type_candidate,
+        Type\Union $return_type_candidate,
         ?Type\Union $all_intersection_return_type,
-        string $method_name,
         Codebase $codebase
     ) : void {
-        if ($return_type_candidate) {
-            if ($all_intersection_return_type) {
-                $return_type_candidate = Type::intersectUnionTypes(
-                    $all_intersection_return_type,
-                    $return_type_candidate,
-                    $codebase
-                ) ?: Type::getMixed();
-            }
-
-            $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
-        } elseif ($all_intersection_return_type) {
-            $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
-        } elseif ($method_name === '__tostring') {
-            $result->return_type = Type::getString();
-        } else {
-            $result->return_type = Type::getMixed();
+        if ($all_intersection_return_type) {
+            $return_type_candidate = Type::intersectUnionTypes(
+                $all_intersection_return_type,
+                $return_type_candidate,
+                $codebase
+            ) ?: Type::getMixed();
         }
+
+        $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
     }
 
     private static function handleInvalidClass(

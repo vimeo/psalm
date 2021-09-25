@@ -44,7 +44,7 @@ class ElseIfAnalyzer
         Context $else_context,
         Context $outer_context,
         Codebase $codebase,
-        ?int $branch_point
+        int $branch_point
     ): ?bool {
         $pre_conditional_context = clone $else_context;
 
