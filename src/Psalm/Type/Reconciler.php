@@ -41,6 +41,10 @@ use function substr;
 
 class Reconciler
 {
+    public const RECONCILIATION_OK = 0;
+    public const RECONCILIATION_REDUNDANT = 1;
+    public const RECONCILIATION_EMPTY = 2;
+
     /** @var array<string, non-empty-list<string>> */
     private static $broken_paths = [];
 
@@ -154,7 +158,7 @@ class Reconciler
 
             $before_adjustment = $result_type ? clone $result_type : null;
 
-            $failed_reconciliation = 0;
+            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
@@ -280,7 +284,7 @@ class Reconciler
                 $changed_var_ids[$key] = true;
             }
 
-            if ($failed_reconciliation === 2) {
+            if ($failed_reconciliation === self::RECONCILIATION_EMPTY) {
                 $result_type->failed_reconciliation = true;
             }
 
