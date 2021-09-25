@@ -78,7 +78,7 @@ class ComposerLock
         /** @psalm-suppress MixedAssignment */
         foreach ($packages as $package) {
             if ($this->isPlugin($package)) {
-                /** @var array{name:string,extra:array{psalm:array{pluginClass:string}}} */
+                /** @var array{name:string,extra:array{psalm:array{pluginClass:string}}} $ret */
                 $ret[] = $package;
             }
         }
