@@ -636,8 +636,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         return $this->aliases;
     }
 
-    public function afterTraverse(array $nodes): void
+    public function afterTraverse(array $nodes)
     {
         $this->file_storage->type_aliases = $this->type_aliases;
+
+        return null;
     }
 }
