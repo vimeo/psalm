@@ -58,7 +58,7 @@ class TryAnalyzer
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
 
         /**
-         * @var array<string, array<array-key, CodeLocation>>
+         * @var array<string, array<array-key, CodeLocation>> $context->possibly_thrown_exceptions
          */
         $context->possibly_thrown_exceptions = [];
 
@@ -270,9 +270,6 @@ class TryAnalyzer
                     }
                 }
 
-                /**
-                 * @var array<string, array<array-key, CodeLocation>>
-                 */
                 $catch_context->possibly_thrown_exceptions = [];
             }
 
