@@ -678,14 +678,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         }
                     }
 
-                    if ($new_type) {
-                        $new_type = Type::combineUnionTypes(
-                            $new_type,
-                            new Type\Union([$new_type_part])
-                        );
-                    } else {
-                        $new_type = new Type\Union([$new_type_part]);
-                    }
+                    $new_type = Type::combineUnionTypes($new_type, new Type\Union([$new_type_part]));
 
                     if ($lhs_type_part->as_type
                         && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
@@ -794,14 +787,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         }
                     }
 
-                    if ($new_type) {
-                        $new_type = Type::combineUnionTypes(
-                            $new_type,
-                            new Type\Union([$generated_type])
-                        );
-                    } else {
-                        $new_type = new Type\Union([$generated_type]);
-                    }
+                    $new_type = Type::combineUnionTypes($new_type, new Type\Union([$generated_type]));
                 }
 
                 continue;
@@ -850,14 +836,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 // fall through
             }
 
-            if ($new_type) {
-                $new_type = Type::combineUnionTypes(
-                    $new_type,
-                    Type::getObject()
-                );
-            } else {
-                $new_type = Type::getObject();
-            }
+            $new_type = Type::combineUnionTypes($new_type, Type::getObject());
         }
 
         if (!$has_single_class) {

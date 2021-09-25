@@ -206,14 +206,10 @@ class StaticPropertyAssignmentAnalyzer
                 if ($source_analyzer instanceof ClassAnalyzer
                     && $fq_class_name === $source_analyzer->getFQCLN()
                 ) {
-                    if (isset($source_analyzer->inferred_property_types[$prop_name_name])) {
-                        $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
-                            $assignment_value_type,
-                            $source_analyzer->inferred_property_types[$prop_name_name]
-                        );
-                    } else {
-                        $source_analyzer->inferred_property_types[$prop_name_name] = $assignment_value_type;
-                    }
+                    $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
+                        $assignment_value_type,
+                        $source_analyzer->inferred_property_types[$prop_name_name] ?? null
+                    );
                 }
             } else {
                 $class_property_type = clone $class_property_type;

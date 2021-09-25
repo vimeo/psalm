@@ -353,10 +353,6 @@ class TemplateInferredTypeReplacer
                         $atomic_type->else_type,
                         $codebase
                     );
-                } elseif ($if_template_type && !$else_template_type) {
-                    $class_template_type = $if_template_type;
-                } elseif (!$if_template_type) {
-                    $class_template_type = $else_template_type;
                 } else {
                     $class_template_type = Type::combineUnionTypes(
                         $if_template_type,

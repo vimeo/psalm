@@ -408,15 +408,11 @@ class ArgumentsAnalyzer
                                 }
                             }
 
-                            if (!$newly_inferred_type) {
-                                $newly_inferred_type = $replaced_type_part->params[$closure_param_offset]->type;
-                            } else {
-                                $newly_inferred_type = Type::combineUnionTypes(
-                                    $newly_inferred_type,
-                                    $replaced_type_part->params[$closure_param_offset]->type,
-                                    $codebase
-                                );
-                            }
+                            $newly_inferred_type = Type::combineUnionTypes(
+                                $newly_inferred_type,
+                                $replaced_type_part->params[$closure_param_offset]->type,
+                                $codebase
+                            );
                         }
                     }
                 }

@@ -329,14 +329,10 @@ class ArithmeticOpAnalyzer
             );
 
             if ($calculated_type) {
-                if ($result_type) {
-                    $result_type = Type::combineUnionTypes(
-                        $calculated_type,
-                        $result_type
-                    );
-                } else {
-                    $result_type = $calculated_type;
-                }
+                $result_type = Type::combineUnionTypes(
+                    $calculated_type,
+                    $result_type
+                );
 
                 $has_valid_left_operand = true;
                 $has_valid_right_operand = true;
@@ -372,11 +368,7 @@ class ArithmeticOpAnalyzer
                 $has_string_increment = true;
             }
 
-            if ($result_type) {
-                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-            } else {
-                $result_type = $new_result_type;
-            }
+            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
 
             $has_valid_left_operand = true;
             $has_valid_right_operand = true;
@@ -444,13 +436,7 @@ class ArithmeticOpAnalyzer
                 && $parent instanceof PhpParser\Node\Expr\AssignOp\Plus
                 && !$right_type_part instanceof TMixed
             ) {
-                $result_type_member = new Type\Union([$right_type_part]);
-
-                if (!$result_type) {
-                    $result_type = $result_type_member;
-                } else {
-                    $result_type = Type::combineUnionTypes($result_type_member, $result_type);
-                }
+                $result_type = Type::combineUnionTypes(new Type\Union([$right_type_part]), $result_type);
 
                 return null;
             }
@@ -559,11 +545,7 @@ class ArithmeticOpAnalyzer
                 );
             }
 
-            if (!$result_type) {
-                $result_type = $result_type_member;
-            } else {
-                $result_type = Type::combineUnionTypes($result_type_member, $result_type, $codebase, true);
-            }
+            $result_type = Type::combineUnionTypes($result_type_member, $result_type, $codebase, true);
 
             if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
                 && $context
@@ -595,14 +577,10 @@ class ArithmeticOpAnalyzer
                             && strtolower($left_type_part->value) === 'gmp')
                         || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
             ) {
-                if (!$result_type) {
-                    $result_type = new Type\Union([new TNamedObject('GMP')]);
-                } else {
-                    $result_type = Type::combineUnionTypes(
-                        new Type\Union([new TNamedObject('GMP')]),
-                        $result_type
-                    );
-                }
+                $result_type = Type::combineUnionTypes(
+                    new Type\Union([new TNamedObject('GMP')]),
+                    $result_type
+                );
             } else {
                 if ($statements_source && IssueBuffer::accepts(
                     new InvalidOperand(
@@ -657,11 +635,7 @@ class ArithmeticOpAnalyzer
                     $new_result_type = new Type\Union([new TFloat(), new TInt()]);
                 }
 
-                if (!$result_type) {
-                    $result_type = $new_result_type;
-                } else {
-                    $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-                }
+                $result_type = Type::combineUnionTypes($new_result_type, $result_type);
 
                 $has_valid_right_operand = true;
                 $has_valid_left_operand = true;
@@ -742,8 +716,6 @@ class ArithmeticOpAnalyzer
                                 $result_type = Type::getInt();
                             }
                         }
-                    } elseif (!$result_type) {
-                        $result_type = $always_positive ? Type::getPositiveInt(true) : Type::getInt(true);
                     } else {
                         $result_type = Type::combineUnionTypes(
                             $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
@@ -761,8 +733,6 @@ class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     $result_type = Type::getInt();
-                } elseif (!$result_type) {
-                    $result_type = Type::getFloat();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 }
@@ -791,8 +761,6 @@ class ArithmeticOpAnalyzer
 
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                     $result_type = Type::getInt();
-                } elseif (!$result_type) {
-                    $result_type = Type::getFloat();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 }
@@ -908,14 +876,10 @@ class ArithmeticOpAnalyzer
     ): void {
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             //can't assume an int range will stay int after division
-            if (!$result_type) {
-                $result_type = new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
-            } else {
-                $result_type = Type::combineUnionTypes(
-                    new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
-                    $result_type
-                );
-            }
+            $result_type = Type::combineUnionTypes(
+                new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]),
+                $result_type
+            );
             return;
         }
 
@@ -929,14 +893,10 @@ class ArithmeticOpAnalyzer
             $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
         ) {
             //really complex to calculate
-            if (!$result_type) {
-                $result_type = Type::getInt();
-            } else {
-                $result_type = Type::combineUnionTypes(
-                    Type::getInt(),
-                    $result_type
-                );
-            }
+            $result_type = Type::combineUnionTypes(
+                Type::getInt(),
+                $result_type
+            );
             return;
         }
 
@@ -944,14 +904,10 @@ class ArithmeticOpAnalyzer
             $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
         ) {
             //really complex to calculate
-            if (!$result_type) {
-                $result_type = new Type\Union([new Type\Atomic\TInt()]);
-            } else {
-                $result_type = Type::combineUnionTypes(
-                    new Type\Union([new Type\Atomic\TInt()]),
-                    $result_type
-                );
-            }
+            $result_type = Type::combineUnionTypes(
+                new Type\Union([new Type\Atomic\TInt()]),
+                $result_type
+            );
             return;
         }
 
@@ -1007,11 +963,7 @@ class ArithmeticOpAnalyzer
 
         $new_result_type = new Type\Union([new Type\Atomic\TIntRange($min_value, $max_value)]);
 
-        if (!$result_type) {
-            $result_type = $new_result_type;
-        } else {
-            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-        }
+        $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
 
     /**
@@ -1208,11 +1160,7 @@ class ArithmeticOpAnalyzer
             $new_result_type = Type::getInt(true);
         }
 
-        if (!$result_type) {
-            $result_type = $new_result_type;
-        } else {
-            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-        }
+        $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
 
     private static function analyzePowBetweenIntRange(
@@ -1281,11 +1229,7 @@ class ArithmeticOpAnalyzer
             }
         }
 
-        if (!$result_type) {
-            $result_type = $new_result_type;
-        } else {
-            $result_type = Type::combineUnionTypes($new_result_type, $result_type);
-        }
+        $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
 
     private static function analyzeModBetweenIntRange(
@@ -1351,13 +1295,9 @@ class ArithmeticOpAnalyzer
             $new_result_type = Type::getInt(true);
         }
 
-        if (!$result_type) {
-            $result_type = $new_result_type;
-        } else {
-            $result_type = Type::combineUnionTypes(
-                $new_result_type,
-                $result_type
-            );
-        }
+        $result_type = Type::combineUnionTypes(
+            $new_result_type,
+            $result_type
+        );
     }
 }

@@ -127,16 +127,10 @@ class ClassTemplateParamCollector
                                 if ($mapped_offset !== false
                                     && isset($lhs_type_part->type_params[$mapped_offset])
                                 ) {
-                                    $candidate_type = $lhs_type_part->type_params[$mapped_offset];
-
-                                    if (!$output_type_extends) {
-                                        $output_type_extends = $candidate_type;
-                                    } else {
-                                        $output_type_extends = Type::combineUnionTypes(
-                                            $candidate_type,
-                                            $output_type_extends
-                                        );
-                                    }
+                                    $output_type_extends = Type::combineUnionTypes(
+                                        $lhs_type_part->type_params[$mapped_offset],
+                                        $output_type_extends
+                                    );
                                 }
                             } elseif (isset(
                                 $static_class_storage
@@ -156,27 +150,17 @@ class ClassTemplateParamCollector
                                 if ($mapped_offset !== false
                                     && isset($lhs_type_part->type_params[$mapped_offset])
                                 ) {
-                                    $candidate_type = $lhs_type_part->type_params[$mapped_offset];
-
-                                    if (!$output_type_extends) {
-                                        $output_type_extends = $candidate_type;
-                                    } else {
-                                        $output_type_extends = Type::combineUnionTypes(
-                                            $candidate_type,
-                                            $output_type_extends
-                                        );
-                                    }
+                                    $output_type_extends = Type::combineUnionTypes(
+                                        $lhs_type_part->type_params[$mapped_offset],
+                                        $output_type_extends
+                                    );
                                 }
                             }
                         } else {
-                            if (!$output_type_extends) {
-                                $output_type_extends = new Type\Union([$type_extends_atomic]);
-                            } else {
-                                $output_type_extends = Type::combineUnionTypes(
-                                    new Type\Union([$type_extends_atomic]),
-                                    $output_type_extends
-                                );
-                            }
+                            $output_type_extends = Type::combineUnionTypes(
+                                new Type\Union([$type_extends_atomic]),
+                                $output_type_extends
+                            );
                         }
                     }
 

@@ -572,17 +572,12 @@ class Analyzer
                         $this->possible_method_param_types[$declaring_method_id] = $possible_param_types;
                     } else {
                         foreach ($possible_param_types as $offset => $possible_param_type) {
-                            if (!isset($this->possible_method_param_types[$declaring_method_id][$offset])) {
-                                $this->possible_method_param_types[$declaring_method_id][$offset]
-                                    = $possible_param_type;
-                            } else {
-                                $this->possible_method_param_types[$declaring_method_id][$offset]
-                                    = \Psalm\Type::combineUnionTypes(
-                                        $this->possible_method_param_types[$declaring_method_id][$offset],
-                                        $possible_param_type,
-                                        $codebase
-                                    );
-                            }
+                            $this->possible_method_param_types[$declaring_method_id][$offset]
+                                = \Psalm\Type::combineUnionTypes(
+                                    $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
+                                    $possible_param_type,
+                                    $codebase
+                                );
                         }
                     }
                 }
@@ -1368,7 +1363,7 @@ class Analyzer
         $total_files = count($all_deep_scanned_files);
 
         $lines = [];
-        
+
         if (!$total_files) {
             $lines[] = 'No files analyzed';
         }
@@ -1380,7 +1375,7 @@ class Analyzer
             $lines[] = 'Psalm was able to infer types for ' . $percentage . '%'
                 . ' of the codebase';
         }
-        
+
         return implode("\n", $lines);
     }
 

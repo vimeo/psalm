@@ -532,17 +532,9 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 ) ?: Type::getMixed();
             }
 
-            if (!$result->return_type) {
-                $result->return_type = $return_type_candidate;
-            } else {
-                $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
-            }
+            $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
         } elseif ($all_intersection_return_type) {
-            if (!$result->return_type) {
-                $result->return_type = $all_intersection_return_type;
-            } else {
-                $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
-            }
+            $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
         } elseif ($method_name === '__tostring') {
             $result->return_type = Type::getString();
         } else {

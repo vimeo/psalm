@@ -393,14 +393,10 @@ class CallAnalyzer
                                     $output_type_candidate = new Type\Union([$atomic_type]);
                                 }
 
-                                if (!$output_type) {
-                                    $output_type = $output_type_candidate;
-                                } else {
-                                    $output_type = Type::combineUnionTypes(
-                                        $output_type_candidate,
-                                        $output_type
-                                    );
-                                }
+                                $output_type = Type::combineUnionTypes(
+                                    $output_type_candidate,
+                                    $output_type
+                                );
                             }
 
                             $template_types[$template_name][$declaring_class_storage->name] = $output_type;
