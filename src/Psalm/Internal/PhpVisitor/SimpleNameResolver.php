@@ -175,7 +175,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      */
     private function resolveType(?Node $node): ?Node
     {
-        if ($node instanceof Node\NullableType) {
+        if ($node instanceof NullableType) {
             $node->type = $this->resolveType($node->type);
 
             return $node;
