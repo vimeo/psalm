@@ -98,10 +98,9 @@ class SwitchCaseAnalyzer
             $case_context->inside_conditional = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
-                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-                $case_scope->parent_context = null;
-                $case_context->case_scope = null;
-                $case_context->parent_context = null;
+                unset($case_scope->parent_context);
+                unset($case_context->case_scope);
+                unset($case_context->parent_context);
 
                 return false;
             }
@@ -273,10 +272,9 @@ class SwitchCaseAnalyzer
                 $switch_scope->leftover_statements = [$case_if_stmt];
             }
 
-            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $case_scope->parent_context = null;
-            $case_context->case_scope = null;
-            $case_context->parent_context = null;
+            unset($case_scope->parent_context);
+            unset($case_context->case_scope);
+            unset($case_context->parent_context);
 
             $statements_analyzer->node_data = $old_node_data;
 
@@ -500,10 +498,9 @@ class SwitchCaseAnalyzer
                 $case_exit_type,
                 $switch_scope
             ) === false) {
-                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-                $case_scope->parent_context = null;
-                $case_context->case_scope = null;
-                $case_context->parent_context = null;
+                unset($case_scope->parent_context);
+                unset($case_context->case_scope);
+                unset($case_context->parent_context);
 
                 return false;
             }
@@ -558,10 +555,9 @@ class SwitchCaseAnalyzer
             }
         }
 
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $case_scope->parent_context = null;
-        $case_context->case_scope = null;
-        $case_context->parent_context = null;
+        unset($case_scope->parent_context);
+        unset($case_context->case_scope);
+        unset($case_context->parent_context);
 
         return null;
     }

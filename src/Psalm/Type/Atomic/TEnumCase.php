@@ -11,9 +11,6 @@ class TEnumCase extends TNamedObject
      */
     public $case_name;
 
-    /**
-     * @param string $value the name of the object
-     */
     public function __construct(string $fq_enum_name, string $case_name)
     {
         parent::__construct($fq_enum_name, false);

@@ -18,7 +18,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     public function __destruct()
     {
-        $this->source = null;
+        unset($this->source);
     }
 
     public function getAliases(): Aliases

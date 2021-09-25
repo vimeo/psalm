@@ -467,8 +467,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat
-     *         $callable_arg
+     * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $callable_arg
      *
      * @return list<non-empty-string>
      *

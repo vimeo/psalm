@@ -106,8 +106,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     public function __destruct()
     {
-        $this->source = null;
-        $this->file_analyzer = null;
+        unset($this->source);
+        unset($this->file_analyzer);
     }
 
     public function getMethodMutations(

@@ -17,5 +17,7 @@ class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract
     public function enterNode(PhpParser\Node $node)
     {
         $this->count++;
+
+        return null;
     }
 }

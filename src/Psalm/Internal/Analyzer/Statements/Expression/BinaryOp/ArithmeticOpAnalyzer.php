@@ -289,8 +289,8 @@ class ArithmeticOpAnalyzer
     }
 
     /**
-     * @param  string[]        &$invalid_left_messages
-     * @param  string[]        &$invalid_right_messages
+     * @param string[] $invalid_left_messages
+     * @param string[] $invalid_right_messages
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,

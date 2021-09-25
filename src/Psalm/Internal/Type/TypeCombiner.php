@@ -1455,7 +1455,7 @@ class TypeCombiner
 
                 if (is_int($property_name)) {
                     $objectlike_keys[$property_name] = new TLiteralInt($property_name);
-                } elseif (isset($type->class_strings[$property_name])) {
+                } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
                     $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
                 } else {
                     $objectlike_keys[$property_name] = new TLiteralString($property_name);

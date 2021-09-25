@@ -662,7 +662,6 @@ class FileAnalyzer extends SourceAnalyzer
 
     public function clearSourceBeforeDestruction() : void
     {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $this->source = null;
+        unset($this->source);
     }
 }

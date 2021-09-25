@@ -9,7 +9,7 @@ interface RegistrationInterface
     public function addStubFile(string $file_name): void;
 
     /**
-     * @param string class-string $handler
+     * @param class-string $handler
      */
     public function registerHooksFromClass(string $handler): void;
 

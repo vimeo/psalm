@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
 
+use function class_exists;
 use function reset;
 
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
@@ -38,6 +39,8 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 
         /** @psalm-suppress UnresolvableInclude */
         require_once($this->path);
+
+        \assert(class_exists($fq_class_name));
 
         $registration->registerHooksFromClass($fq_class_name);
     }

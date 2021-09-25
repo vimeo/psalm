@@ -67,7 +67,7 @@ class LoopScope
 
     public function __destruct()
     {
-        $this->loop_context = null;
-        $this->loop_parent_context = null;
+        unset($this->loop_context);
+        unset($this->loop_parent_context);
     }
 }

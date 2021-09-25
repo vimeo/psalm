@@ -52,7 +52,6 @@ class AstDiffer
                 $body_change = false;
 
                 while ($x < $n && $y < $m && ($is_equal)($a[$x], $b[$y], $a_code, $b_code, $body_change)) {
-                    /** @var bool */
                     $bc[$x] = $body_change;
                     ++$x;
                     ++$y;

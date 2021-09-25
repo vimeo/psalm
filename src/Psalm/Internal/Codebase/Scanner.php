@@ -678,10 +678,6 @@ class Scanner
             return false;
         }
 
-        if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
-            throw new \InvalidArgumentException('Why are you asking about a builtin class?');
-        }
-
         $composer_file_path = $this->config->getComposerFilePathForClassLike($fq_class_name);
 
         if ($composer_file_path && file_exists($composer_file_path)) {
