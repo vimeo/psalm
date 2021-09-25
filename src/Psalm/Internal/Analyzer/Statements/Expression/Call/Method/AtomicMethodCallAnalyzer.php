@@ -471,7 +471,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         foreach ($intersection_types as $intersection_type) {
             $intersection_result = clone $result;
 
-            /** @var ?Type\Union */
             $intersection_result->return_type = null;
 
             self::analyze(
