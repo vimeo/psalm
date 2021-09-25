@@ -616,7 +616,7 @@ class InstancePropertyAssignmentAnalyzer
         Context $context,
         bool $direct_assignment,
         \Psalm\Codebase $codebase,
-        Type\Union &$assignment_value_type,
+        Type\Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id
     ): array {

@@ -42,7 +42,9 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 return new Type\Union([
                     new Type\Atomic\TKeyedArray($object_type->properties)
                 ]);
-            } elseif ($object_type instanceof Type\Atomic\TNamedObject) {
+            }
+
+            if ($object_type instanceof Type\Atomic\TNamedObject) {
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
                     return Type::parseString('array<string, mixed>');
                 }

@@ -531,8 +531,7 @@ class Functions
                         );
 
                         try {
-                            $method_storage = $codebase->methods->getStorage($count_method_id);
-                            return $method_storage->mutation_free;
+                            return $codebase->methods->getStorage($count_method_id)->mutation_free;
                         } catch (\Exception $e) {
                             // do nothing
                         }

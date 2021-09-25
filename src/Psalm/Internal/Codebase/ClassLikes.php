@@ -545,13 +545,8 @@ class ClassLikes
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
-        if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-        ) {
-            return false;
-        }
-
-        return true;
+        return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
+            || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id);
     }
 
     /**
@@ -563,14 +558,9 @@ class ClassLikes
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null
     ): bool {
-        if (!$this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            && !$this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            && !$this->enumExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-        ) {
-            return false;
-        }
-
-        return true;
+        return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
+            || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
+            || $this->enumExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id);
     }
 
     /**
@@ -721,9 +711,7 @@ class ClassLikes
     {
         $fq_interface_name = strtolower($fq_interface_name);
 
-        $storage = $this->classlike_storage_provider->get($fq_interface_name);
-
-        return $storage->parent_interfaces;
+        return $this->classlike_storage_provider->get($fq_interface_name)->parent_interfaces;
     }
 
     public function traitExists(string $fq_trait_name, ?CodeLocation $code_location = null): bool

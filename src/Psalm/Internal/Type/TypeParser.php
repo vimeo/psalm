@@ -435,6 +435,7 @@ class TypeParser
      */
     public static function getComputedIntsFromMask(array $potential_ints) : array
     {
+        /** @var list<int> */
         $potential_values = [];
 
         foreach ($potential_ints as $ith) {
@@ -443,8 +444,8 @@ class TypeParser
             $new_values[] = $ith;
 
             if ($ith !== 0) {
-                for ($j = 0; $j < count($potential_values); $j++) {
-                    $new_values[] = $ith | $potential_values[$j];
+                foreach ($potential_values as $potential_value) {
+                    $new_values[] = $ith | $potential_value;
                 }
             }
 

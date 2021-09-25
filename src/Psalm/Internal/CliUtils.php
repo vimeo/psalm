@@ -63,7 +63,7 @@ final class CliUtils
             require_once __DIR__ . '/../../../vendor/netresearch/jsonmapper/src/JsonMapper/Exception.php';
         }
 
-        if (realpath($psalm_dir) !== realpath($current_dir) && !$in_phar) {
+        if (!$in_phar && realpath($psalm_dir) !== realpath($current_dir)) {
             $autoload_roots[] = $psalm_dir;
         }
 
@@ -241,13 +241,14 @@ final class CliUtils
                 /** @var string */
                 $input_path = $input_paths[$i];
 
-                if (realpath($input_path) === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
+                $real_input_path = realpath($input_path);
+                if ($real_input_path === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
                         . DIRECTORY_SEPARATOR . 'psalm')
-                    || realpath($input_path) === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
+                    || $real_input_path === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
                         . DIRECTORY_SEPARATOR . 'psalter')
-                    || realpath($input_path) === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalm')
-                    || realpath($input_path) === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalter')
-                    || realpath($input_path) === realpath(Phar::running(false))
+                    || $real_input_path === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalm')
+                    || $real_input_path === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalter')
+                    || $real_input_path === realpath(Phar::running(false))
                 ) {
                     continue;
                 }

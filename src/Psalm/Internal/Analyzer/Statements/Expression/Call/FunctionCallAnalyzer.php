@@ -434,9 +434,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     return $function_call_info;
-                } else {
-                    $function_call_info->function_exists = true;
                 }
+
+                $function_call_info->function_exists = true;
             }
         } else {
             $function_call_info->function_exists = true;

@@ -1335,7 +1335,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_has_object && !$existing_has_string) {
             return Type::parseString($assertion, null, $template_type_map);
-        } elseif ($existing_has_string && !$existing_has_object) {
+        }
+
+        if ($existing_has_string && !$existing_has_object) {
             if (!$allow_string_comparison && $code_location) {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(

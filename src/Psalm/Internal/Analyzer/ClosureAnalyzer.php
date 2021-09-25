@@ -130,7 +130,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!$context->hasVariable($use_var_id) && $use->byRef) {
+                if ($use->byRef && !$context->hasVariable($use_var_id)) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 

@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider;
 use Psalm\IssueBuffer;
@@ -902,7 +903,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if ($config->load_xdebug_stub === null && '' !== $ini_handler->getSkippedVersion()) {
+        if ($config->load_xdebug_stub === null && PsalmRestarter::getSkippedVersion() !== '') {
             $config->load_xdebug_stub = true;
         }
     }

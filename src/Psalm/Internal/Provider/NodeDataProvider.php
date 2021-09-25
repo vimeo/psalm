@@ -126,7 +126,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
 
     public function isPureCompatible(PhpParser\Node\Expr $node) : bool
     {
-        $node_type = self::getType($node);
+        $node_type = $this->getType($node);
 
         return ($node_type && $node_type->reference_free) || isset($node->pure);
     }

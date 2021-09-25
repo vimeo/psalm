@@ -5,6 +5,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -360,8 +361,8 @@ class Scanner
                     $statements_provider = $codebase->statements_provider;
 
                     $codebase->scanner->isForked();
-                    $codebase->file_storage_provider->deleteAll();
-                    $codebase->classlike_storage_provider->deleteAll();
+                    FileStorageProvider::deleteAll();
+                    ClassLikeStorageProvider::deleteAll();
 
                     $statements_provider->resetDiffs();
 

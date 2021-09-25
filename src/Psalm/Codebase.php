@@ -942,26 +942,21 @@ class Codebase
                 return null;
             }
 
-            $storage = $this->methods->getStorage($declaring_method_id);
-            return $storage;
+            return $this->methods->getStorage($declaring_method_id);
         }
 
         $function_id = strtolower(substr($symbol, 0, -2));
         $file_storage = $this->file_storage_provider->get($file_path);
 
         if (isset($file_storage->functions[$function_id])) {
-            $function_storage = $file_storage->functions[$function_id];
-
-            return $function_storage;
+            return $file_storage->functions[$function_id];
         }
 
         if (!$function_id) {
             return null;
         }
 
-        $function = $this->functions->getStorage(null, $function_id);
-
-        return $function;
+        return $this->functions->getStorage(null, $function_id);
     }
 
     /**
@@ -1166,13 +1161,10 @@ class Codebase
                     return null;
                 }
 
-                $function = $this->functions->getStorage(null, $function_id);
-                return $function->location;
+                return $this->functions->getStorage(null, $function_id)->location;
             }
 
-            $storage = $this->classlike_storage_provider->get($symbol);
-
-            return $storage->location;
+            return $this->classlike_storage_provider->get($symbol)->location;
         } catch (\UnexpectedValueException $e) {
             error_log($e->getMessage());
 
@@ -1477,8 +1469,8 @@ class Codebase
             if (!$function_storage || !$function_storage->params) {
                 return null;
             }
-            $parameter = $function_storage->params[$argument_num];
-            return $parameter->type;
+
+            return $function_storage->params[$argument_num]->type;
         }
 
         return null;

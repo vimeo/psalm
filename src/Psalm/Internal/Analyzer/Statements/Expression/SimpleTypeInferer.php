@@ -189,13 +189,20 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if (strtolower($stmt->name->parts[0]) === 'false') {
+            $name = strtolower($stmt->name->parts[0]);
+            if ($name === 'false') {
                 return Type::getFalse();
-            } elseif (strtolower($stmt->name->parts[0]) === 'true') {
+            }
+
+            if ($name === 'true') {
                 return Type::getTrue();
-            } elseif (strtolower($stmt->name->parts[0]) === 'null') {
+            }
+
+            if ($name === 'null') {
                 return Type::getNull();
-            } elseif ($stmt->name->parts[0] === '__NAMESPACE__') {
+            }
+
+            if ($stmt->name->parts[0] === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
             }
 
@@ -691,7 +698,9 @@ class SimpleTypeInferer
                 if ($unpacked_atomic_type->type_params[0]->hasString()) {
                     // string keys are not supported in unpacked arrays
                     return false;
-                } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
+                }
+
+                if ($unpacked_atomic_type->type_params[0]->hasInt()) {
                     $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
                 }
 

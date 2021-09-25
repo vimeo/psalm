@@ -770,7 +770,9 @@ class ArrayFunctionArgumentsAnalyzer
             }
 
             return;
-        } elseif ($required_param_count > $max_closure_param_count) {
+        }
+
+        if ($required_param_count > $max_closure_param_count) {
             $argument_text = $max_closure_param_count === 1 ? 'one argument' : $max_closure_param_count . ' arguments';
 
             if (IssueBuffer::accepts(

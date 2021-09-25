@@ -1086,16 +1086,14 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if (!$array_access_type) {
-            return Type::getMixed(
-                $type instanceof TEmpty
-            );
-        } else {
+        if ($array_access_type) {
             return Type::combineUnionTypes(
                 $array_access_type,
                 Type::getMixed($type instanceof TEmpty)
             );
         }
+
+        return Type::getMixed($type instanceof TEmpty);
     }
 
     /**
