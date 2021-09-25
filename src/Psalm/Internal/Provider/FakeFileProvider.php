@@ -63,7 +63,7 @@ class FakeFileProvider extends FileProvider
     public function registerFile(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;
-        $this->fake_file_times[$file_path] = microtime(true);
+        $this->fake_file_times[$file_path] = (int)microtime(true);
     }
 
     /**
