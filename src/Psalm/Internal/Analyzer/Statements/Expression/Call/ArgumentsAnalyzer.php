@@ -908,7 +908,7 @@ class ArgumentsAnalyzer
     private static function handlePossiblyMatchingByRefParam(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        ?string $method_id,
+        string $method_id,
         ?string $cased_method_id,
         ?FunctionLikeParameter $last_param,
         array $function_params,
