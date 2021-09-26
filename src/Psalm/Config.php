@@ -978,7 +978,7 @@ class Config
         }
 
         if (isset($config_xml['maxStringLength'])) {
-            $attribute_text = intval($config_xml['maxStringLength']);
+            $attribute_text = (int)$config_xml['maxStringLength'];
             $config->max_string_length = $attribute_text;
         }
 

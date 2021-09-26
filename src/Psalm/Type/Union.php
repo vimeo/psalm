@@ -336,7 +336,7 @@ class Union implements TypeNode
                 $printed_int = true;
             }
 
-            $types[] = strval($type);
+            $types[] = (string)$type;
         }
 
         sort($types);
@@ -374,7 +374,7 @@ class Union implements TypeNode
                 $types[] = 'int';
                 $printed_int = true;
             } else {
-                $types[] = strval($type->getKey());
+                $types[] = (string)$type->getKey();
             }
         }
 
@@ -390,7 +390,7 @@ class Union implements TypeNode
 
         $types = [];
         foreach ($this->types as $type) {
-            $types[] = strval($type->getId());
+            $types[] = (string)$type->getId();
         }
         sort($types);
 
