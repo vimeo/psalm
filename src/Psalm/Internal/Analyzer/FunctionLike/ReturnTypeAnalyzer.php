@@ -41,8 +41,8 @@ use Psalm\Type;
 use function array_diff;
 use function count;
 use function in_array;
+use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal

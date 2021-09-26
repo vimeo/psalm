@@ -60,5 +60,4 @@ class TTemplateIndexedAccess extends \Psalm\Type\Atomic
     {
         return false;
     }
-
 }

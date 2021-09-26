@@ -331,12 +331,12 @@ class NamedFunctionCallHandler
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
             $anded_assertions = $stmt_assertions ?? AssertionFinder::processFunctionCall(
-                    $stmt,
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    $context->inside_negation
-                );
+                $stmt,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                $context->inside_negation
+            );
 
             $changed_vars = [];
 

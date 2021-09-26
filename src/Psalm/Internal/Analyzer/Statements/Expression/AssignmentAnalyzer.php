@@ -62,7 +62,6 @@ use function is_string;
 use function reset;
 use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal

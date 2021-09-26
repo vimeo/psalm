@@ -61,5 +61,4 @@ class TTemplateParamClass extends TClassString
     ): string {
         return $this->param_name . '::class';
     }
-
 }

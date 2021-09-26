@@ -26,8 +26,8 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 use function in_array;
+use function strpos;
 use function strtolower;
-use function substr;
 
 class MethodComparator
 {

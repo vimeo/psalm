@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type;
 use Psalm\Aliases;
 use Psalm\Exception\TypeParseTreeException;
 
-use function array_push;
 use function array_splice;
 use function array_unshift;
 use function count;

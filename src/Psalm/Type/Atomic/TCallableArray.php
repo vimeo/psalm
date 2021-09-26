@@ -10,5 +10,4 @@ class TCallableArray extends TNonEmptyArray
      * @var string
      */
     public $value = 'callable-array';
-
 }

@@ -39,6 +39,7 @@ use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
+use function strpos;
 use function substr;
 
 /**

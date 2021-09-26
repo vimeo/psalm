@@ -795,13 +795,13 @@ class ArgumentsAnalyzer
                     $function_param,
                     $argument_offset + $i,
                     $i,
-                        $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage->allow_named_arg_calls ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
                     $class_generic_params,
                     $template_result,
-                        $function_storage->specialize_call ?? true,
+                    $function_storage->specialize_call ?? true,
                     $in_call_map
                 ) === false) {
                     return false;

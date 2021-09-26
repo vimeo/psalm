@@ -27,6 +27,7 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function strpos;
 use function strtolower;
 use function substr;
 

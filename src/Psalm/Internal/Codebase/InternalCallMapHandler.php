@@ -14,6 +14,7 @@ use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;

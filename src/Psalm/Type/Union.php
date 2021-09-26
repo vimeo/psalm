@@ -26,7 +26,6 @@ use function implode;
 use function reset;
 use function sort;
 use function strpos;
-use function strval;
 
 class Union implements TypeNode
 {

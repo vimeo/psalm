@@ -21,7 +21,6 @@ use function get_class;
 use function gettype;
 use function in_array;
 use function ini_get;
-use function intval;
 use function pcntl_fork;
 use function pcntl_waitpid;
 use function pcntl_wexitstatus;

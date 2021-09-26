@@ -14,7 +14,7 @@ use function count;
 use function filemtime;
 use function md5;
 use function strlen;
-use function substr;
+use function strpos;
 
 /**
  * @internal

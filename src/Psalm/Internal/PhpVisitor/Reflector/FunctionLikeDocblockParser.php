@@ -20,6 +20,7 @@ use function preg_replace;
 use function preg_split;
 use function reset;
 use function str_replace;
+use function stripos;
 use function strlen;
 use function strpos;
 use function strtolower;

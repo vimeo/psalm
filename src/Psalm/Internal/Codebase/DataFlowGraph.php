@@ -10,6 +10,7 @@ use function array_merge;
 use function array_reverse;
 use function array_sum;
 use function strlen;
+use function strpos;
 use function substr;
 
 abstract class DataFlowGraph

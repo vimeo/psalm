@@ -29,6 +29,7 @@ use Psalm\Type\Union;
 
 use function get_class;
 use function max;
+use function strpos;
 use function substr;
 
 class SimpleNegatedAssertionReconciler extends Reconciler

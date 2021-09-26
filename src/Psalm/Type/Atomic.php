@@ -56,7 +56,6 @@ use function get_class;
 use function is_numeric;
 use function strpos;
 use function strtolower;
-use function substr;
 
 abstract class Atomic implements TypeNode
 {

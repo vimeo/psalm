@@ -315,7 +315,7 @@ class CallAnalyzer
             $args,
             $method_params,
             (string) $method_id,
-                $method_storage->allow_named_arg_calls ?? true,
+            $method_storage->allow_named_arg_calls ?? true,
             $context,
             $class_template_result
         ) === false) {

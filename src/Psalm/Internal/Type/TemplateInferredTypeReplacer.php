@@ -14,7 +14,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function substr;
+use function strpos;
 
 class TemplateInferredTypeReplacer
 {
