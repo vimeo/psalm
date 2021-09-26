@@ -170,7 +170,7 @@ class ReturnTypeAnalyzer
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitly = !!array_diff(
+        $function_returns_implicitly = (bool)array_diff(
             $control_actions,
             [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]
         );

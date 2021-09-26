@@ -234,7 +234,7 @@ class IfElseAnalyzer
         if (array_filter(
             $context->clauses,
             function ($clause): bool {
-                return !!$clause->possibilities;
+                return (bool)$clause->possibilities;
             }
         )) {
             $omit_keys = array_reduce(

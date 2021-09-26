@@ -1027,7 +1027,7 @@ class CallAnalyzer
                     $bounds_with_equality = array_filter(
                         $lower_bounds,
                         function ($lower_bound) {
-                            return !!$lower_bound->equality_bound_classlike;
+                            return (bool)$lower_bound->equality_bound_classlike;
                         }
                     );
 

@@ -218,7 +218,7 @@ class FunctionLikeNodeScanner
             }
 
             $existing_params['$' . $param_storage->name] = $i;
-            $storage->addParam($param_storage, !!$param->type);
+            $storage->addParam($param_storage, (bool)$param->type);
 
             if (!$param_storage->is_optional && !$param_storage->is_variadic) {
                 $required_param_count = $i + 1;

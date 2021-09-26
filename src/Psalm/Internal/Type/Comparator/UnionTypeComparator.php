@@ -381,7 +381,7 @@ class UnionTypeComparator
             }
         }
 
-        return !!$matching_input_keys;
+        return (bool)$matching_input_keys;
     }
 
     /**

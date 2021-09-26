@@ -660,7 +660,7 @@ class ProjectAnalyzer
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
             $this->progress,
-            !!$this->codebase->find_unused_code
+            (bool)$this->codebase->find_unused_code
         );
     }
 

@@ -637,7 +637,7 @@ class Union implements TypeNode
 
     public function hasArrayAccessInterface(Codebase $codebase) : bool
     {
-        return !!array_filter(
+        return (bool)array_filter(
             $this->types,
             function ($type) use ($codebase) {
                 return $type->hasArrayAccessInterface($codebase);
