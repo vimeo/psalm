@@ -133,7 +133,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false,
+                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
@@ -147,7 +147,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false,
+                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
