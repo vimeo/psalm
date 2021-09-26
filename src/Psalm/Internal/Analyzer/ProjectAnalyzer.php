@@ -1334,13 +1334,11 @@ class ProjectAnalyzer
 
         $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
 
-        $file_analyzer = new FileAnalyzer(
+        return new FileAnalyzer(
             $this,
             $file_path,
             $this->config->shortenFileName($file_path)
         );
-
-        return $file_analyzer;
     }
 
     public function getMethodMutations(

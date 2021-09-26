@@ -76,13 +76,11 @@ class Creator
             );
         }
 
-        $template = str_replace(
+        return str_replace(
             'errorLevel="1"',
             'errorLevel="' . $level . '"',
             $template
         );
-
-        return $template;
     }
 
     public static function createBareConfig(

@@ -36,14 +36,12 @@ class PylintReport extends Report
         // but it's still useful for users.
         // E.g. jenkins can't parse %s:%d:%d.
         $message = sprintf('%s (column %d)', $message, $issue_data->column_from);
-        $issue_string = sprintf(
+        return sprintf(
             '%s:%d: [%s] %s',
             $issue_data->file_name,
             $issue_data->line_from,
             $code,
             $message
         );
-
-        return $issue_string;
     }
 }

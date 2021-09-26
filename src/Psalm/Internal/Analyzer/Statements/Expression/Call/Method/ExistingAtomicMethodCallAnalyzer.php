@@ -103,9 +103,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $context
             );
 
-            $function_return = $statements_analyzer->node_data->getType($fake_function_call) ?: Type::getMixed();
-
-            return $function_return;
+            return $statements_analyzer->node_data->getType($fake_function_call) ?: Type::getMixed();
         }
 
         $source = $statements_analyzer->getSource();
