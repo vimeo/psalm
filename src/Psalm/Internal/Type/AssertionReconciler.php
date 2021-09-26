@@ -1240,7 +1240,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                 }
             }
         } elseif ($scalar_type === 'enum') {
-            list($fq_enum_name, $case_name) = explode('::', $value);
+            [$fq_enum_name, $case_name] = explode('::', $value);
 
             if ($existing_var_type->hasMixed()) {
                 if ($is_loose_equality) {

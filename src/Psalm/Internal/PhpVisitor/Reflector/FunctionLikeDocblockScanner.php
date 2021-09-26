@@ -987,7 +987,7 @@ class FunctionLikeDocblockScanner
 
                 if (isset($flow_parts[0]) && \strpos(trim($flow_parts[0]), 'proxy') === 0) {
                     $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
-                    list($fully_qualified_name, $source_param_string) = explode('(', $proxy_call, 2);
+                    [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
 
                     if (!empty($fully_qualified_name) && !empty($source_param_string)) {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
