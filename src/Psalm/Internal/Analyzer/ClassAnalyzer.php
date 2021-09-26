@@ -1913,9 +1913,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
-            ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
-            : [];
+        $overridden_method_ids = $class_storage->overridden_method_ids[strtolower($stmt->name->name)] ?? [];
 
         if (!$return_type
             && !$class_storage->is_interface
@@ -2488,7 +2486,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $code_location = new CodeLocation(
                 $this,
                 $extended_class,
-                $class_context ? $class_context->include_location : null,
+                $class_context->include_location ?? null,
                 true
             );
 
@@ -2592,7 +2590,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $code_location = new CodeLocation(
                     $this,
                     $class->name ?: $class,
-                    $class_context ? $class_context->include_location : null,
+                    $class_context->include_location ?? null,
                     true
                 );
 

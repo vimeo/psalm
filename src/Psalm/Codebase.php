@@ -1614,7 +1614,7 @@ class Codebase
             $insertion_text = Type::getStringFromFQCLN(
                 $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
-                $aliases ? $aliases->uses_flipped : [],
+                $aliases->uses_flipped ?? [],
                 null
             );
 

@@ -127,10 +127,7 @@ class MethodVisibilityAnalyzer
             // Oldest ancestor is at end of array
             $oldest_ancestor_declaring_method_id = array_pop($overridden_method_ids);
         }
-        $oldest_ancestor_declaring_method_class = null;
-        if ($oldest_ancestor_declaring_method_id) {
-            $oldest_ancestor_declaring_method_class = $oldest_ancestor_declaring_method_id->fq_class_name;
-        }
+        $oldest_ancestor_declaring_method_class = $oldest_ancestor_declaring_method_id->fq_class_name ?? null;
 
         switch ($visibility) {
             case ClassLikeAnalyzer::VISIBILITY_PUBLIC:

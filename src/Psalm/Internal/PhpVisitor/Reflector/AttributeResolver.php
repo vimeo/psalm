@@ -36,11 +36,7 @@ class AttributeResolver
         $args = [];
 
         foreach ($stmt->args as $arg_node) {
-            $key = null;
-
-            if ($arg_node->name) {
-                $key = $arg_node->name->name;
-            }
+            $key = $arg_node->name->name ?? null;
 
             $const_type = SimpleTypeInferer::infer(
                 $codebase,

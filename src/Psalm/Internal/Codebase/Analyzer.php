@@ -316,7 +316,7 @@ class Analyzer
 
             $project_analyzer->prepareMigration();
 
-            $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
+            $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run);

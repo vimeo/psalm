@@ -292,7 +292,7 @@ class FunctionLikeNodeScanner
                             $cond_id,
                             $cond_id,
                             $function_stmt->cond,
-                            $this->classlike_storage ? $this->classlike_storage->name : null,
+                            $this->classlike_storage->name ?? null,
                             $this->file_scanner,
                             null
                         );

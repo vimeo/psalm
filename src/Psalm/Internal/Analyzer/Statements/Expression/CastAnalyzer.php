@@ -80,7 +80,7 @@ class CastAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
                 ) {
-                    $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+                    $type->parent_nodes = $maybe_type->parent_nodes ?? [];
                 }
 
                 $statements_analyzer->node_data->setType($stmt, $type);
@@ -106,7 +106,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -131,7 +131,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -181,7 +181,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type ? $maybe_type->parent_nodes : [];
+                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -234,7 +234,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
             ) {
-                $type->parent_nodes = $stmt_expr_type ? $stmt_expr_type->parent_nodes : [];
+                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);

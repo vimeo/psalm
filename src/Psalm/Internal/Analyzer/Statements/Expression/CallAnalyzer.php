@@ -315,7 +315,7 @@ class CallAnalyzer
             $args,
             $method_params,
             (string) $method_id,
-            $method_storage ? $method_storage->allow_named_arg_calls : true,
+                $method_storage->allow_named_arg_calls ?? true,
             $context,
             $class_template_result
         ) === false) {
@@ -414,11 +414,11 @@ class CallAnalyzer
                     $codebase,
                     $type,
                     $appearing_class_name,
-                    $calling_class_storage ? $calling_class_storage->name : null,
+                    $calling_class_storage->name ?? null,
                     null,
                     true,
                     false,
-                    $calling_class_storage ? $calling_class_storage->final : false
+                    $calling_class_storage->final ?? false
                 );
             }
         }

@@ -1174,11 +1174,7 @@ class TemplateStandinTypeReplacer
                                 \array_keys($input_class_storage->template_types)
                             );
 
-                            if (!isset($input_type_params[$old_params_offset])) {
-                                $candidate_param_type = \Psalm\Type::getMixed();
-                            } else {
-                                $candidate_param_type = $input_type_params[$old_params_offset];
-                            }
+                            $candidate_param_type = $input_type_params[$old_params_offset] ?? \Psalm\Type::getMixed();
                         } else {
                             $candidate_param_type = new Union([clone $et]);
                         }

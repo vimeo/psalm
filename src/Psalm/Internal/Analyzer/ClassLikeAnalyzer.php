@@ -454,7 +454,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     public function getClassName(): ?string
     {
-        return $this->class->name ? $this->class->name->name : null;
+        return $this->class->name->name ?? null;
     }
 
     /**

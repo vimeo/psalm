@@ -47,7 +47,7 @@ trait CanAlias
 
         foreach ($stmt->uses as $use) {
             $use_path = implode('\\', $use->name->parts);
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
@@ -107,7 +107,7 @@ trait CanAlias
 
         foreach ($stmt->uses as $use) {
             $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:

@@ -619,7 +619,7 @@ class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage ? $function_storage->allow_named_arg_calls : true,
+                            $function_storage->allow_named_arg_calls ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type)
                             ),
@@ -627,7 +627,7 @@ class ArgumentsAnalyzer
                             $context,
                             $class_generic_params,
                             $template_result,
-                            $function_storage ? $function_storage->specialize_call : true,
+                            $function_storage->specialize_call ?? true,
                             $in_call_map
                         );
                     }
@@ -795,13 +795,13 @@ class ArgumentsAnalyzer
                     $function_param,
                     $argument_offset + $i,
                     $i,
-                    $function_storage ? $function_storage->allow_named_arg_calls : true,
+                        $function_storage->allow_named_arg_calls ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
                     $class_generic_params,
                     $template_result,
-                    $function_storage ? $function_storage->specialize_call : true,
+                        $function_storage->specialize_call ?? true,
                     $in_call_map
                 ) === false) {
                     return false;
@@ -1363,12 +1363,12 @@ class ArgumentsAnalyzer
             $fleshed_out_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $function_param->type,
-                $class_storage ? $class_storage->name : null,
-                $calling_class_storage ? $calling_class_storage->name : null,
+                $class_storage->name ?? null,
+                $calling_class_storage->name ?? null,
                 null,
                 true,
                 false,
-                $calling_class_storage ? $calling_class_storage->final : false
+                $calling_class_storage->final ?? false
             );
 
             TemplateStandinTypeReplacer::replace(

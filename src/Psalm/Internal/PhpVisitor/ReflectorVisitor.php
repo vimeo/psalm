@@ -424,7 +424,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         foreach ($node->uses as $use) {
             $use_path = implode('\\', $use->name->parts);
 
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
@@ -457,7 +457,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
         foreach ($node->uses as $use) {
             $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:

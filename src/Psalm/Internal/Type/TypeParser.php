@@ -406,7 +406,7 @@ class TypeParser
 
                 return new Atomic\TTemplateParamClass(
                     $t->param_name,
-                    $t_atomic_type ? $t_atomic_type->value : 'object',
+                    $t_atomic_type->value ?? 'object',
                     $t_atomic_type,
                     $t->defining_class
                 );

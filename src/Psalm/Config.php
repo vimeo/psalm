@@ -2200,11 +2200,7 @@ class Config
 
     public function getPhpVersion(): ?string
     {
-        if (isset($this->configured_php_version)) {
-            return $this->configured_php_version;
-        }
-
-        return $this->getPHPVersionFromComposerJson();
+        return $this->configured_php_version ?? $this->getPHPVersionFromComposerJson();
     }
 
     private function setBooleanAttribute(string $name, bool $value): void

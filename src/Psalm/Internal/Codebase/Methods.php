@@ -360,7 +360,7 @@ class Methods
         if (InternalCallMapHandler::inCallMap((string) $callmap_id)) {
             $class_storage = $this->classlike_storage_provider->get($callmap_id->fq_class_name);
 
-            $declaring_method_name = $declaring_method_id ? $declaring_method_id->method_name : $method_name;
+            $declaring_method_name = $declaring_method_id->method_name ?? $method_name;
 
             if (!$class_storage->stubbed || empty($class_storage->methods[$declaring_method_name]->stubbed)) {
                 $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
@@ -1060,11 +1060,7 @@ class Methods
 
         $method_name = $method_id->method_name;
 
-        if (isset($class_storage->appearing_method_ids[$method_name])) {
-            return $class_storage->appearing_method_ids[$method_name];
-        }
-
-        return null;
+        return $class_storage->appearing_method_ids[$method_name] ?? null;
     }
 
     /**
@@ -1075,11 +1071,7 @@ class Methods
         $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
         $method_name = $method_id->method_name;
 
-        if (isset($class_storage->overridden_method_ids[$method_name])) {
-            return $class_storage->overridden_method_ids[$method_name];
-        }
-
-        return [];
+        return $class_storage->overridden_method_ids[$method_name] ?? [];
     }
 
     public function getCasedMethodId(MethodIdentifier $original_method_id): string

@@ -1385,7 +1385,7 @@ class ClassLikeNodeScanner
             );
         }
 
-        $doc_var_group_type = $var_comment ? $var_comment->type : null;
+        $doc_var_group_type = $var_comment->type ?? null;
 
         if ($doc_var_group_type) {
             $doc_var_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);

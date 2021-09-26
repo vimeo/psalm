@@ -748,8 +748,8 @@ class ReturnTypeAnalyzer
             $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
-                $classlike_storage ? $classlike_storage->name : null,
-                $classlike_storage ? $classlike_storage->name : null,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
                 $parent_class
             );
 
@@ -770,8 +770,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->signature_return_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
             $parent_class
         );
 
@@ -792,8 +792,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->return_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
             $parent_class,
             true,
             true
@@ -936,7 +936,7 @@ class ReturnTypeAnalyzer
                 true
             ),
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version),
-            $function_like_storage ? $function_like_storage->return_type_description : null
+            $function_like_storage->return_type_description ?? null
         );
     }
 }

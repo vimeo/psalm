@@ -558,7 +558,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name ? $stmt->name->name : null
+                    $stmt->name->name ?? null
                 );
 
                 $class_analyzer->analyze(null, $global_context);
