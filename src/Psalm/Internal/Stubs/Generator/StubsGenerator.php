@@ -22,6 +22,7 @@ use Psalm\Node\VirtualName;
 use Psalm\Node\VirtualNullableType;
 use Psalm\Node\VirtualParam;
 use Psalm\Type;
+use function dirname;
 
 class StubsGenerator
 {
