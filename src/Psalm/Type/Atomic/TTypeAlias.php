@@ -78,19 +78,6 @@ class TTypeAlias extends \Psalm\Type\Atomic
         return false;
     }
 
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
-     *
-     */
-    public function toNamespacedString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        bool $use_phpdoc_format
-    ): string {
-        return $this->getKey();
-    }
-
     public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
