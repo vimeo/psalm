@@ -345,7 +345,7 @@ class Analyzer
 
                 $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
-                $file_analyzer->analyze(null);
+                $file_analyzer->analyze();
                 $file_analyzer->context = null;
                 $file_analyzer->clearSourceBeforeDestruction();
                 unset($file_analyzer);

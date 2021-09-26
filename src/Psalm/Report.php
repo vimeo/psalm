@@ -105,7 +105,7 @@ abstract class Report
 
     protected function xmlEncode(string $data): string
     {
-        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES);
     }
 
     abstract public function create(): string;

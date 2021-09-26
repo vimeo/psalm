@@ -242,7 +242,7 @@ abstract class FunctionLikeStorage
         return $this->getSignature(false);
     }
 
-    public function getSignature(bool $allow_newlines = false): string
+    public function getSignature(bool $allow_newlines): string
     {
         $newlines = $allow_newlines && !empty($this->params);
 

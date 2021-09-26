@@ -220,7 +220,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 $this->verboseLog("Initializing: Registering stub files...");
                 $this->clientStatus('initializing', 'registering stub files');
-                $codebase->config->visitStubFiles($codebase, null);
+                $codebase->config->visitStubFiles($codebase);
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(

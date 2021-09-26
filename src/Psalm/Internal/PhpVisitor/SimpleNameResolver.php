@@ -68,7 +68,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $this->nameContext->startNamespace($node->name);
         } elseif ($node instanceof Stmt\Use_) {
             foreach ($node->uses as $use) {
-                $this->addAlias($use, $node->type, null);
+                $this->addAlias($use, $node->type);
             }
         } elseif ($node instanceof Stmt\GroupUse) {
             foreach ($node->uses as $use) {
