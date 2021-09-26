@@ -37,7 +37,7 @@ class ProtocolStreamReader implements ProtocolReader
     /** @var string[] */
     private $headers = [];
     /** @var ?int */
-    private $content_length = null;
+    private $content_length;
     /** @var bool */
     private $did_emit_close = false;
 

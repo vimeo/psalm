@@ -80,7 +80,7 @@ class Union implements TypeNode
      *
      * @var ?string
      */
-    public $initialized_class = null;
+    public $initialized_class;
 
     /**
      * Whether or not the type has been checked yet

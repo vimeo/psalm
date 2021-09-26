@@ -54,7 +54,7 @@ class ClassLikeStorage
     /**
      * @var ?string
      */
-    public $mixin_declaring_fqcln = null;
+    public $mixin_declaring_fqcln;
 
     /**
      * @var bool

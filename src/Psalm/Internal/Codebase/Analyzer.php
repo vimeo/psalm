@@ -148,7 +148,7 @@ class Analyzer
      *
      * @var array<string>|null
      */
-    private $files_to_update = null;
+    private $files_to_update;
 
     /**
      * @var array<string, array<string, int>>

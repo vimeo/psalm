@@ -92,7 +92,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     /**
      * @var ?int
      */
-    private $skip_if_descendants = null;
+    private $skip_if_descendants;
 
     /**
      * @var array<string, TypeAlias>

@@ -12,12 +12,12 @@ class FunctionCallInfo
     /**
      * @var ?string
      */
-    public $function_id = null;
+    public $function_id;
 
     /**
      * @var ?bool
      */
-    public $function_exists = null;
+    public $function_exists;
 
     /**
      * @var bool
@@ -42,17 +42,17 @@ class FunctionCallInfo
     /**
      * @var ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public $function_params = null;
+    public $function_params;
 
     /**
      * @var ?\Psalm\Storage\FunctionLikeStorage
      */
-    public $function_storage = null;
+    public $function_storage;
 
     /**
      * @var ?PhpParser\Node\Name
      */
-    public $new_function_name = null;
+    public $new_function_name;
 
     /**
      * @var bool

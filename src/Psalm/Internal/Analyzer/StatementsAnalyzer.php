@@ -118,12 +118,12 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @var ParsedDocblock|null
      */
-    private $parsed_docblock = null;
+    private $parsed_docblock;
 
     /**
      * @var ?string
      */
-    private $fake_this_class = null;
+    private $fake_this_class;
 
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;

@@ -32,16 +32,16 @@ class InternalCallMapHandler
     /**
      * @var ?int
      */
-    private static $loaded_php_major_version = null;
+    private static $loaded_php_major_version;
     /**
      * @var ?int
      */
-    private static $loaded_php_minor_version = null;
+    private static $loaded_php_minor_version;
 
     /**
      * @var array<lowercase-string, array<int|string,string>>|null
      */
-    private static $call_map = null;
+    private static $call_map;
 
     /**
      * @var array<list<TCallable>>|null

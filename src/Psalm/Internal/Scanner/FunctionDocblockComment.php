@@ -9,22 +9,22 @@ class FunctionDocblockComment
     /**
      * @var string|null
      */
-    public $return_type = null;
+    public $return_type;
 
     /**
      * @var string|null
      */
-    public $return_type_description = null;
+    public $return_type_description;
 
     /**
      * @var int|null
      */
-    public $return_type_start = null;
+    public $return_type_start;
 
     /**
      * @var int|null
      */
-    public $return_type_end = null;
+    public $return_type_end;
 
     /**
      * @var int|null
@@ -73,7 +73,7 @@ class FunctionDocblockComment
      *
      * @var null|string
      */
-    public $psalm_internal = null;
+    public $psalm_internal;
 
     /**
      * Whether or not the function is internal

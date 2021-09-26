@@ -103,7 +103,7 @@ class Context
     /**
      * @var null|CodeLocation
      */
-    public $include_location = null;
+    public $include_location;
 
     /**
      * @var string|null
@@ -194,7 +194,7 @@ class Context
      *
      * @var array<string, bool>|null
      */
-    public $initialized_methods = null;
+    public $initialized_methods;
 
     /**
      * @var array<string, Type\Union>
@@ -290,27 +290,27 @@ class Context
     /**
      * @var Internal\Scope\LoopScope|null
      */
-    public $loop_scope = null;
+    public $loop_scope;
 
     /**
      * @var Internal\Scope\CaseScope|null
      */
-    public $case_scope = null;
+    public $case_scope;
 
     /**
      * @var Internal\Scope\FinallyScope|null
      */
-    public $finally_scope = null;
+    public $finally_scope;
 
     /**
      * @var Context|null
      */
-    public $if_context = null;
+    public $if_context;
 
     /**
      * @var \Psalm\Internal\Scope\IfScope|null
      */
-    public $if_scope = null;
+    public $if_scope;
 
     /**
      * @var bool

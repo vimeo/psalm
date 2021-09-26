@@ -78,7 +78,7 @@ class FileReferenceProvider
      *
      * @var array<int, string>|null
      */
-    private static $deleted_files = null;
+    private static $deleted_files;
 
     /**
      * A lookup table used for getting all the files referenced by a file

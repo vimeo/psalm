@@ -32,7 +32,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
     /**
      * @var array<string, bool>|null
      */
-    public $class_strings = null;
+    public $class_strings;
 
     /**
      * @var bool - whether or not the objectlike has been created from an explicit array
@@ -44,14 +44,14 @@ class TKeyedArray extends \Psalm\Type\Atomic
      *
      * @var ?Union
      */
-    public $previous_key_type = null;
+    public $previous_key_type;
 
     /**
      * Whether or not to allow new properties to be asserted on the given array
      *
      * @var ?Union
      */
-    public $previous_value_type = null;
+    public $previous_value_type;
 
     /**
      * @var bool - if this is a list of sequential elements

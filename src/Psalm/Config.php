@@ -182,7 +182,7 @@ class Config
      *
      * @var bool|null
      */
-    public $load_xdebug_stub = null;
+    public $load_xdebug_stub;
 
     /**
      * The directory to store PHP Parser (and other) caches
@@ -288,7 +288,7 @@ class Config
     /**
      * @var ?bool
      */
-    public $show_mixed_issues = null;
+    public $show_mixed_issues;
 
     /** @var bool */
     public $strict_binary_operands = false;
@@ -501,7 +501,7 @@ class Config
     public $hash = '';
 
     /** @var string|null */
-    public $error_baseline = null;
+    public $error_baseline;
 
     /**
      * @var bool

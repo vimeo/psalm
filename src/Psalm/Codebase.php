@@ -95,7 +95,7 @@ class Codebase
     /**
      * @var null|'always'|'auto'
      */
-    public $find_unused_code = null;
+    public $find_unused_code;
 
     /**
      * @var FileProvider
@@ -179,7 +179,7 @@ class Codebase
     /**
      * @var ?Internal\Codebase\TaintFlowGraph
      */
-    public $taint_flow_graph = null;
+    public $taint_flow_graph;
 
     /**
      * @var bool

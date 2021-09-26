@@ -46,10 +46,10 @@ class TypeCombination
     public $objectlike_sealed = true;
 
     /** @var ?Union */
-    public $objectlike_key_type = null;
+    public $objectlike_key_type;
 
     /** @var ?Union */
-    public $objectlike_value_type = null;
+    public $objectlike_value_type;
 
     /** @var bool */
     public $empty_mixed = false;
@@ -58,7 +58,7 @@ class TypeCombination
     public $non_empty_mixed = false;
 
     /** @var ?bool */
-    public $mixed_from_loop_isset = null;
+    public $mixed_from_loop_isset;
 
     /** @var array<string, Atomic\TLiteralString>|null */
     public $strings = [];
