@@ -132,7 +132,7 @@ class UnusedAssignmentRemover
         $iter = 1;
 
         // Check if second token is just whitespace
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
+        if (is_array($token_list[$iter]) && trim($token_list[$iter][1]) === '') {
             $offset_count += strlen($token_list[1][1]);
             $iter++;
         }
@@ -146,7 +146,7 @@ class UnusedAssignmentRemover
         $iter++;
 
         // Remove any whitespace following assignment operator token (e.g "=", "+=")
-        if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
+        if (is_array($token_list[$iter]) && trim($token_list[$iter][1]) === '') {
             $offset_count += strlen($token_list[$iter][1]);
             $iter++;
         }
@@ -156,7 +156,7 @@ class UnusedAssignmentRemover
             $offset_count += 1;
             $iter++;
             // Handle any whitespace after "&"
-            if (is_array($token_list[$iter]) && strlen(trim($token_list[$iter][1])) === 0) {
+            if (is_array($token_list[$iter]) && trim($token_list[$iter][1]) === '') {
                 $offset_count += strlen($token_list[$iter][1]);
             }
         }

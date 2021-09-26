@@ -1956,7 +1956,7 @@ class ArrayFetchAnalyzer
         if ($type instanceof TSingleLetter) {
             $valid_offset_type = Type::getInt(false, 0);
         } elseif ($type instanceof TLiteralString) {
-            if (!strlen($type->value)) {
+            if ($type->value === '') {
                 $valid_offset_type = Type::getEmpty();
             } elseif (strlen($type->value) < 10) {
                 $valid_offsets = [];

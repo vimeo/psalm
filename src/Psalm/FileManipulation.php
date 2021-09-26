@@ -55,7 +55,7 @@ class FileManipulation
             $indentation = substr($existing_contents, $newline_pos, $this->start - $newline_pos);
 
             if (trim($indentation) === '') {
-                $this->insertion_text = $this->insertion_text . $indentation;
+                $this->insertion_text .= $indentation;
             }
         }
 
