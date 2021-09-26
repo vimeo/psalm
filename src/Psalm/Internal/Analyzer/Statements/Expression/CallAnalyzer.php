@@ -191,16 +191,11 @@ class CallAnalyzer
                     || $is_final)
             ) {
                 $local_vars_in_scope = [];
-                $local_vars_possibly_in_scope = [];
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (strpos($var_id, '$this->') === 0) {
                         if ($type->initialized) {
                             $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
-
-                            if (isset($context->vars_possibly_in_scope[$var_id])) {
-                                $local_vars_possibly_in_scope[$var_id] = $context->vars_possibly_in_scope[$var_id];
-                            }
 
                             unset($context->vars_in_scope[$var_id]);
                             unset($context->vars_possibly_in_scope[$var_id]);
