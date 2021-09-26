@@ -282,9 +282,7 @@ class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (\InvalidArgumentException $e) {
-                        return null;
-                    } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    } catch (\InvalidArgumentException | \Psalm\Exception\CircularReferenceException $e) {
                         return null;
                     }
                 }

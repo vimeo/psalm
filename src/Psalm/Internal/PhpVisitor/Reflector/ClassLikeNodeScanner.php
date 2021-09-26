@@ -366,12 +366,7 @@ class ClassLikeNodeScanner
                 if ($type_aliases) {
                     $this->classlike_type_aliases = $type_aliases;
                 }
-            } catch (DocblockParseException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage(),
-                    new CodeLocation($this->file_scanner, $node, null, true)
-                );
-            } catch (TypeParseTreeException $e) {
+            } catch (DocblockParseException | TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage(),
                     new CodeLocation($this->file_scanner, $node, null, true)

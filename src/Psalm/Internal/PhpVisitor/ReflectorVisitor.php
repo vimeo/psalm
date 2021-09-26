@@ -145,12 +145,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     }
 
                     $this->type_aliases += $type_aliases;
-                } catch (DocblockParseException $e) {
-                    $this->file_storage->docblock_issues[] = new InvalidDocblock(
-                        $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    );
-                } catch (TypeParseTreeException $e) {
+                } catch (DocblockParseException | TypeParseTreeException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($this->file_scanner, $node, null, true)
