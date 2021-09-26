@@ -24,7 +24,7 @@ final class SystemCommandExecutor
     {
         if (!\function_exists('exec')) {
             throw new \RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));
-        };
+        }
 
         exec($command, $result, $returnValue);
 

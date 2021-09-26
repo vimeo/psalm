@@ -9,8 +9,8 @@ use function min;
  */
 class TIntRange extends TInt
 {
-    const BOUND_MIN = 'min';
-    const BOUND_MAX = 'max';
+    public const BOUND_MIN = 'min';
+    public const BOUND_MAX = 'max';
 
     /**
      * @var int|null
