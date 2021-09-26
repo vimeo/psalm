@@ -232,8 +232,7 @@ class AssignmentAnalyzer
 
         if ($comment_type && $comment_type_location) {
             $temp_assign_value_type = $assign_value_type
-                ? $assign_value_type
-                : ($assign_value ? $statements_analyzer->node_data->getType($assign_value) : null);
+                ?? ($assign_value ? $statements_analyzer->node_data->getType($assign_value) : null);
 
             if ($codebase->find_unused_variables
                 && $temp_assign_value_type

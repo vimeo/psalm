@@ -1833,8 +1833,7 @@ class ArrayFetchAnalyzer
                     [
                         new VirtualArg(
                             $stmt->dim
-                                ? $stmt->dim
-                                : new VirtualConstFetch(
+                                ?? new VirtualConstFetch(
                                     new VirtualName('null'),
                                     $stmt->var->getAttributes()
                                 )

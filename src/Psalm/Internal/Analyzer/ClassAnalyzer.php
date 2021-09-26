@@ -368,7 +368,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
                             new CodeLocation(
                                 $this,
-                                $class->name ? $class->name : $class,
+                                $class->name ?? $class,
                                 $class_context->include_location,
                                 true
                             )
@@ -984,7 +984,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        $fq_class_name = $class_context->self ? $class_context->self : $this->fq_class_name;
+        $fq_class_name = $class_context->self ?: $this->fq_class_name;
         $fq_class_name_lc = strtolower($fq_class_name);
 
         $included_file_path = $this->getFilePath();
@@ -2276,7 +2276,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $code_location = new CodeLocation(
                 $this,
-                $class->name ? $class->name : $class,
+                $class->name ?? $class,
                 $class_context->include_location,
                 true
             );

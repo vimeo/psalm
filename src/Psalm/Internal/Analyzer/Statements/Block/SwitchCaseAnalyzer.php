@@ -402,7 +402,7 @@ class SwitchCaseAnalyzer
                     $case_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
-                        $case->cond ? $case->cond : $case,
+                        $case->cond ?? $case,
                         $context->include_location
                     )
                 );

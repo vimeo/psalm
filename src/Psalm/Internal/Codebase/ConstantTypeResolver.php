@@ -134,12 +134,12 @@ class ConstantTypeResolver
                 || $cond instanceof Type\Atomic\TLiteralString
             ) {
                 if ($cond->value) {
-                    return $if ? $if : $cond;
+                    return $if ?? $cond;
                 }
             } elseif ($cond instanceof Type\Atomic\TFalse || $cond instanceof Type\Atomic\TNull) {
                 return $else;
             } elseif ($cond instanceof Type\Atomic\TTrue) {
-                return $if ? $if : $cond;
+                return $if ?? $cond;
             }
         }
 

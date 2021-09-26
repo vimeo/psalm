@@ -84,7 +84,7 @@ class IncludeAnalyzer
 
             // attempts to resolve using get_include_path dirs
             $include_path = self::resolveIncludePath($path_to_file, dirname($statements_analyzer->getFilePath()));
-            $path_to_file = $include_path ? $include_path : $path_to_file;
+            $path_to_file = $include_path ?: $path_to_file;
 
             if (DIRECTORY_SEPARATOR === '/') {
                 $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;

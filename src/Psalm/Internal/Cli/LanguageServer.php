@@ -309,6 +309,6 @@ HELP;
             $project_analyzer->language_server_verbose = true;
         }
 
-        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']) ? true : false);
+        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']));
     }
 }

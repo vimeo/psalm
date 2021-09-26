@@ -1403,7 +1403,7 @@ class ClassLikeNodeScanner
             $property_storage->type_location = $signature_type_location;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
-            $property_storage->has_default = $property->default ? true : false;
+            $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal ?? '' : '';

@@ -231,7 +231,7 @@ final class CliUtils
         if ($f_paths) {
             $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
         } else {
-            $input_paths = $argv ? $argv : null;
+            $input_paths = $argv ?: null;
         }
 
         if ($input_paths) {
