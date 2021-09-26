@@ -100,7 +100,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                $use_phpdoc_format
+                true
             );
         }
 
@@ -108,7 +108,7 @@ class TTemplateParam extends \Psalm\Type\Atomic
             $namespace,
             $aliased_classes,
             $this_class,
-            $use_phpdoc_format
+            false
         );
 
         return $this->param_name . $intersection_types;

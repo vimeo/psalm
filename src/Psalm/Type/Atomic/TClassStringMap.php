@@ -92,7 +92,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    $use_phpdoc_format
+                    true
                 );
         }
 
@@ -106,7 +106,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                $use_phpdoc_format
+                false
             )
             . '>';
     }

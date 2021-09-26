@@ -70,7 +70,7 @@ class TIntMask extends TInt
         $s = '';
 
         foreach ($this->values as $value) {
-            $s .= $value->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . ', ';
+            $s .= $value->toNamespacedString($namespace, $aliased_classes, $this_class, false) . ', ';
         }
 
         return 'int-mask<' . substr($s, 0, -2) . '>';

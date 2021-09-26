@@ -1075,7 +1075,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                         $existing_var_atomic_type->as = self::handleLiteralEquality(
                             $assertion,
                             $bracket_pos,
-                            $is_loose_equality,
+                            false,
                             $existing_var_atomic_type->as,
                             $old_var_type_string,
                             $var_id,

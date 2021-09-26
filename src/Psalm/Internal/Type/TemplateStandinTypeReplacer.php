@@ -179,7 +179,7 @@ class TemplateStandinTypeReplacer
                     $template_result,
                     $codebase,
                     $statements_analyzer,
-                    $replace,
+                    true,
                     $add_lower_bound,
                     $bound_equality_classlike,
                     $depth,
@@ -599,7 +599,7 @@ class TemplateStandinTypeReplacer
                         $input_arg_offset,
                         $calling_class,
                         $calling_function,
-                        $replace,
+                        true,
                         $add_lower_bound,
                         $bound_equality_classlike,
                         $depth + 1
@@ -685,7 +685,7 @@ class TemplateStandinTypeReplacer
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,
-                $replace,
+                true,
                 $add_lower_bound,
                 $bound_equality_classlike,
                 $depth + 1
