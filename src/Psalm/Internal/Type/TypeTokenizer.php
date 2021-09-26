@@ -479,7 +479,7 @@ class TypeTokenizer
                     $replacement_tokens = $type_alias->replacement_tokens;
 
                     array_unshift($replacement_tokens, ['(', $i]);
-                    array_push($replacement_tokens, [')', $i]);
+                    $replacement_tokens[] = [')', $i];
 
                     $diff = count($replacement_tokens) - 1;
 
