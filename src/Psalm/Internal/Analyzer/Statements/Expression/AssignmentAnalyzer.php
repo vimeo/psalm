@@ -1349,9 +1349,8 @@ class AssignmentAnalyzer
 
                         $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
                     } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
-                        if ($assign_var_item->key
-                            && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                                || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
+                        if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
                             $new_assign_type =

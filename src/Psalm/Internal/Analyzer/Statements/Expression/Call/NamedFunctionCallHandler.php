@@ -223,9 +223,7 @@ class NamedFunctionCallHandler
         if ($function_id === 'func_get_args') {
             $source = $statements_analyzer->getSource();
 
-            if ($statements_analyzer->data_flow_graph
-                && $source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-            ) {
+            if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
                 if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
                     foreach ($source->param_nodes as $param_node) {
                         $statements_analyzer->data_flow_graph->addPath(

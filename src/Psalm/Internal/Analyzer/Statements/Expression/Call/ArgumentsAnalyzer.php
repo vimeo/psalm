@@ -70,8 +70,7 @@ class ArgumentsAnalyzer
             : null;
 
         // if this modifies the array type based on further args
-        if ($method_id
-            && in_array($method_id, ['array_push', 'array_unshift'], true)
+        if (in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
             && isset($args[0])
             && isset($args[1])
@@ -89,7 +88,7 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id && $method_id === 'array_splice' && $function_params && count($args) > 1) {
+        if ($method_id === 'array_splice' && $function_params && count($args) > 1) {
             if (ArrayFunctionArgumentsAnalyzer::handleSplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }

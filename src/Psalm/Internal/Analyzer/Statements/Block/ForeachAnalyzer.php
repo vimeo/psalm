@@ -250,7 +250,7 @@ class ForeachAnalyzer
                 $foreach_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
 
-        if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
+        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
             $key_type = $key_type ?: Type::getMixed();
 
             AssignmentAnalyzer::analyze(

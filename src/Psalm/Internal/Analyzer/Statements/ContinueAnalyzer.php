@@ -17,10 +17,7 @@ class ContinueAnalyzer
         PhpParser\Node\Stmt\Continue_ $stmt,
         Context $context
     ): void {
-        $count = $stmt->num
-            && $stmt->num instanceof PhpParser\Node\Scalar\LNumber
-            ? $stmt->num->value
-            : 1;
+        $count = $stmt->num instanceof PhpParser\Node\Scalar\LNumber? $stmt->num->value : 1;
 
         $loop_scope = $context->loop_scope;
 
