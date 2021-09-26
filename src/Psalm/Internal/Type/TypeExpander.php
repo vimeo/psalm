@@ -664,7 +664,7 @@ class TypeExpander
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
-        bool &$expand_generic = false,
+        bool $expand_generic = false,
         bool $expand_templates = false
     ) {
         $new_as_type = self::expandUnion(

@@ -1297,7 +1297,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         Codebase $codebase,
         Union $existing_var_type,
         string &$assertion,
-        array &$template_type_map,
+        array $template_type_map,
         ?CodeLocation $code_location,
         ?string $key,
         array $suppressed_issues,
