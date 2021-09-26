@@ -2492,7 +2492,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['!=object']];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [['!closed-resource']];
-                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                } elseif (strpos($var_type, 'resource (') === 0) {
                     $if_types[$var_name] = [['!=resource']];
                 } else {
                     $if_types[$var_name] = [['!' . $var_type]];
@@ -2550,7 +2550,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['!=object']];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [['!closed-resource']];
-            } elseif (substr($var_type, 0, 10) === 'resource (') {
+            } elseif (strpos($var_type, 'resource (') === 0) {
                 $if_types[$var_name] = [['!=resource']];
             } else {
                 $if_types[$var_name] = [['!' . $var_type]];
@@ -3173,7 +3173,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['=object']];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [['closed-resource']];
-                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                } elseif (strpos($var_type, 'resource (') === 0) {
                     $if_types[$var_name] = [['=resource']];
                 } else {
                     $if_types[$var_name] = [[$var_type]];
@@ -3231,7 +3231,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['=object']];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [['closed-resource']];
-            } elseif (substr($var_type, 0, 10) === 'resource (') {
+            } elseif (strpos($var_type, 'resource (') === 0) {
                 $if_types[$var_name] = [['=resource']];
             } else {
                 $if_types[$var_name] = [[$var_type]];

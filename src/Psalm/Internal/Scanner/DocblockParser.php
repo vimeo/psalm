@@ -31,7 +31,7 @@ class DocblockParser
         // Strip off comments.
         $docblock = trim($docblock);
 
-        if (substr($docblock, 0, 3) === '/**') {
+        if (strpos($docblock, '/**') === 0) {
             $docblock = substr($docblock, 3);
         }
 

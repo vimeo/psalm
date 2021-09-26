@@ -159,7 +159,7 @@ class NegatedAssertionReconciler extends Reconciler
                 return Type::getEmpty();
             }
 
-            if (substr($assertion, 0, 9) === 'in-array-') {
+            if (strpos($assertion, 'in-array-') === 0) {
                 $assertion = substr($assertion, 9);
                 $new_var_type = null;
                 try {
@@ -195,7 +195,7 @@ class NegatedAssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
-            if (substr($assertion, 0, 14) === 'has-array-key-') {
+            if (strpos($assertion, 'has-array-key-') === 0) {
                 return $existing_var_type;
             }
         }
@@ -283,7 +283,7 @@ class NegatedAssertionReconciler extends Reconciler
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
-        } elseif (substr($assertion, 0, 9) === 'getclass-') {
+        } elseif (strpos($assertion, 'getclass-') === 0) {
             $assertion = substr($assertion, 9);
         } elseif (!$is_equality) {
             $codebase = $statements_analyzer->getCodebase();

@@ -227,7 +227,7 @@ class StatementsProvider
 
                 $changed_members = array_map(
                     function (string $key) use ($file_path_hash) : string {
-                        if (substr($key, 0, 4) === 'use:') {
+                        if (strpos($key, 'use:') === 0) {
                             return $key . ':' . $file_path_hash;
                         }
 

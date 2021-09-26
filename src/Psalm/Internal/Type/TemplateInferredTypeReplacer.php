@@ -83,7 +83,7 @@ class TemplateInferredTypeReplacer
                 } elseif ($codebase) {
                     foreach ($inferred_lower_bounds as $template_type_map) {
                         foreach ($template_type_map as $template_class => $_) {
-                            if (substr($template_class, 0, 3) === 'fn-') {
+                            if (strpos($template_class, 'fn-') === 0) {
                                 continue;
                             }
 

@@ -147,7 +147,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             return $simply_reconciled_type;
         }
 
-        if (substr($assertion, 0, 4) === 'isa-') {
+        if (strpos($assertion, 'isa-') === 0) {
             $should_return = false;
 
             $new_type = self::handleIsA(
@@ -164,7 +164,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
             if ($should_return) {
                 return $new_type;
             }
-        } elseif (substr($assertion, 0, 9) === 'getclass-') {
+        } elseif (strpos($assertion, 'getclass-') === 0) {
             $assertion = substr($assertion, 9);
             $new_type = Type::parseString($assertion, null, $template_type_map);
         } else {
@@ -1003,7 +1003,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $did_remove_type = false;
 
                     foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if (substr($atomic_key, 0, 6) === 'float(') {
+                        if (strpos($atomic_key, 'float(') === 0) {
                             $atomic_key = 'int(' . substr($atomic_key, 6);
                         }
                         if ($atomic_key !== $assertion) {
@@ -1211,7 +1211,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     $did_remove_type = false;
 
                     foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if (substr($atomic_key, 0, 4) === 'int(') {
+                        if (strpos($atomic_key, 'int(') === 0) {
                             $atomic_key = 'float(' . substr($atomic_key, 4);
                         }
                         if ($atomic_key !== $assertion) {
@@ -1307,7 +1307,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
 
         $allow_string_comparison = false;
 
-        if (substr($assertion, 0, 7) === 'string-') {
+        if (strpos($assertion, 'string-') === 0) {
             $assertion = substr($assertion, 7);
             $allow_string_comparison = true;
         }

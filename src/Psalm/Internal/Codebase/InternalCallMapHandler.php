@@ -274,7 +274,7 @@ class InternalCallMapHandler
                     $optional = true;
                 }
 
-                if (substr($arg_name, 0, 3) === '...') {
+                if (strpos($arg_name, '...') === 0) {
                     $arg_name = substr($arg_name, 3);
                     $variadic = true;
                 }

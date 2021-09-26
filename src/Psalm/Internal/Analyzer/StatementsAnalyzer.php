@@ -55,6 +55,7 @@ use function get_class;
 use function preg_split;
 use function round;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -755,7 +756,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if (substr($var_id, 0, 2) === '$_') {
+            if (strpos($var_id, '$_') === 0) {
                 continue;
             }
 

@@ -355,7 +355,7 @@ class TypeChecker extends NodeVisitor
     public function checkTemplateParam(\Psalm\Type\Atomic\TTemplateParam $atomic) : void
     {
         if ($this->prevent_template_covariance
-            && \substr($atomic->defining_class, 0, 3) !== 'fn-'
+            && \strpos($atomic->defining_class, 'fn-') !== 0
         ) {
             $codebase = $this->source->getCodebase();
 

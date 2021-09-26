@@ -87,7 +87,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return $existing_var_type;
         }
 
-        if (substr($assertion, 0, 9) === 'in-array-') {
+        if (strpos($assertion, 'in-array-') === 0) {
             return self::reconcileInArray(
                 $codebase,
                 $existing_var_type,
@@ -100,7 +100,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if (substr($assertion, 0, 14) === 'has-array-key-') {
+        if (strpos($assertion, 'has-array-key-') === 0) {
             return self::reconcileHasArrayKey(
                 $existing_var_type,
                 substr($assertion, 14)
@@ -369,7 +369,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if (substr($assertion, 0, 13) === 'has-at-least-') {
+        if (strpos($assertion, 'has-at-least-') === 0) {
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
                 $key,
@@ -382,7 +382,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if (substr($assertion, 0, 12) === 'has-exactly-') {
+        if (strpos($assertion, 'has-exactly-') === 0) {
             /** @psalm-suppress ArgumentTypeCoercion */
             return self::reconcileExactlyCountable(
                 $existing_var_type,
@@ -390,7 +390,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             );
         }
 
-        if (substr($assertion, 0, 10) === 'hasmethod-') {
+        if (strpos($assertion, 'hasmethod-') === 0) {
             return self::reconcileHasMethod(
                 $codebase,
                 substr($assertion, 10),

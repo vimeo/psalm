@@ -109,7 +109,7 @@ class ReturnTypeAnalyzer
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod
-            && substr($function->name->name, 0, 2) === '__'
+            && strpos($function->name->name, '__') === 0
             && !$is_to_string
             && !$return_type
         ) {

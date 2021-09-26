@@ -617,7 +617,7 @@ class FunctionLikeDocblockScanner
             $param_name = $docblock_param['name'];
             $docblock_param_variadic = false;
 
-            if (substr($param_name, 0, 3) === '...') {
+            if (strpos($param_name, '...') === 0) {
                 $docblock_param_variadic = true;
                 $param_name = substr($param_name, 3);
             }

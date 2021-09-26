@@ -1183,7 +1183,7 @@ class TypeParser
         $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
         if ($offset_defining_class !== $array_defining_class
-            && substr($offset_defining_class, 0, 3) !== 'fn-'
+            && strpos($offset_defining_class, 'fn-') !== 0
         ) {
             throw new TypeParseTreeException('Template params are defined in different locations');
         }

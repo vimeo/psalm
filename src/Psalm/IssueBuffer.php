@@ -115,7 +115,7 @@ class IssueBuffer
 
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
-        if (\substr($issue_type, 0, 7) === 'Tainted') {
+        if (\strpos($issue_type, 'Tainted') === 0) {
             return;
         }
 
@@ -215,7 +215,7 @@ class IssueBuffer
             return false;
         }
 
-        $is_tainted = \substr($issue_type, 0, 7) === 'Tainted';
+        $is_tainted = \strpos($issue_type, 'Tainted') === 0;
 
         if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
             return false;

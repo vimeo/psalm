@@ -2115,7 +2115,7 @@ class Config
         $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
 
         // PSR-4 lookup
-        $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+        $logicalPathPsr4 = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
 
         $candidate_path = null;
 

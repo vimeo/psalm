@@ -82,7 +82,7 @@ class SwitchCaseAnalyzer
 
         $fake_switch_condition = false;
 
-        if ($switch_var_id && substr($switch_var_id, 0, 15) === '$__tmp_switch__') {
+        if ($switch_var_id && strpos($switch_var_id, '$__tmp_switch__') === 0) {
             $switch_condition = new VirtualVariable(
                 substr($switch_var_id, 1),
                 $stmt->cond->getAttributes()

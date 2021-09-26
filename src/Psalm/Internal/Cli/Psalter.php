@@ -434,7 +434,7 @@ HELP;
              * @param string $arg
              */
             function ($arg): void {
-                if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+                if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
                     if ($arg_name === 'alter') {

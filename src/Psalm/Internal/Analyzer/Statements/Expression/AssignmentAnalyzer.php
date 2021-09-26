@@ -360,7 +360,7 @@ class AssignmentAnalyzer
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
-                && substr($var_id ?? '', 0, 2) !== '$_'
+                && strpos($var_id ?? '', '$_') !== 0
             ) {
                 $origin_locations = [];
 
