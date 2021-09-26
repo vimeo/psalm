@@ -46,11 +46,12 @@ use Psalm\Type\Union;
 use function assert;
 use function count;
 use function explode;
-use function fnmatch;
 use function get_class;
 use function max;
 use function min;
-use function reset;
+use function preg_match;
+use function sprintf;
+use function str_replace;
 use function strpos;
 use function substr;
 
@@ -426,6 +427,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return self::reconcileClassConstant(
                 $codebase,
                 substr($assertion, 15, -1),
+                $existing_var_type,
                 $failed_reconciliation
             );
         }
@@ -2404,36 +2406,35 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
     private static function reconcileClassConstant(
         Codebase $codebase,
         string $class_constant_expression,
+        Union $existing_type,
         int &$failed_reconciliation
     ) : Union {
         if (strpos($class_constant_expression, '::') === false) {
-            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
-            return Type::getMixed();
+            return $existing_type;
         }
 
         [$class_name, $constant_pattern] = explode('::', $class_constant_expression, 2);
 
         if (!$codebase->classlike_storage_provider->has($class_name)) {
-            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
-            return Type::getMixed();
+            return $existing_type;
         }
+
+        $constant_regex_pattern = sprintf('#^%s$#', str_replace('*', '.*', $constant_pattern));
 
         $class_like_storage = $codebase->classlike_storage_provider->get($class_name);
         $matched_class_constant_types = [];
 
         foreach ($class_like_storage->constants as $constant => $class_constant_storage) {
-            if (!fnmatch($constant_pattern, $constant)) {
+            if (preg_match($constant_regex_pattern, $constant) === 0) {
                 continue;
             }
 
-            if (! $class_constant_storage->type || !$class_constant_storage->type->isSingle()) {
-                $matched_class_constant_types[] = new TMixed();
+            if (! $class_constant_storage->type) {
+                $matched_class_constant_types[] = [new TMixed()];
                 continue;
             }
 
-            $types = $class_constant_storage->type->getAtomicTypes();
-            $type = reset($types);
-            $matched_class_constant_types[] = $type;
+            $matched_class_constant_types[] = $class_constant_storage->type->getAtomicTypes();
         }
 
         if ($matched_class_constant_types === []) {
@@ -2441,6 +2442,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return Type::getMixed();
         }
 
-        return new Union($matched_class_constant_types);
+        return TypeCombiner::combine(array_values(array_merge(...$matched_class_constant_types)), $codebase);
     }
 }

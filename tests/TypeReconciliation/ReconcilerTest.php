@@ -196,9 +196,9 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             namespace ReconciliationTest;
             class Foo
             {
-                const BAR = \'bar\';
-                const BAZ = \'baz\';
-                const QOO = Foo::BAR;
+                const PREFIX_BAR = \'bar\';
+                const PREFIX_BAZ = \'baz\';
+                const PREFIX_QOO = Foo::PREFIX_BAR;
             }
             '
         );
@@ -227,16 +227,24 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
     public function constantAssertions(): array
     {
         return [
-            'single-constant' => [
-                'class-constant(Foo::BAR)',
+            'constant-with-prefix' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_*)',
+                '"bar"|"baz"',
+            ],
+            'single-class-constant' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_BAR)',
                 '"bar"',
             ],
-            'referencing-constant' => [
-                'class-constant(Foo::QOO)',
+            'referencing-another-class-constant' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_QOO)',
                 '"bar"',
             ],
-            'wildcard-constant' => [
-                'Foo::*',
+            'referencing-all-class-constants' => [
+                'class-constant(ReconciliationTest\\Foo::*)',
+                '"bar"|"baz"',
+            ],
+            'referencing-some-class-constants-with-wildcard' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_B*)',
                 '"bar"|"baz"',
             ],
         ];
