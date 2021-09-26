@@ -2114,7 +2114,7 @@ class AssertionFinder
         ?Codebase $codebase,
         bool $inside_negation,
         int $false_position
-    ) {
+    ): array {
         $if_types = [];
 
         if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -2807,7 +2807,7 @@ class AssertionFinder
         bool $inside_negation,
         bool $cache,
         int $true_position
-    ) {
+    ): array {
         $if_types = [];
 
         if ($true_position === self::ASSIGNMENT_TO_RIGHT) {

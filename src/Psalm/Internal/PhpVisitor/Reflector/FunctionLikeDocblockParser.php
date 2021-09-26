@@ -490,7 +490,7 @@ class FunctionLikeDocblockParser
      * @param list<string> $line_parts
      * @return array{string, string} $line_parts
      */
-    private static function sanitizeAssertionLineParts(array $line_parts)
+    private static function sanitizeAssertionLineParts(array $line_parts): array
     {
         if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
             throw new IncorrectDocblockException('Misplaced variable');

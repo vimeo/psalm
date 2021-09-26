@@ -352,7 +352,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Name $function_name,
         Context $context,
         CodeLocation $code_location
-    ) {
+    ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
         $codebase = $statements_analyzer->getCodebase();
