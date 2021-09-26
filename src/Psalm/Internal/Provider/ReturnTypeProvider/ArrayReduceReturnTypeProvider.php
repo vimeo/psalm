@@ -258,11 +258,6 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 $method_id,
                                 $self_class
                             ) ?: Type::getMixed();
-
-                            $reduce_return_type = Type::combineUnionTypes(
-                                $reduce_return_type,
-                                $return_type
-                            );
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
@@ -280,12 +275,9 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();
-
-                            $reduce_return_type = Type::combineUnionTypes(
-                                $reduce_return_type,
-                                $return_type
-                            );
                         }
+
+                        $reduce_return_type = Type::combineUnionTypes($reduce_return_type, $return_type);
                     }
                 }
 

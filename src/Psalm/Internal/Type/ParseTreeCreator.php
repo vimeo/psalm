@@ -402,10 +402,8 @@ class ParseTreeCreator
             $this->current_leaf->parent = $new_leaf;
 
             array_pop($current_parent->children);
-            $current_parent->children[] = $new_leaf;
-        } else {
-            $current_parent->children[] = $new_leaf;
         }
+        $current_parent->children[] = $new_leaf;
 
         $this->current_leaf = $new_leaf;
     }
