@@ -126,17 +126,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     {
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
-                $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
-                    && $node->name !== null
-                    ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
-                    : null;
-
                 try {
                     $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
                         $this->type_aliases,
-                        $self_fqcln
+                        null
                     );
 
                     foreach ($type_aliases as $type_alias) {
