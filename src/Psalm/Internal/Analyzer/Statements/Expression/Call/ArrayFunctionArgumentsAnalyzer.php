@@ -88,7 +88,7 @@ class ArrayFunctionArgumentsAnalyzer
             $array_arg_types[] = $array_arg_type;
         }
 
-        $closure_arg = isset($args[$closure_index]) ? $args[$closure_index] : null;
+        $closure_arg = $args[$closure_index] ?? null;
 
         $closure_arg_type = null;
 

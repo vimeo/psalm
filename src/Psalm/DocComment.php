@@ -16,6 +16,7 @@ use function rtrim;
 use function str_repeat;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function strspn;
 use function substr;
 use function trim;
@@ -156,7 +157,7 @@ class DocComment
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
         foreach ($special as $special_key => $_) {
-            if (substr($special_key, 0, 6) === 'psalm-') {
+            if (strpos($special_key, 'psalm-') === 0) {
                 $special_key = substr($special_key, 6);
 
                 if (!in_array(
@@ -186,7 +187,7 @@ class DocComment
         );
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
-            if (substr($special_key, 0, 6) === 'psalm-') {
+            if (strpos($special_key, 'psalm-') === 0) {
                 $special_key = substr($special_key, 6);
 
                 if (!in_array(

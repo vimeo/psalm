@@ -62,7 +62,6 @@ use function is_string;
 use function reset;
 use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -232,8 +231,7 @@ class AssignmentAnalyzer
 
         if ($comment_type && $comment_type_location) {
             $temp_assign_value_type = $assign_value_type
-                ? $assign_value_type
-                : ($assign_value ? $statements_analyzer->node_data->getType($assign_value) : null);
+                ?? ($assign_value ? $statements_analyzer->node_data->getType($assign_value) : null);
 
             if ($codebase->find_unused_variables
                 && $temp_assign_value_type
@@ -361,7 +359,7 @@ class AssignmentAnalyzer
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
-                && substr($var_id ?? '', 0, 2) !== '$_'
+                && strpos($var_id ?? '', '$_') !== 0
             ) {
                 $origin_locations = [];
 
@@ -1350,9 +1348,8 @@ class AssignmentAnalyzer
 
                         $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
                     } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
-                        if ($assign_var_item->key
-                            && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                                || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
+                        if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
                             $new_assign_type =

@@ -13,7 +13,7 @@ class TEnumCase extends TNamedObject
 
     public function __construct(string $fq_enum_name, string $case_name)
     {
-        parent::__construct($fq_enum_name, false);
+        parent::__construct($fq_enum_name);
 
         $this->case_name = $case_name;
     }

@@ -20,6 +20,7 @@ use function preg_replace;
 use function preg_split;
 use function reset;
 use function str_replace;
+use function stripos;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -199,7 +200,7 @@ class FunctionLikeDocblockParser
                 if (count($param_parts) === 2) {
                     $taint_type = $param_parts[1];
 
-                    if (substr($taint_type, 0, 5) === 'exec_') {
+                    if (strpos($taint_type, 'exec_') === 0) {
                         $taint_type = substr($taint_type, 5);
 
                         if ($taint_type === 'tainted') {
@@ -375,7 +376,7 @@ class FunctionLikeDocblockParser
             }
         }
 
-        if (strpos(strtolower($parsed_docblock->description), '@inheritdoc') !== false
+        if (stripos($parsed_docblock->description, '@inheritdoc') !== false
             || isset($parsed_docblock->tags['inheritdoc'])
             || isset($parsed_docblock->tags['inheritDoc'])
         ) {
@@ -490,7 +491,7 @@ class FunctionLikeDocblockParser
      * @param list<string> $line_parts
      * @return array{string, string} $line_parts
      */
-    private static function sanitizeAssertionLineParts(array $line_parts)
+    private static function sanitizeAssertionLineParts(array $line_parts): array
     {
         if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
             throw new IncorrectDocblockException('Misplaced variable');

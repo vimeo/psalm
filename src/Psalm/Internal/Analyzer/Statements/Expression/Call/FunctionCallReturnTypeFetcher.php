@@ -222,7 +222,7 @@ class FunctionCallReturnTypeFetcher
                 $fake_call_factory = new BuilderFactory();
 
                 if (strpos($proxy_call['fqn'], '::') !== false) {
-                    list($fqcn, $method) = explode('::', $proxy_call['fqn']);
+                    [$fqcn, $method] = explode('::', $proxy_call['fqn']);
                     $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
                 } else {
                     $fake_call = $fake_call_factory->funcCall($proxy_call['fqn'], $fake_call_arguments);

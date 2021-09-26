@@ -148,7 +148,7 @@ class Analyzer
      *
      * @var array<string>|null
      */
-    private $files_to_update = null;
+    private $files_to_update;
 
     /**
      * @var array<string, array<string, int>>
@@ -316,7 +316,7 @@ class Analyzer
 
             $project_analyzer->prepareMigration();
 
-            $files_to_update = $this->files_to_update !== null ? $this->files_to_update : $this->files_to_analyze;
+            $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run);
@@ -345,7 +345,7 @@ class Analyzer
 
                 $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
-                $file_analyzer->analyze(null);
+                $file_analyzer->analyze();
                 $file_analyzer->context = null;
                 $file_analyzer->clearSourceBeforeDestruction();
                 unset($file_analyzer);

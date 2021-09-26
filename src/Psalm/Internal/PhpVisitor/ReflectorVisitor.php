@@ -92,7 +92,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     /**
      * @var ?int
      */
-    private $skip_if_descendants = null;
+    private $skip_if_descendants;
 
     /**
      * @var array<string, TypeAlias>
@@ -126,17 +126,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     {
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
-                $self_fqcln = $node instanceof PhpParser\Node\Stmt\ClassLike
-                    && $node->name !== null
-                    ? ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name
-                    : null;
-
                 try {
                     $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
                         $this->type_aliases,
-                        $self_fqcln
+                        null
                     );
 
                     foreach ($type_aliases as $type_alias) {
@@ -145,12 +140,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     }
 
                     $this->type_aliases += $type_aliases;
-                } catch (DocblockParseException $e) {
-                    $this->file_storage->docblock_issues[] = new InvalidDocblock(
-                        $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
-                    );
-                } catch (TypeParseTreeException $e) {
+                } catch (DocblockParseException | TypeParseTreeException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($this->file_scanner, $node, null, true)
@@ -434,7 +424,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         foreach ($node->uses as $use) {
             $use_path = implode('\\', $use->name->parts);
 
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
@@ -467,7 +457,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
         foreach ($node->uses as $use) {
             $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
-            $use_alias = $use->alias ? $use->alias->name : $use->name->getLast();
+            $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:

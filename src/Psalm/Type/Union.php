@@ -26,7 +26,6 @@ use function implode;
 use function reset;
 use function sort;
 use function strpos;
-use function strval;
 
 class Union implements TypeNode
 {
@@ -80,7 +79,7 @@ class Union implements TypeNode
      *
      * @var ?string
      */
-    public $initialized_class = null;
+    public $initialized_class;
 
     /**
      * Whether or not the type has been checked yet
@@ -336,7 +335,7 @@ class Union implements TypeNode
                 $printed_int = true;
             }
 
-            $types[] = strval($type);
+            $types[] = (string)$type;
         }
 
         sort($types);
@@ -374,7 +373,7 @@ class Union implements TypeNode
                 $types[] = 'int';
                 $printed_int = true;
             } else {
-                $types[] = strval($type->getKey());
+                $types[] = $type->getKey();
             }
         }
 
@@ -390,7 +389,7 @@ class Union implements TypeNode
 
         $types = [];
         foreach ($this->types as $type) {
-            $types[] = strval($type->getId());
+            $types[] = $type->getId();
         }
         sort($types);
 
@@ -637,7 +636,7 @@ class Union implements TypeNode
 
     public function hasArrayAccessInterface(Codebase $codebase) : bool
     {
-        return !!array_filter(
+        return (bool)array_filter(
             $this->types,
             function ($type) use ($codebase) {
                 return $type->hasArrayAccessInterface($codebase);

@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type;
 use Psalm\Aliases;
 use Psalm\Exception\TypeParseTreeException;
 
-use function array_push;
 use function array_splice;
 use function array_unshift;
 use function count;
@@ -479,7 +478,7 @@ class TypeTokenizer
                     $replacement_tokens = $type_alias->replacement_tokens;
 
                     array_unshift($replacement_tokens, ['(', $i]);
-                    array_push($replacement_tokens, [')', $i]);
+                    $replacement_tokens[] = [')', $i];
 
                     $diff = count($replacement_tokens) - 1;
 

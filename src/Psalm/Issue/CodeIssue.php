@@ -2,11 +2,9 @@
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-use Psalm\Config;
 
 use function array_pop;
 use function explode;
-use function get_called_class;
 
 abstract class CodeIssue
 {
@@ -87,13 +85,13 @@ abstract class CodeIssue
         return $this->message;
     }
 
-    public function toIssueData(string $severity = Config::REPORT_ERROR): \Psalm\Internal\Analyzer\IssueData
+    public function toIssueData(string $severity): \Psalm\Internal\Analyzer\IssueData
     {
         $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
-        $fqcn_parts = explode('\\', get_called_class());
+        $fqcn_parts = explode('\\', static::class);
         $issue_type = array_pop($fqcn_parts);
 
         return new \Psalm\Internal\Analyzer\IssueData(

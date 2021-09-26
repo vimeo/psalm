@@ -454,7 +454,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     public function getClassName(): ?string
     {
-        return $this->class->name ? $this->class->name->name : null;
+        return $this->class->name->name ?? null;
     }
 
     /**
@@ -580,22 +580,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 return $emit_issues ? null : true;
 
             case self::VISIBILITY_PRIVATE:
-                if (!$context->self || $appearing_property_class !== $context->self) {
-                    if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
-                    }
-
-                    return null;
+                if ($emit_issues && IssueBuffer::accepts(
+                    new InaccessibleProperty(
+                        'Cannot access private property ' . $property_id . ' from context ' . $context->self,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
                 }
 
-                return $emit_issues ? null : true;
-
+                return null;
             case self::VISIBILITY_PROTECTED:
                 if (!$context->self) {
                     if ($emit_issues && IssueBuffer::accepts(

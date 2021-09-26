@@ -169,11 +169,7 @@ class FileManipulationBuffer
      */
     public static function getManipulationsForFile(string $file_path): array
     {
-        if (!isset(self::$file_manipulations[$file_path])) {
-            return [];
-        }
-
-        return self::$file_manipulations[$file_path];
+        return self::$file_manipulations[$file_path] ?? [];
     }
 
     /**

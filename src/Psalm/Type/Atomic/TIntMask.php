@@ -42,19 +42,6 @@ class TIntMask extends TInt
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     */
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
-    ): ?string {
-        return $php_major_version >= 7 ? 'int' : null;
-    }
-
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(
@@ -70,7 +57,7 @@ class TIntMask extends TInt
         $s = '';
 
         foreach ($this->values as $value) {
-            $s .= $value->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . ', ';
+            $s .= $value->toNamespacedString($namespace, $aliased_classes, $this_class, false) . ', ';
         }
 
         return 'int-mask<' . substr($s, 0, -2) . '>';

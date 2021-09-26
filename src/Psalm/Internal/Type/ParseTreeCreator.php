@@ -402,10 +402,8 @@ class ParseTreeCreator
             $this->current_leaf->parent = $new_leaf;
 
             array_pop($current_parent->children);
-            $current_parent->children[] = $new_leaf;
-        } else {
-            $current_parent->children[] = $new_leaf;
         }
+        $current_parent->children[] = $new_leaf;
 
         $this->current_leaf = $new_leaf;
     }
@@ -450,7 +448,7 @@ class ParseTreeCreator
             return;
         }
 
-        if ($current_parent && $current_parent instanceof ParseTree\KeyedArrayPropertyTree) {
+        if ($current_parent instanceof ParseTree\KeyedArrayPropertyTree) {
             return;
         }
 
@@ -462,7 +460,7 @@ class ParseTreeCreator
             $current_parent = $this->current_leaf->parent;
         }
 
-        if ($current_parent && $current_parent instanceof ParseTree\ConditionalTree) {
+        if ($current_parent instanceof ParseTree\ConditionalTree) {
             if (count($current_parent->children) > 1) {
                 throw new TypeParseTreeException('Cannot process colon in conditional twice');
             }
@@ -608,12 +606,12 @@ class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected token |');
         }
 
-        if ($current_parent && $current_parent instanceof ParseTree\UnionTree) {
+        if ($current_parent instanceof ParseTree\UnionTree) {
             $this->current_leaf = $current_parent;
             return;
         }
 
-        if ($current_parent && $current_parent instanceof ParseTree\IntersectionTree) {
+        if ($current_parent instanceof ParseTree\IntersectionTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $this->current_leaf->parent;
         }
@@ -649,12 +647,12 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent && $current_parent instanceof ParseTree\MethodTree) {
+        if ($current_parent instanceof ParseTree\MethodTree) {
             $this->createMethodParam($this->type_tokens[$this->t], $current_parent);
             return;
         }
 
-        if ($current_parent && $current_parent instanceof ParseTree\IntersectionTree) {
+        if ($current_parent instanceof ParseTree\IntersectionTree) {
             $this->current_leaf = $current_parent;
             return;
         }

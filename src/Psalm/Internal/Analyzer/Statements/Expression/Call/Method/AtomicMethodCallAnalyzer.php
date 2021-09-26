@@ -660,7 +660,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name
-    ) {
+    ): array {
         $naive_method_exists = false;
 
         if ($class_storage->templatedMixins
@@ -749,7 +749,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
         ?string $lhs_var_id
-    ) {
+    ): array {
         $naive_method_exists = false;
 
         foreach ($class_storage->namedMixins as $mixin) {

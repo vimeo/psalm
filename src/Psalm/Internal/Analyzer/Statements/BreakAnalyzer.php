@@ -21,10 +21,7 @@ class BreakAnalyzer
         if ($loop_scope) {
             if ($context->break_types
                 && \end($context->break_types) === 'switch'
-                && (!$stmt->num
-                    || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber
-                    || $stmt->num->value < 2
-                )
+                && (!$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {

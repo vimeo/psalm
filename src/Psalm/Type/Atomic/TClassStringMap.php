@@ -92,7 +92,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    $use_phpdoc_format
+                    true
                 );
         }
 
@@ -106,7 +106,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                $use_phpdoc_format
+                false
             )
             . '>';
     }
@@ -234,7 +234,7 @@ class TClassStringMap extends \Psalm\Type\Atomic
         return new Type\Union([
             new TTemplateParamClass(
                 $this->param_name,
-                $this->as_type ? $this->as_type->value : 'object',
+                $this->as_type->value ?? 'object',
                 $this->as_type,
                 'class-string-map'
             )

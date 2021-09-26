@@ -27,6 +27,7 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -85,7 +86,7 @@ final class LanguageServer
              * @param string $arg
              */
             function ($arg) use ($valid_long_options): void {
-                if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+                if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
                     if (!in_array($arg_name, $valid_long_options, true)
@@ -309,6 +310,6 @@ HELP;
             $project_analyzer->language_server_verbose = true;
         }
 
-        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']) ? true : false);
+        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']));
     }
 }

@@ -23,8 +23,8 @@ class ArrayRandReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
             return Type::getMixed();
         }
 
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
-        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+        $first_arg = $call_args[0]->value ?? null;
+        $second_arg = $call_args[1]->value ?? null;
 
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))

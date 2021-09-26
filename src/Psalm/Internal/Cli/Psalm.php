@@ -251,7 +251,7 @@ final class Psalm
             }
         }
 
-        $paths_to_check = CliUtils::getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
@@ -420,7 +420,7 @@ final class Psalm
              * @param string $arg
              */
             function ($arg): void {
-                if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+                if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
                     if (!in_array($arg_name, self::LONG_OPTIONS)
@@ -434,7 +434,7 @@ final class Psalm
                         );
                         exit(1);
                     }
-                } elseif (substr($arg, 0, 1) === '-' && $arg !== '-' && $arg !== '--') {
+                } elseif (strpos($arg, '-') === 0 && $arg !== '-' && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
                     if (!in_array($arg_name, self::SHORT_OPTIONS)

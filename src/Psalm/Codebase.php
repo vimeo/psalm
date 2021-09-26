@@ -95,7 +95,7 @@ class Codebase
     /**
      * @var null|'always'|'auto'
      */
-    public $find_unused_code = null;
+    public $find_unused_code;
 
     /**
      * @var FileProvider
@@ -179,7 +179,7 @@ class Codebase
     /**
      * @var ?Internal\Codebase\TaintFlowGraph
      */
-    public $taint_flow_graph = null;
+    public $taint_flow_graph;
 
     /**
      * @var bool
@@ -614,7 +614,7 @@ class Codebase
 
     public function getStubbedConstantType(string $const_id): ?Type\Union
     {
-        return isset(self::$stubbed_constants[$const_id]) ? self::$stubbed_constants[$const_id] : null;
+        return self::$stubbed_constants[$const_id] ?? null;
     }
 
     /**
@@ -1614,7 +1614,7 @@ class Codebase
             $insertion_text = Type::getStringFromFQCLN(
                 $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
-                $aliases ? $aliases->uses_flipped : [],
+                $aliases->uses_flipped ?? [],
                 null
             );
 

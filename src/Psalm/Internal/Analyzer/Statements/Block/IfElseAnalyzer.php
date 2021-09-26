@@ -234,7 +234,7 @@ class IfElseAnalyzer
         if (array_filter(
             $context->clauses,
             function ($clause): bool {
-                return !!$clause->possibilities;
+                return (bool)$clause->possibilities;
             }
         )) {
             $omit_keys = array_reduce(
@@ -449,9 +449,7 @@ class IfElseAnalyzer
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
-                        isset($context->vars_in_scope[$var_id])
-                            ? $context->vars_in_scope[$var_id]
-                            : null,
+                        $context->vars_in_scope[$var_id] ?? null,
                         $statements_analyzer
                     );
                 }

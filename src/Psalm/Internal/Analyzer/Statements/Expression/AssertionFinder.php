@@ -133,7 +133,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false,
+                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
@@ -147,7 +147,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false,
+                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
@@ -2114,7 +2114,7 @@ class AssertionFinder
         ?Codebase $codebase,
         bool $inside_negation,
         int $false_position
-    ) {
+    ): array {
         $if_types = [];
 
         if ($false_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -2492,7 +2492,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['!=object']];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [['!closed-resource']];
-                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                } elseif (strpos($var_type, 'resource (') === 0) {
                     $if_types[$var_name] = [['!=resource']];
                 } else {
                     $if_types[$var_name] = [['!' . $var_type]];
@@ -2550,7 +2550,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['!=object']];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [['!closed-resource']];
-            } elseif (substr($var_type, 0, 10) === 'resource (') {
+            } elseif (strpos($var_type, 'resource (') === 0) {
                 $if_types[$var_name] = [['!=resource']];
             } else {
                 $if_types[$var_name] = [['!' . $var_type]];
@@ -2807,7 +2807,7 @@ class AssertionFinder
         bool $inside_negation,
         bool $cache,
         int $true_position
-    ) {
+    ): array {
         $if_types = [];
 
         if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -3173,7 +3173,7 @@ class AssertionFinder
                     $if_types[$var_name] = [['=object']];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [['closed-resource']];
-                } elseif (substr($var_type, 0, 10) === 'resource (') {
+                } elseif (strpos($var_type, 'resource (') === 0) {
                     $if_types[$var_name] = [['=resource']];
                 } else {
                     $if_types[$var_name] = [[$var_type]];
@@ -3231,7 +3231,7 @@ class AssertionFinder
                 $if_types[$var_name] = [['=object']];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [['closed-resource']];
-            } elseif (substr($var_type, 0, 10) === 'resource (') {
+            } elseif (strpos($var_type, 'resource (') === 0) {
                 $if_types[$var_name] = [['=resource']];
             } else {
                 $if_types[$var_name] = [[$var_type]];
@@ -3418,7 +3418,7 @@ class AssertionFinder
         if ($first_var_name) {
             $first_arg = $expr->args[0]->value;
             $second_arg = $expr->args[1]->value;
-            $third_arg = isset($expr->args[2]->value) ? $expr->args[2]->value : null;
+            $third_arg = $expr->args[2]->value ?? null;
 
             if ($third_arg instanceof PhpParser\Node\Expr\ConstFetch) {
                 if (!in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])) {

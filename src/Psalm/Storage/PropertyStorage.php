@@ -84,7 +84,7 @@ class PropertyStorage
     /**
      * @var ?string
      */
-    public $getter_method = null;
+    public $getter_method;
 
     /**
      * @var bool

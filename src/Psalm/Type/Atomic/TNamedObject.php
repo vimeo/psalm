@@ -144,6 +144,6 @@ class TNamedObject extends Atomic
 
     public function getChildNodes() : array
     {
-        return $this->extra_types !== null ? $this->extra_types : [];
+        return $this->extra_types ?? [];
     }
 }

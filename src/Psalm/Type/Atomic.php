@@ -56,7 +56,6 @@ use function get_class;
 use function is_numeric;
 use function strpos;
 use function strtolower;
-use function substr;
 
 abstract class Atomic implements TypeNode
 {
@@ -289,7 +288,7 @@ abstract class Atomic implements TypeNode
                 return new TNonEmptyMixed();
         }
 
-        if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
+        if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
             throw new \Psalm\Exception\TypeParseTreeException('Unrecognized type ' . $value);
         }
 

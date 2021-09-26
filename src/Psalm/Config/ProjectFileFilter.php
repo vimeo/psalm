@@ -11,7 +11,7 @@ class ProjectFileFilter extends FileFilter
     /**
      * @var ProjectFileFilter|null
      */
-    private $file_filter = null;
+    private $file_filter;
 
     /**
      * @return static

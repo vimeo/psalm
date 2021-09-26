@@ -7,11 +7,6 @@ namespace Psalm\Type\Atomic;
  */
 class TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
 {
-    public function getKey(bool $include_extra = true): string
-    {
-        return 'string';
-    }
-
     public function getId(bool $nested = false): string
     {
         return 'non-empty-literal-string';

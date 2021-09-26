@@ -41,8 +41,8 @@ use Psalm\Type;
 use function array_diff;
 use function count;
 use function in_array;
+use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -109,7 +109,7 @@ class ReturnTypeAnalyzer
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod
-            && substr($function->name->name, 0, 2) === '__'
+            && strpos($function->name->name, '__') === 0
             && !$is_to_string
             && !$return_type
         ) {
@@ -170,7 +170,7 @@ class ReturnTypeAnalyzer
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitly = !!array_diff(
+        $function_returns_implicitly = (bool)array_diff(
             $control_actions,
             [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]
         );
@@ -748,8 +748,8 @@ class ReturnTypeAnalyzer
             $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
-                $classlike_storage ? $classlike_storage->name : null,
-                $classlike_storage ? $classlike_storage->name : null,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
                 $parent_class
             );
 
@@ -770,8 +770,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->signature_return_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
             $parent_class
         );
 
@@ -792,8 +792,8 @@ class ReturnTypeAnalyzer
         $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $storage->return_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $classlike_storage ? $classlike_storage->name : null,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
             $parent_class,
             true,
             true
@@ -936,7 +936,7 @@ class ReturnTypeAnalyzer
                 true
             ),
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version),
-            $function_like_storage ? $function_like_storage->return_type_description : null
+            $function_like_storage->return_type_description ?? null
         );
     }
 }

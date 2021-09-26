@@ -32,7 +32,7 @@ class ClassLikeDocblockComment
      *
      * @var null|string
      */
-    public $psalm_internal = null;
+    public $psalm_internal;
 
     /**
      * @var string[]
@@ -57,7 +57,7 @@ class ClassLikeDocblockComment
     /**
      * @var ?string
      */
-    public $yield = null;
+    public $yield;
 
     /**
      * @var array<int, array{name:string, type:string, tag:string, line_number:int}>

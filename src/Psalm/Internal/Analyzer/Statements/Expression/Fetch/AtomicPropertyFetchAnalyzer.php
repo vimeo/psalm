@@ -1112,8 +1112,6 @@ class AtomicPropertyFetchAnalyzer
             $has_magic_getter,
             $var_id
         );
-
-        return;
     }
 
     private static function getClassPropertyType(

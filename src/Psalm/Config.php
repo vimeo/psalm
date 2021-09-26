@@ -55,7 +55,6 @@ use function getcwd;
 use function glob;
 use function implode;
 use function in_array;
-use function intval;
 use function is_a;
 use function is_dir;
 use function is_file;
@@ -80,7 +79,6 @@ use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
-use function strtr;
 use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
@@ -182,7 +180,7 @@ class Config
      *
      * @var bool|null
      */
-    public $load_xdebug_stub = null;
+    public $load_xdebug_stub;
 
     /**
      * The directory to store PHP Parser (and other) caches
@@ -288,7 +286,7 @@ class Config
     /**
      * @var ?bool
      */
-    public $show_mixed_issues = null;
+    public $show_mixed_issues;
 
     /** @var bool */
     public $strict_binary_operands = false;
@@ -501,7 +499,7 @@ class Config
     public $hash = '';
 
     /** @var string|null */
-    public $error_baseline = null;
+    public $error_baseline;
 
     /**
      * @var bool
@@ -978,7 +976,7 @@ class Config
         }
 
         if (isset($config_xml['maxStringLength'])) {
-            $attribute_text = intval($config_xml['maxStringLength']);
+            $attribute_text = (int)$config_xml['maxStringLength'];
             $config->max_string_length = $attribute_text;
         }
 
@@ -2115,7 +2113,7 @@ class Config
         $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
 
         // PSR-4 lookup
-        $logicalPathPsr4 = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+        $logicalPathPsr4 = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
 
         $candidate_path = null;
 
@@ -2200,11 +2198,7 @@ class Config
 
     public function getPhpVersion(): ?string
     {
-        if (isset($this->configured_php_version)) {
-            return $this->configured_php_version;
-        }
-
-        return $this->getPHPVersionFromComposerJson();
+        return $this->configured_php_version ?? $this->getPHPVersionFromComposerJson();
     }
 
     private function setBooleanAttribute(string $name, bool $value): void

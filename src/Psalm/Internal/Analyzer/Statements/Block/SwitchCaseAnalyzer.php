@@ -39,6 +39,7 @@ use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
+use function strpos;
 use function substr;
 
 /**
@@ -82,7 +83,7 @@ class SwitchCaseAnalyzer
 
         $fake_switch_condition = false;
 
-        if ($switch_var_id && substr($switch_var_id, 0, 15) === '$__tmp_switch__') {
+        if ($switch_var_id && strpos($switch_var_id, '$__tmp_switch__') === 0) {
             $switch_condition = new VirtualVariable(
                 substr($switch_var_id, 1),
                 $stmt->cond->getAttributes()
@@ -402,7 +403,7 @@ class SwitchCaseAnalyzer
                     $case_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
-                        $case->cond ? $case->cond : $case,
+                        $case->cond ?? $case,
                         $context->include_location
                     )
                 );

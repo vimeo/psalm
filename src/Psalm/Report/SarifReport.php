@@ -45,7 +45,7 @@ class SarifReport extends Report
                 ],
                 'properties' => [
                     'tags' => [
-                        (\substr($issue_data->type, 0, 7) === 'Tainted') ? 'security' : 'maintainability',
+                        (\strpos($issue_data->type, 'Tainted') === 0) ? 'security' : 'maintainability',
                     ],
                 ],
                 'helpUri' => $issue_data->link,

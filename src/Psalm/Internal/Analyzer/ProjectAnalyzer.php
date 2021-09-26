@@ -660,7 +660,7 @@ class ProjectAnalyzer
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
             $this->progress,
-            !!$this->codebase->find_unused_code
+            (bool)$this->codebase->find_unused_code
         );
     }
 
@@ -688,7 +688,7 @@ class ProjectAnalyzer
                 && $destination_pos === (strlen($destination) - 1)
             ) {
                 foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
-                    if (substr($class_storage->name, 0, $source_pos) === substr($source, 0, -1)) {
+                    if (strpos($source, substr($class_storage->name, 0, $source_pos)) === 0) {
                         $this->to_refactor[$class_storage->name]
                             = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
                     }
@@ -1334,13 +1334,11 @@ class ProjectAnalyzer
 
         $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
 
-        $file_analyzer = new FileAnalyzer(
+        return new FileAnalyzer(
             $this,
             $file_path,
             $this->config->shortenFileName($file_path)
         );
-
-        return $file_analyzer;
     }
 
     public function getMethodMutations(

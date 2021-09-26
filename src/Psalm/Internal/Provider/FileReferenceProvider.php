@@ -78,7 +78,7 @@ class FileReferenceProvider
      *
      * @var array<int, string>|null
      */
-    private static $deleted_files = null;
+    private static $deleted_files;
 
     /**
      * A lookup table used for getting all the files referenced by a file
@@ -447,7 +447,7 @@ class FileReferenceProvider
      */
     public function getFilesReferencingFile(string $file): array
     {
-        return isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [];
+        return self::$file_references[$file]['a'] ?? [];
     }
 
     /**
@@ -455,7 +455,7 @@ class FileReferenceProvider
      */
     public function getFilesInheritingFromFile(string $file): array
     {
-        return isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [];
+        return self::$file_references[$file]['i'] ?? [];
     }
 
     /**
@@ -691,14 +691,14 @@ class FileReferenceProvider
         foreach ($visited_files as $file => $_) {
             $all_file_references = array_unique(
                 array_merge(
-                    isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
+                    self::$file_references[$file]['a'] ?? [],
                     $this->calculateFilesReferencingFile($codebase, $file)
                 )
             );
 
             $inheritance_references = array_unique(
                 array_merge(
-                    isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
+                    self::$file_references[$file]['i'] ?? [],
                     $this->calculateFilesInheritingFile($codebase, $file)
                 )
             );

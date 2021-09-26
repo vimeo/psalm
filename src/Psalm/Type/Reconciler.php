@@ -102,10 +102,8 @@ class Reconciler
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    switch ($new_type_part_part[0]) {
-                        case '!':
-                            $has_negation = true;
-                            break;
+                    if ($new_type_part_part[0] === '!') {
+                        $has_negation = true;
                     }
 
                     $has_isset = $has_isset

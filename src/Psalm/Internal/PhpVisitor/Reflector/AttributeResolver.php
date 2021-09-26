@@ -26,24 +26,17 @@ class AttributeResolver
     ) : AttributeStorage {
         if ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$stmt->name;
-
-            $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-            $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         } else {
             $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->name, $aliases);
-
-            $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-            $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         }
+
+        $codebase->scanner->queueClassLikeForScanning($fq_type_string);
+        $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
 
         $args = [];
 
         foreach ($stmt->args as $arg_node) {
-            $key = null;
-
-            if ($arg_node->name) {
-                $key = $arg_node->name->name;
-            }
+            $key = $arg_node->name->name ?? null;
 
             $const_type = SimpleTypeInferer::infer(
                 $codebase,

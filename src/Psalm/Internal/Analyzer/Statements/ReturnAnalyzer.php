@@ -633,7 +633,7 @@ class ReturnAnalyzer
             $param->type = self::inferInnerClosureTypeFromParent(
                 $statements_analyzer->getCodebase(),
                 $param->type,
-                $parent_param ? $parent_param->type : null
+                $parent_param->type ?? null
             );
         }
 

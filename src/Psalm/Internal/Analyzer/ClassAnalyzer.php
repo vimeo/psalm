@@ -368,7 +368,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
                             new CodeLocation(
                                 $this,
-                                $class->name ? $class->name : $class,
+                                $class->name ?? $class,
                                 $class_context->include_location,
                                 true
                             )
@@ -984,7 +984,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        $fq_class_name = $class_context->self ? $class_context->self : $this->fq_class_name;
+        $fq_class_name = $class_context->self ?: $this->fq_class_name;
         $fq_class_name_lc = strtolower($fq_class_name);
 
         $included_file_path = $this->getFilePath();
@@ -1913,9 +1913,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
-            ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
-            : [];
+        $overridden_method_ids = $class_storage->overridden_method_ids[strtolower($stmt->name->name)] ?? [];
 
         if (!$return_type
             && !$class_storage->is_interface
@@ -2276,7 +2274,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $code_location = new CodeLocation(
                 $this,
-                $class->name ? $class->name : $class,
+                $class->name ?? $class,
                 $class_context->include_location,
                 true
             );
@@ -2488,7 +2486,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $code_location = new CodeLocation(
                 $this,
                 $extended_class,
-                $class_context ? $class_context->include_location : null,
+                $class_context->include_location ?? null,
                 true
             );
 
@@ -2592,7 +2590,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $code_location = new CodeLocation(
                     $this,
                     $class->name ?: $class,
-                    $class_context ? $class_context->include_location : null,
+                    $class_context->include_location ?? null,
                     true
                 );
 

@@ -29,11 +29,7 @@ class FakeFileProvider extends FileProvider
             return $this->temp_files[strtolower($file_path)];
         }
 
-        if (isset($this->fake_files[$file_path])) {
-            return $this->fake_files[$file_path];
-        }
-
-        return parent::getContents($file_path);
+        return $this->fake_files[$file_path] ?? parent::getContents($file_path);
     }
 
     public function setContents(string $file_path, string $file_contents): void
@@ -50,11 +46,7 @@ class FakeFileProvider extends FileProvider
 
     public function getModifiedTime(string $file_path): int
     {
-        if (isset($this->fake_file_times[$file_path])) {
-            return $this->fake_file_times[$file_path];
-        }
-
-        return parent::getModifiedTime($file_path);
+        return $this->fake_file_times[$file_path] ?? parent::getModifiedTime($file_path);
     }
 
     /**

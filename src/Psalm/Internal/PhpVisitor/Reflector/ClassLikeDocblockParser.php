@@ -489,7 +489,7 @@ class ClassLikeDocblockParser
         array $specials,
         string $property_tag
     ) : void {
-        $magic_property_comments = isset($specials[$property_tag]) ? $specials[$property_tag] : [];
+        $magic_property_comments = $specials[$property_tag] ?? [];
 
         foreach ($magic_property_comments as $offset => $property) {
             $line_parts = CommentAnalyzer::splitDocLine($property);

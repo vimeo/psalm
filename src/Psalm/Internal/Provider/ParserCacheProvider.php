@@ -45,7 +45,7 @@ class ParserCacheProvider
      *
      * @var array<string, string>|null
      */
-    private $existing_file_content_hashes = null;
+    private $existing_file_content_hashes;
 
     /**
      * A map of recently-added filename hashes to contents hashes

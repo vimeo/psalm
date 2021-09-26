@@ -21,12 +21,12 @@ class ProjectCacheProvider
     /**
      * @var int|null
      */
-    private $last_run = null;
+    private $last_run;
 
     /**
      * @var string|null
      */
-    private $composer_lock_hash = null;
+    private $composer_lock_hash;
 
     private $composer_lock_location;
 

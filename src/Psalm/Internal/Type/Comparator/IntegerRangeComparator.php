@@ -81,15 +81,7 @@ class IntegerRangeComparator
             return false;
         }
 
-        if ($result_reduction === null) {
-            //inconclusive result, we can't remove atomics anymore.
-            //container: `int<1, 5>`, input: `int<0, 6>`
-            //container: `5`, input: `int<4, 6>`
-            //we assume there's no combinations that makes the input contained
-            return false;
-        }
-
-        return $result_reduction;
+        return $result_reduction ?? false;
     }
 
     /**

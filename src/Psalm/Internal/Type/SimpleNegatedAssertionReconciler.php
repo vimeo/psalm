@@ -29,6 +29,7 @@ use Psalm\Type\Union;
 
 use function get_class;
 use function max;
+use function strpos;
 use function substr;
 
 class SimpleNegatedAssertionReconciler extends Reconciler
@@ -217,7 +218,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if (substr($assertion, 0, 13) === 'has-at-least-') {
+        if (strpos($assertion, 'has-at-least-') === 0) {
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
                 $key,
@@ -230,7 +231,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if (substr($assertion, 0, 12) === 'has-exactly-') {
+        if (strpos($assertion, 'has-exactly-') === 0) {
             return $existing_var_type;
         }
 

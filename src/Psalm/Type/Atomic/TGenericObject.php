@@ -69,7 +69,7 @@ class TGenericObject extends TNamedObject
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        return parent::toNamespacedString($namespace, $aliased_classes, $this_class, false);
+        return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -98,6 +98,6 @@ class TGenericObject extends TNamedObject
 
     public function getChildNodes() : array
     {
-        return array_merge($this->type_params, $this->extra_types !== null ? $this->extra_types : []);
+        return array_merge($this->type_params, $this->extra_types ?? []);
     }
 }

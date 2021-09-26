@@ -159,7 +159,7 @@ class ElseIfAnalyzer
             if (array_filter(
                 $entry_clauses,
                 function ($clause): bool {
-                    return !!$clause->possibilities;
+                    return (bool)$clause->possibilities;
                 }
             )) {
                 $omit_keys = array_reduce(

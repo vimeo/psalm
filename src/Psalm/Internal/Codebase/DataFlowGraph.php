@@ -10,6 +10,7 @@ use function array_merge;
 use function array_reverse;
 use function array_sum;
 use function strlen;
+use function strpos;
 use function substr;
 
 abstract class DataFlowGraph
@@ -65,7 +66,7 @@ abstract class DataFlowGraph
 
         // arraykey-fetch requires a matching arraykey-assignment at the same level
         // otherwise the tainting is not valid
-        if (substr($path_type, 0, $el + 7) === $expression_type . '-fetch-' || $path_type === 'arraykey-fetch') {
+        if (strpos($path_type, $expression_type . '-fetch-') === 0 || $path_type === 'arraykey-fetch') {
             $fetch_nesting = 0;
 
             $previous_path_types = array_reverse($previous_path_types);
@@ -79,11 +80,11 @@ abstract class DataFlowGraph
                     $fetch_nesting--;
                 }
 
-                if (substr($previous_path_type, 0, $el + 6) === $expression_type . '-fetch') {
+                if (strpos($previous_path_type, $expression_type . '-fetch') === 0) {
                     $fetch_nesting++;
                 }
 
-                if (substr($previous_path_type, 0, $el + 12) === $expression_type . '-assignment-') {
+                if (strpos($previous_path_type, $expression_type . '-assignment-') === 0) {
                     if ($fetch_nesting > 0) {
                         $fetch_nesting--;
                         continue;

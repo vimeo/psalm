@@ -51,24 +51,6 @@ class TTemplateParamClass extends TClassString
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     */
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
-    ): ?string {
-        return 'string';
-    }
-
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
-    {
-        return false;
-    }
-
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
      *
      */
     public function toNamespacedString(
@@ -78,10 +60,5 @@ class TTemplateParamClass extends TClassString
         bool $use_phpdoc_format
     ): string {
         return $this->param_name . '::class';
-    }
-
-    public function getChildNodes() : array
-    {
-        return $this->as_type ? [$this->as_type] : [];
     }
 }

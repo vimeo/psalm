@@ -321,7 +321,7 @@ class CallableTypeComparator
 
                     $matching_callable->is_pure = $codebase->functions->isCallMapFunctionPure(
                         $codebase,
-                        $statements_analyzer ? $statements_analyzer->node_data : null,
+                        $statements_analyzer->node_data ?? null,
                         $input_type_part->value,
                         null,
                         $must_use

@@ -23,11 +23,6 @@ class TLiteralString extends TString
         return 'string(' . $this->value . ')';
     }
 
-    public function __toString(): string
-    {
-        return 'string';
-    }
-
     public function getId(bool $nested = false): string
     {
         // quote control characters, backslashes and double quote
@@ -42,19 +37,6 @@ class TLiteralString extends TString
     public function getAssertionString(bool $exact = false): string
     {
         return 'string(' . $this->value . ')';
-    }
-
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
-     */
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
-    ): ?string {
-        return $php_major_version >= 7 ? 'string' : null;
     }
 
     /**

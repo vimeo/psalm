@@ -281,7 +281,7 @@ class ExpressionScanner
 
             // attempts to resolve using get_include_path dirs
             $include_path = IncludeAnalyzer::resolveIncludePath($path_to_file, dirname($file_storage->file_path));
-            $path_to_file = $include_path ? $include_path : $path_to_file;
+            $path_to_file = $include_path ?: $path_to_file;
 
             if (DIRECTORY_SEPARATOR === '/') {
                 $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;

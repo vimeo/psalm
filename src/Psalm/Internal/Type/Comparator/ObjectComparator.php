@@ -76,11 +76,11 @@ class ObjectComparator
 
                     foreach ($intersection_input_types as $intersection_input_type) {
                         if ($intersection_input_type instanceof TTemplateParam
-                            && (\substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
-                                || \substr($intersection_input_type->defining_class, 0, 3) === 'fn-')
+                            && (\strpos($intersection_container_type->defining_class, 'fn-') === 0
+                                || \strpos($intersection_input_type->defining_class, 'fn-') === 0)
                         ) {
-                            if (\substr($intersection_input_type->defining_class, 0, 3) === 'fn-'
-                                && \substr($intersection_container_type->defining_class, 0, 3) === 'fn-'
+                            if (\strpos($intersection_input_type->defining_class, 'fn-') === 0
+                                && \strpos($intersection_container_type->defining_class, 'fn-') === 0
                                 && $intersection_input_type->defining_class
                                     !== $intersection_container_type->defining_class
                             ) {
@@ -191,10 +191,10 @@ class ObjectComparator
                     if ($intersection_container_type->param_name !== $intersection_input_type->param_name
                         || ($intersection_container_type->defining_class
                             !== $intersection_input_type->defining_class
-                            && \substr($intersection_input_type->defining_class, 0, 3) !== 'fn-'
-                            && \substr($intersection_container_type->defining_class, 0, 3) !== 'fn-')
+                            && \strpos($intersection_input_type->defining_class, 'fn-') !== 0
+                            && \strpos($intersection_container_type->defining_class, 'fn-') !== 0)
                     ) {
-                        if (\substr($intersection_input_type->defining_class, 0, 3) !== 'fn-') {
+                        if (\strpos($intersection_input_type->defining_class, 'fn-') !== 0) {
                             $input_class_storage = $codebase->classlike_storage_provider->get(
                                 $intersection_input_type->defining_class
                             );

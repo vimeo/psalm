@@ -30,7 +30,7 @@ class ClassConstantStorage
     /**
      * @var ?\Psalm\Internal\Scanner\UnresolvedConstantComponent
      */
-    public $unresolved_node = null;
+    public $unresolved_node;
 
     /**
      * @var bool

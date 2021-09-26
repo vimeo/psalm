@@ -60,10 +60,10 @@ class NamedFunctionCallHandler
             return;
         }
 
-        $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
+        $first_arg = $stmt->args[0] ?? null;
 
         if ($function_id === 'method_exists') {
-            $second_arg = isset($stmt->args[1]) ? $stmt->args[1] : null;
+            $second_arg = $stmt->args[1] ?? null;
 
             if ($first_arg
                 && $first_arg->value instanceof PhpParser\Node\Expr\Variable
@@ -223,9 +223,7 @@ class NamedFunctionCallHandler
         if ($function_id === 'func_get_args') {
             $source = $statements_analyzer->getSource();
 
-            if ($statements_analyzer->data_flow_graph
-                && $source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
-            ) {
+            if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
                 if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
                     foreach ($source->param_nodes as $param_node) {
                         $statements_analyzer->data_flow_graph->addPath(
@@ -332,17 +330,13 @@ class NamedFunctionCallHandler
         ) {
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
-            if ($stmt_assertions !== null) {
-                $anded_assertions = $stmt_assertions;
-            } else {
-                $anded_assertions = AssertionFinder::processFunctionCall(
-                    $stmt,
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    $context->inside_negation
-                );
-            }
+            $anded_assertions = $stmt_assertions ?? AssertionFinder::processFunctionCall(
+                $stmt,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                $context->inside_negation
+            );
 
             $changed_vars = [];
 
@@ -442,7 +436,7 @@ class NamedFunctionCallHandler
         string $function_id,
         Context $context
     ) : void {
-        $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
+        $first_arg = $stmt->args[0] ?? null;
 
         if ($first_arg) {
             $var = $first_arg->value;

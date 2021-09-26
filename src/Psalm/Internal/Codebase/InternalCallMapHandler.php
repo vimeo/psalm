@@ -14,6 +14,7 @@ use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;
@@ -32,16 +33,16 @@ class InternalCallMapHandler
     /**
      * @var ?int
      */
-    private static $loaded_php_major_version = null;
+    private static $loaded_php_major_version;
     /**
      * @var ?int
      */
-    private static $loaded_php_minor_version = null;
+    private static $loaded_php_minor_version;
 
     /**
      * @var array<lowercase-string, array<int|string,string>>|null
      */
-    private static $call_map = null;
+    private static $call_map;
 
     /**
      * @var array<list<TCallable>>|null
@@ -274,7 +275,7 @@ class InternalCallMapHandler
                     $optional = true;
                 }
 
-                if (substr($arg_name, 0, 3) === '...') {
+                if (strpos($arg_name, '...') === 0) {
                     $arg_name = substr($arg_name, 3);
                     $variadic = true;
                 }

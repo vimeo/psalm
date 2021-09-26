@@ -253,12 +253,12 @@ class ArgumentAnalyzer
         $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
             $codebase,
             $param_type,
-            $classlike_storage ? $classlike_storage->name : null,
-            $static_classlike_storage ? $static_classlike_storage->name : null,
+            $classlike_storage->name ?? null,
+            $static_classlike_storage->name ?? null,
             $parent_class,
             true,
             false,
-            $static_classlike_storage ? $static_classlike_storage->final : false,
+            $static_classlike_storage->final ?? false,
             true
         );
 
@@ -384,12 +384,12 @@ class ArgumentAnalyzer
             $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $param_type,
-                $classlike_storage ? $classlike_storage->name : null,
-                $static_classlike_storage ? $static_classlike_storage->name : null,
+                $classlike_storage->name ?? null,
+                $static_classlike_storage->name ?? null,
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage ? $static_classlike_storage->final : false,
+                $static_classlike_storage->final ?? false,
                 true
             );
         }
@@ -398,8 +398,8 @@ class ArgumentAnalyzer
             ? \Psalm\Internal\Type\TypeExpander::expandUnion(
                 $codebase,
                 $function_param->signature_type,
-                $classlike_storage ? $classlike_storage->name : null,
-                $static_classlike_storage ? $static_classlike_storage->name : null,
+                $classlike_storage->name ?? null,
+                $static_classlike_storage->name ?? null,
                 $parent_class
             )
             : null;

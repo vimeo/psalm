@@ -55,6 +55,7 @@ use function get_class;
 use function preg_split;
 use function round;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -117,12 +118,12 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @var ParsedDocblock|null
      */
-    private $parsed_docblock = null;
+    private $parsed_docblock;
 
     /**
      * @var ?string
      */
-    private $fake_this_class = null;
+    private $fake_this_class;
 
     /** @var \Psalm\Internal\Provider\NodeDataProvider */
     public $node_data;
@@ -557,7 +558,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name ? $stmt->name->name : null
+                    $stmt->name->name ?? null
                 );
 
                 $class_analyzer->analyze(null, $global_context);
@@ -755,7 +756,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if (substr($var_id, 0, 2) === '$_') {
+            if (strpos($var_id, '$_') === 0) {
                 continue;
             }
 
@@ -911,12 +912,12 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     public function getFirstAppearance(string $var_id): ?CodeLocation
     {
-        return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
+        return $this->all_vars[$var_id] ?? null;
     }
 
     public function getBranchPoint(string $var_id): ?int
     {
-        return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
+        return $this->var_branch_points[$var_id] ?? null;
     }
 
     public function addVariableInitialization(string $var_id, int $branch_point): void

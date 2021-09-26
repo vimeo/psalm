@@ -37,7 +37,7 @@ class LoopScope
     /**
      * @var array<string, Type\Union>|null
      */
-    public $possibly_redefined_loop_parent_vars = null;
+    public $possibly_redefined_loop_parent_vars;
 
     /**
      * @var array<string, Type\Union>

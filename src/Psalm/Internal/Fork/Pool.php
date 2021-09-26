@@ -21,7 +21,6 @@ use function get_class;
 use function gettype;
 use function in_array;
 use function ini_get;
-use function intval;
 use function pcntl_fork;
 use function pcntl_waitpid;
 use function pcntl_wexitstatus;
@@ -307,7 +306,7 @@ class Pool
         // resource id.
         $streams = [];
         foreach ($this->read_streams as $stream) {
-            $streams[intval($stream)] = $stream;
+            $streams[(int)$stream] = $stream;
         }
 
         // Create an array for the content received on each stream,
@@ -340,12 +339,12 @@ class Pool
             foreach ($needs_read as $file) {
                 $buffer = fread($file, 1024);
                 if ($buffer !== false) {
-                    $content[intval($file)] .= $buffer;
+                    $content[(int)$file] .= $buffer;
                 }
 
                 if (strpos($buffer, "\n") !== false) {
-                    $serialized_messages = explode("\n", $content[intval($file)]);
-                    $content[intval($file)] = array_pop($serialized_messages);
+                    $serialized_messages = explode("\n", $content[(int)$file]);
+                    $content[(int)$file] = array_pop($serialized_messages);
 
                     foreach ($serialized_messages as $serialized_message) {
                         $message = unserialize(base64_decode($serialized_message, true));
@@ -375,13 +374,13 @@ class Pool
 
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
-                    if ($content[intval($file)] !== '') {
+                    if ($content[(int)$file] !== '') {
                         error_log('Child did not send full message before closing the connection');
                         $this->did_have_error = true;
                     }
 
                     fclose($file);
-                    unset($streams[intval($file)]);
+                    unset($streams[(int)$file]);
                 }
             }
         }
