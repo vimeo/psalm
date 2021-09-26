@@ -614,7 +614,7 @@ class Codebase
 
     public function getStubbedConstantType(string $const_id): ?Type\Union
     {
-        return isset(self::$stubbed_constants[$const_id]) ? self::$stubbed_constants[$const_id] : null;
+        return self::$stubbed_constants[$const_id] ?? null;
     }
 
     /**

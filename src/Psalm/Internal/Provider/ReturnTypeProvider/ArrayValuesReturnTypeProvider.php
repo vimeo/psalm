@@ -22,7 +22,7 @@ class ArrayValuesReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
             return Type::getMixed();
         }
 
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $first_arg = $call_args[0]->value ?? null;
 
         if (!$first_arg) {
             return Type::getArray();

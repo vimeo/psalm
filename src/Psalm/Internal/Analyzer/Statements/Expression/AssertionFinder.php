@@ -3418,7 +3418,7 @@ class AssertionFinder
         if ($first_var_name) {
             $first_arg = $expr->args[0]->value;
             $second_arg = $expr->args[1]->value;
-            $third_arg = isset($expr->args[2]->value) ? $expr->args[2]->value : null;
+            $third_arg = $expr->args[2]->value ?? null;
 
             if ($third_arg instanceof PhpParser\Node\Expr\ConstFetch) {
                 if (!in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])) {

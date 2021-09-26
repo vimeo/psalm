@@ -418,7 +418,7 @@ class Context
                     ? $end_context->vars_in_scope[$var_id]
                     : null;
 
-                $existing_type = isset($this->vars_in_scope[$var_id]) ? $this->vars_in_scope[$var_id] : null;
+                $existing_type = $this->vars_in_scope[$var_id] ?? null;
 
                 if (!$existing_type) {
                     if ($new_type) {

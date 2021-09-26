@@ -38,7 +38,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
             return Type::getMixed();
         }
 
-        $array_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $array_arg = $call_args[0]->value ?? null;
 
         $first_arg_array = $array_arg
             && ($first_arg_type = $statements_source->node_data->getType($array_arg))

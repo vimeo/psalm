@@ -911,12 +911,12 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     public function getFirstAppearance(string $var_id): ?CodeLocation
     {
-        return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
+        return $this->all_vars[$var_id] ?? null;
     }
 
     public function getBranchPoint(string $var_id): ?int
     {
-        return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
+        return $this->var_branch_points[$var_id] ?? null;
     }
 
     public function addVariableInitialization(string $var_id, int $branch_point): void

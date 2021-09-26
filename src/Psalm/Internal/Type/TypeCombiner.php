@@ -684,9 +684,7 @@ class TypeCombiner
             $has_defined_keys = false;
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
-                $value_type = isset($combination->objectlike_entries[$candidate_property_name])
-                    ? $combination->objectlike_entries[$candidate_property_name]
-                    : null;
+                $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;

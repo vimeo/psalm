@@ -201,7 +201,7 @@ HELP;
         // If Xdebug is enabled, restart without it
         (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
 
-        $paths_to_check = CliUtils::getPathsToCheck(isset($options['f']) ? $options['f'] : null);
+        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
