@@ -233,6 +233,18 @@ class TaintTest extends TestCase
                         echo $a;
                     }'
             ],
+            'taintFilterVarInt' => [
+                '<?php
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_INT);'
+            ],
+            'taintFilterVarBoolean' => [
+                '<?php
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN);'
+            ],
+            'taintFilterVarFloat' => [
+                '<?php
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT);'
+            ],
             'taintLdapEscape' => [
                 '<?php
                     $ds = ldap_connect(\'example.com\');
@@ -1619,7 +1631,7 @@ class TaintTest extends TestCase
                     echo $get["test"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'taintFilterVar' => [
+            'taintFilterVarCallback' => [
                 '<?php
                     $get = filter_var($_GET, FILTER_CALLBACK, ["options" => "trim"]);
 
