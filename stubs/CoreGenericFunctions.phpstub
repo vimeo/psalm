@@ -666,6 +666,13 @@ function array_sum(array $input) {}
 function array_product(array $input) {}
 
 /**
+ * 257 is FILTER_VALIDATE_INT
+ * @psalm-taint-escape ($filter is 257 ? 'html' : null)
+ * @psalm-flow ($value, $filter, $options) -> return
+ */
+function filter_var(mixed $value, int $filter = FILTER_DEFAULT, array|int $options = 0): mixed {}
+
+/**
  * @psalm-pure
  *
  * @psalm-taint-escape html
