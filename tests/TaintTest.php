@@ -235,7 +235,15 @@ class TaintTest extends TestCase
             ],
             'taintFilterVarInt' => [
                 '<?php
-                    echo filter_var($_GET["id"], FILTER_VALIDATE_INT);'
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_INT);'
+            ],
+            'taintFilterVarBoolean' => [
+                '<?php
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN);'
+            ],
+            'taintFilterVarFloat' => [
+                '<?php
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT);'
             ],
             'taintLdapEscape' => [
                 '<?php
