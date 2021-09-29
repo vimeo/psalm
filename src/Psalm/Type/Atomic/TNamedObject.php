@@ -123,7 +123,7 @@ class TNamedObject extends Atomic
             return $php_major_version >= 8 ? 'static' : null;
         }
 
-        if ($this->was_static) {
+        if ($this->was_static && $this->value === $this_class) {
             return $php_major_version >= 8 ? 'static' : 'self';
         }
 
