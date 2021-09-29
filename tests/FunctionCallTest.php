@@ -1612,7 +1612,7 @@ class FunctionCallTest extends TestCase
                         }
                     }
 
-                    function two(): mixed
+                    function two(): array
                     {
                         exec("", $lines);
                         return $lines;
