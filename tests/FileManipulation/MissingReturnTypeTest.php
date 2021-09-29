@@ -1088,6 +1088,32 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'WithAttributes' => [
+                '<?php
+
+                    class A
+                    {
+                        #[Foo()]
+                        public function bar()
+                        {
+                        }
+                    }
+                    ',
+                '<?php
+
+                    class A
+                    {
+                        #[Foo()]
+                        public function bar(): void
+                        {
+                        }
+                    }
+                    ',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+                true,
+            ],
         ];
     }
 }

@@ -123,6 +123,14 @@ class FunctionDocblockManipulator
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
+        $attributes = $stmt->getAttrGroups();
+        foreach ($attributes as $attribute) {
+            // if we have attribute groups, we need to consider that the function starts after them
+            if ((int) $attribute->getAttribute('endFilePos') > $function_start) {
+                $function_start = (int) $attribute->getAttribute('endFilePos');
+            }
+        }
+
         foreach ($stmt->params as $param) {
             if ($param->var instanceof PhpParser\Node\Expr\Variable
                 && \is_string($param->var->name)
