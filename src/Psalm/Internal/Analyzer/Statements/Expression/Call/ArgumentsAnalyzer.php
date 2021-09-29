@@ -969,8 +969,8 @@ class ArgumentsAnalyzer
                     $function_param = $last_param;
                 }
 
-                $by_ref_type = $function_param->type;
-                $by_ref_out_type = $function_param->out_type;
+                $by_ref_type = clone $function_param->type;
+                $by_ref_out_type = clone $function_param->out_type;
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
                     $check_null_ref = false;

@@ -1602,6 +1602,22 @@ class FunctionCallTest extends TestCase
                         foo($s);
                     }',
             ],
+            'preventObjectLeakingFromCallmapReference' => [
+                '<?php
+                    function one(): void
+                    {
+                        try {
+                            exec("", $output);
+                        } catch (Exception $e){
+                        }
+                    }
+
+                    function two(): mixed
+                    {
+                        exec("", $lines);
+                        return $lines;
+                    }',
+            ],
         ];
     }
 
