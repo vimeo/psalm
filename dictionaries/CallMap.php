@@ -3313,7 +3313,7 @@ return [
 'flush' => ['void'],
 'fmod' => ['float', 'num1'=>'float', 'num2'=>'float'],
 'fnmatch' => ['bool', 'pattern'=>'string', 'filename'=>'string', 'flags='=>'int'],
-'fopen' => ['resource|false', 'filename'=>'string', 'mode'=>'string', 'use_include_path='=>'bool', 'context='=>'resource'],
+'fopen' => ['resource|false', 'filename'=>'string', 'mode'=>'string', 'use_include_path='=>'bool', 'context='=>'resource|null'],
 'forward_static_call' => ['mixed|false', 'callback'=>'callable', '...args='=>'mixed'],
 'forward_static_call_array' => ['mixed|false', 'callback'=>'callable', 'args'=>'list<mixed>'],
 'fpassthru' => ['int|false', 'stream'=>'resource'],
