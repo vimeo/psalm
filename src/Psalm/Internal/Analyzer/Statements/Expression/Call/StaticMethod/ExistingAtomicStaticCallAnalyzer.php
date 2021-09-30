@@ -280,7 +280,7 @@ class ExistingAtomicStaticCallAnalyzer
                 } elseif ($context->mutation_free && !$method_storage->mutation_free) {
                     if (IssueBuffer::accepts(
                         new ImpureMethodCall(
-                            'Cannot call an possibly-mutating method from a mutation-free context',
+                            'Cannot call a possibly-mutating method from a mutation-free context',
                             new CodeLocation($statements_analyzer, $stmt_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
