@@ -224,6 +224,12 @@ class FunctionDocblockManipulator
 
                     break 2;
 
+                case '=':
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue 2;
+                    }
+                    break 2;
+
                 case '?':
                     if ($in_multi_line_comment || $in_single_line_comment) {
                         continue 2;
