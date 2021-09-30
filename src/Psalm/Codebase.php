@@ -1466,7 +1466,7 @@ class Codebase
             }
             // First parameter to a function-like
             $function_storage = $this->getFunctionStorageForSymbol($file_path, $function . '()');
-            if (!$function_storage || !$function_storage->params) {
+            if (!$function_storage || !$function_storage->params || !isset($function_storage->params[$argument_num])) {
                 return null;
             }
 
