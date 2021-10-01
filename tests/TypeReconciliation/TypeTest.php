@@ -863,7 +863,7 @@ class TypeTest extends \Psalm\Tests\TestCase
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
-                    '$a' => 'positive-int',
+                    '$a===' => '1',
                 ],
             ],
             'typedValueAssertion' => [
@@ -1102,6 +1102,29 @@ class TypeTest extends \Psalm\Tests\TestCase
                         }
                     }
                 ',
+            ],
+            'CountEqual0MakesNonEmptyArray' => [
+                '<?php
+                    function a(array $a): void {
+                        if (count($a) === 0) {
+                            throw new \LogicException;
+                        }
+                        expectNonEmptyArray($a);
+                    }
+                    function b(array $a): void {
+                        if (count($a) !== 0) {
+                            expectNonEmptyArray($a);
+                        }
+                    }
+                    function c(array $a): void {
+                        if (count($a) === 0) {
+                            throw new \LogicException;
+                        } else {
+                            expectNonEmptyArray($a);
+                        }
+                    }
+                    /** @param non-empty-array $a */
+                    function expectNonEmptyArray(array $a): array { return $a; }'
             ],
         ];
     }

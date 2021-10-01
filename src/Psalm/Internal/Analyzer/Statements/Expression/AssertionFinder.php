@@ -372,8 +372,12 @@ class AssertionFinder
             );
         }
 
-        $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
+        $count = null;
+        $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
 
         if ($count_equality_position) {
             $if_types = [];
@@ -393,19 +397,33 @@ class AssertionFinder
                 $source
             );
 
+            $var_type = $source->node_data->getType($conditional->left);
+            $other_type = $source->node_data->getType($conditional->right);
+
+            if ($codebase
+                && $other_type
+                && $var_type
+                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ) {
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
+                    $other_type,
+                    $codebase,
+                    $conditional
+                );
+            }
+
             if ($var_name) {
-                if ($min_count) {
-                    $if_types[$var_name] = [['=has-at-least-' . $min_count]];
+                if ($count !== 0) {
+                    $if_types[$var_name] = [['=has-exactly-' . $count]];
                 } else {
-                    $if_types[$var_name] = [['=non-empty-countable']];
+                    $if_types[$var_name] = [['!non-empty-countable']];
                 }
             }
 
             return $if_types ? [$if_types] : [];
-        }
-
-        if (!$source instanceof StatementsAnalyzer) {
-            return [];
         }
 
         $getclass_position = self::hasGetClassCheck($conditional, $source);
@@ -545,7 +563,7 @@ class AssertionFinder
         }
 
         $count = null;
-        $count_inequality_position = self::hasNotCountEqualityCheck($conditional, $count);
+        $count_inequality_position = self::hasCountEqualityCheck($conditional, $count);
 
         if ($count_inequality_position) {
             $if_types = [];
@@ -1418,7 +1436,7 @@ class AssertionFinder
     }
 
     /**
-     * @param Greater|GreaterOrEqual|Identical|Equal|Smaller|SmallerOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      * @return false|int
      */
     protected static function hasNonEmptyCountEqualityCheck(
@@ -1431,9 +1449,7 @@ class AssertionFinder
             && $conditional->left->args;
 
         $operator_greater_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
 
         if ($left_count
@@ -1457,9 +1473,7 @@ class AssertionFinder
             && $conditional->right->args;
 
         $operator_less_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 
         if ($right_count
@@ -1531,7 +1545,7 @@ class AssertionFinder
      * @param Equal|Identical|NotEqual|NotIdentical $conditional
      * @return false|int
      */
-    protected static function hasNotCountEqualityCheck(
+    protected static function hasCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count
     ) {
