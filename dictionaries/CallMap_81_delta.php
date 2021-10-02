@@ -26,6 +26,26 @@ return [
   ],
 
   'changed' => [
+    'finfo_buffer' => [
+       'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
+       'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
+    ],
+    'finfo_close' => [
+        'old' => ['bool', 'finfo'=>'resource'],
+        'new' => ['bool', 'finfo'=>'finfo'],
+    ],
+    'finfo_file' => [
+        'old' => ['string|false', 'finfo'=>'resource', 'filename'=>'string', 'flags='=>'int', 'context='=>'resource'],
+        'new' => ['string|false', 'finfo'=>'finfo', 'filename'=>'string', 'flags='=>'int', 'context='=>'resource'],
+    ],
+    'finfo_open' => [
+        'old' => ['resource|false', 'flags='=>'int', 'magic_database='=>'string'],
+        'new' => ['finfo|false', 'flags='=>'int', 'magic_database='=>'string'],
+    ],
+    'finfo_set_flags' => [
+        'old' => ['bool', 'finfo'=>'resource', 'flags'=>'int'],
+        'new' => ['bool', 'finfo'=>'finfo', 'flags'=>'int'],
+    ],
     'ftp_connect' => [
       'old' => ['resource|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],
       'new' => ['FTP\Connection|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],
