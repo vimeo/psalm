@@ -9,3 +9,7 @@ namespace {
 namespace FTP {
     final class Connection {}
 }
+
+namespace IMAP {
+    final class Connection {}
+}
