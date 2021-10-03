@@ -71,7 +71,6 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     class C {
                         /**
-                         * @param string $a
                          * @psalm-param \'hello\' $a
                          */
                         public function fooFoo(string $a): void {}
@@ -193,7 +192,6 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     class C {
                         /**
-                         * @param string $a
                          * @psalm-param \'hello\' $a
                          */
                         public function fooFoo(string $a): void {}
@@ -236,7 +234,6 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     class C {
                         /**
-                         * @param string $bar
                          * @psalm-param \'hello\' $bar
                          */
                         public function foo(string &$bar) : void {
@@ -270,7 +267,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                         }
                     }
 
-                    $a = stdClass::class;;
+                    $a = stdClass::class;
                     (new C)->foo($a);',
                 '7.1',
                 ['MissingParamType'],
