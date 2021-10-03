@@ -72,6 +72,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class C {
                         /**
                          * @param string $a
+                         * @psalm-param \'hello\' $a
                          */
                         public function fooFoo(string $a): void {}
                     }
@@ -96,6 +97,8 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class C {
                         /**
                          * @param string $a
+                         *
+                         * @psalm-param \'hello\' $a
                          */
                         public function fooFoo($a): void {}
                     }
@@ -150,6 +153,8 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class C {
                         /**
                          * @param string $a
+                         *
+                         * @psalm-param \'hello\' $a
                          */
                         public function fooFoo($a): void {}
                     }
@@ -189,6 +194,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class C {
                         /**
                          * @param string $a
+                         * @psalm-param \'hello\' $a
                          */
                         public function fooFoo(string $a): void {}
                     }
@@ -231,6 +237,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class C {
                         /**
                          * @param string $bar
+                         * @psalm-param \'hello\' $bar
                          */
                         public function foo(string &$bar) : void {
                             $bar .= " me";
@@ -238,6 +245,32 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     $a = "hello";
+                    (new C)->foo($a);',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'NamespacedParamNeeded' => [
+                '<?php
+                    class C {
+                        public function foo($bar) : void {
+                            echo $bar;
+                        }
+                    }
+
+                    $a = stdClass::class;
+                    (new C)->foo($a);',
+                '<?php
+                    class C {
+                        /**
+                         * @psalm-param stdClass::class $bar
+                         */
+                        public function foo(string $bar) : void {
+                            echo $bar;
+                        }
+                    }
+
+                    $a = stdClass::class;;
                     (new C)->foo($a);',
                 '7.1',
                 ['MissingParamType'],
