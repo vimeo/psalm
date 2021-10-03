@@ -1399,7 +1399,7 @@ class Codebase
             if ($offset - $end_pos === 1) {
                 $candidate_gap = substr($file_contents, $end_pos, 1);
 
-                if ($candidate_gap == '[') {
+                if ($candidate_gap === '[') {
                     $gap = $candidate_gap;
                     $recent_type = $possible_type;
 

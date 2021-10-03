@@ -393,7 +393,7 @@ class ReturnTypeAnalyzer
             $parent_class,
             true,
             true,
-            $function_like_storage instanceof MethodStorage && $function_like_storage->final
+            ($function_like_storage instanceof MethodStorage && $function_like_storage->final)
                 || ($classlike_storage && $classlike_storage->final)
         );
 

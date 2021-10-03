@@ -416,10 +416,7 @@ final class Psalm
     private static function validateCliArguments(array $args): void
     {
         array_map(
-            /**
-             * @param string $arg
-             */
-            function ($arg): void {
+            function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
@@ -456,7 +453,7 @@ final class Psalm
     /**
      * @param array<string,string|false|list<mixed>> $options
      */
-    private static function setMemoryLimit($options): void
+    private static function setMemoryLimit(array $options): void
     {
         if (!array_key_exists('use-ini-defaults', $options)) {
             ini_set('display_errors', 'stderr');

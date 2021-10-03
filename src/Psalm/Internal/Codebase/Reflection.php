@@ -260,7 +260,7 @@ class Reflection
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
         $storage->mutation_free = $storage->external_mutation_free
-            = $method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone';
+            = ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone');
 
         $class_storage->declaring_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
             $declaring_class->name,

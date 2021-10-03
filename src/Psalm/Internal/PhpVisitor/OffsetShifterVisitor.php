@@ -27,10 +27,7 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
         $this->extra_offsets = $extra_offsets;
     }
 
-    /**
-     * @return null|int
-     */
-    public function enterNode(PhpParser\Node $node)
+    public function enterNode(PhpParser\Node $node): ?int
     {
         /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();

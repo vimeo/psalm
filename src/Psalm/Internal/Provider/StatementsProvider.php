@@ -200,24 +200,14 @@ class StatementsProvider
                     );
 
                 $unchanged_members = array_map(
-                    /**
-                     * @param int $_
-                     *
-                     * @return bool
-                     */
-                    function ($_): bool {
+                    function (int $_): bool {
                         return true;
                     },
                     array_flip($unchanged_members)
                 );
 
                 $unchanged_signature_members = array_map(
-                    /**
-                     * @param int $_
-                     *
-                     * @return bool
-                     */
-                    function ($_): bool {
+                    function (int $_): bool {
                         return true;
                     },
                     array_flip($unchanged_signature_members)

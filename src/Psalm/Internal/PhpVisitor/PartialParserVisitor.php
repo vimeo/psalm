@@ -60,11 +60,9 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     }
 
     /**
-     * @param  bool $traverseChildren
-     *
      * @return null|int|PhpParser\Node
      */
-    public function enterNode(PhpParser\Node $node, &$traverseChildren = true)
+    public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true)
     {
         /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();

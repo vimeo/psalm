@@ -34,19 +34,12 @@ class ClassStatementsDiffer extends AstDiffer
         $diff_map = [];
 
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            /**
-             * @param string $a_code
-             * @param string $b_code
-             * @param bool $body_change
-             *
-             * @return bool
-             */
             function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
-                $a_code,
-                $b_code,
-                &$body_change = false
+                string $a_code,
+                string $b_code,
+                bool &$body_change = false
             ) use (&$diff_map): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;

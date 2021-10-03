@@ -71,10 +71,7 @@ final class Refactor
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
         array_map(
-            /**
-             * @param string $arg
-             */
-            function ($arg) use ($valid_long_options): void {
+            function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 

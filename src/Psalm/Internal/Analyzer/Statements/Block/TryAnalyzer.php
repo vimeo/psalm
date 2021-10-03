@@ -281,10 +281,7 @@ class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        /**
-                         * @param string $fq_catch_class
-                         */
-                        function ($fq_catch_class) use ($codebase): \Psalm\Type\Atomic\TNamedObject {
+                        function (string $fq_catch_class) use ($codebase): \Psalm\Type\Atomic\TNamedObject {
                             $catch_class_type = new TNamedObject($fq_catch_class);
 
                             if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
