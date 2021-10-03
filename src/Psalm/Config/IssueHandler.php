@@ -138,12 +138,7 @@ class IssueHandler
     {
         return array_filter(
             array_map(
-                /**
-                 * @param string $file_name
-                 *
-                 * @return string
-                 */
-                function ($file_name) {
+                function (string $file_name): string {
                     return substr($file_name, 0, -4);
                 },
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)

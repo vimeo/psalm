@@ -427,13 +427,10 @@ HELP;
     }
 
     /** @param array<int,string> $args */
-    private static function validateCliArguments($args): void
+    private static function validateCliArguments(array $args): void
     {
         array_map(
-            /**
-             * @param string $arg
-             */
-            function ($arg): void {
+            function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 

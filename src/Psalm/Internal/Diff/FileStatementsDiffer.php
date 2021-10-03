@@ -29,17 +29,11 @@ class FileStatementsDiffer extends AstDiffer
     public static function diff(array $a, array $b, string $a_code, string $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            /**
-             * @param string $a_code
-             * @param string $b_code
-             *
-             * @return bool
-             */
             function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
-                $a_code,
-                $b_code,
+                string $a_code,
+                string $b_code,
                 bool &$body_change = false
             ): bool {
                 if (get_class($a) !== get_class($b)) {

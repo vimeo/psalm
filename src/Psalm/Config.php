@@ -1257,7 +1257,7 @@ class Config
 
                     self::requirePath($plugin_class_path);
                 } else {
-                    if (!class_exists($plugin_class_name, true)) {
+                    if (!class_exists($plugin_class_name)) {
                         throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
                     }
                 }
@@ -2240,7 +2240,7 @@ class Config
 
     public function addUniversalObjectCrate(string $class): void
     {
-        if (!class_exists($class, true)) {
+        if (!class_exists($class)) {
             throw new \UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = $class;

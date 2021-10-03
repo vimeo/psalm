@@ -713,7 +713,7 @@ class FunctionCallReturnTypeFetcher
             $next = $pattern[$i + 1] ?? null;
 
             if ($current === '\\') {
-                if ($next == null
+                if ($next === null
                     || $next === 'x'
                     || $next === 'u'
                 ) {

@@ -82,10 +82,7 @@ final class LanguageServer
         }
 
         array_map(
-            /**
-             * @param string $arg
-             */
-            function ($arg) use ($valid_long_options): void {
+            function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 

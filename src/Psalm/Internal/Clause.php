@@ -131,23 +131,15 @@ class Clause
     {
         $clause_strings = array_map(
             /**
-             * @param string $var_id
              * @param non-empty-list<string> $values
-             *
-             * @return string
              */
-            function ($var_id, $values): string {
+            function (string $var_id, array $values): string {
                 if ($var_id[0] === '*') {
                     $var_id = '<expr>';
                 }
 
                 $var_id_clauses = array_map(
-                    /**
-                     * @param string $value
-                     *
-                     * @return string
-                     */
-                    function ($value) use ($var_id): string {
+                    function (string $value) use ($var_id): string {
                         if ($value === 'falsy') {
                             return '!' . $var_id;
                         }
