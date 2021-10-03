@@ -203,6 +203,226 @@ return [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
     ],
+    'imap_append' => [
+        'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
+    ],
+    'imap_body' => [
+        'old' => ['string|false', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['string|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_bodystruct' => [
+        'old' => ['stdClass|false', 'imap'=>'resource', 'message_num'=>'int', 'section'=>'string'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'section'=>'string'],
+    ],
+    'imap_check' => [
+        'old' => ['stdClass|false', 'imap'=>'resource'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_clearflag_full' => [
+        'old' => ['bool', 'imap'=>'resource', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+    ],
+    'imap_close' => [
+        'old' => ['bool', 'imap'=>'resource', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'flags='=>'int'],
+    ],
+    'imap_create' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_createmailbox' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_delete' => [
+        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_deletemailbox' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_expunge' => [
+        'old' => ['bool', 'imap'=>'resource'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_fetch_overview' => [
+        'old' => ['array|false', 'imap'=>'resource', 'sequence'=>'string', 'flags='=>'int'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flags='=>'int'],
+    ],
+    'imap_fetchbody' => [
+        'old' => ['string|false', 'imap'=>'resource', 'message_num'=>'int', 'section'=>'string', 'flags='=>'int'],
+        'new' => ['string|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'section'=>'string', 'flags='=>'int'],
+    ],
+    'imap_fetchheader' => [
+        'old' => ['string|false', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['string|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_fetchmime' => [
+        'old' => ['string|false', 'imap'=>'resource', 'message_num'=>'int', 'section'=>'string', 'flags='=>'int'],
+        'new' => ['string|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'section'=>'string', 'flags='=>'int'],
+    ],
+    'imap_fetchstructure' => [
+        'old' => ['stdClass|false', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_fetchtext' => [
+        'old' => ['string|false', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['string|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_gc' => [
+        'old' => ['bool', 'imap'=>'resource', 'flags'=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'flags'=>'int'],
+    ],
+    'imap_get_quota' => [
+        'old' => ['array|false', 'imap'=>'resource', 'quota_root'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'quota_root'=>'string'],
+    ],
+    'imap_get_quotaroot' => [
+        'old' => ['array|false', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_getacl' => [
+        'old' => ['array|false', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_getmailboxes' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_getsubscribed' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_headerinfo' => [
+        'old' => ['stdClass|false', 'imap'=>'resource', 'message_num'=>'int', 'from_length='=>'int', 'subject_length='=>'int', 'default_host='=>'string|null'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'from_length='=>'int', 'subject_length='=>'int', 'default_host='=>'string|null'],
+    ],
+    'imap_headers' => [
+        'old' => ['array|false', 'imap'=>'resource'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_list' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_listmailbox' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_listscan' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+    ],
+    'imap_listsubscribed' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_lsub' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
+    ],
+    'imap_mail_copy' => [
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
+    ],
+    'imap_mail_move' => [
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
+    ],
+    'imap_mailboxmsginfo' => [
+        'old' => ['stdClass|false', 'imap'=>'resource'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_msgno' => [
+        'old' => ['int|false', 'imap'=>'resource', 'message_uid'=>'int'],
+        'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_uid'=>'int'],
+    ],
+    'imap_num_msg' => [
+        'old' => ['int|false', 'imap'=>'resource'],
+        'new' => ['int|false', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_num_recent' => [
+        'old' => ['int|false', 'imap'=>'resource'],
+        'new' => ['int|false', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_open' => [
+        'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
+        'new' => ['IMAP\Connection|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
+    ],
+    'imap_ping' => [
+        'old' => ['bool', 'imap'=>'resource'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_rename' => [
+        'old' => ['bool', 'imap'=>'resource', 'from'=>'string', 'to'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'from'=>'string', 'to'=>'string'],
+    ],
+    'imap_renamemailbox' => [
+        'old' => ['bool', 'imap'=>'resource', 'from'=>'string', 'to'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'from'=>'string', 'to'=>'string'],
+    ],
+    'imap_reopen' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string', 'flags='=>'int', 'retries='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string', 'flags='=>'int', 'retries='=>'int'],
+    ],
+    'imap_savebody' => [
+        'old' => ['bool', 'imap'=>'resource', 'file'=>'string|resource', 'message_num'=>'int', 'section='=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'file'=>'string|resource', 'message_num'=>'int', 'section='=>'string', 'flags='=>'int'],
+    ],
+    'imap_scan' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+    ],
+    'imap_scanmailbox' => [
+        'old' => ['array|false', 'imap'=>'resource', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string', 'content'=>'string'],
+    ],
+    'imap_search' => [
+        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'string', 'flags='=>'int', 'charset='=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'string', 'flags='=>'int', 'charset='=>'string'],
+    ],
+    'imap_set_quota' => [
+        'old' => ['bool', 'imap'=>'resource', 'quota_root'=>'string', 'mailbox_size'=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'quota_root'=>'string', 'mailbox_size'=>'int'],
+    ],
+    'imap_setacl' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string', 'user_id'=>'string', 'rights'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string', 'user_id'=>'string', 'rights'=>'string'],
+    ],
+    'imap_setflag_full' => [
+        'old' => ['bool', 'imap'=>'resource', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+    ],
+    'imap_sort' => [
+        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+    ],
+    'imap_status' => [
+        'old' => ['stdClass|false', 'imap'=>'resource', 'mailbox'=>'string', 'flags'=>'int'],
+        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection', 'mailbox'=>'string', 'flags'=>'int'],
+    ],
+    'imap_subscribe' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'imap_thread' => [
+        'old' => ['array|false', 'imap'=>'resource', 'flags='=>'int'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'flags='=>'int'],
+    ],
+    'imap_uid' => [
+        'old' => ['int|false', 'imap'=>'resource', 'message_num'=>'int'],
+        'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int'],
+    ],
+    'imap_undelete' => [
+        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+    ],
+    'imap_unsubscribe' => [
+        'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
     'mysqli_execute' => [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
