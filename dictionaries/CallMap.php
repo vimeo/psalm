@@ -1701,6 +1701,7 @@ return [
 'CURLFile::getPostFilename' => ['string'],
 'CURLFile::setMimeType' => ['void', 'mime'=>'string'],
 'CURLFile::setPostFilename' => ['void', 'name'=>'string'],
+'CURLStringFile::__construct' => ['void', 'data'=>'string', 'postname'=>'string', 'mime='=>'string'],
 'current' => ['mixed|false', 'array'=>'array|object'],
 'cyrus_authenticate' => ['void', 'connection'=>'resource', 'mechlist='=>'string', 'service='=>'string', 'user='=>'string', 'minssf='=>'int', 'maxssf='=>'int', 'authname='=>'string', 'password='=>'string'],
 'cyrus_bind' => ['bool', 'connection'=>'resource', 'callbacks'=>'array'],

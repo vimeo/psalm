@@ -23,6 +23,7 @@ return [
     'imagecreatefromavif' => ['false|GdImage', 'filename'=>'string'],
     'mysqli_fetch_column' => ['null|int|float|string|false', 'result'=>'mysqli_result', 'column='=>'int'],
     'mysqli_result::fetch_column' => ['null|int|float|string|false', 'column='=>'int'],
+    'CURLStringFile::__construct' => ['void', 'data'=>'string', 'postname'=>'string', 'mime='=>'string'],
   ],
 
   'changed' => [
