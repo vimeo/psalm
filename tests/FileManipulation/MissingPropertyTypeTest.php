@@ -116,7 +116,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     class A {
-                        public ?int $v = null;
+                        protected ?int $v = null;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -177,7 +177,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     class A {
-                        public int $v;
+                        protected int $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -236,8 +236,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     class A {
-                        public int $u;
-                        public int $v;
+                        protected int $u;
+                        protected int $v;
 
                         public function __construct(int $i, int $j) {
                             $this->u = $i;
