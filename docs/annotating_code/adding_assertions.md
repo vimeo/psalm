@@ -1,9 +1,10 @@
 # Adding assertions
 
-Psalm has three docblock annotations that allow you to specify that a function verifies facts about variables and properties:
+Psalm has four docblock annotations that allow you to specify that a function verifies facts about variables and properties:
 
 - `@psalm-assert` (used when throwing an exception)
 - `@psalm-assert-if-true`/`@psalm-assert-if-false` (used when returning a `bool`)
+- `@psalm-if-this-is` (used when calling a method)
 
 A list of acceptable assertions [can be found here](assertion_syntax.md).
 
@@ -152,3 +153,39 @@ if( $result->hasException() ) {
 
 Please note that the example above only works if you enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults)
 in the config file or annotate the class as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable).
+
+
+You can also make sure, when calling a method, that its object has some specific template arguments:
+
+
+```php
+<?php
+
+/**
+ * @template T
+ */
+class a {
+    /**
+     * @var T
+     */
+    private $data;
+    /**
+     * @param T $data
+     */
+    public function __construct($data) {
+        $this->data = $data;
+    }
+    /**
+     * @psalm-if-this-is a<int>
+     */
+    public function test(): void {
+    }
+}
+
+$i = new a(123);
+$i->test();
+
+$i = new a("test");
+// IfThisIsMismatch - Class is not a<int> as required by psalm-if-this-is
+$i->test();
+```

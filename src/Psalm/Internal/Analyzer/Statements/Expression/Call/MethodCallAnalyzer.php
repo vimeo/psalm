@@ -8,6 +8,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -434,6 +436,24 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             // TODO: When should a method have a storage?
             if ($codebase->methods->hasStorage($method_id)) {
                 $storage = $codebase->methods->getStorage($method_id);
+                if ($storage->if_this_is_type
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $class_type,
+                        $storage->if_this_is_type
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new IfThisIsMismatch(
+                            'Class is not ' . (string) $storage->if_this_is_type
+                            . ' as required by psalm-if-this-is',
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // keep going
+                    }
+                }
                 if ($storage->self_out_type) {
                     $self_out_type = $storage->self_out_type;
                     $context->vars_in_scope[$lhs_var_id] = $self_out_type;

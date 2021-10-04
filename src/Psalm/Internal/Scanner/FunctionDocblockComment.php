@@ -57,6 +57,11 @@ class FunctionDocblockComment
     public $self_out;
 
     /**
+     * @var array{type:string, line_number: int}|null
+     */
+    public $if_this_is;
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $globals = [];

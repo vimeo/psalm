@@ -29,6 +29,7 @@
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
  - [ForbiddenEcho](issues/ForbiddenEcho.md)
+ - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
