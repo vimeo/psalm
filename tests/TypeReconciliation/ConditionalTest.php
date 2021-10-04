@@ -2675,6 +2675,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     '$_a===' => '"N"|"Y"',
                 ]
             ],
+            'assertionsWorksBothWays' => [
+                '<?php
+                    $a = 2;
+                    $b = getPositiveInt();
+
+                    assert($a === $b);
+
+                    /** @return positive-int */
+                    function getPositiveInt(): int{
+                        return 2;
+                    }',
+                'assertions' => [
+                    '$a===' => '2',
+                    '$b===' => '2',
+                ]
+            ],
             'nullErasureWithSmallerAndGreater' => [
                 '<?php
                     function getIntOrNull(): ?int{return null;}
