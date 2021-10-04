@@ -30,8 +30,10 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function assert;
 use function count;
 use function in_array;
+use function is_callable;
 use function is_int;
 use function strpos;
 use function strtolower;
@@ -49,6 +51,25 @@ class AssertionFinder
     public const ASSIGNMENT_TO_RIGHT = 1;
     public const ASSIGNMENT_TO_LEFT = -1;
 
+    public const IS_TYPE_CHECKS = [
+        'is_string' => ['string', [Type::class, 'getString']],
+        'is_int' => ['int', [Type::class, 'getInt']],
+        'is_integer' => ['int', [Type::class, 'getInt']],
+        'is_long' => ['int', [Type::class, 'getInt']],
+        'is_bool' => ['bool', [Type::class, 'getBool']],
+        'is_resource' => ['resource', [Type::class, 'getResource']],
+        'is_object' => ['object', [Type::class, 'getObject']],
+        'array_is_list' => ['list', [Type::class, 'getList']],
+        'is_array' => ['array', [Type::class, 'getArray']],
+        'is_numeric' => ['numeric', [Type::class, 'getNumeric']],
+        'is_null' => ['null', [Type::class, 'getNull']],
+        'is_float' => ['float', [Type::class, 'getFloat']],
+        'is_real' => ['float', [Type::class, 'getFloat']],
+        'is_double' => ['float', [Type::class, 'getFloat']],
+        'is_scalar' => ['scalar', [Type::class, 'getScalar']],
+        'is_iterable' => ['iterable'],
+        'is_countable' => ['countable'],
+    ];
     /**
      * Gets all the type assertions in a conditional
      *
@@ -683,156 +704,18 @@ class AssertionFinder
             ? $source->node_data->getType($expr->args[0]->value)
             : null;
 
-        if (self::hasNullCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['null']];
-            }
+        if ($tmp_if_types = self::handleIsTypeCheck(
+            $codebase,
+            $source,
+            $expr,
+            $first_var_name,
+            $first_var_type,
+            $expr,
+            $negate
+        )) {
+            $if_types = $tmp_if_types;
         } elseif ($source instanceof StatementsAnalyzer && self::hasIsACheck($expr, $source)) {
             return self::getIsaAssertions($expr, $source, $this_class_name, $first_var_name);
-        } elseif (self::hasArrayCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['array']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getArray(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasBoolCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['bool']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getBool(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasStringCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['string']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getString(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasObjectCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['object']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getObject(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasNumericCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['numeric']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getNumeric(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasIntCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['int']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getInt(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasFloatCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['float']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getFloat(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasResourceCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['resource']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getResource(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
-        } elseif (self::hasScalarCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['scalar']];
-            } elseif ($first_var_type
-                && $codebase
-                && $source instanceof StatementsAnalyzer
-            ) {
-                self::processIrreconcilableFunctionCall(
-                    $first_var_type,
-                    Type::getScalar(),
-                    $expr,
-                    $source,
-                    $codebase,
-                    $negate
-                );
-            }
         } elseif (self::hasCallableCheck($expr)) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [['callable']];
@@ -850,14 +733,6 @@ class AssertionFinder
                         ['hasmethod-' . $expr->args[0]->value->items[1]->value->value]
                     ];
                 }
-            }
-        } elseif (self::hasIterableCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['iterable']];
-            }
-        } elseif (self::hasCountableCheck($expr)) {
-            if ($first_var_name) {
-                $if_types[$first_var_name] = [['countable']];
             }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
@@ -1767,15 +1642,6 @@ class AssertionFinder
         return false;
     }
 
-    protected static function hasNullCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_null') {
-            return true;
-        }
-
-        return false;
-    }
-
     protected static function hasIsACheck(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $source
@@ -1804,67 +1670,60 @@ class AssertionFinder
         return false;
     }
 
-    protected static function hasArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_array') {
-            return true;
+    /**
+     * @return array<string, non-empty-list<non-empty-list<string>>>
+     */
+    private static function handleIsTypeCheck(
+        ?Codebase $codebase,
+        FileSource $source,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        ?string $first_var_name,
+        ?Type\Union $first_var_type,
+        PhpParser\Node\Expr\FuncCall $expr,
+        bool $negate
+    ): array {
+        $if_types = [];
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && ($function_name = strtolower($stmt->name->parts[0]))
+            && isset(self::IS_TYPE_CHECKS[$function_name])
+            && $source instanceof StatementsAnalyzer
+            && ($source->getNamespace() === null //either the namespace is null
+                || $stmt->name instanceof PhpParser\Node\Name\FullyQualified //or we have a FQ to base function
+                || isset($source->getAliases()->functions[$function_name]) //or it is imported
+                || ($codebase && !$codebase->functions->functionExists(
+                    $source,
+                    strtolower($source->getNamespace()."\\".$function_name)
+                )) //or this function name does not exist in current namespace
+            )
+        ) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[self::IS_TYPE_CHECKS[$function_name][0]]];
+            } elseif ($first_var_type
+                && $codebase
+            ) {
+                if (isset(self::IS_TYPE_CHECKS[$function_name][1])) {
+                    $callable = self::IS_TYPE_CHECKS[$function_name][1];
+                    assert(is_callable($callable));
+                    $type = $callable();
+                    assert($type instanceof Type\Union);
+                    self::processIrreconcilableFunctionCall(
+                        $first_var_type,
+                        $type,
+                        $expr,
+                        $source,
+                        $codebase,
+                        $negate
+                    );
+                }
+            }
         }
 
-        return false;
+        return $if_types;
     }
 
-    protected static function hasStringCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_string') {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasBoolCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_bool') {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasObjectCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_object']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_iterable') {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasCountableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_countable') {
-            return true;
-        }
-
-        return false;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_callable';
     }
 
     /**
@@ -1921,81 +1780,18 @@ class AssertionFinder
 
     protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->parts[0]) === 'interface_exists'
-        ) {
-            return true;
-        }
-
-        return false;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'interface_exists';
     }
 
     protected static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'function_exists') {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasIntCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['is_int'] ||
-                $stmt->name->parts === ['is_integer'] ||
-                $stmt->name->parts === ['is_long'])
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasFloatCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name &&
-            ($stmt->name->parts === ['is_float'] ||
-                $stmt->name->parts === ['is_real'] ||
-                $stmt->name->parts === ['is_double'])
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasResourceCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_resource']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasScalarCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_scalar']) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable']) {
-            return true;
-        }
-
-        return false;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'function_exists';
     }
 
     protected static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && $stmt->name->parts === ['in_array']
+            && strtolower($stmt->name->parts[0]) === 'in_array'
             && isset($stmt->args[2])
         ) {
             $second_arg = $stmt->args[2]->value;
@@ -2012,22 +1808,12 @@ class AssertionFinder
 
     protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name
-            && $stmt->name->parts === ['count']
-        ) {
-            return true;
-        }
-
-        return false;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'count';
     }
 
     protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['array_key_exists']) {
-            return true;
-        }
-
-        return false;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'array_key_exists';
     }
 
     /**

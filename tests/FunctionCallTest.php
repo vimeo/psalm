@@ -1618,6 +1618,20 @@ class FunctionCallTest extends TestCase
                         return $lines;
                     }',
             ],
+            'array_is_list' => [
+                '<?php
+                    function getArray() : array {
+                        return [];
+                    }
+                    $s = getArray();
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s' => 'list<mixed>',
+                ],
+                [],
+                '8.1',
+            ],
         ];
     }
 

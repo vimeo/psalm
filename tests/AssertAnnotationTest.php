@@ -225,7 +225,7 @@ class AssertAnnotationTest extends TestCase
                      * @throws \Exception
                      */
                     function assertIsLongString($data): void {
-                        if (!is_string($data)) {
+                        if (!\is_string($data)) {
                             throw new \Exception;
                         }
                         if (strlen($data) < 100) {
