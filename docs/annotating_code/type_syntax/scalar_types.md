@@ -78,4 +78,4 @@ An empty string, lowercased or both at once.
 
 A string which can safely be used in a html context.
 
-_This type will remove in 5.x._
+_This type will be removed in Psalm 5.x._
