@@ -828,7 +828,7 @@ class Methods
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
                 ) {
-                    if ($old_contained_by_new && $new_contained_by_old) {
+                    if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         $attempted_intersection = Type::intersectUnionTypes(
                             $candidate_type,
                             $overridden_storage->return_type,

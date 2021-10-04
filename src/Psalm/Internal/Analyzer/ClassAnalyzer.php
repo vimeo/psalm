@@ -685,12 +685,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
 
-                    if ((($property_storage->signature_type
-                                && !$guide_property_storage->signature_type)
-                            || (!$property_storage->signature_type
-                                && $guide_property_storage->signature_type)
+                    if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
+                            || (!$property_storage->signature_type && $guide_property_storage->signature_type)
                             || ($property_storage->signature_type
-                                && $guide_property_storage->signature_type
                                 && !$property_storage->signature_type->equals(
                                     $guide_property_storage->signature_type
                                 )))

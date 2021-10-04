@@ -978,10 +978,22 @@ class Union implements TypeNode
             if ($atomic_type instanceof Type\Atomic\TLiteralString &&
                 ($atomic_type->value === '' || $atomic_type->value === '0')
             ) {
-                    continue;
+                continue;
             }
 
             if ($atomic_type instanceof Type\Atomic\TNull) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TEmptyMixed) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TEmptyNumeric) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TEmptyScalar) {
                 continue;
             }
 
@@ -1010,6 +1022,10 @@ class Union implements TypeNode
 
     public function isAlwaysTruthy(): bool
     {
+        if ($this->possibly_undefined || $this->possibly_undefined_from_try) {
+            return false;
+        }
+
         foreach ($this->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTrue) {
                 continue;
@@ -1029,7 +1045,11 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonFalsyString) {
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyString) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyNonspecificLiteralString) {
                 continue;
             }
 
@@ -1065,10 +1085,18 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TTraitString) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TResource) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as $property) {
                     if ($property->possibly_undefined === false) {
-                        continue;
+                        continue 2;
                     }
                 }
             }

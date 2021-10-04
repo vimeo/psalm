@@ -45,7 +45,7 @@ class ScopeTest extends \Psalm\Tests\TestCase
             ],
             'functionExists' => [
                 '<?php
-                    if (true && function_exists("flabble")) {
+                    if (rand(0,1) && function_exists("flabble")) {
                         flabble();
                     }',
             ],

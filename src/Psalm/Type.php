@@ -576,7 +576,7 @@ abstract class Type
                 return $type_1;
             }
 
-            if ($type_1_mixed && !$type_2_mixed) {
+            if ($type_1_mixed) {
                 $combined_type = clone $type_2;
                 $intersection_performed = true;
             } elseif ($type_2_mixed) {

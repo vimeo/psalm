@@ -943,14 +943,14 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                 '<?php
                     $a = rand(0, 10) > 5;
                     if ($a || $a) {}',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'typeResolutionRepeatingOredConditionWithVarInMiddle' => [
                 '<?php
                     $a = rand(0, 10) > 5;
                     $b = rand(0, 10) > 5;
                     if ($a || $b || $a) {}',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'typeResolutionIsIntAndIsNumeric' => [
                 '<?php
@@ -1416,6 +1416,26 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
+            'OrTrue' => [
+                '<?php
+                    if(rand(0,1) || true){}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'AndTrue' => [
+                '<?php
+                    if(rand(0,1) && true){}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'OrFalse' => [
+                '<?php
+                    if(rand(0,1) || false){}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'AndFalse' => [
+                '<?php
+                    if(rand(0,1) && false){}',
+                'error_message' => 'TypeDoesNotContainType',
+            ]
         ];
     }
 }

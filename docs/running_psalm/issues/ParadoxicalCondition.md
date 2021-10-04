@@ -5,8 +5,11 @@ Emitted when a paradox is encountered in your programs logic that could not be c
 ```php
 <?php
 
-function foo($a) : void {
-    if ($a) return;
-    if ($a) echo "cannot happen";
+function foo($a, $b) : void {
+    if ($a && $b) {
+        echo "a";
+    } elseif ($a && $b) {
+        echo "cannot happen";
+    }
 }
 ```

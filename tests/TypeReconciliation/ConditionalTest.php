@@ -3086,6 +3086,23 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'BooleanNotOfAlwaysTruthyisFalse' => [
+                '<?php
+                    class a
+                    {
+                        public function fluent(): self
+                        {
+                            return $this;
+                        }
+                    }
+
+                    $a = new a();
+                    if (!$a->fluent()) {
+                        echo "always";
+                    }
+                    ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }
