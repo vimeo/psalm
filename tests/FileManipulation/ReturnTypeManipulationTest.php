@@ -683,6 +683,59 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'GenericObjectInSignature' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container {
+                        /**
+                         * @var T
+                         */
+                        private $c;
+                        /**
+                         * @param T $c
+                         */
+                        public function __construct($c) { $this->c = $c; }
+                    }
+                    class a {
+                        public function test()
+                        {
+                            $a = new container(1);
+                            return $a;
+                        }
+                    }',
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container {
+                        /**
+                         * @var T
+                         */
+                        private $c;
+                        /**
+                         * @param T $c
+                         */
+                        public function __construct($c) { $this->c = $c; }
+                    }
+                    class a {
+                        /**
+                         * @return container
+                         *
+                         * @psalm-return container<1>
+                         */
+                        public function test(): container
+                        {
+                            $a = new container(1);
+                            return $a;
+                        }
+                    }',
+                '7.3',
+                ['MissingReturnType'],
+                false,
+                true,
+            ]
         ];
     }
 }
