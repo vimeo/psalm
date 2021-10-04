@@ -1045,11 +1045,11 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyString) {
+            if ($atomic_type instanceof Type\Atomic\TNonFalsyString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyNonspecificLiteralString) {
+            if ($atomic_type instanceof Type\Atomic\TCallableString) {
                 continue;
             }
 
