@@ -259,7 +259,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     class A {
-                        public bool $u = false;
+                        protected bool $u = false;
 
                         public function bar() {
                             $this->u = true;
