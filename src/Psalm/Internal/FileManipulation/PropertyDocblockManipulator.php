@@ -183,6 +183,7 @@ class PropertyDocblockManipulator
 
         if ($this->new_phpdoc_type
             && $this->new_phpdoc_type !== $old_phpdoc_type
+            && $this->new_phpdoc_type !== $this->new_php_type
         ) {
             $modified_docblock = true;
             $parsed_docblock->tags['var'] = [
@@ -199,6 +200,7 @@ class PropertyDocblockManipulator
         if ($this->new_psalm_type
             && $this->new_phpdoc_type !== $this->new_psalm_type
             && $this->new_psalm_type !== $old_psalm_type
+            && $this->new_psalm_type !== $this->new_php_type
         ) {
             $modified_docblock = true;
             $parsed_docblock->tags['psalm-var'] = [$this->new_psalm_type];
