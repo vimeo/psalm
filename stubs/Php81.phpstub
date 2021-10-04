@@ -19,3 +19,8 @@ namespace LDAP {
    final class Result {}
    final class ResultEntry {}
 }
+
+namespace PSpell {
+     final class Config {}
+     final class Dictionary {}
+}   

@@ -627,6 +627,70 @@ return [
       'old' => ['bool'],
       'new' => ['bool', 'params=' => 'list<mixed>|null'],
     ],
+    'pspell_add_to_personal' => [
+      'old' => ['bool', 'dictionary'=>'int', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary', 'word'=>'string'],
+    ],
+    'pspell_add_to_session' => [
+      'old' => ['bool', 'dictionary'=>'int', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary', 'word'=>'string'],
+    ],
+    'pspell_check' => [
+      'old' => ['bool', 'dictionary'=>'int', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary', 'word'=>'string'],
+    ],
+    'pspell_clear_session' => [
+      'old' => ['bool', 'dictionary'=>'int'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary'],
+    ],
+    'pspell_config_data_dir' => [
+      'old' => ['bool', 'config'=>'int', 'directory'=>'string'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'directory'=>'string'],
+    ],
+    'pspell_config_dict_dir' => [
+      'old' => ['bool', 'config'=>'int', 'directory'=>'string'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'directory'=>'string'],
+    ],
+    'pspell_config_ignore' => [
+      'old' => ['bool', 'config'=>'int', 'min_length'=>'int'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'min_length'=>'int'],
+    ],
+    'pspell_config_mode' => [
+      'old' => ['bool', 'config'=>'int', 'mode'=>'int'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'mode'=>'int'],
+    ],
+    'pspell_config_personal' => [
+      'old' => ['bool', 'config'=>'int', 'filename'=>'string'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'filename'=>'string'],
+    ],
+    'pspell_config_repl' => [
+      'old' => ['bool', 'config'=>'int', 'filename'=>'string'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'filename'=>'string'],
+    ],
+    'pspell_config_runtogether' => [
+      'old' => ['bool', 'config'=>'int', 'allow'=>'bool'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'allow'=>'bool'],
+    ],
+    'pspell_config_save_repl' => [
+      'old' => ['bool', 'config'=>'int', 'save'=>'bool'],
+      'new' => ['bool', 'config'=>'PSpell\Config', 'save'=>'bool'],
+    ],
+    'pspell_new_config' => [
+      'old' => ['int|false', 'config'=>'int'],
+      'new' => ['int|false', 'config'=>'PSpell\Config'],
+    ],
+    'pspell_save_wordlist' => [
+      'old' => ['bool', 'dictionary'=>'int'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary'],
+    ],
+    'pspell_store_replacement' => [
+      'old' => ['bool', 'dictionary'=>'int', 'misspelled'=>'string', 'correct'=>'string'],
+      'new' => ['bool', 'dictionary'=>'PSpell\Dictionary', 'misspelled'=>'string', 'correct'=>'string'],
+    ],
+    'pspell_suggest' => [
+      'old' => ['array', 'dictionary'=>'int', 'word'=>'string'],
+      'new' => ['array', 'dictionary'=>'PSpell\Dictionary', 'word'=>'string'],
+    ],
   ],
 
   'removed' => [],
