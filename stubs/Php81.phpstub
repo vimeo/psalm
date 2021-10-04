@@ -13,3 +13,9 @@ namespace FTP {
 namespace IMAP {
     final class Connection {}
 }
+
+namespace LDAP {
+   final class Connection {}
+   final class Result {}
+   final class ResultEntry {}
+}
