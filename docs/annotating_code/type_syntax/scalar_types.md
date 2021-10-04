@@ -74,6 +74,8 @@ An empty string, lowercased or both at once.
 
 `empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.
 
-### html-escaped-string
+### html-escaped-string (deprecated)
 
-A string which can safely be used in a html context
+A string which can safely be used in a html context.
+
+_This type will be removed in Psalm 5.x._
