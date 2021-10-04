@@ -1065,11 +1065,6 @@ function str_getcsv(string $input, string $delimiter = ',', string $enclosure = 
 }
 
 /**
- * @return ($min is positive-int ? positive-int : int)
- */
-function random_int(int $min, int $max): int {}
-
-/**
  * @template TKey as array-key
  *
  * @param array<mixed, TKey> $array
