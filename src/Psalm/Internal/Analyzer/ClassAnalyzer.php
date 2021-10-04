@@ -1562,6 +1562,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
             && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
             && $suggested_type
+            && $property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
                 return;

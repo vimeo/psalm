@@ -12,7 +12,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingUnionType56' => [
                 '<?php
                     class A {
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -29,7 +29,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                          *
                          * @psalm-var \'hello\'|4
                          */
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -46,7 +46,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingNullableType56' => [
                 '<?php
                     class A {
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -61,7 +61,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                          *
                          * @psalm-var 4|null
                          */
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -76,7 +76,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingNullableTypeNoDefault74' => [
                 '<?php
                     class A {
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -91,7 +91,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                          *
                          * @psalm-var 4|null
                          */
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -106,7 +106,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingNullableTypeWithDefault74' => [
                 '<?php
                     class A {
-                        public $v = null;
+                        protected $v = null;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -131,7 +131,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingUnionTypeSetInBranches74' => [
                 '<?php
                     class A {
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -148,7 +148,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                          *
                          * @psalm-var \'hello\'|4
                          */
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -165,7 +165,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingIntTypeSetInBranches74' => [
                 '<?php
                     class A {
-                        public $v;
+                        protected $v;
 
                         public function __construct() {
                             if (rand(0, 1)) {
@@ -194,8 +194,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingDocblockTypesSpacedProperly' => [
                 '<?php
                     class A {
-                        public $u;
-                        public $v;
+                        protected $u;
+                        protected $v;
 
                         public function __construct(int $i, int $j) {
                             $this->u = $i;
@@ -207,12 +207,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                         /**
                          * @var int
                          */
-                        public $u;
+                        protected $u;
 
                         /**
                          * @var int
                          */
-                        public $v;
+                        protected $v;
 
                         public function __construct(int $i, int $j) {
                             $this->u = $i;
@@ -226,8 +226,8 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingTypehintsSpacedProperly' => [
                 '<?php
                     class A {
-                        public $u;
-                        public $v;
+                        protected $u;
+                        protected $v;
 
                         public function __construct(int $i, int $j) {
                             $this->u = $i;
@@ -251,7 +251,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'addMissingTypehintWithDefault' => [
                 '<?php
                     class A {
-                        public $u = false;
+                        protected $u = false;
 
                         public function bar() {
                             $this->u = true;
@@ -272,7 +272,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
             'dontAddMissingPropertyTypeInTrait' => [
                 '<?php
                     trait T {
-                        public $u;
+                        protected $u;
                     }
                     class A {
                         use T;
@@ -283,7 +283,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     trait T {
-                        public $u;
+                        protected $u;
                     }
                     class A {
                         use T;
