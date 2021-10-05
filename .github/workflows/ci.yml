@@ -36,7 +36,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - run: |
-          git ls-files | grep \\\.php$ | ./vendor/bin/parallel-lint --stdin
+          git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
   chunk-matrix:
     name: Generate Chunk Matrix
 
