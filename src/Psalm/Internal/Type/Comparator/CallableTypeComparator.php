@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -430,6 +431,24 @@ class CallableTypeComparator
                             strtolower($lhs_atomic_type->value) . '::',
                             $calling_method_id ?: $file_name
                         );
+                    } elseif ($lhs_atomic_type instanceof Atomic\TTemplateParam) {
+                        $lhs_template_type = $lhs_atomic_type->as;
+                        if ($lhs_template_type->isSingle()) {
+                            $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
+                            $member_id = null;
+                            if ($lhs_template_atomic_type instanceof TNamedObject) {
+                                $member_id = $lhs_template_atomic_type->value;
+                            } elseif ($lhs_template_atomic_type instanceof TClassString) {
+                                $member_id = $lhs_template_atomic_type->as;
+                            }
+
+                            if ($member_id) {
+                                $codebase->analyzer->addMixedMemberName(
+                                    strtolower($member_id) . '::',
+                                    $calling_method_id ?: $file_name
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -456,7 +475,7 @@ class CallableTypeComparator
                         $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
                         if ($lhs_template_atomic_type instanceof TNamedObject) {
                             $class_name = $lhs_template_atomic_type->value;
-                        } elseif ($lhs_template_atomic_type instanceof Type\Atomic\TClassString) {
+                        } elseif ($lhs_template_atomic_type instanceof TClassString) {
                             $class_name = $lhs_template_atomic_type->as;
                         }
                     }
