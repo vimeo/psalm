@@ -450,6 +450,16 @@ class CallableTypeComparator
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
+                } elseif ($lhs_atomic_type instanceof Atomic\TTemplateParam) {
+                    $lhs_template_type = $lhs_atomic_type->as;
+                    if ($lhs_template_type->isSingle()) {
+                        $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
+                        if ($lhs_template_atomic_type instanceof TNamedObject) {
+                            $class_name = $lhs_template_atomic_type->value;
+                        } elseif ($lhs_template_atomic_type instanceof Type\Atomic\TClassString) {
+                            $class_name = $lhs_template_atomic_type->as;
+                        }
+                    }
                 } elseif ($lhs_atomic_type instanceof Type\Atomic\TClassString
                     && $lhs_atomic_type->as
                 ) {
