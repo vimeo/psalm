@@ -384,14 +384,18 @@ class FunctionDocblockManipulator
             $parsed_docblock->tags['psalm-pure'] = [''];
         }
 
-        if ($this->new_phpdoc_return_type
-            && $this->new_phpdoc_return_type !== $old_phpdoc_return_type
-        ) {
+
+        if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
             $modified_docblock = true;
-            $parsed_docblock->tags['return'] = [
-                $this->new_phpdoc_return_type
+            if ($this->new_phpdoc_return_type !== $this->new_php_return_type || $this->return_type_description) {
+                //only add the type if it's different than signature or if there's a description
+                $parsed_docblock->tags['return'] = [
+                    $this->new_phpdoc_return_type
                     . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
-            ];
+                ];
+            } else {
+                unset($parsed_docblock->tags['return']);
+            }
         }
 
         $old_psalm_return_type = null;
