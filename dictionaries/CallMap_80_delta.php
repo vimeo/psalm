@@ -97,6 +97,10 @@ return [
       'old' => ['array<string,mixed>'],
       'new' => ['array<string,mixed>', 'filter='=>'?int'],
     ],
+    'ReflectionClass::getReflectionConstants' => [
+        'old' => ['list<ReflectionClassConstant>'],
+        'new' => ['list<ReflectionClassConstant>', 'filter='=>'?int'],
+    ],
     'XMLWriter::flush' => [
       'old' => ['string|int|false', 'empty='=>'bool'],
       'new' => ['string|int', 'empty='=>'bool'],

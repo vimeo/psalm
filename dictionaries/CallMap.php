@@ -11314,7 +11314,7 @@ return [
 'ReflectionClass::getProperties' => ['list<ReflectionProperty>', 'filter='=>'int'],
 'ReflectionClass::getProperty' => ['ReflectionProperty', 'name'=>'string'],
 'ReflectionClass::getReflectionConstant' => ['ReflectionClassConstant|false', 'name'=>'string'],
-'ReflectionClass::getReflectionConstants' => ['list<ReflectionClassConstant>'],
+'ReflectionClass::getReflectionConstants' => ['list<ReflectionClassConstant>', 'filter='=>'?int'],
 'ReflectionClass::getShortName' => ['string'],
 'ReflectionClass::getStartLine' => ['int|false'],
 'ReflectionClass::getStaticProperties' => ['array<string, ReflectionProperty>'],
