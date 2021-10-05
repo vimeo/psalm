@@ -297,8 +297,10 @@ class FunctionDocblockManipulator
             $this->new_php_param_types[$param_name] = $php_type;
         }
 
-        if ($php_type !== $new_type) {
+        if ($php_type !== $phpdoc_type) {
             $this->new_phpdoc_param_types[$param_name] = $phpdoc_type;
+        }
+        if ($php_type !== $new_type && $phpdoc_type !== $new_type) {
             $this->new_psalm_param_types[$param_name] = $new_type;
         }
     }
@@ -343,6 +345,32 @@ class FunctionDocblockManipulator
             if (!$found_in_params) {
                 $modified_docblock = true;
                 $parsed_docblock->tags['param'][] = $new_param_block;
+            }
+        }
+
+        foreach ($this->new_psalm_param_types as $param_name => $psalm_type) {
+            $found_in_params = false;
+            $new_param_block = $psalm_type . ' ' . '$' . $param_name;
+
+            if (isset($parsed_docblock->tags['psalm-param'])) {
+                foreach ($parsed_docblock->tags['psalm-param'] as &$param_block) {
+                    $doc_parts = CommentAnalyzer::splitDocLine($param_block);
+
+                    if (($doc_parts[1] ?? null) === '$' . $param_name) {
+                        if ($param_block !== $new_param_block) {
+                            $modified_docblock = true;
+                        }
+
+                        $param_block = $new_param_block;
+                        $found_in_params = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$found_in_params) {
+                $modified_docblock = true;
+                $parsed_docblock->tags['psalm-param'][] = $new_param_block;
             }
         }
 
