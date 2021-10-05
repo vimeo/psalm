@@ -701,8 +701,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }
                     class a {
                         /**
-                         * @return container
-                         *
                          * @psalm-return container<1>
                          */
                         public function test(): container
