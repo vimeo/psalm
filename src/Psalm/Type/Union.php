@@ -497,6 +497,14 @@ class Union implements TypeNode
             $nullable = true;
         }
 
+        $falsable = false;
+
+        if (isset($types['false']) && count($types) > 1) {
+            unset($types['false']);
+
+            $falsable = true;
+        }
+
         $php_types = [];
 
         foreach ($types as $atomic_type) {
@@ -513,6 +521,10 @@ class Union implements TypeNode
             }
 
             $php_types[] = $php_type;
+        }
+
+        if ($falsable) {
+            return ($nullable ? '?' : '') . implode('|', array_unique($php_types)) . '|false';
         }
 
         return ($nullable ? '?' : '') . implode('|', array_unique($php_types));

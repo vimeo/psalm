@@ -713,6 +713,24 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 ['MissingReturnType'],
                 false,
                 true,
+            ],
+            'OrFalseInReturn' => [
+                '<?php
+                    function a() {
+                        /** @var false|array $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): array|false {
+                        /** @var false|array $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
             ]
         ];
     }
