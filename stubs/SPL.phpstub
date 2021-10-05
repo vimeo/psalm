@@ -388,7 +388,7 @@ class SplQueue extends SplDoublyLinkedList {
  * @template TValue
  * @template-implements Iterator<int, TValue>
  */
-class SplHeap implements Iterator, Countable {
+abstract class SplHeap implements Iterator, Countable {
     public function __construct() {}
 
     /**
@@ -401,7 +401,7 @@ class SplHeap implements Iterator, Countable {
      *
      * @since 5.3.0
      */
-    protected abstract function compare($value1, $value2): int {}
+    protected abstract function compare($value1, $value2): int;
 
     /**
      * Counts the number of elements in the heap
