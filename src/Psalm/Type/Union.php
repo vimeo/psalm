@@ -1680,4 +1680,9 @@ class Union implements TypeNode
     {
         return count($this->literal_float_types) > 0;
     }
+
+    public function getSingleAtomic(): Atomic
+    {
+        return reset($this->types);
+    }
 }
