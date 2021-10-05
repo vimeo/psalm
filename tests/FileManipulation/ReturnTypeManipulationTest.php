@@ -69,8 +69,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @return string
-                     *
                      * @psalm-return \'hello\'
                      */
                     function foo(): string {
@@ -166,9 +164,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         return "hello";
                     }',
                 '<?php
-                    /**
-                     * @return string
-                     */
                     function foo(): string {
                         return "hello";
                     }',
@@ -202,8 +197,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      *    a friend of mine
                      *       + Members
                      *          - `google`
-                     *
-                     * @return string
                      *
                      * @psalm-return \'hello\'
                      */
@@ -269,8 +262,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * @return Closure
-                     *
                      * @psalm-return Closure(string):string
                      */
                     function bar() : Closure {
@@ -455,9 +446,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }',
                 '<?php
                     class A {
-                        /**
-                         * @return void
-                         */
                         protected final function foo(): void {}
                     }',
                 '7.3',
@@ -475,9 +463,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }',
                 '<?php
                     final class A {
-                        /**
-                         * @return void
-                         */
                         protected function foo(): void {}
                     }',
                 '7.3',
@@ -492,9 +477,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      */
                     function foo() {}',
                 '<?php
-                    /**
-                     * @return void
-                     */
                     function foo(): void {}',
                 '7.3',
                 ['InvalidReturnType'],
@@ -667,8 +649,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @param string $a
-                     *
-                     * @return array
                      *
                      * @psalm-return array<empty, empty>
                      */

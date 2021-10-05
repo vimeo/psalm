@@ -498,8 +498,6 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @return iterable
-                     *
                      * @psalm-return iterable<mixed, int>
                      */
                     function foo(): iterable {
@@ -848,8 +846,6 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @return array
-                     *
                      * @psalm-return array<empty, empty>
                      */
                     function foo(): array {
