@@ -347,7 +347,7 @@ class ForeachAnalyzer
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
      * @return false|null
      */
-    public static function checkIteratorType(
+    public static function  checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\NodeAbstract $stmt,
         PhpParser\Node\Expr $expr,
@@ -449,7 +449,7 @@ class ForeachAnalyzer
                             ? new Type\Union([
                                 new Type\Atomic\TDependentListKey($list_var_id)
                             ])
-                            : Type::getInt(),
+                            : new Type\Union([new Type\Atomic\TIntRange(0, null)]),
                         $iterator_atomic_type->type_param
                     ]);
                 } elseif (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
