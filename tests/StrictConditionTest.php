@@ -3,75 +3,52 @@ namespace Psalm\Tests;
 
 class StrictConditionTest extends TestCase
 {
-    /**
-     * @dataProvider provideInvalidIfConditions
-     */
-    public function testInvalidStrictBooleanIfCondition(string $code): void
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
+
+    public function setUp(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('NonStrictBoolCondition');
+        parent::setUp();
 
-        $this->project_analyzer->getConfig()->strict_bool_conditions = true;
-
-        $this->addFile(
-            'somefile.php',
-            $code
-        );
-
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->testConfig->strict_bool_conditions = true;
     }
 
     /**
-     * @dataProvider provideValidIfConditions
+     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
-    public function testValidStrictBooleanIfCondition(string $code): void
+    public function providerValidCodeParse(): iterable
     {
-        $this->project_analyzer->getConfig()->strict_bool_conditions = true;
-
-        $this->addFile(
-            'somefile.php',
-            $code
-        );
-
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
-    }
-
-    public function provideValidIfConditions(): iterable
-    {
-        yield [
-            '<?php
-                if (rand(0, 1) === 0) { }'
-        ];
-
-        yield [
-            'non-nullable bool' => '
-            <?php
-                function bar(bool $b): void
-                {
-                    if ($b) { }
-                }
-            '
-        ];
-
-        yield [
-            'non-nullable object' => '
-            <?php
-                class A {
-                    function getFoo() : ?Foo {
-                        return rand(0, 1) ? new Foo : null;
+        $output = [
+            'rand' => [
+                '<?php
+                    if (rand(0, 1) === 0) { }'
+            ],
+            'non-nullable bool' => [
+                '<?php
+                    function bar(bool $b): void
+                    {
+                        if ($b) { }
                     }
-                }
-                class Foo { }
+                '
+            ],
+            'non-nullable object' => [
+                '<?php
+                    class A {
+                        function getFoo() : ?Foo {
+                            return rand(0, 1) ? new Foo : null;
+                        }
+                    }
+                    class Foo { }
 
-                $a = new A();
-                if ($a->getFoo() !== null) { }
-            '
+                    $a = new A();
+                    if ($a->getFoo() !== null) { }
+                '
+            ]
         ];
 
         if (\version_compare(\PHP_VERSION, '8.0.0') >= 0) {
-            yield [
-                'nullable bool from nullable object' => '
-                <?php
+            $output['nullable bool from nullable object'] = [
+                '<?php
                     final class Response
                     {
                         public function isOk(): bool
@@ -87,29 +64,62 @@ class StrictConditionTest extends TestCase
                 '
             ];
         }
+
+        return $output;
     }
 
-    public function provideInvalidIfConditions(): iterable
+    /**
+     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     */
+    public function providerInvalidCodeParse(): iterable
     {
-        yield [
-            'nullable object' => '
-            <?php
-                class A {
-                    function getFoo() : ?Foo {
-                        return rand(0, 1) ? new Foo : null;
+        $output = [
+            'nullable object' => [
+                '<?php
+                    class A {
+                        function getFoo() : ?Foo {
+                            return rand(0, 1) ? new Foo : null;
+                        }
                     }
-                }
-                class Foo { }
+                    class Foo { }
 
-                $a = new A();
-                if ($a->getFoo()) { }
-            '
+                    $a = new A();
+                    if ($a->getFoo()) { }
+                ',
+                'error_message' => 'NonStrictBoolCondition',
+            ],
+            'nullable bool' => [
+                '<?php
+                    function bar(?bool $b): void
+                    {
+                        if ($b) { }
+                    }
+                ',
+                'error_message' => 'NonStrictBoolCondition',
+            ],
+            'nullable bool' => [
+                '<?php
+                    function bar(?bool $b): void
+                    {
+                        if (rand(0, 1) === 0) { } else if ($b) { }
+                    }
+                ',
+                'error_message' => 'NonStrictBoolCondition',
+            ],
+            'nullable bool' => [
+                '<?php
+                    function bar(?bool $b): void
+                    {
+                        if (rand(0, 1) === 0) { } elseif ($b) { }
+                    }
+                ',
+                'error_message' => 'NonStrictBoolCondition',
+            ]
         ];
 
         if (\version_compare(\PHP_VERSION, '8.0.0') >= 0) {
-            yield [
-                'nullable bool from nullable object' => '
-                <?php
+            $output['nullable bool from nullable object'] = [
+                '<?php
                     final class Response
                     {
                         public function isOk(): bool
@@ -122,38 +132,11 @@ class StrictConditionTest extends TestCase
                     {
                         if ($response?->isOk()) { }
                     }
-                '
+                ',
+                'error_message' => 'NonStrictBoolCondition',
             ];
         }
 
-        yield [
-            'nullable bool' => '
-            <?php
-                function bar(?bool $b): void
-                {
-                    if ($b) { }
-                }
-            '
-        ];
-
-        yield [
-            'nullable bool' => '
-            <?php
-                function bar(?bool $b): void
-                {
-                    if (rand(0, 1) === 0) { } else if ($b) { }
-                }
-            '
-        ];
-
-        yield [
-            'nullable bool' => '
-            <?php
-                function bar(?bool $b): void
-                {
-                    if (rand(0, 1) === 0) { } elseif ($b) { }
-                }
-            '
-        ];
+        return $output;
     }
 }
