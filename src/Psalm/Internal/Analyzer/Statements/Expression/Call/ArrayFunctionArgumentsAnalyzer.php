@@ -131,6 +131,7 @@ class ArrayFunctionArgumentsAnalyzer
         string $method_id
     ): ?bool {
         $array_arg = $args[0]->value;
+        $nb_args = count($args);
 
         $unpacked_args = array_filter(
             $args,
@@ -140,7 +141,7 @@ class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($method_id === 'array_push' && !$unpacked_args) {
-            for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
+            for ($i = 1; $i < $nb_args; $i++) {
                 $was_inside_assignment = $context->inside_assignment;
 
                 $context->inside_assignment = true;
@@ -187,7 +188,7 @@ class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
-        for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
+        for ($i = 1; $i < $nb_args; $i++) {
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $args[$i]->value,
@@ -239,7 +240,7 @@ class ArrayFunctionArgumentsAnalyzer
                     return false;
                 }
 
-                if ($method_id === 'array_unshift') {
+                if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
                     $new_offset_type = Type::getInt(false, 0);
                 } else {
                     $new_offset_type = Type::getInt();
