@@ -297,7 +297,9 @@ class ArrayFunctionArgumentsAnalyzer
                                         ]
                                     ),
                                 ]
-                            )
+                            ),
+                            null,
+                            true
                         );
                     }
                 }
