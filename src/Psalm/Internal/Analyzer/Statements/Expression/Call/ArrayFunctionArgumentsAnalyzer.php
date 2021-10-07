@@ -128,9 +128,10 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context,
-        bool $is_push
+        string $method_id
     ): ?bool {
         $array_arg = $args[0]->value;
+        $nb_args = count($args);
 
         $unpacked_args = array_filter(
             $args,
@@ -139,8 +140,8 @@ class ArrayFunctionArgumentsAnalyzer
             }
         );
 
-        if ($is_push && !$unpacked_args) {
-            for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
+        if ($method_id === 'array_push' && !$unpacked_args) {
+            for ($i = 1; $i < $nb_args; $i++) {
                 $was_inside_assignment = $context->inside_assignment;
 
                 $context->inside_assignment = true;
@@ -187,7 +188,7 @@ class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
-        for ($i = 1, $iMax = count($args); $i < $iMax; $i++) {
+        for ($i = 1; $i < $nb_args; $i++) {
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $args[$i]->value,
@@ -239,12 +240,18 @@ class ArrayFunctionArgumentsAnalyzer
                     return false;
                 }
 
+                if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
+                    $new_offset_type = Type::getInt(false, 0);
+                } else {
+                    $new_offset_type = Type::getInt();
+                }
+
                 if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     || $arg_value_type->hasMixed()
                 ) {
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
-                        new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
+                        new Type\Union([new TArray([$new_offset_type, Type::getMixed()])])
                     );
                 } elseif ($arg->unpack) {
                     $arg_value_type = clone $arg_value_type;
@@ -292,12 +299,14 @@ class ArrayFunctionArgumentsAnalyzer
                                 [
                                     new TNonEmptyArray(
                                         [
-                                            Type::getInt(),
+                                            $new_offset_type,
                                             clone $arg_value_type
                                         ]
                                     ),
                                 ]
-                            )
+                            ),
+                            null,
+                            true
                         );
                     }
                 }

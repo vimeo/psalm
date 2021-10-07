@@ -104,6 +104,23 @@ class ArrayTypeComparator
             return !$container_type_part instanceof TNonEmptyList;
         }
 
+        if ($container_type_part instanceof TNonEmptyList
+            && $input_type_part instanceof TNonEmptyArray
+            && $input_type_part->type_params[0]->isSingleIntLiteral()
+            && $input_type_part->type_params[0]->getSingleIntLiteral()->value === 0
+        ) {
+            //this is a special case where the only offset value of an non empty array is 0, so it's a non empty list
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->type_params[1],
+                $container_type_part->type_param,
+                $input_type_part->type_params[1]->ignore_nullable_issues,
+                $input_type_part->type_params[1]->ignore_falsable_issues,
+                $atomic_comparison_result,
+                $allow_interface_equality
+            );
+        }
+
         if ($input_type_part instanceof TList
             && $container_type_part instanceof TList
         ) {

@@ -79,7 +79,7 @@ class ArgumentsAnalyzer
                 $statements_analyzer,
                 $args,
                 $context,
-                $method_id === 'array_push'
+                $method_id
             ) === false
             ) {
                 return false;
