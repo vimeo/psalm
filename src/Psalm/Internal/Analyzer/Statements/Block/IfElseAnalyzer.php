@@ -2,8 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -12,11 +12,11 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Issue\NonStrictBoolCondition;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
-use Psalm\IssueBuffer;
-use Psalm\Issue\NonStrictBoolCondition;
 
 use function array_combine;
 use function array_diff_key;
@@ -513,8 +513,11 @@ class IfElseAnalyzer
         return null;
     }
 
-    private static function verifyStrictBoolCondition(Codebase $codebase, StatementsAnalyzer $statements_analyzer, \PhpParser\Node\Expr $cond): void
-    {
+    private static function verifyStrictBoolCondition(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        \PhpParser\Node\Expr $cond
+    ): void {
         if (!$codebase->config->strict_bool_conditions) {
             return;
         }
