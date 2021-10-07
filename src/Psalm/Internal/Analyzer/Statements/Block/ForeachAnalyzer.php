@@ -347,7 +347,7 @@ class ForeachAnalyzer
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
      * @return false|null
      */
-    public static function  checkIteratorType(
+    public static function checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\NodeAbstract $stmt,
         PhpParser\Node\Expr $expr,
