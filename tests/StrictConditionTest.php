@@ -97,7 +97,7 @@ class StrictConditionTest extends TestCase
                 ',
                 'error_message' => 'NonStrictBoolCondition',
             ],
-            'nullable bool' => [
+            'nullable bool in else if' => [
                 '<?php
                     function bar(?bool $b): void
                     {
@@ -106,7 +106,7 @@ class StrictConditionTest extends TestCase
                 ',
                 'error_message' => 'NonStrictBoolCondition',
             ],
-            'nullable bool' => [
+            'nullable bool in elseif' => [
                 '<?php
                     function bar(?bool $b): void
                     {
