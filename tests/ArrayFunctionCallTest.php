@@ -1950,6 +1950,20 @@ class ArrayFunctionCallTest extends TestCase
                     '$line===' => 'array{0: int}<array-key, int>',
                 ],
             ],
+            'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
+                '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function foo(): array
+                    {
+                        $a = [];
+
+                        array_unshift($a, "string");
+
+                        return $a;
+                    }',
+            ],
         ];
     }
 
