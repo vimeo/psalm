@@ -9,7 +9,7 @@ class StrictConditionTest extends TestCase
     public function testInvalidStrictBooleanIfCondition(string $code): void
     {
         $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessage('PossiblyInvalidCast');
+        $this->expectExceptionMessage('NonStrictBoolCondition');
 
         $this->project_analyzer->getConfig()->strict_bool_conditions = true;
 

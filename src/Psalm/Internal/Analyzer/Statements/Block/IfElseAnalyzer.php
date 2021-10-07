@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
@@ -14,6 +15,8 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\IssueBuffer;
+use Psalm\Issue\NonStrictBoolCondition;
 
 use function array_combine;
 use function array_diff_key;
@@ -367,6 +370,8 @@ class IfElseAnalyzer
             return false;
         }
 
+        self::verifyStrictBoolCondition($codebase, $statements_analyzer, $stmt->cond);
+
         // this has to go on a separate line because the phar compactor messes with precedence
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
         $else_context = clone $scope_to_clone;
@@ -384,6 +389,8 @@ class IfElseAnalyzer
             ) === false) {
                 return false;
             }
+
+            self::verifyStrictBoolCondition($codebase, $statements_analyzer, $elseif->cond);
         }
 
         if ($stmt->else) {
@@ -504,5 +511,29 @@ class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    private static function verifyStrictBoolCondition(Codebase $codebase, StatementsAnalyzer $statements_analyzer, \PhpParser\Node\Expr $cond): void
+    {
+        if (!$codebase->config->strict_bool_conditions) {
+            return;
+        }
+
+        $type = $statements_analyzer->node_data->getType($cond);
+        if ($type === null) {
+            return;
+        }
+
+        if (!$type->isBool()) {
+            if (IssueBuffer::accepts(
+                new NonStrictBoolCondition(
+                    'Type of if-condition should be bool, not ' . $type->getId(),
+                    new CodeLocation($statements_analyzer, $cond)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
     }
 }

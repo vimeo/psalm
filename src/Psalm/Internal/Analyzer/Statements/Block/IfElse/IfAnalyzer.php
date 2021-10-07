@@ -34,8 +34,6 @@ use function substr;
 
 class IfAnalyzer
 {
-    use StrictBoolConditionTrait;
-
     /**
      * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
      *
@@ -247,8 +245,6 @@ class IfAnalyzer
         if ($outer_context->collect_exceptions) {
             $outer_context->mergeExceptions($if_context);
         }
-
-        self::verifyStrictBoolCondition($codebase->config, $statements_analyzer, $stmt->cond);
 
         return null;
     }
