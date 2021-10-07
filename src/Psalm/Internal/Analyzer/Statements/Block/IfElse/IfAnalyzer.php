@@ -248,7 +248,7 @@ class IfAnalyzer
             $outer_context->mergeExceptions($if_context);
         }
 
-        self::verifyStrictBoolCondition($codebase, $statements_analyzer, $stmt->cond);
+        self::verifyStrictBoolCondition($codebase->config, $statements_analyzer, $stmt->cond);
 
         return null;
     }

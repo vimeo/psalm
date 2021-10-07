@@ -2,17 +2,17 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\PossiblyInvalidCast;
 
 trait StrictBoolConditionTrait
 {
-    private static function verifyStrictBoolCondition(Codebase $codebase, StatementsAnalyzer $statements_analyzer, \PhpParser\Node\Expr $cond): void
+    private static function verifyStrictBoolCondition(Config $config, StatementsAnalyzer $statements_analyzer, \PhpParser\Node\Expr $cond): void
     {
-        if (!$codebase->config->strict_bool_conditions) {
+        if (!$config->strict_bool_conditions) {
             return;
         }
 

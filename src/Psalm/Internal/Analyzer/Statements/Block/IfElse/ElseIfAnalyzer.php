@@ -432,7 +432,7 @@ class ElseIfAnalyzer
             $if_scope->negated_clauses = [];
         }
 
-        self::verifyStrictBoolCondition($codebase, $statements_analyzer, $elseif->cond);
+        self::verifyStrictBoolCondition($codebase->config, $statements_analyzer, $elseif->cond);
 
         return null;
     }
