@@ -551,23 +551,23 @@ function strpos($haystack, $needle, int $offset = 0) : int {}
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function trim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function ltrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function rtrim(string $str, string $character_mask = " \t\n\r\0\x0B") : string {}
+function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
