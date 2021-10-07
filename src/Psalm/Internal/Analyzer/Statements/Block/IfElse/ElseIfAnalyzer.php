@@ -34,6 +34,8 @@ use function preg_quote;
 
 class ElseIfAnalyzer
 {
+    use StrictBoolConditionTrait;
+
     /**
      * @return false|null
      */
@@ -429,6 +431,8 @@ class ElseIfAnalyzer
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
         }
+
+        self::verifyStrictBoolCondition($codebase, $statements_analyzer, $elseif->cond);
 
         return null;
     }

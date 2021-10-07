@@ -291,6 +291,9 @@ class Config
     /** @var bool */
     public $strict_binary_operands = false;
 
+    /** @var bool */
+    public $strict_bool_conditions = false;
+
     /**
      * @var bool
      */
@@ -827,6 +830,7 @@ class Config
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
+            'strictBoolConditions' => 'strict_bool_conditions',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
