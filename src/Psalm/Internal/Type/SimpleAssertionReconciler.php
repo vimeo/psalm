@@ -1897,6 +1897,13 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                if ($type->type_params[0]->isEmpty()
+                    || $type->type_params[1]->isEmpty()
+                ) {
+                    //we allow an empty array to pass as a list. We keep the type as empty array though (more precise)
+                    $array_types[] = $type;
+                }
+
                 $did_remove_type = true;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([

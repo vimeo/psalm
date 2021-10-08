@@ -1632,6 +1632,18 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.1',
             ],
+            'array_is_list_on_empty_array' => [
+                '<?php
+                    $a = [];
+                    if(array_is_list($a)) {
+                        //$a is still empty array
+                    }
+                    ',
+                [],
+                [],
+                '8.1',
+            ],
+
         ];
     }
 
