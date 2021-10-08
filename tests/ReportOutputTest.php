@@ -852,7 +852,10 @@ echo $a;';
         $this->assertIsArray(json_decode($report->create()));
     }
 
-    public function sonarSourceProvider(): array
+    /**
+     * @return iterable<string, array{string,test_file:string}>
+     */
+    public function sonarSourceProvider(): iterable
     {
         return [
             "SonarQube" => ['sonarqube', 'test-sonarqube.json'],
@@ -860,7 +863,10 @@ echo $a;';
         ];
     }
 
-    /** @dataProvider sonarSourceProvider */
+    /**
+     * @param string 'sonarcloud'|'sonarqube' $sonar_source_format
+     * @dataProvider sonarSourceProvider
+     */
     public function testSonarSourceReport(string $sonar_source_format, string $test_file): void
     {
         $this->analyzeFileForReport();
