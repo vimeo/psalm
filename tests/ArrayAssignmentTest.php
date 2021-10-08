@@ -1242,7 +1242,7 @@ class ArrayAssignmentTest extends TestCase
                         ...["b" => 2]
                     ];',
                 [
-                    '$x' => 'array{a: 1, b: 2}',
+                    '$x===' => 'array{a: 1, b: 2}',
                 ]
             ],
             'listPropertyAssignmentAfterIsset' => [
