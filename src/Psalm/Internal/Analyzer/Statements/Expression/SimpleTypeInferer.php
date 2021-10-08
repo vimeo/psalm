@@ -669,17 +669,22 @@ class SimpleTypeInferer
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
-                foreach ($unpacked_atomic_type->properties as $property_value) {
-                    $new_int_offset = $array_creation_info->int_offset++;
+                foreach ($unpacked_atomic_type->properties as $key => $property_value) {
+                    if (\is_string($key)) {
+                        $new_offset = $key;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
+                    } else {
+                        $new_offset = $array_creation_info->int_offset++;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_offset);
+                    }
 
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_int_offset);
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
                         array_values($property_value->getAtomicTypes())
                     );
 
-                    $array_creation_info->array_keys[$new_int_offset] = true;
-                    $array_creation_info->property_types[$new_int_offset] = $property_value;
+                    $array_creation_info->array_keys[$new_offset] = true;
+                    $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
                 /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
