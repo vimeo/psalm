@@ -1234,6 +1234,17 @@ class ArrayAssignmentTest extends TestCase
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],
+            'arraySpreadWithString' => [
+                '<?php
+                    $x = [
+                        "a" => 0,
+                        ...["a" => 1],
+                        ...["b" => 2]
+                    ];',
+                [
+                    '$x' => 'array{a: 1, b: 2}',
+                ]
+            ],
             'listPropertyAssignmentAfterIsset' => [
                 '<?php
                     class Collection {

@@ -669,12 +669,7 @@ class SimpleTypeInferer
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
-                foreach ($unpacked_atomic_type->properties as $key => $property_value) {
-                    if (\is_string($key)) {
-                        // string keys are not supported in unpacked arrays
-                        return false;
-                    }
-
+                foreach ($unpacked_atomic_type->properties as $property_value) {
                     $new_int_offset = $array_creation_info->int_offset++;
 
                     $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_int_offset);
@@ -694,8 +689,7 @@ class SimpleTypeInferer
                 $array_creation_info->can_create_objectlike = false;
 
                 if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                    // string keys are not supported in unpacked arrays
-                    return false;
+                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
                 }
 
                 if ($unpacked_atomic_type->type_params[0]->hasInt()) {
