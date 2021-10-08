@@ -246,7 +246,6 @@ class ArrayAnalyzer
             self::handleUnpackedArray(
                 $statements_analyzer,
                 $array_creation_info,
-                $item,
                 $unpacked_array_type
             );
 
@@ -481,7 +480,6 @@ class ArrayAnalyzer
     private static function handleUnpackedArray(
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
         Type\Union $unpacked_array_type
     ) : void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
