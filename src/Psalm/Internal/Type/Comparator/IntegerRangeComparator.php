@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 
@@ -52,6 +53,10 @@ class IntegerRangeComparator
 
         if (isset($container_atomic_types['int'])) {
             if (get_class($container_atomic_types['int']) === TInt::class) {
+                return true;
+            }
+
+            if (get_class($container_atomic_types['int']) === TNonspecificLiteralInt::class) {
                 return true;
             }
 
