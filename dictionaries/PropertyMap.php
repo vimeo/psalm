@@ -442,23 +442,11 @@ return [
     'reflectionparameter' => [
         'name' => 'string',
     ],
-    'phpparser\\node\\expr\\funccall' => [
-        'args' => 'list<PhpParser\Node\Arg>',
-    ],
-    'phpparser\\node\\expr\\new_' => [
-        'args' => 'list<PhpParser\Node\Arg>',
-    ],
     'phpparser\\node\\expr\\array_' => [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\list_' => [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
-    ],
-    'phpparser\\node\\expr\\methodcall' => [
-        'args' => 'list<PhpParser\Node\Arg>',
-    ],
-    'phpparser\\node\\expr\\staticcall' => [
-        'args' => 'list<PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\arrowfunction' => [
         'params' => 'list<PhpParser\Node\Param>',

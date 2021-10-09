@@ -70,7 +70,7 @@ class FunctionReturnTypeProviderEvent
      */
     public function getCallArgs(): array
     {
-        return $this->stmt->args;
+        return $this->stmt->getArgs();
     }
 
     public function getContext(): Context

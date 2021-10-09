@@ -506,7 +506,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         && $meta_stmt->expr->name instanceof PhpParser\Node\Name
                         && $meta_stmt->expr->name->parts === ['override']
                     ) {
-                        PhpStormMetaScanner::handleOverride($meta_stmt->expr->args, $this->codebase);
+                        PhpStormMetaScanner::handleOverride($meta_stmt->expr->getArgs(), $this->codebase);
                     }
                 }
             }

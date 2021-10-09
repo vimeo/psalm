@@ -139,7 +139,7 @@ class FunctionReturnTypeProvider
             $return_type = $function_handler(
                 $statements_source,
                 $function_id,
-                $stmt->args,
+                $stmt->getArgs(),
                 $context,
                 $code_location
             );

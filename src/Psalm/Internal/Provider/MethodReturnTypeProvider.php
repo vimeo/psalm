@@ -125,7 +125,7 @@ class MethodReturnTypeProvider
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
-                $stmt->args,
+                $stmt->getArgs(),
                 $context,
                 $code_location,
                 $template_type_parameters,

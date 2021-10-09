@@ -61,7 +61,7 @@ class MissingMethodCallHandler
 
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     null,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -80,7 +80,7 @@ class MissingMethodCallHandler
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
                 true,
@@ -89,7 +89,7 @@ class MissingMethodCallHandler
 
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
@@ -129,7 +129,7 @@ class MissingMethodCallHandler
         } elseif ($all_intersection_return_type === null) {
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -158,7 +158,7 @@ class MissingMethodCallHandler
                     $arg->getAttributes()
                 );
             },
-            $stmt->args
+            $stmt->getArgs()
         );
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -217,7 +217,7 @@ class MissingMethodCallHandler
 
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
                 true,
@@ -228,7 +228,7 @@ class MissingMethodCallHandler
 
             if (ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
@@ -274,7 +274,7 @@ class MissingMethodCallHandler
 
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
-            $stmt->args,
+            $stmt->getArgs(),
             null,
             null,
             true,

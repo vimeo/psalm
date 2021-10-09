@@ -151,7 +151,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($context->isPhantomClass($fq_class_name)) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         null,
                         null,
                         true,
@@ -171,7 +171,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         null,
                         null,
                         true,
@@ -224,7 +224,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             } else {
                 ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     null,
                     null,
                     true,
@@ -360,7 +360,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             if (self::checkMethodArgs(
                 $method_id,
-                $stmt->args,
+                $stmt->getArgs(),
                 $template_result,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -430,7 +430,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->class,
                         null,
                         $method_storage->assertions,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         $generic_params,
                         $context,
                         $statements_analyzer
@@ -518,7 +518,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     new Type\Union([$result_atomic_type])
                 );
             }
-        } elseif ($stmt->args) {
+        } elseif ($stmt->getArgs()) {
             if (IssueBuffer::accepts(
                 new TooManyArguments(
                     'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
@@ -617,7 +617,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         if (!$stmt_class_type) {
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -634,7 +634,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         } else {
             if (self::checkMethodArgs(
                 null,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -846,7 +846,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,

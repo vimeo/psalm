@@ -298,10 +298,10 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
                 && $stmt->expr->name->parts === ['define']
-                && isset($stmt->expr->args[1])
+                && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(
-                    $stmt->expr->args[0]->value,
+                    $stmt->expr->getArgs()[0]->value,
                     $statements_analyzer->node_data,
                     $codebase,
                     $statements_analyzer->getAliases()
@@ -314,7 +314,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         Statements\Expression\SimpleTypeInferer::infer(
                             $codebase,
                             $statements_analyzer->node_data,
-                            $stmt->expr->args[1]->value,
+                            $stmt->expr->getArgs()[1]->value,
                             $statements_analyzer->getAliases(),
                             $statements_analyzer
                         ) ?: Type::getMixed(),

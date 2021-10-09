@@ -324,19 +324,19 @@ class IncludeAnalyzer
             $stmt->name instanceof PhpParser\Node\Name &&
             $stmt->name->parts === ['dirname']
         ) {
-            if ($stmt->args) {
+            if ($stmt->getArgs()) {
                 $dir_level = 1;
 
-                if (isset($stmt->args[1])) {
-                    if ($stmt->args[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
-                        $dir_level = $stmt->args[1]->value->value;
+                if (isset($stmt->getArgs()[1])) {
+                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                        $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
                         return null;
                     }
                 }
 
                 $evaled_path = self::getPathTo(
-                    $stmt->args[0]->value,
+                    $stmt->getArgs()[0]->value,
                     $type_provider,
                     $statements_analyzer,
                     $file_name,

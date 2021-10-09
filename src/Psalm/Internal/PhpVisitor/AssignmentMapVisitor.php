@@ -76,7 +76,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\MethodCall
             || $node instanceof PhpParser\Node\Expr\StaticCall
         ) {
-            foreach ($node->args as $arg) {
+            foreach ($node->getArgs() as $arg) {
                 $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
 
                 if ($arg_var_id) {

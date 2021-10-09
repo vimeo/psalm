@@ -126,7 +126,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -170,7 +170,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -185,7 +185,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
-        $args = $stmt->args;
+        $args = $stmt->getArgs();
 
         $naive_method_id = $method_id;
 
@@ -627,7 +627,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 if (ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     null,
                     null,
                     true,

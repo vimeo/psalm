@@ -60,10 +60,10 @@ class NamedFunctionCallHandler
             return;
         }
 
-        $first_arg = $stmt->args[0] ?? null;
+        $first_arg = $stmt->getArgs()[0] ?? null;
 
         if ($function_id === 'method_exists') {
-            $second_arg = $stmt->args[1] ?? null;
+            $second_arg = $stmt->getArgs()[1] ?? null;
 
             if ($first_arg
                 && $first_arg->value instanceof PhpParser\Node\Expr\Variable
@@ -183,7 +183,7 @@ class NamedFunctionCallHandler
             $all_args_string_literals = true;
             $new_items = [];
 
-            foreach ($stmt->args as $arg) {
+            foreach ($stmt->getArgs() as $arg) {
                 $arg_type = $statements_analyzer->node_data->getType($arg->value);
 
                 if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
@@ -275,8 +275,8 @@ class NamedFunctionCallHandler
                     $statements_analyzer->getAliases()
                 );
 
-                if ($fq_const_name !== null && isset($stmt->args[1])) {
-                    $second_arg = $stmt->args[1];
+                if ($fq_const_name !== null && isset($stmt->getArgs()[1])) {
+                    $second_arg = $stmt->getArgs()[1];
                     $was_in_call = $context->inside_call;
                     $context->inside_call = true;
                     ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
@@ -436,7 +436,7 @@ class NamedFunctionCallHandler
         string $function_id,
         Context $context
     ) : void {
-        $first_arg = $stmt->args[0] ?? null;
+        $first_arg = $stmt->getArgs()[0] ?? null;
 
         if ($first_arg) {
             $var = $first_arg->value;

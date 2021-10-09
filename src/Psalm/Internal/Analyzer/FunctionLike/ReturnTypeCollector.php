@@ -329,7 +329,7 @@ class ReturnTypeCollector
             || $stmt instanceof PhpParser\Node\Expr\StaticCall) {
             $yield_types = [];
 
-            foreach ($stmt->args as $arg) {
+            foreach ($stmt->getArgs() as $arg) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value, $nodes));
             }
 

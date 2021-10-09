@@ -18,12 +18,12 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
     {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
-        
+
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || !$item->name instanceof PhpParser\Node\Name
             || \count($item->name->parts) !== 1
-            || \count($item->args) === 0
+            || \count($item->getArgs()) === 0
         ) {
             return [];
         }
@@ -33,7 +33,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
         if ($function_id === 'html_entity_decode'
             || $function_id === 'htmlspecialchars_decode'
         ) {
-            $second_arg = $item->args[1]->value ?? null;
+            $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
                 return ['html'];
@@ -46,7 +46,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             }
 
             $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-            
+
             if (($second_arg_value & \ENT_QUOTES) === \ENT_QUOTES) {
                 return ['html', 'has_quotes'];
             }
@@ -66,12 +66,12 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
     {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
-        
+
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || !$item->name instanceof PhpParser\Node\Name
             || \count($item->name->parts) !== 1
-            || \count($item->args) === 0
+            || \count($item->getArgs()) === 0
         ) {
             return [];
         }
@@ -81,7 +81,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
         if ($function_id === 'htmlentities'
             || $function_id === 'htmlspecialchars'
         ) {
-            $second_arg = $item->args[1]->value ?? null;
+            $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
                 return ['html'];
@@ -94,14 +94,14 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             }
 
             $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-            
+
             if (($second_arg_value & \ENT_QUOTES) === \ENT_QUOTES) {
                 return ['html', 'has_quotes'];
             }
 
             return ['html'];
         }
-        
+
         return [];
     }
 }
