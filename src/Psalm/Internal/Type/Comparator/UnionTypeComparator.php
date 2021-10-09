@@ -109,6 +109,14 @@ class UnionTypeComparator
                 continue;
             }
 
+            if ($input_type_part instanceof TArrayKey && $container_type->hasTemplate()) {
+                foreach ($container_type->getTemplateTypes() as $template_type) {
+                    if ($template_type->as->isArrayKey()) {
+                        continue 2;
+                    }
+                }
+            }
+
             if ($input_type_part instanceof Atomic\TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
                     $input_type_part,
