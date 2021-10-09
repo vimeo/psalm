@@ -12,6 +12,7 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_values;
@@ -154,9 +155,9 @@ class DoAnalyzer
             $do_context->vars_possibly_in_scope
         );
 
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $do_context->referenced_var_ids
+        $context->referenced_var_ids = array_intersect_key(
+            $do_context->referenced_var_ids,
+            $context->referenced_var_ids
         );
 
         if ($context->collect_exceptions) {
