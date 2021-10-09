@@ -1048,7 +1048,7 @@ class CallAnalyzer
                     if (count($equality_types) > 1) {
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
-                                'Incompatible types found for ' . $template_name . ' must have only one of (' .
+                                'Incompatible types found for ' . $template_name . ' (must have only one of ' .
                                 implode(', ', $equality_types) . ')',
                                 $code_location,
                                 $function_id
