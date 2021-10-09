@@ -30,6 +30,7 @@ use function array_map;
 use function array_merge;
 use function array_unique;
 use function count;
+use function implode;
 use function in_array;
 use function is_int;
 use function preg_match;
@@ -1047,7 +1048,8 @@ class CallAnalyzer
                     if (count($equality_types) > 1) {
                         if (IssueBuffer::accepts(
                             new InvalidArgument(
-                                'Incompatible types found for ' . $template_name,
+                                'Incompatible types found for ' . $template_name . ' (must have only one of ' .
+                                implode(', ', $equality_types) . ')',
                                 $code_location,
                                 $function_id
                             ),
@@ -1061,7 +1063,9 @@ class CallAnalyzer
                                 if (!in_array($lower_bound->type->getId(), $equality_types, true)) {
                                     if (IssueBuffer::accepts(
                                         new InvalidArgument(
-                                            'Incompatible types found for ' . $template_name,
+                                            'Incompatible types found for ' . $template_name . ' (' .
+                                            $lower_bound->type->getId() . ' is not in ' .
+                                            implode(', ', $equality_types) . ')',
                                             $code_location,
                                             $function_id
                                         ),
