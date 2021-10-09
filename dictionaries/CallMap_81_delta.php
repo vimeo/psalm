@@ -36,7 +36,6 @@ return [
     'Fiber::getCurrent' => ['?self'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
-    'FiberExit::__construct' => ['void'],
   ],
 
   'changed' => [
