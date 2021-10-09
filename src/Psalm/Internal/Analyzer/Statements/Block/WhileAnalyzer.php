@@ -60,7 +60,7 @@ class WhileAnalyzer
         }
 
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('Should always enter loop');
+            throw new \UnexpectedValueException('There should be an inner loop context');
         }
 
         $always_enters_loop = false;
@@ -122,7 +122,7 @@ class WhileAnalyzer
     /**
      * @return list<PhpParser\Node\Expr>
      */
-    private static function getAndExpressions(
+    public static function getAndExpressions(
         PhpParser\Node\Expr $expr
     ) : array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {

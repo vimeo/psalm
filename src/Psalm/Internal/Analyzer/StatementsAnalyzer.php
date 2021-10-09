@@ -509,7 +509,9 @@ class StatementsAnalyzer extends SourceAnalyzer
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-            DoAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            if (DoAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+                return false;
+            }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
             ConstFetchAnalyzer::analyzeConstAssignment($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {

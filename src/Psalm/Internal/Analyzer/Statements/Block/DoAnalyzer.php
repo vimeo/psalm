@@ -29,7 +29,7 @@ class DoAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context
-    ): void {
+    ): ?bool {
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
         $do_context->inside_loop = true;
@@ -89,20 +89,22 @@ class DoAnalyzer
             $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
         }
 
-        LoopAnalyzer::analyze(
+        if (LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
-            [$stmt->cond],
+            WhileAnalyzer::getAndExpressions($stmt->cond),
             [],
             $loop_scope,
             $inner_loop_context,
             true,
             true
-        );
+        ) === false) {
+            return false;
+        }
 
         // because it's a do {} while, inner loop vars belong to the main context
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('Should never be null');
+            throw new \UnexpectedValueException('There should be an inner loop context');
         }
 
         $negated_while_clauses = Algebra::negateFormula($while_clauses);
@@ -112,8 +114,6 @@ class DoAnalyzer
                 array_merge($context->clauses, $negated_while_clauses)
             )
         );
-
-        //var_dump($do_context->vars_in_scope);
 
         if ($negated_while_types) {
             $changed_var_ids = [];
@@ -132,22 +132,6 @@ class DoAnalyzer
                 );
         }
 
-        foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-            // if there are break statements in the loop it's not certain
-            // that the loop has finished executing, so the assertions at the end
-            // the loop in the while conditional may not hold
-            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)) {
-                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
-                    );
-                }
-            } else {
-                $context->vars_in_scope[$var_id] = $type;
-            }
-        }
-
         $do_context->loop_scope = null;
 
         $context->vars_possibly_in_scope = array_merge(
@@ -163,6 +147,8 @@ class DoAnalyzer
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
         }
+
+        return null;
     }
 
     private static function analyzeDoNaively(
