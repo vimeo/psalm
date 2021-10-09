@@ -24,6 +24,18 @@ return [
     'mysqli_fetch_column' => ['null|int|float|string|false', 'result'=>'mysqli_result', 'column='=>'int'],
     'mysqli_result::fetch_column' => ['null|int|float|string|false', 'column='=>'int'],
     'CURLStringFile::__construct' => ['void', 'data'=>'string', 'postname'=>'string', 'mime='=>'string'],
+    'Fiber::__construct' => ['void', 'callback'=>'callable'],
+    'Fiber::start' => ['mixed', '...args'=>'mixed'],
+    'Fiber::resume' => ['mixed', 'value='=>'null|mixed'],
+    'Fiber::throw' => ['mixed', 'exception'=>'Throwable'],
+    'Fiber::isStarted' => ['bool'],
+    'Fiber::isSuspended' => ['bool'],
+    'Fiber::isRunning' => ['bool'],
+    'Fiber::isTerminated' => ['bool'],
+    'Fiber::getReturn' => ['mixed'],
+    'Fiber::getCurrent' => ['?self'],
+    'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
+    'FiberError::__construct' => ['void'],
   ],
 
   'changed' => [
