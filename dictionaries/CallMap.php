@@ -3386,7 +3386,6 @@ return [
 'Fiber::getCurrent' => ['?self'],
 'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
 'FiberError::__construct' => ['void'],
-'FiberExit::__construct' => ['void'],
 'gc_collect_cycles' => ['int'],
 'gc_disable' => ['void'],
 'gc_enable' => ['void'],
