@@ -348,6 +348,13 @@ class FunctionCallReturnTypeFetcher
                                     return new Type\Union([new Type\Atomic\TIntRange($min, null)]);
                                 }
 
+                                if ($atomic_types['array'] instanceof Type\Atomic\TArray
+                                    && $atomic_types['array']->type_params[0]->isEmpty()
+                                    && $atomic_types['array']->type_params[1]->isEmpty()
+                                ) {
+                                    return Type::getInt(false, 0);
+                                }
+
                                 return new Type\Union([
                                     new Type\Atomic\TLiteralInt(0),
                                     new Type\Atomic\TPositiveInt

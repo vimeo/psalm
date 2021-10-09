@@ -543,13 +543,13 @@ class FunctionLikeDocblockParser
         foreach ($return_specials as $offset => $return_block) {
             $return_lines = explode("\n", $return_block);
 
-            if (!trim($return_lines[0])) {
+            if (trim($return_lines[0]) === '') {
                 return;
             }
 
             $return_block = trim($return_block);
 
-            if (!$return_block) {
+            if ($return_block === '') {
                 return;
             }
 

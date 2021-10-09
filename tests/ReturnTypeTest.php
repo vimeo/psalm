@@ -950,6 +950,15 @@ class ReturnTypeTest extends TestCase
                         returnsNever();
                     }'
             ],
+            'return0' => [
+                '<?php
+                    /**
+                     * @return 0
+                     */
+                    function takesAnInt() {
+                        return 0;
+                    }'
+            ],
         ];
     }
 
