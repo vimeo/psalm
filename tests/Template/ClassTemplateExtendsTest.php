@@ -1562,14 +1562,8 @@ class ClassTemplateExtendsTest extends TestCase
                             $this->elements = $elements;
                         }
 
-                        /**
-                         * @psalm-suppress InvalidReturnType
-                         */
                         public function getIterator()
                         {
-                            /**
-                             * @psalm-suppress InvalidReturnStatement
-                             */
                             return new ArrayIterator($this->elements);
                         }
 
