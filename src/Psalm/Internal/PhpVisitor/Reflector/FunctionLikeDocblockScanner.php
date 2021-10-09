@@ -355,7 +355,7 @@ class FunctionLikeDocblockScanner
             }
         }
 
-        if ($docblock_info->return_type) {
+        if ($docblock_info->return_type !== null) {
             self::handleReturn(
                 $codebase,
                 $docblock_info,
