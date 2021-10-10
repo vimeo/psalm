@@ -652,6 +652,7 @@ class ArgumentAnalyzer
     /**
      * @param Atomic\TKeyedArray|Atomic\TArray|Atomic\TList|Atomic\TClassStringMap $unpacked_atomic_array
      * @return  null|false
+     * @psalm-suppress ComplexMethod
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
