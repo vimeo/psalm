@@ -1021,12 +1021,13 @@ class ArgumentAnalyzer
                 true
             );
 
+            $type = ($input_type->possibly_undefined ? 'possibly undefined ' : '') . $input_type->getId();
             if ($union_comparison_results->scalar_type_match_found) {
                 if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type->getId() . ', ' . $input_type->getId() . ' provided',
+                                $param_type->getId() . ', ' . $type . ' provided',
                             $arg_location,
                             $cased_method_id
                         ),
@@ -1039,7 +1040,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', possibly different type ' . $input_type->getId() . ' provided',
+                            ', possibly different type ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1051,7 +1052,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', ' . $input_type->getId() . ' provided',
+                            ', ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
