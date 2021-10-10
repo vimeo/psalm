@@ -832,7 +832,7 @@ class AssertionFinder
             if ($first_var_type->from_docblock) {
                 if (IssueBuffer::accepts(
                     new DocblockTypeContradiction(
-                        $first_var_type . ' does not contain ' . $expected_type,
+                        'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
@@ -843,7 +843,7 @@ class AssertionFinder
             } else {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
-                        $first_var_type . ' does not contain ' . $expected_type,
+                        '!' . $first_var_type . ' does not contain ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
