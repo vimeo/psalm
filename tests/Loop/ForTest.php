@@ -156,6 +156,26 @@ class ForTest extends \Psalm\Tests\TestCase
                         return $data;
                     }'
             ],
+            'InfiniteForLoop' => [
+                '<?php
+                    /**
+                     * @return int
+                     */
+                    function g() {
+                        for (;;) {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @return int
+                     */
+                    function h() {
+                        for (;1;) {
+                            return 1;
+                        }
+                    }'
+            ],
         ];
     }
 
