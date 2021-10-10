@@ -823,12 +823,8 @@ class ArgumentAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 
-        if ($function_param->by_ref) {
-            $param_type->possibly_undefined = true;
-        }
-
-        if ($function_param->is_optional) {
-            //if the param is optional, we'll allow the input to be possibly_undefined
+        if ($function_param->by_ref || $function_param->is_optional) {
+            //if the param is optional or a ref, we'll allow the input to be possibly_undefined
             $param_type->possibly_undefined = true;
         }
 
