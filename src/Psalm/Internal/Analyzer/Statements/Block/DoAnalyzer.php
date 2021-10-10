@@ -92,7 +92,7 @@ class DoAnalyzer
         if (LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
-            [$stmt->cond],
+            WhileAnalyzer::getAndExpressions($stmt->cond),
             [],
             $loop_scope,
             $inner_loop_context,
@@ -130,6 +130,22 @@ class DoAnalyzer
                     true,
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
+        }
+
+        foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
+            // if there are break statements in the loop it's not certain
+            // that the loop has finished executing, so the assertions at the end
+            // the loop in the while conditional may not hold
+            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)) {
+                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                    );
+                }
+            } else {
+                $context->vars_in_scope[$var_id] = $type;
+            }
         }
 
         $do_context->loop_scope = null;
