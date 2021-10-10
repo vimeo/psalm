@@ -1643,7 +1643,25 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.1',
             ],
+            'possiblyUndefinedArrayDestructurationOnOptionalArg' => [
+                '<?php
+                    class A
+                    {
+                    }
 
+                    function foo(A $a1, A $a2 = null): void
+                    {
+                    }
+
+                    $arguments = [new A()];
+                    if (mt_rand(1, 10) > 5) {
+                        // when this is done outside if - no errors
+                        $arguments[] = new A();
+                    }
+
+                    foo(...$arguments);
+                    ',
+            ],
         ];
     }
 

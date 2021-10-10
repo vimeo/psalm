@@ -652,6 +652,7 @@ class ArgumentAnalyzer
     /**
      * @param Atomic\TKeyedArray|Atomic\TArray|Atomic\TList|Atomic\TClassStringMap $unpacked_atomic_array
      * @return  null|false
+     * @psalm-suppress ComplexMethod
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
@@ -823,7 +824,8 @@ class ArgumentAnalyzer
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 
-        if ($function_param->by_ref) {
+        if ($function_param->by_ref || $function_param->is_optional) {
+            //if the param is optional or a ref, we'll allow the input to be possibly_undefined
             $param_type->possibly_undefined = true;
         }
 
@@ -1016,12 +1018,13 @@ class ArgumentAnalyzer
                 true
             );
 
+            $type = ($input_type->possibly_undefined ? 'possibly undefined ' : '') . $input_type->getId();
             if ($union_comparison_results->scalar_type_match_found) {
                 if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type->getId() . ', ' . $input_type->getId() . ' provided',
+                                $param_type->getId() . ', ' . $type . ' provided',
                             $arg_location,
                             $cased_method_id
                         ),
@@ -1034,7 +1037,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', possibly different type ' . $input_type->getId() . ' provided',
+                            ', possibly different type ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1046,7 +1049,7 @@ class ArgumentAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', ' . $input_type->getId() . ' provided',
+                            ', ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
