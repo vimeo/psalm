@@ -92,7 +92,7 @@ class DoAnalyzer
         if (LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
-            WhileAnalyzer::getAndExpressions($stmt->cond),
+            [$stmt->cond],
             [],
             $loop_scope,
             $inner_loop_context,
