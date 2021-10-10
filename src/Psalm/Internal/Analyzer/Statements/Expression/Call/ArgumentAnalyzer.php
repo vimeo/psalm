@@ -827,6 +827,11 @@ class ArgumentAnalyzer
             $param_type->possibly_undefined = true;
         }
 
+        if ($function_param->is_optional) {
+            //if the param is optional, we'll allow the input to be possibly_undefined
+            $param_type->possibly_undefined = true;
+        }
+
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
