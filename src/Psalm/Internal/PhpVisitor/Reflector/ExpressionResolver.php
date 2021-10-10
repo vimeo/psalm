@@ -203,6 +203,10 @@ class ExpressionResolver
                 $parent_fq_class_name
             );
 
+            if (!$right) {
+                return null;
+            }
+
             return new UnresolvedConstant\UnresolvedAdditionOp(
                 new UnresolvedConstant\ScalarValue(0),
                 $right
@@ -216,6 +220,10 @@ class ExpressionResolver
                 $fq_classlike_name,
                 $parent_fq_class_name
             );
+
+            if (!$right) {
+                return null;
+            }
 
             return new UnresolvedConstant\UnresolvedSubtractionOp(
                 new UnresolvedConstant\ScalarValue(0),
