@@ -195,6 +195,34 @@ class ExpressionResolver
             return new UnresolvedConstant\ScalarValue($stmt->value);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
+            $right = self::getUnresolvedClassConstExpr(
+                $stmt->expr,
+                $aliases,
+                $fq_classlike_name,
+                $parent_fq_class_name
+            );
+
+            return new UnresolvedConstant\UnresolvedAdditionOp(
+                new UnresolvedConstant\ScalarValue(0),
+                $right
+            );
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
+            $right = self::getUnresolvedClassConstExpr(
+                $stmt->expr,
+                $aliases,
+                $fq_classlike_name,
+                $parent_fq_class_name
+            );
+
+            return new UnresolvedConstant\UnresolvedSubtractionOp(
+                new UnresolvedConstant\ScalarValue(0),
+                $right
+            );
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {
             $items = [];
 
