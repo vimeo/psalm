@@ -361,6 +361,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return Type::getFloat();
         }
 
+        if ($assertion === 'float' && $is_equality && !$is_strict_equality && $existing_var_type->isString()) {
+            return Type::getNumericString();
+        }
+
         if ($assertion === 'non-empty-countable') {
             return self::reconcileNonEmptyCountable(
                 $existing_var_type,
@@ -957,6 +961,9 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $int_types[] = $type;
                 }
 
+                $did_remove_type = true;
+            } elseif ($type instanceof TString && $is_equality && !$is_strict_equality) {
+                $int_types[] = new TNumericString();
                 $did_remove_type = true;
             } else {
                 $did_remove_type = true;
