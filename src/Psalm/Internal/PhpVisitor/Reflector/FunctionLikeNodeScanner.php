@@ -2,6 +2,10 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
+use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -399,9 +403,13 @@ class FunctionLikeNodeScanner
 
         if ($parser_return_type) {
             $original_type = $parser_return_type;
+            if ($original_type instanceof PhpParser\Node\IntersectionType) {
+                throw new \UnexpectedValueException('Intersection types not yet supported');
+            }
+            /** @var Identifier|Name|NullableType|UnionType $original_type */
 
             $storage->return_type = TypeHintResolver::resolve(
-                $parser_return_type,
+                $original_type,
                 $this->codebase->scanner,
                 $this->file_storage,
                 $this->classlike_storage,
@@ -753,6 +761,11 @@ class FunctionLikeNodeScanner
         $param_typehint = $param->type;
 
         if ($param_typehint) {
+            if ($param_typehint instanceof PhpParser\Node\IntersectionType) {
+                throw new \UnexpectedValueException('Intersection types not yet supported');
+            }
+            /** @var Identifier|Name|NullableType|UnionType $param_typehint */
+
             $param_type = TypeHintResolver::resolve(
                 $param_typehint,
                 $this->codebase->scanner,

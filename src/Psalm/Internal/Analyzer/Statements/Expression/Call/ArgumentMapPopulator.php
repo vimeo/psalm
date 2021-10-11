@@ -32,7 +32,7 @@ class ArgumentMapPopulator
         $file_content = $codebase->file_provider->getContents($statements_analyzer->getFilePath());
 
         // Find opening paren
-        $first_argument = $stmt->args[0] ?? null;
+        $first_argument = $stmt->getArgs()[0] ?? null;
         $first_argument_character = $first_argument !== null
             ? $first_argument->getStartFilePos()
             : $stmt->getEndFilePos();
@@ -67,7 +67,7 @@ class ArgumentMapPopulator
         $ranges = [];
 
         // Add range between opening paren and first argument
-        $first_argument = $stmt->args[0] ?? null;
+        $first_argument = $stmt->getArgs()[0] ?? null;
         $first_argument_starting_position = $first_argument !== null
             ? $first_argument->getStartFilePos()
             : $stmt->getEndFilePos();
@@ -77,9 +77,9 @@ class ArgumentMapPopulator
         }
 
         // Add range between arguments
-        foreach ($stmt->args as $i => $argument) {
+        foreach ($stmt->getArgs() as $i => $argument) {
             $range_start = $argument->getEndFilePos() + 1;
-            $next_argument = $stmt->args[$i + 1] ?? null;
+            $next_argument = $stmt->getArgs()[$i + 1] ?? null;
             $range_end = $next_argument !== null
                 ? $next_argument->getStartFilePos()
                 : $stmt->getEndFilePos();

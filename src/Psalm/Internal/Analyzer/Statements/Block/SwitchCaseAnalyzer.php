@@ -316,7 +316,7 @@ class SwitchCaseAnalyzer
             if ($new_case_equality_expr) {
                 ExpressionAnalyzer::analyze(
                     $statements_analyzer,
-                    $new_case_equality_expr->args[1]->value,
+                    $new_case_equality_expr->getArgs()[1]->value,
                     $case_context
                 );
 

@@ -103,7 +103,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$context->check_classes) {
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -201,7 +201,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
-        if (!$stmt->args && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {
+        if (!$stmt->getArgs() && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier) {
             if ($codebase->config->memoize_method_calls || $result->can_memoize) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
 
@@ -334,7 +334,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if (IssueBuffer::accepts(
                 new TooManyArguments(
-                    'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->args),
+                    'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
                     (string) $error_method_id
                 ),
@@ -349,7 +349,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             if (IssueBuffer::accepts(
                 new TooFewArguments(
-                    'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->args),
+                    'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
                     (string) $error_method_id
                 ),
@@ -390,7 +390,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$result->existent_method_ids) {
             return self::checkMethodArgs(
                 null,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),

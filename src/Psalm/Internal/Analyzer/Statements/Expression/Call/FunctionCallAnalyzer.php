@@ -72,15 +72,15 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $real_stmt = $stmt;
 
         if ($function_name instanceof PhpParser\Node\Name
-            && isset($stmt->args[0])
-            && !$stmt->args[0]->unpack
+            && isset($stmt->getArgs()[0])
+            && !$stmt->getArgs()[0]->unpack
         ) {
             $original_function_id = implode('\\', $function_name->parts);
 
             if ($original_function_id === 'call_user_func') {
-                $other_args = \array_slice($stmt->args, 1);
+                $other_args = \array_slice($stmt->getArgs(), 1);
 
-                $function_name = $stmt->args[0]->value;
+                $function_name = $stmt->getArgs()[0]->value;
 
                 $stmt = new VirtualFuncCall(
                     $function_name,
@@ -89,12 +89,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($original_function_id === 'call_user_func_array' && isset($stmt->args[1])) {
-                $function_name = $stmt->args[0]->value;
+            if ($original_function_id === 'call_user_func_array' && isset($stmt->getArgs()[1])) {
+                $function_name = $stmt->getArgs()[0]->value;
 
                 $stmt = new VirtualFuncCall(
                     $function_name,
-                    [new VirtualArg($stmt->args[1]->value, false, true)],
+                    [new VirtualArg($stmt->getArgs()[1]->value, false, true)],
                     $stmt->getAttributes()
                 );
             }
@@ -142,7 +142,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         ArgumentsAnalyzer::analyze(
             $statements_analyzer,
-            $stmt->args,
+            $stmt->getArgs(),
             $function_call_info->function_params,
             $function_call_info->function_id,
             $function_call_info->allow_named_args,
@@ -160,7 +160,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $statements_analyzer->node_data
                 );
 
@@ -174,7 +174,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if ($function_call_info->function_params !== null) {
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 $function_call_info->function_id,
                 $function_call_info->function_params,
                 $function_call_info->function_storage,
@@ -232,13 +232,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($function_name instanceof PhpParser\Node\Name
             && $function_name->parts === ['assert']
-            && isset($stmt->args[0])
+            && isset($stmt->getArgs()[0])
         ) {
             self::processAssertFunctionEffects(
                 $statements_analyzer,
                 $codebase,
                 $stmt,
-                $stmt->args[0],
+                $stmt->getArgs()[0],
                 $context
             );
         }
@@ -272,7 +272,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     $function_call_info->function_storage->assertions,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $inferred_lower_bounds,
                     $context,
                     $statements_analyzer
@@ -424,7 +424,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     if (ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         null,
                         null,
                         true,
@@ -451,7 +451,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     null,
                     $code_location
                 );
@@ -484,7 +484,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $function_call_info->function_id,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         $statements_analyzer->node_data
                     );
 
@@ -789,7 +789,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $fake_method_call = new VirtualMethodCall(
             $function_name,
             new VirtualIdentifier('__invoke', $function_name->getAttributes()),
-            $stmt->args
+            $stmt->getArgs()
         );
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -948,7 +948,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $statements_analyzer->node_data,
                     $function_call_info->function_id,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $must_use
                 )
                 : null;
@@ -1031,11 +1031,11 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $parameters = $function_call_info->function_params;
 
         // If no arguments were passed
-        if (0 === \count($stmt->args)) {
+        if (0 === \count($stmt->getArgs())) {
             return false;
         }
 
-        foreach ($stmt->args as $index => $argument) {
+        foreach ($stmt->getArgs() as $index => $argument) {
             $parameter = null;
             if (null !== $argument->name) {
                 $argument_name = $argument->name->toString();

@@ -197,7 +197,7 @@ class ExpressionIdentifier
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && !$stmt->args
+            && !$stmt->getArgs()
         ) {
             $config = \Psalm\Config::getInstance();
 

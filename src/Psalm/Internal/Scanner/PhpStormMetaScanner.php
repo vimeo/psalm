@@ -39,10 +39,10 @@ class PhpStormMetaScanner
         $map = [];
 
         if ($args[1]->value->name->parts === ['map']
-            && $args[1]->value->args
-            && $args[1]->value->args[0]->value instanceof PhpParser\Node\Expr\Array_
+            && $args[1]->value->getArgs()
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Expr\Array_
         ) {
-            foreach ($args[1]->value->args[0]->value->items as $array_item) {
+            foreach ($args[1]->value->getArgs()[0]->value->items as $array_item) {
                 if ($array_item
                     && $array_item->key instanceof PhpParser\Node\Scalar\String_
                 ) {
@@ -64,33 +64,33 @@ class PhpStormMetaScanner
         $type_offset = null;
 
         if ($args[1]->value->name->parts === ['type']
-            && $args[1]->value->args
-            && $args[1]->value->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
-            $type_offset = $args[1]->value->args[0]->value->value;
+            $type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
 
         $element_type_offset = null;
 
         if ($args[1]->value->name->parts === ['elementType']
-            && $args[1]->value->args
-            && $args[1]->value->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
-            $element_type_offset = $args[1]->value->args[0]->value->value;
+            $element_type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
 
         if ($identifier instanceof PhpParser\Node\Expr\StaticCall
             && $identifier->class instanceof PhpParser\Node\Name\FullyQualified
             && $identifier->name instanceof PhpParser\Node\Identifier
-            && $identifier->args
-            && $identifier->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $identifier->getArgs()
+            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
             $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
 
             $meta_method_name = strtolower($identifier->name->name);
 
             if ($map) {
-                $offset = $identifier->args[0]->value->value;
+                $offset = $identifier->getArgs()[0]->value->value;
 
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
@@ -241,13 +241,13 @@ class PhpStormMetaScanner
 
         if ($identifier instanceof PhpParser\Node\Expr\FuncCall
             && $identifier->name instanceof PhpParser\Node\Name\FullyQualified
-            && $identifier->args
-            && $identifier->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $identifier->getArgs()
+            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
             $function_id = strtolower(implode('\\', $identifier->name->parts));
 
             if ($map) {
-                $offset = $identifier->args[0]->value->value;
+                $offset = $identifier->getArgs()[0]->value->value;
 
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,

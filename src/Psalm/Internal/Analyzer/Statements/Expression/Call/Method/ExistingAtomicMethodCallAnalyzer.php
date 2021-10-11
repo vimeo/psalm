@@ -428,7 +428,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $first_arg_value = $stmt->args[0]->value ?? null;
+        $first_arg_value = $stmt->getArgs()[0]->value ?? null;
 
         if (!$first_arg_value instanceof PhpParser\Node\Scalar\String_) {
             return null;
@@ -467,8 +467,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
                 // If a `@property` annotation is set, the type of the value passed to the
                 // magic setter must match the annotation.
-                $second_arg_type = isset($stmt->args[1])
-                    ? $statements_analyzer->node_data->getType($stmt->args[1]->value)
+                $second_arg_type = isset($stmt->getArgs()[1])
+                    ? $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value)
                     : null;
 
                 if (isset($class_storage->pseudo_property_set_types['$' . $prop_name]) && $second_arg_type) {

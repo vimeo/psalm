@@ -123,8 +123,8 @@ class ExpressionScanner
         }
 
         if ($function_id === 'define') {
-            $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
-            $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
+            $first_arg_value = isset($node->getArgs()[0]) ? $node->getArgs()[0]->value : null;
+            $second_arg_value = isset($node->getArgs()[1]) ? $node->getArgs()[1]->value : null;
             if ($first_arg_value && $second_arg_value) {
                 $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
                 $const_name = ConstFetchAnalyzer::getConstName(
@@ -162,10 +162,10 @@ class ExpressionScanner
 
         $mapping_function_ids = [];
 
-        if (($function_id === 'array_map' && isset($node->args[0]))
-            || ($function_id === 'array_filter' && isset($node->args[1]))
+        if (($function_id === 'array_map' && isset($node->getArgs()[0]))
+            || ($function_id === 'array_filter' && isset($node->getArgs()[1]))
         ) {
-            $node_arg_value = $function_id === 'array_map' ? $node->args[0]->value : $node->args[1]->value;
+            $node_arg_value = $function_id === 'array_map' ? $node->getArgs()[0]->value : $node->getArgs()[1]->value;
 
             if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
                 || $node_arg_value instanceof PhpParser\Node\Expr\Array_
@@ -202,7 +202,7 @@ class ExpressionScanner
         }
 
         if ($function_id === 'is_a' || $function_id === 'is_subclass_of') {
-            $second_arg = $node->args[1]->value ?? null;
+            $second_arg = $node->getArgs()[1]->value ?? null;
 
             if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
                 $codebase->scanner->queueClassLikeForScanning(
@@ -212,8 +212,8 @@ class ExpressionScanner
         }
 
         if ($function_id === 'class_alias' && !$skip_if_descendants) {
-            $first_arg = $node->args[0]->value ?? null;
-            $second_arg = $node->args[1]->value ?? null;
+            $first_arg = $node->getArgs()[0]->value ?? null;
+            $second_arg = $node->getArgs()[1]->value ?? null;
 
             if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
                 $first_arg_value = $first_arg->value;

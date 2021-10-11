@@ -205,7 +205,7 @@ class AtomicStaticCallAnalyzer
 
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -263,7 +263,7 @@ class AtomicStaticCallAnalyzer
             );
         }
 
-        $args = $stmt->args;
+        $args = $stmt->getArgs();
 
         if ($intersection_types
             && !$codebase->methods->methodExists($method_id)
@@ -411,7 +411,7 @@ class AtomicStaticCallAnalyzer
                             $stmt->class->getAttributes()
                         ),
                         $stmt_name,
-                        $stmt->args,
+                        $stmt->getArgs(),
                         $stmt->getAttributes()
                     );
 
@@ -481,7 +481,7 @@ class AtomicStaticCallAnalyzer
                     if ($return_type_candidate) {
                         CallAnalyzer::checkMethodArgs(
                             $method_id,
-                            $stmt->args,
+                            $stmt->getArgs(),
                             null,
                             $context,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -585,7 +585,7 @@ class AtomicStaticCallAnalyzer
             if (!$context->check_methods) {
                 if (ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     null,
                     null,
                     true,
@@ -609,7 +609,7 @@ class AtomicStaticCallAnalyzer
         if (!$does_method_exist) {
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -704,7 +704,7 @@ class AtomicStaticCallAnalyzer
                         $stmt->class->getAttributes()
                     ),
                     $stmt_name,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $stmt->getAttributes()
                 );
 

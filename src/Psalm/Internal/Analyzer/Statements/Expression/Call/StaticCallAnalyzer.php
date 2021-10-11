@@ -186,7 +186,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         if (!$lhs_type) {
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 null,
                 true,
@@ -218,7 +218,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         if (!$has_existing_method) {
             return self::checkMethodArgs(
                 $method_id,
-                $stmt->args,
+                $stmt->getArgs(),
                 null,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -363,7 +363,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage,
                 $statements_analyzer->data_flow_graph,
                 (string) $method_id,
-                $stmt->args,
+                $stmt->getArgs(),
                 $node_location,
                 $method_source,
                 \array_merge($method_storage->removed_taints, $removed_taints),

@@ -2,6 +2,10 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
+use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
@@ -1365,9 +1369,13 @@ class ClassLikeNodeScanner
 
         if ($stmt->type) {
             $parser_property_type = $stmt->type;
+            if ($parser_property_type instanceof PhpParser\Node\IntersectionType) {
+                throw new \UnexpectedValueException('Intersection types not yet supported');
+            }
+            /** @var Identifier|Name|NullableType|UnionType $parser_property_type */
 
             $signature_type = TypeHintResolver::resolve(
-                $stmt->type,
+                $parser_property_type,
                 $this->codebase->scanner,
                 $this->file_storage,
                 $this->storage,

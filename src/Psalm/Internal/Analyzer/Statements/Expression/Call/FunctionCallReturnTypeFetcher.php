@@ -69,7 +69,7 @@ class FunctionCallReturnTypeFetcher
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getInt(false, count($stmt->args))
+                                            Type::getInt(false, count($stmt->getArgs()))
                                         )
                                     ]
                                 ];
@@ -187,7 +187,7 @@ class FunctionCallReturnTypeFetcher
                 $stmt_type = self::getReturnTypeFromCallMapWithArgs(
                     $statements_analyzer,
                     $function_id,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $callmap_callable,
                     $context
                 );
@@ -216,7 +216,7 @@ class FunctionCallReturnTypeFetcher
             foreach ($function_storage->proxy_calls as $proxy_call) {
                 $fake_call_arguments = [];
                 foreach ($proxy_call['params'] as $i) {
-                    $fake_call_arguments[] = $stmt->args[$i];
+                    $fake_call_arguments[] = $stmt->getArgs()[$i];
                 }
 
                 $fake_call_factory = new BuilderFactory();
@@ -586,9 +586,9 @@ class FunctionCallReturnTypeFetcher
         ) {
             $removed_taints = $function_storage->removed_taints;
 
-            if ($function_id === 'preg_replace' && count($stmt->args) > 2) {
-                $first_stmt_type = $statements_analyzer->node_data->getType($stmt->args[0]->value);
-                $second_stmt_type = $statements_analyzer->node_data->getType($stmt->args[1]->value);
+            if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
+                $first_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[0]->value);
+                $second_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value);
 
                 if ($first_stmt_type
                     && $second_stmt_type
@@ -627,7 +627,7 @@ class FunctionCallReturnTypeFetcher
                 $function_storage,
                 $statements_analyzer->data_flow_graph,
                 $function_id,
-                $stmt->args,
+                $stmt->getArgs(),
                 $node_location,
                 $function_call_node,
                 $removed_taints,

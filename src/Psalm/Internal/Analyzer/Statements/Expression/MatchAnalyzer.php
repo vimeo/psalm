@@ -64,9 +64,9 @@ class MatchAnalyzer
                 && ($stmt->cond->name->parts === ['get_class']
                     || $stmt->cond->name->parts === ['gettype']
                     || $stmt->cond->name->parts === ['get_debug_type'])
-                && $stmt->cond->args
+                && $stmt->cond->getArgs()
             ) {
-                $first_arg = $stmt->cond->args[0];
+                $first_arg = $stmt->cond->getArgs()[0];
 
                 if (!$first_arg->value instanceof PhpParser\Node\Expr\Variable) {
                     $switch_var_id = '$__tmp_switch__' . (int) $first_arg->value->getAttribute('startFilePos');

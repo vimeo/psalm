@@ -307,7 +307,7 @@ class ExistingAtomicStaticCallAnalyzer
                     $stmt_name,
                     null,
                     $method_storage->assertions,
-                    $stmt->args,
+                    $stmt->getArgs(),
                     $generic_params,
                     $context,
                     $statements_analyzer
@@ -487,7 +487,7 @@ class ExistingAtomicStaticCallAnalyzer
                             $template_result->lower_bounds[$template_type->param_name] = [
                                 'fn-' . strtolower((string)$method_id) => [
                                     new TemplateBound(
-                                        Type::getInt(false, count($stmt->args))
+                                        Type::getInt(false, count($stmt->getArgs()))
                                     )
                                 ]
                             ];

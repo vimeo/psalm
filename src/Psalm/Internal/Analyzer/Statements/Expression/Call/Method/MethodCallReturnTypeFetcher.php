@@ -100,7 +100,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->args),
+                    \count($stmt->getArgs()),
                     $codebase
                 );
             } else {
@@ -160,7 +160,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->args),
+                    \count($stmt->getArgs()),
                     $codebase
                 );
 
