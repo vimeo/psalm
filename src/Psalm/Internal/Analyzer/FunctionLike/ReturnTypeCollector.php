@@ -222,13 +222,13 @@ class ReturnTypeCollector
 
         // if we're at the top level and we're not ending in a return, make sure to add possible null
         if ($collapse_types) {
-            if (!$clean_ending) {
-                $return_types[] = Type::getNull();
-            }
-
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
                 $yield_types = self::processYieldTypes($codebase, $return_types, $yield_types);
+            }
+
+            if (!$clean_ending) {
+                $return_types[] = Type::getNull();
             }
         }
 
