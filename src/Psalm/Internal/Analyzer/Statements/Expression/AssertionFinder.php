@@ -29,6 +29,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function assert;
 use function count;
@@ -494,8 +495,12 @@ class AssertionFinder
                 $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase);
 
                 if ($intersection_type !== null && $intersection_type->isSingle()) {
-                    $assertion = $intersection_type->getAssertionString();
-
+                    try {
+                        $assertion = $intersection_type->getAssertionString();
+                    } catch (UnexpectedValueException $e) {
+                        // getAssertionString can't work if the Union has more than one type
+                        return [];
+                    }
                     $if_types = [];
 
                     $var_name_left = ExpressionIdentifier::getArrayVarId(
@@ -504,8 +509,14 @@ class AssertionFinder
                         $source
                     );
 
-                    if ($var_name_left &&
-                        (!$var_type->isSingle() || $var_type->getAssertionString() !== $assertion)) {
+                    try {
+                        $var_assertion_different = $var_type->getAssertionString() !== $assertion;
+                    } catch (UnexpectedValueException $e) {
+                        // if getAssertionString threw, it's different
+                        $var_assertion_different = true;
+                    }
+
+                    if ($var_name_left && $var_assertion_different) {
                         $if_types[$var_name_left] = [['='.$assertion]];
                     }
 
@@ -515,8 +526,15 @@ class AssertionFinder
                         $source
                     );
 
-                    if ($var_name_right &&
-                        (!$other_type->isSingle() || $other_type->getAssertionString() !== $assertion)) {
+
+                    try {
+                        $other_assertion_different = $other_type->getAssertionString() !== $assertion;
+                    } catch (UnexpectedValueException $e) {
+                        // if getAssertionString threw, it's different
+                        $other_assertion_different = true;
+                    }
+
+                    if ($var_name_right && $other_assertion_different) {
                         $if_types[$var_name_right] = [['='.$assertion]];
                     }
 
@@ -896,14 +914,17 @@ class AssertionFinder
                     foreach ($and_rules as $j => $rule) {
                         if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
-
-                            $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                                $codebase,
-                                Type::parseString(substr($rule, 15, -1)),
-                                null,
-                                null,
-                                null
-                            )->getAssertionString();
+                            try {
+                                $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                    $codebase,
+                                    Type::parseString(substr($rule, 15, -1)),
+                                    null,
+                                    null,
+                                    null
+                                )->getAssertionString();
+                            } catch (UnexpectedValueException $e) {
+                                continue;
+                            }
                         }
                     }
                 }
@@ -962,13 +983,17 @@ class AssertionFinder
                         if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
 
-                            $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
-                                $codebase,
-                                Type::parseString(substr($rule, 15, -1)),
-                                null,
-                                null,
-                                null
-                            )->getAssertionString();
+                            try {
+                                $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                    $codebase,
+                                    Type::parseString(substr($rule, 15, -1)),
+                                    null,
+                                    null,
+                                    null
+                                )->getAssertionString();
+                            } catch (UnexpectedValueException $e) {
+                                continue;
+                            }
                         }
                     }
                 }
@@ -2487,9 +2512,25 @@ class AssertionFinder
                     );
 
                 if ($not_identical) {
-                    $if_types[$var_name] = [['!=' . $var_type->getAssertionString()]];
+                    try {
+                        $assertion = $var_type->getAssertionString();
+                    } catch (UnexpectedValueException $e) {
+                        $assertion = null;
+                    }
+
+                    if ($assertion) {
+                        $if_types[$var_name] = [['!=' . $assertion]];
+                    }
                 } else {
-                    $if_types[$var_name] = [['!~' . $var_type->getAssertionString()]];
+                    try {
+                        $assertion = $var_type->getAssertionString();
+                    } catch (UnexpectedValueException $e) {
+                        $assertion = null;
+                    }
+
+                    if ($assertion) {
+                        $if_types[$var_name] = [['!~' . $assertion]];
+                    }
                 }
             }
 
@@ -3177,18 +3218,49 @@ class AssertionFinder
                 );
 
             if ($identical) {
-                $if_types[$var_name] = [['=' . $var_type->getAssertionString(true)]];
+                try {
+                    $assertion = $var_type->getAssertionString(true);
+                } catch (UnexpectedValueException $e) {
+                    $assertion = null;
+                }
+
+                if ($assertion) {
+                    $if_types[$var_name] = [['=' . $assertion]];
+                }
             } else {
-                $if_types[$var_name] = [['~' . $var_type->getAssertionString()]];
+                try {
+                    $assertion = $var_type->getAssertionString();
+                } catch (UnexpectedValueException $e) {
+                    $assertion = null;
+                }
+
+                if ($assertion) {
+                    $if_types[$var_name] = [['~' . $assertion]];
+                }
             }
 
-            // we count the Atomics instead of using isSingle because Psalm considers multiple literals as Single
-            // however, getAssertionString return the assertion for the first Atomic only
-            if ($other_var_name && $other_type && count($other_type->getAtomicTypes()) === 1) {
+
+            if ($other_var_name && $other_type) {
                 if ($identical) {
-                    $if_types[$other_var_name] = [['=' . $other_type->getAssertionString(true)]];
+                    try {
+                        $assertion = $other_type->getAssertionString(true);
+                    } catch (UnexpectedValueException $e) {
+                        $assertion = null;
+                    }
+
+                    if ($assertion) {
+                        $if_types[$other_var_name] = [['=' . $assertion]];
+                    }
                 } else {
-                    $if_types[$other_var_name] = [['~' . $other_type->getAssertionString()]];
+                    try {
+                        $assertion = $other_type->getAssertionString();
+                    } catch (UnexpectedValueException $e) {
+                        $assertion = null;
+                    }
+
+                    if ($assertion) {
+                        $if_types[$other_var_name] = [['~' . $assertion]];
+                    }
                 }
             }
         }
