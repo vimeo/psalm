@@ -78,14 +78,16 @@ class ForAnalyzer
             $context->protected_var_ids
         );
 
-        LoopAnalyzer::analyze(
+        if (LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             $stmt->cond,
             $stmt->loop,
             $loop_scope,
             $inner_loop_context
-        );
+        ) === false) {
+            return false;
+        }
 
         if (!$inner_loop_context) {
             throw new \UnexpectedValueException('There should be an inner loop context');
@@ -142,7 +144,8 @@ class ForAnalyzer
         if ($always_enters_loop && $can_leave_loop) {
             foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
                 // if there are break statements in the loop it's not certain
-                // that the loop has finished executing
+                // that the loop has finished executing, so the assertions at the end
+                // the loop in the while conditional may not hold
                 if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
                     || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
                 ) {

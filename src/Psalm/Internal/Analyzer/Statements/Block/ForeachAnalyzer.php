@@ -309,7 +309,7 @@ class ForeachAnalyzer
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        LoopAnalyzer::analyze(
+        if (LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             [],
@@ -318,7 +318,9 @@ class ForeachAnalyzer
             $inner_loop_context,
             false,
             $always_non_empty_array
-        );
+        ) === false) {
+            return false;
+        }
 
         if (!$inner_loop_context) {
             throw new \UnexpectedValueException('There should be an inner loop context');

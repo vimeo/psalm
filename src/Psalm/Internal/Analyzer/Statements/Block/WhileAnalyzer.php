@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 
+use function array_intersect_key;
 use function array_merge;
 use function in_array;
 
@@ -59,48 +60,17 @@ class WhileAnalyzer
         }
 
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('Should always enter loop');
+            throw new \UnexpectedValueException('There should be an inner loop context');
         }
 
         $always_enters_loop = false;
 
         if ($stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond)) {
+            $always_enters_loop = $stmt_cond_type->isAlwaysTruthy();
+        }
+
+        if ($while_true) {
             $always_enters_loop = true;
-
-            foreach ($stmt_cond_type->getAtomicTypes() as $iterator_type) {
-                if ($iterator_type instanceof Type\Atomic\TArray
-                    || $iterator_type instanceof Type\Atomic\TKeyedArray
-                ) {
-                    if ($iterator_type instanceof Type\Atomic\TKeyedArray) {
-                        if (!$iterator_type->sealed) {
-                            $always_enters_loop = false;
-                        }
-                    } elseif (!$iterator_type instanceof Type\Atomic\TNonEmptyArray) {
-                        $always_enters_loop = false;
-                    }
-
-                    continue;
-                }
-
-                if ($iterator_type instanceof Type\Atomic\TTrue) {
-                    continue;
-                }
-
-                if ($iterator_type instanceof Type\Atomic\TLiteralString
-                    && $iterator_type->value
-                ) {
-                    continue;
-                }
-
-                if ($iterator_type instanceof Type\Atomic\TLiteralInt
-                    && $iterator_type->value
-                ) {
-                    continue;
-                }
-
-                $always_enters_loop = false;
-                break;
-            }
         }
 
         $can_leave_loop = !$while_true
@@ -137,10 +107,14 @@ class WhileAnalyzer
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
 
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $while_context->referenced_var_ids
+        $context->referenced_var_ids = array_intersect_key(
+            $while_context->referenced_var_ids,
+            $context->referenced_var_ids
         );
+
+        if ($context->collect_exceptions) {
+            $context->mergeExceptions($while_context);
+        }
 
         return null;
     }
@@ -148,7 +122,7 @@ class WhileAnalyzer
     /**
      * @return list<PhpParser\Node\Expr>
      */
-    private static function getAndExpressions(
+    public static function getAndExpressions(
         PhpParser\Node\Expr $expr
     ) : array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
