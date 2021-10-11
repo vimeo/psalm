@@ -959,6 +959,13 @@ class ReturnTypeTest extends TestCase
                         return 0;
                     }'
             ],
+            'neverReturnClosure' => [
+                '<?php
+                    $a = function() {
+                        print_r(func_get_args());
+                        exit(1);
+                    };'
+            ],
         ];
     }
 

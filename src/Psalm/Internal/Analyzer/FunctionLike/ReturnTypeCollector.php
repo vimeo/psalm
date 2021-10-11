@@ -23,6 +23,8 @@ class ReturnTypeCollector
      * @return list<Type\Union>    a list of return types
      *
      * @psalm-suppress ComplexMethod to be refactored
+     *
+     * TODO: This would probably benefit from using the list of exit_functions
      */
     public static function getReturnTypes(
         Codebase $codebase,
@@ -68,6 +70,11 @@ class ReturnTypeCollector
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
+                    $return_types[] = Type::getNever();
+                    break;
+                }
+
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Assign) {
                     $return_types = array_merge(
                         $return_types,
