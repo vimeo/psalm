@@ -62,16 +62,26 @@ class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
-                || $stmt instanceof PhpParser\Node\Stmt\Break_
+            if ($stmt instanceof PhpParser\Node\Stmt\Break_
                 || $stmt instanceof PhpParser\Node\Stmt\Continue_
             ) {
                 break;
             }
 
+            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+                if ($collapse_types) {
+                    $return_types[] = Type::getNever();
+                }
+
+                break;
+            }
+
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
-                    $return_types[] = Type::getNever();
+                    if ($collapse_types) {
+                        $return_types[] = Type::getNever();
+                    }
+
                     break;
                 }
 
