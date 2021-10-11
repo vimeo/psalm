@@ -92,10 +92,6 @@ class IfConditionalAnalyzer
 
         $internally_applied_if_cond_expr = self::getDefinitelyEvaluatedExpressionInsideIf($cond);
 
-        $was_inside_conditional = $outer_context->inside_conditional;
-
-        $outer_context->inside_conditional = true;
-
         $pre_condition_vars_in_scope = $outer_context->vars_in_scope;
 
         $referenced_var_ids = $outer_context->referenced_var_ids;
@@ -109,6 +105,10 @@ class IfConditionalAnalyzer
         if ($internally_applied_if_cond_expr !== $externally_applied_if_cond_expr) {
             $if_context = clone $outer_context;
         }
+
+        $was_inside_conditional = $outer_context->inside_conditional;
+
+        $outer_context->inside_conditional = true;
 
         if ($externally_applied_if_cond_expr) {
             if (ExpressionAnalyzer::analyze(
