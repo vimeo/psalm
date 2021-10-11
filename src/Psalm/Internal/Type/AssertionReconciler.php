@@ -838,6 +838,53 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                if (($new_type_part instanceof Type\Atomic\TArray
+                        || $new_type_part instanceof Type\Atomic\TIterable)
+                    && $existing_type_part instanceof Type\Atomic\TKeyedArray
+                ) {
+                    $has_any_param_match = false;
+
+                    $new_param = $new_type_part->type_params[1];
+                    foreach ($existing_type_part->properties as $property_key => $existing_param) {
+                        $has_param_match = true;
+
+                        $new_param = self::filterTypeWithAnother(
+                            $codebase,
+                            $existing_param,
+                            $new_param,
+                            $template_type_map,
+                            $has_param_match,
+                            $any_scalar_type_match_found
+                        );
+
+                        if ($template_type_map) {
+                            TemplateInferredTypeReplacer::replace(
+                                $new_param,
+                                new TemplateResult([], $template_type_map),
+                                $codebase
+                            );
+                        }
+
+                        if ($has_param_match
+                            && $existing_type_part->properties[$property_key]->getId() !== $new_param->getId()
+                        ) {
+                            $existing_type_part->properties[$property_key] = $new_param;
+
+                            if (!$has_local_match) {
+                                $has_any_param_match = true;
+                            }
+                        }
+                    }
+
+                    $existing_type->bustCache();
+
+                    if ($has_any_param_match) {
+                        $has_local_match = true;
+                        $matching_atomic_types[] = $existing_type_part;
+                        $atomic_comparison_results->type_coerced = true;
+                    }
+                }
+
                 //These partial match wouldn't have been handled by AtomicTypeComparator
                 $new_range = null;
                 if ($new_type_part instanceof Atomic\TIntRange && $existing_type_part instanceof Atomic\TPositiveInt) {
