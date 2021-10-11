@@ -141,8 +141,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
             'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
             'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', 'SomeInterface', 'SomeClass|SomeInterface'],
-            'stringToNumericStringWithInt' => ['numeric-string', 'int', 'string'],
-            'stringToNumericStringWithFloat' => ['numeric-string', 'int', 'string'],
+            'stringToNumericStringWithInt' => ['numeric-string', '~int', 'string'],
+            'stringToNumericStringWithFloat' => ['numeric-string', '~float', 'string'],
             'filterKeyedArrayWithIterable' => ['array{some: string}', 'iterable<string>', 'array{some: mixed}'],
         ];
     }
