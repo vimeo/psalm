@@ -241,9 +241,7 @@ class ExpressionAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\PreInc
             || $stmt instanceof PhpParser\Node\Expr\PreDec
         ) {
-            Expression\IncDecExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
-
-            return true;
+            return Expression\IncDecExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\New_) {
@@ -283,9 +281,7 @@ class ExpressionAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
         ) {
-            ClosureAnalyzer::analyzeExpression($statements_analyzer, $stmt, $context);
-
-            return true;
+            return ClosureAnalyzer::analyzeExpression($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {

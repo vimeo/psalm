@@ -509,13 +509,15 @@ class AssignmentAnalyzer
             }
 
             if ($context->check_classes) {
-                StaticPropertyAssignmentAnalyzer::analyze(
+                if (StaticPropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $assign_var,
                     $assign_value,
                     $assign_value_type,
                     $context
-                );
+                ) === false) {
+                    return false;
+                }
             }
 
             if ($var_id) {
