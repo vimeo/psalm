@@ -34,6 +34,8 @@ class ReturnTypeCollector
         bool $collapse_types = false
     ): array {
         $return_types = [];
+        //whether or not we met a return/throw/exit at the top level
+        $clean_ending = false;
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
@@ -58,6 +60,7 @@ class ReturnTypeCollector
                 } else {
                     $return_types[] = Type::getMixed();
                 }
+                $clean_ending = true;
 
                 break;
             }
@@ -66,12 +69,17 @@ class ReturnTypeCollector
                 || $stmt instanceof PhpParser\Node\Stmt\Break_
                 || $stmt instanceof PhpParser\Node\Stmt\Continue_
             ) {
+                $return_types[] = Type::getNever();
+                $clean_ending = true;
+
                 break;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
                     $return_types[] = Type::getNever();
+                    $clean_ending = true;
+
                     break;
                 }
 
@@ -214,6 +222,10 @@ class ReturnTypeCollector
 
         // if we're at the top level and we're not ending in a return, make sure to add possible null
         if ($collapse_types) {
+            if (!$clean_ending) {
+                $return_types[] = Type::getNull();
+            }
+
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
                 $yield_types = self::processYieldTypes($codebase, $return_types, $yield_types);

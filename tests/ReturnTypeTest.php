@@ -968,6 +968,20 @@ class ReturnTypeTest extends TestCase
                         exit(1);
                     });'
             ],
+            'implicitNull' => [
+                '<?php
+                    /** @var list<string> */
+                    $array = [];
+
+                    $result = array_map(function(string $row) {
+                        if (strlen($row) <= 10) {
+                            return $row;
+                        }
+                    }, $array);',
+                'assertions' => [
+                    '$result' => 'string|null',
+                ]
+            ],
         ];
     }
 
