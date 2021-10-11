@@ -278,6 +278,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
+     * This method is called when SimpleAssertionReconciler was not enough. It receives the existing type, the assertion
+     * and also a new type created from the assertion string.
+     *
      * @param 0|1|2         $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param   array<string, array<string, Type\Union>> $template_type_map
@@ -583,7 +586,13 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
+     * This method receives two types. The goal is to use datas in the new type to reduce the existing_type to a more
+     * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
+     *
      * @param array<string, array<string, Type\Union>> $template_type_map
+     *
+     * @psalm-suppress ComplexMethod we'd probably want to extract specific handling blocks at the end and also allow
+     * early return once a specific case has been handled
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,
@@ -736,6 +745,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     continue;
                 }
 
+                //we filter both types of standard iterables
                 if (($new_type_part instanceof Type\Atomic\TGenericObject
                         || $new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)
@@ -791,6 +801,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                //we filter the second part of a list with the second part of standard iterables
                 if (($new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)
                     && $existing_type_part instanceof Type\Atomic\TList
@@ -838,6 +849,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                //we filter each property of a Keyed Array with the second part of standard iterables
                 if (($new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)
                     && $existing_type_part instanceof Type\Atomic\TKeyedArray
