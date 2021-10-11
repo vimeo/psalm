@@ -278,6 +278,9 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
+     * This method is called when SimpleAssertionReconciler was not enough. It receives the existing type, the assertion
+     * and also a new type created from the assertion string.
+     *
      * @param 0|1|2         $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param   array<string, array<string, Type\Union>> $template_type_map
@@ -583,7 +586,13 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
     }
 
     /**
+     * This method receives two types. The goal is to use datas in the new type to reduce the existing_type to a more
+     * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
+     *
      * @param array<string, array<string, Type\Union>> $template_type_map
+     *
+     * @psalm-suppress ComplexMethod we'd probably want to extract specific handling blocks at the end and also allow
+     * early return once a specific case has been handled
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,
@@ -736,6 +745,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     continue;
                 }
 
+                //we filter both types of standard iterables
                 if (($new_type_part instanceof Type\Atomic\TGenericObject
                         || $new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)
@@ -791,6 +801,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
+                //we filter the second part of a list with the second part of standard iterables
                 if (($new_type_part instanceof Type\Atomic\TArray
                         || $new_type_part instanceof Type\Atomic\TIterable)
                     && $existing_type_part instanceof Type\Atomic\TList
@@ -830,6 +841,54 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                             $has_any_param_match = true;
                         }
                     }
+
+                    if ($has_any_param_match) {
+                        $has_local_match = true;
+                        $matching_atomic_types[] = $existing_type_part;
+                        $atomic_comparison_results->type_coerced = true;
+                    }
+                }
+
+                //we filter each property of a Keyed Array with the second part of standard iterables
+                if (($new_type_part instanceof Type\Atomic\TArray
+                        || $new_type_part instanceof Type\Atomic\TIterable)
+                    && $existing_type_part instanceof Type\Atomic\TKeyedArray
+                ) {
+                    $has_any_param_match = false;
+
+                    $new_param = $new_type_part->type_params[1];
+                    foreach ($existing_type_part->properties as $property_key => $existing_param) {
+                        $has_param_match = true;
+
+                        $new_param = self::filterTypeWithAnother(
+                            $codebase,
+                            $existing_param,
+                            $new_param,
+                            $template_type_map,
+                            $has_param_match,
+                            $any_scalar_type_match_found
+                        );
+
+                        if ($template_type_map) {
+                            TemplateInferredTypeReplacer::replace(
+                                $new_param,
+                                new TemplateResult([], $template_type_map),
+                                $codebase
+                            );
+                        }
+
+                        if ($has_param_match
+                            && $existing_type_part->properties[$property_key]->getId() !== $new_param->getId()
+                        ) {
+                            $existing_type_part->properties[$property_key] = $new_param;
+
+                            if (!$has_local_match) {
+                                $has_any_param_match = true;
+                            }
+                        }
+                    }
+
+                    $existing_type->bustCache();
 
                     if ($has_any_param_match) {
                         $has_local_match = true;
