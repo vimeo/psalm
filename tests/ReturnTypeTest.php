@@ -962,7 +962,6 @@ class ReturnTypeTest extends TestCase
             'neverReturnClosure' => [
                 '<?php
                     set_error_handler(
-                    /** @psalm-suppress MissingClosureReturnType  */
                     function() {
                         print_r(func_get_args());
                         exit(1);
