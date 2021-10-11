@@ -63,6 +63,7 @@ class ArrayAssignmentAnalyzer
 
     /**
      * @return false|null
+     * @psalm-suppress PossiblyUnusedReturnValue not used but seems important
      */
     public static function updateArrayType(
         StatementsAnalyzer $statements_analyzer,
@@ -231,13 +232,15 @@ class ArrayAssignmentAnalyzer
         } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
-            StaticPropertyAssignmentAnalyzer::analyze(
+            if (StaticPropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $root_array_expr,
                 null,
                 $root_type,
                 $context
-            );
+            ) === false) {
+                return false;
+            }
         } elseif ($root_var_id) {
             $context->vars_in_scope[$root_var_id] = $root_type;
         }

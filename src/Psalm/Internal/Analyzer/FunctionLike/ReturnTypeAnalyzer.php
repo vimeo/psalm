@@ -55,6 +55,8 @@ class ReturnTypeAnalyzer
      * @param string[]            $compatible_method_ids
      *
      * @return  false|null
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      */
     public static function verifyReturnType(
         FunctionLike $function,

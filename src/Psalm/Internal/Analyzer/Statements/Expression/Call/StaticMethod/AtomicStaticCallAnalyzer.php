@@ -233,6 +233,9 @@ class AtomicStaticCallAnalyzer
         }
     }
 
+    /**
+     * @psalm-suppress UnusedReturnValue not used but seems important
+     */
     private static function handleNamedCall(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
