@@ -1481,6 +1481,16 @@ class UnusedCodeTest extends TestCase
                     f(new Worker());',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'UnusedFunctionInDoubleConditional' => [
+                '<?php
+                    $list = [];
+
+                    if (rand(0,1) && rand(0,1)) {
+                        array_merge($list, []);
+                    };
+                ',
+                'error_message' => 'UnusedFunctionCall',
+            ],
         ];
     }
 }
