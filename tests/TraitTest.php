@@ -324,7 +324,7 @@ class TraitTest extends TestCase
                 '<?php
                     trait T {
                         public function f(): void {
-                            if (is_a(static::class, "B")) { }
+                            if (is_a(static::class, B::class, true)) { }
                         }
                     }
 
@@ -342,7 +342,7 @@ class TraitTest extends TestCase
                 '<?php
                     trait T {
                         public function f(): void {
-                            if (is_a(static::class, "B")) { }
+                            if (is_a(static::class, B::class, true)) { }
                         }
                     }
 
