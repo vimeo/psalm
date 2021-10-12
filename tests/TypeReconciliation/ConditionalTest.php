@@ -2733,6 +2733,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     }
                     ',
             ],
+            'SimpleXMLElementNotAlwaysTruthy' => [
+                '<?php
+                    $lilstring = "";
+
+                    $n = new SimpleXMLElement($lilstring);
+                    /** @psalm-suppress MixedAssignment */
+                    $n = $n->b;
+
+                    if (!$n instanceof SimpleXMLElement) {
+                        return;
+                    }
+
+                    if (!$n) {
+                        echo "false";
+                    }',
+            ],
         ];
     }
 

@@ -144,6 +144,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'stringToNumericStringWithInt' => ['numeric-string', '~int', 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', '~float', 'string'],
             'filterKeyedArrayWithIterable' => ['array{some: string}', 'iterable<string>', 'array{some: mixed}'],
+            'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', '!falsy', 'SimpleXMLElement'],
+            'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', 'falsy', 'SimpleXMLElement'],
         ];
     }
 
