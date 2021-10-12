@@ -1077,7 +1077,8 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($atomic_type instanceof Type\Atomic\TNamedObject
+                && $atomic_type->value !== 'SimpleXMLElement') {
                 continue;
             }
 
