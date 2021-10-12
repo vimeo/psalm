@@ -11,7 +11,6 @@ use Psalm\Type\Union;
 
 use function array_merge;
 use function array_values;
-use function class_exists;
 use function count;
 use function is_a;
 use function reset;
