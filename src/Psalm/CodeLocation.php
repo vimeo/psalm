@@ -259,7 +259,7 @@ class CodeLocation
             }
 
             if (preg_match($regex, $preview_snippet, $matches, PREG_OFFSET_CAPTURE)) {
-                if (!isset($matches[1])) {
+                if (!isset($matches[1]) || (int)$matches[1][1] === -1) {
                     throw new \LogicException(
                         "Failed to match anything to 1st capturing group, "
                         . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type
