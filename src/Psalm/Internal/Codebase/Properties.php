@@ -127,32 +127,32 @@ class Properties
         }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
-            $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+            $declaring_property_class = strtolower($class_storage->declaring_property_ids[$property_name]);
 
             if ($context && $context->calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    strtolower($declaring_property_class) . '::$' . $property_name,
+                    $declaring_property_class . '::$' . $property_name,
                     false
                 );
 
                 if ($read_mode) {
                     $this->file_reference_provider->addMethodReferenceToClassProperty(
                         $context->calling_method_id,
-                        strtolower($declaring_property_class) . '::$' . $property_name
+                        $declaring_property_class . '::$' . $property_name
                     );
                 }
             } elseif ($source) {
                 $this->file_reference_provider->addFileReferenceToClassMember(
                     $source->getFilePath(),
-                    strtolower($declaring_property_class) . '::$' . $property_name,
+                    $declaring_property_class . '::$' . $property_name,
                     false
                 );
 
                 if ($read_mode) {
                     $this->file_reference_provider->addFileReferenceToClassProperty(
                         $source->getFilePath(),
-                        strtolower($declaring_property_class) . '::$' . $property_name
+                        $declaring_property_class . '::$' . $property_name
                     );
                 }
             }
@@ -160,7 +160,7 @@ class Properties
             if ($this->collect_locations && $code_location) {
                 $this->file_reference_provider->addCallingLocationForClassProperty(
                     $code_location,
-                    strtolower($declaring_property_class) . '::$' . $property_name
+                    $declaring_property_class . '::$' . $property_name
                 );
             }
 

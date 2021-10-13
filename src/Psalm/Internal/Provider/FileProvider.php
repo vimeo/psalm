@@ -23,12 +23,13 @@ class FileProvider
 
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
-        if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
-            return $this->temp_files[strtolower($file_path)];
+        $file_path_lc = strtolower($file_path);
+        if (!$go_to_source && isset($this->temp_files[$file_path_lc])) {
+            return $this->temp_files[$file_path_lc];
         }
 
-        if (isset($this->open_files[strtolower($file_path)])) {
-            return $this->open_files[strtolower($file_path)];
+        if (isset($this->open_files[$file_path_lc])) {
+            return $this->open_files[$file_path_lc];
         }
 
         if (!file_exists($file_path)) {
@@ -44,12 +45,13 @@ class FileProvider
 
     public function setContents(string $file_path, string $file_contents): void
     {
-        if (isset($this->open_files[strtolower($file_path)])) {
-            $this->open_files[strtolower($file_path)] = $file_contents;
+        $file_path_lc = strtolower($file_path);
+        if (isset($this->open_files[$file_path_lc])) {
+            $this->open_files[$file_path_lc] = $file_contents;
         }
 
-        if (isset($this->temp_files[strtolower($file_path)])) {
-            $this->temp_files[strtolower($file_path)] = $file_contents;
+        if (isset($this->temp_files[$file_path_lc])) {
+            $this->temp_files[$file_path_lc] = $file_contents;
         }
 
         file_put_contents($file_path, $file_contents);
@@ -57,8 +59,9 @@ class FileProvider
 
     public function setOpenContents(string $file_path, string $file_contents): void
     {
-        if (isset($this->open_files[strtolower($file_path)])) {
-            $this->open_files[strtolower($file_path)] = $file_contents;
+        $file_path_lc = strtolower($file_path);
+        if (isset($this->open_files[$file_path_lc])) {
+            $this->open_files[$file_path_lc] = $file_contents;
         }
     }
 
@@ -88,12 +91,14 @@ class FileProvider
 
     public function isOpen(string $file_path): bool
     {
-        return isset($this->temp_files[strtolower($file_path)]) || isset($this->open_files[strtolower($file_path)]);
+        $file_path_lc = strtolower($file_path);
+        return isset($this->temp_files[$file_path_lc]) || isset($this->open_files[$file_path_lc]);
     }
 
     public function closeFile(string $file_path): void
     {
-        unset($this->temp_files[strtolower($file_path)], $this->open_files[strtolower($file_path)]);
+        $file_path_lc = strtolower($file_path);
+        unset($this->temp_files[$file_path_lc], $this->open_files[$file_path_lc]);
     }
 
     public function fileExists(string $file_path): bool

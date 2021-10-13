@@ -271,10 +271,11 @@ class ClassLikeNodeScanner
             foreach ($node->extends as $interface) {
                 $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
                 $interface_fqcln = $this->codebase->classlikes->getUnAliasedName($interface_fqcln);
+                $interface_fqcln_lc = strtolower($interface_fqcln);
                 $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln);
-                $storage->parent_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
-                $storage->direct_interface_parents[strtolower($interface_fqcln)] = $interface_fqcln;
-                $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
+                $storage->parent_interfaces[$interface_fqcln_lc] = $interface_fqcln;
+                $storage->direct_interface_parents[$interface_fqcln_lc] = $interface_fqcln;
+                $this->file_storage->required_interfaces[$interface_fqcln_lc] = $interface_fqcln;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Trait_) {
             $storage->is_trait = true;
@@ -321,10 +322,11 @@ class ClassLikeNodeScanner
         if ($node instanceof PhpParser\Node\Stmt\Class_ || $node instanceof PhpParser\Node\Stmt\Enum_) {
             foreach ($node->implements as $interface) {
                 $interface_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($interface, $this->aliases);
+                $interface_fqcln_lc = strtolower($interface_fqcln);
                 $this->codebase->scanner->queueClassLikeForScanning($interface_fqcln);
-                $storage->class_implements[strtolower($interface_fqcln)] = $interface_fqcln;
-                $storage->direct_class_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
-                $this->file_storage->required_interfaces[strtolower($interface_fqcln)] = $interface_fqcln;
+                $storage->class_implements[$interface_fqcln_lc] = $interface_fqcln;
+                $storage->direct_class_interfaces[$interface_fqcln_lc] = $interface_fqcln;
+                $this->file_storage->required_interfaces[$interface_fqcln_lc] = $interface_fqcln;
             }
         }
 
