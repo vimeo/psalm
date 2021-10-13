@@ -23,6 +23,7 @@ use function array_values;
 use function count;
 use function get_class;
 use function implode;
+use function ksort;
 use function reset;
 use function sort;
 use function strpos;
@@ -497,7 +498,7 @@ class Union implements TypeNode
 
         $nullable = false;
 
-        if (isset($types['null']) && count($types) === 2) {
+        if (isset($types['null']) && count($types) > 1) {
             unset($types['null']);
 
             $nullable = true;
@@ -530,7 +531,12 @@ class Union implements TypeNode
         }
 
         if ($falsable) {
-            return ($nullable ? '?' : '') . implode('|', array_unique($php_types)) . '|false';
+            if ($nullable) {
+                $php_types['null'] = 'null';
+            }
+            $php_types['false'] = 'false';
+            ksort($php_types);
+            return implode('|', array_unique($php_types));
         }
 
         return ($nullable ? '?' : '') . implode('|', array_unique($php_types));

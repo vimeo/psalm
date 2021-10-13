@@ -731,7 +731,111 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 ['MissingReturnType'],
                 false,
                 true,
-            ]
+            ],
+            'OrFalseNullInReturn' => [
+                '<?php
+                    function a() {
+                        /** @var array|false|null $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): array|false|null {
+                        /** @var array|false|null $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'OrFalseNullInReturn' => [
+                '<?php
+                    function a() {
+                        /** @var array|false|null $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): array|false|null {
+                        /** @var array|false|null $a */
+                        $a = false;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'ForeignStatic' => [
+                '<?php
+                    class a {
+                        public function g(): static { return $this; }
+                    }
+                    class b extends a {}
+
+                    class c {
+                        public function a() { return (new a)->g(); }
+                        public function b() { return (new b)->g(); }
+                    }
+                ',
+                '<?php
+                    class a {
+                        public function g(): static { return $this; }
+                    }
+                    class b extends a {}
+
+                    class c {
+                        public function a(): a { return (new a)->g(); }
+                        public function b(): b { return (new b)->g(); }
+                    }
+                ',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'ForeignStaticIntersection' => [
+                '<?php
+                    class a {
+                        public function g(): static { return $this; }
+                    }
+                    class b extends a {}
+
+                    class c {
+                        public function a() { return (new a)->g(); }
+                        public function b() { return (new b)->g(); }
+                    }
+                ',
+                '<?php
+                    class a {
+                        public function g(): static { return $this; }
+                    }
+                    class b extends a {}
+
+                    class c {
+                        public function a(): a { return (new a)->g(); }
+                        public function b(): a&b { return (new b)->g(); }
+                    }
+                ',
+                '8.1',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'ArrowFunction' => [
+                '<?php
+                    fn () => 0;
+                ',
+                '<?php
+                    fn (): int => 0;
+                ',
+                '8.0',
+                ['MissingClosureReturnType'],
+                false,
+                true,
+            ],
         ];
     }
 }

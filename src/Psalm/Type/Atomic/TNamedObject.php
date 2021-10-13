@@ -8,6 +8,7 @@ use Psalm\Type\Atomic;
 
 use function array_map;
 use function implode;
+use function strrpos;
 use function substr;
 
 /**
@@ -127,7 +128,14 @@ class TNamedObject extends Atomic
             return $php_major_version >= 8 ? 'static' : 'self';
         }
 
-        return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+        $intersection = strrpos($result, '&');
+        if ($intersection === false ||
+            ($intersection !== false && $php_major_version >= 8 && $php_minor_version >= 1)
+        ) {
+            return $result;
+        }
+        return substr($result, $intersection+1);
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
