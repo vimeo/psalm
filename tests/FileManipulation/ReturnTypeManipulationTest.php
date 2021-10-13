@@ -750,24 +750,6 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 false,
                 true,
             ],
-            'OrFalseNullInReturn' => [
-                '<?php
-                    function a() {
-                        /** @var array|false|null $a */
-                        $a = false;
-                        return $a;
-                    }',
-                '<?php
-                    function a(): array|false|null {
-                        /** @var array|false|null $a */
-                        $a = false;
-                        return $a;
-                    }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
-            ],
             'ForeignStatic' => [
                 '<?php
                     class a {
