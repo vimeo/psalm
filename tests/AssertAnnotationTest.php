@@ -1241,7 +1241,7 @@ class AssertAnnotationTest extends TestCase
                         return substr($a, 0, 1) . substr($b, 0, 1);
                     }'
             ],
-            'convertConstStringType' => [
+            'SKIPPED-convertConstStringType' => [
                 '<?php
                     class A {
                         const T1 = 1;
