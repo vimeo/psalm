@@ -273,6 +273,48 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 ['MissingParamType'],
                 true,
             ],
+            'StaticParamForbidden' => [
+                '<?php
+                    class A {
+                        private function foo($bar) : void {
+                        }
+                        public function test(): void {
+                            $this->foo($this->ret());
+                        }
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+                    class B extends A {
+                    }
+
+                    (new A)->test();
+                    (new A)->test();
+                ',
+                '<?php
+                    class A {
+                        /**
+                         * @param static $bar
+                         */
+                        private function foo($bar) : void {
+                        }
+                        public function test(): void {
+                            $this->foo($this->ret());
+                        }
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+                    class B extends A {
+                    }
+
+                    (new A)->test();
+                    (new A)->test();
+                ',
+                '8.0',
+                ['MissingParamType'],
+                true,
+            ],
         ];
     }
 }

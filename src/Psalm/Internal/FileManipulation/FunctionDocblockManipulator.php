@@ -299,6 +299,9 @@ class FunctionDocblockManipulator
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
+        if ($php_type === 'static') {
+            $php_type = '';
+        }
         if ($php_type) {
             $this->new_php_param_types[$param_name] = $php_type;
         }
