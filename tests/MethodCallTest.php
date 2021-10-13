@@ -935,7 +935,7 @@ class MethodCallTest extends TestCase
                 '<?php
                     $a = new SplObjectStorage();',
                 [
-                    '$a' => 'SplObjectStorage<empty, empty>',
+                    '$a' => 'SplObjectStorage<never, never>',
                 ]
             ],
             'allowIteratorToBeNull' => [

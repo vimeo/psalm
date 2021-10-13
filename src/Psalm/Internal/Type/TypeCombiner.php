@@ -9,6 +9,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TAssertionEmpty;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
@@ -17,7 +18,6 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -336,7 +336,7 @@ class TypeCombiner
             $combination->value_types += $combination->named_object_types;
         }
 
-        $has_empty = (int) isset($combination->value_types['empty']);
+        $has_empty = (int) (isset($combination->value_types['never']) || isset($combination->value_types['empty']));
         $has_never = false;
 
         foreach ($combination->value_types as $type) {
@@ -347,7 +347,7 @@ class TypeCombiner
                 continue;
             }
 
-            if (($type instanceof TEmpty || $type instanceof TNever)
+            if (($type instanceof TNever || $type instanceof TAssertionEmpty)
                 && (count($combination->value_types) > 1 || count($new_types))
             ) {
                 $has_never = true;

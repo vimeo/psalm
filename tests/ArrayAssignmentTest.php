@@ -1008,7 +1008,7 @@ class ArrayAssignmentTest extends TestCase
                     $b = (array) null;',
                 'assertions' => [
                     '$a' => 'array{0?: int, 1?: string}',
-                    '$b' => 'array<empty, empty>',
+                    '$b' => 'array<never, never>',
                 ],
             ],
             'getOnCoercedArray' => [
@@ -1124,7 +1124,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesList($a);',
                 'assertions' => [
-                    '$a' => 'array<empty, empty>'
+                    '$a' => 'array<never, never>'
                 ],
             ],
             'listCreatedInSingleStatementUsedAsArray' => [

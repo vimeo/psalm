@@ -9,10 +9,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Union;
@@ -84,8 +84,8 @@ class UnsetAnalyzer
                                     } else {
                                         $root_type->addType(
                                             new TArray([
-                                                new Union([new TEmpty]),
-                                                new Union([new TEmpty]),
+                                                new Union([new TNever]),
+                                                new Union([new TNever]),
                                             ])
                                         );
                                     }

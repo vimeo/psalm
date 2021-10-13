@@ -11,6 +11,7 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TAssertionEmpty;
 use Psalm\Type\Atomic\TAssertionFalsy;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
@@ -25,7 +26,6 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
@@ -231,7 +231,7 @@ abstract class Atomic implements TypeNode
                 return new TNamedObject($value);
 
             case 'empty':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TEmpty();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TAssertionEmpty();
 
             case 'scalar':
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();

@@ -571,7 +571,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             case TTemplateParam::class:
             case TEmptyMixed::class:
-            case TEmpty::class:
+            case TNever::class:
             case TMixed::class:
             case TNonEmptyMixed::class:
             case TObject::class:

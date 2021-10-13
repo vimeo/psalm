@@ -490,7 +490,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if ($inferred_return_type->hasMixed() || $inferred_return_type->isEmpty()) {
+            if ($inferred_return_type->hasMixed()) {
                 if (IssueBuffer::accepts(
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .

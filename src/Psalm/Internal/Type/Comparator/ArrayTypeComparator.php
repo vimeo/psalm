@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -39,8 +40,8 @@ class ArrayTypeComparator
 
         $is_empty_array = $input_type_part->equals(
             new TArray([
-                new Union([new TEmpty()]),
-                new Union([new TEmpty()])
+                new Union([new TNever()]),
+                new Union([new TNever()])
             ]),
             false
         );

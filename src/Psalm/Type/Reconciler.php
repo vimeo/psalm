@@ -23,13 +23,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
@@ -232,7 +232,7 @@ class Reconciler
 
                     /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
                     if (!$result_type_candidate->getAtomicTypes()) {
-                        $result_type_candidate->addType(new TEmpty);
+                        $result_type_candidate->addType(new TNever());
                     }
 
                     $orred_type = Type::combineUnionTypes(
@@ -654,7 +654,7 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
-                        } elseif ($existing_key_type_part instanceof TEmpty
+                        } elseif ($existing_key_type_part instanceof TNever
                             || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)
                         ) {

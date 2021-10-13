@@ -18,7 +18,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -40,6 +39,7 @@ use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
@@ -483,14 +483,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
 
                 $existing_var_type->removeType('array');
-            } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
+            } elseif ($array_atomic_type->getId() !== 'array<never, never>') {
                 $did_remove_type = true;
 
                 if (!$min_count) {
                     $existing_var_type->addType(new TArray(
                         [
-                            new Union([new TEmpty]),
-                            new Union([new TEmpty]),
+                            new Union([new TNever()]),
+                            new Union([new TNever()]),
                         ]
                     ));
                 }

@@ -33,9 +33,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -544,8 +544,8 @@ class ArrayFunctionArgumentsAnalyzer
                             if ($array_atomic_type->count === 0) {
                                 $array_atomic_type = new TArray(
                                     [
-                                        new Union([new TEmpty]),
-                                        new Union([new TEmpty]),
+                                        new Union([new TNever]),
+                                        new Union([new TNever]),
                                     ]
                                 );
                             } else {
@@ -561,8 +561,8 @@ class ArrayFunctionArgumentsAnalyzer
                             if ($array_atomic_type->count === 0) {
                                 $array_atomic_type = new TArray(
                                     [
-                                        new Union([new TEmpty]),
-                                        new Union([new TEmpty]),
+                                        new Union([new TNever]),
+                                        new Union([new TNever]),
                                     ]
                                 );
                             } else {

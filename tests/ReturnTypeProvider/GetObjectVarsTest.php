@@ -33,7 +33,7 @@ class GetObjectVarsTest extends TestCase
                 }
                 $ret = get_object_vars(new C);
             ',
-            ['$ret' => 'array<empty, empty>'],
+            ['$ret' => 'array<never, never>'],
         ];
 
         yield 'includesPrivateAndProtectedPropertiesWhenCalledInsideClassScope' => [

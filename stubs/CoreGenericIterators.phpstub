@@ -442,7 +442,7 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator {
 }
 
 /**
- * @template-implements Iterator<empty, empty>
+ * @template-implements Iterator<never, never>
  */
 class EmptyIterator implements Iterator {
     /**

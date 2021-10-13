@@ -176,7 +176,7 @@ class ReconcilerTest extends TestCase
                 'array<int, array<string, string>>',
             ],
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
-                'array<empty, empty>',
+                'array<never, never>',
                 'array{a?: string, b?: string}',
             ],
             'literalNumericStringInt' => [

@@ -847,7 +847,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @psalm-return array<empty, empty>
+                     * @psalm-return array<never, never>
                      */
                     function foo(): array {
                         return [];

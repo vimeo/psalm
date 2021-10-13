@@ -592,7 +592,7 @@ class TypeTest extends TestCase
                         $ids = [];
                     }',
                 'assertions' => [
-                    '$ids' => 'array<empty, empty>',
+                    '$ids' => 'array<never, never>',
                 ],
             ],
             'arrayUnionTypeAssertionWithIsArray' => [
@@ -603,7 +603,7 @@ class TypeTest extends TestCase
                         $ids = [];
                     }',
                 'assertions' => [
-                    '$ids' => 'array<empty, empty>',
+                    '$ids' => 'array<never, never>',
                 ],
             ],
             '2dArrayUnionTypeAssertionWithIsArray' => [

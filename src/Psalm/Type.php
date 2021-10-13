@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -311,7 +310,7 @@ abstract class Type
      */
     public static function getEmpty(): Union
     {
-        $type = new TEmpty();
+        $type = new TNever();
 
         return new Union([$type]);
     }
@@ -378,8 +377,8 @@ abstract class Type
     {
         $array_type = new TArray(
             [
-                new Union([new TEmpty]),
-                new Union([new TEmpty]),
+                new Union([new TNever()]),
+                new Union([new TNever()]),
             ]
         );
 

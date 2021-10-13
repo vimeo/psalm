@@ -138,7 +138,7 @@ class YieldAnalyzer
                 $expression_type = Type::getMixed();
             }
         } else {
-            $expression_type = Type::getEmpty();
+            $expression_type = Type::getNever();
         }
 
         $yield_type = null;

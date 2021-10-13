@@ -136,7 +136,7 @@ class ExitAnalyzer
             }
         }
 
-        $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+        $statements_analyzer->node_data->setType($stmt, Type::getNever());
 
         $context->has_returned = true;
 

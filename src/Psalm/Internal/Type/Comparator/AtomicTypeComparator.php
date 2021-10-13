@@ -94,7 +94,7 @@ class AtomicTypeComparator
             return true;
         }
 
-        if ($input_type_part instanceof TNever || $input_type_part instanceof TEmpty) {
+        if ($input_type_part instanceof TNever) {
             return true;
         }
 

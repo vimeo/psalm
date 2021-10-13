@@ -56,7 +56,6 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -67,6 +66,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
@@ -553,7 +553,10 @@ class ArrayFetchAnalyzer
         foreach ($array_type->getAtomicTypes() as $type_string => $type) {
             $original_type = $type;
 
-            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
+            if ($type instanceof TMixed
+                || $type instanceof TTemplateParam
+                || $type instanceof TNever
+            ) {
                 if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
                     $array_access_type = self::handleMixedArrayAccess(
                         $context,
@@ -592,7 +595,7 @@ class ArrayFetchAnalyzer
                             $statements_analyzer->getSuppressedIssues()
                         );
 
-                        $array_access_type = new Union([new TEmpty]);
+                        $array_access_type = new Union([new TNever]);
                     }
                 } else {
                     if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
@@ -1002,7 +1005,7 @@ class ArrayFetchAnalyzer
     }
 
     /**
-     * @param  TMixed|TTemplateParam|TEmpty $type
+     * @param  TMixed|TTemplateParam|TNever $type
      */
     public static function handleMixedArrayAccess(
         Context $context,
@@ -1073,7 +1076,7 @@ class ArrayFetchAnalyzer
 
         return Type::combineUnionTypes(
             $array_access_type,
-            Type::getMixed($type instanceof TEmpty)
+            Type::getMixed($type instanceof TNever)
         );
     }
 
@@ -1118,7 +1121,7 @@ class ArrayFetchAnalyzer
                 // ok, type becomes an TKeyedArray
                 $array_type->removeType($type_string);
                 $type = new TKeyedArray([
-                    $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getEmpty()
+                    $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getNever()
                 ]);
 
                 $type->sealed = $from_empty_array;
@@ -1525,7 +1528,7 @@ class ArrayFetchAnalyzer
                         clone $type->properties[$key_value]
                     );
                 } elseif ($in_assignment) {
-                    $type->properties[$key_value] = new Union([new TEmpty]);
+                    $type->properties[$key_value] = new Union([new TNever]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
@@ -1948,7 +1951,7 @@ class ArrayFetchAnalyzer
             $valid_offset_type = Type::getInt(false, 0);
         } elseif ($type instanceof TLiteralString) {
             if ($type->value === '') {
-                $valid_offset_type = Type::getEmpty();
+                $valid_offset_type = Type::getNever();
             } elseif (strlen($type->value) < 10) {
                 $valid_offsets = [];
 

@@ -232,7 +232,7 @@ class CastAnalyzer
                         $keyed_array->is_list = true;
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
-                        $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
+                        $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
                     } elseif ($type instanceof TArray
                         || $type instanceof TList
                         || $type instanceof TKeyedArray

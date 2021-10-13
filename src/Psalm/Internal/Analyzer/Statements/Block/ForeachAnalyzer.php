@@ -49,6 +49,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
@@ -505,7 +506,10 @@ class ForeachAnalyzer
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
                 $value_type = Type::getMixed();
-            } elseif ($iterator_atomic_type instanceof TObject || $iterator_atomic_type instanceof TMixed) {
+            } elseif ($iterator_atomic_type instanceof TObject ||
+                $iterator_atomic_type instanceof TMixed ||
+                $iterator_atomic_type instanceof TNever
+            ) {
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
                 $key_type = Type::getMixed();

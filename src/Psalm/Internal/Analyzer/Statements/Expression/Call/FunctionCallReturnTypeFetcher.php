@@ -144,7 +144,7 @@ class FunctionCallReturnTypeFetcher
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getEmpty()
+                                            Type::getNever()
                                         )
                                     ]
                                 ];

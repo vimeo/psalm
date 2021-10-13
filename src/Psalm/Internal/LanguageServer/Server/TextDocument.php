@@ -262,7 +262,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position
-     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
+     * @psalm-return Promise<array<never, never>>|Promise<CompletionList>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {

@@ -64,7 +64,7 @@ This is the _bottom type_ in PHP's type system, and usually represents a return 
 
 ### `empty`
 
-A type that's equivalent to a "coming soon" sign. Psalm uses this type when it’s awaiting more information — a good example is the type of the empty array `[]`, which Psalm types as `array<empty, empty>`. Psalm treats `empty` in a somewhat similar fashion to `never` when combining types together — `empty|int` becomes `int`, just as `never|string` becomes `string`.
+A type that's equivalent to a "coming soon" sign. Psalm uses this type when it’s awaiting more information — a good example is the type of the empty array `[]`, which Psalm types as `array<never, never>`. Psalm treats `empty` in a somewhat similar fashion to `never` when combining types together — `empty|int` becomes `int`, just as `never|string` becomes `string`.
 
 ## Other
 

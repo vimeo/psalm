@@ -35,7 +35,7 @@ The classes are as follows:
 
 `TEmptyMixed` - as above, but empty. Generated for `$x` inside the `if` statement `if (!$x) {...}` when `$x` is `mixed` outside.
 
-`TEmpty` - denotes the `empty` type, used to describe a type corresponding to no value whatsoever. Empty arrays `[]` have the type `array<empty, empty>`.
+`TEmpty` - denotes the `empty` type, used to describe a type corresponding to no value whatsoever. Empty arrays `[]` have the type `array<never, never>`.
 
 `TIterable` - denotes the [`iterable` type](https://www.php.net/manual/en/language.types.iterable.php) (which can also result from an `is_iterable` check).
 

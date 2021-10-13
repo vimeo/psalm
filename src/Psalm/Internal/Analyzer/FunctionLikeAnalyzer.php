@@ -503,7 +503,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && !$inferred_return_type->isSingleIntLiteral()
                 && !$inferred_return_type->isSingleStringLiteral()
                 && !$inferred_return_type->isTrue()
-                && $inferred_return_type->getId() !== 'array<empty, empty>'
+                && $inferred_return_type->getId() !== 'array<never, never>'
             ) {
                 $manipulator->makePure();
             }
