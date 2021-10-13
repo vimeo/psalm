@@ -539,7 +539,13 @@ class Union implements TypeNode
             return implode('|', array_unique($php_types));
         }
 
-        return ($nullable ? '?' : '') . implode('|', array_unique($php_types));
+        if ($php_major_version < 8) {
+            return ($nullable ? '?' : '') . implode('|', array_unique($php_types));
+        }
+        if ($nullable) {
+            $php_types['null'] = 'null';
+        }
+        return implode('|', array_unique($php_types));
     }
 
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool

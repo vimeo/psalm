@@ -750,6 +750,60 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'NullUnionReturn8' => [
+                '<?php
+                    function a() {
+                        /** @var int|string|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): int|string|null {
+                        /** @var int|string|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'NullableReturn8' => [
+                '<?php
+                    function a() {
+                        /** @var int|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): int|null {
+                        /** @var int|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'NullableReturn7' => [
+                '<?php
+                    function a() {
+                        /** @var int|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '<?php
+                    function a(): ?int {
+                        /** @var int|null $a */
+                        $a = 0;
+                        return $a;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
             'ForeignStatic' => [
                 '<?php
                     class a {
