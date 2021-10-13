@@ -201,7 +201,7 @@ class ExpressionIdentifier
         ) {
             $config = \Psalm\Config::getInstance();
 
-            if ($config->memoize_method_calls || isset($stmt->memoizable)) {
+            if ($config->memoize_method_calls || $stmt->getAttribute('memoizable', false)) {
                 $lhs_var_name = self::getArrayVarId(
                     $stmt->var,
                     $this_class_name,
