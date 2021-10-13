@@ -1294,3 +1294,10 @@ function get_meta_tags(string $filename, bool $use_include_path = false) : array
  * @return ($categorize is false ? array<string,int|string|float|bool|null|array|resource> : array<string, array<string,int|string|float|bool|null|array|resource>>)
  */
 function get_defined_constants(bool $categorize = false): array {}
+
+/**
+ * @param mixed $object_or_class
+ * @param class-string $class
+ * @return ($allow_string is false ? ($object_or_class is string ? false : bool) : bool)
+ */
+function is_a($object_or_class, string $class, $allow_string = false): bool{}
