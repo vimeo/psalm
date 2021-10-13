@@ -1376,6 +1376,7 @@ class ClassLikes
         ?string $calling_method_id
     ) : void {
         $calling_fq_class_name = $source->getFQCLN();
+        $fq_class_name_lc = strtolower($calling_fq_class_name ?? '');
 
         $moved_type = false;
 
@@ -1408,9 +1409,9 @@ class ClassLikes
             $migrated_source_fqcln = $calling_fq_class_name;
 
             if ($calling_fq_class_name
-                && isset($codebase->class_transforms[strtolower($calling_fq_class_name)])
+                && isset($codebase->class_transforms[$fq_class_name_lc])
             ) {
-                $migrated_source_fqcln = $codebase->class_transforms[strtolower($calling_fq_class_name)];
+                $migrated_source_fqcln = $codebase->class_transforms[$fq_class_name_lc];
             }
 
             $source_namespace = $source->getNamespace();
@@ -1471,16 +1472,16 @@ class ClassLikes
         if (!$moved_type
             && $codebase->classes_to_move
             && $calling_fq_class_name
-            && isset($codebase->classes_to_move[strtolower($calling_fq_class_name)])
+            && isset($codebase->classes_to_move[$fq_class_name_lc])
         ) {
             $bounds = $type_location->getSelectionBounds();
 
-            $destination_class = $codebase->classes_to_move[strtolower($calling_fq_class_name)];
+            $destination_class = $codebase->classes_to_move[$fq_class_name_lc];
 
-            if ($type->containsClassLike(strtolower($calling_fq_class_name))) {
+            if ($type->containsClassLike($fq_class_name_lc)) {
                 $type = clone $type;
 
-                $type->replaceClassLike(strtolower($calling_fq_class_name), $destination_class);
+                $type->replaceClassLike($fq_class_name_lc, $destination_class);
             }
 
             $this->airliftClassDefinedDocblockType(

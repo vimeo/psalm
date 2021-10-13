@@ -71,7 +71,7 @@ class MatchAnalyzer
                 if (!$first_arg->value instanceof PhpParser\Node\Expr\Variable) {
                     $switch_var_id = '$__tmp_switch__' . (int) $first_arg->value->getAttribute('startFilePos');
 
-                    $condition_type = $statements_analyzer->node_data->getType($first_arg->value) ?: Type::getMixed();
+                    $condition_type = $statements_analyzer->node_data->getType($first_arg->value) ?? Type::getMixed();
 
                     $context->vars_in_scope[$switch_var_id] = $condition_type;
 
@@ -97,7 +97,7 @@ class MatchAnalyzer
             ) {
                 $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
 
-                $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
+                $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?? Type::getMixed();
 
                 $context->vars_in_scope[$switch_var_id] = $condition_type;
 
@@ -276,7 +276,7 @@ class MatchAnalyzer
 
         $stmt_expr_type = $statements_analyzer->node_data->getType($ternary);
 
-        $old_node_data->setType($stmt, $stmt_expr_type ?: Type::getMixed());
+        $old_node_data->setType($stmt, $stmt_expr_type ?? Type::getMixed());
 
         $statements_analyzer->node_data = $old_node_data;
 

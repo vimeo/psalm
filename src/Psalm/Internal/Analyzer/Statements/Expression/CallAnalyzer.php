@@ -50,6 +50,7 @@ class CallAnalyzer
         string $method_name,
         Context $context
     ): void {
+        $method_name_lc = strtolower($method_name);
         $fq_class_name = (string)$source->getFQCLN();
 
         $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
@@ -67,7 +68,7 @@ class CallAnalyzer
         ) {
             $method_id = new \Psalm\Internal\MethodIdentifier(
                 $fq_class_name,
-                strtolower($method_name)
+                $method_name_lc
             );
 
             if ((string) $method_id !== $source->getId()) {
@@ -101,7 +102,7 @@ class CallAnalyzer
             ) &&
             $source->getMethodName() !== $method_name
         ) {
-            $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, strtolower($method_name));
+            $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $method_name_lc);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -115,7 +116,7 @@ class CallAnalyzer
 
                             $method_id = new \Psalm\Internal\MethodIdentifier(
                                 $fq_class_name,
-                                strtolower($method_name)
+                                $method_name_lc
                             );
 
                             $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -135,7 +136,7 @@ class CallAnalyzer
                                 $fq_class_name = $intersection_type->value;
                                 $method_id = new \Psalm\Internal\MethodIdentifier(
                                     $fq_class_name,
-                                    strtolower($method_name)
+                                    $method_name_lc
                                 );
 
                                 $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -179,7 +180,7 @@ class CallAnalyzer
                         $appearing_method_id->fq_class_name
                     );
 
-                    if (isset($appearing_class_storage->trait_final_map[strtolower($method_name)])) {
+                    if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
                         $is_final = true;
                     }
                 }

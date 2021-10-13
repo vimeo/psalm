@@ -257,7 +257,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $method_id,
                                 $self_class
-                            ) ?: Type::getMixed();
+                            ) ?? Type::getMixed();
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,

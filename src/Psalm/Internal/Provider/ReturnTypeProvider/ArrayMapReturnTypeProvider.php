@@ -310,7 +310,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
             $statements_analyzer->removeSuppressedIssues(['MixedArrayOffset']);
         }
 
-        $return_type = $statements_analyzer->node_data->getType($fake_call) ?: null;
+        $return_type = $statements_analyzer->node_data->getType($fake_call) ?? null;
 
         $statements_analyzer->node_data = $old_data_provider;
 
@@ -437,7 +437,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                         unset($context->vars_in_scope['$__fake_offset_var__']);
                     }
 
-                    $function_id_return_type = $fake_method_return_type ?: Type::getMixed();
+                    $function_id_return_type = $fake_method_return_type ?? Type::getMixed();
                 } else {
                     $fake_function_call = new VirtualFuncCall(
                         new VirtualFullyQualified(
@@ -459,7 +459,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
 
                     unset($context->vars_in_scope['$__fake_offset_var__']);
 
-                    $function_id_return_type = $fake_function_return_type ?: Type::getMixed();
+                    $function_id_return_type = $fake_function_return_type ?? Type::getMixed();
                 }
             }
 

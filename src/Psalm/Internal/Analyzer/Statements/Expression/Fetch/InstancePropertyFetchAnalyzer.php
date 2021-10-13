@@ -302,7 +302,7 @@ class InstancePropertyFetchAnalyzer
         }
 
         if ($var_id) {
-            $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?: Type::getMixed();
+            $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
         }
 
         return true;

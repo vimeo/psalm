@@ -407,7 +407,7 @@ class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $return_type_candidate = $return_type_candidate ?: Type::getMixed();
+        $return_type_candidate = $return_type_candidate ?? Type::getMixed();
 
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::taintReturnType(
             $statements_analyzer,

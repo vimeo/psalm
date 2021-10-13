@@ -1094,7 +1094,7 @@ class TemplateStandinTypeReplacer
             $last_arg_offset = $template_bound->arg_offset;
         }
 
-        return $current_type ?: \Psalm\Type::getMixed();
+        return $current_type ?? \Psalm\Type::getMixed();
     }
 
     /**

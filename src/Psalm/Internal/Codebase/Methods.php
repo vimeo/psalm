@@ -354,7 +354,7 @@ class Methods
 
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
-        $callmap_id = $declaring_method_id ?: $method_id;
+        $callmap_id = $declaring_method_id ?? $method_id;
 
         // functions
         if (InternalCallMapHandler::inCallMap((string) $callmap_id)) {

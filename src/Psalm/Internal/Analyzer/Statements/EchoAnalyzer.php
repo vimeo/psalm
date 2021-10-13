@@ -70,7 +70,7 @@ class EchoAnalyzer
 
             if (ArgumentAnalyzer::verifyType(
                 $statements_analyzer,
-                $expr_type ?: Type::getMixed(),
+                $expr_type ?? Type::getMixed(),
                 Type::getString(),
                 null,
                 'echo',

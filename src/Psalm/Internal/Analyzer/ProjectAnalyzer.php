@@ -763,6 +763,7 @@ class ProjectAnalyzer
                     );
                 }
 
+                $source_lc = strtolower($source);
                 if (strtolower($source_parts[0]) !== strtolower($destination_parts[0])) {
                     $source_method_storage = $this->codebase->methods->getStorage($source_method_id);
                     $destination_class_storage
@@ -779,12 +780,12 @@ class ProjectAnalyzer
                         );
                     }
 
-                    $this->codebase->methods_to_move[strtolower($source)]= $destination;
+                    $this->codebase->methods_to_move[$source_lc]= $destination;
                 } else {
-                    $this->codebase->methods_to_rename[strtolower($source)] = $destination_parts[1];
+                    $this->codebase->methods_to_rename[$source_lc] = $destination_parts[1];
                 }
 
-                $this->codebase->call_transforms[strtolower($source) . '\((.*\))'] = $destination . '($1)';
+                $this->codebase->call_transforms[$source_lc . '\((.*\))'] = $destination . '($1)';
                 continue;
             }
 

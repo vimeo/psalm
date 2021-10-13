@@ -169,7 +169,7 @@ class ArrayFunctionArgumentsAnalyzer
                     ),
                     $context,
                     $args[$i]->value,
-                    $statements_analyzer->node_data->getType($args[$i]->value) ?: Type::getMixed()
+                    $statements_analyzer->node_data->getType($args[$i]->value) ?? Type::getMixed()
                 );
 
                 $statements_analyzer->node_data = $old_node_data;

@@ -1348,7 +1348,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
-                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                        new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
@@ -1362,7 +1362,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' has wrong casing',
-                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                        new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
@@ -1379,7 +1379,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new DeprecatedTrait(
                         'Trait ' . $fq_trait_name . ' is deprecated',
-                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                        new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
@@ -1398,7 +1398,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         new ExtensionRequirementViolation(
                             $fq_trait_name . ' requires using class to extend ' . $extension_requirement
                                 . ', but ' . $storage->name . ' does not',
-                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                            new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
@@ -1416,7 +1416,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         new ImplementationRequirementViolation(
                             $fq_trait_name . ' requires using class to implement '
                                 . $implementation_requirement . ', but ' . $storage->name . ' does not',
-                            new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                            new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     )) {
@@ -1429,7 +1429,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new MutableDependency(
                         $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
-                        new CodeLocation($previous_trait_analyzer ?: $this, $trait_name)
+                        new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
                 )) {
@@ -2422,7 +2422,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     MethodComparator::compare(
                         $codebase,
                         null,
-                        $implementer_classlike_storage ?: $storage,
+                        $implementer_classlike_storage ?? $storage,
                         $interface_storage,
                         $implementer_method_storage,
                         $interface_method_storage,

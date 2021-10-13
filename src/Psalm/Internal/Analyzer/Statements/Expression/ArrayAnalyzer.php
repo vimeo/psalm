@@ -115,9 +115,9 @@ class ArrayAnalyzer
 
         if ($array_creation_info->all_list) {
             if (empty($array_creation_info->item_key_atomic_types)) {
-                $array_type = new Type\Atomic\TList($item_value_type ?: Type::getMixed());
+                $array_type = new Type\Atomic\TList($item_value_type ?? Type::getMixed());
             } else {
-                $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?: Type::getMixed());
+                $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?? Type::getMixed());
                 $array_type->count = count($array_creation_info->property_types);
             }
 
@@ -207,7 +207,7 @@ class ArrayAnalyzer
 
         $array_type = new Type\Atomic\TNonEmptyArray([
             $item_key_type && !$item_key_type->hasMixed() ? $item_key_type : Type::getArrayKey(),
-            $item_value_type ?: Type::getMixed(),
+            $item_value_type ?? Type::getMixed(),
         ]);
 
         $array_type->count = count($array_creation_info->property_types);

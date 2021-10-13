@@ -43,7 +43,7 @@ class MethodCallReturnTypeFetcher
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result
     ) : Type\Union {
-        $call_map_id = $declaring_method_id ?: $method_id;
+        $call_map_id = $declaring_method_id ?? $method_id;
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;

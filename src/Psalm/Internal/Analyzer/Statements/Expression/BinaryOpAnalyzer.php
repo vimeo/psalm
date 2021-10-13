@@ -251,7 +251,7 @@ class BinaryOpAnalyzer
                 $from_type = $statements_analyzer->node_data->getType($stmt->left->getArgs()[1]->value);
 
                 $length_type = isset($stmt->left->getArgs()[2])
-                    ? ($statements_analyzer->node_data->getType($stmt->left->getArgs()[2]->value) ?: Type::getMixed())
+                    ? ($statements_analyzer->node_data->getType($stmt->left->getArgs()[2]->value) ?? Type::getMixed())
                     : null;
 
                 $string_length = null;

@@ -352,7 +352,7 @@ class CastAnalyzer
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class
-                            ) ?: Type::getString();
+                            ) ?? Type::getString();
 
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
 

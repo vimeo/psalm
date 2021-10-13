@@ -49,7 +49,7 @@ class SwitchAnalyzer
         ) {
             $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
 
-            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
+            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?? Type::getMixed();
 
             $context->vars_in_scope[$switch_var_id] = $condition_type;
         }

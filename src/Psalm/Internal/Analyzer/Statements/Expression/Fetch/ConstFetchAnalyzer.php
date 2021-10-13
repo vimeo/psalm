@@ -297,7 +297,7 @@ class ConstFetchAnalyzer
             self::setConstType(
                 $statements_analyzer,
                 $const->name->name,
-                $statements_analyzer->node_data->getType($const->value) ?: Type::getMixed(),
+                $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
                 $context
             );
         }
