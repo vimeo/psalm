@@ -1685,10 +1685,10 @@ class ArrayAssignmentTest extends TestCase
                 {
                     return [...$data];
                 }',
+                [],
+                [],
+                '8.1'
             ],
-            [],
-            [],
-            '8.1'
         ];
     }
 
