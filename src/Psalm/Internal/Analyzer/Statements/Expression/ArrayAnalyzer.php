@@ -246,7 +246,9 @@ class ArrayAnalyzer
             self::handleUnpackedArray(
                 $statements_analyzer,
                 $array_creation_info,
-                $unpacked_array_type
+                $item,
+                $unpacked_array_type,
+                $codebase
             );
 
             if (($data_flow_graph = $statements_analyzer->data_flow_graph)
@@ -480,12 +482,29 @@ class ArrayAnalyzer
     private static function handleUnpackedArray(
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
-        Type\Union $unpacked_array_type
+        PhpParser\Node\Expr\ArrayItem $item,
+        Type\Union $unpacked_array_type,
+        Codebase $codebase
     ) : void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (\is_string($key)) {
+                        if ($codebase->php_major_version < 8 ||
+                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new DuplicateArrayKey(
+                                    'String keys are not supported in unpacked arrays',
+                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return;
+                        }
                         $new_offset = $key;
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
                     } else {
@@ -518,6 +537,22 @@ class ArrayAnalyzer
                     $array_creation_info->can_create_objectlike = false;
 
                     if ($unpacked_atomic_type->type_params[0]->hasString()) {
+                        if ($codebase->php_major_version < 8 ||
+                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new DuplicateArrayKey(
+                                    'String keys are not supported in unpacked arrays',
+                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return;
+                        }
+
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
                     } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
