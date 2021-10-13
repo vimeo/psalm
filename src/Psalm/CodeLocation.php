@@ -259,6 +259,9 @@ class CodeLocation
             }
 
             if (preg_match($regex, $preview_snippet, $matches, PREG_OFFSET_CAPTURE)) {
+                if (!isset($matches[1])) {
+                    throw new \LogicException("Failed to match anything to 1st capturing group, or regexp doesn't contain 1st capturing group, regexp type " . $this->regex_type);
+                }
                 $this->selection_start = $this->selection_start + (int)$matches[1][1];
                 $this->selection_end = $this->selection_start + strlen((string)$matches[1][0]);
             }
