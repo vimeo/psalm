@@ -166,7 +166,7 @@ class ClassTemplateParamCollector
 
                     if (!$self_call || $static_fq_class_name !== $class_storage->name) {
                         $class_template_params[$type_name][$class_storage->name]
-                            = $output_type_extends ?: Type::getMixed();
+                            = $output_type_extends ?? Type::getMixed();
                     }
                 }
 

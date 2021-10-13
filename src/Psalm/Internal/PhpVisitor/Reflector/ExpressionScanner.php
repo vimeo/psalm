@@ -140,7 +140,7 @@ class ExpressionScanner
                         $type_provider,
                         $second_arg_value,
                         $aliases
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
 
                     $config = Config::getInstance();
 

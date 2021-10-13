@@ -285,7 +285,7 @@ class NamedFunctionCallHandler
                     ConstFetchAnalyzer::setConstType(
                         $statements_analyzer,
                         $fq_const_name,
-                        $statements_analyzer->node_data->getType($second_arg->value) ?: Type::getMixed(),
+                        $statements_analyzer->node_data->getType($second_arg->value) ?? Type::getMixed(),
                         $context
                     );
                 }

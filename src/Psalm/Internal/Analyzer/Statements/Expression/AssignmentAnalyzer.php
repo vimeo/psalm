@@ -114,7 +114,7 @@ class AssignmentAnalyzer
         if ($base_assign_value !== $assign_value) {
             ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
 
-            $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?: $assign_value_type;
+            $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?? $assign_value_type;
         }
 
         $removed_taints = [];
@@ -220,7 +220,7 @@ class AssignmentAnalyzer
                     }
 
                     // if we're not exiting immediately, make everything mixed
-                    $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
+                    $context->vars_in_scope[$var_id] = $comment_type ?? Type::getMixed();
                 }
 
                 return false;
@@ -832,7 +832,7 @@ class AssignmentAnalyzer
 
         $old_node_data->setType(
             $stmt,
-            $statements_analyzer->node_data->getType($operation) ?: Type::getMixed()
+            $statements_analyzer->node_data->getType($operation) ?? Type::getMixed()
         );
 
         $statements_analyzer->node_data = $old_node_data;

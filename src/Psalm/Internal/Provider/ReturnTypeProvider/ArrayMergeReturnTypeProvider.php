@@ -227,7 +227,7 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
                 ]);
             }
 
-            $inner_key_type = $inner_key_type ?: Type::getArrayKey();
+            $inner_key_type = $inner_key_type ?? Type::getArrayKey();
 
             if ($any_nonempty) {
                 return new Type\Union([

@@ -75,7 +75,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                             $statements_source,
                             $context
                         );
-                        $properties[$name] = $property_type ?: Type::getMixed();
+                        $properties[$name] = $property_type ?? Type::getMixed();
                     }
                 }
 

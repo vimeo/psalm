@@ -575,7 +575,7 @@ class ScalarTypeComparator
                     $codebase,
                     $input_callable,
                     $container_callable,
-                    $atomic_comparison_result ?: new TypeComparisonResult()
+                    $atomic_comparison_result ?? new TypeComparisonResult()
                 ) === false
                 ) {
                     return false;

@@ -423,7 +423,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?: $method_id));
+        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
         if (!$in_call_map) {
             if ($result->check_visibility) {
@@ -507,7 +507,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $all_intersection_return_type,
                         $intersection_result->return_type,
                         $codebase
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
                 }
             }
         }
@@ -526,7 +526,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $all_intersection_return_type,
                 $return_type_candidate,
                 $codebase
-            ) ?: Type::getMixed();
+            ) ?? Type::getMixed();
         }
 
         $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);

@@ -90,7 +90,7 @@ class NullsafeAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        $statements_analyzer->node_data->setType($stmt, $ternary_type ?: Type::getMixed());
+        $statements_analyzer->node_data->setType($stmt, $ternary_type ?? Type::getMixed());
 
         return true;
     }

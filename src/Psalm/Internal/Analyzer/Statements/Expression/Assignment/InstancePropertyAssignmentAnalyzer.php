@@ -118,7 +118,7 @@ class InstancePropertyAssignmentAnalyzer
 
             $assigned_properties = [
                 new AssignedProperty(
-                    $class_property_type ?: Type::getMixed(),
+                    $class_property_type ?? Type::getMixed(),
                     $property_id,
                     $assignment_value_type
                 )
@@ -194,7 +194,7 @@ class InstancePropertyAssignmentAnalyzer
                                 . ' parent type `' . $assignment_type->getId() . '` provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $assigned_property->id
@@ -210,7 +210,7 @@ class InstancePropertyAssignmentAnalyzer
                                 . ' parent type \'' . $assignment_type->getId() . '\' provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $assigned_property->id
@@ -229,7 +229,7 @@ class InstancePropertyAssignmentAnalyzer
                             . '\'' . $assignment_type . '\' provided with a __toString method',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
+                            $assignment_value ?? $stmt,
                             $context->include_location
                         )
                     ),
@@ -266,7 +266,7 @@ class InstancePropertyAssignmentAnalyzer
                                 '\' cannot be assigned nullable type \'' . $assignment_type . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $assigned_property->id
@@ -288,7 +288,7 @@ class InstancePropertyAssignmentAnalyzer
                                 '\' cannot be assigned possibly false type \'' . $assignment_type . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $assigned_property->id
@@ -309,7 +309,7 @@ class InstancePropertyAssignmentAnalyzer
                             '\' cannot be assigned type \'' . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
+                            $assignment_value ?? $stmt,
                             $context->include_location
                         ),
                         $property_id
@@ -326,7 +326,7 @@ class InstancePropertyAssignmentAnalyzer
                             $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
+                            $assignment_value ?? $stmt,
                             $context->include_location
                         ),
                         $property_id

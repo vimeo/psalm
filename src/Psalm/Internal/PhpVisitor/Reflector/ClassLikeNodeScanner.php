@@ -229,7 +229,7 @@ class ClassLikeNodeScanner
             IssueBuffer::add(
                 new \Psalm\Issue\ParseError(
                     'Class name ' . $class_name . ' clashes with a use statement alias',
-                    $name_location ?: $class_location
+                    $name_location ?? $class_location
                 )
             );
 
@@ -344,7 +344,7 @@ class ClassLikeNodeScanner
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                    $name_location ?: $class_location
+                    $name_location ?? $class_location
                 );
             }
         }
@@ -418,7 +418,7 @@ class ClassLikeNodeScanner
                             } catch (TypeParseTreeException $e) {
                                 $storage->docblock_issues[] = new InvalidDocblock(
                                     $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                                    $name_location ?: $class_location
+                                    $name_location ?? $class_location
                                 );
 
                                 continue;
@@ -430,7 +430,7 @@ class ClassLikeNodeScanner
                         } else {
                             $storage->docblock_issues[] = new InvalidDocblock(
                                 'Template missing as type',
-                                $name_location ?: $class_location
+                                $name_location ?? $class_location
                             );
                         }
                     } else {
@@ -544,7 +544,7 @@ class ClassLikeNodeScanner
                     } catch (TypeParseTreeException $e) {
                         $storage->docblock_issues[] = new InvalidDocblock(
                             $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                            $name_location ?: $class_location
+                            $name_location ?? $class_location
                         );
                     }
                 }

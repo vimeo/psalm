@@ -290,7 +290,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                             $const->value,
                             $statements_analyzer->getAliases(),
                             $statements_analyzer
-                        ) ?: Type::getMixed(),
+                        ) ?? Type::getMixed(),
                         $context
                     );
                 }
@@ -317,7 +317,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                             $stmt->expr->getArgs()[1]->value,
                             $statements_analyzer->getAliases(),
                             $statements_analyzer
-                        ) ?: Type::getMixed(),
+                        ) ?? Type::getMixed(),
                         $context
                     );
                 }

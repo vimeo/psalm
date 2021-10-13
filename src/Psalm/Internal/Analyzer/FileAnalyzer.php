@@ -192,8 +192,8 @@ class FileAnalyzer extends SourceAnalyzer
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {
                     if ($leftover_stmt->expr) {
-                        $this->return_type = $statements_analyzer->node_data->getType($leftover_stmt->expr)
-                            ?: Type::getMixed();
+                        $this->return_type =
+                            $statements_analyzer->node_data->getType($leftover_stmt->expr) ?? Type::getMixed();
                     } else {
                         $this->return_type = Type::getVoid();
                     }
