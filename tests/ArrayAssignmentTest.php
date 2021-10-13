@@ -1234,6 +1234,19 @@ class ArrayAssignmentTest extends TestCase
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],
+            'arraySpreadWithString' => [
+                '<?php
+                    $x = [
+                        "a" => 0,
+                        ...["a" => 1],
+                        ...["b" => 2]
+                    ];',
+                [
+                    '$x===' => 'array{a: 1, b: 2}',
+                ],
+                [],
+                '8.1'
+            ],
             'listPropertyAssignmentAfterIsset' => [
                 '<?php
                     class Collection {
@@ -1631,6 +1644,51 @@ class ArrayAssignmentTest extends TestCase
                     ',
                 'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}']
             ],
+            'unpackTypedIterableWithStringKeysIntoArray' => [
+                '<?php
+
+                /**
+                 * @param iterable<string, string> $data
+                 * @return list<string>
+                 */
+                function unpackIterable(iterable $data): array
+                {
+                    return [...$data];
+                }',
+                [],
+                [],
+                '8.1'
+            ],
+            'unpackTypedTraversableWithStringKeysIntoArray' => [
+                '<?php
+
+                    /**
+                     * @param Traversable<string, string> $data
+                     * @return list<string>
+                     */
+                    function unpackIterable(Traversable $data): array
+                    {
+                        return [...$data];
+                    }',
+                [],
+                [],
+                '8.1'
+            ],
+            'unpackArrayWithArrayKeyIntoArray' => [
+                '<?php
+
+                /**
+                 * @param array<array-key, mixed> $data
+                 * @return list<mixed>
+                 */
+                function unpackArray(array $data): array
+                {
+                    return [...$data];
+                }',
+                [],
+                [],
+                '8.1'
+            ],
         ];
     }
 
@@ -1881,45 +1939,6 @@ class ArrayAssignmentTest extends TestCase
                         return $cache[$b][$a];
                     }',
                 'error_message' => 'NullableReturnStatement',
-            ],
-            'unpackTypedIterableWithStringKeysIntoArray' => [
-                '<?php
-
-                /**
-                 * @param iterable<string, string> $data
-                 * @return list<string>
-                 */
-                function unpackIterable(iterable $data): array
-                {
-                    return [...$data];
-                }',
-                'error_message' => 'DuplicateArrayKey'
-            ],
-            'unpackTypedTraversableWithStringKeysIntoArray' => [
-                '<?php
-
-                /**
-                 * @param Traversable<string, string> $data
-                 * @return list<string>
-                 */
-                function unpackIterable(Traversable $data): array
-                {
-                    return [...$data];
-                }',
-                'error_message' => 'DuplicateArrayKey'
-            ],
-            'unpackArrayWithArrayKeyIntoArray' => [
-                '<?php
-
-                /**
-                 * @param array<array-key, mixed> $data
-                 * @return list<mixed>
-                 */
-                function unpackArray(array $data): array
-                {
-                    return [...$data];
-                }',
-                'error_message' => 'DuplicateArrayKey',
             ],
             'ArrayCreateOffsetObject' => [
                 '<?php
