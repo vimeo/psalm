@@ -130,7 +130,11 @@ class TNamedObject extends Atomic
 
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
         $intersection = strrpos($result, '&');
-        if ($intersection === false || ($php_major_version >= 8 && $php_minor_version >= 1)) {
+        if ($intersection === false || (
+                ($php_major_version === 8 && $php_minor_version >= 1) ||
+                ($php_major_version >= 9)
+            )
+        ) {
             return $result;
         }
         return substr($result, $intersection+1);
