@@ -1243,7 +1243,9 @@ class ArrayAssignmentTest extends TestCase
                     ];',
                 [
                     '$x===' => 'array{a: 1, b: 2}',
-                ]
+                ],
+                [],
+                '8.1'
             ],
             'listPropertyAssignmentAfterIsset' => [
                 '<?php
@@ -1653,6 +1655,9 @@ class ArrayAssignmentTest extends TestCase
                 {
                     return [...$data];
                 }',
+                [],
+                [],
+                '8.1'
             ],
             'unpackTypedTraversableWithStringKeysIntoArray' => [
                 '<?php
@@ -1665,6 +1670,9 @@ class ArrayAssignmentTest extends TestCase
                     {
                         return [...$data];
                     }',
+                [],
+                [],
+                '8.1'
             ],
             'unpackArrayWithArrayKeyIntoArray' => [
                 '<?php
@@ -1678,6 +1686,9 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }',
             ],
+            [],
+            [],
+            '8.1'
         ];
     }
 
