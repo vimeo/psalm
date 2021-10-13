@@ -199,8 +199,7 @@ class SwitchAnalyzer
                 }
             }
 
-            /** @psalm-suppress UndefinedPropertyAssignment */
-            $stmt->allMatched = true;
+            $stmt->setAttribute('allMatched', true);
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {

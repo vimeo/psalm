@@ -213,8 +213,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($result->can_memoize) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->memoizable = true;
+                    $stmt->setAttribute('memoizable', true);
                 }
             }
         }
