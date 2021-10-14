@@ -229,7 +229,7 @@ class CodeLocation
                     break;
 
                 case self::FUNCTION_PHPDOC_METHOD:
-                    $regex = '/@psalm-method[ \t]+(.*)/';
+                    $regex = '/@(?:psalm-)?method[ \t]+(.*)/';
                     break;
 
                 case self::FUNCTION_PHPDOC_PARAM_TYPE:
