@@ -981,7 +981,7 @@ class Populator
 
     private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, bool $is_property = false): void
     {
-        if(!$candidate->from_docblock){
+        if (!$candidate->from_docblock) {
             //never convert a type that comes from a signature
             return;
         }
