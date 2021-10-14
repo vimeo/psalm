@@ -41,6 +41,19 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpStormGenericsWithTypeInSignature(): void
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function a(array|\ArrayObject $_meta = []): void {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testPhpStormGenericsWithValidTraversableArgument(): void
     {
         Config::getInstance()->allow_phpstorm_generics = true;
