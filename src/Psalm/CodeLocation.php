@@ -213,43 +213,35 @@ class CodeLocation
         if ($this->regex_type !== null) {
             switch ($this->regex_type) {
                 case self::VAR_TYPE:
-                    $regex = '/@(psalm-)?var[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    $match_offset = 2;
+                    $regex = '/@(?:psalm-)?var[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     break;
 
                 case self::FUNCTION_RETURN_TYPE:
                     $regex = '/\\:\s+(\\??\s*[A-Za-z0-9_\\\\\[\]]+)/';
-                    $match_offset = 1;
                     break;
 
                 case self::FUNCTION_PARAM_TYPE:
                     $regex = '/^(\\??\s*[A-Za-z0-9_\\\\\[\]]+)\s/';
-                    $match_offset = 1;
                     break;
 
                 case self::FUNCTION_PHPDOC_RETURN_TYPE:
-                    $regex = '/@(psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    $match_offset = 2;
+                    $regex = '/@(?:psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     break;
 
                 case self::FUNCTION_PHPDOC_METHOD:
-                    $regex = '/@(psalm-)method[ \t]+.*/';
-                    $match_offset = 2;
+                    $regex = '/@(?:psalm-)?method[ \t]+(.*)/';
                     break;
 
                 case self::FUNCTION_PHPDOC_PARAM_TYPE:
-                    $regex = '/@(psalm-)?param[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    $match_offset = 2;
+                    $regex = '/@(?:psalm-)?param[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     break;
 
                 case self::FUNCTION_PARAM_VAR:
                     $regex = '/(\$[^ ]*)/';
-                    $match_offset = 1;
                     break;
 
                 case self::CATCH_VAR:
                     $regex = '/(\$[^ ^\)]*)/';
-                    $match_offset = 1;
                     break;
 
                 default:
@@ -264,12 +256,17 @@ class CodeLocation
 
             if ($this->text) {
                 $regex = '/(' . str_replace(',', ',[ ]*', preg_quote($this->text, '/')) . ')/';
-                $match_offset = 1;
             }
 
             if (preg_match($regex, $preview_snippet, $matches, PREG_OFFSET_CAPTURE)) {
-                $this->selection_start = $this->selection_start + (int)$matches[$match_offset][1];
-                $this->selection_end = $this->selection_start + strlen((string)$matches[$match_offset][0]);
+                if (!isset($matches[1]) || (int)$matches[1][1] === -1) {
+                    throw new \LogicException(
+                        "Failed to match anything to 1st capturing group, "
+                        . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type
+                    );
+                }
+                $this->selection_start = $this->selection_start + (int)$matches[1][1];
+                $this->selection_end = $this->selection_start + strlen((string)$matches[1][0]);
             }
         }
 
