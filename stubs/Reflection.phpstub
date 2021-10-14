@@ -126,18 +126,13 @@ class ReflectionParameter {
 
 /**
  * @psalm-immutable
- * @since 8.0
  */
 class ReflectionNamedType extends ReflectionType
 {
-    /**
-     * @since 8.0
-     */
     public function getName(): string {}
 
     /**
      * @psalm-assert-if-false class-string $this->getName()
-     * @since 8.0
      */
     public function isBuiltin(): bool {}
 }
