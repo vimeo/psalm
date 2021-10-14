@@ -14,7 +14,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TString;
 
 class ExitAnalyzer
@@ -63,7 +63,7 @@ class ExitAnalyzer
                 if (ArgumentAnalyzer::verifyType(
                     $statements_analyzer,
                     $expr_type,
-                    new Type\Union([new TInt(), new TString()]),
+                    new Type\Union([new TIntRange(0, 254), new TString()]),
                     null,
                     'exit',
                     null,
