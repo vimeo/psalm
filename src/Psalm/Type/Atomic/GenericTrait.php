@@ -14,6 +14,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function implode;
+use function strpos;
 use function substr;
 
 trait GenericTrait
@@ -102,6 +103,10 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
+        $intersection_pos = strpos($base_value, '&');
+        if ($intersection_pos !== false) {
+            $base_value = substr($base_value, 0, $intersection_pos);
+        }
         $type_params = $this->type_params;
 
         //no need for special format if the key is not determined

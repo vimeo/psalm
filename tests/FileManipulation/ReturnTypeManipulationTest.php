@@ -872,6 +872,94 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 false,
                 true,
             ],
+            'Intersection80' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container1 {}
+                    /**
+                     * @template TT
+                     * @extends container1<TT>
+                     */
+                    class container2 extends container1 {}
+                    
+                    function ret() {
+                        /** @var container1<int>&container2<int> $a */
+                        $a = new container1;
+                        return $a;
+                    }
+                ',
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container1 {}
+                    /**
+                     * @template TT
+                     * @extends container1<TT>
+                     */
+                    class container2 extends container1 {}
+                    
+                    /**
+                     * @return container1&container2
+                     *
+                     * @psalm-return container1<int>&container2<int>
+                     */
+                    function ret(): container2 {
+                        /** @var container1<int>&container2<int> $a */
+                        $a = new container1;
+                        return $a;
+                    }
+                ',
+                '8.0',
+                ['MissingReturnType'],
+                false,
+                true,
+            ],
+            'Intersection81' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container1 {}
+                    /**
+                     * @template TT
+                     * @extends container1<TT>
+                     */
+                    class container2 extends container1 {}
+                    
+                    function ret() {
+                        /** @var container1<int>&container2<int> $a */
+                        $a = new container1;
+                        return $a;
+                    }
+                ',
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class container1 {}
+                    /**
+                     * @template TT
+                     * @extends container1<TT>
+                     */
+                    class container2 extends container1 {}
+                    
+                    /**
+                     * @psalm-return container1<int>&container2<int>
+                     */
+                    function ret(): container1&container2 {
+                        /** @var container1<int>&container2<int> $a */
+                        $a = new container1;
+                        return $a;
+                    }
+                ',
+                '8.1',
+                ['MissingReturnType'],
+                false,
+                true,
+            ]
         ];
     }
 }
