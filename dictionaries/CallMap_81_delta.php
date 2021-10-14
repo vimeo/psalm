@@ -639,6 +639,446 @@ return [
       'old' => ['bool'],
       'new' => ['bool', 'params=' => 'list<mixed>|null'],
     ],
+    'pg_affected_rows' => [
+      'old' => ['int', 'result' => 'resource'],
+      'new' => ['int', 'result' => '\PgSql\Result'],
+    ],
+    'pg_cancel_query' => [
+      'old' => ['bool', 'connection' => 'resource'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_client_encoding' => [
+      'old' => ['string|false', 'connection=' => 'resource'],
+      'new' => ['string|false', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_close' => [
+      'old' => ['bool', 'connection=' => 'resource'],
+      'new' => ['bool', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_connect' => [
+      'old' => ['resource|false', 'connection_string' => 'string', 'flags=' => 'int'],
+      'new' => ['\PgSql\Connection|false', 'connection_string' => 'string', 'flags=' => 'int'],
+    ],
+    'pg_connect_poll' => [
+      'old' => ['int', 'connection' => 'resource'],
+      'new' => ['int', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_connection_busy' => [
+      'old' => ['bool', 'connection' => 'resource'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_connection_reset' => [
+      'old' => ['bool', 'connection' => 'resource'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_connection_status' => [
+      'old' => ['int', 'connection' => 'resource'],
+      'new' => ['int', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_consume_input' => [
+      'old' => ['bool', 'connection' => 'resource'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_convert' => [
+      'old' => ['array', 'connection' => 'resource', 'table_name' => 'string', 'values' => 'array', 'flags=' => 'int'],
+      'new' => ['array', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'values' => 'array', 'flags=' => 'int'],
+    ],
+    'pg_copy_from' => [
+      'old' => ['bool', 'connection' => 'resource', 'table_name' => 'string', 'rows' => 'array', 'separator=' => 'string', 'null_as=' => 'string'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'rows' => 'array', 'separator=' => 'string', 'null_as=' => 'string'],
+    ],
+    'pg_copy_to' => [
+      'old' => ['array|false', 'connection' => 'resource', 'table_name' => 'string', 'separator=' => 'string', 'null_as=' => 'string'],
+      'new' => ['array|false', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'separator=' => 'string', 'null_as=' => 'string'],
+    ],
+    'pg_dbname' => [
+      'old' => ['string|false', 'connection=' => 'resource'],
+      'new' => ['string|false', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_delete' => [
+      'old' => ['string|bool', 'connection' => 'resource', 'table_name' => 'string', 'conditions' => 'array', 'flags=' => 'int'],
+      'new' => ['string|bool', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'conditions' => 'array', 'flags=' => 'int'],
+    ],
+    'pg_end_copy' => [
+      'old' => ['bool', 'connection=' => 'resource'],
+      'new' => ['bool', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_escape_bytea' => [
+      'old' => ['string', 'connection' => 'resource', 'string' => 'string'],
+      'new' => ['string', 'connection' => '\PgSql\Connection', 'string' => 'string'],
+    ],
+    'pg_escape_bytea\'1' => [
+      'old' => ['string', 'connection' => 'string'],
+      'new' => ['string', 'connection' => 'string'],
+    ],
+    'pg_escape_identifier' => [
+      'old' => ['string', 'connection' => 'resource', 'string' => 'string'],
+      'new' => ['string', 'connection' => '\PgSql\Connection', 'string' => 'string'],
+    ],
+    'pg_escape_identifier\'1' => [
+      'old' => ['string', 'connection' => 'string'],
+      'new' => ['string', 'connection' => 'string'],
+    ],
+    'pg_escape_literal' => [
+      'old' => ['string', 'connection' => 'resource', 'string' => 'string'],
+      'new' => ['string', 'connection' => '\PgSql\Connection', 'string' => 'string'],
+    ],
+    'pg_escape_literal\'1' => [
+      'old' => ['string', 'connection' => 'string'],
+      'new' => ['string', 'connection' => 'string'],
+    ],
+    'pg_escape_string' => [
+      'old' => ['string', 'connection' => 'resource', 'string' => 'string'],
+      'new' => ['string', 'connection' => '\PgSql\Connection', 'string' => 'string'],
+    ],
+    'pg_escape_string\'1' => [
+      'old' => ['string', 'connection' => 'string'],
+      'new' => ['string', 'connection' => 'string'],
+    ],
+    'pg_exec' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'query' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'query' => 'string'],
+    ],
+    'pg_execute' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'statement_name' => 'string', 'params' => 'array'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'statement_name' => 'string', 'params' => 'array'],
+    ],
+    'pg_execute\'1' => [
+      'old' => ['resource|false', 'connection' => 'string', 'statement_name' => 'array'],
+      'new' => ['\PgSql\Connection|false', 'connection' => 'string', 'statement_name' => 'array'],
+    ],
+    'pg_fetch_all' => [
+      'old' => ['array<array>|false', 'result' => 'resource', 'result_type=' => 'int'],
+      'new' => ['array<array>|false', 'result' => '\PgSql\Result', 'result_type=' => 'int'],
+    ],
+    'pg_fetch_all_columns' => [
+      'old' => ['array|false', 'result' => 'resource', 'field=' => 'int'],
+      'new' => ['array|false', 'result' => '\PgSql\Result', 'field=' => 'int'],
+    ],
+    'pg_fetch_array' => [
+      'old' => ['array<string|null>|false', 'result' => 'resource', 'row=' => '?int', 'mode=' => 'int'],
+      'new' => ['array<string|null>|false', 'result' => '\PgSql\Result', 'row=' => '?int', 'mode=' => 'int'],
+    ],
+    'pg_fetch_assoc' => [
+      'old' => ['array<string, mixed>|false', 'result' => 'resource', 'row=' => '?int'],
+      'new' => ['array<string, mixed>|false', 'result' => '\PgSql\Result', 'row=' => '?int'],
+    ],
+    'pg_fetch_object' => [
+      'old' => ['object', 'result' => 'resource', 'row=' => '?int', 'class=' => 'int'],
+      'new' => ['object', 'result' => '\PgSql\Result', 'row=' => '?int', 'class=' => 'int'],
+    ],
+    'pg_fetch_object\'1' => [
+      'old' => ['object', 'result' => 'resource', 'row=' => '?int', 'class=' => 'string', 'constructor_args=' => 'array'],
+      'new' => ['object', 'result' => '\PgSql\Result', 'row=' => '?int', 'class=' => 'string', 'constructor_args=' => 'array'],
+    ],
+    'pg_fetch_result' => [
+      'old' => ['string', 'result' => 'resource', 'row' => 'string|int'],
+      'new' => ['string', 'result' => '\PgSql\Result', 'row' => 'string|int'],
+    ],
+    'pg_fetch_result\'1' => [
+      'old' => ['string', 'result' => 'resource', 'row' => '?int', 'field' => 'string|int'],
+      'new' => ['string', 'result' => '\PgSql\Result', 'row' => '?int', 'field' => 'string|int'],
+    ],
+    'pg_fetch_row' => [
+      'old' => ['array', 'result' => 'resource', 'row=' => '?int', 'mode=' => 'int'],
+      'new' => ['array', 'result' => '\PgSql\Result', 'row=' => '?int', 'mode=' => 'int'],
+    ],
+    'pg_field_is_null' => [
+      'old' => ['int', 'result' => 'resource', 'row' => 'string|int'],
+      'new' => ['int', 'result' => '\PgSql\Result', 'row' => 'string|int'],
+    ],
+    'pg_field_is_null\'1' => [
+      'old' => ['int', 'result' => 'resource', 'row' => 'int', 'field' => 'string|int'],
+      'new' => ['int', 'result' => '\PgSql\Result', 'row' => 'int', 'field' => 'string|int'],
+    ],
+    'pg_field_name' => [
+      'old' => ['string|false', 'result' => 'resource', 'field' => 'int'],
+      'new' => ['string|false', 'result' => '\PgSql\Result', 'field' => 'int'],
+    ],
+    'pg_field_num' => [
+      'old' => ['int', 'result' => 'resource', 'field' => 'string'],
+      'new' => ['int', 'result' => '\PgSql\Result', 'field' => 'string'],
+    ],
+    'pg_field_prtlen' => [
+      'old' => ['int|false', 'result' => 'resource', 'row' => ''],
+      'new' => ['int|false', 'result' => '\PgSql\Result', 'row' => ''],
+    ],
+    'pg_field_prtlen\'1' => [
+      'old' => ['int', 'result' => 'resource', 'row' => 'int', 'field' => 'string|int'],
+      'new' => ['int', 'result' => '\PgSql\Result', 'row' => 'int', 'field' => 'string|int'],
+    ],
+    'pg_field_size' => [
+      'old' => ['int', 'result' => 'resource', 'field' => 'int'],
+      'new' => ['int', 'result' => '\PgSql\Result', 'field' => 'int'],
+    ],
+    'pg_field_table' => [
+      'old' => ['mixed|false', 'result' => 'resource', 'field' => 'int', 'oid_only=' => 'bool'],
+      'new' => ['mixed|false', 'result' => '\PgSql\Result', 'field' => 'int', 'oid_only=' => 'bool'],
+    ],
+    'pg_field_type' => [
+      'old' => ['string|false', 'result' => 'resource', 'field' => 'int'],
+      'new' => ['string|false', 'result' => '\PgSql\Result', 'field' => 'int'],
+    ],
+    'pg_field_type_oid' => [
+      'old' => ['int|false', 'result' => 'resource', 'field' => 'int'],
+      'new' => ['int|false', 'result' => '\PgSql\Result', 'field' => 'int'],
+    ],
+    'pg_flush' => [
+      'old' => ['mixed', 'connection' => 'resource'],
+      'new' => ['mixed', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_free_result' => [
+      'old' => ['bool', 'result' => 'resource'],
+      'new' => ['bool', 'result' => '\PgSql\Result'],
+    ],
+    'pg_get_notify' => [
+      'old' => ['array|false', 'result' => 'resource', 'mode=' => 'int'],
+      'new' => ['array|false', 'result' => '\PgSql\Result', 'mode=' => 'int'],
+    ],
+    'pg_get_pid' => [
+      'old' => ['int|false', 'connection' => 'resource'],
+      'new' => ['int|false', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_get_result' => [
+      'old' => ['resource|false', 'connection=' => 'resource'],
+      'new' => ['\PgSql\Connection|false', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_host' => [
+      'old' => ['string|false', 'connection=' => 'resource'],
+      'new' => ['string|false', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_insert' => [
+      'old' => ['resource|string|false', 'connection' => 'resource', 'table_name' => 'string', 'values' => 'array', 'flags=' => 'int'],
+      'new' => ['\PgSql\Connection|string|false', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'values' => 'array', 'flags=' => 'int'],
+    ],
+    'pg_last_error' => [
+      'old' => ['string', 'connection=' => 'resource', 'operation=' => 'int'],
+      'new' => ['string', 'connection=' => '\PgSql\Connection', 'operation=' => 'int'],
+    ],
+    'pg_last_notice' => [
+      'old' => ['string|array|bool', 'connection' => 'resource', 'mode=' => 'int'],
+      'new' => ['string|array|bool', 'connection' => '\PgSql\Connection', 'mode=' => 'int'],
+    ],
+    'pg_last_oid' => [
+      'old' => ['string', 'result' => 'resource'],
+      'new' => ['string', 'result' => '\PgSql\Result'],
+    ],
+    'pg_lo_close' => [
+      'old' => ['bool', 'lob' => 'resource'],
+      'new' => ['bool', 'lob' => '\PgSql\Lob'],
+    ],
+    'pg_lo_create' => [
+      'old' => ['int|false', 'connection=' => 'resource', 'oid=' => ''],
+      'new' => ['int|false', 'connection=' => '\PgSql\Connection', 'oid=' => ''],
+    ],
+    'pg_lo_export' => [
+      'old' => ['bool', 'connection' => 'resource', 'oid' => 'int', 'filename' => 'string'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'oid' => 'int', 'filename' => 'string'],
+    ],
+    'pg_lo_export\'1' => [
+      'old' => ['bool', 'connection' => 'int', 'oid' => 'string'],
+      'new' => ['bool', 'connection' => 'int', 'oid' => 'string'],
+    ],
+    'pg_lo_import' => [
+      'old' => ['int', 'connection' => 'resource', 'filename' => 'string', 'oid' => ''],
+      'new' => ['int', 'connection' => '\PgSql\Connection', 'filename' => 'string', 'oid' => ''],
+    ],
+    'pg_lo_import\'1' => [
+      'old' => ['int', 'connection' => 'string', 'filename' => ''],
+      'new' => ['int', 'connection' => 'string', 'filename' => ''],
+    ],
+    'pg_lo_open' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'oid' => 'int', 'mode' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'oid' => 'int', 'mode' => 'string'],
+    ],
+    'pg_lo_read' => [
+      'old' => ['string', 'lob' => 'resource', 'length=' => 'int'],
+      'new' => ['string', 'lob' => '\PgSql\Lob', 'length=' => 'int'],
+    ],
+    'pg_lo_read_all' => [
+      'old' => ['int|false', 'lob' => 'resource'],
+      'new' => ['int|false', 'lob' => '\PgSql\Lob'],
+    ],
+    'pg_lo_seek' => [
+      'old' => ['bool', 'lob' => 'resource', 'offset' => 'int', 'whence=' => 'int'],
+      'new' => ['bool', 'lob' => '\PgSql\Lob', 'offset' => 'int', 'whence=' => 'int'],
+    ],
+    'pg_lo_tell' => [
+      'old' => ['int', 'lob' => 'resource'],
+      'new' => ['int', 'lob' => '\PgSql\Lob'],
+    ],
+    'pg_lo_truncate' => [
+      'old' => ['bool', 'lob' => 'resource', 'size' => 'int'],
+      'new' => ['bool', 'lob' => '\PgSql\Lob', 'size' => 'int'],
+    ],
+    'pg_lo_unlink' => [
+      'old' => ['bool', 'connection' => 'resource', 'oid' => 'int'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'oid' => 'int'],
+    ],
+    'pg_lo_write' => [
+      'old' => ['int|false', 'lob' => 'resource', 'data' => 'string', 'length=' => 'int'],
+      'new' => ['int|false', 'lob' => '\PgSql\Lob', 'data' => 'string', 'length=' => 'int'],
+    ],
+    'pg_meta_data' => [
+      'old' => ['array', 'connection' => 'resource', 'table_name' => 'string', 'extended=' => 'bool'],
+      'new' => ['array', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'extended=' => 'bool'],
+    ],
+    'pg_num_fields' => [
+      'old' => ['int', 'result' => 'resource'],
+      'new' => ['int', 'result' => '\PgSql\Result'],
+    ],
+    'pg_num_rows' => [
+      'old' => ['int', 'result' => 'resource'],
+      'new' => ['int', 'result' => '\PgSql\Result'],
+    ],
+    'pg_options' => [
+      'old' => ['string', 'connection=' => 'resource'],
+      'new' => ['string', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_parameter_status' => [
+      'old' => ['string|false', 'connection' => 'resource', 'name' => 'string'],
+      'new' => ['string|false', 'connection' => '\PgSql\Connection', 'name' => 'string'],
+    ],
+    'pg_parameter_status\'1' => [
+      'old' => ['string|false', 'connection' => 'string'],
+      'new' => ['string|false', 'connection' => 'string'],
+    ],
+    'pg_pconnect' => [
+      'old' => ['resource|false', 'connection_string' => 'string', 'flags=' => 'string', 'port=' => 'string|int', 'options=' => 'string', 'tty=' => 'string', 'database=' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection_string' => 'string', 'flags=' => 'string', 'port=' => 'string|int', 'options=' => 'string', 'tty=' => 'string', 'database=' => 'string'],
+    ],
+    'pg_ping' => [
+      'old' => ['bool', 'connection=' => 'resource'],
+      'new' => ['bool', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_port' => [
+      'old' => ['int', 'connection=' => 'resource'],
+      'new' => ['int', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_prepare' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'statement_name' => 'string', 'query' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'statement_name' => 'string', 'query' => 'string'],
+    ],
+    'pg_prepare\'1' => [
+      'old' => ['resource|false', 'connection' => 'string', 'statement_name' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => 'string', 'statement_name' => 'string'],
+    ],
+    'pg_put_line' => [
+      'old' => ['bool', 'connection' => 'resource', 'query' => 'string'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'query' => 'string'],
+    ],
+    'pg_put_line\'1' => [
+      'old' => ['bool', 'connection' => 'string'],
+      'new' => ['bool', 'connection' => 'string'],
+    ],
+    'pg_query' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'query' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'query' => 'string'],
+    ],
+    'pg_query\'1' => [
+      'old' => ['resource|false', 'connection' => 'string'],
+      'new' => ['\PgSql\Connection|false', 'connection' => 'string'],
+    ],
+    'pg_query_params' => [
+      'old' => ['resource|false', 'connection' => 'resource', 'query' => 'string', 'params' => 'array'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection', 'query' => 'string', 'params' => 'array'],
+    ],
+    'pg_query_params\'1' => [
+      'old' => ['resource|false', 'connection' => 'string', 'query' => 'array'],
+      'new' => ['\PgSql\Connection|false', 'connection' => 'string', 'query' => 'array'],
+    ],
+    'pg_result_error' => [
+      'old' => ['string|false', 'result' => 'resource'],
+      'new' => ['string|false', 'result' => '\PgSql\Result'],
+    ],
+    'pg_result_error_field' => [
+      'old' => ['string|?false', 'result' => 'resource', 'field_code' => 'int'],
+      'new' => ['string|?false', 'result' => '\PgSql\Result', 'field_code' => 'int'],
+    ],
+    'pg_result_seek' => [
+      'old' => ['bool', 'result' => 'resource', 'row' => 'int'],
+      'new' => ['bool', 'result' => '\PgSql\Result', 'row' => 'int'],
+    ],
+    'pg_result_status' => [
+      'old' => ['mixed', 'result' => 'resource', 'mode=' => 'int'],
+      'new' => ['mixed', 'result' => '\PgSql\Result', 'mode=' => 'int'],
+    ],
+    'pg_select' => [
+      'old' => ['bool|string', 'connection' => 'resource', 'table_name' => 'string', 'assoc_array' => 'array', 'options=' => 'int', 'result_type=' => 'int'],
+      'new' => ['bool|string', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'assoc_array' => 'array', 'options=' => 'int', 'result_type=' => 'int'],
+    ],
+    'pg_send_execute' => [
+      'old' => ['bool', 'connection' => 'resource', 'query' => 'string', 'params' => 'array'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'query' => 'string', 'params' => 'array'],
+    ],
+    'pg_send_prepare' => [
+      'old' => ['bool', 'connection' => 'resource', 'statement_name' => 'string', 'query' => 'string'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'statement_name' => 'string', 'query' => 'string'],
+    ],
+    'pg_send_query' => [
+      'old' => ['bool', 'connection' => 'resource', 'query' => 'string'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'query' => 'string'],
+    ],
+    'pg_send_query_params' => [
+      'old' => ['bool', 'connection' => 'resource', 'query' => 'string', 'params' => 'array'],
+      'new' => ['bool', 'connection' => '\PgSql\Connection', 'query' => 'string', 'params' => 'array'],
+    ],
+    'pg_set_client_encoding' => [
+      'old' => ['int', 'connection' => 'resource', 'encoding' => 'string'],
+      'new' => ['int', 'connection' => '\PgSql\Connection', 'encoding' => 'string'],
+    ],
+    'pg_set_client_encoding\'1' => [
+      'old' => ['int', 'connection' => 'string'],
+      'new' => ['int', 'connection' => 'string'],
+    ],
+    'pg_set_error_verbosity' => [
+      'old' => ['int', 'connection' => 'resource', 'verbosity' => 'int'],
+      'new' => ['int', 'connection' => '\PgSql\Connection', 'verbosity' => 'int'],
+    ],
+    'pg_set_error_verbosity\'1' => [
+      'old' => ['int', 'connection' => 'int'],
+      'new' => ['int', 'connection' => 'int'],
+    ],
+    'pg_socket' => [
+      'old' => ['resource|false', 'connection' => 'resource'],
+      'new' => ['\PgSql\Connection|false', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_trace' => [
+      'old' => ['bool', 'filename' => 'string', 'mode=' => 'string', 'connection=' => 'resource'],
+      'new' => ['bool', 'filename' => 'string', 'mode=' => 'string', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_transaction_status' => [
+      'old' => ['int', 'connection' => 'resource'],
+      'new' => ['int', 'connection' => '\PgSql\Connection'],
+    ],
+    'pg_tty' => [
+      'old' => ['string', 'connection=' => 'resource'],
+      'new' => ['string', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_tty\'1' => [
+      'old' => ['string'],
+      'new' => ['string'],
+    ],
+    'pg_unescape_bytea' => [
+      'old' => ['string', 'string' => 'string'],
+      'new' => ['string', 'string' => 'string'],
+    ],
+    'pg_untrace' => [
+      'old' => ['bool', 'connection=' => 'resource'],
+      'new' => ['bool', 'connection=' => '\PgSql\Connection'],
+    ],
+    'pg_untrace\'1' => [
+      'old' => ['bool'],
+      'new' => ['bool'],
+    ],
+    'pg_update' => [
+      'old' => ['mixed', 'connection' => 'resource', 'table_name' => 'string', 'values' => 'array', 'conditions' => 'array', 'flags=' => 'int'],
+      'new' => ['mixed', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'values' => 'array', 'conditions' => 'array', 'flags=' => 'int'],
+    ],
+    'pg_version' => [
+      'old' => ['array', 'connection=' => 'resource'],
+      'new' => ['array', 'connection=' => '\PgSql\Connection'],
+    ],
     'pspell_add_to_personal' => [
       'old' => ['bool', 'dictionary'=>'int', 'word'=>'string'],
       'new' => ['bool', 'dictionary'=>'PSpell\Dictionary', 'word'=>'string'],

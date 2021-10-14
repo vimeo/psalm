@@ -20,7 +20,15 @@ namespace LDAP {
    final class ResultEntry {}
 }
 
+<<<<<<< Updated upstream
 namespace PSpell {
      final class Config {}
      final class Dictionary {}
 }   
+=======
+namespace PgSql {
+   final class Connection {}
+   final class Result {}
+   final class Lob {}
+}
+>>>>>>> Stashed changes
