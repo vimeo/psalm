@@ -3739,7 +3739,7 @@ return [
 'get_magic_quotes_gpc' => ['int|false'],
 'get_magic_quotes_runtime' => ['int|false'],
 'get_meta_tags' => ['array', 'filename'=>'string', 'use_include_path='=>'bool'],
-'get_object_vars' => ['array<string,mixed>', 'object'=>'object'],
+'get_object_vars' => ['array<int|string,mixed>', 'object'=>'object'],
 'get_parent_class' => ['class-string|false', 'object_or_class='=>'mixed'],
 'get_required_files' => ['list<string>'],
 'get_resource_id' => ['int', 'resource'=>'resource'],
