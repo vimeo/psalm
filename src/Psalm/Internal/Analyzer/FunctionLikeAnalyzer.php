@@ -505,7 +505,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             []
         );
 
-        $this->examineParamTypes($statements_analyzer, $context, $codebase);
+        if ($final_actions !== [ScopeAnalyzer::ACTION_END]) {
+            $this->examineParamTypes($statements_analyzer, $context, $codebase);
+        }
 
         foreach ($params as $function_param) {
             // only complain if there's no type defined by a parent type
