@@ -399,7 +399,8 @@ class ReturnTypeAnalyzer
                 || ($classlike_storage && $classlike_storage->final)
         );
 
-        if (!$inferred_return_type->isNever()
+        if (!$inferred_return_type_parts
+            && !$inferred_return_type->isNever()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
         ) {
