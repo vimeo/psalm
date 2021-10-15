@@ -224,6 +224,12 @@ class FunctionDocblockManipulator
 
                     break 2;
 
+                case '=':
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue 2;
+                    }
+                    break 2;
+
                 case '?':
                     if ($in_multi_line_comment || $in_single_line_comment) {
                         continue 2;
@@ -293,6 +299,9 @@ class FunctionDocblockManipulator
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
+        if ($php_type === 'static') {
+            $php_type = '';
+        }
         if ($php_type) {
             $this->new_php_param_types[$param_name] = $php_type;
         }

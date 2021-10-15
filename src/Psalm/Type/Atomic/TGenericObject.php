@@ -6,6 +6,7 @@ use Psalm\Type\Atomic;
 use function array_merge;
 use function count;
 use function implode;
+use function strrpos;
 use function substr;
 
 /**
@@ -69,7 +70,16 @@ class TGenericObject extends TNamedObject
         int $php_major_version,
         int $php_minor_version
     ): ?string {
-        return $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
+        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
+        $intersection = strrpos($result, '&');
+        if ($intersection === false || (
+                ($php_major_version === 8 && $php_minor_version >= 1) ||
+                ($php_major_version >= 9)
+            )
+        ) {
+            return $result;
+        }
+        return substr($result, $intersection+1);
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
