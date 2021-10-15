@@ -228,6 +228,81 @@ class ArrayFunctionCallTest extends TestCase
                         return array_merge($list, ["test"]);
                     }',
             ],
+            'arrayMergeTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function merge($a, $b): array
+                        {
+                            return array_merge($a, $b);
+                        }
+                    }',
+            ],
+            'arrayReplaceIntArrays' => [
+                '<?php
+                    $d = array_replace(["a", "b", "c"], [1, 2, 3]);',
+                'assertions' => [
+                    '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
+                ],
+            ],
+            'arrayReplacePossiblyUndefined' => [
+                '<?php
+                    /**
+                     * @param array{host?:string} $opts
+                     * @return array{host:string|int}
+                     */
+                    function b(array $opts): array {
+                        return array_replace(["host" => 5], $opts);
+                    }',
+            ],
+            'arrayReplaceListResultWithArray' => [
+                '<?php
+                    /**
+                     * @param array<int, string> $list
+                     * @return list<string>
+                     */
+                    function bar(array $list) : array {
+                        return array_replace($list, ["test"]);
+                    }',
+            ],
+            'arrayReplaceListResultWithList' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function foo(array $list) : array {
+                        return array_replace($list, ["test"]);
+                    }',
+            ],
+            'arrayReplaceTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function replace($a, $b): array
+                        {
+                            return array_replace($a, $b);
+                        }
+                    }',
+            ],
             'arrayReverseDontPreserveKey' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4]);',
@@ -612,6 +687,26 @@ class ArrayFunctionCallTest extends TestCase
                   $a1 = ["hi" => 3];
                   $a2 = ["bye" => 5];
                   $a3 = array_merge($a1, $a2);
+
+                  foo($a3);',
+                'assertions' => [
+                    '$a3' => 'array{hi: int, bye: int}',
+                ],
+            ],
+            'arrayReplaceTKeyedArray' => [
+                '<?php
+                  /**
+                   * @param array<string, int> $a
+                   * @return array<string, int>
+                   */
+                  function foo($a)
+                  {
+                    return $a;
+                  }
+
+                  $a1 = ["hi" => 3];
+                  $a2 = ["bye" => 5];
+                  $a3 = array_replace($a1, $a2);
 
                   foo($a3);',
                 'assertions' => [
@@ -1768,6 +1863,27 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'list<string>'
                 ],
             ],
+            'arrayReplaceTwoExplicitLists' => [
+                '<?php
+                    /**
+                     * @param list<int> $foo
+                     */
+                    function foo(array $foo) : void {}
+
+                    $foo1 = [1, 2, 3];
+                    $foo2 = [1, 4, 5];
+                    foo(array_replace($foo1, $foo2));'
+            ],
+            'arrayReplaceTwoPossiblyFalse' => [
+                '<?php
+                    $a = array_replace(
+                        glob(__DIR__ . \'/stubs/*.php\'),
+                        glob(__DIR__ . \'/stubs/DBAL/*.php\'),
+                    );',
+                [
+                    '$a' => 'list<string>'
+                ],
+            ],
             'arrayMapPossiblyFalseIgnored' => [
                 '<?php
                     function takesString(string $string): void {}
@@ -1855,6 +1971,30 @@ class ArrayFunctionCallTest extends TestCase
                      */
                     function merger(array $a, array $b) : array {
                         return array_merge($a, $b);
+                    }'
+            ],
+            'arrayReplaceKeepLastKeysAndType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_replace($b, $a);
+                    }'
+            ],
+            'arrayReplaceKeepFirstKeysSameType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, int> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_replace($a, $b);
                     }'
             ],
             'filteredArrayCanBeEmpty' => [
@@ -2181,6 +2321,19 @@ class ArrayFunctionCallTest extends TestCase
                      */
                     function merger(array $a, array $b) : array {
                         return array_merge($a, $b);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
+            ],
+            'arrayReplaceKeepFirstKeysButNotType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_replace($a, $b);
                     }',
                 'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
