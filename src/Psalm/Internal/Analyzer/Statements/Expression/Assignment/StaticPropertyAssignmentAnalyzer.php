@@ -250,7 +250,7 @@ class StaticPropertyAssignmentAnalyzer
                                 . ' parent type `' . $assignment_value_type->getId() . '` provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $property_id
@@ -266,7 +266,7 @@ class StaticPropertyAssignmentAnalyzer
                                 . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt,
+                                $assignment_value ?? $stmt,
                                 $context->include_location
                             ),
                             $property_id
@@ -285,7 +285,7 @@ class StaticPropertyAssignmentAnalyzer
                             . '\'' . $assignment_value_type . '\' provided with a __toString method',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?: $stmt,
+                            $assignment_value ?? $stmt,
                             $context->include_location
                         )
                     ),
@@ -304,7 +304,7 @@ class StaticPropertyAssignmentAnalyzer
                                 . $assignment_value_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt
+                                $assignment_value ?? $stmt
                             ),
                             $property_id
                         ),
@@ -320,7 +320,7 @@ class StaticPropertyAssignmentAnalyzer
                                 . $assignment_value_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?: $stmt
+                                $assignment_value ?? $stmt
                             ),
                             $property_id
                         ),

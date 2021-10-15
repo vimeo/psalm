@@ -115,7 +115,7 @@ class ArrayFetchAnalyzer
         $new_offset_type = null;
 
         if ($stmt->dim) {
-            $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?: Type::getMixed();
+            $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?? Type::getMixed();
 
             $dim_var_id = ExpressionIdentifier::getArrayVarId(
                 $stmt->dim,
@@ -1807,9 +1807,7 @@ class ArrayFetchAnalyzer
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
             }
 
-            $call_array_access_type = $statements_analyzer->node_data->getType(
-                $fake_method_call
-            ) ?: Type::getMixed();
+            $call_array_access_type = $statements_analyzer->node_data->getType($fake_method_call) ?? Type::getMixed();
 
             $statements_analyzer->node_data = $old_data_provider;
         } else {
@@ -1840,11 +1838,10 @@ class ArrayFetchAnalyzer
                                 )
                         ),
                         new VirtualArg(
-                            $assign_value
-                                ?: new VirtualConstFetch(
-                                    new VirtualName('null'),
-                                    $stmt->var->getAttributes()
-                                )
+                            $assign_value ?? new VirtualConstFetch(
+                                new VirtualName('null'),
+                                $stmt->var->getAttributes()
+                            )
                         ),
                     ]
                 );
@@ -1879,8 +1876,8 @@ class ArrayFetchAnalyzer
                     $context
                 );
 
-                $call_array_access_type = $statements_analyzer->node_data->getType($fake_get_method_call)
-                    ?: Type::getMixed();
+                $call_array_access_type =
+                    $statements_analyzer->node_data->getType($fake_get_method_call) ?? Type::getMixed();
 
                 $statements_analyzer->node_data = $old_node_data;
             } else {

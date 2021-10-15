@@ -95,7 +95,7 @@ class ArrayAssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?: Type::getMixed();
+        $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
             if (ExpressionAnalyzer::analyze(
@@ -735,7 +735,7 @@ class ArrayAssignmentAnalyzer
                 $statements_analyzer,
                 $child_stmt,
                 $array_type,
-                $child_stmt_dim_type ?: Type::getInt(),
+                $child_stmt_dim_type ?? Type::getInt(),
                 true,
                 $array_var_id,
                 $context,
@@ -906,7 +906,7 @@ class ArrayAssignmentAnalyzer
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt,
-                    $statements_analyzer->node_data->getType($child_stmt->var) ?: Type::getMixed(),
+                    $statements_analyzer->node_data->getType($child_stmt->var) ?? Type::getMixed(),
                     $new_child_type,
                     $parent_array_var_id,
                     $key_values

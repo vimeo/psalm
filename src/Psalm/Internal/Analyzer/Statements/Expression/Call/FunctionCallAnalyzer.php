@@ -1011,8 +1011,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         // fall through
                     }
                 } else {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->pure = true;
+                    $stmt->setAttribute('pure', true);
                 }
             }
         }

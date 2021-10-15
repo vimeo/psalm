@@ -38,12 +38,12 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             if (($node instanceof PhpParser\Node\Expr\FuncCall
                     || $node instanceof PhpParser\Node\Expr\MethodCall
                     || $node instanceof PhpParser\Node\Expr\StaticCall)
-                && isset($node->pure)
+                && $node->getAttribute('pure', false)
             ) {
                 return false;
             }
 
-            if ($node instanceof PhpParser\Node\Expr\New_ && isset($node->external_mutation_free)) {
+            if ($node instanceof PhpParser\Node\Expr\New_ && $node->getAttribute('external_mutation_free', false)) {
                 return false;
             }
 

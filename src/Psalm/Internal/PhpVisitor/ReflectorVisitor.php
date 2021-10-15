@@ -276,7 +276,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     new \Psalm\Internal\Provider\NodeDataProvider(),
                     $const->value,
                     $this->aliases
-                ) ?: Type::getMixed();
+                ) ?? Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
 

@@ -50,7 +50,7 @@ class MissingMethodCallHandler
                         $all_intersection_return_type,
                         $return_type_candidate,
                         $codebase
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
                 }
 
                 $result->return_type = Type::combineUnionTypes(
@@ -115,7 +115,7 @@ class MissingMethodCallHandler
                         $all_intersection_return_type,
                         $return_type_candidate,
                         $codebase
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
                 }
 
                 $result->return_type = Type::combineUnionTypes(
@@ -248,7 +248,7 @@ class MissingMethodCallHandler
                         $all_intersection_return_type,
                         $return_type_candidate,
                         $codebase
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
                 }
 
                 $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(

@@ -115,9 +115,9 @@ class ArrayAnalyzer
 
         if ($array_creation_info->all_list) {
             if (empty($array_creation_info->item_key_atomic_types)) {
-                $array_type = new Type\Atomic\TList($item_value_type ?: Type::getMixed());
+                $array_type = new Type\Atomic\TList($item_value_type ?? Type::getMixed());
             } else {
-                $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?: Type::getMixed());
+                $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?? Type::getMixed());
                 $array_type->count = count($array_creation_info->property_types);
             }
 
@@ -207,7 +207,7 @@ class ArrayAnalyzer
 
         $array_type = new Type\Atomic\TNonEmptyArray([
             $item_key_type && !$item_key_type->hasMixed() ? $item_key_type : Type::getArrayKey(),
-            $item_value_type ?: Type::getMixed(),
+            $item_value_type ?? Type::getMixed(),
         ]);
 
         $array_type->count = count($array_creation_info->property_types);
@@ -247,7 +247,8 @@ class ArrayAnalyzer
                 $statements_analyzer,
                 $array_creation_info,
                 $item,
-                $unpacked_array_type
+                $unpacked_array_type,
+                $codebase
             );
 
             if (($data_flow_graph = $statements_analyzer->data_flow_graph)
@@ -482,35 +483,42 @@ class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
-        Type\Union $unpacked_array_type
+        Type\Union $unpacked_array_type,
+        Codebase $codebase
     ) : void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (\is_string($key)) {
-                        if (IssueBuffer::accepts(
-                            new DuplicateArrayKey(
-                                'String keys are not supported in unpacked arrays',
-                                new CodeLocation($statements_analyzer->getSource(), $item->value)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        if ($codebase->php_major_version < 8 ||
+                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new DuplicateArrayKey(
+                                    'String keys are not supported in unpacked arrays',
+                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
 
-                        return;
+                            return;
+                        }
+                        $new_offset = $key;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
+                    } else {
+                        $new_offset = $array_creation_info->int_offset++;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_offset);
                     }
 
-                    $new_int_offset = $array_creation_info->int_offset++;
-
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_int_offset);
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
                         array_values($property_value->getAtomicTypes())
                     );
 
-                    $array_creation_info->array_keys[$new_int_offset] = true;
-                    $array_creation_info->property_types[$new_int_offset] = $property_value;
+                    $array_creation_info->array_keys[$new_offset] = true;
+                    $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } else {
                 $codebase = $statements_analyzer->getCodebase();
@@ -529,15 +537,23 @@ class ArrayAnalyzer
                     $array_creation_info->can_create_objectlike = false;
 
                     if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                        if (IssueBuffer::accepts(
-                            new DuplicateArrayKey(
-                                'String keys are not supported in unpacked arrays',
-                                new CodeLocation($statements_analyzer->getSource(), $item->value)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if ($codebase->php_major_version < 8 ||
+                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new DuplicateArrayKey(
+                                    'String keys are not supported in unpacked arrays',
+                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return;
                         }
+
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
                     } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
                     }

@@ -1241,7 +1241,7 @@ class AssertAnnotationTest extends TestCase
                         return substr($a, 0, 1) . substr($b, 0, 1);
                     }'
             ],
-            'convertConstStringType' => [
+            'SKIPPED-convertConstStringType' => [
                 '<?php
                     class A {
                         const T1 = 1;
@@ -1462,6 +1462,17 @@ class AssertAnnotationTest extends TestCase
                             $parameter->getType()->__toString();
                         }
                     }',
+            ],
+            'reflectionNameTypeClassStringIfNotBuiltin' => [
+                '<?php
+                    /** @return class-string|null */
+                    function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
+                        $type = $reflectionItem->getType();
+                        return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
+                    }',
+                [],
+                [],
+                '7.4',
             ],
             'withHasTypeCall' => [
                 '<?php

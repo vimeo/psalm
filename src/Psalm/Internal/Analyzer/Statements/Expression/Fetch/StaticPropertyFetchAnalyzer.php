@@ -406,7 +406,7 @@ class StaticPropertyFetchAnalyzer
 
         $context->inside_general_use = $was_inside_general_use;
 
-        $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?: Type::getMixed();
+        $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?? Type::getMixed();
 
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -438,8 +438,7 @@ class StaticPropertyFetchAnalyzer
 
                 self::analyze($statements_analyzer, $fake_static_property, $context);
 
-                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_static_property)
-                    ?: Type::getMixed();
+                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_static_property) ?? Type::getMixed();
             } else {
                 $fake_var_name = '__fake_var_' . (string) $stmt->getAttribute('startFilePos');
 
@@ -464,8 +463,7 @@ class StaticPropertyFetchAnalyzer
                     true
                 );
 
-                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property)
-                    ?: Type::getMixed();
+                $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property) ?? Type::getMixed();
             }
 
             $stmt_type = $stmt_type

@@ -430,7 +430,7 @@ class AtomicStaticCallAnalyzer
 
                     $statements_analyzer->node_data = $old_data_provider;
 
-                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type ?: Type::getMixed());
+                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type ?? Type::getMixed());
 
                     return true;
                 }

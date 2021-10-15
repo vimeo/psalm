@@ -49,7 +49,7 @@ class SwitchAnalyzer
         ) {
             $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
 
-            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?: Type::getMixed();
+            $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?? Type::getMixed();
 
             $context->vars_in_scope[$switch_var_id] = $condition_type;
         }
@@ -199,8 +199,7 @@ class SwitchAnalyzer
                 }
             }
 
-            /** @psalm-suppress UndefinedPropertyAssignment */
-            $stmt->allMatched = true;
+            $stmt->setAttribute('allMatched', true);
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {

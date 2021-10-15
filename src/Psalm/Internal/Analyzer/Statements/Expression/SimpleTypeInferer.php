@@ -671,20 +671,20 @@ class SimpleTypeInferer
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (\is_string($key)) {
-                        // string keys are not supported in unpacked arrays
-                        return false;
+                        $new_offset = $key;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
+                    } else {
+                        $new_offset = $array_creation_info->int_offset++;
+                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_offset);
                     }
 
-                    $new_int_offset = $array_creation_info->int_offset++;
-
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_int_offset);
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
                         array_values($property_value->getAtomicTypes())
                     );
 
-                    $array_creation_info->array_keys[$new_int_offset] = true;
-                    $array_creation_info->property_types[$new_int_offset] = $property_value;
+                    $array_creation_info->array_keys[$new_offset] = true;
+                    $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
                 /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
@@ -694,8 +694,7 @@ class SimpleTypeInferer
                 $array_creation_info->can_create_objectlike = false;
 
                 if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                    // string keys are not supported in unpacked arrays
-                    return false;
+                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
                 }
 
                 if ($unpacked_atomic_type->type_params[0]->hasInt()) {

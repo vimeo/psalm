@@ -410,11 +410,17 @@ class Union implements TypeNode
 
     public function getAssertionString(bool $exact = false): string
     {
+        $assertions = [];
         foreach ($this->types as $type) {
-            return $type->getAssertionString($exact);
+            $assertions[] = $type->getAssertionString($exact);
         }
 
-        throw new \UnexpectedValueException('Should only be one type per assertion');
+        $assertions = array_unique($assertions);
+        if (count($assertions) !== 1) {
+            throw new \UnexpectedValueException('Should only be one type per assertion');
+        }
+
+        return reset($assertions);
     }
 
     /**
@@ -1077,7 +1083,8 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($atomic_type instanceof Type\Atomic\TNamedObject
+                && $atomic_type->value !== 'SimpleXMLElement') {
                 continue;
             }
 

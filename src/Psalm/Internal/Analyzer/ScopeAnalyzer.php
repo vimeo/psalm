@@ -314,7 +314,7 @@ class ScopeAnalyzer
                     }
                 );
 
-                if ($has_default_terminator || isset($stmt->allMatched)) {
+                if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
                     return array_values(array_unique(array_merge($control_actions, $all_case_actions)));
                 }
 

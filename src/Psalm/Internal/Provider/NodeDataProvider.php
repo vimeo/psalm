@@ -114,7 +114,7 @@ class NodeDataProvider implements \Psalm\NodeTypeProvider
     {
         $node_type = $this->getType($node);
 
-        return ($node_type && $node_type->reference_free) || isset($node->pure);
+        return ($node_type && $node_type->reference_free) || $node->getAttribute('pure', false);
     }
 
     public function clearNodeOfTypeAndAssertions(Node\Expr $node) : void

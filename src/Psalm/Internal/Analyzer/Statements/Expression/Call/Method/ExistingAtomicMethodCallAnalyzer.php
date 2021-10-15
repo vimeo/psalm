@@ -103,7 +103,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $context
             );
 
-            return $statements_analyzer->node_data->getType($fake_function_call) ?: Type::getMixed();
+            return $statements_analyzer->node_data->getType($fake_function_call) ?? Type::getMixed();
         }
 
         $source = $statements_analyzer->getSource();
@@ -219,7 +219,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result
         );
 
-        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?: $method_id));
+        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
         if (!$in_call_map) {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
@@ -247,7 +247,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         try {
-            $method_storage = $codebase->methods->getStorage($declaring_method_id ?: $method_id);
+            $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
         } catch (\UnexpectedValueException $e) {
             $method_storage = null;
         }
@@ -289,14 +289,14 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         && !$in_call_map
                     ) {
                         $result->too_few_arguments = true;
-                        $result->too_few_arguments_method_ids[] = $declaring_method_id ?: $method_id;
+                        $result->too_few_arguments_method_ids[] = $declaring_method_id ?? $method_id;
                     }
                 }
 
                 if ($has_variadic_param || count($method_storage->params) >= count($args) || $in_call_map) {
                     $result->too_many_arguments = false;
                 } else {
-                    $result->too_many_arguments_method_ids[] = $declaring_method_id ?: $method_id;
+                    $result->too_many_arguments_method_ids[] = $declaring_method_id ?? $method_id;
                 }
             }
 
@@ -405,7 +405,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        return $return_type_candidate ?: Type::getMixed();
+        return $return_type_candidate ?? Type::getMixed();
     }
 
     /**

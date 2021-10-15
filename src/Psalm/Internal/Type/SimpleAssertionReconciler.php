@@ -2490,7 +2490,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             ) {
                 $did_remove_type = true;
 
-                $existing_var_type->removeType($type_key);
+                //SimpleXMLElement may be falsy
+                if (!$type instanceof TNamedObject || $type->value !== 'SimpleXMLElement') {
+                    $existing_var_type->removeType($type_key);
+                }
             }
 
             if ($type instanceof TTemplateParam) {

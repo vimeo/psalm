@@ -20,7 +20,13 @@ namespace LDAP {
    final class ResultEntry {}
 }
 
+namespace PgSql {
+   final class Connection {}
+   final class Result {}
+   final class Lob {}
+}
+
 namespace PSpell {
      final class Config {}
      final class Dictionary {}
-}   
+}

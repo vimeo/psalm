@@ -76,7 +76,9 @@ class MethodCallPurityAnalyzer
             }
         } elseif (($method_storage->mutation_free
                 || ($method_storage->external_mutation_free
-                    && (isset($stmt->var->external_mutation_free) || isset($stmt->var->pure))))
+                    && ($stmt->var->getAttribute('external_mutation_free', false)
+                        || $stmt->var->getAttribute('pure', false))
+                ))
             && !$context->inside_unset
         ) {
             if ($method_storage->mutation_free
@@ -89,12 +91,10 @@ class MethodCallPurityAnalyzer
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
                 ) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->memoizable = true;
+                    $stmt->setAttribute('memoizable', true);
 
                     if ($method_storage->immutable) {
-                        /** @psalm-suppress UndefinedPropertyAssignment */
-                        $stmt->pure = true;
+                        $stmt->setAttribute('pure', true);
                     }
                 }
 
@@ -118,8 +118,7 @@ class MethodCallPurityAnalyzer
                         // fall through
                     }
                 } elseif (!$method_storage->mutation_free_inferred) {
-                    /** @psalm-suppress UndefinedPropertyAssignment */
-                    $stmt->pure = true;
+                    $stmt->setAttribute('pure', true);
                 }
             }
         }
@@ -158,7 +157,7 @@ class MethodCallPurityAnalyzer
                         $class_storage->name,
                         $name,
                         $class_storage
-                    ) ?: Type::getMixed();
+                    ) ?? Type::getMixed();
 
                     $context->vars_in_scope[$mutation_var_id] = $new_type;
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;

@@ -180,7 +180,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
             $context->inside_general_use = $was_inside_general_use;
-            $lhs_type = $statements_analyzer->node_data->getType($stmt->class) ?: Type::getMixed();
+            $lhs_type = $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed();
         }
 
         if (!$lhs_type) {

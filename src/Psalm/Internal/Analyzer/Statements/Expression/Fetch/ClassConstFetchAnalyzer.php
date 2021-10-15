@@ -106,6 +106,8 @@ class ClassConstFetchAnalyzer
                 }
             }
 
+            $fq_class_name_lc = strtolower($fq_class_name);
+
             $moved_class = false;
 
             if ($codebase->alter_code
@@ -295,12 +297,12 @@ class ClassConstFetchAnalyzer
             if ($context->calling_method_id) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    strtolower($fq_class_name) . '::' . $stmt->name->name,
+                    $fq_class_name_lc . '::' . $stmt->name->name,
                     false
                 );
             }
 
-            $declaring_const_id = strtolower($fq_class_name) . '::' . $stmt->name->name;
+            $declaring_const_id = $fq_class_name_lc . '::' . $stmt->name->name;
 
             if ($codebase->alter_code && !$moved_class) {
                 foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
@@ -309,7 +311,7 @@ class ClassConstFetchAnalyzer
 
                         $file_manipulations = [];
 
-                        if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
+                        if (strtolower($new_fq_class_name) !== $fq_class_name_lc) {
                             $file_manipulations[] = new \Psalm\FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,

@@ -251,7 +251,7 @@ class ForeachAnalyzer
         }
 
         if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_type = $key_type ?: Type::getMixed();
+            $key_type = $key_type ?? Type::getMixed();
 
             AssignmentAnalyzer::analyze(
                 $statements_analyzer,
@@ -264,7 +264,7 @@ class ForeachAnalyzer
             );
         }
 
-        $value_type = $value_type ?: Type::getMixed();
+        $value_type = $value_type ?? Type::getMixed();
 
         if ($stmt->byRef) {
             $value_type->by_ref = true;
@@ -549,7 +549,7 @@ class ForeachAnalyzer
                             $intersection_value_type,
                             $value_type_part,
                             $codebase
-                        ) ?: Type::getMixed();
+                        ) ?? Type::getMixed();
                     }
 
                     if (!$intersection_key_type) {
@@ -559,7 +559,7 @@ class ForeachAnalyzer
                             $intersection_key_type,
                             $key_type_part,
                             $codebase
-                        ) ?: Type::getMixed();
+                        ) ?? Type::getMixed();
                     }
                 }
 
@@ -816,7 +816,7 @@ class ForeachAnalyzer
                         $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
                     }
 
-                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
 
                     $statements_analyzer->node_data = $old_data_provider;
 
@@ -1071,7 +1071,7 @@ class ForeachAnalyzer
             $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
         }
 
-        $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?: null;
+        $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
 
         $statements_analyzer->node_data = $old_data_provider;
 

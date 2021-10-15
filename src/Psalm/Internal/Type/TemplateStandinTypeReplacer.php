@@ -488,6 +488,7 @@ class TemplateStandinTypeReplacer
                 continue;
             }
 
+            /** @var class-string $key may not always be true but class_exists on built in classes(Iterator) is wrong */
             if (is_a($input_key, $key, true)) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
@@ -1094,7 +1095,7 @@ class TemplateStandinTypeReplacer
             $last_arg_offset = $template_bound->arg_offset;
         }
 
-        return $current_type ?: \Psalm\Type::getMixed();
+        return $current_type ?? \Psalm\Type::getMixed();
     }
 
     /**
