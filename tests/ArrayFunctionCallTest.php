@@ -228,6 +228,25 @@ class ArrayFunctionCallTest extends TestCase
                         return array_merge($list, ["test"]);
                     }',
             ],
+            'arrayMergeTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function merge($a, $b): array
+                        {
+                            return array_merge($a, $b);
+                        }
+                    }',
+            ],
             'arrayReplaceIntArrays' => [
                 '<?php
                     $d = array_replace(["a", "b", "c"], [1, 2, 3]);',
@@ -263,6 +282,25 @@ class ArrayFunctionCallTest extends TestCase
                      */
                     function foo(array $list) : array {
                         return array_replace($list, ["test"]);
+                    }',
+            ],
+            'arrayReplaceTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function replace($a, $b): array
+                        {
+                            return array_replace($a, $b);
+                        }
                     }',
             ],
             'arrayReverseDontPreserveKey' => [
