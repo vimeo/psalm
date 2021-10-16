@@ -1105,6 +1105,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TDependentGetClass) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TTraitString) {
                 continue;
             }
