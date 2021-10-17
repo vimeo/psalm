@@ -71,7 +71,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
 
                 $new_properties = \array_filter(
                     array_map(
-                        function ($keyed_type) use ($statements_source, $context) {
+                        static function ($keyed_type) use ($statements_source, $context) {
                             $prev_keyed_type = $keyed_type;
 
                             $keyed_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
@@ -85,16 +85,13 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 $statements_source->getSuppressedIssues()
                             );
 
-                            $keyed_type->possibly_undefined = ($prev_keyed_type->hasInt()
-                                    && !$prev_keyed_type->hasLiteralInt())
-                                || $prev_keyed_type->hasFloat()
-                                || $prev_keyed_type->getId() !== $keyed_type->getId();
+                            $keyed_type->possibly_undefined = !$prev_keyed_type->isAlwaysTruthy();
 
                             return $keyed_type;
                         },
                         $first_arg_array->properties
                     ),
-                    function ($keyed_type) {
+                    static function ($keyed_type) {
                         return !$keyed_type->isEmpty();
                     }
                 );
