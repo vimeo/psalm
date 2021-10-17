@@ -1533,6 +1533,127 @@ class AssertAnnotationTest extends TestCase
                     [],
                     '7.4'
             ],
+            'onPropertyOfImmutableArgument' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class Aclass {
+                        public ?string $b;
+                        public function __construct(?string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert !null $item->b */
+                    function c(\Aclass $item): void {
+                        if (null === $item->b) {
+                            throw new \InvalidArgumentException("");
+                        }
+                    }
+
+                    /** @var \Aclass $a */
+                    c($a);
+                    echo strlen($a->b);',
+            ],
+            'inTrueOnPropertyOfImmutableArgument' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public ?int $b;
+                        public function __construct(?int $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-true !null $item->b */
+                    function c(A $item): bool {
+                        return null !== $item->b;
+                    }
+
+                    function check(int $a): void {}
+
+                    /** @var A $a */
+
+                    if (c($a)) {
+                        check($a->b);
+                    }',
+            ],
+            'inFalseOnPropertyOfAImmutableArgument' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public ?int $b;
+                        public function __construct(?int $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-false !null $item->b */
+                    function c(A $item): bool {
+                        return null === $item->b;
+                    }
+
+                    function check(int $a): void {}
+
+                    /** @var A $a */
+
+                    if (!c($a)) {
+                        check($a->b);
+                    }',
+            ],
+            'ifTrueOnNestedPropertyOfArgument' => [
+                '<?php
+                    class B {
+                        public ?string $c;
+                        public function __construct(?string $c) {
+                            $this->c = $c;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Aclass {
+                        public B $b;
+                        public function __construct(B $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-true !null $item->b->c */
+                    function c(\Aclass $item): bool {
+                        return null !== $item->b->c;
+                    }
+
+                    $a = new \Aclass(new \B(null));
+                    if (c($a)) {
+                        echo strlen($a->b->c);
+                    }',
+            ],
+            'ifFalseOnNestedPropertyOfArgument' => [
+                '<?php
+                    class B {
+                        public ?string $c;
+                        public function __construct(?string $c) {
+                            $this->c = $c;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Aclass {
+                        public B $b;
+                        public function __construct(B $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-false !null $item->b->c */
+                    function c(\Aclass $item): bool {
+                        return null !== $item->b->c;
+                    }
+
+                    $a = new \Aclass(new \B(null));
+                    if (!c($a)) {
+                        echo strlen($a->b->c);
+                    }',
+            ],
         ];
     }
 
@@ -1797,6 +1918,67 @@ class AssertAnnotationTest extends TestCase
                         $parameter->getType()->__toString();
                     }',
                 'error_message' => 'PossiblyNullReference',
+            ],
+            'onPropertyOfMutableArgument' => [
+                '<?php
+                    class Aclass {
+                        public ?string $b;
+                        public function __construct(?string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert !null $item->b */
+                    function c(\Aclass $item): void {
+                        if (null === $item->b) {
+                            throw new \InvalidArgumentException("");
+                        }
+                    }
+
+                    /** @var \Aclass $a */
+                    c($a);
+                    echo strlen($a->b);',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifTrueOnPropertyOfMutableArgument' => [
+                '<?php
+                    class Aclass {
+                        public ?string $b;
+                        public function __construct(?string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-true !null $item->b */
+                    function c(\Aclass $item): bool {
+                        return null !== $item->b;
+                    }
+
+                    /** @var \Aclass $a */
+                    if (c($a)) {
+                        echo strlen($a->b);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifFalseOnPropertyOfMutableArgument' => [
+                '<?php
+                    class Aclass {
+                        public ?string $b;
+                        public function __construct(?string $b) {
+                            $this->b = $b;
+                        }
+                    }
+
+                    /** @psalm-assert-if-false !null $item->b */
+                    function c(\Aclass $item): bool {
+                        return null === $item->b;
+                    }
+
+                    /** @var \Aclass $a */
+                    if (!c($a)) {
+                        echo strlen($a->b);
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
