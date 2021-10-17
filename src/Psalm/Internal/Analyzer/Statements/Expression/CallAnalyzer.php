@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\UndefinedFunction;
@@ -30,9 +31,11 @@ use function array_map;
 use function array_merge;
 use function array_unique;
 use function count;
+use function explode;
 use function implode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function str_replace;
@@ -617,7 +620,6 @@ class CallAnalyzer
     /**
      * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
      * @param  \Psalm\Storage\Assertion[] $assertions
-     * @param  string $thisName
      * @param  list<PhpParser\Node\Arg> $args
      * @param  array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds,
      *
@@ -663,6 +665,65 @@ class CallAnalyzer
                 $assertion_var_id = $assertion->var_id;
             } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
+            } elseif (strpos($assertion->var_id, '->') !== false) {
+                $exploded = explode('->', $assertion->var_id);
+
+                if (count($exploded) < 2) {
+                    IssueBuffer::add(
+                        new InvalidDocblock(
+                            'Assert notation is malformed',
+                            new CodeLocation($statements_analyzer, $expr)
+                        )
+                    );
+                    continue;
+                }
+
+                [$var_id, $property] = $exploded;
+
+                $var_id = is_numeric($var_id) ? (int) $var_id : $var_id;
+
+                if (!is_int($var_id) || !isset($args[$var_id])) {
+                    IssueBuffer::add(
+                        new InvalidDocblock(
+                            'Variable ' . $var_id . ' is not an argument so cannot be asserted',
+                            new CodeLocation($statements_analyzer, $expr)
+                        )
+                    );
+                    continue;
+                }
+
+                /** @var PhpParser\Node\Expr\Variable $arg_value */
+                $arg_value = $args[$var_id]->value;
+
+                $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $statements_analyzer);
+
+                if (!$arg_var_id) {
+                    IssueBuffer::add(
+                        new InvalidDocblock(
+                            'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
+                            new CodeLocation($statements_analyzer, $expr)
+                        )
+                    );
+                    continue;
+                }
+
+                if (count($exploded) === 2) {
+                    $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
+                        $property,
+                        $statements_analyzer->getNodeTypeProvider(),
+                        $statements_analyzer->getCodebase()->classlike_storage_provider,
+                        $arg_value
+                    );
+
+                    if (null !== $failedMessage) {
+                        IssueBuffer::add(
+                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr))
+                        );
+                        continue;
+                    }
+                }
+
+                $assertion_var_id = str_replace((string) $var_id, $arg_var_id, $assertion->var_id);
             }
 
             $codebase = $statements_analyzer->getCodebase();

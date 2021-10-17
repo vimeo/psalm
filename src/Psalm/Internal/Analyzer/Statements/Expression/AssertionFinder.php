@@ -19,8 +19,11 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\RedundantIdentityWithTrue;
@@ -28,14 +31,21 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
+use function array_key_exists;
 use function assert;
 use function count;
+use function explode;
 use function in_array;
 use function is_callable;
 use function is_int;
+use function is_numeric;
+use function sprintf;
+use function str_replace;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -943,7 +953,17 @@ class AssertionFinder
                     if ($var_name) {
                         $if_types[$var_name] = [[$assertion->rule[0][0]]];
                     }
-                } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
+                } elseif ($assertion->var_id === '$this') {
+                    if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
+                        IssueBuffer::add(
+                            new InvalidDocblock(
+                                'Assertion of $this can be done only on method of a class',
+                                new CodeLocation($source, $expr)
+                            )
+                        );
+                        continue;
+                    }
+
                     $var_id = ExpressionIdentifier::getArrayVarId(
                         $expr->var,
                         $this_class_name,
@@ -953,17 +973,74 @@ class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = [[$assertion->rule[0][0]]];
                     }
-                } elseif (\is_string($assertion->var_id)
-                    && (
-                        $expr instanceof PhpParser\Node\Expr\MethodCall
-                        || $expr instanceof PhpParser\Node\Expr\StaticCall
-                    )
-                ) {
-                    $var_id = $assertion->var_id;
-                    if (strpos($var_id, 'self::') === 0) {
-                        $var_id = $this_class_name . '::' . substr($var_id, 6);
+                } elseif (\is_string($assertion->var_id)) {
+                    $is_function = substr($assertion->var_id, -2) === '()';
+                    $exploded_id = explode('->', $assertion->var_id);
+                    $var_id   = $exploded_id[0] ?? null;
+                    $property = $exploded_id[1] ?? null;
+
+                    if (is_numeric($var_id) && null !== $property && !$is_function) {
+                        $args = $expr->getArgs();
+
+                        if (!array_key_exists($var_id, $args)) {
+                            IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Variable '.$var_id.' is not an argument so cannot be asserted',
+                                    new CodeLocation($source, $expr)
+                                )
+                            );
+                            continue;
+                        }
+
+                        $arg_value = $args[$var_id]->value;
+                        assert($arg_value instanceof PhpParser\Node\Expr\Variable);
+
+                        $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $source);
+
+                        if (null === $arg_var_id) {
+                            IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
+                                    in local scope',
+                                    new CodeLocation($source, $expr)
+                                )
+                            );
+                            continue;
+                        }
+
+                        if (count($exploded_id) === 2) {
+                            $failedMessage = self::isPropertyImmutableOnArgument(
+                                $property,
+                                $source->getNodeTypeProvider(),
+                                $source->getCodebase()->classlike_storage_provider,
+                                $arg_value
+                            );
+
+                            if (null !== $failedMessage) {
+                                IssueBuffer::accepts(
+                                    new InvalidDocblock($failedMessage, new CodeLocation($source, $expr))
+                                );
+                                continue;
+                            }
+                        }
+
+                        $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
+                    } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
+                        $assertion_var_id = $assertion->var_id;
+
+                        if (strpos($assertion_var_id, 'self::') === 0) {
+                            $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
+                        }
+                    } else {
+                        IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
+                                new CodeLocation($source, $expr)
+                            )
+                        );
+                        continue;
                     }
-                    $if_types[$var_id] = [[$assertion->rule[0][0]]];
+                    $if_types[$assertion_var_id] = [[$assertion->rule[0][0]]];
                 }
 
                 if ($if_types) {
@@ -1030,17 +1107,78 @@ class AssertionFinder
                             $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
                         }
                     }
-                } elseif (\is_string($assertion->var_id)
-                    && (
-                        $expr instanceof PhpParser\Node\Expr\MethodCall
-                        || $expr instanceof PhpParser\Node\Expr\StaticCall
-                    )
-                ) {
-                    $var_id = $assertion->var_id;
-                    if (strpos($var_id, 'self::') === 0) {
-                        $var_id = $this_class_name . '::' . substr($var_id, 6);
+                } elseif (\is_string($assertion->var_id)) {
+                    $is_function = substr($assertion->var_id, -2) === '()';
+                    $exploded_id = explode('->', $assertion->var_id);
+                    $var_id   = $exploded_id[0] ?? null;
+                    $property = $exploded_id[1] ?? null;
+
+                    if (is_numeric($var_id) && null !== $property && !$is_function) {
+                        $args = $expr->getArgs();
+
+                        if (!array_key_exists($var_id, $args)) {
+                            IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Variable '.$var_id.' is not an argument so cannot be asserted',
+                                    new CodeLocation($source, $expr)
+                                )
+                            );
+                            continue;
+                        }
+                        /** @var PhpParser\Node\Expr\Variable $arg_value */
+                        $arg_value = $args[$var_id]->value;
+
+                        $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $source);
+
+                        if (null === $arg_var_id) {
+                            IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
+                                     in local scope',
+                                    new CodeLocation($source, $expr)
+                                )
+                            );
+                            continue;
+                        }
+
+                        if (count($exploded_id) === 2) {
+                            $failedMessage = self::isPropertyImmutableOnArgument(
+                                $property,
+                                $source->getNodeTypeProvider(),
+                                $source->getCodebase()->classlike_storage_provider,
+                                $arg_value
+                            );
+
+                            if (null !== $failedMessage) {
+                                IssueBuffer::accepts(
+                                    new InvalidDocblock($failedMessage, new CodeLocation($source, $expr))
+                                );
+                                continue;
+                            }
+                        }
+
+                        if ('!' === $assertion->rule[0][0][0]) {
+                            $rule = substr($assertion->rule[0][0], 1);
+                        } else {
+                            $rule = '!' . $assertion->rule[0][0];
+                        }
+                        $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
+
+                        $if_types[$assertion_var_id] = [[$rule]];
+                    } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
+                        $var_id = $assertion->var_id;
+                        if (strpos($var_id, 'self::') === 0) {
+                            $var_id = $this_class_name.'::'.substr($var_id, 6);
+                        }
+                        $if_types[$var_id] = [['!'.$assertion->rule[0][0]]];
+                    } else {
+                        IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
+                                new CodeLocation($source, $expr)
+                            )
+                        );
                     }
-                    $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
                 }
 
                 if ($if_types) {
@@ -3977,5 +4115,47 @@ class AssertionFinder
                 }
             }
         }
+    }
+
+    public static function isPropertyImmutableOnArgument(
+        string                       $property,
+        NodeDataProvider             $node_provider,
+        ClassLikeStorageProvider     $class_provider,
+        PhpParser\Node\Expr\Variable $arg_expr
+    ): ?string {
+        $type = $node_provider->getType($arg_expr);
+        /** @var string $name */
+        $name = $arg_expr->name;
+
+        if (null === $type) {
+            return 'Cannot resolve a type of variable ' . $name;
+        }
+
+        foreach ($type->getAtomicTypes() as $type) {
+            if (!$type instanceof TNamedObject) {
+                return 'Variable ' . $name . ' is not an object so assertion cannot be applied';
+            }
+
+            $class_definition = $class_provider->get($type->value);
+            $property_definition = $class_definition->properties[$property] ?? null;
+
+            if (!$property_definition instanceof PropertyStorage) {
+                return sprintf(
+                    'Property %s is not defined on variable %s so assertion cannot be applied',
+                    $property,
+                    $name
+                );
+            }
+
+            if (!$property_definition->readonly) {
+                return sprintf(
+                    'Property %s of variable %s is not read-only/immutable so assertion cannot be applied',
+                    $property,
+                    $name
+                );
+            }
+        }
+
+        return null;
     }
 }
