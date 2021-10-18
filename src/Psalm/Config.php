@@ -30,6 +30,7 @@ use Psalm\Issue\VariableIssue;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
+use SimpleXMLIterator;
 use Webmozart\PathUtil\Path;
 use XdgBaseDir\Xdg;
 
@@ -145,6 +146,7 @@ class Config
     protected $universal_object_crates = [
         \stdClass::class,
         SimpleXMLElement::class,
+        SimpleXMLIterator::class,
     ];
 
     /**
