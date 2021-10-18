@@ -68,7 +68,8 @@ class TypeCombinationTest extends TestCase
             'ArrayAndTraversableNotIterable' => [
                 '<?php declare(strict_types=1);
 
-                    function isNullIdentifier(mixed $identifier): bool
+                    /** @param mixed $identifier */
+                    function isNullIdentifier($identifier): bool
                     {
                         if ($identifier instanceof \Traversable || is_array($identifier)) {
                             expectsTraversableOrArray($identifier);
