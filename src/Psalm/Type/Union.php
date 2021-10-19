@@ -851,16 +851,6 @@ class Union implements TypeNode
         return isset($this->types['float']) || $this->literal_float_types;
     }
 
-    public function hasDefinitelyNumericType(bool $include_literal_int = true): bool
-    {
-        return isset($this->types['int'])
-            || isset($this->types['float'])
-            || isset($this->types['numeric-string'])
-            || isset($this->types['numeric'])
-            || ($include_literal_int && $this->literal_int_types)
-            || $this->literal_float_types;
-    }
-
     public function hasScalar(): bool
     {
         return isset($this->types['scalar']);

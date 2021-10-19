@@ -99,7 +99,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'nullWithSomeClassPipeNull' => ['null', 'null', 'SomeClass|null'],
             'nullWithMixed' => ['null', 'null', 'mixed'],
 
-            'falsyWithSomeClass' => ['mixed', 'falsy', 'SomeClass'],
+            'falsyWithSomeClass' => ['empty', 'falsy', 'SomeClass'],
             'falsyWithSomeClassPipeFalse' => ['false', 'falsy', 'SomeClass|false'],
             'falsyWithSomeClassPipeBool' => ['false', 'falsy', 'SomeClass|bool'],
             'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],

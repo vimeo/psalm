@@ -588,6 +588,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             //if any atomic in the union is either always falsy, we remove it. If not always truthy, we mark the check
             //as not redundant.
             $union = new Union([$existing_var_type_part]);
+            $union->possibly_undefined = $existing_var_type->possibly_undefined;
+            $union->possibly_undefined_from_try = $existing_var_type->possibly_undefined_from_try;
             if ($union->isAlwaysFalsy()) {
                 $did_remove_type = true;
                 $existing_var_type->removeType($existing_var_type_key);
@@ -603,7 +605,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 && IssueBuffer::accepts(
                     new ParadoxicalCondition(
                         'Found a paradox when evaluating ' . $key
-                        . ' of type ' . $existing_var_type->getId()
+                        . ' of type ' . $old_var_type_string
                         . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
                         $code_location
                     ),
@@ -626,7 +628,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TTrue());
         }
 
-        if ($existing_var_type->hasType('array')) {
+        if ($existing_var_type->hasArray()) {
             $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
 
             if ($array_atomic_type instanceof TArray
@@ -726,7 +728,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (isset($existing_var_type->getAtomicTypes()['string'])) {
+        if ($existing_var_type->hasType('string')) {
             $string_atomic_type = $existing_var_type->getAtomicTypes()['string'];
 
             if (get_class($string_atomic_type) === TString::class) {
@@ -763,6 +765,28 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     }
                     if (IssueBuffer::accepts($issue, $suppressed_issues)) {
                         // fall through
+                    }
+                }
+            }
+
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
+            }
+        }
+
+        if ($existing_var_type->hasInt()) {
+            $existing_range_types = $existing_var_type->getRangeInts();
+
+            if ($existing_range_types) {
+                foreach ($existing_range_types as $int_key => $literal_type) {
+                    if ($literal_type->contains(0)) {
+                        $existing_var_type->removeType($int_key);
+                        if ($literal_type->min_bound === null || $literal_type->min_bound <= -1) {
+                            $existing_var_type->addType(new Type\Atomic\TIntRange($literal_type->min_bound, -1));
+                        }
+                        if ($literal_type->min_bound === null || $literal_type->max_bound >= 1) {
+                            $existing_var_type->addType(new Type\Atomic\TIntRange(1, $literal_type->max_bound));
+                        }
                     }
                 }
             }
