@@ -1080,6 +1080,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyScalar) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TNonEmptyList) {
                 continue;
             }
