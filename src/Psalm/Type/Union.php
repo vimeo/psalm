@@ -1027,6 +1027,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TArray && $atomic_type->getId() === 'array<empty, empty>') {
+                continue;
+            }
+
             //we can't be sure the type is always falsy
             return false;
         }
