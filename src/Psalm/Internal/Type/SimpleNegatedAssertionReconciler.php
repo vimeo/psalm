@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
@@ -599,20 +600,26 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
-            if ($code_location
-                && $key
-                && !$is_empty_assertion
-                && IssueBuffer::accepts(
-                    new ParadoxicalCondition(
+            if ($code_location && $key && !$is_empty_assertion) {
+                if ($existing_var_type->from_docblock) {
+                    $issue = new DocblockTypeContradiction(
+                        'Found a paradox when evaluating ' . $key
+                        . ' of type ' . $old_var_type_string
+                        . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
+                        $code_location,
+                        null
+                    );
+                } else {
+                    $issue = new ParadoxicalCondition(
                         'Found a paradox when evaluating ' . $key
                         . ' of type ' . $old_var_type_string
                         . ' and trying to reconcile it with a non-' . $assertion . ' assertion',
                         $code_location
-                    ),
-                    $suppressed_issues
-                )
-            ) {
-                // fall through
+                    );
+                }
+                if (IssueBuffer::accepts($issue, $suppressed_issues)) {
+                    // fall through
+                }
             }
 
             $failed_reconciliation = 2;

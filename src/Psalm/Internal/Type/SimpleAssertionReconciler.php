@@ -4,6 +4,7 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
@@ -21,11 +22,15 @@ use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -2239,19 +2244,26 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
-            if ($code_location
-                && $key
-                && IssueBuffer::accepts(
-                    new ParadoxicalCondition(
+            if ($code_location && $key) {
+                if ($existing_var_type->from_docblock) {
+                    $issue = new DocblockTypeContradiction(
+                        'Found a paradox when evaluating ' . $key
+                        . ' of type ' . $old_var_type_string
+                        . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                        $code_location,
+                        null
+                    );
+                } else {
+                    $issue = new ParadoxicalCondition(
                         'Found a paradox when evaluating ' . $key
                         . ' of type ' . $old_var_type_string
                         . ' and trying to reconcile it with a ' . $assertion . ' assertion',
                         $code_location
-                    ),
-                    $suppressed_issues
-                )
-            ) {
-                // fall through
+                    );
+                }
+                if (IssueBuffer::accepts($issue, $suppressed_issues)) {
+                    // fall through
+                }
             }
 
             $failed_reconciliation = 2;
@@ -2268,8 +2280,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type->removeType('array');
             $existing_var_type->addType(new TArray(
                 [
-                    new Type\Union([new TEmpty]),
-                    new Type\Union([new TEmpty]),
+                    new Type\Union([new TEmpty()]),
+                    new Type\Union([new TEmpty()]),
                 ]
             ));
         }
@@ -2279,7 +2291,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
             if (get_class($mixed_atomic_type) === TMixed::class) {
                 $existing_var_type->removeType('mixed');
-                $existing_var_type->addType(new Type\Atomic\TEmptyMixed());
+                $existing_var_type->addType(new TEmptyMixed());
             } elseif ($existing_var_type->isSingle() && $mixed_atomic_type instanceof TEmptyMixed) {
                 if ($code_location && $key && !$did_remove_type) {
                     if ($existing_var_type->from_docblock) {
@@ -2353,17 +2365,17 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
             if (get_class($string_atomic_type) === TString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
-                $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                $existing_var_type->addType(new TLiteralString(''));
+                $existing_var_type->addType(new TLiteralString('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                $existing_var_type->addType(new TLiteralString('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyLowercaseString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                $existing_var_type->addType(new TLiteralString('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyNonspecificLiteralString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                $existing_var_type->addType(new TLiteralString('0'));
             } elseif ($existing_var_type->isSingle() && $string_atomic_type instanceof TNonFalsyString) {
                 if ($code_location && $key && !$did_remove_type) {
                     if ($existing_var_type->from_docblock) {
@@ -2401,12 +2413,12 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 foreach ($existing_range_types as $int_key => $literal_type) {
                     if ($literal_type->contains(0)) {
                         $existing_var_type->removeType($int_key);
-                        $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
+                        $existing_var_type->addType(new TLiteralInt(0));
                     }
                 }
             } else {
                 $existing_var_type->removeType('int');
-                $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
+                $existing_var_type->addType(new TLiteralInt(0));
             }
 
             if ($existing_var_type->isSingle()) {
@@ -2416,7 +2428,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_var_type->hasFloat()) {
             $existing_var_type->removeType('float');
-            $existing_var_type->addType(new Type\Atomic\TLiteralFloat(0.0));
+            $existing_var_type->addType(new TLiteralFloat(0.0));
 
             if ($existing_var_type->isSingle()) {
                 return $existing_var_type;
@@ -2425,7 +2437,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($existing_var_type->hasNumeric()) {
             $existing_var_type->removeType('numeric');
-            $existing_var_type->addType(new Type\Atomic\TEmptyNumeric());
+            $existing_var_type->addType(new TEmptyNumeric());
 
             if ($existing_var_type->isSingle()) {
                 return $existing_var_type;
