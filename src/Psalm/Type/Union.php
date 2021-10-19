@@ -1084,6 +1084,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyMixed) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TObject) {
                 continue;
             }
