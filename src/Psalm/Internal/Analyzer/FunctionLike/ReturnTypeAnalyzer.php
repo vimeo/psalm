@@ -273,13 +273,15 @@ class ReturnTypeAnalyzer
         }
 
         if ($is_to_string) {
+            $union_comparison_results = new TypeComparisonResult();
             if (!$inferred_return_type->hasMixed() &&
                 !UnionTypeComparator::isContainedBy(
                     $codebase,
                     $inferred_return_type,
                     Type::getString(),
                     $inferred_return_type->ignore_nullable_issues,
-                    $inferred_return_type->ignore_falsable_issues
+                    $inferred_return_type->ignore_falsable_issues,
+                    $union_comparison_results
                 )
             ) {
                 if (IssueBuffer::accepts(
@@ -290,6 +292,19 @@ class ReturnTypeAnalyzer
                     $suppressed_issues
                 )) {
                     return false;
+                }
+            }
+
+            if ($union_comparison_results->to_string_cast) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        'The declared return type for ' . $cased_method_id . ' expects string, ' .
+                        '\'' . $inferred_return_type . '\' provided with a __toString method',
+                        $return_type_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
                 }
             }
 
