@@ -318,11 +318,6 @@ class Config
     /**
      * @var bool
      */
-    public $allow_phpstorm_generics = false;
-
-    /**
-     * @var bool
-     */
     public $allow_string_standin_for_class = false;
 
     /**
@@ -887,7 +882,6 @@ class Config
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
-            'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
             'usePhpDocPropertiesWithoutMagicCall' => 'use_phpdoc_property_without_magic_or_parent',

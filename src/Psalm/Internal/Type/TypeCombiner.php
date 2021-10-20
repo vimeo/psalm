@@ -180,8 +180,7 @@ class TypeCombiner
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->builtin_type_params['Traversable']))
             && (
-                ($codebase && $codebase->config->allow_phpstorm_generics)
-                || isset($combination->builtin_type_params['Traversable'])
+                isset($combination->builtin_type_params['Traversable'])
                 || (isset($combination->named_object_types['Traversable'])
                     && $combination->named_object_types['Traversable']->from_docblock)
             )

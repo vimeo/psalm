@@ -14,11 +14,6 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
-use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -110,26 +105,6 @@ class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
-            if ($this->config->allow_phpstorm_generics) {
-                foreach ($class_storage->properties as $property_storage) {
-                    if ($property_storage->type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($property_storage->type, true);
-                    }
-                }
-
-                foreach ($class_storage->methods as $method_storage) {
-                    if ($method_storage->return_type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($method_storage->return_type);
-                    }
-
-                    foreach ($method_storage->params as $param_storage) {
-                        if ($param_storage->type) {
-                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
-                        }
-                    }
-                }
-            }
-
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -138,22 +113,6 @@ class Populator
                 }
 
                 $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
-            }
-        }
-
-        if ($this->config->allow_phpstorm_generics) {
-            foreach ($all_file_storage as $file_storage) {
-                foreach ($file_storage->functions as $function_storage) {
-                    if ($function_storage->return_type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($function_storage->return_type);
-                    }
-
-                    foreach ($function_storage->params as $param_storage) {
-                        if ($param_storage->type) {
-                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
-                        }
-                    }
-                }
             }
         }
 
@@ -989,65 +948,6 @@ class Populator
         }
 
         $storage->populated = true;
-    }
-
-    private function convertPhpStormGenericToPsalmGeneric(Union $candidate, bool $is_property = false): void
-    {
-        if (!$candidate->from_docblock) {
-            //never convert a type that comes from a signature
-            return;
-        }
-
-        $atomic_types = $candidate->getAtomicTypes();
-
-        if (isset($atomic_types['array']) && count($atomic_types) > 1 && !isset($atomic_types['null'])) {
-            $iterator_name = null;
-            $generic_params = null;
-            $iterator_key = null;
-
-            try {
-                foreach ($atomic_types as $type_key => $type) {
-                    if ($type instanceof TIterable
-                        || ($type instanceof TNamedObject
-                            && (!$type->from_docblock || $is_property)
-                            && (
-                                strtolower($type->value) === 'traversable'
-                                || $this->classlikes->interfaceExtends(
-                                    $type->value,
-                                    'Traversable'
-                                )
-                                || $this->classlikes->classImplements(
-                                    $type->value,
-                                    'Traversable'
-                                )
-                            ))
-                    ) {
-                        $iterator_name = $type->value;
-                        $iterator_key = $type_key;
-                    } elseif ($type instanceof TArray) {
-                        $generic_params = $type->type_params;
-                    }
-                }
-            } catch (InvalidArgumentException $e) {
-                // ignore class-not-found issues
-            }
-
-            if ($iterator_name && $iterator_key && $generic_params) {
-                if ($iterator_name === 'iterable') {
-                    $generic_iterator = new TIterable($generic_params);
-                } else {
-                    if (strtolower($iterator_name) === 'generator') {
-                        $generic_params[] = Type::getMixed();
-                        $generic_params[] = Type::getMixed();
-                    }
-                    $generic_iterator = new TGenericObject($iterator_name, $generic_params);
-                }
-
-                $candidate->removeType('array');
-                $candidate->removeType($iterator_key);
-                $candidate->addType($generic_iterator);
-            }
-        }
     }
 
     protected function inheritMethodsFromParent(
