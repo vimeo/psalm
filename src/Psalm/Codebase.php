@@ -384,7 +384,6 @@ class Codebase
         );
 
         $this->populator = new Populator(
-            $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
             $this->classlikes,

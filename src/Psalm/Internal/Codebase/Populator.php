@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
-use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -61,17 +60,11 @@ class Populator
     private $classlikes;
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
      * @var FileReferenceProvider
      */
     private $file_reference_provider;
 
     public function __construct(
-        Config $config,
         ClassLikeStorageProvider $classlike_storage_provider,
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
@@ -82,7 +75,6 @@ class Populator
         $this->file_storage_provider = $file_storage_provider;
         $this->classlikes = $classlikes;
         $this->progress = $progress;
-        $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
     }
 
