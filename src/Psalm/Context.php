@@ -589,14 +589,6 @@ class Context
                         break;
                     }
 
-                    // empty and !empty are not definitive for arrays and scalar types
-                    if (($type === '!falsy' || $type === 'falsy') &&
-                        ($new_type->hasArray() || $new_type->hasPossiblyNumericType())
-                    ) {
-                        $type_changed = true;
-                        break;
-                    }
-
                     $result_type = AssertionReconciler::reconcile(
                         $type,
                         clone $new_type,
