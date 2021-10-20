@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
@@ -747,6 +748,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif (get_class($string_atomic_type) === TNonspecificLiteralString::class) {
                 $existing_var_type->removeType('string');
                 $existing_var_type->addType(new TNonEmptyNonspecificLiteralString());
+            } elseif (get_class($string_atomic_type) === TNonEmptyString::class) {
+                $existing_var_type->removeType('string');
+                $existing_var_type->addType(new TNonFalsyString());
             } elseif ($existing_var_type->isSingle() && !$is_equality && (
                 $string_atomic_type instanceof TNonFalsyString ||
                 $string_atomic_type instanceof TClassString ||

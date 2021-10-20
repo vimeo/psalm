@@ -3135,6 +3135,22 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     ',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'redundantConditionForNonEmptyString' => [
+                '<?php
+
+                    /**
+                     * @param non-empty-string $c
+                     */
+                    function c(string $c): void {
+                        if ($c) {
+                          if ($c) {
+                              echo "hello";
+                          }
+                      }
+                    }
+                    ',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }
