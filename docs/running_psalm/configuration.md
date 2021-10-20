@@ -143,7 +143,7 @@ Setting this to `false` means that any function calls will cause Psalm to forget
 ```
 Allows you to specify whether or not to use the typed iterator docblock format supported by PHP Storm e.g. `ArrayIterator|string[]`, which Psalm transforms to `ArrayIterator<string>`. Defaults to `false`.
 
-This config is deprecated and will be removed in Psalm v5
+This flag is deprecated and will be removed in Psalm v5
 
 #### allowStringToStandInForClass
 
