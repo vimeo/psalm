@@ -31,7 +31,7 @@ collections)
 psl)
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
-	git checkout 1.6.x
+	git checkout 1.9.x
 	composer install --ignore-platform-reqs
 	"$PSALM" --monochrome --config=tools/psalm/psalm.xml
 	;;
