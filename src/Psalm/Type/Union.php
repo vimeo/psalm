@@ -851,16 +851,6 @@ class Union implements TypeNode
         return isset($this->types['float']) || $this->literal_float_types;
     }
 
-    public function hasDefinitelyNumericType(bool $include_literal_int = true): bool
-    {
-        return isset($this->types['int'])
-            || isset($this->types['float'])
-            || isset($this->types['numeric-string'])
-            || isset($this->types['numeric'])
-            || ($include_literal_int && $this->literal_int_types)
-            || $this->literal_float_types;
-    }
-
     public function hasScalar(): bool
     {
         return isset($this->types['scalar']);
@@ -1027,6 +1017,10 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TArray && $atomic_type->getId() === 'array<empty, empty>') {
+                continue;
+            }
+
             //we can't be sure the type is always falsy
             return false;
         }
@@ -1076,7 +1070,15 @@ class Union implements TypeNode
                 continue;
             }
 
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyScalar) {
+                continue;
+            }
+
             if ($atomic_type instanceof Type\Atomic\TNonEmptyList) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TNonEmptyMixed) {
                 continue;
             }
 
@@ -1102,6 +1104,10 @@ class Union implements TypeNode
             }
 
             if ($atomic_type instanceof Type\Atomic\TClassString) {
+                continue;
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TDependentGetClass) {
                 continue;
             }
 

@@ -4,8 +4,10 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -19,14 +21,24 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEmptyNumeric;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
@@ -36,7 +48,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
 use function count;
 use function explode;
 use function get_class;
@@ -2213,108 +2224,96 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         int &$failed_reconciliation
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
-            || $existing_var_type->hasType('iterable');
+        $did_remove_type = $existing_var_type->possibly_undefined
+            || $existing_var_type->possibly_undefined_from_try;
 
-        if ($existing_var_type->hasMixed()) {
-            if ($existing_var_type->isMixed()
-                && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed
-            ) {
-                if ($code_location
-                    && $key
-                    && IssueBuffer::accepts(
-                        new ParadoxicalCondition(
-                            'Found a paradox when evaluating ' . $key
-                                . ' of type ' . $existing_var_type->getId()
-                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )
-                ) {
-                    // fall through
-                }
-
-                return Type::getMixed();
-            }
-
-            if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
+        foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_key => $existing_var_type_part) {
+            //if any atomic in the union is either always truthy, we remove it. If not always falsy, we mark the check
+            //as not redundant.
+            $union = new Union([$existing_var_type_part]);
+            $union->possibly_undefined = $existing_var_type->possibly_undefined;
+            $union->possibly_undefined_from_try = $existing_var_type->possibly_undefined_from_try;
+            if ($union->isAlwaysTruthy()) {
                 $did_remove_type = true;
-                $existing_var_type->removeType('mixed');
-
-                if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed) {
-                    $existing_var_type->addType(new Type\Atomic\TEmptyMixed);
-                }
-            } elseif ($existing_var_type->isMixed()) {
-                if ($code_location
-                    && $key
-                    && IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key
-                                . ' of type ' . $existing_var_type->getId()
-                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
-                            $code_location,
-                            $existing_var_type->getId() . ' ' . $assertion
-                        ),
-                        $suppressed_issues
-                    )
-                ) {
-                    // fall through
-                }
-            }
-
-            if ($existing_var_type->isMixed()) {
-                return $existing_var_type;
+                $existing_var_type->removeType($existing_var_type_key);
+            } elseif (!$union->isAlwaysFalsy()) {
+                $did_remove_type = true;
             }
         }
 
-        if ($existing_var_type->hasScalar()) {
-            if ($existing_var_type->isSingle()
-                && $existing_var_atomic_types['scalar'] instanceof Type\Atomic\TNonEmptyScalar
-            ) {
-                if ($code_location
-                    && $key
-                    && IssueBuffer::accepts(
-                        new ParadoxicalCondition(
-                            'Found a paradox when evaluating ' . $key
-                                . ' of type ' . $existing_var_type->getId()
-                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )
-                ) {
+        if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
+            if ($code_location && $key) {
+                if ($existing_var_type->from_docblock) {
+                    $issue = new DocblockTypeContradiction(
+                        'Found a paradox when evaluating ' . $key
+                        . ' of type ' . $old_var_type_string
+                        . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                        $code_location,
+                        null
+                    );
+                } else {
+                    $issue = new ParadoxicalCondition(
+                        'Found a paradox when evaluating ' . $key
+                        . ' of type ' . $old_var_type_string
+                        . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                        $code_location
+                    );
+                }
+                if (IssueBuffer::accepts($issue, $suppressed_issues)) {
                     // fall through
                 }
-
-                return Type::getScalar();
             }
 
-            if (!$existing_var_atomic_types['scalar'] instanceof Type\Atomic\TEmptyScalar) {
-                $did_remove_type = true;
-                $existing_var_type->removeType('scalar');
+            $failed_reconciliation = 2;
 
-                if (!$existing_var_atomic_types['scalar'] instanceof Type\Atomic\TNonEmptyScalar) {
-                    $existing_var_type->addType(new Type\Atomic\TEmptyScalar);
-                }
-            } elseif ($existing_var_type->isSingle()) {
-                if ($code_location
-                    && $key
-                    && IssueBuffer::accepts(
-                        new RedundantCondition(
+            return Type::getEmpty();
+        }
+
+        if ($existing_var_type->hasType('bool')) {
+            $existing_var_type->removeType('bool');
+            $existing_var_type->addType(new TFalse());
+        }
+
+        if ($existing_var_type->hasArray()) {
+            $existing_var_type->removeType('array');
+            $existing_var_type->addType(new TArray(
+                [
+                    new Type\Union([new TEmpty()]),
+                    new Type\Union([new TEmpty()]),
+                ]
+            ));
+        }
+
+        if ($existing_var_type->hasMixed()) {
+            $mixed_atomic_type = $existing_var_type->getAtomicTypes()['mixed'];
+
+            if (get_class($mixed_atomic_type) === TMixed::class) {
+                $existing_var_type->removeType('mixed');
+                $existing_var_type->addType(new TEmptyMixed());
+            } elseif ($existing_var_type->isSingle() && $mixed_atomic_type instanceof TEmptyMixed) {
+                if ($code_location && $key && !$did_remove_type) {
+                    if ($existing_var_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
                             'Found a redundant condition when evaluating ' . $key
-                                . ' of type ' . $existing_var_type->getId()
-                                . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
                             $code_location,
                             $existing_var_type->getId() . ' ' . $assertion
-                        ),
-                        $suppressed_issues
-                    )
-                ) {
-                    // fall through
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
+                        );
+                    }
+                    if (IssueBuffer::accepts($issue, $suppressed_issues)) {
+                        // fall through
+                    }
                 }
             }
 
@@ -2323,181 +2322,151 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             }
         }
 
-        if ($existing_var_type->hasType('bool')) {
-            $did_remove_type = true;
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TFalse);
-        }
+        if ($existing_var_type->hasScalar()) {
+            $scalar_atomic_type = $existing_var_type->getAtomicTypes()['scalar'];
 
-        if ($existing_var_type->hasType('true')) {
-            $did_remove_type = true;
-            $existing_var_type->removeType('true');
-        }
-
-        if ($existing_var_type->hasString()) {
-            $existing_string_types = $existing_var_type->getLiteralStrings();
-
-            if ($existing_string_types) {
-                foreach ($existing_string_types as $string_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($string_key);
-                        $did_remove_type = true;
+            if (get_class($scalar_atomic_type) === TScalar::class) {
+                $existing_var_type->removeType('scalar');
+                $existing_var_type->addType(new TEmptyScalar());
+            } elseif ($existing_var_type->isSingle() &&
+                $scalar_atomic_type instanceof TEmptyScalar
+            ) {
+                if ($code_location && $key && !$did_remove_type) {
+                    if ($existing_var_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Found a redundant condition when evaluating ' . $key
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
+                        );
+                    }
+                    if (IssueBuffer::accepts($issue, $suppressed_issues)) {
+                        // fall through
                     }
                 }
-            } else {
-                $did_remove_type = true;
-                if ($existing_var_type->hasType('class-string')) {
-                    $existing_var_type->removeType('class-string');
-                }
+            }
 
-                if ($existing_var_type->hasType('callable-string')) {
-                    $existing_var_type->removeType('callable-string');
-                }
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
+            }
+        }
 
-                if ($existing_var_type->hasType('string')) {
-                    $existing_var_type->removeType('string');
+        if ($existing_var_type->hasType('string')) {
+            $string_atomic_type = $existing_var_type->getAtomicTypes()['string'];
 
-                    if (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonEmptyString) {
-                        $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
-                        $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
-                    } elseif (!$existing_var_atomic_types['string'] instanceof Type\Atomic\TNonFalsyString) {
-                        $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+            if (get_class($string_atomic_type) === TString::class) {
+                $existing_var_type->removeType('string');
+                $existing_var_type->addType(new TLiteralString(''));
+                $existing_var_type->addType(new TLiteralString('0'));
+            } elseif (get_class($string_atomic_type) === TNonEmptyString::class) {
+                $existing_var_type->removeType('string');
+                $existing_var_type->addType(new TLiteralString('0'));
+            } elseif (get_class($string_atomic_type) === TNonEmptyLowercaseString::class) {
+                $existing_var_type->removeType('string');
+                $existing_var_type->addType(new TLiteralString('0'));
+            } elseif (get_class($string_atomic_type) === TNonEmptyNonspecificLiteralString::class) {
+                $existing_var_type->removeType('string');
+                $existing_var_type->addType(new TLiteralString('0'));
+            } elseif ($existing_var_type->isSingle() && $string_atomic_type instanceof TNonFalsyString) {
+                if ($code_location && $key && !$did_remove_type) {
+                    if ($existing_var_type->from_docblock) {
+                        $issue = new RedundantConditionGivenDocblockType(
+                            'Found a redundant condition when evaluating ' . $key
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
+                        );
+                    } else {
+                        $issue = new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key
+                            . ' of type ' . $existing_var_type->getId()
+                            . ' and trying to reconcile it with a ' . $assertion . ' assertion',
+                            $code_location,
+                            $existing_var_type->getId() . ' ' . $assertion
+                        );
+                    }
+                    if (IssueBuffer::accepts($issue, $suppressed_issues)) {
+                        // fall through
                     }
                 }
+            }
+
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
             }
         }
 
         if ($existing_var_type->hasInt()) {
-            $existing_int_types = $existing_var_type->getLiteralInts();
             $existing_range_types = $existing_var_type->getRangeInts();
 
-            if ($existing_int_types) {
-                foreach ($existing_int_types as $int_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($int_key);
-                        $did_remove_type = true;
-                    }
-                }
-            } elseif ($existing_range_types) {
+            if ($existing_range_types) {
                 foreach ($existing_range_types as $int_key => $literal_type) {
                     if ($literal_type->contains(0)) {
                         $existing_var_type->removeType($int_key);
-                        $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
-                        $did_remove_type = true;
+                        $existing_var_type->addType(new TLiteralInt(0));
                     }
                 }
             } else {
-                $did_remove_type = true;
                 $existing_var_type->removeType('int');
-                $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
+                $existing_var_type->addType(new TLiteralInt(0));
+            }
+
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
             }
         }
 
         if ($existing_var_type->hasFloat()) {
-            $existing_float_types = $existing_var_type->getLiteralFloats();
+            $existing_var_type->removeType('float');
+            $existing_var_type->addType(new TLiteralFloat(0.0));
 
-            if ($existing_float_types) {
-                foreach ($existing_float_types as $float_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($float_key);
-                        $did_remove_type = true;
-                    }
-                }
-            } else {
-                $did_remove_type = true;
-                $existing_var_type->removeType('float');
-                $existing_var_type->addType(new Type\Atomic\TLiteralFloat(0));
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
             }
         }
 
         if ($existing_var_type->hasNumeric()) {
-            $existing_int_types = $existing_var_type->getLiteralInts();
-
-            if ($existing_int_types) {
-                foreach ($existing_int_types as $int_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($int_key);
-                    }
-                }
-            }
-
-            $existing_string_types = $existing_var_type->getLiteralStrings();
-
-            if ($existing_string_types) {
-                foreach ($existing_string_types as $string_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($string_key);
-                    }
-                }
-            }
-
-            $existing_float_types = $existing_var_type->getLiteralFloats();
-
-            if ($existing_float_types) {
-                foreach ($existing_float_types as $float_key => $literal_type) {
-                    if ($literal_type->value) {
-                        $existing_var_type->removeType($float_key);
-                    }
-                }
-            }
-
-            $did_remove_type = true;
             $existing_var_type->removeType('numeric');
-            $existing_var_type->addType(new Type\Atomic\TEmptyNumeric);
-        }
+            $existing_var_type->addType(new TEmptyNumeric());
 
-        if (isset($existing_var_atomic_types['array'])) {
-            $array_atomic_type = $existing_var_atomic_types['array'];
-
-            if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                || $array_atomic_type instanceof Type\Atomic\TNonEmptyList
-                || ($array_atomic_type instanceof Type\Atomic\TKeyedArray
-                    && array_filter(
-                        $array_atomic_type->properties,
-                        function (Type\Union $t): bool {
-                            return !$t->possibly_undefined;
-                        }
-                    ))
-            ) {
-                $did_remove_type = true;
-
-                $existing_var_type->removeType('array');
-            } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
-                $did_remove_type = true;
-
-                $existing_var_type->addType(new TArray(
-                    [
-                        new Type\Union([new TEmpty]),
-                        new Type\Union([new TEmpty]),
-                    ]
-                ));
+            if ($existing_var_type->isSingle()) {
+                return $existing_var_type;
             }
         }
 
-        if (isset($existing_var_atomic_types['scalar'])
-            && $existing_var_atomic_types['scalar']->getId() !== 'empty-scalar'
-        ) {
-            $did_remove_type = true;
-            $existing_var_type->addType(new Type\Atomic\TEmptyScalar);
-        }
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TTemplateParam) {
+                if (!$existing_var_atomic_type->as->isMixed()) {
+                    $template_did_fail = 0;
 
-        foreach ($existing_var_atomic_types as $type_key => $type) {
-            if ($type instanceof TNamedObject
-                || $type instanceof TObject
-                || $type instanceof TResource
-                || $type instanceof TCallable
-                || $type instanceof TClassString
-            ) {
-                $did_remove_type = true;
+                    $existing_var_atomic_type = clone $existing_var_atomic_type;
 
-                //SimpleXMLElement may be falsy
-                if (!$type instanceof TNamedObject || $type->value !== 'SimpleXMLElement') {
-                    $existing_var_type->removeType($type_key);
+                    $existing_var_atomic_type->as = self::reconcileFalsyOrEmpty(
+                        $assertion,
+                        $existing_var_atomic_type->as,
+                        $key,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                        $template_did_fail
+                    );
+
+                    $did_remove_type = true;
+
+                    if (!$template_did_fail) {
+                        $existing_var_type->addType($existing_var_atomic_type);
+                    }
                 }
-            }
-
-            if ($type instanceof TTemplateParam) {
-                $did_remove_type = true;
             }
         }
 
@@ -2515,6 +2484,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                     $code_location,
                     $suppressed_issues
                 );
+            }
+
+            if (!$did_remove_type) {
+                $failed_reconciliation = 1;
             }
         }
 

@@ -24,7 +24,7 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'assertions' => [
-                    '$d' => 'array{a?: int<0, 10>, b?: int<0, 10>}',
+                    '$d' => 'array{a?: int<1, 10>, b?: int<1, 10>}',
                     '$e' => 'array<string, int<0, 10>|null>',
                 ],
             ],
