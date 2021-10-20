@@ -71,7 +71,7 @@ class Php70Test extends TestCase
                     '$a' => 'string',
                 ],
             ],
-            'SKIPPED-nullCoalesceWithReference' => [
+            'nullCoalesceWithReference' => [
                 '<?php
                     $var = 0;
                     ($a =& $var) ?? "hello";',
