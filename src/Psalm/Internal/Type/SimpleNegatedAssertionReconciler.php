@@ -3,11 +3,6 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
-use Psalm\Issue\DocblockTypeContradiction;
-use Psalm\Issue\ParadoxicalCondition;
-use Psalm\Issue\RedundantCondition;
-use Psalm\Issue\RedundantConditionGivenDocblockType;
-use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -15,8 +10,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
