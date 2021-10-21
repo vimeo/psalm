@@ -559,7 +559,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     f(A::class);
                     f(B::class);',
             ],
-            'SKIPPED-compareToExactClassString' => [
+            'compareToExactClassString' => [
                 '<?php
                     /**
                      * @template T as object

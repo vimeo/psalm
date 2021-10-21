@@ -630,7 +630,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                         $b_or_d->foo();
                     }',
             ],
-            'SKIPPED-isArrayOnArrayKeyOffset' => [
+            'isArrayOnArrayKeyOffset' => [
                 '<?php
                     /** @var array{s:array<mixed, array<int, string>|string>} */
                     $doc = [];
@@ -2923,7 +2923,7 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     echo $i === 3;',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'SKIPPED-noIntersectionOfArrayOrTraversable' => [
+            'noIntersectionOfArrayOrTraversable' => [
                 '<?php
                     function foo(iterable $iterable) : void {
                         if (\is_array($iterable) && $iterable instanceof \Traversable) {}

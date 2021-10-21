@@ -33,7 +33,7 @@ class ClassLoadOrderTest extends TestCase
                     $a = A::B;
                     class C {}',
             ],
-            'SKIPPED-deferredReference' => [
+            'deferredReference' => [
                 '<?php
                     class B {
                         const C = A;
