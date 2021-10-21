@@ -70,7 +70,7 @@ Strings that don't pass this type check:
 
 ### lowercase-string, non-empty-string, non-empty-lowercase-string
 
-An empty string, lowercased or both at once.
+A non empty string, lowercased or both at once.
 
 `empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.
 
