@@ -841,6 +841,32 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                             assert(!is_int($a));
                         }
                     }'
+            ],
+            'alwaysTrueAssignAllowedInsideAND' => [
+                '<?php
+                    class A{
+                        public function get(): stdClass{ return new stdClass;}
+                    }
+                    $a = new A();
+
+                    if (($c = $a->get()) && rand(0,1)){
+
+
+                    }
+                    '
+            ],
+            'alwaysTrueAssignAllowedInsideOr' => [
+                '<?php
+                    class A{
+                        public function get(): ?stdClass{ return new stdClass;}
+                    }
+                    $a = new A();
+
+                    if ($a->get() || ($c = rand(0,1))){
+
+
+                    }
+                    '
             ]
         ];
     }
@@ -1435,7 +1461,21 @@ class RedundantConditionTest extends \Psalm\Tests\TestCase
                 '<?php
                     if(rand(0,1) && false){}',
                 'error_message' => 'TypeDoesNotContainType',
-            ]
+            ],
+            'alwaysTrueAssign' => [
+                '<?php
+                    class A{
+                        public function get(): stdClass{ return new stdClass;}
+                    }
+                    $a = new A();
+
+                    if ($c = $a->get()){
+
+
+                    }
+                    ',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

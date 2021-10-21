@@ -215,7 +215,7 @@ class IfConditionalAnalyzer
             )
         );
 
-        self::handleParadoxicalCondition($statements_analyzer, $cond);
+        self::handleParadoxicalCondition($statements_analyzer, $cond, true);
 
         // get all the var ids that were referenced in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $assigned_in_conditional_var_ids);
@@ -321,7 +321,8 @@ class IfConditionalAnalyzer
 
     public static function handleParadoxicalCondition(
         StatementsAnalyzer  $statements_analyzer,
-        PhpParser\Node\Expr $stmt
+        PhpParser\Node\Expr $stmt,
+        bool $emit_redundant_with_assignation = false
     ): void {
         $type = $statements_analyzer->node_data->getType($stmt);
 
@@ -350,7 +351,9 @@ class IfConditionalAnalyzer
                         // fall through
                     }
                 }
-            } elseif ($type->isAlwaysTruthy() && !$stmt instanceof PhpParser\Node\Expr\Assign) {
+            } elseif ($type->isAlwaysTruthy() &&
+                (!$stmt instanceof PhpParser\Node\Expr\Assign || $emit_redundant_with_assignation)
+            ) {
                 if ($type->from_docblock) {
                     if (IssueBuffer::accepts(
                         new RedundantConditionGivenDocblockType(
