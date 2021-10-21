@@ -118,7 +118,7 @@ class ProtocolStreamReader implements ProtocolReader
                             $this->emit('message', [$msg]);
                             /**
                              * @psalm-suppress DocblockTypeContradiction
-                             * @psalm-suppress ParadoxicalCondition
+                             * @psalm-suppress RedundantConditionGivenDocblockType
                              */
                             if (!$this->is_accepting_new_requests) {
                                 // If we fork, don't read any bytes in the input buffer from the worker process.
