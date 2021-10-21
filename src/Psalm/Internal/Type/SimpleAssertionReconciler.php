@@ -148,7 +148,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
+                false
             );
         }
 
@@ -2222,7 +2223,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
+        bool $recursive_check
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -2246,7 +2248,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
             //every type was removed, this is an impossible assertion
-            if ($code_location && $key) {
+            if ($code_location && $key && !$recursive_check) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
@@ -2266,7 +2268,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         if (!$did_remove_type) {
             //nothing was removed, this is a redundant assertion
-            if ($code_location && $key) {
+            if ($code_location && $key && !$recursive_check) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
@@ -2376,7 +2378,8 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                         $negated,
                         $code_location,
                         $suppressed_issues,
-                        $template_did_fail
+                        $template_did_fail,
+                        $recursive_check
                     );
 
                     if (!$template_did_fail) {

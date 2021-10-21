@@ -603,7 +603,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
             //every type was removed, this is an impossible assertion
-            if ($code_location && $key && !$is_empty_assertion) {
+            if ($code_location && $key && !$is_empty_assertion && !$recursive_check) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
@@ -622,7 +622,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if (!$did_remove_type) {
-            if ($code_location && $key && !$is_empty_assertion) {
+            if ($code_location && $key && !$is_empty_assertion && !$recursive_check) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
