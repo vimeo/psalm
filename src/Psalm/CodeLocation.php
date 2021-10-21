@@ -297,8 +297,12 @@ class CodeLocation
         $this->text = mb_strcut($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
 
         // reset preview start to beginning of line
-        $this->column_from = $this->selection_start -
-            (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+        if ($file_contents !== '') {
+            $this->column_from = $this->selection_start -
+                (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+        } else {
+            $this->column_from = $this->selection_start;
+        }
 
         $newlines = substr_count($this->text, "\n");
 
