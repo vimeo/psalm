@@ -1017,6 +1017,13 @@ class ArrayAccessTest extends TestCase
                     '$_arr2===' => 'non-empty-array<1, 5>',
                 ]
             ],
+            'accessArrayWithSingleStringLiteralOffset' => [
+                '<?php
+                    /** @param non-empty-array<"name", int> $p */
+                    function f($p): int {
+                        return $p["name"];
+                    }'
+            ],
         ];
     }
 
