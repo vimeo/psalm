@@ -1295,14 +1295,18 @@ class ArrayFetchAnalyzer
                 if ($codebase->config->ensure_array_string_offsets_exist
                     && $offset_type_contained_by_expected
                 ) {
-                    self::checkLiteralStringArrayOffset(
-                        $offset_type,
-                        $expected_offset_type,
-                        $array_var_id,
-                        $stmt,
-                        $context,
-                        $statements_analyzer
-                    );
+                    //we already know we found a match, so if the array is non-empty and the key is a literal,
+                    //then no need to check for PossiblyUndefinedStringArrayOffset
+                    if (!$type instanceof TNonEmptyArray || !$type->type_params[0]->isSingleStringLiteral()) {
+                        self::checkLiteralStringArrayOffset(
+                            $offset_type,
+                            $expected_offset_type,
+                            $array_var_id,
+                            $stmt,
+                            $context,
+                            $statements_analyzer
+                        );
+                    }
                 }
 
                 if ($codebase->config->ensure_array_int_offsets_exist
