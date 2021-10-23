@@ -16,6 +16,7 @@ use Psalm\Type\Reconciler;
 
 use function array_filter;
 use function array_intersect;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -174,12 +175,6 @@ class TernaryAnalyzer
                 return false;
             }
 
-            foreach ($if_context->vars_in_scope as $var_id => $type) {
-                if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
-                }
-            }
-
             $context->referenced_var_ids = array_merge(
                 $context->referenced_var_ids,
                 $if_context->referenced_var_ids
@@ -217,18 +212,16 @@ class TernaryAnalyzer
             return false;
         }
 
-        foreach ($t_else_context->vars_in_scope as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $context->vars_in_scope[$var_id],
-                    $type
-                );
-            } elseif (isset($if_context->vars_in_scope[$var_id])
-                && isset($if_context->assigned_var_ids[$var_id])
-            ) {
+        $assign_var_ifs = $if_context->assigned_var_ids;
+        $assign_var_else = $t_else_context->assigned_var_ids;
+        $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);
+
+        //if the same var was assigned in both branches
+        foreach ($assign_all as $var_id => $_) {
+            if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
-                    $type
+                    $t_else_context->vars_in_scope[$var_id]
                 );
             }
         }
@@ -237,11 +230,32 @@ class TernaryAnalyzer
         $redef_var_else = array_keys($t_else_context->getRedefinedVars($context->vars_in_scope));
         $redef_all = array_intersect($redef_var_ifs, $redef_var_else);
 
+        //these vars were changed in both branches
         foreach ($redef_all as $redef_var_id) {
             $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
                 $if_context->vars_in_scope[$redef_var_id],
                 $t_else_context->vars_in_scope[$redef_var_id]
             );
+        }
+
+        //these vars were changed in the if and existed before
+        foreach ($redef_var_ifs as $redef_var_ifs_id) {
+            if (isset($context->vars_in_scope[$redef_var_ifs_id])) {
+                $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$redef_var_ifs_id],
+                    $if_context->vars_in_scope[$redef_var_ifs_id]
+                );
+            }
+        }
+
+        //these vars were changed in the else and existed before
+        foreach ($redef_var_else as $redef_var_else_id) {
+            if (isset($context->vars_in_scope[$redef_var_else_id])) {
+                $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$redef_var_else_id],
+                    $t_else_context->vars_in_scope[$redef_var_else_id]
+                );
+            }
         }
 
         $context->vars_possibly_in_scope = array_merge(

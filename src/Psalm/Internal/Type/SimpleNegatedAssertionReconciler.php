@@ -180,8 +180,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $failed_reconciliation,
                 $is_equality,
                 $is_strict_equality,
-                false,
-                $inside_loop
+                false
             );
         }
 
@@ -571,8 +570,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality,
         bool $is_strict_equality,
-        bool $recursive_check,
-        bool $inside_loop
+        bool $recursive_check
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -725,16 +723,16 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+        foreach ($existing_var_atomic_types as $type_key => $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 if (!$is_equality && !$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $tmp_existing_var_atomic_type = clone $existing_var_atomic_type;
+                    $existing_var_atomic_type = clone $existing_var_atomic_type;
 
-                    $reconciled_type = self::reconcileFalsyOrEmpty(
+                    $existing_var_atomic_type->as = self::reconcileFalsyOrEmpty(
                         $assertion,
-                        $tmp_existing_var_atomic_type->as,
+                        $existing_var_atomic_type->as,
                         $key,
                         $negated,
                         $code_location,
@@ -742,12 +740,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $template_did_fail,
                         $is_equality,
                         $is_strict_equality,
-                        true,
-                        $inside_loop
+                        true
                     );
 
-                    if (!$template_did_fail && !$inside_loop) {
-                        $existing_var_atomic_type->as = $reconciled_type;
+                    if (!$template_did_fail) {
+                        $existing_var_type->removeType($type_key);
                         $existing_var_type->addType($existing_var_atomic_type);
                     }
                 }
