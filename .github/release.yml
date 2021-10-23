@@ -18,3 +18,6 @@ changelog:
     - title: Typos
       labels:
         - 'release:typo'
+    - title: Other changes
+      labels:
+        - "*"
