@@ -180,7 +180,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $failed_reconciliation,
                 $is_equality,
                 $is_strict_equality,
-                false
+                false,
+                $inside_loop
             );
         }
 
@@ -570,7 +571,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality,
         bool $is_strict_equality,
-        bool $recursive_check
+        bool $recursive_check,
+        bool $inside_loop
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -728,11 +730,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $existing_var_atomic_type = clone $existing_var_atomic_type;
+                    $tmp_existing_var_atomic_type = clone $existing_var_atomic_type;
 
-                    $existing_var_atomic_type->as = self::reconcileFalsyOrEmpty(
+                    $reconciled_type = self::reconcileFalsyOrEmpty(
                         $assertion,
-                        $existing_var_atomic_type->as,
+                        $tmp_existing_var_atomic_type->as,
                         $key,
                         $negated,
                         $code_location,
@@ -740,10 +742,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $template_did_fail,
                         $is_equality,
                         $is_strict_equality,
-                        true
+                        true,
+                        $inside_loop
                     );
 
-                    if (!$template_did_fail) {
+                    if (!$template_did_fail && !$inside_loop) {
+                        $existing_var_atomic_type->as = $reconciled_type;
                         $existing_var_type->addType($existing_var_atomic_type);
                     }
                 }
