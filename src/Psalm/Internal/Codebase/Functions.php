@@ -482,7 +482,7 @@ class Functions
             'ignore_user_abort',
 
             // ftp
-            'ftp_close',
+            'ftp_close', 'ftp_pasv',
 
             // bcmath
             'bcscale',
