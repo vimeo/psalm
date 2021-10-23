@@ -12,6 +12,7 @@ changelog:
     - title: Docs
       labels:
         - 'release:docs'
+        - 'documentation'
     - title: Internal changes
       labels:
         - 'release:internal'
