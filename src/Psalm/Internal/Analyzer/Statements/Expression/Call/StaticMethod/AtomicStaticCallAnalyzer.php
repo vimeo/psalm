@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
@@ -512,6 +513,40 @@ class AtomicStaticCallAnalyzer
                     ) === false
                     ) {
                         return false;
+                    }
+
+                    if (!$context->inside_throw) {
+                        if ($context->pure && !$pseudo_method_storage->pure) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call an impure method from a pure context',
+                                    new CodeLocation($statements_analyzer, $stmt_name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($context->mutation_free && !$pseudo_method_storage->mutation_free) {
+                            if (IssueBuffer::accepts(
+                                new ImpureMethodCall(
+                                    'Cannot call a possibly-mutating method from a mutation-free context',
+                                    new CodeLocation($statements_analyzer, $stmt_name)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } elseif ($statements_analyzer->getSource()
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            && $statements_analyzer->getSource()->track_mutations
+                            && !$pseudo_method_storage->pure
+                        ) {
+                            if (!$pseudo_method_storage->mutation_free) {
+                                $statements_analyzer->getSource()->inferred_has_mutation = true;
+                            }
+
+                            $statements_analyzer->getSource()->inferred_impure = true;
+                        }
                     }
 
                     if ($pseudo_method_storage->return_type) {
