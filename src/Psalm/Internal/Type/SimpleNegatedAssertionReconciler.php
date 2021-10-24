@@ -711,7 +711,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         if ($literal_type->min_bound === null || $literal_type->min_bound <= -1) {
                             $existing_var_type->addType(new Type\Atomic\TIntRange($literal_type->min_bound, -1));
                         }
-                        if ($literal_type->min_bound === null || $literal_type->max_bound >= 1) {
+                        if ($literal_type->max_bound === null || $literal_type->max_bound >= 1) {
                             $existing_var_type->addType(new Type\Atomic\TIntRange(1, $literal_type->max_bound));
                         }
                     }
