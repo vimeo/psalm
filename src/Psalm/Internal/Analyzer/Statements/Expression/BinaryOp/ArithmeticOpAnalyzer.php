@@ -390,11 +390,7 @@ class ArithmeticOpAnalyzer
             }
         }
 
-        if ($left_type_part instanceof TMixed
-            || $right_type_part instanceof TMixed
-            || $left_type_part instanceof TTemplateParam
-            || $right_type_part instanceof TTemplateParam
-        ) {
+        if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
             if ($statements_source && $codebase && $context) {
                 if (!$context->collect_initializations
                     && !$context->collect_mutations
@@ -407,7 +403,7 @@ class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($left_type_part instanceof TMixed || $left_type_part instanceof TTemplateParam) {
+            if ($left_type_part instanceof TMixed) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
                         'Left operand cannot be mixed',
@@ -445,6 +441,32 @@ class ArithmeticOpAnalyzer
             $result_type = Type::getMixed($from_loop_isset);
 
             return $result_type;
+        }
+
+        if ($left_type_part instanceof TTemplateParam || $right_type_part instanceof TTemplateParam) {
+            if ($left_type_part instanceof TTemplateParam && !$left_type_part->as->isInt()) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new MixedOperand(
+                        'Left operand cannot be a non-int template',
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($right_type_part instanceof TTemplateParam && !$right_type_part->as->isInt()) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new MixedOperand(
+                        'Right operand cannot be a non-int template',
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            return null;
         }
 
         if ($statements_source && $codebase && $context) {
