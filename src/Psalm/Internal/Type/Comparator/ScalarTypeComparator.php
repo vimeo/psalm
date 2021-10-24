@@ -585,6 +585,11 @@ class ScalarTypeComparator
             return true;
         }
 
+        if ($input_type_part instanceof TLowercaseString
+            && get_class($container_type_part) === TNonEmptyString::class) {
+            return false;
+        }
+
         if ($input_type_part->getKey() === $container_type_part->getKey()) {
             return true;
         }
