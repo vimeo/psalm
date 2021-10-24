@@ -216,7 +216,8 @@ class ConcatAnalyzer
                     $lowercase_type
                 );
 
-                $non_empty_string = Type::getNonEmptyString();
+                $non_empty_string = clone $numeric_type;
+                $non_empty_string->addType(new Type\Atomic\TNonEmptyString());
 
                 $has_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,
