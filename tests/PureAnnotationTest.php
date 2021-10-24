@@ -804,6 +804,28 @@ class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureThroughCallStatic' => [
+                '<?php
+                    /**
+                     * @method static void test()
+                     */
+                    final class Impure
+                    {
+                        public static function __callStatic(string $name, array $arguments)
+                        {
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function testImpure(): void
+                    {
+                        Impure::test();
+                    }
+                    ',
+                'error_message' => 'ImpureMethodCall',
+            ],
         ];
     }
 }
