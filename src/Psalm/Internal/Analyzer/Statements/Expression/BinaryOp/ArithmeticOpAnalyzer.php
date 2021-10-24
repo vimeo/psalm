@@ -407,25 +407,29 @@ class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($left_type_part instanceof TMixed || $left_type_part instanceof TTemplateParam) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Left operand cannot be mixed',
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            } else {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Right operand cannot be mixed',
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+            if ((!$left_type_part instanceof TTemplateParam || $left_type_part->as instanceof TInt) &&
+                (!$right_type_part instanceof TTemplateParam || $right_type_part->as instanceof TInt)
+            ) {
+                if ($left_type_part instanceof TMixed || $left_type_part instanceof TTemplateParam) {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new MixedOperand(
+                            'Left operand cannot be mixed',
+                            new CodeLocation($statements_source, $left)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new MixedOperand(
+                            'Right operand cannot be mixed',
+                            new CodeLocation($statements_source, $right)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
