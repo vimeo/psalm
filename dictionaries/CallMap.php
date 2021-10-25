@@ -5400,7 +5400,7 @@ return [
 'imagecreatefromxpm' => ['false|GdImage', 'filename'=>'string'],
 'imagecreatetruecolor' => ['false|GdImage', 'width'=>'int', 'height'=>'int'],
 'imagecrop' => ['false|GdImage', 'image'=>'GdImage', 'rectangle'=>'array'],
-'imagecropauto' => ['false|GdImage', 'image'=>'GdImage', 'mode'=>'int', 'threshold'=>'float', 'color'=>'int'],
+'imagecropauto' => ['false|GdImage', 'image'=>'GdImage', 'mode='=>'int', 'threshold='=>'float', 'color='=>'int'],
 'imagedashedline' => ['bool', 'image'=>'GdImage', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'color'=>'int'],
 'imagedestroy' => ['bool', 'image'=>'GdImage'],
 'imageellipse' => ['bool', 'image'=>'GdImage', 'center_x'=>'int', 'center_y'=>'int', 'width'=>'int', 'height'=>'int', 'color'=>'int'],
