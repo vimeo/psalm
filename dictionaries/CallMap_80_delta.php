@@ -490,8 +490,8 @@ return [
       'new' => ['false|GdImage', 'image'=>'GdImage', 'rectangle'=>'array'],
     ],
     'imagecropauto' => [
-      'old' => ['resource|false', 'im'=>'resource', 'mode'=>'int', 'threshold'=>'float', 'color'=>'int'],
-      'new' => ['false|GdImage', 'image'=>'GdImage', 'mode'=>'int', 'threshold'=>'float', 'color'=>'int'],
+      'old' => ['resource|false', 'im'=>'resource', 'mode='=>'int', 'threshold='=>'float', 'color='=>'int'],
+      'new' => ['false|GdImage', 'image'=>'GdImage', 'mode='=>'int', 'threshold='=>'float', 'color='=>'int'],
     ],
     'imagedashedline' => [
       'old' => ['bool', 'image'=>'resource', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'color'=>'int'],

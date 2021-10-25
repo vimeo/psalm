@@ -12076,7 +12076,7 @@ return [
     'imagecreatefromxpm' => ['resource|false', 'filename'=>'string'],
     'imagecreatetruecolor' => ['resource|false', 'x_size'=>'int', 'y_size'=>'int'],
     'imagecrop' => ['resource|false', 'im'=>'resource', 'rect'=>'array'],
-    'imagecropauto' => ['resource|false', 'im'=>'resource', 'mode'=>'int', 'threshold'=>'float', 'color'=>'int'],
+    'imagecropauto' => ['resource|false', 'im'=>'resource', 'mode='=>'int', 'threshold='=>'float', 'color='=>'int'],
     'imagedashedline' => ['bool', 'image'=>'resource', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int', 'color'=>'int'],
     'imagedestroy' => ['bool', 'image'=>'resource'],
     'imageellipse' => ['bool', 'image'=>'resource', 'center_x'=>'int', 'center_y'=>'int', 'width'=>'int', 'height'=>'int', 'color'=>'int'],
