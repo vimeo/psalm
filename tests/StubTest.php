@@ -646,6 +646,42 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubFunctionReturnTypeOverwrite(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/custom_functions.phpstub" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            /**
+             * @return string
+             */
+            function testReturnTypeOverwrite() {
+                echo "foo";
+            }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testNoStubFunction(): void
     {
         $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');

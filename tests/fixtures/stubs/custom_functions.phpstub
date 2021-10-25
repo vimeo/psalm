@@ -12,3 +12,6 @@ function variadic2() : array
 {
     return func_get_args();
 }
+
+function testReturnTypeOverwrite() {
+}
