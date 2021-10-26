@@ -4431,6 +4431,66 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'templateExtendsFewerTemplateParameters' => [
+                '<?php
+                    class Real {}
+                    
+                    class RealE extends Real {}
+                    
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue as object
+                     */
+                    class a {
+                        /** @param TValue $real */
+                        public function __construct(public object $real) {}
+                        /**
+                         * @return TValue
+                         */
+                        public function ret(): object {
+                            return $this->real;
+                        }
+                    }
+                    /**
+                     * @template TTKey as array-key
+                     * @template TTValue as object
+                     *
+                     * @extends a<TTKey, TTValue>
+                     */
+                    class b extends a {
+                    }
+                    
+                    
+                    /**
+                     * @template TObject as Real
+                     *
+                     * @extends b<string, TObject>
+                     */
+                    class c extends b {
+                    }
+
+                    $a = new a(new RealE);
+                    $resultA = $a->ret();
+                    
+                    
+                    $b = new b(new RealE);
+                    $resultB = $b->ret();
+                    
+                    $c = new c(new RealE);
+                    $resultC = $c->ret();
+                    
+                ',
+                'assertions' => [
+                    '$a' => 'a<array-key, RealE>',
+                    '$resultA' => 'RealE',
+
+                    '$b' => 'b<array-key, RealE>',
+                    '$resultB' => 'RealE',
+
+                    '$c' => 'c<string, RealE>',
+                    '$resultC' => 'RealE',
+                ],
+            ],
         ];
     }
 
