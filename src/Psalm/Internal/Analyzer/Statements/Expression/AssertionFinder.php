@@ -3378,7 +3378,7 @@ class AssertionFinder
             }
 
 
-            if ($other_var_name && $other_type) {
+            if ($other_var_name && $other_type && !$other_type->isMixed()) {
                 if ($identical) {
                     try {
                         $assertion = $other_type->getAssertionString(true);
