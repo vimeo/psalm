@@ -285,6 +285,12 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TString);
         } elseif (strpos($assertion, 'getclass-') === 0) {
             $assertion = substr($assertion, 9);
+        } elseif ($existing_var_type->isSingle()
+            && $existing_var_type->hasNamedObjectType()
+            && isset($existing_var_type->getAtomicTypes()[$assertion])
+        ) {
+            // checking if two types share a common parent is not enough to guarantee childs are instanceof each other
+            // fall through
         } elseif (!$is_equality) {
             $codebase = $statements_analyzer->getCodebase();
 
