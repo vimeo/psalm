@@ -4442,8 +4442,11 @@ class ClassTemplateExtendsTest extends TestCase
                      * @template TValue as object
                      */
                     class a {
-                        /** @param TValue $real */
-                        public function __construct(public object $real) {}
+                        /** 
+                         * @param TKey $key
+                         * @param TValue $real
+                         */
+                        public function __construct(public int|string $key, public object $real) {}
                         /**
                          * @return TValue
                          */
@@ -4467,13 +4470,18 @@ class ClassTemplateExtendsTest extends TestCase
                      * @extends b<string, TObject>
                      */
                     class c extends b {
+                        /**
+                         * @param TObject $real
+                         */
+                        public function __construct(object $real) {
+                            parent::__construct("", $real);
+                        }
                     }
 
-                    $a = new a(new RealE);
+                    $a = new a(123, new RealE);
                     $resultA = $a->ret();
                     
-                    
-                    $b = new b(new RealE);
+                    $b = new b(123, new RealE);
                     $resultB = $b->ret();
                     
                     $c = new c(new RealE);
@@ -4481,13 +4489,13 @@ class ClassTemplateExtendsTest extends TestCase
                     
                 ',
                 'assertions' => [
-                    '$a' => 'a<array-key, RealE>',
+                    '$a' => 'a<int, RealE>',
                     '$resultA' => 'RealE',
 
-                    '$b' => 'b<array-key, RealE>',
+                    '$b' => 'b<int, RealE>',
                     '$resultB' => 'RealE',
 
-                    '$c' => 'c<string, RealE>',
+                    '$c' => 'c<RealE>',
                     '$resultC' => 'RealE',
                 ],
             ],
