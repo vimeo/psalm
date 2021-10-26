@@ -8,10 +8,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function count;
+use function end;
 
 class ClassTemplateParamCollector
 {
@@ -138,18 +141,21 @@ class ClassTemplateParamCollector
                                         [$type_extends_atomic->defining_class]
                                         [$type_extends_atomic->param_name]
                             )) {
-                                $mapped_offset = array_search(
-                                    $type_extends_atomic->param_name,
-                                    array_keys(
-                                        $static_class_storage->template_extended_params
-                                            [$type_extends_atomic->defining_class]
-                                    ),
-                                    true
-                                );
+                                $mapped_offset = 0;
+                                $found = false;
+                                foreach ($static_class_storage->template_extended_params
+                                    [$type_extends_atomic->defining_class] as $param_name => $tt) {
+                                    if ($param_name === $type_extends_atomic->param_name) {
+                                        $found = true;
+                                        break;
+                                    }
+                                    $tt = $tt->getAtomicTypes();
+                                    if (count($tt) === 1 && end($tt) instanceof TTemplateParam) {
+                                        $mapped_offset++;
+                                    }
+                                }
 
-                                if ($mapped_offset !== false
-                                    && isset($lhs_type_part->type_params[$mapped_offset])
-                                ) {
+                                if ($found && isset($lhs_type_part->type_params[$mapped_offset])) {
                                     $output_type_extends = Type::combineUnionTypes(
                                         $lhs_type_part->type_params[$mapped_offset],
                                         $output_type_extends
