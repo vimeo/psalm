@@ -4478,8 +4478,8 @@ class ClassTemplateExtendsTest extends TestCase
                     }
                     
                     /**
-                     * @template TOther
                      * @template TObject as Real
+                     * @template TOther
                      *
                      * @extends b<string, TObject>
                      */
@@ -4537,7 +4537,7 @@ class ClassTemplateExtendsTest extends TestCase
                     '$c1' => 'c1<RealE>',
                     '$resultC1' => 'RealE',
 
-                    '$c2' => 'c2<false, RealE>',
+                    '$c2' => 'c2<RealE, false>',
                     '$resultC2' => 'RealE',
 
                     '$c3' => 'c3<Secondary, RealE>',
