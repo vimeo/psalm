@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use UnexpectedValueException;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -193,6 +194,28 @@ class AnnotationTest extends TestCase
                  * @return void
                  */
                 function foo($arr = false) {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPromotedPropertyDuplicateDoc(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Both param and property type provided for id');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class UserRole
+                {
+                    /** @psalm-param string $id */
+                    public function __construct(
+                        /** @psalm-var stdClass */
+                        protected $id
+                    ) {
+                    }
+                }'
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1303,6 +1326,22 @@ class AnnotationTest extends TestCase
                     $_b = new A();
                     echo (string)($a->getConfig()[0]??"");'
             ],
+            'promotedPropertiesDocumentationEitherForParamOrForProperty' => [
+                '<?php
+                    final class UserRole
+                    {
+                        /** @psalm-param stdClass $id */
+                        public function __construct(
+                            protected $id,
+                            /** @psalm-var stdClass */
+                            protected $id2
+                        ) {
+                        }
+                    }
+
+                    new UserRole(new stdClass(), new stdClass());
+                    '
+            ],
         ];
     }
 
@@ -1881,6 +1920,36 @@ class AnnotationTest extends TestCase
                     }
                 ",
                 'error_message' => 'InvalidDocblock',
+            ],
+            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainParam' => [
+                '<?php
+                    final class UserRole
+                    {
+                        /** @psalm-param stdClass $id */
+                        public function __construct(
+                            protected $id
+                        ) {
+                        }
+
+                    }
+                    new UserRole("a");
+                    ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainProperty' => [
+                '<?php
+                    final class UserRole
+                    {
+                        public function __construct(
+                            /** @psalm-var stdClass */
+                            protected $id2
+                        ) {
+                        }
+                    }
+
+                    new UserRole("a");
+                    ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
