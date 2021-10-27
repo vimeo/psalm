@@ -4463,13 +4463,12 @@ class ClassTemplateExtendsTest extends TestCase
                     class b extends a {
                     }
                     
-                    
                     /**
                      * @template TObject as Real
                      *
                      * @extends b<string, TObject>
                      */
-                    class c extends b {
+                    class c1 extends b {
                         /**
                          * @param TObject $real
                          */
@@ -4477,16 +4476,56 @@ class ClassTemplateExtendsTest extends TestCase
                             parent::__construct("", $real);
                         }
                     }
-
+                    
+                    /**
+                     * @template TOther
+                     * @template TObject as Real
+                     *
+                     * @extends b<string, TObject>
+                     */
+                    class c2 extends b {
+                        /**
+                         * @param TOther $other
+                         * @param TObject $real
+                         */
+                        public function __construct($other, object $real) {
+                            parent::__construct("", $real);
+                        }
+                    }
+                    
+                    /**
+                     * @template TOther as object
+                     * @template TObject as Real
+                     *
+                     * @extends b<string, TObject|TOther>
+                     */
+                    class c3 extends b {
+                        /**
+                         * @param TOther $other
+                         * @param TObject $real
+                         */
+                        public function __construct(object $other, object $real) {
+                            parent::__construct("", $real);
+                        }
+                    }
+                    
                     $a = new a(123, new RealE);
                     $resultA = $a->ret();
                     
                     $b = new b(123, new RealE);
                     $resultB = $b->ret();
                     
-                    $c = new c(new RealE);
-                    $resultC = $c->ret();
+                    $c1 = new c1(new RealE);
+                    $resultC1 = $c1->ret();
                     
+                    $c2 = new c2(false, new RealE);
+                    $resultC2 = $c2->ret();
+                    
+                    
+                    class Secondary {}
+                    
+                    $c3 = new c3(new Secondary, new RealE);
+                    $resultC3 = $c3->ret();
                 ',
                 'assertions' => [
                     '$a' => 'a<int, RealE>',
@@ -4495,8 +4534,14 @@ class ClassTemplateExtendsTest extends TestCase
                     '$b' => 'b<int, RealE>',
                     '$resultB' => 'RealE',
 
-                    '$c' => 'c<RealE>',
-                    '$resultC' => 'RealE',
+                    '$c1' => 'c1<RealE>',
+                    '$resultC1' => 'RealE',
+
+                    '$c2' => 'c2<false, RealE>',
+                    '$resultC2' => 'RealE',
+
+                    '$c3' => 'c3<Secondary, RealE>',
+                    '$resultC3' => 'RealE|Secondary',
                 ],
             ],
         ];
