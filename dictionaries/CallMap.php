@@ -9335,7 +9335,7 @@ return [
 'openssl_pkey_export_to_file' => ['bool', 'key'=>'resource|string|array', 'output_filename'=>'string', 'passphrase='=>'string|null', 'options='=>'array'],
 'openssl_pkey_free' => ['void', 'key'=>'resource'],
 'openssl_pkey_get_details' => ['array|false', 'key'=>'resource'],
-'openssl_pkey_get_private' => ['resource|false', 'private_key'=>'string', 'passphrase='=>'string'],
+'openssl_pkey_get_private' => ['OpenSSLAsymmetricKey|false', 'private_key'=>'OpenSSLAsymmetricKey|OpenSSLCertificate|array|string', 'passphrase='=>'?string'],
 'openssl_pkey_get_public' => ['resource|false', 'public_key'=>'resource|string'],
 'openssl_pkey_new' => ['resource|false', 'options='=>'array'],
 'openssl_private_decrypt' => ['bool', 'data'=>'string', '&w_decrypted_data'=>'string', 'private_key'=>'string|resource|array', 'padding='=>'int'],

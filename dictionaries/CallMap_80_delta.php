@@ -897,6 +897,10 @@ return [
       'old' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
       'new' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
     ],
+    'openssl_pkey_get_private' => [
+      'old' => ['resource|false', 'private_key'=>'string', 'passphrase='=>'string'],
+      'new' => ['OpenSSLAsymmetricKey|false', 'private_key'=>'OpenSSLAsymmetricKey|OpenSSLCertificate|array|string', 'passphrase='=>'?string'],
+    ],
     'openssl_x509_parse' => [
       'old' => ['array|false', 'certificate'=>'string|resource', 'short_names='=>'bool'],
       'new' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
