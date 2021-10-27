@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@50ec62ffd8a4b46d48835abb007d4bdd4da6c4c9">
+<files psalm-version="dev-master@aed069bf8345aa69b5ccdcec7fcf8f961715e729">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -10,11 +10,6 @@
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
       <code>$matches[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/CodeLocation.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
-      <code>$matches[$match_offset]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Codebase.php">
@@ -125,7 +120,18 @@
       <code>$gettype_expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssignmentAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
+    <DeprecatedMethod occurrences="4">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$invalid_left_messages[0]</code>
       <code>$invalid_right_messages[0]</code>
@@ -145,6 +151,12 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
+    <DeprecatedClass occurrences="4">
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="4">
       <code>$args[0]</code>
       <code>$args[0]</code>
@@ -158,6 +170,21 @@
       <code>$stmt-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallReturnTypeFetcher.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/AtomicMethodCallAnalyzer.php">
+    <DeprecatedClass occurrences="1">
+      <code>Type\Atomic\TEmpty::class</code>
+    </DeprecatedClass>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallReturnTypeFetcher.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="7">
       <code>$result-&gt;existent_method_ids[0]</code>
@@ -169,6 +196,16 @@
       <code>$result-&gt;non_existent_magic_method_ids[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/NewAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/StaticMethod/ExistingAtomicStaticCallAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/CallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$assertion-&gt;rule[0]</code>
@@ -176,15 +213,56 @@
       <code>$callable_arg-&gt;items[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/CastAnalyzer.php">
+    <DeprecatedMethod occurrences="2">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ExitAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
+    <DeprecatedClass occurrences="3">
+      <code>Type\Atomic\TMixed|Type\Atomic\TTemplateParam|Type\Atomic\TEmpty</code>
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+    </DeprecatedClass>
+    <DeprecatedMethod occurrences="2">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/InstancePropertyFetchAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$invalid_fetch_types[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/YieldAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$atomic_return_type-&gt;type_params[2]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/ThrowAnalyzer.php">
+    <DeprecatedMethod occurrences="1">
+      <code>\Psalm\Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/UnsetAnalyzer.php">
+    <DeprecatedClass occurrences="2">
+      <code>new Type\Atomic\TEmpty</code>
+      <code>new Type\Atomic\TEmpty</code>
+    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
@@ -200,6 +278,16 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$stmt-&gt;expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
+    <DeprecatedClass occurrences="2">
+      <code>new Type\Atomic\TEmpty()</code>
+      <code>new Type\Atomic\TEmpty()</code>
+    </DeprecatedClass>
+    <DeprecatedMethod occurrences="2">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
@@ -305,6 +393,49 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Type/Comparator/ArrayTypeComparator.php">
+    <DeprecatedClass occurrences="2">
+      <code>new Type\Atomic\TEmpty()</code>
+      <code>new Type\Atomic\TEmpty()</code>
+    </DeprecatedClass>
+  </file>
+  <file src="src/Psalm/Internal/Type/NegatedAssertionReconciler.php">
+    <DeprecatedMethod occurrences="3">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
+    <DeprecatedClass occurrences="2">
+      <code>new TEmpty()</code>
+      <code>new TEmpty()</code>
+    </DeprecatedClass>
+    <DeprecatedMethod occurrences="13">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
+  <file src="src/Psalm/Internal/Type/SimpleNegatedAssertionReconciler.php">
+    <DeprecatedClass occurrences="2">
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+    </DeprecatedClass>
+    <DeprecatedMethod occurrences="1">
+      <code>Type::getEmpty()</code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
@@ -333,7 +464,17 @@
       <code>$rules[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type.php">
+    <DeprecatedClass occurrences="3">
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
+      <code>new TEmpty()</code>
+    </DeprecatedClass>
+  </file>
   <file src="src/Psalm/Type/Atomic.php">
+    <DeprecatedClass occurrences="1">
+      <code>new TEmpty()</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>array_keys($template_type_map[$value])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
@@ -344,6 +485,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
+    <DeprecatedClass occurrences="1">
+      <code>new TEmpty</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$type[0]</code>
     </PossiblyUndefinedIntArrayOffset>
