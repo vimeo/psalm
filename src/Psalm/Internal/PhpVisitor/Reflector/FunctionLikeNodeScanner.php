@@ -33,8 +33,8 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
-
 use UnexpectedValueException;
+
 use function array_pop;
 use function count;
 use function explode;

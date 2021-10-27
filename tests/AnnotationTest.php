@@ -1921,7 +1921,7 @@ class AnnotationTest extends TestCase
                 ",
                 'error_message' => 'InvalidDocblock',
             ],
-            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainParam' => [
+            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstParam' => [
                 '<?php
                     final class UserRole
                     {
@@ -1936,7 +1936,7 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'InvalidArgument',
             ],
-            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainProperty' => [
+            'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstProperty' => [
                 '<?php
                     final class UserRole
                     {
