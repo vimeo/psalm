@@ -14,6 +14,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Scanner\FileScanner;
@@ -32,6 +33,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_pop;
 use function count;
@@ -404,7 +406,7 @@ class FunctionLikeNodeScanner
         if ($parser_return_type) {
             $original_type = $parser_return_type;
             if ($original_type instanceof PhpParser\Node\IntersectionType) {
-                throw new \UnexpectedValueException('Intersection types not yet supported');
+                throw new UnexpectedValueException('Intersection types not yet supported');
             }
             /** @var Identifier|Name|NullableType|UnionType $original_type */
 
@@ -585,9 +587,45 @@ class FunctionLikeNodeScanner
                     continue;
                 }
 
+                $doc_comment = $param->getDocComment();
+                $var_comment_type = null;
+                if ($doc_comment) {
+                    $var_comments = CommentAnalyzer::getTypeFromComment(
+                        $doc_comment,
+                        $this->file_scanner,
+                        $this->aliases,
+                        $this->existing_function_template_types ?: [],
+                        $this->type_aliases
+                    );
+
+                    $var_comment = array_pop($var_comments);
+
+                    if ($var_comment !== null) {
+                        $var_comment_type = $var_comment->type;
+                    }
+                }
+
+                //both way to document type were used
+                if ($param_storage->type && $var_comment_type) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Param ' . $param_storage->name . ' of ' . $cased_function_id .
+                            ' should be documented as a param or a property, not both',
+                            new CodeLocation($this->file_scanner, $param, null, true)
+                        )
+                    )) {
+                        return false;
+                    }
+                }
+
+                //no docblock type was provided for param but we have one for property
+                if ($param_storage->type === null && $var_comment_type) {
+                    $param_storage->type = $var_comment_type;
+                }
+
                 $property_storage = $classlike_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
-                $property_storage->type = $param_storage->type;
+                $property_storage->type = $param_storage->type ?? $var_comment_type;
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
@@ -762,7 +800,7 @@ class FunctionLikeNodeScanner
 
         if ($param_typehint) {
             if ($param_typehint instanceof PhpParser\Node\IntersectionType) {
-                throw new \UnexpectedValueException('Intersection types not yet supported');
+                throw new UnexpectedValueException('Intersection types not yet supported');
             }
             /** @var Identifier|Name|NullableType|UnionType $param_typehint */
 
@@ -786,7 +824,7 @@ class FunctionLikeNodeScanner
         $is_optional = $param->default !== null;
 
         if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
-            throw new \UnexpectedValueException('Not expecting param name to be non-string');
+            throw new UnexpectedValueException('Not expecting param name to be non-string');
         }
 
         $default_type = null;
@@ -1074,7 +1112,7 @@ class FunctionLikeNodeScanner
                 }
             }
         } else {
-            throw new \UnexpectedValueException('Unrecognized functionlike');
+            throw new UnexpectedValueException('Unrecognized functionlike');
         }
 
         return [
