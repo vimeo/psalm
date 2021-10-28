@@ -609,7 +609,7 @@ class FunctionLikeNodeScanner
                 if ($param_storage->type && $var_comment_type) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
-                            'Param' . $param_storage->name . ' of ' . $cased_function_id .
+                            'Param ' . $param_storage->name . ' of ' . $cased_function_id .
                             ' should be documented as a param or a property, not both',
                             new CodeLocation($this->file_scanner, $param, null, true)
                         )
