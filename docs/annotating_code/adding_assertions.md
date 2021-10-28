@@ -1,10 +1,10 @@
 # Adding assertions
 
-Psalm has four docblock annotations that allow you to specify that a function verifies facts about variables and properties:
+Psalm has five docblock annotations that allow you to specify that a function verifies facts about variables and properties:
 
 - `@psalm-assert` (used when throwing an exception)
 - `@psalm-assert-if-true`/`@psalm-assert-if-false` (used when returning a `bool`)
-- `@psalm-if-this-is` (used when calling a method)
+- `@psalm-if-this-is`/`@psalm-this-out` (used when calling a method)
 
 A list of acceptable assertions [can be found here](assertion_syntax.md).
 
@@ -155,7 +155,8 @@ Please note that the example above only works if you enable [method call memoiza
 in the config file or annotate the class as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable).
 
 
-You can also make sure, when calling a method, that its object has some specific template arguments:
+You can use `@psalm-this-out` to change the template arguments of a method after a method call, to reflect changes to the object's internal state.  
+You can also make assertions on the object's template arguments using `@psalm-if-this-is`.  
 
 
 ```php
@@ -166,14 +167,40 @@ You can also make sure, when calling a method, that its object has some specific
  */
 class a {
     /**
-     * @var T
+     * @var list<T>
      */
-    private $data;
+    private array $data;
     /**
      * @param T $data
      */
     public function __construct($data) {
-        $this->data = $data;
+        $this->data = [$data];
+    }
+    /**
+     * @template NewT
+     * 
+     * @param NewT $data
+     * 
+     * @psalm-this-out self<T|NewT>
+     * 
+     * @return void
+     */
+    public function addData($data) {
+        /** @var self<T|NewT> $this */
+        $this->data []= $data;
+    }
+    /**
+     * @template NewT
+     * 
+     * @param NewT $data
+     * 
+     * @psalm-this-out self<NewT>
+     * 
+     * @return void
+     */
+    public function setData($data) {
+        /** @var self<NewT> $this */
+        $this->data = [$data];
     }
     /**
      * @psalm-if-this-is a<int>
@@ -183,9 +210,14 @@ class a {
 }
 
 $i = new a(123);
+// OK - $i is a<123>
 $i->test();
 
-$i = new a("test");
+$i->addData(321);
+// OK - $i is a<123|321>
+$i->test();
+
+$i->setData("test");
 // IfThisIsMismatch - Class is not a<int> as required by psalm-if-this-is
 $i->test();
 ```

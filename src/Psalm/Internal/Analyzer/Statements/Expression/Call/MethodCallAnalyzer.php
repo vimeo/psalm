@@ -453,10 +453,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         // keep going
                     }
                 }
-                if ($storage->self_out_type) {
-                    $self_out_type = $storage->self_out_type;
-                    $context->vars_in_scope[$lhs_var_id] = $self_out_type;
-                }
             }
         }
 

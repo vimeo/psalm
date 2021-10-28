@@ -51,7 +51,7 @@ class DocumentationTest extends TestCase
      * annotations that we don’t want documented
      */
     private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
-        '@psalm-self-out', // I'm fairly sure it's intentionally undocumented, but can't find the reference
+        '@psalm-self-out', // Not documented as it's a legacy alias of @psalm-this-out
         '@psalm-variadic',
     ];
 
