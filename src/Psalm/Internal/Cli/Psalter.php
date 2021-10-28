@@ -265,8 +265,6 @@ HELP;
             $config->debug_emitted_issues = true;
         }
 
-        $config->visitComposerAutoloadFiles($project_analyzer);
-
         if (array_key_exists('issues', $options)) {
             if (!is_string($options['issues']) || !$options['issues']) {
                 die('Expecting a comma-separated list of issues' . PHP_EOL);
