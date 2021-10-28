@@ -299,6 +299,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @deprecated will be removed in Psalm 5. See getNever to retrieve a TNever that replaces TEmpty
+     */
     public static function getEmpty(): Union
     {
         $type = new TEmpty();
