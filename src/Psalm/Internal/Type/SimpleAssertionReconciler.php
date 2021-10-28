@@ -2221,7 +2221,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         bool $recursive_check
     ) : Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $did_remove_type = $existing_var_type->possibly_undefined
             || $existing_var_type->possibly_undefined_from_try;
@@ -2358,7 +2357,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             $existing_var_type->addType(new TEmptyNumeric());
         }
 
-        foreach ($existing_var_atomic_types as $type_key => $existing_var_atomic_type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type_key => $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 if (!$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;

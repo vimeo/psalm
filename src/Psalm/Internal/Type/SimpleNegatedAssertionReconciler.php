@@ -573,7 +573,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $recursive_check
     ) : Type\Union {
         $old_var_type_string = $existing_var_type->getId();
-        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
         //empty is used a lot to check for array offset existence, so we have to silent errors a lot
         $is_empty_assertion = $assertion === 'empty';
 
@@ -723,7 +723,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        foreach ($existing_var_atomic_types as $type_key => $existing_var_atomic_type) {
+        foreach ($existing_var_type->getAtomicTypes() as $type_key => $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 if (!$is_equality && !$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;
