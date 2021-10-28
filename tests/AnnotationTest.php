@@ -3,7 +3,6 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
-use UnexpectedValueException;
 
 use const DIRECTORY_SEPARATOR;
 
