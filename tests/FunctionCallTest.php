@@ -1662,6 +1662,14 @@ class FunctionCallTest extends TestCase
                     foo(...$arguments);
                     ',
             ],
+            'is_aWithStringableClass' => [
+                '<?php
+                    /**
+                     * @psalm-var class-string<Throwable> $exceptionType
+                     */
+                    if (\is_a(new Exception(), $exceptionType)) {}
+                    ',
+            ],
         ];
     }
 

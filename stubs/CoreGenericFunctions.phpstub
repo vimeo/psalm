@@ -1298,6 +1298,6 @@ function get_defined_constants(bool $categorize = false): array {}
 /**
  * @param mixed $object_or_class
  * @param class-string $class
- * @return ($allow_string is false ? ($object_or_class is string ? false : bool) : bool)
+ * @return ($allow_string is false ? ($object_or_class is object ? bool : false) : bool)
  */
 function is_a($object_or_class, string $class, $allow_string = false): bool{}
