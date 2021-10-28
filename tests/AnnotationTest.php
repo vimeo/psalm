@@ -199,28 +199,6 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testPromotedPropertyDuplicateDoc(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage('Both param and property type provided for id');
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                final class UserRole
-                {
-                    /** @psalm-param string $id */
-                    public function __construct(
-                        /** @psalm-var stdClass */
-                        protected $id
-                    ) {
-                    }
-                }'
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
     public function testInvalidParamDefaultButAllowedInConfig(): void
     {
         Config::getInstance()->add_param_default_to_docblock_type = true;
@@ -1951,6 +1929,22 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'InvalidArgument',
             ],
+            'promotedPropertyDuplicateDoc' => [
+                '<?php
+                    final class UserRole
+                    {
+                        /** @psalm-param string $id */
+                        public function __construct(
+                            /** @psalm-var stdClass */
+                            protected $id
+                        ) {
+                        }
+                    }
+                    ',
+                'error_message' => 'InvalidDocblock',
+            ],
+
+
         ];
     }
 }

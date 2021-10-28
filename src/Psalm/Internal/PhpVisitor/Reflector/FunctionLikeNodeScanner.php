@@ -607,9 +607,15 @@ class FunctionLikeNodeScanner
 
                 //both way to document type were used
                 if ($param_storage->type && $var_comment_type) {
-                    throw new UnexpectedValueException(
-                        'Both param and property type provided for ' . $param_storage->name
-                    );
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Param' . $param_storage->name . ' of ' . $cased_function_id .
+                            ' should be documented as a param or a property, not both',
+                            new CodeLocation($this->file_scanner, $param, null, true)
+                        )
+                    )) {
+                        return false;
+                    }
                 }
 
                 //no docblock type was provided for param but we have one for property
