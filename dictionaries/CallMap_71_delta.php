@@ -51,16 +51,16 @@ return [
       'new' => ['array<string,string>|array<string,false>|array<string,list<mixed>>|false', 'short_options'=>'string', 'long_options='=>'array', '&w_rest_index='=>'int'],
     ],
     'pg_fetch_all' => [
-      'old' => ['array<array>|false', 'result'=>'resource'],
-      'new' => ['array<array>|false', 'result'=>'resource', 'result_type='=>'int'],
+      'old' => ['array<array>', 'result'=>'resource'],
+      'new' => ['array<array>', 'result'=>'resource', 'result_type='=>'int'],
     ],
     'pg_last_error' => [
       'old' => ['string', 'connection='=>'resource'],
       'new' => ['string', 'connection='=>'resource', 'operation='=>'int'],
     ],
     'pg_select' => [
-      'old' => ['bool|string', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int'],
-      'new' => ['bool|string', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int', 'result_type='=>'int'],
+      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int'],
+      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int', 'result_type='=>'int'],
     ],
     'timezone_identifiers_list' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
