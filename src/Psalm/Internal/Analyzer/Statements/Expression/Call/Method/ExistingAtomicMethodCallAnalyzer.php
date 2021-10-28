@@ -253,7 +253,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
-            if ($method_storage->self_out_type) {
+            if ($method_storage->self_out_type && $lhs_var_id) {
                 $self_out_candidate = clone $method_storage->self_out_type;
 
                 if ($template_result->lower_bounds) {
