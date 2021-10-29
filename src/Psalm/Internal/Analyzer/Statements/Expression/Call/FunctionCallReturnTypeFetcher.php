@@ -76,9 +76,21 @@ class FunctionCallReturnTypeFetcher
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
-                                            new TemplateBound(
-                                                Type::getInt(false, $codebase->php_major_version)
+                                        new TemplateBound(
+                                            Type::getInt(false, $codebase->php_major_version)
+                                        )
+                                    ]
+                                ];
+                            } elseif ($template_name === 'TPhpVersionId') {
+                                $template_result->lower_bounds[$template_name] = [
+                                    'fn-' . $function_id => [
+                                        new TemplateBound(
+                                            Type::getInt(
+                                                false,
+                                                10000 * $codebase->php_major_version
+                                                + 100 * $codebase->php_minor_version
                                             )
+                                        )
                                     ]
                                 ];
                             } else {

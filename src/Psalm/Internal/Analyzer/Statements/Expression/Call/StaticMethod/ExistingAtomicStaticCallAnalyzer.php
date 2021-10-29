@@ -499,6 +499,18 @@ class ExistingAtomicStaticCallAnalyzer
                                     )
                                 ]
                             ];
+                        } elseif ($template_type->param_name === 'TPhpVersionId') {
+                            $template_result->lower_bounds[$template_type->param_name] = [
+                                'fn-' . strtolower((string) $method_id) => [
+                                    new TemplateBound(
+                                        Type::getInt(
+                                            false,
+                                            10000 * $codebase->php_major_version
+                                            + 100 * $codebase->php_minor_version
+                                        )
+                                    )
+                                ]
+                            ];
                         } else {
                             $template_result->lower_bounds[$template_type->param_name] = [
                                 ($template_type->defining_class) => [

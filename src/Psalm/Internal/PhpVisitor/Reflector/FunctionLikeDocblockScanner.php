@@ -484,6 +484,19 @@ class FunctionLikeDocblockScanner
 
                 $fixed_type_tokens[$i][0] = $template_name;
             }
+
+            if ($token_body === 'PHP_VERSION_ID') {
+                $template_name = 'TPhpVersionId';
+
+                $storage->template_types[$template_name] = [
+                    $template_function_id => Type::getInt()
+                ];
+
+                $function_template_types[$template_name]
+                    = $storage->template_types[$template_name];
+
+                $fixed_type_tokens[$i][0] = $template_name;
+            }
         }
 
         return [$fixed_type_tokens, $function_template_types];
