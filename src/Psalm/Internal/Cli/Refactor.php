@@ -308,8 +308,6 @@ HELP;
             $project_analyzer->debug_lines = true;
         }
 
-        $config->visitComposerAutoloadFiles($project_analyzer);
-
         $project_analyzer->refactorCodeAfterCompletion($to_refactor);
 
         $start_time = microtime(true);
