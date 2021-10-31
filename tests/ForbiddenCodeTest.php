@@ -267,6 +267,63 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testForbiddenExitFunction(): void
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="exit" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                exit(2);
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testForbiddenDieFunction(): void
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="die" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                die(2);
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {
         $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
