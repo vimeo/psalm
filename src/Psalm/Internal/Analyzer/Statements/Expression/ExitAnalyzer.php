@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
-use PhpParser;
+use PhpParser\Node\Expr\Exit_;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
@@ -21,10 +22,36 @@ class ExitAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Exit_ $stmt,
+        Exit_ $stmt,
         Context $context
     ) : bool {
         $expr_type = null;
+
+        $config = $statements_analyzer->getProjectAnalyzer()->getConfig();
+
+        $forbidden = null;
+
+        if (isset($config->forbidden_functions['exit'])
+            && $stmt->getAttribute('kind') === Exit_::KIND_EXIT
+        ) {
+            $forbidden = 'exit';
+        } elseif (isset($config->forbidden_functions['die'])
+            && $stmt->getAttribute('kind') === Exit_::KIND_DIE
+        ) {
+            $forbidden = 'die';
+        }
+
+        if ($forbidden) {
+            if (IssueBuffer::accepts(
+                new ForbiddenCode(
+                    'You have forbidden the use of ' . $forbidden,
+                    new CodeLocation($statements_analyzer, $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
 
         if ($stmt->expr) {
             $context->inside_call = true;
@@ -91,7 +118,7 @@ class ExitAnalyzer
             && !$context->collect_initializations
         ) {
             if ($context->mutation_free || $context->external_mutation_free) {
-                $function_name = $stmt->getAttribute('kind') === PhpParser\Node\Expr\Exit_::KIND_DIE ? 'die' : 'exit';
+                $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
 
                 if (IssueBuffer::accepts(
                     new ImpureFunctionCall(
