@@ -1,0 +1,13 @@
+name: Pull Request Labels
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mheap/github-action-required-labels@v1
+        with:
+          mode: minimum
+          count: 1
+          labels: "release:typo, release:fix, release:feature, release:deprecation, release:internal, release:docs"
