@@ -362,6 +362,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            if ($stmt_type->isNever()) {
+                $context->has_returned = true;
+            }
         }
 
         if ($result->returns_by_ref) {

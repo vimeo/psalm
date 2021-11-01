@@ -112,6 +112,8 @@ class ExitAnalyzer
 
         $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
 
+        $context->has_returned = true;
+
         return true;
     }
 }

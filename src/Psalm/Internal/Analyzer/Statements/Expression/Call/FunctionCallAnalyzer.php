@@ -209,6 +209,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
+            if ($stmt_type->isNever()) {
+                $context->has_returned = true;
+            }
+
             $event = new AfterEveryFunctionCallAnalysisEvent(
                 $stmt,
                 $function_call_info->function_id,
