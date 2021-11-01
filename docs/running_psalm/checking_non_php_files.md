@@ -23,14 +23,21 @@ Plugins can register their own custom scanner  and analyzer implementations for 
 namespace Psalm\Example;
 
 use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\FileExtensionsInterface;
 use Psalm\Plugin\RegistrationInterface;
 
-class CustomPlugin implements PluginEntryPointInterface
+class CustomPlugin implements PluginEntryPointInterface, PluginFileExtensionsInterface
 {
     public function __invoke(RegistrationInterface $registration, ?\SimpleXMLElement $config = null): void
     {
-        $registration->addFileTypeScanner('phpt', TemplateScanner::class);
-        $registration->addFileTypeAnalyzer('phpt', TemplateAnalyzer::class);
+        // ... regular plugin processes, stub registration, hook registration
     }
+
+    public function processFileExtensions(FileExtensionsInterface $fileExtensions, ?SimpleXMLElement $config = null): void
+    {
+        $fileExtensions->addFileTypeScanner('phpt', TemplateScanner::class);
+        $fileExtensions->addFileTypeAnalyzer('phpt', TemplateAnalyzer::class);
+    }    
 }
 ```

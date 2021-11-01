@@ -198,3 +198,14 @@
  - [BC] Method `Psalm\DocComment::parse()` was removed
  - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
  - [BC] Property `Psalm\Context::$vars_from_global` has been renamed to `$referenced_globals`
+ - [BC] Self-registration of file type scanners and file type analyzers has been changed
+   - `Psalm\Plugin\RegistrationInterface::addFileTypeScanner` was removed
+   - `Psalm\Plugin\RegistrationInterface::addFileTypeAnalyzer` was removed
+   - :information_source: migration possible using `Psalm\Plugin\FileExtensionsInterface`
+   - `Psalm\PluginRegistrationSocket::addFileTypeScanner` was removed
+   - `Psalm\PluginRegistrationSocket::getAdditionalFileTypeScanners` was removed
+   - `Psalm\PluginRegistrationSocket::addFileTypeAnalyzer` was removed
+   - `Psalm\PluginRegistrationSocket::getAdditionalFileTypeAnalyzers` was removed
+   - `Psalm\PluginRegistrationSocket::getAdditionalFileExtensions` was removed
+   - `Psalm\PluginRegistrationSocket::addFileExtension` was removed
+   - :information_source: migration possible using `Psalm\PluginFileExtensionsSocket`

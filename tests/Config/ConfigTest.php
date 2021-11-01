@@ -1416,7 +1416,7 @@ class ConfigTest extends TestCase
         $extension = uniqid('test');
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
-            'analyzer' => uniqid('PsalmTestFileTypeAnaylzer'),
+            'analyzer' => uniqid('PsalmTestFileTypeAnalyzer'),
             'extension' => $extension,
         ];
         $scannerMock = $this->getMockBuilder(FileScanner::class)
@@ -1437,12 +1437,11 @@ class ConfigTest extends TestCase
             <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
             FileTypeSelfRegisteringPlugin::class
         );
-        $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
-        );
-
 
         try {
+            $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
+            );
             $config = $projectAnalyzer->getConfig();
             $config->initializePlugins($projectAnalyzer);
         } catch (ConfigException $exception) {

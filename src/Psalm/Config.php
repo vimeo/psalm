@@ -36,6 +36,8 @@ use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
@@ -592,6 +594,11 @@ class Config
         "soap" => false,
         "xdebug" => false,
     ];
+
+    /**
+     * @var array<class-string, PluginInterface>
+     */
+    private $plugins = [];
 
     protected function __construct()
     {
@@ -1372,6 +1379,40 @@ class Config
         return $this->plugin_classes;
     }
 
+    public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void
+    {
+        $projectAnalyzer->progress->debug('Process plugin adjustments...' . PHP_EOL);
+        $socket = new PluginFileExtensionsSocket($this);
+        foreach ($this->plugin_classes as $pluginClassEntry) {
+            $pluginClassName = $pluginClassEntry['class'];
+            $pluginConfig = $pluginClassEntry['config'];
+            $plugin = $this->loadPlugin($projectAnalyzer, $pluginClassName);
+            if (!$plugin instanceof PluginFileExtensionsInterface) {
+                continue;
+            }
+            try {
+                $plugin->processFileExtensions($socket, $pluginConfig);
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to process plugin file extensions ' . $pluginClassName,
+                    1635800581,
+                    $t
+                );
+            }
+            $projectAnalyzer->progress->debug('Initialized plugin ' . $pluginClassName . ' successfully' . PHP_EOL);
+        }
+        // populate additional aspects after plugins have been initialized
+        foreach ($socket->getAdditionalFileExtensions() as $fileExtension) {
+            $this->file_extensions[] = $fileExtension;
+        }
+        foreach ($socket->getAdditionalFileTypeScanners() as $extension => $className) {
+            $this->filetype_scanners[$extension] = $className;
+        }
+        foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
+            $this->filetype_analyzers[$extension] = $className;
+        }
+    }
+
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      */
@@ -1387,38 +1428,22 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
 
-            try {
-                // Below will attempt to load plugins from the project directory first.
-                // Failing that, it will use registered autoload chain, which will load
-                // plugins from Psalm directory or phar file. If that fails as well, it
-                // will fall back to project autoloader. It may seem that the last step
-                // will always fail, but it's only true if project uses Composer autoloader
-                if ($this->composer_class_loader
-                    && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
-                ) {
-                    $project_analyzer->progress->debug(
-                        'Loading plugin ' . $plugin_class_name . ' via require' . PHP_EOL
-                    );
-
-                    self::requirePath($plugin_class_path);
-                } else {
-                    if (!class_exists($plugin_class_name)) {
-                        throw new UnexpectedValueException($plugin_class_name . ' is not a known class');
-                    }
-                }
-
-                /**
-                 * @psalm-suppress InvalidStringClass
-                 *
-                 * @var PluginEntryPointInterface
-                 */
-                $plugin_object = new $plugin_class_name;
-                $plugin_object($socket, $plugin_config);
-            } catch (Throwable $e) {
-                throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginEntryPointInterface) {
+                continue;
             }
 
-            $project_analyzer->progress->debug('Loaded plugin ' . $plugin_class_name . ' successfully' . PHP_EOL);
+            try {
+                $plugin($socket, $plugin_config);
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to invoke plugin ' . $plugin_class_name,
+                    1635800582,
+                    $t
+                );
+            }
+
+            $project_analyzer->progress->debug('Initialized plugin ' . $plugin_class_name . ' successfully' . PHP_EOL);
         }
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
@@ -1447,26 +1472,51 @@ class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $plugin_object = new FileBasedPluginAdapter($path, $this, $codebase);
-                $plugin_object($socket);
+                $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
+                $plugin($socket);
             } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
-        }
-        // populate additional aspects after plugins have been initialized
-        foreach ($socket->getAdditionalFileExtensions() as $fileExtension) {
-            $this->file_extensions[] = $fileExtension;
-        }
-        foreach ($socket->getAdditionalFileTypeScanners() as $extension => $className) {
-            $this->filetype_scanners[$extension] = $className;
-        }
-        foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
-            $this->filetype_analyzers[$extension] = $className;
         }
 
         new HtmlFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
+    }
+
+    private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
+    {
+        if (isset($this->plugins[$pluginClassName])) {
+            return $this->plugins[$pluginClassName];
+        }
+        try {
+            // Below will attempt to load plugins from the project directory first.
+            // Failing that, it will use registered autoload chain, which will load
+            // plugins from Psalm directory or phar file. If that fails as well, it
+            // will fall back to project autoloader. It may seem that the last step
+            // will always fail, but it's only true if project uses Composer autoloader
+            if ($this->composer_class_loader
+                && ($pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName))
+            ) {
+                $projectAnalyzer->progress->debug(
+                    'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL
+                );
+
+                self::requirePath($pluginclas_class_path);
+            } else {
+                if (!class_exists($pluginClassName)) {
+                    throw new \UnexpectedValueException($pluginClassName . ' is not a known class');
+                }
+            }
+            if (!is_a($pluginClassName, PluginInterface::class, true)) {
+                throw new \UnexpectedValueException($pluginClassName . ' is not a PluginInterface implementation');
+            }
+            $this->plugins[$pluginClassName] = new $pluginClassName;
+            $projectAnalyzer->progress->debug('Loaded plugin ' . $pluginClassName . PHP_EOL);
+            return $this->plugins[$pluginClassName];
+        } catch (Throwable $e) {
+            throw new ConfigException('Failed to load plugin ' . $pluginClassName, 0, $e);
+        }
     }
 
     private static function requirePath(string $path): void

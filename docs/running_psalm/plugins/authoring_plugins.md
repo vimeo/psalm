@@ -39,8 +39,8 @@ To register a stub file manually use `Psalm\Plugin\RegistrationInterface::addStu
 In addition to XML configuration node `<fileExtensions>` plugins can register their own custom scanner
 and analyzer implementations for particular file extensions, e.g.
 
-* `Psalm\Plugin\RegistrationInterface::addFileTypeScanner('html', CustomFileScanner::class)`
-* `Psalm\Plugin\RegistrationInterface::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
+* `Psalm\Plugin\FileExtensionsInterface::addFileTypeScanner('html', CustomFileScanner::class)`
+* `Psalm\Plugin\FileExtensionsInterface::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
 
 ## Publishing your plugin on Packagist
 
