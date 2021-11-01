@@ -19,8 +19,6 @@ class MethodSignatureTest extends TestCase
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-
-            return;
         }
 
         $this->addFile(
@@ -58,8 +56,6 @@ class MethodSignatureTest extends TestCase
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-
-            return;
         }
 
         $this->addFile(
@@ -89,8 +85,6 @@ class MethodSignatureTest extends TestCase
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-
-            return;
         }
 
         $this->addFile(
@@ -265,8 +259,6 @@ class MethodSignatureTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-
-            return;
         }
 
         $this->addFile(
@@ -304,8 +296,6 @@ class MethodSignatureTest extends TestCase
 
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-
-            return;
         }
 
         $this->addFile(

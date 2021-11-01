@@ -1491,6 +1491,45 @@ class UnusedCodeTest extends TestCase
                 ',
                 'error_message' => 'UnusedFunctionCall',
             ],
+            'functionNeverUnevaluatedCode' => [
+                '<?php
+                    /** @return never */
+                    function neverReturns() {
+                        die();
+                    }
+
+                    function f(): void {
+                        neverReturns();
+                        echo "hello";
+                    }
+                ',
+                'error_message' => 'UnevaluatedCode',
+            ],
+            'methodNeverUnevaluatedCode' => [
+                '<?php
+                    class A{
+                        /** @return never */
+                        function neverReturns() {
+                            die();
+                        }
+
+                        function f(): void {
+                            $this->neverReturns();
+                            echo "hello";
+                        }
+                    }
+                ',
+                'error_message' => 'UnevaluatedCode',
+            ],
+            'exitNeverUnevaluatedCode' => [
+                '<?php
+                    function f(): void {
+                        exit();
+                        echo "hello";
+                    }
+                ',
+                'error_message' => 'UnevaluatedCode',
+            ],
         ];
     }
 }

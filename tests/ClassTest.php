@@ -15,8 +15,6 @@ class ClassTest extends TestCase
     {
         if (class_exists('mysqli') === false) {
             $this->markTestSkipped('Cannot run test, base class "mysqli" does not exist!');
-
-            return;
         }
 
         $this->addFile(
