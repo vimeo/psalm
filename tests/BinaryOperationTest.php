@@ -17,8 +17,6 @@ class BinaryOperationTest extends TestCase
     {
         if (class_exists('GMP') === false) {
             $this->markTestSkipped('Cannot run test, base class "GMP" does not exist!');
-
-            return;
         }
 
         $this->addFile(

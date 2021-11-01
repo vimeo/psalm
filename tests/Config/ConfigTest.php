@@ -161,8 +161,6 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
             if (is_array($last_error) && $no_symlinking_error === $last_error['message']) {
                 $this->markTestSkipped($no_symlinking_error);
-
-                return;
             }
         }
 
