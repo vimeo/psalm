@@ -286,7 +286,7 @@ class GeneratorTest extends TestCase
                     '$iterator' => 'NoRewindIterator<int, string>',
                 ]
             ],
-            'fillTemplatesForIteratorFromGenerator' => [
+            'detectYieldInNew' => [
                 '<?php
                     /** @psalm-suppress MissingClosureReturnType */
                     $_a = function() { return new RuntimeException(yield "a"); };
