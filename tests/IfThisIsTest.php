@@ -24,7 +24,7 @@ class IfThisIsTest extends TestCase
                     class F implements I
                     {
                         /**
-                         * @psalm-self-out I
+                         * @psalm-this-out I
                          * @return void
                          */
                         public function convert() {}

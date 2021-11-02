@@ -514,7 +514,7 @@ class MethodCallReturnTypeFetcher
         );
     }
 
-    private static function replaceTemplateTypes(
+    public static function replaceTemplateTypes(
         Type\Union $return_type_candidate,
         TemplateResult $template_result,
         MethodIdentifier $method_id,

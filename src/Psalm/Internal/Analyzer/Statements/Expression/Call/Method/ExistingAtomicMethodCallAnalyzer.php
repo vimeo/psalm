@@ -253,6 +253,48 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
+            if ($method_storage->self_out_type && $lhs_var_id) {
+                $self_out_candidate = clone $method_storage->self_out_type;
+
+                if ($template_result->lower_bounds) {
+                    $self_out_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $codebase,
+                        $self_out_candidate,
+                        $fq_class_name,
+                        null,
+                        $class_storage->parent_class,
+                        true,
+                        false,
+                        $static_type instanceof Type\Atomic\TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        true
+                    );
+                }
+
+                $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $self_out_candidate,
+                    $template_result,
+                    $method_id,
+                    \count($args),
+                    $codebase
+                );
+
+                $self_out_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $codebase,
+                    $self_out_candidate,
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $static_type instanceof Type\Atomic\TNamedObject
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true
+                );
+
+                $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+            }
+    
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,

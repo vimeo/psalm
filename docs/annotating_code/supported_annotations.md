@@ -132,7 +132,7 @@ function addString(?string $s) {
 
 `@psalm-suppress all` can be used to suppress all issues instead of listing them individually.
 
-### `@psalm-assert`, `@psalm-assert-if-true`, `@psalm-assert-if-false` and `@psalm-if-this-is`
+### `@psalm-assert`, `@psalm-assert-if-true`, `@psalm-assert-if-false`, `@psalm-if-this-is` and `@psalm-this-out`
 
 See [Adding assertions](adding_assertions.md).
 
