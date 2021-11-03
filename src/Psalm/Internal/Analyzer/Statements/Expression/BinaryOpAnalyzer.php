@@ -378,6 +378,7 @@ class BinaryOpAnalyzer
             && $stmt instanceof PhpParser\Node\Expr\BinaryOp
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || !$result_type->hasArray())
         ) {
             //among BinaryOp, only Concat and Coalesce can pass tainted value to the result
             return;
