@@ -644,6 +644,12 @@ class TaintTest extends TestCase
 
                     takesArray(["good" => $_GET["bad"]]);'
             ],
+            'resultOfComparisonIsNotTainted' => [
+                '<?php
+                    $input = $_GET["foo"];
+                    $var = $input === "x";
+                    var_dump($var);'
+            ],
         ];
     }
 

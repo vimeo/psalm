@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureMethodCall;
@@ -369,10 +370,20 @@ class BinaryOpAnalyzer
             throw new \UnexpectedValueException('bad');
         }
         $result_type = $statements_analyzer->node_data->getType($stmt);
+        if (!$result_type) {
+            return;
+        }
 
-        if ($statements_analyzer->data_flow_graph
-            && $result_type
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $stmt instanceof PhpParser\Node\Expr\BinaryOp
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
         ) {
+            //among BinaryOp, only Concat and Coalesce can pass tainted value to the result
+            return;
+        }
+
+        if ($statements_analyzer->data_flow_graph) {
             $stmt_left_type = $statements_analyzer->node_data->getType($left);
             $stmt_right_type = $statements_analyzer->node_data->getType($right);
 
