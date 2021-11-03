@@ -1,5 +1,8 @@
 changelog:
   categories:
+    - title: Removed
+      labels:
+        - 'release:removed'
     - title: Deprecations
       labels:
         - 'release:deprecation'
