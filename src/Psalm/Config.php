@@ -763,7 +763,9 @@ class Config
     ): void {
         // Attributes to be removed in Psalm 5
         $deprecated_attributes = [
-            'allowCoercionFromStringToClassConst'
+            'allowCoercionFromStringToClassConst',
+            'allowPhpStormGenerics',
+            'exitFunctions'
         ];
 
         $config->config_issues = [];
