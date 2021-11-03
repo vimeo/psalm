@@ -1670,6 +1670,12 @@ class FunctionCallTest extends TestCase
                     if (\is_a(new Exception(), $exceptionType)) {}
                     ',
             ],
+            'strposFirstParamAllowClassString' => [
+                '<?php
+                    function sayHello(string $needle): void {
+                        if (strpos(DateTime::class, $needle)) {}
+                    }',
+            ],
         ];
     }
 
