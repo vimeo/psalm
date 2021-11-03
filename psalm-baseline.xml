@@ -492,4 +492,9 @@
       <code>$type[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
+    <PossiblyUndefinedStringArrayOffset occurrences="1">
+      <code>$subNodes['expr']</code>
+    </PossiblyUndefinedStringArrayOffset>
+  </file>
 </files>
