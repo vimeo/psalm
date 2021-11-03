@@ -22,8 +22,6 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TString;
 
 use function get_class;
 use function in_array;
