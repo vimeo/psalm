@@ -421,7 +421,7 @@ class Functions
             'opcache_compile_file', 'clearstatcache',
 
             // process-related
-            'pcntl_signal', 'posix_kill', 'cli_set_process_title', 'pcntl_async_signals', 'proc_close',
+            'pcntl_signal', 'pcntl_alarm', 'posix_kill', 'cli_set_process_title', 'pcntl_async_signals', 'proc_close',
             'proc_nice', 'proc_open', 'proc_terminate',
 
             // curl
