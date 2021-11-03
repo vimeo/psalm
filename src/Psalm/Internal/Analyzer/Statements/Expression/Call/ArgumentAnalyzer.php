@@ -1505,6 +1505,14 @@ class ArgumentAnalyzer
             return $input_type;
         }
 
+        // numeric types can't be tainted
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $input_type->isSingle()
+            && ($input_type->isInt() || $input_type->isFloat())
+        ) {
+            return $input_type;
+        }
+
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
