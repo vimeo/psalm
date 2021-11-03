@@ -14,7 +14,6 @@ use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -67,7 +66,6 @@ class ScopeAnalyzer
 
     /**
      * @param array<PhpParser\Node> $stmts
-     * @param array<lowercase-string, bool> $exit_functions
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
      *
@@ -78,7 +76,6 @@ class ScopeAnalyzer
     public static function getControlActions(
         array $stmts,
         ?NodeDataProvider $nodes,
-        array $exit_functions,
         array $break_types,
         bool $return_is_exit = true
     ): array {
@@ -107,32 +104,6 @@ class ScopeAnalyzer
                     && $stmt_expr_type->isNever()
                 ) {
                     return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
-                }
-
-                if ($exit_functions) {
-                    if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
-                    ) {
-                        if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall) {
-                            /** @var string|null */
-                            $resolved_name = $stmt->expr->name->getAttribute('resolvedName');
-
-                            if ($resolved_name && isset($exit_functions[strtolower($resolved_name)])) {
-                                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
-                            }
-                        } elseif ($stmt->expr->class instanceof PhpParser\Node\Name
-                            && $stmt->expr->name instanceof PhpParser\Node\Identifier
-                        ) {
-                            /** @var string|null */
-                            $resolved_class_name = $stmt->expr->class->getAttribute('resolvedName');
-
-                            if ($resolved_class_name
-                                && isset($exit_functions[strtolower($resolved_class_name . '::' . $stmt->expr->name)])
-                            ) {
-                                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
-                            }
-                        }
-                    }
                 }
 
                 continue;
@@ -174,7 +145,6 @@ class ScopeAnalyzer
                 $if_statement_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
-                    $exit_functions,
                     $break_types,
                     $return_is_exit
                 );
@@ -190,7 +160,6 @@ class ScopeAnalyzer
                     ? self::getControlActions(
                         $stmt->else->stmts,
                         $nodes,
-                        $exit_functions,
                         $break_types,
                         $return_is_exit
                     ) : [];
@@ -211,7 +180,6 @@ class ScopeAnalyzer
                         $elseif_control_actions = self::getControlActions(
                             $elseif->stmts,
                             $nodes,
-                            $exit_functions,
                             $break_types,
                             $return_is_exit
                         );
@@ -268,7 +236,6 @@ class ScopeAnalyzer
                     $case_actions = self::getControlActions(
                         $case->stmts,
                         $nodes,
-                        $exit_functions,
                         array_merge($break_types, ['switch']),
                         $return_is_exit
                     );
@@ -334,7 +301,6 @@ class ScopeAnalyzer
                 $loop_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
-                    $exit_functions,
                     array_merge($break_types, ['loop']),
                     $return_is_exit
                 );
@@ -393,7 +359,6 @@ class ScopeAnalyzer
                 $try_statement_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
-                    $exit_functions,
                     $break_types,
                     $return_is_exit
                 );
@@ -414,7 +379,6 @@ class ScopeAnalyzer
                         $catch_actions = self::getControlActions(
                             $catch->stmts,
                             $nodes,
-                            $exit_functions,
                             $break_types,
                             $return_is_exit
                         );
@@ -453,7 +417,6 @@ class ScopeAnalyzer
                     $finally_statement_actions = self::getControlActions(
                         $stmt->finally->stmts,
                         $nodes,
-                        $exit_functions,
                         $break_types,
                         $return_is_exit
                     );

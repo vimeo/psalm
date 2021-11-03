@@ -503,13 +503,6 @@ class Config
     private $composer_class_loader;
 
     /**
-     * Custom functions that always exit
-     *
-     * @var array<lowercase-string, bool>
-     */
-    public $exit_functions = [];
-
-    /**
      * @var string
      */
     public $hash = '';
@@ -1111,13 +1104,6 @@ class Config
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
-            }
-        }
-
-        if (isset($config_xml->exitFunctions) && isset($config_xml->exitFunctions->function)) {
-            /** @var SimpleXMLElement $exit_function */
-            foreach ($config_xml->exitFunctions->function as $exit_function) {
-                $config->exit_functions[strtolower((string) $exit_function['name'])] = true;
             }
         }
 

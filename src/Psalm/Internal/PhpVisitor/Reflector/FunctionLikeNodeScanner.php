@@ -300,7 +300,6 @@ class FunctionLikeNodeScanner
                         $final_actions = ScopeAnalyzer::getControlActions(
                             $function_stmt->stmts,
                             null,
-                            $this->config->exit_functions,
                             [],
                             false
                         );

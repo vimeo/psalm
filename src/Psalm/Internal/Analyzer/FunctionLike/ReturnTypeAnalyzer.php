@@ -156,7 +156,6 @@ class ReturnTypeAnalyzer
             && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
-                $codebase->config->exit_functions,
                 []
             ) !== [ScopeAnalyzer::ACTION_END]
             && !$inferred_yield_types
@@ -177,7 +176,6 @@ class ReturnTypeAnalyzer
         $control_actions = ScopeAnalyzer::getControlActions(
             $function_stmts,
             $type_provider,
-            $codebase->config->exit_functions,
             [],
             false
         );

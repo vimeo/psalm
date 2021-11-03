@@ -75,7 +75,6 @@ class IfAnalyzer
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
-            $codebase->config->exit_functions,
             []
         );
 
