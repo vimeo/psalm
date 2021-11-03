@@ -8395,6 +8395,7 @@ return [
 'mysqli::character_set_name' => ['string'],
 'mysqli::close' => ['bool'],
 'mysqli::commit' => ['bool', 'flags='=>'int', 'name='=>'string'],
+'mysqli::connect' => ['null|false', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
 'mysqli::debug' => ['bool', 'options'=>'string'],
 'mysqli::disable_reads_from_master' => ['bool'],
 'mysqli::dump_debug_info' => ['bool'],
