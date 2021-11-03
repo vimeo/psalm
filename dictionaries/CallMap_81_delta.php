@@ -627,6 +627,10 @@ return [
       'old' => ['bool', 'ldap'=>'resource', 'callback'=>'string'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'string'],
     ],
+    'mysqli::connect' => [
+      'old' => ['null|false', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
+      'new' => ['bool', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
+    ],
     'mysqli_execute' => [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
