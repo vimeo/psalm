@@ -2190,6 +2190,16 @@ class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             */
+            'castToArrayPassTaints' => [
+                '<?php
+                    $args = $_POST;
+
+                    $args = (array) $args;
+
+                    pg_query($connection, "SELECT * FROM tableA where key = " .$args["key"]);
+                    ',
+                'error_message' => 'TaintedSql',
+            ],
         ];
     }
 

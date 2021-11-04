@@ -232,8 +232,7 @@ class CastAnalyzer
                 $type = Type::getArray();
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
-            ) {
+            if ($statements_analyzer->data_flow_graph) {
                 $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
             }
 
