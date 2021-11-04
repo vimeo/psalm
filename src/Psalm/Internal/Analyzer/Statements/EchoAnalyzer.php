@@ -38,7 +38,7 @@ class EchoAnalyzer
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                if ($expr_type) {
+                if ($expr_type && $expr_type->hasObjectType()) {
                     $expr_type = CastAnalyzer::castStringAttempt(
                         $statements_analyzer,
                         $context,

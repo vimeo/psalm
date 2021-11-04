@@ -616,6 +616,21 @@ class TaintTest extends TestCase
                     echo foo($_GET["foo"], true);
                     echo foo($_GET["foo"]);'
             ],
+            'NoTaintForInt' => [
+                '<?php // --taint-analysis
+
+                    function foo(int $value): void {
+                        echo $value;
+                    }
+
+                    foo($_GET["foo"]);
+
+                    function bar(): int {
+                        return $_GET["foo"];
+                    }
+
+                    echo bar();'
+            ],
             'conditionallyEscapedTaintPassedTrueStaticCall' => [
                 '<?php
                     class U {
