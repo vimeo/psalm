@@ -460,7 +460,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         $did_remove_type = ($key && strpos($key, '['))
             || !$existing_var_type->initialized
             || $existing_var_type->possibly_undefined
-            || $key === '$_SESSION'
             || $existing_var_type->ignore_isset;
 
         if ($existing_var_type->isNullable()) {
