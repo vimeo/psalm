@@ -2565,7 +2565,9 @@ class AssertionFinder
                 $this_class_name,
                 $source
             );
-        } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch) {
+        } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $getclass_expr->class instanceof PhpParser\Node\Expr
+        ) {
             $var_name = ExpressionIdentifier::getArrayVarId(
                 $getclass_expr->class,
                 $this_class_name,
@@ -3268,7 +3270,9 @@ class AssertionFinder
                 $this_class_name,
                 $source
             );
-        } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch) {
+        } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $getclass_expr->class instanceof PhpParser\Node\Expr
+        ) {
             $var_name = ExpressionIdentifier::getArrayVarId(
                 $getclass_expr->class,
                 $this_class_name,
