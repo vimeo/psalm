@@ -644,6 +644,18 @@ class TaintTest extends TestCase
 
                     takesArray(["good" => $_GET["bad"]]);'
             ],
+            'resultOfComparisonIsNotTainted' => [
+                '<?php
+                    $input = $_GET["foo"];
+                    $var = $input === "x";
+                    var_dump($var);'
+            ],
+            'resultOfPlusIsNotTainted' => [
+                '<?php
+                    $input = $_GET["foo"];
+                    $var = $input + 1;
+                    var_dump($var);'
+            ],
         ];
     }
 
@@ -2151,6 +2163,16 @@ class TaintTest extends TestCase
                     }
 
                     takesArray([$_GET["bad"] => "good"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'resultOfPlusIsTaintedOnArrays' => [
+                '<?php
+                    scope($_GET["foo"]);
+                    function scope(array $foo)
+                    {
+                        $var = $foo + [];
+                        var_dump($var);
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayKeyWithExplicitSink' => [
