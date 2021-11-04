@@ -322,7 +322,7 @@ function preg_grep($pattern, array $array, $flags = 0)
 
 /**
  * @param resource $stream
- * @param-out closed-resource $handle
+ * @param-out closed-resource $stream
  */
 function fclose(&$stream) : bool
 {
@@ -330,7 +330,7 @@ function fclose(&$stream) : bool
 
 /**
  * @param string $string
- * @param-out null $reference
+ * @param-out null $string
  */
 function sodium_memzero(string &$string): void
 {
@@ -342,8 +342,8 @@ function sodium_memzero(string &$string): void
  * @return ($return is true ? string : void)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($var) -> return
- * @psalm-taint-sink html $var
+ * @psalm-flow ($value) -> return
+ * @psalm-taint-sink html $value
  */
 function var_export($value, bool $return = false) {}
 
@@ -365,8 +365,8 @@ function var_dump($value, ...$values) {}
  * @return ($return is true ? string : true)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($var) -> return
- * @psalm-taint-sink html $var
+ * @psalm-flow ($value) -> return
+ * @psalm-taint-sink html $value
  */
 function print_r($value, bool $return = false) {}
 
@@ -401,7 +401,7 @@ function php_strip_whitespace(string $filename) : string {}
  * @param mixed $string
  * @return ($return is true ? string : bool)
  *
- * @psalm-flow ($var) -> return
+ * @psalm-flow ($string) -> return
  */
 function highlight_string($string, bool $return = false) {}
 
@@ -911,7 +911,7 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
  * @param int $count
  * @return ($subject is array ? array<string>|null : string|null)
  *
- * @psalm-flow ($replace, $subject) -> return
+ * @psalm-flow ($replacement, $subject) -> return
  */
 function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
