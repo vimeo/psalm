@@ -3,14 +3,14 @@
  * @psalm-template TKey as array-key
  * @psalm-template TArray as array<TKey, mixed>
  *
- * @param TArray $arr
+ * @param TArray $array
  * @param mixed $search_value
  * @param bool  $strict
  *
  * @return (TArray is non-empty-array ? non-empty-list<TKey> : list<TKey>)
  * @psalm-pure
  */
-function array_keys(array $arr, $search_value = null, bool $strict = false)
+function array_keys(array $array, $search_value = null, bool $strict = false)
 {
 }
 
@@ -18,14 +18,13 @@ function array_keys(array $arr, $search_value = null, bool $strict = false)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect(array $arr, array $arr2, array ...$arr3)
+function array_intersect(array $array, array ...$arrays)
 {
 }
 
@@ -33,14 +32,13 @@ function array_intersect(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect_key(array $arr, array $arr2, array ...$arr3)
+function array_intersect_key(array $array, array ...$arrays)
 {
 }
 
@@ -48,14 +46,13 @@ function array_intersect_key(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_intersect_assoc(array $arr, array $arr2, array ...$arr3)
+function array_intersect_assoc(array $array, array ...$arrays)
 {
 }
 
@@ -82,14 +79,13 @@ function array_combine(array $keys, array $values)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff(array $arr, array $arr2, array ...$arr3)
+function array_diff(array $array, array ...$arrays)
 {
 }
 
@@ -97,14 +93,13 @@ function array_diff(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_key(array $arr, array $arr2, array ...$arr3)
+function array_diff_key(array $array, array ...$arrays)
 {
 }
 
@@ -112,14 +107,13 @@ function array_diff_key(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array $arr2
- * @param array ...$arr3
+ * @param array<TKey, TValue> $array
+ * @param array ...$arrays
  *
  * @return array<TKey, TValue>
  * @psalm-pure
  */
-function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
+function array_diff_assoc(array $array, array ...$arrays)
 {
 }
 
@@ -127,12 +121,12 @@ function array_diff_assoc(array $arr, array $arr2, array ...$arr3)
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
+ * @param array<TKey, TValue> $array
  *
  * @return array<TValue, TKey>
  * @psalm-pure
  */
-function array_flip(array $arr)
+function array_flip(array $array)
 {
 }
 
@@ -140,13 +134,13 @@ function array_flip(array $arr)
  * @psalm-template TKey as array-key
  * @psalm-template TArray as array<TKey, mixed>
  *
- * @param TArray $arr
+ * @param TArray $array
  *
  * @return (TArray is array<empty, empty> ? null : TKey|null)
  * @psalm-pure
  * @psalm-ignore-nullable-return
  */
-function key($arr)
+function key($array)
 {
 }
 
@@ -154,12 +148,12 @@ function key($arr)
  * @psalm-template TKey as array-key
  * @psalm-template TArray as array<TKey, mixed>
  *
- * @param TArray $arr
+ * @param TArray $array
  *
  * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
-function array_key_first($arr)
+function array_key_first($array)
 {
 }
 
@@ -167,12 +161,12 @@ function array_key_first($arr)
  * @psalm-template TKey as array-key
  * @psalm-template TArray as array<TKey, mixed>
  *
- * @param TArray $arr
+ * @param TArray $array
  *
  * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
-function array_key_last($arr)
+function array_key_last($array)
 {
 }
 
@@ -193,41 +187,41 @@ function array_search($needle, array $haystack, bool $strict = false)
 /**
  * @psalm-template T
  *
- * @param T[] $arr
- * @param-out list<T> $arr
+ * @param T[] $array
+ * @param-out list<T> $array
  */
-function shuffle(array &$arr): bool
+function shuffle(array &$array): bool
 {
 }
 
 /**
  * @psalm-template T
  *
- * @param T[] $arr
- * @param-out list<T> $arr
+ * @param T[] $array
+ * @param-out list<T> $array
  */
-function sort(array &$arr, int $sort_flags = SORT_REGULAR): bool
+function sort(array &$array, int $flags = SORT_REGULAR): bool
 {
 }
 
 /**
  * @psalm-template T
  *
- * @param T[] $arr
- * @param-out list<T> $arr
+ * @param T[] $array
+ * @param-out list<T> $array
  */
-function rsort(array &$arr, int $sort_flags = SORT_REGULAR): bool
+function rsort(array &$array, int $flags = SORT_REGULAR): bool
 {
 }
 
 /**
  * @psalm-template T
  *
- * @param T[] $arr
+ * @param T[] $array
  * @param callable(T,T):int $callback
- * @param-out list<T> $arr
+ * @param-out list<T> $array
  */
-function usort(array &$arr, callable $callback): bool
+function usort(array &$array, callable $callback): bool
 {
 }
 
@@ -235,11 +229,11 @@ function usort(array &$arr, callable $callback): bool
  * @psalm-template TKey
  * @psalm-template T
  *
- * @param array<TKey,T> $arr
+ * @param array<TKey,T> $array
  * @param callable(T,T):int $callback
- * @param-out array<TKey,T> $arr
+ * @param-out array<TKey,T> $array
  */
-function uasort(array &$arr, callable $callback): bool
+function uasort(array &$array, callable $callback): bool
 {
 }
 
@@ -247,11 +241,11 @@ function uasort(array &$arr, callable $callback): bool
  * @psalm-template TKey
  * @psalm-template T
  *
- * @param array<TKey,T> $arr
+ * @param array<TKey,T> $array
  * @param callable(TKey,TKey):int $callback
- * @param-out array<TKey,T> $arr
+ * @param-out array<TKey,T> $array
  */
-function uksort(array &$arr, callable $callback): bool
+function uksort(array &$array, callable $callback): bool
 {
 }
 
@@ -261,11 +255,11 @@ function uksort(array &$arr, callable $callback): bool
  * @psalm-template K of array-key
  * @psalm-template T
  *
- * @param array<K,T> $arr
+ * @param array<K,T> $array
  *
  * @return array<K,T>
  */
-function array_change_key_case(array $arr, int $case = CASE_LOWER)
+function array_change_key_case(array $array, int $case = CASE_LOWER)
 {
 }
 
@@ -275,11 +269,11 @@ function array_change_key_case(array $arr, int $case = CASE_LOWER)
  * @psalm-template TKey as array-key
  *
  * @param TKey $key
- * @param array<TKey, mixed> $search
+ * @param array<TKey, mixed> $array
  *
  * @return bool
  */
-function array_key_exists($key, array $search) : bool
+function array_key_exists($key, array $array) : bool
 {
 }
 
@@ -289,12 +283,11 @@ function array_key_exists($key, array $search) : bool
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
- * @param array<TKey, TValue> $arr
- * @param array<TKey, TValue> ...$arr2
+ * @param array<TKey, TValue> ...$arrays
  *
  * @return array<TKey, TValue>
  */
-function array_merge_recursive(array $arr, array ...$arr2)
+function array_merge_recursive(array ...$arrays)
 {
 }
 
@@ -319,40 +312,40 @@ function array_fill_keys(array $keys, $value): array
  * @psalm-template TKey
  *
  * @param string $pattern
- * @param array<TKey,string> $input
+ * @param array<TKey,string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
  * @return array<TKey,string>
  */
-function preg_grep($pattern, array $input, $flags = 0)
+function preg_grep($pattern, array $array, $flags = 0)
 {
 }
 
 /**
- * @param resource $handle
- * @param-out closed-resource $handle
+ * @param resource $stream
+ * @param-out closed-resource $stream
  */
-function fclose(&$handle) : bool
+function fclose(&$stream) : bool
 {
 }
 
 /**
- * @param string $reference
- * @param-out null $reference
+ * @param string $string
+ * @param-out null $string
  */
-function sodium_memzero(string &$reference): void
+function sodium_memzero(string &$string): void
 {
 }
 
 /**
- * @param mixed $var
+ * @param mixed $value
  * @param bool $return
  * @return ($return is true ? string : void)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($var) -> return
- * @psalm-taint-sink html $var
+ * @psalm-flow ($value) -> return
+ * @psalm-taint-sink html $value
  */
-function var_export($var, bool $return = false) {}
+function var_export($value, bool $return = false) {}
 
 /**
  * @param mixed $value
@@ -367,33 +360,33 @@ function var_export($var, bool $return = false) {}
 function var_dump($value, ...$values) {}
 
 /**
- * @param mixed $var
+ * @param mixed $value
  * @param bool $return
  * @return ($return is true ? string : true)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($var) -> return
- * @psalm-taint-sink html $var
+ * @psalm-flow ($value) -> return
+ * @psalm-taint-sink html $value
  */
-function print_r($var, bool $return = false) {}
+function print_r($value, bool $return = false) {}
 
 /**
  * @psalm-pure
  *
- * @psalm-taint-sink file $var
- * @param mixed $var
+ * @psalm-taint-sink file $filename
+ * @param mixed $filename
  * @return ($return is true ? string : bool)
  */
-function highlight_file($var, bool $return = false) {}
+function highlight_file($filename, bool $return = false) {}
 
 /**
  * @psalm-pure
  *
- * @psalm-taint-sink file $var
- * @param mixed $var
+ * @psalm-taint-sink file $filename
+ * @param mixed $filename
  * @return ($return is true ? string : bool)
  */
-function show_source($var, bool $return = false) {}
+function show_source($filename, bool $return = false) {}
 
 /**
  * @psalm-pure
@@ -405,34 +398,34 @@ function php_strip_whitespace(string $filename) : string {}
 /**
  * @psalm-pure
  *
- * @param mixed $var
+ * @param mixed $string
  * @return ($return is true ? string : bool)
  *
- * @psalm-flow ($var) -> return
+ * @psalm-flow ($string) -> return
  */
-function highlight_string($var, bool $return = false) {}
+function highlight_string($string, bool $return = false) {}
 
 /**
  * @psalm-pure
  *
- * @return ($get_as_float is true ? float : string)
+ * @return ($as_float is true ? float : string)
  */
-function microtime(bool $get_as_float = false) {}
+function microtime(bool $as_float = false) {}
 
 /**
  * @psalm-pure
  *
- * @return ($return_float is true ? float : array<string, int>)
+ * @return ($as_float is true ? float : array<string, int>)
  */
-function gettimeofday(bool $return_float = false) {}
+function gettimeofday(bool $as_float = false) {}
 
 /**
  * @psalm-pure
  *
- * @param numeric $number
- * @return ($number is int ? int : ($number is float ? float : int|float))
+ * @param numeric $num
+ * @return ($num is int ? int : ($num is float ? float : int|float))
  */
-function abs($number) {}
+function abs($num) {}
 
 /**
  * @psalm-pure
@@ -478,10 +471,10 @@ function date(string $format, int $timestamp = 0) {}
  *
  * @param mixed $vars
  * @param-out string|int|float|null $vars
- * @psalm-flow ($str, $format) -> return
+ * @psalm-flow ($string, $format) -> return
  * @return (func_num_args() is 2 ? (null|list<float|int|string|null>) : int)
  */
-function sscanf(string $str, string $format, &...$vars) {}
+function sscanf(string $string, string $format, &...$vars) {}
 
 /**
  * @psalm-pure
@@ -492,7 +485,7 @@ function sscanf(string $str, string $format, &...$vars) {}
  *     : string
  * )
  */
-function pathinfo(string $path, int $options = \PATHINFO_DIRNAME) {}
+function pathinfo(string $path, int $flags = \PATHINFO_DIRNAME) {}
 
 /**
  * @psalm-pure
@@ -505,39 +498,39 @@ function getenv(string $varname = '', bool $local_only = false) {}
  * @psalm-pure
  *
  * @return (
- *     $str is non-empty-string ? non-empty-lowercase-string : lowercase-string
+ *     $string is non-empty-string ? non-empty-lowercase-string : lowercase-string
  * )
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function strtolower(string $str) : string {}
+function strtolower(string $string) : string {}
 
 /**
  * @psalm-pure
  *
  * @return (
- *     $str is non-falsy-string
+ *     $string is non-falsy-string
  *     ? non-falsy-string
- *     : ($str is non-empty-string ? non-empty-string : string)
+ *     : ($string is non-empty-string ? non-empty-string : string)
  * )
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function strtoupper(string $str) : string {}
+function strtoupper(string $string) : string {}
 
 /**
  * @psalm-pure
  *
  * @param string|array<string> $string
- * @param string|array<string> $replacement
- * @param int|array<int> $start
+ * @param string|array<string> $replace
+ * @param int|array<int> $offset
  * @param null|int|array<int> $length
  *
  * @return ($string is array<string> ? array<string> : string)
  *
- * @psalm-flow ($string, $replacement) -> return
+ * @psalm-flow ($string, $replace) -> return
  */
-function substr_replace($string, $replacement, $start, $length = null) {}
+function substr_replace($string, $replace, $offset, $length = null) {}
 
 /**
  * @psalm-pure
@@ -572,46 +565,46 @@ function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
- * @param string|array $glue
- * @param array<string|float|int|stringable-object|null|bool> $pieces
+ * @param string|array $separator
+ * @param array<string|float|int|stringable-object|null|bool> $array
  *
  * @return (
- *     $glue is non-empty-string
- *     ? ($pieces is non-empty-array
- *         ? ($pieces is array<literal-string|literal-int>
- *             ? ($glue is literal-string ? non-empty-literal-string : non-empty-string)
+ *     $separator is non-empty-string
+ *     ? ($array is non-empty-array
+ *         ? ($array is array<literal-string|literal-int>
+ *             ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
  *             : non-empty-string
  *         )
  *         : string)
  *     : string
  * )
  *
- * @psalm-flow ($glue) -> return
- * @psalm-flow ($pieces) -(array-fetch)-> return
+ * @psalm-flow ($separator) -> return
+ * @psalm-flow ($array) -(array-fetch)-> return
  */
-function implode($glue, array $pieces = []) : string {}
+function implode($separator, array $array = []) : string {}
 
 /**
  * @psalm-pure
  *
- * @param string|array $glue
- * @param array<string|float|int|stringable-object|null|bool> $pieces
+ * @param string|array $separator
+ * @param array<string|float|int|stringable-object|null|bool> $array
  *
  * @return (
- *     $glue is non-empty-string
- *     ? ($pieces is non-empty-array
- *         ? ($pieces is array<literal-string|literal-int>
- *             ? ($glue is literal-string ? non-empty-literal-string : non-empty-string)
+ *     $separator is non-empty-string
+ *     ? ($array is non-empty-array
+ *         ? ($array is array<literal-string|literal-int>
+ *             ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
  *             : non-empty-string
  *         )
  *         : string)
  *     : string
  * )
  *
- * @psalm-flow ($glue) -> return
- * @psalm-flow ($pieces) -(array-fetch)-> return
+ * @psalm-flow ($separator) -> return
+ * @psalm-flow ($array) -(array-fetch)-> return
  */
-function join($glue, array $pieces = []): string
+function join($separator, array $array = []): string
 {
 }
 
@@ -620,7 +613,7 @@ function join($glue, array $pieces = []): string
  *
  * @psalm-flow ($string) -(array-assignment)-> return
  */
-function explode(string $delimiter, string $string, int $limit = -1) : array {}
+function explode(string $separator, string $string, int $limit = -1) : array {}
 
 /**
  * @psalm-pure
@@ -638,32 +631,32 @@ function explode(string $delimiter, string $string, int $limit = -1) : array {}
 function preg_split(string $pattern, string $subject, int $limit = -1, int $flags = 0) {}
 
 /**
- * @param array $input
+ * @param array $array
  *
  * @return (
- *     $input is array<int>
+ *     $array is array<int>
  *     ? int
- *     : ($input is array<float>
+ *     : ($array is array<float>
  *         ? float
  *         : float|int
  *     )
  * )
  */
-function array_sum(array $input) {}
+function array_sum(array $array) {}
 
 /**
- * @param array $input
+ * @param array $array
  *
  * @return (
- *     $input is array<int>
+ *     $array is array<int>
  *     ? int
- *     : ($input is array<float>
+ *     : ($array is array<float>
  *         ? float
  *         : float|int
  *     )
  * )
  */
-function array_product(array $input) {}
+function array_product(array $array) {}
 
 /**
  * 257 is FILTER_VALIDATE_INT
@@ -683,23 +676,23 @@ function filter_var(mixed $value, int $filter = FILTER_DEFAULT, array|int $optio
  * @psalm-pure
  *
  * @psalm-taint-escape html
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function strip_tags(string $str, ?string $allowable_tags = null) : string {}
+function strip_tags(string $string, ?string $allowed_tags = null) : string {}
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function stripcslashes(string $str) : string {}
+function stripcslashes(string $string) : string {}
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function stripslashes(string $str) : string {}
+function stripslashes(string $string) : string {}
 
 /**
  * @psalm-pure
@@ -708,7 +701,7 @@ function stripslashes(string $str) : string {}
  *
  * @psalm-flow ($string) -> return
  */
-function htmlentities(string $string, ?int $quote_style = null, ?string $charset = null, bool $double_encode = true) : string {}
+function htmlentities(string $string, ?int $flags = null, ?string $encoding = null, bool $double_encode = true) : string {}
 
 /**
  * @psalm-pure
@@ -717,7 +710,7 @@ function htmlentities(string $string, ?int $quote_style = null, ?string $charset
  *
  * @psalm-flow ($string) -> return
  */
-function html_entity_decode(string $string, ?int $quote_style = null, ?string $charset = null) : string {}
+function html_entity_decode(string $string, ?int $flags = null, ?string $encoding = null) : string {}
 
 /**
  * @psalm-pure
@@ -740,7 +733,7 @@ function htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401,
  *
  * @psalm-flow ($string) -> return
  */
-function htmlspecialchars_decode(string $string, ?int $quote_style = null) : string {}
+function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
 
 /**
  * @psalm-pure
@@ -782,51 +775,51 @@ function str_ireplace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
- * @return ($input is non-empty-string ? non-empty-string : ($pad_length is positive-int ? non-empty-string: string))
+ * @return ($string is non-empty-string ? non-empty-string : ($length is positive-int ? non-empty-string: string))
  *
- * @psalm-flow ($input, $pad_string) -> return
+ * @psalm-flow ($string, $pad_string) -> return
  */
-function str_pad(string $input, int $pad_length, $pad_string = '', int $pad_type = STR_PAD_RIGHT): string {}
+function str_pad(string $string, int $length, $pad_string = '', int $pad_type = STR_PAD_RIGHT): string {}
 
 /**
  * @psalm-pure
  *
- * @todo update $multiplier to be `0|positive-int`
+ * @todo update $times to be `0|positive-int`
  * @return (
- *      $input is non-empty-string
+ *      $string is non-empty-string
  *      ? (
- *          $multiplier is positive-int
+ *          $times is positive-int
  *          ? non-empty-string
- *          : ($multiplier is 0 ? '' : string)
+ *          : ($times is 0 ? '' : string)
  *      )
- *      : ($multiplier is 0 ? '' : string)
+ *      : ($times is 0 ? '' : string)
  * )
- *
- * @psalm-flow ($input) -> return
- */
-function str_repeat(string $input, int $multiplier): string {}
-
-/**
- * @psalm-pure
- *
- * @psalm-flow ($str) -> return
- */
-function str_rot13(string $str): string {}
-
-/**
- * @psalm-pure
- *
- * @psalm-flow ($str) -> return
- */
-function str_shuffle(string $str): string {}
-
-/**
- * @psalm-pure
- * @return ($split_length is positive-int ? list<string> : false)
  *
  * @psalm-flow ($string) -> return
  */
-function str_split(string $string, int $split_length = 1) {}
+function str_repeat(string $string, int $times): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_rot13(string $string): string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_shuffle(string $string): string {}
+
+/**
+ * @psalm-pure
+ * @return ($length is positive-int ? list<string> : false)
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_split(string $string, int $length = 1) {}
 
 /**
  * @psalm-pure
@@ -860,9 +853,9 @@ function strchr(string $haystack, string $needle, bool $before_needle = false) {
  * @return string|false
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($haystack) -> return
+ * @psalm-flow ($string) -> return
  */
-function strpbrk(string $haystack, string $char_list) {}
+function strpbrk(string $string, string $characters) {}
 
 /**
  * @psalm-pure
@@ -912,19 +905,19 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
 /**
  * @psalm-pure
  *
- * @param string|string[] $search
- * @param string|array<string|int|float> $replace
+ * @param string|string[] $pattern
+ * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
  * @param int $count
  * @return ($subject is array ? array<string>|null : string|null)
  *
- * @psalm-flow ($replace, $subject) -> return
+ * @psalm-flow ($replacement, $subject) -> return
  */
-function preg_replace($search, $replace, $subject, int $limit = -1, &$count = null) {}
+function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @param string|string[] $search
- * @param callable(string[]):string $replace
+ * @param string|string[] $pattern
+ * @param callable(string[]):string $callback
  * @param string|array<string|int|float> $subject
  * @param int $count
  * @return ($subject is array ? array<string>|null : string|null)
@@ -932,7 +925,7 @@ function preg_replace($search, $replace, $subject, int $limit = -1, &$count = nu
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
  */
-function preg_replace_callback($search, $replace, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
+function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
 
 /**
  * @psalm-pure
@@ -978,7 +971,7 @@ function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int 
  *
  * @psalm-flow ($string) -> return
  */
-function substr(string $string, int $start, ?int $length = null) {}
+function substr(string $string, int $offset, ?int $length = null) {}
 
 /**
  * @psalm-pure
@@ -990,28 +983,28 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
 /**
  * @psalm-pure
  *
- * @param string|int|float $args
+ * @param string|int|float $values
  *
- * @psalm-flow ($format, $args) -> return
+ * @psalm-flow ($format, $values) -> return
  */
-function sprintf(string $format, ...$args) : string {}
+function sprintf(string $format, ...$values) : string {}
 
 /**
  * @psalm-pure
  * @return string|false
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($format, $args) -> return
+ * @psalm-flow ($format, $values) -> return
  */
-function vsprintf(string $format, array $args) {}
+function vsprintf(string $format, array $values) {}
 
 /**
  * @psalm-pure
  * @return string
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function wordwrap(string $str, int $width = 75, string $break = "\n", bool $cut = false) : string {}
+function wordwrap(string $string, int $width = 75, string $break = "\n", bool $cut_long_words = false) : string {}
 
 /**
  * @psalm-pure
@@ -1038,29 +1031,29 @@ function realpath(string $path) {}
 /**
  * @psalm-pure
  *
- * @param numeric-string $left_operand
- * @param numeric-string $right_operand
- * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($right_operand is "0" ? null : numeric-string))
+ * @param numeric-string $num1
+ * @param numeric-string $num2
+ * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($num2 is "0" ? null : numeric-string))
  */
-function bcdiv(string $left_operand, string $right_operand, int $scale = 0): ?string {}
+function bcdiv(string $num1, string $num2, int $scale = 0): ?string {}
 
 /**
  * @psalm-pure
  *
- * @param scalar|null|object $var
+ * @param scalar|null|object $value
  * @return string The string value of var.
  *
- * @psalm-flow ($var) -> return
+ * @psalm-flow ($value) -> return
  */
-function strval ($var): string {}
+function strval ($value): string {}
 
 /**
- * @return ($input is non-empty-string ? non-empty-list<string> : non-empty-list<string>|array{null})
+ * @return ($string is non-empty-string ? non-empty-list<string> : non-empty-list<string>|array{null})
  * @psalm-pure
  *
- * @psalm-flow ($input) -> return
+ * @psalm-flow ($string) -> return
  */
-function str_getcsv(string $input, string $delimiter = ',', string $enclosure = '"', string $escape = '\\\\')
+function str_getcsv(string $string, string $separator = ',', string $enclosure = '"', string $escape = '\\\\')
 {
 }
 
@@ -1078,116 +1071,116 @@ function array_count_values(array $array): array {}
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function addcslashes(string $str, string $charlist) : string
+function addcslashes(string $string, string $characters) : string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function addslashes(string $str): string
+function addslashes(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function ucfirst(string $str): string
+function ucfirst(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str, $delimiters) -> return
+ * @psalm-flow ($string, $separators) -> return
  */
-function ucwords (string $str, string $delimiters = " \t\r\n\f\v"): string
+function ucwords (string $string, string $separators = " \t\r\n\f\v"): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function lcfirst(string $str): string
+function lcfirst(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function nl2br(string $str, bool $is_xhtml = false): string
+function nl2br(string $string, bool $use_xhtml = false): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function quoted_printable_decode(string $str): string
+function quoted_printable_decode(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function quoted_printable_encode(string $str): string
+function quoted_printable_encode(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function quotemeta(string $str): string
+function quotemeta(string $string): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($str) -> return
+ * @psalm-flow ($string) -> return
  */
-function chop(string $str, string $character_mask = " \t\n\r\0\x0B"): string
+function chop(string $string, string $characters = " \t\n\r\0\x0B"): string
 {
 }
 
 /**
  * @psalm-pure
- * @psalm-flow ($str, $end) -> return
+ * @psalm-flow ($string, $separator) -> return
  */
-function chunk_split(string $str, int $chunklen = 76, string $end= ''): string
-{
-}
-
-/**
- * @psalm-pure
- *
- * @psalm-flow ($data) -> return
- */
-function convert_uudecode(string $data): string
+function chunk_split(string $string, int $length = 76, string $separator= ''): string
 {
 }
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($data) -> return
+ * @psalm-flow ($string) -> return
  */
-function convert_uuencode(string $data) : string
+function convert_uudecode(string $string): string
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ */
+function convert_uuencode(string $string) : string
 {
 }
 
@@ -1197,7 +1190,7 @@ function convert_uuencode(string $data) : string
  * @psalm-taint-escape ldap
  * @psalm-flow ($value) -> return
  */
-function ldap_escape(string $value, string $ignore = "", int $flag = 0) : string {}
+function ldap_escape(string $value, string $ignore = "", int $flags = 0) : string {}
 
 /**
  * @psalm-pure
@@ -1249,37 +1242,37 @@ function uniqid(string $prefix = "", bool $more_entropy = false) : string {}
  * @return array|false
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($data) -> return
+ * @psalm-flow ($string) -> return
  */
-function unpack(string $format, string $data, int $offset = 0) {}
+function unpack(string $format, string $string, int $offset = 0) {}
 
 /**
  * @psalm-pure
  *
  * @return string|false
  *
- * @psalm-flow ($data) -> return
+ * @psalm-flow ($string) -> return
  * @psalm-ignore-falsable-return
  */
-function base64_decode(string $data, bool $strict = false) {}
+function base64_decode(string $string, bool $strict = false) {}
 
 /**
  * @psalm-pure
  *
- * @psalm-flow ($data) -> return
+ * @psalm-flow ($string) -> return
  */
-function base64_encode(string $data) : string {}
+function base64_encode(string $string) : string {}
 
 /**
  * @psalm-pure
  *
  * @param resource|null $context
  *
- * @return ($format is 0 ? list<string> : array<string, string|list<string>>)|false
+ * @return ($associative is 0 ? list<string> : array<string, string|list<string>>)|false
  *
  * @psalm-taint-sink ssrf $url
  */
-function get_headers(string $url, int $format = 0, $context = null) : array|false {}
+function get_headers(string $url, int $associative = 0, $context = null) : array|false {}
 
 /**
  * @psalm-pure
