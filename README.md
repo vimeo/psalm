@@ -2,7 +2,6 @@
 
 [![Packagist](https://img.shields.io/packagist/v/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
 [![Packagist](https://img.shields.io/packagist/dt/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
-[![Coverage Status](https://coveralls.io/repos/github/vimeo/psalm/badge.svg)](https://coveralls.io/github/vimeo/psalm)
 [![Psalm coverage](https://shepherd.dev/github/vimeo/psalm/coverage.svg?)](https://shepherd.dev/github/vimeo/psalm)
 [![Psalm level](https://shepherd.dev/github/vimeo/psalm/level.svg?)](https://psalm.dev/)
 
