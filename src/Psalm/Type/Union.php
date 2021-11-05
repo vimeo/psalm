@@ -943,7 +943,8 @@ class Union implements TypeNode
     public function isEmptyMixed(): bool
     {
         return isset($this->types['mixed'])
-            && $this->types['mixed'] instanceof Type\Atomic\TEmptyMixed;
+            && $this->types['mixed'] instanceof Type\Atomic\TEmptyMixed
+            && count($this->types) === 1;
     }
 
     public function isVanillaMixed(): bool
@@ -1140,12 +1141,12 @@ class Union implements TypeNode
 
     public function isVoid(): bool
     {
-        return isset($this->types['void']);
+        return isset($this->types['void']) && count($this->types) === 1;
     }
 
     public function isNever(): bool
     {
-        return isset($this->types['never']);
+        return isset($this->types['never']) && count($this->types) === 1;
     }
 
     public function isGenerator(): bool
@@ -1157,7 +1158,7 @@ class Union implements TypeNode
 
     public function isEmpty(): bool
     {
-        return isset($this->types['empty']);
+        return isset($this->types['empty']) && count($this->types) === 1;
     }
 
     public function substitute(Union $old_type, ?Union $new_type = null): void
