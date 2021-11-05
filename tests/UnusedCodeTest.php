@@ -1058,7 +1058,8 @@ class UnusedCodeTest extends TestCase
             ],
             'notUnevaluatedFunction' => [
                 '<?php
-                    function neverReturns(): never{
+                    /** @return never */
+                    function neverReturns(){
                         die();
                     }
                     unrelated();
