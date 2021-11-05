@@ -344,6 +344,10 @@ class StatementsAnalyzer extends SourceAnalyzer
             && !$context->collect_mutations
             && !($stmt instanceof PhpParser\Node\Stmt\Nop)
             && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
+            && !($stmt instanceof PhpParser\Node\Stmt\Function_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Class_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Interface_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Trait_)
         ) {
             if ($codebase->find_unused_variables) {
                 if (IssueBuffer::accepts(
