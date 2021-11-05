@@ -1065,7 +1065,7 @@ class UnusedCodeTest extends TestCase
                     unrelated();
                     neverReturns();
 
-                    function unrelated(){
+                    function unrelated():void{
                         echo "hello";
                     }',
             ],
