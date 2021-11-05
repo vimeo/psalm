@@ -34,6 +34,14 @@ class UnionTypeComparator
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true
     ) : bool {
+        if ($container_type->isMixed()) {
+            return true;
+        }
+
+        if ($input_type->isNever()) {
+            return true;
+        }
+
         if ($union_comparison_result) {
             $union_comparison_result->scalar_type_match_found = true;
         }
@@ -317,6 +325,10 @@ class UnionTypeComparator
             return false;
         }
 
+        if ($input_type->isNever()) {
+            return true;
+        }
+
         if ($input_type->getId() === $container_type->getId()) {
             return true;
         }
@@ -354,6 +366,10 @@ class UnionTypeComparator
         array &$matching_input_keys = []
     ): bool {
         if ($container_type->hasMixed()) {
+            return true;
+        }
+
+        if ($input_type->isNever()) {
             return true;
         }
 
