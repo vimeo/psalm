@@ -557,7 +557,11 @@ class VariableFetchAnalyzer
         }
 
         if (self::isSuperGlobal($var_id)) {
-            return Type::getArray();
+            $type = Type::getArray();
+            if ($var_id === '$_SESSION') {
+                $type->possibly_undefined = true;
+            }
+            return $type;
         }
 
         return Type::getMixed();

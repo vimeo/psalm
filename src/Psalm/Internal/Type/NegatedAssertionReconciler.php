@@ -86,7 +86,6 @@ class NegatedAssertionReconciler extends Reconciler
                 if (!$existing_var_type->isNullable()
                     && $key
                     && strpos($key, '[') === false
-                    && $key !== '$_SESSION'
                 ) {
                     foreach ($existing_var_type->getAtomicTypes() as $atomic) {
                         if (!$existing_var_type->hasMixed()
