@@ -437,6 +437,41 @@ class AssertAnnotationTest extends TestCase
 
                     if (!is_int($a)) $a->bar();',
             ],
+            'unionOfStringTypes' => [
+                '<?php
+                    /** @psalm-assert "self"|class-string $b */
+                    function a(string $b): void {
+                        if ("" === $b) { throw new \Exception("");};
+                    }
+
+                    /** @psalm-assert-if-true "self"|class-string $b */
+                    function atrue(string $b): bool {
+                        return $b === "";
+                    }
+
+                    /** @psalm-assert-if-false "self"|class-string $b */
+                    function afalse(string $b): bool {
+                        return $b === "";
+                    }
+
+                    /** @var string $var */;
+                    a($var);
+
+                    /** @var string $varTrue */;
+                    if (!atrue($varTrue)) {
+                        exit;
+                    }
+
+                    /** @var string $varFalse */;
+                    if (afalse($varFalse)) {
+                        exit;
+                    }',
+                [
+                    '$var===' => '"self"|class-string',
+                    '$varTrue===' => '"self"|class-string',
+                    '$varFalse===' => '"self"|class-string',
+                ],
+            ],
             'assertThisType' => [
                 '<?php
                     class Type {
@@ -1465,7 +1500,7 @@ class AssertAnnotationTest extends TestCase
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 '<?php
-                    /** @return class-string|null */
+                    /** @return class-string|"self"|int|null */
                     function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
                         $type = $reflectionItem->getType();
                         return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
@@ -1473,6 +1508,17 @@ class AssertAnnotationTest extends TestCase
                 [],
                 [],
                 '7.4',
+            ],
+            'PHP80-reflectionNameTypeClassStringIfNotBuiltin' => [
+                '<?php
+                    /** @return class-string|"self"|"static"|null */
+                    function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
+                        $type = $reflectionItem->getType();
+                        return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
+                    }',
+                [],
+                [],
+                '8.0',
             ],
             'withHasTypeCall' => [
                 '<?php
