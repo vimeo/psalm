@@ -288,6 +288,17 @@ class EnumTest extends TestCase
                 false,
                 '8.1',
             ],
+            'propsOnEnum' => [
+                '<?php
+                    enum Status {
+                        public $prop;
+                    }
+                ',
+                'error_message' => 'NoEnumProperties',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }
