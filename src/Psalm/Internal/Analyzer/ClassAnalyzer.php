@@ -35,6 +35,7 @@ use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\MutableDependency;
+use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
 use Psalm\Issue\OverriddenPropertyAccess;
@@ -430,6 +431,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
+                    if ($storage->is_enum) {
+                        if (IssueBuffer::accepts(new NoEnumProperties(
+                            'Enums cannot have properties',
+                            new CodeLocation($this, $prop),
+                            $fq_class_name
+                        ))) {
+                            // fall through
+                        }
+                        continue;
+                    }
                     if ($prop->default) {
                         $member_stmts[] = $stmt;
                     }
@@ -525,7 +536,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         foreach ($class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Property && !isset($stmt->type)) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Property && !$storage->is_enum && !isset($stmt->type)) {
                 $this->checkForMissingPropertyType($this, $stmt, $class_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
