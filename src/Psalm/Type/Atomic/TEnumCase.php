@@ -2,7 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * Denotes an anonymous class (i.e. `new class{}`) with potential methods
+ * Denotes an enum with a specific value
  */
 class TEnumCase extends TNamedObject
 {

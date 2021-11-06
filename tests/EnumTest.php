@@ -99,6 +99,61 @@ class EnumTest extends TestCase
                 [],
                 '8.1'
             ],
+            'namePropertyFromOutside' => [
+                '<?php
+                    enum Status
+                    {
+                        case DRAFT;
+                        case PUBLISHED;
+                        case ARCHIVED;
+                    }
+                    $a = Status::DRAFT->name;
+                ',
+                'assertions' => [
+                    '$a===' => '"DRAFT"',
+                ],
+                [],
+                '8.1'
+            ],
+            'namePropertyFromInside' => [
+                '<?php
+                    enum Status
+                    {
+                        case DRAFT;
+                        case PUBLISHED;
+                        case ARCHIVED;
+
+                        public function get(): string
+                        {
+                            return $this->name;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                [],
+                '8.1'
+            ],
+            'valuePropertyFromInside' => [
+                '<?php
+                    enum Status: string
+                    {
+                        case DRAFT = "draft";
+                        case PUBLISHED = "published";
+                        case ARCHIVED = "archived";
+
+                        public function get(): string
+                        {
+                            return $this->value;
+                        }
+                    }
+
+                    echo Status::DRAFT->get();
+
+                ',
+                'assertions' => [],
+                [],
+                '8.1'
+            ],
         ];
     }
 

@@ -165,28 +165,8 @@ class AtomicPropertyFetchAnalyzer
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if ($lhs_type_part instanceof Type\Atomic\TEnumCase) {
-            if ($prop_name !== 'value'
-                || $class_storage->enum_type === null
-                || !$class_storage->enum_cases
-            ) {
-                self::handleNonExistentProperty(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt,
-                    $context,
-                    $config,
-                    $class_storage,
-                    $prop_name,
-                    $lhs_type_part,
-                    $fq_class_name,
-                    $property_id,
-                    $in_assignment,
-                    $stmt_var_id,
-                    $has_magic_getter,
-                    $var_id
-                );
-            } else {
+        if ($class_storage->is_enum) {
+            if ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $case_values = [];
 
                 foreach ($class_storage->enum_cases as $enum_case) {
@@ -204,6 +184,32 @@ class AtomicPropertyFetchAnalyzer
                 $statements_analyzer->node_data->setType(
                     $stmt,
                     new Type\Union($case_values)
+                );
+            } elseif ($prop_name === 'name') {
+                if ($lhs_type_part instanceof Type\Atomic\TEnumCase) {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        new Type\Union([new Type\Atomic\TLiteralString($lhs_type_part->case_name)])
+                    );
+                } else {
+                    $statements_analyzer->node_data->setType($stmt, Type::getString());
+                }
+            } else {
+                self::handleNonExistentProperty(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $context,
+                    $config,
+                    $class_storage,
+                    $prop_name,
+                    $lhs_type_part,
+                    $fq_class_name,
+                    $property_id,
+                    $in_assignment,
+                    $stmt_var_id,
+                    $has_magic_getter,
+                    $var_id
                 );
             }
 
