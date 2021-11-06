@@ -364,6 +364,16 @@ class EnumTest extends TestCase
                 false,
                 '8.1',
             ],
+            'enumsAsAttributes' => [
+                '<?php
+                    #[Attribute(Attribute::TARGET_CLASS)]
+                    enum Status { }
+                    ',
+                'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }
