@@ -354,6 +354,16 @@ class EnumTest extends TestCase
                 false,
                 '8.1',
             ],
+            'enumInstantiation' => [
+                '<?php
+                    enum Status {}
+                    new Status;
+                ',
+                'error_message' => 'UndefinedClass',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }

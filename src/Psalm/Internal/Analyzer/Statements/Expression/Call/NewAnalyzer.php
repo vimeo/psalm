@@ -230,6 +230,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     true,
                     $context
                 );
+
+                if ($codebase->classlikes->enumExists($fq_class_name)) {
+                    if (IssueBuffer::accepts(new UndefinedClass(
+                        'Enums cannot be instantiated',
+                        new CodeLocation($statements_analyzer, $stmt),
+                        $fq_class_name
+                    ))) {
+                        // fall through
+                    }
+                }
             }
         }
 
