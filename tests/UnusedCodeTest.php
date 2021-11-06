@@ -1091,7 +1091,7 @@ class UnusedCodeTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->getVal(null);',
+                    echo $a->getVal(null);',
             ],
         ];
     }
