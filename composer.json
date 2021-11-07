@@ -56,7 +56,8 @@
         "weirdan/prophecy-shim": "^1.0 || ^2.0"
     },
     "suggest": {
-        "ext-igbinary": "^2.0.5"
+        "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
+        "ext-curl": "In order to send data to shepherd"
     },
     "config": {
         "optimize-autoloader": true,
