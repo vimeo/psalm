@@ -913,6 +913,10 @@ return [
       'old' => ['resource|false', 'private_key'=>'string', 'passphrase='=>'string'],
       'new' => ['OpenSSLAsymmetricKey|false', 'private_key'=>'OpenSSLAsymmetricKey|OpenSSLCertificate|array|string', 'passphrase='=>'?string'],
     ],
+    'openssl_sign' => [
+      'old' => ['bool', 'data'=>'string', '&w_signature'=>'string', 'private_key'=>'resource|string', 'algorithm='=>'int|string'],
+      'new' => ['bool', 'data'=>'string', '&w_signature'=>'string', 'private_key'=>'OpenSSLAsymmetricKey|OpenSSLCertificate|string', 'algorithm='=>'int|string'],
+    ],
     'openssl_x509_parse' => [
       'old' => ['array|false', 'certificate'=>'string|resource', 'short_names='=>'bool'],
       'new' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
