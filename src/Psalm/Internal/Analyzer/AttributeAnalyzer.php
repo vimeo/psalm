@@ -95,6 +95,16 @@ class AttributeAnalyzer
                 )) {
                     // fall through
                 }
+            } elseif ($classlike_storage->is_enum) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new InvalidAttribute(
+                        'Enums cannot act a attribute classes',
+                        $attribute->name_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
