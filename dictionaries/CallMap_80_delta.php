@@ -101,6 +101,10 @@ return [
         'old' => ['list<ReflectionClassConstant>'],
         'new' => ['list<ReflectionClassConstant>', 'filter='=>'?int'],
     ],
+    'ReflectionClass::newInstanceArgs' => [
+        'old' => ['object', 'args='=>'list<mixed>'],
+        'new' => ['object', 'args='=>'array<array-key, mixed>'],
+    ],
     'XMLWriter::flush' => [
       'old' => ['string|int|false', 'empty='=>'bool'],
       'new' => ['string|int', 'empty='=>'bool'],
