@@ -2237,6 +2237,17 @@ class TaintTest extends TestCase
                     ',
                 'error_message' => 'TaintedSql',
             ],
+            'taintSinkWithComments' => [
+                '<?php
+
+                    /**
+                     * @psalm-taint-sink html $sink
+                     *
+                     * Not working
+                     */
+                    function sinkNotWorking($sink) : string {}',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
