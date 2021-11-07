@@ -11240,7 +11240,7 @@ return [
 'RedisCluster::setBit' => ['int', 'key'=>'string', 'offset'=>'int', 'value'=>'bool|int'],
 'RedisCluster::setex' => ['bool', 'key'=>'string', 'ttl'=>'int', 'value'=>'string'],
 'RedisCluster::setnx' => ['bool', 'key'=>'string', 'value'=>'string'],
-'RedisCluster::setOption' => ['bool', 'name'=>'string', 'value'=>'string'],
+'RedisCluster::setOption' => ['bool', 'name'=>'string|int', 'value'=>'string|int'],
 'RedisCluster::setRange' => ['string', 'key'=>'string', 'offset'=>'int', 'value'=>'string'],
 'RedisCluster::sInter' => ['list<string>', 'key'=>'string', '...other_keys='=>'string'],
 'RedisCluster::sInterStore' => ['int', 'dstKey'=>'string', 'key'=>'string', '...other_keys='=>'string'],
