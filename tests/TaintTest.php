@@ -2245,7 +2245,9 @@ class TaintTest extends TestCase
                      *
                      * Not working
                      */
-                    function sinkNotWorking($sink) : string {}',
+                    function sinkNotWorking($sink) : string {}
+
+                    echo sinkNotWorking($_GET["taint"]);',
                 'error_message' => 'TaintedHtml',
             ],
         ];
