@@ -201,7 +201,7 @@ class TemplateStandinTypeReplacer
                     $array_template_type
                         = $template_result->template_types[$atomic_type->array_param_name][$atomic_type->defining_class];
                     $offset_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        = self::getMostSpecificTypeFromBounds(
                             array_values($template_result->lower_bounds[$atomic_type->offset_param_name])[0],
                             $codebase
                         );

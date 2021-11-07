@@ -41,6 +41,7 @@
             <property name="linesCountBetweenUseTypes" value="1" />
         </properties>
     </rule>
+    <rule ref="Squiz.Classes.SelfMemberReference" />
     <file>bin/</file>
     <file>src/</file>
     <file>tests/</file>

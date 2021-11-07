@@ -700,7 +700,7 @@ class AtomicTypeComparator
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
-        return (AtomicTypeComparator::isContainedBy(
+        return (self::isContainedBy(
             $codebase,
             $type1_part,
             $type2_part,
@@ -709,7 +709,7 @@ class AtomicTypeComparator
             $first_comparison_result
         )
             && !$first_comparison_result->to_string_cast
-        ) || (AtomicTypeComparator::isContainedBy(
+        ) || (self::isContainedBy(
             $codebase,
             $type2_part,
             $type1_part,
