@@ -11353,7 +11353,7 @@ return [
 'ReflectionClass::isTrait' => ['bool'],
 'ReflectionClass::isUserDefined' => ['bool'],
 'ReflectionClass::newInstance' => ['object', '...args='=>'mixed'],
-'ReflectionClass::newInstanceArgs' => ['object', 'args='=>'list<mixed>'],
+'ReflectionClass::newInstanceArgs' => ['object', 'args='=>'array<array-key, mixed>'],
 'ReflectionClass::newInstanceWithoutConstructor' => ['object'],
 'ReflectionClass::setStaticPropertyValue' => ['void', 'name'=>'string', 'value'=>'mixed'],
 'ReflectionClassConstant::__construct' => ['void', 'class'=>'mixed', 'name'=>'string'],
