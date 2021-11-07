@@ -320,7 +320,7 @@ class Reconciler
                     || $type[0][0] === 'isset'
                     || $type[0][0] === '!empty'
                 ) {
-                    $key_parts = Reconciler::breakUpPathIntoParts($nk);
+                    $key_parts = self::breakUpPathIntoParts($nk);
 
                     $base_key = array_shift($key_parts);
 
@@ -385,7 +385,7 @@ class Reconciler
                 }
 
                 if ($type[0][0] === 'array-key-exists') {
-                    $key_parts = Reconciler::breakUpPathIntoParts($nk);
+                    $key_parts = self::breakUpPathIntoParts($nk);
 
                     if (count($key_parts) === 4
                         && $key_parts[1] === '['

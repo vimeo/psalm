@@ -306,18 +306,18 @@ class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithSimpleArgs(): void
     {
-        $this->assertSame('array{a: int, b: string}', (string) Type:: parseString('array{a: int, b: string}'));
+        $this->assertSame('array{a: int, b: string}', (string) Type::parseString('array{a: int, b: string}'));
     }
 
     public function testTKeyedArrayWithSpace(): void
     {
-        $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type:: parseString('array{\'a \': int, \'b  \': string}'));
+        $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type::parseString('array{\'a \': int, \'b  \': string}'));
     }
 
     public function testTKeyedArrayWithQuotedKeys(): void
     {
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{\'"\': int, \'\\\'\': string}'));
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type:: parseString('array{"\\"": int, "\\\'": string}'));
+        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
+        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
     }
 
     public function testTKeyedArrayWithClassConstantKey(): void
@@ -328,7 +328,7 @@ class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithQuotedClassConstantKey(): void
     {
-        $this->assertSame('array{\'self::FOO\': string}', (string) Type:: parseString('array{"self::FOO": string}'));
+        $this->assertSame('array{\'self::FOO\': string}', (string) Type::parseString('array{"self::FOO": string}'));
     }
 
     public function testTKeyedArrayWithoutClosingBracket(): void
@@ -867,8 +867,8 @@ class TypeParseTest extends TestCase
         $string = "АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя";
         $string .= $string;
         $expected = mb_substr($string, 0, 80);
-        $this->assertSame("\"$expected...\"", Type:: parseString("'$string'")->getId());
-        $this->assertSame("\"$expected...\"", Type:: parseString("\"$string\"")->getId());
+        $this->assertSame("\"$expected...\"", Type::parseString("'$string'")->getId());
+        $this->assertSame("\"$expected...\"", Type::parseString("\"$string\"")->getId());
     }
 
     public function testSingleLiteralString(): void

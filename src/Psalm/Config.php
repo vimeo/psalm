@@ -596,7 +596,7 @@ class Config
         }
 
         do {
-            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
+            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . self::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path) || file_exists($maybe_path .= '.dist')) {
                 return $maybe_path;
@@ -1526,7 +1526,7 @@ class Config
 
         $parent_issue_type = self::getParentIssueType($issue_type);
 
-        if ($parent_issue_type && $reporting_level === Config::REPORT_ERROR) {
+        if ($parent_issue_type && $reporting_level === self::REPORT_ERROR) {
             $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
 
             if ($parent_reporting_level !== $reporting_level) {

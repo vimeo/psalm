@@ -467,7 +467,7 @@ abstract class Type
         }
 
         if ($type_1->isVanillaMixed() && $type_2->isVanillaMixed()) {
-            $combined_type = Type::getMixed();
+            $combined_type = self::getMixed();
         } else {
             $both_failed_reconciliation = false;
 
@@ -565,7 +565,7 @@ abstract class Type
         $type_2_mixed = $type_2->isMixed();
 
         if ($type_1_mixed && $type_2_mixed) {
-            $combined_type = Type::getMixed();
+            $combined_type = self::getMixed();
         } else {
             $both_failed_reconciliation = false;
 
