@@ -323,6 +323,33 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testForbiddenEvalExpression(): void
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="eval" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                eval("foo bar");
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 
     private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
     {

@@ -8,6 +8,8 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Issue\ForbiddenCode;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 
 /**
@@ -21,6 +23,8 @@ class EvalAnalyzer
         Context $context
     ) : void {
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
+
+        $codebase = $statements_analyzer->getCodebase();
 
         $expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
@@ -58,6 +62,18 @@ class EvalAnalyzer
                         $removed_taints
                     );
                 }
+            }
+        }
+
+        if (isset($codebase->config->forbidden_functions['eval'])) {
+            if (IssueBuffer::accepts(
+                new ForbiddenCode(
+                    'You have forbidden the use of eval',
+                    new CodeLocation($statements_analyzer, $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // continue
             }
         }
 
