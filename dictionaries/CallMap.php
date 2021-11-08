@@ -9345,7 +9345,7 @@ return [
 'openssl_public_encrypt' => ['bool', 'data'=>'string', '&w_encrypted_data'=>'string', 'public_key'=>'string|resource', 'padding='=>'int'],
 'openssl_random_pseudo_bytes' => ['string|false', 'length'=>'int', '&w_strong_result='=>'bool'],
 'openssl_seal' => ['int|false', 'data'=>'string', '&w_sealed_data'=>'string', '&w_encrypted_keys'=>'array', 'public_key'=>'array', 'cipher_algo='=>'string', '&rw_iv='=>'string'],
-'openssl_sign' => ['bool', 'data'=>'string', '&w_signature'=>'string', 'private_key'=>'resource|string', 'algorithm='=>'int|string'],
+'openssl_sign' => ['bool', 'data'=>'string', '&w_signature'=>'string', 'private_key'=>'OpenSSLAsymmetricKey|OpenSSLCertificate|array{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string', 'algorithm='=>'int|string'],
 'openssl_spki_export' => ['?string', 'spki'=>'string'],
 'openssl_spki_export_challenge' => ['?string', 'spki'=>'string'],
 'openssl_spki_new' => ['?string', 'private_key'=>'resource', 'challenge'=>'string', 'digest_algo='=>'int'],
