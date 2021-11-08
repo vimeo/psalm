@@ -14604,7 +14604,7 @@ return [
 'tidyNode::isPhp' => ['bool'],
 'tidyNode::isText' => ['bool'],
 'time' => ['positive-int'],
-'time_nanosleep' => ['array{0:positive-int,1:positive-int}|bool', 'seconds'=>'positive-int', 'nanoseconds'=>'positive-int'],
+'time_nanosleep' => ['array{0:0|positive-int,1:0|positive-int}|bool', 'seconds'=>'positive-int', 'nanoseconds'=>'positive-int'],
 'time_sleep_until' => ['bool', 'timestamp'=>'float'],
 'timezone_abbreviations_list' => ['array<string, list<array{dst: bool, offset: int, timezone_id: string|null}>>|false'],
 'timezone_identifiers_list' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
