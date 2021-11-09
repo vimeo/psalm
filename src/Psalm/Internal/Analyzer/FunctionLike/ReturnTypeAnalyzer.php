@@ -239,23 +239,6 @@ class ReturnTypeAnalyzer
             );
         }
 
-        // if we still have more than one type, we remove TVoid and replace it by TNull
-        $number_of_types = count($inferred_return_type_parts);
-        if ($number_of_types > 1) {
-            $inferred_return_type_parts = array_filter(
-                $inferred_return_type_parts,
-                static function (Union $union_type) : bool {
-                    return !$union_type->isVoid();
-                }
-            );
-
-            if (count($inferred_return_type_parts) !== $number_of_types) {
-                $null_type = Type::getNull();
-                $null_type->from_docblock = true;
-                $inferred_return_type_parts[] = $null_type;
-            }
-        }
-
         $inferred_return_type_parts = array_values($inferred_return_type_parts);
 
         $inferred_return_type = $inferred_return_type_parts
