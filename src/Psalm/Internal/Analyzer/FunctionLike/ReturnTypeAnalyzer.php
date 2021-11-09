@@ -37,8 +37,10 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_diff;
+use function array_filter;
 use function count;
 use function in_array;
 use function strpos;
@@ -222,6 +224,34 @@ class ReturnTypeAnalyzer
             }
 
             return null;
+        }
+
+        $number_of_types = count($inferred_return_type_parts);
+        // we filter TNever and TEmpty that have no bearing on the return type
+        if ($number_of_types > 1) {
+            $inferred_return_type_parts = array_filter(
+                $inferred_return_type_parts,
+                static function (Union $union_type) : bool {
+                    return !($union_type->isNever() || $union_type->isEmpty());
+                }
+            );
+        }
+
+        // if we still have more than one type, we remove TVoid and replace it by TNull
+        $number_of_types = count($inferred_return_type_parts);
+        if ($number_of_types > 1) {
+            $inferred_return_type_parts = array_filter(
+                $inferred_return_type_parts,
+                static function (Union $union_type) : bool {
+                    return !$union_type->isVoid();
+                }
+            );
+
+            if (count($inferred_return_type_parts) !== $number_of_types) {
+                $null_type = Type::getNull();
+                $null_type->from_docblock = true;
+                $inferred_return_type_parts[] = $null_type;
+            }
         }
 
         $inferred_return_type = $inferred_return_type_parts

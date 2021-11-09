@@ -3,9 +3,13 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TTemplateParam;
 
+use function array_filter;
 use function array_merge;
 use function array_values;
 use function count;
@@ -793,12 +797,32 @@ class TypeExpander
                 $else_conditional_return_types
             );
 
-            foreach ($all_conditional_return_types as $i => $conditional_return_type) {
-                if ($conditional_return_type instanceof Type\Atomic\TVoid
-                    && count($all_conditional_return_types) > 1
-                ) {
-                    $all_conditional_return_types[$i] = new Type\Atomic\TNull();
-                    $all_conditional_return_types[$i]->from_docblock = true;
+            $number_of_types = count($all_conditional_return_types);
+            // we filter TNever and TEmpty that have no bearing on the return type
+            if ($number_of_types > 1) {
+                $all_conditional_return_types = array_filter(
+                    $all_conditional_return_types,
+                    static function (Atomic $atomic_type) : bool {
+                        return !($atomic_type instanceof TEmpty
+                            || $atomic_type instanceof TNever);
+                    }
+                );
+            }
+
+            // if we still have more than one type, we remove TVoid and replace it by TNull
+            $number_of_types = count($all_conditional_return_types);
+            if ($number_of_types > 1) {
+                $all_conditional_return_types = array_filter(
+                    $all_conditional_return_types,
+                    static function (Atomic $atomic_type) : bool {
+                        return !$atomic_type instanceof Atomic\TVoid;
+                    }
+                );
+
+                if (count($all_conditional_return_types) !== $number_of_types) {
+                    $null_type = new Type\Atomic\TNull();
+                    $null_type->from_docblock = true;
+                    $all_conditional_return_types[] = $null_type;
                 }
             }
 
