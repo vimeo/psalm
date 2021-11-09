@@ -180,6 +180,48 @@ class AttributeTest extends TestCase
                         class Baz {}
                     }
                 '
+            ],
+            'returnTypeWillChange7.1' => [
+                '<?php
+
+                    namespace Rabus\PsalmReturnTypeWillChange;
+
+                    use EmptyIterator;
+                    use IteratorAggregate;
+                    use ReturnTypeWillChange;
+
+                    final class EmptyCollection implements IteratorAggregate
+                    {
+                        #[ReturnTypeWillChange]
+                        public function getIterator()
+                        {
+                            return new EmptyIterator();
+                        }
+                    }',
+                [],
+                [],
+                '7.1'
+            ],
+            'returnTypeWillChange8.1' => [
+                '<?php
+
+                    namespace Rabus\PsalmReturnTypeWillChange;
+
+                    use EmptyIterator;
+                    use IteratorAggregate;
+                    use ReturnTypeWillChange;
+
+                    final class EmptyCollection implements IteratorAggregate
+                    {
+                        #[ReturnTypeWillChange]
+                        public function getIterator()
+                        {
+                            return new EmptyIterator();
+                        }
+                    }',
+                [],
+                [],
+                '8.1'
             ]
         ];
     }

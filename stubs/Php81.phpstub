@@ -4,12 +4,6 @@ namespace {
         /** @return non-empty-list<static> */
         public static function cases(): array;
     }
-
-    #[Attribute]
-    final class ReturnTypeWillChange
-    {
-        public function __construct() {}
-    }
 }
 
 namespace FTP {
