@@ -978,6 +978,30 @@ class ReturnTypeTest extends TestCase
                         }
                     }'
             ],
+            'NeverAndVoid' => [
+                '<?php
+                    function foo(): void
+                    {
+                        foreach ([0, 1, 2] as $_i) {
+                            return;
+                        }
+
+                        throw new \Exception();
+                    }'
+            ],
+            'neverAndVoidOnConditional' => [
+                '<?php
+                    /**
+                     * @template T as bool
+                     * @param T $end
+                     * @return (T is true ? never : void)
+                     */
+                    function a($end): void{
+                        if($end){
+                            die();
+                        }
+                    }'
+            ],
         ];
     }
 
