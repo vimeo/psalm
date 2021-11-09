@@ -606,7 +606,7 @@ class FunctionLikeNodeScanner
                 }
 
                 //both way to document type were used
-                if ($param_storage->type && $var_comment_type) {
+                if ($param_storage->type && $param_storage->type->from_docblock && $var_comment_type) {
                     if (IssueBuffer::accepts(
                         new InvalidDocblock(
                             'Param ' . $param_storage->name . ' of ' . $cased_function_id .
@@ -625,7 +625,7 @@ class FunctionLikeNodeScanner
 
                 $property_storage = $classlike_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
-                $property_storage->type = $param_storage->type ?? $var_comment_type;
+                $property_storage->type = $param_storage->type;
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
