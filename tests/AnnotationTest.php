@@ -1319,6 +1319,19 @@ class AnnotationTest extends TestCase
                     new UserRole(new stdClass(), new stdClass());
                     '
             ],
+            'promotedPropertiesDocumentationForPropertyAndSignature' => [
+                '<?php
+                    final class A
+                    {
+                        public function __construct(
+                            /**
+                             * @var iterable<string>
+                             */
+                            private iterable $strings,
+                        ) {
+                        }
+                    }'
+            ],
         ];
     }
 
