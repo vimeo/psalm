@@ -41,6 +41,7 @@ use Psalm\Type\Union;
 
 use function array_diff;
 use function array_filter;
+use function array_values;
 use function count;
 use function in_array;
 use function strpos;
@@ -59,6 +60,7 @@ class ReturnTypeAnalyzer
      * @return  false|null
      *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
+     * @psalm-suppress ComplexMethod to be refactored
      */
     public static function verifyReturnType(
         FunctionLike $function,
@@ -253,6 +255,8 @@ class ReturnTypeAnalyzer
                 $inferred_return_type_parts[] = $null_type;
             }
         }
+
+        $inferred_return_type_parts = array_values($inferred_return_type_parts);
 
         $inferred_return_type = $inferred_return_type_parts
             ? \Psalm\Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)

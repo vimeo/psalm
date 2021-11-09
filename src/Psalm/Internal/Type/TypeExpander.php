@@ -826,12 +826,14 @@ class TypeExpander
                 }
             }
 
-            $combined = TypeCombiner::combine(
-                array_values($all_conditional_return_types),
-                $codebase
-            );
+            if ($all_conditional_return_types) {
+                $combined = TypeCombiner::combine(
+                    array_values($all_conditional_return_types),
+                    $codebase
+                );
 
-            return array_values($combined->getAtomicTypes());
+                return array_values($combined->getAtomicTypes());
+            }
         }
 
         $return_type->conditional_type = self::expandUnion(
