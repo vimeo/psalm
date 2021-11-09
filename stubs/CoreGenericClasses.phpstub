@@ -494,3 +494,10 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      */
     public function offsetUnset($offset) {}
 }
+
+
+#[Attribute]
+final class ReturnTypeWillChange
+{
+    public function __construct() {}
+}
