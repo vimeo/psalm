@@ -1093,6 +1093,13 @@ class UnusedCodeTest extends TestCase
                     $a = new A();
                     echo $a->getVal(null);',
             ],
+            '__halt_compiler_no_usage_check' => [
+                '<?php
+                    exit(0);
+                    __halt_compiler();
+                    foobar
+                ',
+            ],
         ];
     }
 
