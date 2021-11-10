@@ -1430,6 +1430,39 @@ class ConstantTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
             ],
+            'duplicateConstants' => [
+                '<?php
+                    class A {
+                        public const B = 1;
+                        public const B = 2;
+                    }
+                ',
+                'error_message' => 'DuplicateConstant',
+            ],
+            'constantDuplicatesEnumCase' => [
+                '<?php
+                    enum State {
+                        case Open;
+                        public const Open = 1;
+                    }
+                ',
+                'error_message' => 'DuplicateConstant',
+                [],
+                false,
+                '8.1',
+            ],
+            'enumCaseDuplicatesConstant' => [
+                '<?php
+                    enum State {
+                        public const Open = 1;
+                        case Open;
+                    }
+                ',
+                'error_message' => 'DuplicateConstant',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }

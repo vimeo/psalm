@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
+use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
@@ -1193,6 +1194,19 @@ class ClassLikeNodeScanner
                 $fq_classlike_name
             );
 
+            if (isset($storage->constants[$const->name->name])
+                || isset($storage->enum_cases[$const->name->name])
+            ) {
+                if (IssueBuffer::accepts(new DuplicateConstant(
+                    'Constant names should be unique',
+                    new CodeLocation($this->file_scanner, $const),
+                    $fq_classlike_name
+                ))) {
+                    // fall through
+                }
+                continue;
+            }
+
             $storage->constants[$const->name->name] = $constant_storage = new \Psalm\Storage\ClassConstantStorage(
                 $const_type,
                 $stmt->isProtected()
@@ -1271,6 +1285,17 @@ class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name
     ): void {
+        if (isset($storage->constants[$stmt->name->name])) {
+            if (IssueBuffer::accepts(new DuplicateConstant(
+                'Constant names should be unique',
+                new CodeLocation($this->file_scanner, $stmt),
+                $fq_classlike_name
+            ))) {
+                // fall through
+            }
+            return;
+        }
+
         $enum_value = null;
 
         if ($stmt->expr !== null) {
