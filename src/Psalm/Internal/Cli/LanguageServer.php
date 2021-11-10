@@ -68,7 +68,7 @@ final class LanguageServer
             'tcp:',
             'tcp-server',
             'disable-on-change::',
-            'enable-autocomplete',
+            'enable-autocomplete::',
             'use-extended-diagnostic-codes',
             'verbose'
         ];
