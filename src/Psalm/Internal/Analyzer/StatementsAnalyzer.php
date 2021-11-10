@@ -343,7 +343,6 @@ class StatementsAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
             && !($stmt instanceof PhpParser\Node\Stmt\Nop)
-            && !($stmt instanceof PhpParser\Node\Stmt\InlineHTML)
             && !($stmt instanceof PhpParser\Node\Stmt\Function_)
             && !($stmt instanceof PhpParser\Node\Stmt\Class_)
             && !($stmt instanceof PhpParser\Node\Stmt\Interface_)
