@@ -1574,6 +1574,13 @@ class UnusedCodeTest extends TestCase
                 ',
                 'error_message' => 'UnevaluatedCode',
             ],
+            'exitInlineHtml' => [
+                '<?php
+                    exit(0);
+                    ?'.'>foo
+                ',
+                'error_message' => 'UnevaluatedCode',
+            ],
         ];
     }
 }
