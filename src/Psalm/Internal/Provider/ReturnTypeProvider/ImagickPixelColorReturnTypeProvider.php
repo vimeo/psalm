@@ -8,6 +8,8 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
+use function in_array;
+
 class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
@@ -32,10 +34,10 @@ class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\
         if (!$call_args) {
             $formats = [0 => true];
         } else {
-            $normalized = $source->node_data->getType($call_args[0]->value);
+            $normalized = $source->node_data->getType($call_args[0]->value) ?? Type::getMixed();
             $formats = [];
             foreach ($normalized->getAtomicTypes() as $t) {
-                if ($t instanceof TLiteralInt) {
+                if ($t instanceof TLiteralInt && in_array($t->value, [0, 1, 2], true)) {
                     $formats[$t->value] = true;
                 } else {
                     $formats[0] = true;
@@ -76,6 +78,7 @@ class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\
             ]);
         }
 
+        /** @var non-empty-list<Psalm\Type\Union> $types */
         return Type::combineUnionTypeArray($types, $event->getSource()->getCodebase());
     }
 }
