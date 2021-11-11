@@ -8,6 +8,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
+use function assert;
 use function in_array;
 
 class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
@@ -78,7 +79,7 @@ class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\
             ]);
         }
 
-        /** @var non-empty-list<Psalm\Type\Union> $types */
+        assert($types !== []);
         return Type::combineUnionTypeArray($types, $event->getSource()->getCodebase());
     }
 }
