@@ -91,9 +91,9 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
-     * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param array{int,int}|null $php_version contains php version when the type comes from signature
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param array<string, TypeAlias> $type_aliases
      */
     public static function create(
         string $value,

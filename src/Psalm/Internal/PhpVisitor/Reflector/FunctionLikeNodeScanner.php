@@ -39,6 +39,7 @@ use function array_pop;
 use function count;
 use function explode;
 use function implode;
+use function in_array;
 use function is_string;
 use function strlen;
 use function strpos;
@@ -205,9 +206,7 @@ class FunctionLikeNodeScanner
             }
 
             if ($param_storage->name === 'haystack'
-                && (strpos($this->file_path, 'CoreGenericFunctions.phpstub')
-                    || strpos($this->file_path, 'CoreGenericClasses.phpstub')
-                    || strpos($this->file_path, 'CoreGenericIterators.phpstub'))
+                && in_array($this->file_path, $this->codebase->config->internal_stubs)
             ) {
                 $param_storage->expect_variable = true;
             }
