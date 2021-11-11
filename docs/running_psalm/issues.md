@@ -20,6 +20,7 @@
  - [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
  - [DuplicateArrayKey](issues/DuplicateArrayKey.md)
  - [DuplicateClass](issues/DuplicateClass.md)
+ - [DuplicateConstant](issues/DuplicateConstant.md)
  - [DuplicateFunction](issues/DuplicateFunction.md)
  - [DuplicateMethod](issues/DuplicateMethod.md)
  - [DuplicateParam](issues/DuplicateParam.md)
