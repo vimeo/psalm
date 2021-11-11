@@ -28,7 +28,7 @@ class ImagickPixelColorReturnTypeProvider implements \Psalm\Plugin\EventHandler\
         }
 
         if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            return Type::getMixed();
+            return null;
         }
 
         if (!$call_args) {
