@@ -56,7 +56,7 @@ class AttributeAnalyzer
             if ($classlike_storage->is_trait) {
                 if (\Psalm\IssueBuffer::accepts(
                     new InvalidAttribute(
-                        'Traits cannot act a attribute classes',
+                        'Traits cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
@@ -66,7 +66,7 @@ class AttributeAnalyzer
             } elseif ($classlike_storage->is_interface) {
                 if (\Psalm\IssueBuffer::accepts(
                     new InvalidAttribute(
-                        'Interfaces cannot act a attribute classes',
+                        'Interfaces cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
@@ -76,7 +76,7 @@ class AttributeAnalyzer
             } elseif ($classlike_storage->abstract) {
                 if (\Psalm\IssueBuffer::accepts(
                     new InvalidAttribute(
-                        'Abstract classes cannot act a attribute classes',
+                        'Abstract classes cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
@@ -88,7 +88,7 @@ class AttributeAnalyzer
             ) {
                 if (\Psalm\IssueBuffer::accepts(
                     new InvalidAttribute(
-                        'Classes with protected/private constructors cannot act a attribute classes',
+                        'Classes with protected/private constructors cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
@@ -98,7 +98,7 @@ class AttributeAnalyzer
             } elseif ($classlike_storage->is_enum) {
                 if (\Psalm\IssueBuffer::accepts(
                     new InvalidAttribute(
-                        'Enums cannot act a attribute classes',
+                        'Enums cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
