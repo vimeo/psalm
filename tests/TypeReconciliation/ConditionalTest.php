@@ -2821,6 +2821,17 @@ class ConditionalTest extends \Psalm\Tests\TestCase
                     function b(B $_b): void {
                     }',
             ],
+            'SimpleXMLIteratorNotAlwaysTruthy' => [
+                '<?php
+                    $lilstring = "";
+
+                    $n = new SimpleXMLElement($lilstring);
+                    $n = $n->children();
+
+                    if (!$n) {
+                        echo "false";
+                    }',
+            ],
         ];
     }
 

@@ -146,6 +146,8 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'filterKeyedArrayWithIterable' => ['array{some: string}', 'iterable<string>', 'array{some: mixed}'],
             'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', '!falsy', 'SimpleXMLElement'],
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', 'falsy', 'SimpleXMLElement'],
+            'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', '!falsy', 'SimpleXMLIterator'],
+            'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', 'falsy', 'SimpleXMLIterator'],
         ];
     }
 
