@@ -244,30 +244,6 @@ class SoapClient  {
      public function __getCookies () {}
 
      /**
-      * Performs a SOAP request
-      * @link https://php.net/manual/en/soapclient.dorequest.php
-      * @param string $request <p>
-      * The XML SOAP request.
-      * </p>
-      * @param string $location <p>
-      * The URL to request.
-      * </p>
-      * @param string $action <p>
-      * The SOAP action.
-      * </p>
-      * @param int $version <p>
-      * The SOAP version.
-      * </p>
-      * @param int $one_way [optional] <p>
-      * If one_way is set to 1, this method returns nothing.
-      * Use this where a response is not expected.
-      * </p>
-      * @return string The XML SOAP response.
-      * @since 5.0.1
-      */
-     public function __doRequest ($request, $location, $action, $version, $one_way = 0) {}
-
-     /**
       * The __setCookie purpose
       * @link https://php.net/manual/en/soapclient.setcookie.php
       * @param string $name <p>

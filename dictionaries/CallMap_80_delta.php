@@ -109,6 +109,10 @@ return [
       'old' => ['string|int|false', 'empty='=>'bool'],
       'new' => ['string|int', 'empty='=>'bool'],
     ],
+    'SoapClient::__doRequest' => [
+      'old' => ['string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'int'],
+      'new' => ['string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'bool'],
+    ],
     'XMLWriter::startAttributeNs' => [
       'old' => ['bool', 'prefix'=>'string', 'name'=>'string', 'namespace'=>'?string'],
       'new' => ['bool', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'?string'],
