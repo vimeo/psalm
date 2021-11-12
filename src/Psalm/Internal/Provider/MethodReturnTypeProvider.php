@@ -47,6 +47,7 @@ class MethodReturnTypeProvider
         self::$legacy_handlers = [];
 
         $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
+        $this->registerClass(ReturnTypeProvider\ImagickPixelColorReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
         $this->registerClass(ReturnTypeProvider\PdoStatementReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ClosureFromCallableReturnTypeProvider::class);
