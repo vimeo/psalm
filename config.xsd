@@ -67,7 +67,13 @@
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
-        <xs:attribute name="forbidEcho" type="xs:boolean" default="false" />
+        <xs:attribute name="forbidEcho" type="xs:boolean" default="false">
+            <xs:annotation>
+                <xs:documentation xml:lang="en">
+                    Deprecated. Will be replaced by adding echo to forbiddenFunctions in Psalm 5.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
         <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="true" />
