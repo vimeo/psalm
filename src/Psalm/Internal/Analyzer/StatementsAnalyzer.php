@@ -357,7 +357,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                     ),
                     $statements_analyzer->source->getSuppressedIssues()
                 )) {
-                    return false;
+                    return null;
                 }
             }
 
