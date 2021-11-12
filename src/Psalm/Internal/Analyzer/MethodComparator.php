@@ -92,7 +92,7 @@ class MethodComparator
             $cased_implementer_method_id,
             $prevent_method_signature_mismatch,
             $prevent_abstract_override,
-            $codebase->php_major_version >= 8,
+            $codebase->analysis_php_version_id >= 80000,
             $code_location,
             $suppressed_issues
         );
@@ -559,9 +559,7 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $is_contained_by = (($codebase->php_major_version === 7
-                    && $codebase->php_minor_version === 4)
-                || $codebase->php_major_version >= 8)
+        $is_contained_by = $codebase->analysis_php_version_id >= 70400
             && $guide_param_signature_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -575,7 +573,7 @@ class MethodComparator
         if (!$is_contained_by) {
             $config = Config::getInstance();
 
-            if ($codebase->php_major_version >= 8
+            if ($codebase->analysis_php_version_id >= 80000
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
@@ -853,9 +851,7 @@ class MethodComparator
                 $implementer_classlike_storage->parent_class
             ) : null;
 
-        $is_contained_by = (($codebase->php_major_version === 7
-                    && $codebase->php_minor_version === 4)
-                || $codebase->php_major_version >= 8)
+        $is_contained_by = $codebase->analysis_php_version_id >= 70400
             && $implementer_signature_return_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -865,7 +861,7 @@ class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($codebase->php_major_version >= 8
+            if ($codebase->analysis_php_version_id >= 80000
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name

@@ -510,9 +510,7 @@ class ArrayAnalyzer
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {
-                        if ($codebase->php_major_version < 8 ||
-                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
-                        ) {
+                        if ($codebase->analysis_php_version_id <= 80000) {
                             IssueBuffer::maybeAdd(
                                 new DuplicateArrayKey(
                                     'String keys are not supported in unpacked arrays',
@@ -555,9 +553,7 @@ class ArrayAnalyzer
                     $array_creation_info->can_create_objectlike = false;
 
                     if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                        if ($codebase->php_major_version < 8 ||
-                            ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
-                        ) {
+                        if ($codebase->analysis_php_version_id <= 80000) {
                             IssueBuffer::maybeAdd(
                                 new DuplicateArrayKey(
                                     'String keys are not supported in unpacked arrays',

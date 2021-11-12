@@ -141,8 +141,7 @@ trait CallableTrait
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);

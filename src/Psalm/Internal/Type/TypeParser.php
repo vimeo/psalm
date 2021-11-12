@@ -105,7 +105,7 @@ class TypeParser
      */
     public static function parseTokens(
         array $type_tokens,
-        ?array $php_version = null,
+        ?int $analysis_php_version_id = null,
         array $template_type_map = [],
         array $type_aliases = []
     ): Union {
@@ -121,9 +121,9 @@ class TypeParser
                     throw new TypeParseTreeException("Invalid type '$only_token[0]'");
                 }
             } else {
-                $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $php_version);
+                $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $analysis_php_version_id);
 
-                $atomic = Atomic::create($only_token[0], $php_version, $template_type_map, $type_aliases);
+                $atomic = Atomic::create($only_token[0], $analysis_php_version_id, $template_type_map, $type_aliases);
                 $atomic->offset_start = 0;
                 $atomic->offset_end = strlen($only_token[0]);
                 $atomic->text = isset($only_token[2]) && $only_token[2] !== $only_token[0] ? $only_token[2] : null;
@@ -137,7 +137,7 @@ class TypeParser
         $parsed_type = self::getTypeFromTree(
             $parse_tree,
             $codebase,
-            $php_version,
+            $analysis_php_version_id,
             $template_type_map,
             $type_aliases
         );
@@ -150,18 +150,17 @@ class TypeParser
     }
 
     /**
-     * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<string, TypeAlias>            $type_aliases
      *
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(
         ParseTree $parse_tree,
-        Codebase $codebase,
-        ?array $php_version = null,
-        array $template_type_map = [],
-        array $type_aliases = []
+        Codebase  $codebase,
+        ?int      $analysis_php_version_id = null,
+        array     $template_type_map = [],
+        array     $type_aliases = []
     ): TypeNode {
         if ($parse_tree instanceof GenericTree) {
             return self::getTypeFromGenericTree(
@@ -378,9 +377,9 @@ class TypeParser
             throw new TypeParseTreeException('Invalid type \'' . $parse_tree->value . '\'');
         }
 
-        $atomic_type_string = TypeTokenizer::fixScalarTerms($parse_tree->value, $php_version);
+        $atomic_type_string = TypeTokenizer::fixScalarTerms($parse_tree->value, $analysis_php_version_id);
 
-        $atomic_type = Atomic::create($atomic_type_string, $php_version, $template_type_map, $type_aliases);
+        $atomic_type = Atomic::create($atomic_type_string, $analysis_php_version_id, $template_type_map, $type_aliases);
 
         $atomic_type->offset_start = $parse_tree->offset_start;
         $atomic_type->offset_end = $parse_tree->offset_end;

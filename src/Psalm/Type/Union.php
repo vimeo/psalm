@@ -511,17 +511,16 @@ class Union implements TypeNode
      */
     public function toPhpString(
         ?string $namespace,
-        array $aliased_classes,
+        array   $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int     $analysis_php_version_id
     ): ?string {
         if (!$this->isSingleAndMaybeNullable()) {
-            if ($php_major_version < 8) {
+            if ($analysis_php_version_id < 80000) {
                 return null;
             }
-        } elseif ($php_major_version < 7
-            || (isset($this->types['null']) && $php_major_version === 7 && $php_minor_version < 1)
+        } elseif ($analysis_php_version_id < 70000
+            || (isset($this->types['null']) && $analysis_php_version_id < 70100)
         ) {
             return null;
         }
@@ -551,8 +550,7 @@ class Union implements TypeNode
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                $php_major_version,
-                $php_minor_version
+                $analysis_php_version_id
             );
 
             if (!$php_type) {
@@ -571,7 +569,7 @@ class Union implements TypeNode
             return implode('|', array_unique($php_types));
         }
 
-        if ($php_major_version < 8) {
+        if ($analysis_php_version_id < 80000) {
             return ($nullable ? '?' : '') . implode('|', array_unique($php_types));
         }
         if ($nullable) {
@@ -580,9 +578,9 @@ class Union implements TypeNode
         return implode('|', array_unique($php_types));
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        if (!$this->isSingleAndMaybeNullable() && $php_major_version < 8) {
+        if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 80000) {
             return false;
         }
 
@@ -598,8 +596,8 @@ class Union implements TypeNode
 
         return !array_filter(
             $types,
-            function ($atomic_type) use ($php_major_version, $php_minor_version) {
-                return !$atomic_type->canBeFullyExpressedInPhp($php_major_version, $php_minor_version);
+            function ($atomic_type) use ($analysis_php_version_id) {
+                return !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id);
             }
         );
     }

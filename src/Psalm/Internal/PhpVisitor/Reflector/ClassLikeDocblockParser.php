@@ -422,7 +422,7 @@ class ClassLikeDocblockParser
 
                     $statements = StatementsProvider::parseStatements(
                         $php_string,
-                        $codebase->php_major_version . '.' . $codebase->php_minor_version,
+                        $codebase->analysis_php_version_id,
                         $has_errors
                     );
                 } catch (Exception $e) {

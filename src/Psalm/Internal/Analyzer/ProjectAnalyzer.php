@@ -569,7 +569,7 @@ class ProjectAnalyzer
     {
         $codebase = $this->codebase;
 
-        $version = $codebase->php_major_version . '.' . $codebase->php_minor_version;
+        $version = $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion();
 
         switch ($codebase->php_version_source) {
             case 'cli':
@@ -1297,17 +1297,15 @@ class ProjectAnalyzer
         $php_major_version = (int) $php_major_version;
         $php_minor_version = (int) $php_minor_version;
 
-        if ($this->codebase->php_major_version !== $php_major_version
-            || $this->codebase->php_minor_version !== $php_minor_version
-        ) {
+        $analysis_php_version_id = $php_major_version * 10000 + $php_minor_version * 100;
+
+        if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
             // reset lexer and parser when php version changes
             StatementsProvider::clearLexer();
             StatementsProvider::clearParser();
         }
 
-        $this->codebase->php_major_version = $php_major_version;
-        $this->codebase->php_minor_version = $php_minor_version;
-        $this->codebase->analysis_php_version_id = $php_major_version * 10000 + $php_minor_version * 100;
+        $this->codebase->analysis_php_version_id = $analysis_php_version_id;
         $this->codebase->php_version_source = $source;
     }
 

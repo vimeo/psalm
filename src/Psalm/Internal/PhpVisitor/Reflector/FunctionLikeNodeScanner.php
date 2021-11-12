@@ -434,8 +434,7 @@ class FunctionLikeNodeScanner
                 $this->file_storage,
                 $this->classlike_storage,
                 $this->aliases,
-                $this->codebase->php_major_version,
-                $this->codebase->php_minor_version
+                $this->codebase->analysis_php_version_id
             );
 
             $storage->return_type_location = new CodeLocation(
@@ -486,12 +485,14 @@ class FunctionLikeNodeScanner
 
             if ($docblock_info) {
                 if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                    if ($docblock_info->since_php_major_version > $this->codebase->php_major_version) {
+                    $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                    $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                    if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
                         return false;
                     }
 
-                    if ($docblock_info->since_php_major_version === $this->codebase->php_major_version
-                        && $docblock_info->since_php_minor_version > $this->codebase->php_minor_version
+                    if ($docblock_info->since_php_major_version === $analysis_major_php_version
+                        && $docblock_info->since_php_minor_version > $analysis_minor_php_version
                     ) {
                         return false;
                     }
@@ -828,8 +829,7 @@ class FunctionLikeNodeScanner
                 $this->file_storage,
                 $this->classlike_storage,
                 $this->aliases,
-                $this->codebase->php_major_version,
-                $this->codebase->php_minor_version
+                $this->codebase->analysis_php_version_id
             );
 
             if ($is_nullable) {
@@ -1043,11 +1043,14 @@ class FunctionLikeNodeScanner
                     }
                     if ($docblock_info) {
                         if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                            if ($docblock_info->since_php_major_version > $this->codebase->php_major_version) {
+                            $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                            $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                            if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
                                 return false;
                             }
-                            if ($docblock_info->since_php_major_version === $this->codebase->php_major_version
-                                && $docblock_info->since_php_minor_version > $this->codebase->php_minor_version
+
+                            if ($docblock_info->since_php_major_version === $analysis_major_php_version
+                                && $docblock_info->since_php_minor_version > $analysis_minor_php_version
                             ) {
                                 return false;
                             }
@@ -1072,7 +1075,7 @@ class FunctionLikeNodeScanner
             if ($method_name_lc === strtolower($class_name)
                 && !isset($classlike_storage->methods['__construct'])
                 && strpos($fq_classlike_name, '\\') === false
-                && $this->codebase->php_major_version < 8
+                && $this->codebase->analysis_php_version_id <= 70400
             ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $fq_classlike_name,

@@ -1495,8 +1495,7 @@ class ClassLikeNodeScanner
                 $this->file_storage,
                 $this->storage,
                 $this->aliases,
-                $this->codebase->php_major_version,
-                $this->codebase->php_minor_version
+                $this->codebase->analysis_php_version_id
             );
 
             $signature_type_location = new CodeLocation(

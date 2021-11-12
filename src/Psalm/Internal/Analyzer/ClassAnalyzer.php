@@ -1608,8 +1608,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
 
         $allow_native_type = !$docblock_only
-            && $codebase->php_major_version >= 7
-            && ($codebase->php_major_version > 7 || $codebase->php_minor_version >= 4)
+            && $codebase->analysis_php_version_id >= 70400
             && $codebase->allow_backwards_incompatible_changes;
 
         $manipulator->setType(
@@ -1618,8 +1617,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $codebase->php_major_version,
-                    $codebase->php_minor_version
+                    $codebase->analysis_php_version_id
                 ) : null,
             $inferred_type->toNamespacedString(
                 $source->getNamespace(),
@@ -1633,7 +1631,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version)
+            $inferred_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id)
         );
     }
 

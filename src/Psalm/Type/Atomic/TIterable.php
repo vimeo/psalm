@@ -89,16 +89,12 @@ class TIterable extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version > 7
-            || ($php_major_version === 7 && $php_minor_version >= 1)
-            ? 'iterable'
-            : null;
+        return $analysis_php_version_id >= 70100 ? 'iterable' : null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }

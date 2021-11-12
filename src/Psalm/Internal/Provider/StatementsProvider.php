@@ -6,6 +6,7 @@ use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\Stmt;
 use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
@@ -109,8 +110,11 @@ class StatementsProvider
     /**
      * @return list<Stmt>
      */
-    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null): array
-    {
+    public function getStatementsForFile(
+        string $file_path,
+        int $analysis_php_version_id,
+        ?Progress $progress = null
+    ): array {
         unset($this->errors[$file_path]);
 
         if ($progress === null) {
@@ -133,7 +137,7 @@ class StatementsProvider
 
             $has_errors = false;
 
-            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
 
             return $stmts ?: [];
         }
@@ -195,7 +199,7 @@ class StatementsProvider
 
             $stmts = self::parseStatements(
                 $file_contents,
-                $php_version,
+                $analysis_php_version_id,
                 $has_errors,
                 $file_path,
                 $existing_file_contents,
@@ -416,22 +420,24 @@ class StatementsProvider
      * @return list<Stmt>
      */
     public static function parseStatements(
-        string $file_contents,
-        string $php_version,
-        bool &$has_errors,
+        string  $file_contents,
+        int     $analysis_php_version_id,
+        bool    &$has_errors,
         ?string $file_path = null,
         ?string $existing_file_contents = null,
-        ?array $existing_statements = null,
-        ?array $file_changes = null
+        ?array  $existing_statements = null,
+        ?array  $file_changes = null
     ): array {
         $attributes = [
             'comments', 'startLine', 'startFilePos', 'endFilePos',
         ];
 
         if (!self::$lexer) {
+            $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10000);
+            $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10000, 100);
             self::$lexer = new PhpParser\Lexer\Emulative([
                 'usedAttributes' => $attributes,
-                'phpVersion' => $php_version,
+                'phpVersion' => $major_version . '.' . $minor_version,
             ]);
         }
 

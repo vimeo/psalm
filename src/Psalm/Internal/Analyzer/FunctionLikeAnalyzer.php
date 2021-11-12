@@ -1443,7 +1443,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $allow_native_type = !$docblock_only
-            && $codebase->php_major_version >= 7
+            && $codebase->analysis_php_version_id >= 70000
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
@@ -1457,8 +1457,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
                     $this->source->getFQCLN(),
-                    $project_analyzer->getCodebase()->php_major_version,
-                    $project_analyzer->getCodebase()->php_minor_version
+                    $project_analyzer->getCodebase()->analysis_php_version_id
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $this->source->getNamespace(),

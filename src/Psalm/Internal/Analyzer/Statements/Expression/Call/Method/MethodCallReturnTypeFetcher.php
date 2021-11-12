@@ -570,7 +570,7 @@ class MethodCallReturnTypeFetcher
                         $template_result->lower_bounds[$template_type->param_name] = [
                             'fn-' . strtolower((string) $method_id) => [
                                 new TemplateBound(
-                                    Type::getInt(false, $codebase->php_major_version)
+                                    Type::getInt(false, $codebase->getMajorAnalysisPhpVersion())
                                 )
                             ]
                         ];
@@ -580,8 +580,7 @@ class MethodCallReturnTypeFetcher
                                 new TemplateBound(
                                     Type::getInt(
                                         false,
-                                        10000 * $codebase->php_major_version
-                                        + 100 * $codebase->php_minor_version
+                                        $codebase->analysis_php_version_id
                                     )
                                 )
                             ]

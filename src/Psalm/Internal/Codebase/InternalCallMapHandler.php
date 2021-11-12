@@ -347,8 +347,8 @@ class InternalCallMapHandler
     public static function getCallMap(): array
     {
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
-        $analyzer_major_version = $codebase->php_major_version;
-        $analyzer_minor_version = $codebase->php_minor_version;
+        $analyzer_major_version = $codebase->getMajorAnalysisPhpVersion();
+        $analyzer_minor_version = $codebase->getMinorAnalysisPhpVersion();
 
         $analyzer_version = $analyzer_major_version . '.' . $analyzer_minor_version;
         $current_version = self::PHP_MAJOR_VERSION . '.' . self::PHP_MINOR_VERSION;

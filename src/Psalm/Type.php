@@ -75,14 +75,14 @@ abstract class Type
      */
     public static function parseString(
         string $type_string,
-        ?array $php_version = null,
+        ?int $analysis_php_version_id = null,
         array $template_type_map = []
     ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
                 $type_string
             ),
-            $php_version,
+            $analysis_php_version_id,
             $template_type_map
         );
     }
