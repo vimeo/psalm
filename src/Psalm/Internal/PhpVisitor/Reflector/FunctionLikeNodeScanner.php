@@ -631,12 +631,13 @@ class FunctionLikeNodeScanner
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
+                $property_storage->readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
-                switch ($param->flags) {
+                switch ($param->flags & \PhpParser\Node\Stmt\Class_::VISIBILITY_MODIFIER_MASK) {
                     case \PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
