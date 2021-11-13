@@ -7,7 +7,7 @@
  * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.1
  * The 'removed' section contains the signatures that were removed in php 7.2.
  * The 'changed' section contains functions for which the signature has changed for php 7.2.
- *     Each function in the 'changed' section has an 'old' and a 'new' section, 
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
  *     representing the function as it was in PHP 7.1 and in PHP 7.2, respectively
  *
  * @see CallMap.php
@@ -34,6 +34,7 @@ return [
     'ldap_exop_whoami' => ['string|false', 'ldap'=>'resource'],
     'ldap_parse_exop' => ['bool', 'ldap'=>'resource', 'result'=>'resource', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
     'mb_chr' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string'],
+    'mb_convert_encoding\'1' => ['array', 'string'=>'array', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
     'mb_ord' => ['int|false', 'string'=>'string', 'encoding='=>'string'],
     'mb_scrub' => ['string', 'string'=>'string', 'encoding='=>'string'],
     'oci_register_taf_callback' => ['bool', 'connection'=>'resource', 'callback='=>'callable'],
