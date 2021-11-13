@@ -552,6 +552,11 @@ class Config
      */
     public $trigger_error_exits = 'default';
 
+    /**
+     * @var string[]
+     */
+    public $internal_stubs = [];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -769,7 +774,9 @@ class Config
         ];
 
         $config->config_issues = [];
-        $attributes = $dom_document->getElementsByTagName('psalm')->item(0)->attributes;
+        $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
+        assert($psalm_element_item !== null);
+        $attributes = $psalm_element_item->attributes;
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
                 $line = $attribute->getLineNo();
@@ -1864,93 +1871,59 @@ class Config
 
         $codebase->register_stub_files = true;
 
-        $core_generic_files = [
-            dirname(__DIR__, 2) . '/stubs/CoreGenericFunctions.phpstub',
-            dirname(__DIR__, 2) . '/stubs/CoreGenericClasses.phpstub',
-            dirname(__DIR__, 2) . '/stubs/CoreGenericIterators.phpstub',
-            dirname(__DIR__, 2) . '/stubs/CoreImmutableClasses.phpstub',
-            dirname(__DIR__, 2) . '/stubs/DOM.phpstub',
-            dirname(__DIR__, 2) . '/stubs/Reflection.phpstub',
-            dirname(__DIR__, 2) . '/stubs/SPL.phpstub',
+        $dir_lvl_2 = dirname(__DIR__, 2);
+        $this->internal_stubs = [
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericFunctions.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DOM.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
+            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
 
-        foreach ($core_generic_files as $stub_path) {
+        if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
+            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
+            $this->internal_stubs[] = $stringable_path;
+        }
+
+        if (\PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
+            $this->internal_stubs[] = $stringable_path;
+        }
+
+        if (\extension_loaded('PDO')) {
+            $ext_pdo_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'pdo.phpstub';
+            $this->internal_stubs[] = $ext_pdo_path;
+        }
+
+        if (\extension_loaded('soap')) {
+            $ext_soap_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'soap.phpstub';
+            $this->internal_stubs[] = $ext_soap_path;
+        }
+
+        if (\extension_loaded('ds')) {
+            $ext_ds_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-ds.phpstub';
+            $this->internal_stubs[] = $ext_ds_path;
+        }
+
+        if (\extension_loaded('mongodb')) {
+            $ext_mongodb_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mongodb.phpstub';
+            $this->internal_stubs[] = $ext_mongodb_path;
+        }
+
+        if ($this->load_xdebug_stub) {
+            $xdebug_stub_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Xdebug.phpstub';
+            $this->internal_stubs[] = $xdebug_stub_path;
+        }
+
+        foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
                 throw new \UnexpectedValueException('Cannot locate ' . $stub_path);
             }
         }
 
-        if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (\PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate PHP 8.1 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (\extension_loaded('PDO')) {
-            $ext_pdo_path = dirname(__DIR__, 2) . '/stubs/pdo.phpstub';
-
-            if (!file_exists($ext_pdo_path)) {
-                throw new \UnexpectedValueException('Cannot locate pdo classes');
-            }
-
-            $core_generic_files[] = $ext_pdo_path;
-        }
-
-        if (\extension_loaded('soap')) {
-            $ext_soap_path = dirname(__DIR__, 2) . '/stubs/soap.phpstub';
-
-            if (!file_exists($ext_soap_path)) {
-                throw new \UnexpectedValueException('Cannot locate soap classes');
-            }
-
-            $core_generic_files[] = $ext_soap_path;
-        }
-
-        if (\extension_loaded('ds')) {
-            $ext_ds_path = dirname(__DIR__, 2) . '/stubs/ext-ds.phpstub';
-
-            if (!file_exists($ext_ds_path)) {
-                throw new \UnexpectedValueException('Cannot locate ext-ds classes');
-            }
-
-            $core_generic_files[] = $ext_ds_path;
-        }
-
-        if (\extension_loaded('mongodb')) {
-            $ext_mongodb_path = dirname(__DIR__, 2) . '/stubs/mongodb.phpstub';
-
-            if (!file_exists($ext_mongodb_path)) {
-                throw new \UnexpectedValueException('Cannot locate mongodb classes');
-            }
-
-            $core_generic_files[] = $ext_mongodb_path;
-        }
-
-        $stub_files = array_merge($core_generic_files, $this->stub_files);
-
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = dirname(__DIR__, 2) . '/stubs/Xdebug.phpstub';
-
-            if (!file_exists($xdebug_stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate Xdebug stub');
-            }
-
-            $stub_files[] = $xdebug_stub_path;
-        }
+        $stub_files = array_merge($this->internal_stubs, $this->stub_files);
 
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 

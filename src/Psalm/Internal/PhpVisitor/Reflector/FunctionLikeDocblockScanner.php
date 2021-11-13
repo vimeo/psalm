@@ -28,6 +28,7 @@ use function array_filter;
 use function array_merge;
 use function count;
 use function explode;
+use function in_array;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -118,11 +119,23 @@ class FunctionLikeDocblockScanner
             $storage->specialize_call = true;
         }
 
-        if ($docblock_info->ignore_nullable_return && $storage->return_type) {
+        // we make sure we only add ignore flag for internal stubs if the config is set to true
+        if ($docblock_info->ignore_nullable_return
+            && $storage->return_type
+            && ($codebase->config->ignore_internal_nullable_issues
+                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+            )
+        ) {
             $storage->return_type->ignore_nullable_issues = true;
         }
 
-        if ($docblock_info->ignore_falsable_return && $storage->return_type) {
+        // we make sure we only add ignore flag for internal stubs if the config is set to true
+        if ($docblock_info->ignore_falsable_return
+            && $storage->return_type
+            && ($codebase->config->ignore_internal_falsable_issues
+                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+            )
+        ) {
             $storage->return_type->ignore_falsable_issues = true;
         }
 
@@ -958,11 +971,23 @@ class FunctionLikeDocblockScanner
             );
         }
 
-        if ($storage->return_type && $docblock_info->ignore_nullable_return) {
+        // we make sure we only add ignore flag for internal stubs if the config is set to true
+        if ($docblock_info->ignore_nullable_return
+            && $storage->return_type
+            && ($codebase->config->ignore_internal_nullable_issues
+                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+            )
+        ) {
             $storage->return_type->ignore_nullable_issues = true;
         }
 
-        if ($storage->return_type && $docblock_info->ignore_falsable_return) {
+        // we make sure we only add ignore flag for internal stubs if the config is set to true
+        if ($docblock_info->ignore_falsable_return
+            && $storage->return_type
+            && ($codebase->config->ignore_internal_falsable_issues
+                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+            )
+        ) {
             $storage->return_type->ignore_falsable_issues = true;
         }
 
