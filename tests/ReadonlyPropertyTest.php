@@ -243,6 +243,20 @@ class ReadonlyPropertyTest extends TestCase
                 false,
                 '8.1',
             ],
+            'readonlyPromotedPropertyAssignOperator' => [
+                '<?php
+                    class A {
+                        public function __construct(public readonly string $bar) {
+                        }
+                    }
+
+                    $a = new A("hello");
+                    $a->bar = "goodbye";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }
