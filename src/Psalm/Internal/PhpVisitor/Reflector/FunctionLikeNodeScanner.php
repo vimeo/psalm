@@ -637,7 +637,7 @@ class FunctionLikeNodeScanner
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
-                switch ($param->flags) {
+                switch ($param->flags & \PhpParser\Node\Stmt\Class_::VISIBILITY_MODIFIER_MASK) {
                     case \PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
