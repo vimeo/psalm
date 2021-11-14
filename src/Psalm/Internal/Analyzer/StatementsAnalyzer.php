@@ -382,7 +382,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-trace'])) {
                 foreach ($statements_analyzer->parsed_docblock->tags['psalm-trace'] as $traced_variable_line) {
-                    $possible_traced_variable_names = preg_split('/[\s]+/', $traced_variable_line);
+                    $possible_traced_variable_names = preg_split('/\s+/', $traced_variable_line);
                     if ($possible_traced_variable_names) {
                         $traced_variables = array_merge(
                             $traced_variables,
