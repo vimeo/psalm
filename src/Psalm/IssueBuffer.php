@@ -44,6 +44,7 @@ use function mkdir;
 use function number_format;
 use function ob_get_clean;
 use function ob_start;
+use function preg_match;
 use function sha1;
 use function sprintf;
 use function str_repeat;
@@ -234,7 +235,13 @@ class IssueBuffer
             fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
         }
 
+        // Make issue type for trace variable specific ("Trace" => "Trace~$var").
+        $trace_var = $issue_type === 'Trace' && preg_match('/^(\$.+?):/', $e->message, $m) === 1
+            ? '~' . $m[1]
+            : '';
+
         $emitted_key = $issue_type
+            . $trace_var
             . '-' . $e->getShortLocation()
             . ':' . $e->code_location->getColumn()
             . ' ' . $e->dupe_key;
