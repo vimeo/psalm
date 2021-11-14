@@ -14,7 +14,7 @@ use function substr;
 class ConsoleReport extends Report
 {
     /** @var string|null */
-    private $linkFormat;
+    private $link_format;
 
     public function create(): string
     {
@@ -118,13 +118,13 @@ class ConsoleReport extends Report
             return $reference;
         }
 
-        if (null === $this->linkFormat) {
+        if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
-            $this->linkFormat = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
+            $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
                 ?: 'file://%f#L%l';
         }
 
-        $link = strtr($this->linkFormat, ['%f' => $data->file_path, '%l' => $data->line_from]);
+        $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);
         // $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
 
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
