@@ -103,6 +103,7 @@ use const SCANDIR_SORT_NONE;
 class Config
 {
     private const DEFAULT_FILE_NAME = 'psalm.xml';
+    public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
     public const REPORT_INFO = 'info';
     public const REPORT_ERROR = 'error';
     public const REPORT_SUPPRESS = 'suppress';
@@ -708,7 +709,7 @@ class Config
         }
 
         if (!$psalm_node->hasAttribute('xmlns')) {
-            $psalm_node->setAttribute('xmlns', 'https://getpsalm.org/schema/config');
+            $psalm_node->setAttribute('xmlns', self::CONFIG_NAMESPACE);
 
             $old_dom_document = $dom_document;
             $dom_document = self::loadDomDocument($base_dir, $old_dom_document->saveXML());
@@ -766,21 +767,27 @@ class Config
         string $file_contents,
         string $config_path
     ): void {
+        $config->config_issues = [];
+
         // Attributes to be removed in Psalm 5
         $deprecated_attributes = [
             'allowCoercionFromStringToClassConst',
             'allowPhpStormGenerics',
-            'exitFunctions'
         ];
 
-        $config->config_issues = [];
+        $deprecated_elements = [
+            'exitFunctions',
+        ];
+
         $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
         assert($psalm_element_item !== null);
         $attributes = $psalm_element_item->attributes;
+
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
                 $line = $attribute->getLineNo();
                 assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
+
                 $offset = self::lineNumberToByteOffset($file_contents, $line);
                 $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
                 $attribute_end = $attribute_start + strlen($attribute->name) - 1;
@@ -794,6 +801,35 @@ class Config
                         basename($config_path),
                         $attribute_start,
                         $attribute_end
+                    )
+                );
+            }
+        }
+
+        foreach ($deprecated_elements as $deprecated_element) {
+            $deprecated_elements_xml = $dom_document->getElementsByTagNameNS(
+                self::CONFIG_NAMESPACE,
+                $deprecated_element
+            );
+            if ($deprecated_elements_xml->count()) {
+                $deprecated_element_xml = $deprecated_elements_xml->item(0);
+                assert($deprecated_element_xml !== null);
+                $line = $deprecated_element_xml->getLineNo();
+                assert($line > 0);
+
+                $offset = self::lineNumberToByteOffset($file_contents, $line);
+                $element_start = strpos($file_contents, $deprecated_element, $offset) ?: 0;
+                $element_end = $element_start + strlen($deprecated_element) - 1;
+
+                $config->config_issues[] = new ConfigIssue(
+                    'Element "' . $deprecated_element . '" is deprecated '
+                    . 'and is going to be removed in the next major version',
+                    new CodeLocation\Raw(
+                        $file_contents,
+                        $config_path,
+                        basename($config_path),
+                        $element_start,
+                        $element_end
                     )
                 );
             }
