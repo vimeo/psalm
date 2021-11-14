@@ -66,6 +66,7 @@ abstract class TaintedInput extends CodeIssue
             $location->getLineNumber(),
             $location->getEndLineNumber(),
             $location->file_name,
+            $location->file_path,
             $location->getSnippet(),
             $selection_bounds[0],
             $selection_bounds[1],

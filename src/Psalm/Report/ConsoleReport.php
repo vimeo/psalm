@@ -3,12 +3,19 @@ namespace Psalm\Report;
 
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
+use function get_cfg_var;
+use function ini_get;
+use function strtr;
 use function substr;
 
 class ConsoleReport extends Report
 {
+    /** @var string|null */
+    private $link_format;
+
     public function create(): string
     {
         $output = '';
@@ -34,7 +41,7 @@ class ConsoleReport extends Report
         $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
         $issue_string .= ': ' . $issue_data->type
-            . ' - ' . $issue_data->file_name . ':' . $issue_data->line_from . ':' . $issue_data->column_from
+            . ' - ' . $this->getFileReference($issue_data)
             . ' - ' . $issue_data->message . $issue_reference . "\n";
 
 
@@ -75,10 +82,7 @@ class ConsoleReport extends Report
 
         foreach ($taint_trace as $node_data) {
             if ($node_data instanceof DataFlowNodeData) {
-                $snippets .= '  ' . $node_data->label
-                    . ' - ' . $node_data->file_name
-                    . ':' . $node_data->line_from
-                    . ':' . $node_data->column_from . "\n";
+                $snippets .= '  ' . $node_data->label . ' - ' . $this->getFileReference($node_data) . "\n";
 
                 if ($this->show_snippet) {
                     $snippet = $node_data->snippet;
@@ -101,5 +105,28 @@ class ConsoleReport extends Report
         }
 
         return $snippets;
+    }
+
+    /**
+     * @param IssueData|DataFlowNodeData $data
+     */
+    private function getFileReference($data): string
+    {
+        $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
+
+        if (!$this->use_color) {
+            return $reference;
+        }
+
+        if (null === $this->link_format) {
+            // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
+            $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
+                ?: 'file://%f#L%l';
+        }
+
+        $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);
+        // $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
+
+        return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }
 }
