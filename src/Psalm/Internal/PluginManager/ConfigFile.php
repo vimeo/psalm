@@ -12,7 +12,6 @@ use function substr;
 
 class ConfigFile
 {
-    public const NS = 'https://getpsalm.org/schema/config';
     /** @var string */
     private $path;
 
@@ -94,7 +93,7 @@ class ConfigFile
 
         $plugin_class_element = $config_xml->createElement('pluginClass');
         if ($plugin_class_element) {
-            $plugin_class_element->setAttribute('xmlns', self::NS);
+            $plugin_class_element->setAttribute('xmlns', Config::CONFIG_NAMESPACE);
             $plugin_class_element->setAttribute('class', $plugin_class);
             if ($plugins_element) {
                 $plugins_element->appendChild($plugin_class_element);
