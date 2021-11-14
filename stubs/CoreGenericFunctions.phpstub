@@ -1301,3 +1301,11 @@ function get_defined_constants(bool $categorize = false): array {}
  * @return ($allow_string is false ? ($object_or_class is object ? bool : false) : bool)
  */
 function is_a($object_or_class, string $class, $allow_string = false): bool{}
+
+/**
+ * @template T of array|string
+ * @param T $string
+ * @return (T is array<int, string> ? array<int, string> : T is array ? array : string|false)
+ * @psalm-ignore-falsable-return
+ */
+function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false{}

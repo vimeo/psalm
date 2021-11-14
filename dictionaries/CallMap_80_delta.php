@@ -722,8 +722,8 @@ return [
       'new' => ['string|false', 'string'=>'string', 'to_encoding'=>'string', 'from_encoding='=>'array|string|null'],
     ],
     'mb_convert_encoding\'1' => [
-      'old' => ['array<int, string>', 'string'=>'array<int, string>', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
-      'new' => ['array<int, string>', 'string'=>'array<int, string>', 'to_encoding'=>'string', 'from_encoding='=>'array|string|null'],
+      'old' => ['array', 'string'=>'array', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
+      'new' => ['array', 'string'=>'array', 'to_encoding'=>'string', 'from_encoding='=>'array|string|null'],
     ],
     'mb_convert_kana' => [
       'old' => ['string', 'string'=>'string', 'mode='=>'string', 'encoding='=>'string'],
