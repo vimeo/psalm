@@ -69,7 +69,7 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
             <psalm
                 name="bar"
             >
-                <plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins>
+                <plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins>
             </psalm>',
             file_get_contents($this->file_path)
         ));
@@ -91,7 +91,7 @@ class ConfigFileTest extends \Psalm\Tests\TestCase
 
         $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0"?>
-            <psalm><plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins></psalm>',
+            <psalm><plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins></psalm>',
             file_get_contents($this->file_path)
         ));
     }
