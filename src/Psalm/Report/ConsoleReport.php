@@ -112,6 +112,12 @@ class ConsoleReport extends Report
      */
     private function getFileReference($data): string
     {
+        $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
+
+        if (!$this->use_color) {
+            return $reference;
+        }
+
         if (null === $this->linkFormat) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
             $this->linkFormat = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
@@ -119,7 +125,7 @@ class ConsoleReport extends Report
         }
 
         $link = strtr($this->linkFormat, ['%f' => $data->file_path, '%l' => $data->line_from]);
-        $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
+        // $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
 
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }
