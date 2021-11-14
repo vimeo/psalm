@@ -1676,6 +1676,26 @@ class FunctionCallTest extends TestCase
                         if (strpos(DateTime::class, $needle)) {}
                     }',
             ],
+            'mb_strtolowerProducesStringWithSecondArgument' => [
+                '<?php
+                    $r = mb_strtolower("École", "BASE64");
+                ',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
+            'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
+                '<?php
+                    $a = mb_strtolower("AAA");
+                    $b = mb_strtolower("AAA", null);
+                ',
+                'assertions' => [
+                    '$a===' => 'lowercase-string',
+                    '$b===' => 'lowercase-string',
+                ],
+                [],
+                '8.1',
+            ],
         ];
     }
 
