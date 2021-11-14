@@ -471,6 +471,16 @@ class FunctionCallReturnTypeFetcher
                     }
 
                     return $call_map_return_type;
+                case 'mb_strtolower':
+                    if (count($call_args) < 2) {
+                        return Type::getLowercaseString();
+                    } else {
+                        $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
+                        if ($second_arg_type && $second_arg_type->isNull()) {
+                            return Type::getLowercaseString();
+                        }
+                    }
+                    return Type::getString();
             }
         }
 
