@@ -852,7 +852,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
 
                     class c {
                         public function a(): a { return (new a)->g(); }
-                        public function b(): a&b { return (new b)->g(); }
+                        public function b(): b { return (new b)->g(); }
                     }
                 ',
                 '8.1',
@@ -883,7 +883,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -900,7 +900,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @return container1&container2
                      *
@@ -928,7 +928,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -945,7 +945,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @psalm-return container1<int>&container2<int>
                      */
