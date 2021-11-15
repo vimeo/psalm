@@ -1035,6 +1035,21 @@ class MethodCallTest extends TestCase
                 [],
                 '8.0'
             ],
+            'dontGoNutsWithReflectionOnThis' => [
+                '<?php
+
+                    class A
+                    {
+                        public function B(): void
+                        {
+                            (new ReflectionClass($this))->getName();
+                        }
+                    }
+                    ',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
