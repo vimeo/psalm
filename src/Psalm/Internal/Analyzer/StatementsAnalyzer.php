@@ -47,7 +47,6 @@ use Psalm\Type;
 use function array_change_key_case;
 use function array_column;
 use function array_combine;
-use function array_filter;
 use function array_keys;
 use function array_merge;
 use function fwrite;
@@ -383,7 +382,12 @@ class StatementsAnalyzer extends SourceAnalyzer
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-trace'])) {
                 foreach ($statements_analyzer->parsed_docblock->tags['psalm-trace'] as $traced_variable_line) {
-                    $possible_traced_variable_names = preg_split('/(?:\s*,\s*|\s+)/', $traced_variable_line, -1, PREG_SPLIT_NO_EMPTY);
+                    $possible_traced_variable_names = preg_split(
+                        '/(?:\s*,\s*|\s+)/',
+                        $traced_variable_line,
+                        -1,
+                        PREG_SPLIT_NO_EMPTY
+                    );
                     if ($possible_traced_variable_names) {
                         $traced_variables = array_merge($traced_variables, $possible_traced_variable_names);
                     }
