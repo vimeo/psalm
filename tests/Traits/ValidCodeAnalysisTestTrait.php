@@ -15,7 +15,7 @@ use const PHP_VERSION;
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[],php_version?:string}>
      */
     abstract public function providerValidCodeParse(): iterable;
 

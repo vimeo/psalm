@@ -1627,35 +1627,36 @@ class ClassLikes
 
         $storage = $this->classlike_storage_provider->get($class_name);
 
-        if (!isset($storage->constants[$constant_name])) {
-            return null;
+        if (isset($storage->constants[$constant_name])) {
+            $constant_storage = $storage->constants[$constant_name];
+
+            if ($visibility === ReflectionProperty::IS_PUBLIC
+                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            ) {
+                return null;
+            }
+
+            if ($visibility === ReflectionProperty::IS_PROTECTED
+                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED
+            ) {
+                return null;
+            }
+
+            if ($constant_storage->unresolved_node) {
+                $constant_storage->type = new Type\Union([ConstantTypeResolver::resolve(
+                    $this,
+                    $constant_storage->unresolved_node,
+                    $statements_analyzer,
+                    $visited_constant_ids
+                )]);
+            }
+
+            return $constant_storage->type;
+        } elseif (isset($storage->enum_cases[$constant_name])) {
+            return new Type\Union([new Type\Atomic\TEnumCase($storage->name, $constant_name)]);
         }
-
-        $constant_storage = $storage->constants[$constant_name];
-
-        if ($visibility === ReflectionProperty::IS_PUBLIC
-            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-        ) {
-            return null;
-        }
-
-        if ($visibility === ReflectionProperty::IS_PROTECTED
-            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED
-        ) {
-            return null;
-        }
-
-        if ($constant_storage->unresolved_node) {
-            $constant_storage->type = new Type\Union([ConstantTypeResolver::resolve(
-                $this,
-                $constant_storage->unresolved_node,
-                $statements_analyzer,
-                $visited_constant_ids
-            )]);
-        }
-
-        return $constant_storage->type;
+        return null;
     }
 
     private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods): void
