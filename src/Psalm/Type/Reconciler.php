@@ -158,7 +158,7 @@ class Reconciler
 
             $before_adjustment = $result_type ? clone $result_type : null;
 
-            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $failed_reconciliation = self::RECONCILIATION_OK;
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
