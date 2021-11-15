@@ -4,6 +4,7 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -49,10 +50,6 @@ use function explode;
 use function get_class;
 use function max;
 use function min;
-use function preg_match;
-use function preg_quote;
-use function sprintf;
-use function str_replace;
 use function strpos;
 use function substr;
 
@@ -2416,26 +2413,10 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
 
         [$class_name, $constant_pattern] = explode('::', $class_constant_expression, 2);
 
-        if (!$codebase->classlike_storage_provider->has($class_name)) {
+        $resolver = new ClassConstantByWildcardResolver($codebase);
+        $matched_class_constant_types = $resolver->resolve($class_name, $constant_pattern);
+        if ($matched_class_constant_types === null) {
             return $existing_type;
-        }
-
-        $constant_regex_pattern = sprintf('#^%s$#', str_replace('*', '.*', $constant_pattern));
-
-        $class_like_storage = $codebase->classlike_storage_provider->get($class_name);
-        $matched_class_constant_types = [];
-
-        foreach ($class_like_storage->constants as $constant => $class_constant_storage) {
-            if (preg_match($constant_regex_pattern, $constant) === 0) {
-                continue;
-            }
-
-            if (! $class_constant_storage->type) {
-                $matched_class_constant_types[] = [new TMixed()];
-                continue;
-            }
-
-            $matched_class_constant_types[] = $class_constant_storage->type->getAtomicTypes();
         }
 
         if ($matched_class_constant_types === []) {
@@ -2443,6 +2424,6 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return Type::getMixed();
         }
 
-        return TypeCombiner::combine(array_values(array_merge(...$matched_class_constant_types)), $codebase);
+        return TypeCombiner::combine($matched_class_constant_types, $codebase);
     }
 }
