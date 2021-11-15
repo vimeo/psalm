@@ -69,14 +69,8 @@ final class ClassConstantByWildcardResolverTest extends TestCase
 
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'QOO');
         self::assertNotNull($resolved);
-        /** @var list<\Psalm\Type\Atomic> */
         self::assertCount(1, $resolved);
-        /** @var non-empty-list<\Psalm\Type\Atomic> $type */
         $type = $resolved[0];
-        /**
-         * @psalm-suppress DocblockTypeContradiction TLiteralString has to be asserted here,
-         *                                           ofc it does not match the docblock
-         */
         self::assertInstanceOf(TLiteralString::class, $type);
         self::assertTrue($type->value === 'qoo');
     }
