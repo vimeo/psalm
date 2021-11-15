@@ -236,7 +236,7 @@ class IssueBuffer
         }
 
         // Make issue type for trace variable specific ("Trace" => "Trace~$var").
-        $trace_var = $issue_type === 'Trace' && preg_match('/^(\$.+?):/', $e->message, $m) === 1
+        $trace_var = $issue_type === 'Trace' && preg_match('/^(\$.+?):/', $e->message, $m) === 1 && isset($m[1])
             ? '~' . $m[1]
             : '';
 
