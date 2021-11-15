@@ -7,7 +7,7 @@ class ConstantTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[], php_version?: string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1179,6 +1179,22 @@ class ConstantTest extends TestCase
                       }
 
                     }',
+            ],
+            'classConstantReferencingEnumCase' => [
+                '<?php
+                    enum E {
+                        case Z;
+                    }
+                    class C {
+                        public const CC = E::Z;
+                    }
+                    $c = C::CC;
+                ',
+                'assertions' => [
+                    '$c===' => 'enum(E::Z)'
+                ],
+                [],
+                '8.1'
             ],
         ];
     }
