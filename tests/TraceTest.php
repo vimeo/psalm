@@ -17,6 +17,20 @@ class TraceTest extends TestCase
                     $a = getmypid();',
                 'error_message' => 'Trace',
             ],
+            'traceVariables' => [
+                '<?php
+                    /** @psalm-trace $a $b */
+                    $a = getmypid();
+                    $b = getmypid();',
+                'error_message' => 'Trace',
+            ],
+            'traceVariablesComma' => [
+                '<?php
+                    /** @psalm-trace $a, $b */
+                    $a = getmypid();
+                    $b = getmypid();',
+                'error_message' => 'Trace',
+            ],
             'undefinedTraceVariable' => [
                 '<?php
                     /** @psalm-trace $b */
