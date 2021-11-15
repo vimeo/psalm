@@ -55,6 +55,6 @@ final class ClassConstantByWildcardResolver
             $matched_class_constant_types[] = $class_constant_storage->type->getAtomicTypes();
         }
 
-        return array_values(array_merge(...$matched_class_constant_types));
+        return array_values(array_merge([], ...$matched_class_constant_types));
     }
 }
