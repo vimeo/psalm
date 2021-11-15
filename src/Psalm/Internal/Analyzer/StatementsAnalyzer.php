@@ -61,6 +61,7 @@ use function strtolower;
 use function substr;
 use function trim;
 
+use const PREG_SPLIT_NO_EMPTY;
 use const STDERR;
 
 /**
@@ -382,12 +383,9 @@ class StatementsAnalyzer extends SourceAnalyzer
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-trace'])) {
                 foreach ($statements_analyzer->parsed_docblock->tags['psalm-trace'] as $traced_variable_line) {
-                    $possible_traced_variable_names = preg_split('/(?:\s*,\s*|\s+)/', $traced_variable_line);
+                    $possible_traced_variable_names = preg_split('/(?:\s*,\s*|\s+)/', $traced_variable_line, -1, PREG_SPLIT_NO_EMPTY);
                     if ($possible_traced_variable_names) {
-                        $traced_variables = array_merge(
-                            $traced_variables,
-                            array_filter($possible_traced_variable_names)
-                        );
+                        $traced_variables = array_merge($traced_variables, $possible_traced_variable_names);
                     }
                 }
             }
