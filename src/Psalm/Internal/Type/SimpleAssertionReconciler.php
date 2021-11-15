@@ -2420,7 +2420,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
             return $existing_type;
         }
 
-        $constant_regex_pattern = sprintf('#^%s$#', preg_quote(str_replace('*', '.*', $constant_pattern), '#'));
+        $constant_regex_pattern = sprintf('#^%s$#', str_replace('*', '.*', $constant_pattern));
 
         $class_like_storage = $codebase->classlike_storage_provider->get($class_name);
         $matched_class_constant_types = [];
