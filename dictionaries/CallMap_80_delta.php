@@ -946,7 +946,7 @@ return [
       'new' => ['array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}', 'process'=>'resource'],
     ],
     'session_set_cookie_params' => [
-      'old' => ['bool', 'lifetime'=>'int', 'path='=>'string', 'domain='=>'?string', 'secure='=>'bool', 'httponly='=>'bool'],
+      'old' => ['bool', 'lifetime'=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
       'new' => ['bool', 'lifetime'=>'int', 'path='=>'?string', 'domain='=>'?string', 'secure='=>'?bool', 'httponly='=>'?bool'],
     ],
     'socket_accept' => [
