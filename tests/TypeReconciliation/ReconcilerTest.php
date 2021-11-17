@@ -39,7 +39,6 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
 
     /**
      * @dataProvider providerTestReconcilation
-     *
      */
     public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
     {
@@ -181,6 +180,72 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
             'literalNumericString' => [
                 '"10.03"',
                 'numeric',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider constantAssertions
+     */
+    public function testReconciliationOfClassConstantInAssertions(string $assertion, string $expected_type): void
+    {
+        $this->addFile(
+            'psalm-assert.php',
+            '
+            <?php
+            namespace ReconciliationTest;
+            class Foo
+            {
+                const PREFIX_BAR = \'bar\';
+                const PREFIX_BAZ = \'baz\';
+                const PREFIX_QOO = Foo::PREFIX_BAR;
+            }
+            '
+        );
+        $this->project_analyzer->getCodebase()->scanFiles();
+
+        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+            $assertion,
+            new Type\Union([
+                new Type\Atomic\TLiteralString(''),
+            ]),
+            null,
+            $this->statements_analyzer,
+            false,
+            []
+        );
+
+        $this->assertSame(
+            $expected_type,
+            $reconciled->getId()
+        );
+    }
+
+    /**
+     * @return array<non-empty-string,array{non-empty-string,string}>
+     */
+    public function constantAssertions(): array
+    {
+        return [
+            'constant-with-prefix' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_*)',
+                '"bar"|"baz"',
+            ],
+            'single-class-constant' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_BAR)',
+                '"bar"',
+            ],
+            'referencing-another-class-constant' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_QOO)',
+                '"bar"',
+            ],
+            'referencing-all-class-constants' => [
+                'class-constant(ReconciliationTest\\Foo::*)',
+                '"bar"|"baz"',
+            ],
+            'referencing-some-class-constants-with-wildcard' => [
+                'class-constant(ReconciliationTest\\Foo::PREFIX_B*)',
+                '"bar"|"baz"',
             ],
         ];
     }

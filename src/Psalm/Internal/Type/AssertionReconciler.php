@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_intersect_key;
@@ -33,7 +34,7 @@ use function is_string;
 use function strpos;
 use function substr;
 
-class AssertionReconciler extends \Psalm\Type\Reconciler
+class AssertionReconciler extends Reconciler
 {
     /**
      * Reconciles types
@@ -57,7 +58,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         array $template_type_map,
         ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
-        ?int &$failed_reconciliation = 0,
+        ?int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $negated = false
     ) : Union {
         $codebase = $statements_analyzer->getCodebase();
@@ -66,7 +67,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
         $is_loose_equality = false;
         $is_equality = false;
         $is_negation = false;
-        $failed_reconciliation = 0;
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
 
         if ($assertion[0] === '!') {
             $assertion = substr($assertion, 1);
@@ -581,7 +582,7 @@ class AssertionReconciler extends \Psalm\Type\Reconciler
                     }
                 }
 
-                $failed_reconciliation = 2;
+                $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             }
         }
 

@@ -56,7 +56,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $negated = false,
         ?CodeLocation $code_location = null,
         array $suppressed_issues = [],
-        int &$failed_reconciliation = 0,
+        int &$failed_reconciliation = Reconciler::RECONCILIATION_EMPTY,
         bool $is_equality = false,
         bool $is_strict_equality = false,
         bool $inside_loop = false
@@ -283,7 +283,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
     /**
      * @param   string[]  $suppressed_issues
-     * @param   0|1|2    $failed_reconciliation
+     * @param  0|1|2      $failed_reconciliation
      */
     private static function reconcileBool(
         Type\Union $existing_var_type,
@@ -336,7 +336,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -344,7 +344,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return new Type\Union($non_bool_types);
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -475,7 +475,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -484,7 +484,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -542,7 +542,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -551,7 +551,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -825,7 +825,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -837,7 +837,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -926,7 +926,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -938,7 +938,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1016,7 +1016,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1028,7 +1028,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1116,7 +1116,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1128,7 +1128,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1211,7 +1211,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1223,7 +1223,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1315,7 +1315,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1327,7 +1327,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1416,7 +1416,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1428,7 +1428,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
@@ -1486,7 +1486,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$did_remove_type) {
-                $failed_reconciliation = 1;
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
             }
         }
 
@@ -1495,7 +1495,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
-        $failed_reconciliation = 2;
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getMixed();
     }
