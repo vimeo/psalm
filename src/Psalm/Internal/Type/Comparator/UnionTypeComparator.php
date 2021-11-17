@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
 
 use function array_merge;
 
@@ -59,7 +60,7 @@ class UnionTypeComparator
 
         $container_has_template = $container_type->hasTemplateOrStatic();
 
-        $input_atomic_types = \array_reverse($input_type->getAtomicTypes());
+        $input_atomic_types = \array_reverse(self::getTypeParts($codebase, $input_type));
 
         while ($input_type_part = \array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
@@ -134,7 +135,7 @@ class UnionTypeComparator
                 }
             }
 
-            foreach ($container_type->getAtomicTypes() as $container_type_part) {
+            foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
                     && !$input_type_part instanceof TNull
@@ -468,5 +469,38 @@ class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * @return list<Type\Atomic>
+     */
+    private static function getTypeParts(
+        Codebase $codebase,
+        Type\Union $union_type
+    ): array {
+        $atomic_types = [];
+        foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TTypeAlias) {
+                \array_push($atomic_types, $atomic_type);
+                continue;
+            }
+            $expanded = TypeExpander::expandAtomic(
+                $codebase,
+                $atomic_type,
+                $atomic_type->declaring_fq_classlike_name,
+                $atomic_type->declaring_fq_classlike_name,
+                null,
+                true,
+                true
+            );
+            if ($expanded instanceof Type\Atomic) {
+                \array_push($atomic_types, $expanded);
+                continue;
+            }
+
+            \array_push($atomic_types, ...$expanded);
+        }
+
+        return $atomic_types;
     }
 }
