@@ -964,6 +964,15 @@ class MethodComparator
                 $guide_method_storage_return_type,
                 $codebase
             );
+
+            if ($implementer_method_storage->defining_fqcln) {
+                self::transformTemplates(
+                    $implementer_classlike_storage->template_extended_params,
+                    $implementer_method_storage->defining_fqcln,
+                    $implementer_method_storage_return_type,
+                    $codebase
+                );
+            }
         }
 
         if ($implementer_classlike_storage->is_trait) {
