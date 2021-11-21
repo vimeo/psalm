@@ -3227,7 +3227,7 @@ return [
 'file' => ['list<string>|false', 'filename'=>'string', 'flags='=>'int', 'context='=>'resource'],
 'file_exists' => ['bool', 'filename'=>'string'],
 'file_get_contents' => ['string|false', 'filename'=>'string', 'use_include_path='=>'bool', 'context='=>'?resource', 'offset='=>'int', 'length='=>'int'],
-'file_put_contents' => ['int|false', 'filename'=>'string', 'data'=>'mixed', 'flags='=>'int', 'context='=>'resource'],
+'file_put_contents' => ['int|false', 'filename'=>'string', 'data'=>'string|resource|array<string>', 'flags='=>'int', 'context='=>'resource'],
 'fileatime' => ['int|false', 'filename'=>'string'],
 'filectime' => ['int|false', 'filename'=>'string'],
 'filegroup' => ['int|false', 'filename'=>'string'],
