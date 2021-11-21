@@ -948,18 +948,23 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
+                // if the signature type contains null, we add null into the final return type too
                 if ($storage->signature_return_type->isNullable()
                     && !$storage->return_type->isNullable()
                     && !$storage->return_type->hasTemplate()
                     && !$storage->return_type->hasConditional()
-                    //don't add null to docblock type if it's not contained in signature type
-                    && UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $storage->return_type,
-                        $storage->signature_return_type
-                    )
                 ) {
-                    $storage->return_type->addType(new Type\Atomic\TNull());
+                    //don't add null to final type if signature type don't match the docblock type
+                    // however, we can't check for object types at this point (#6931), so we'll assume it's ok
+                    if ($storage->return_type->hasObjectType() ||
+                        UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $storage->return_type,
+                            $storage->signature_return_type
+                        )
+                    ) {
+                        $storage->return_type->addType(new Type\Atomic\TNull());
+                    }
                 }
             }
 
