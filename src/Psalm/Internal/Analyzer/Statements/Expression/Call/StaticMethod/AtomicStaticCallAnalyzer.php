@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNamedObject;
 
 use function array_filter;
 use function array_map;
+use function assert;
 use function count;
 use function in_array;
 use function strtolower;
@@ -469,7 +470,9 @@ class AtomicStaticCallAnalyzer
                 true,
                 $context->insideUse()
             )) {
-                $callstatic_storage = $codebase->methods->getStorage($callstatic_id);
+                $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
+                assert($callstatic_appearing_id !== null);
+                $callstatic_storage =  $codebase->methods->getStorage($callstatic_appearing_id);
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                         $statements_analyzer,
