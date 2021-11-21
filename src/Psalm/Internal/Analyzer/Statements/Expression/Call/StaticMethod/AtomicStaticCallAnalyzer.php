@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNamedObject;
 
 use function array_filter;
 use function array_map;
+use function assert;
 use function count;
 use function in_array;
 use function strtolower;
@@ -469,6 +470,9 @@ class AtomicStaticCallAnalyzer
                 true,
                 $context->insideUse()
             )) {
+                $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
+                assert($callstatic_appearing_id !== null);
+                $callstatic_storage =  $codebase->methods->getStorage($callstatic_appearing_id);
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                         $statements_analyzer,
@@ -516,7 +520,7 @@ class AtomicStaticCallAnalyzer
                     }
 
                     if (!$context->inside_throw) {
-                        if ($context->pure && !$pseudo_method_storage->pure) {
+                        if ($context->pure && !$callstatic_storage->pure) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
                                     'Cannot call an impure method from a pure context',
@@ -526,7 +530,7 @@ class AtomicStaticCallAnalyzer
                             )) {
                                 // fall through
                             }
-                        } elseif ($context->mutation_free && !$pseudo_method_storage->mutation_free) {
+                        } elseif ($context->mutation_free&& !$callstatic_storage->mutation_free) {
                             if (IssueBuffer::accepts(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method from a mutation-free context',
@@ -539,9 +543,9 @@ class AtomicStaticCallAnalyzer
                         } elseif ($statements_analyzer->getSource()
                             instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
-                            && !$pseudo_method_storage->pure
+                            && !$callstatic_storage->pure
                         ) {
-                            if (!$pseudo_method_storage->mutation_free) {
+                            if (!$callstatic_storage->mutation_free) {
                                 $statements_analyzer->getSource()->inferred_has_mutation = true;
                             }
 
