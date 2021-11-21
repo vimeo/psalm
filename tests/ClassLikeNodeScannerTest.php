@@ -1,11 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
-use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeNodeScanner;
-use Psalm\Internal\Type\ParseTreeCreator;
 
 class ClassLikeNodeScannerTest extends \Psalm\Tests\TestCase
 {
