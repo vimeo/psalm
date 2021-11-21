@@ -27,7 +27,7 @@ class ClassLikeNodeScannerTest extends \Psalm\Tests\TestCase
                 [':', 23],
                 ['void', 25],
             ],
-            $type_aliases['TypedArrayHandler']
+            $type_aliases['TypedArrayHandler']->replacement_tokens
         );
     }
 }
