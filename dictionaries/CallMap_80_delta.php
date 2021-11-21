@@ -175,7 +175,7 @@ return [
     ],
     'count_chars' => [
       'old' => ['array<int,int>|false|string', 'input'=>'string', 'mode='=>'int'],
-      'new' => ['array<int,int>|string', 'input'=>'string', 'mode='=>'int'],
+      'new' => ['array<int,int>|string', 'string'=>'string', 'mode='=>'int'],
     ],
     'curl_close' => [
       'old' => ['void', 'ch'=>'resource'],
@@ -227,7 +227,7 @@ return [
     ],
     'curl_multi_exec' => [
       'old' => ['int', 'mh'=>'resource', '&w_still_running'=>'int'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int'],
+      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&still_running'=>'int'],
     ],
     'curl_multi_getcontent' => [
       'old' => ['string', 'ch'=>'resource'],
@@ -235,7 +235,7 @@ return [
     ],
     'curl_multi_info_read' => [
       'old' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],
-      'new' => ['array|false', 'multi_handle'=>'CurlMultiHandle', '&w_queued_messages='=>'int'],
+      'new' => ['array|false', 'multi_handle'=>'CurlMultiHandle', '&queued_messages='=>'int'],
     ],
     'curl_multi_init' => [
       'old' => ['resource|false'],
@@ -1107,7 +1107,7 @@ return [
     ],
     'parse_str' => [
       'old' => ['void', 'string'=>'string', '&w_result='=>'array'],
-      'new' => ['void', 'string'=>'string', '&w_result'=>'array'],
+      'new' => ['void', 'string'=>'string', '&result'=>'array'],
     ],
     'password_hash' => [
       'old' => ['string|false', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
@@ -1343,7 +1343,7 @@ return [
     ],
     'xml_parse_into_struct' => [
       'old' => ['int', 'parser'=>'resource', 'data'=>'string', '&w_values'=>'array', '&w_index='=>'array'],
-      'new' => ['int', 'parser'=>'XMLParser', 'data'=>'string', '&w_values'=>'array', '&w_index='=>'array'],
+      'new' => ['int', 'parser'=>'XMLParser', 'data'=>'string', '&values'=>'array', '&index='=>'array'],
     ],
     'xml_parser_create' => [
       'old' => ['resource', 'encoding='=>'string'],
