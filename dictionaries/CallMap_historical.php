@@ -6821,7 +6821,7 @@ return [
     'SoapClient::SoapClient' => ['object', 'wsdl'=>'mixed', 'options='=>'array|null'],
     'SoapClient::__call' => ['', 'function_name'=>'string', 'arguments'=>'array'],
     'SoapClient::__construct' => ['void', 'wsdl'=>'mixed', 'options='=>'array|null'],
-    'SoapClient::__doRequest' => ['string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'int'],
+    'SoapClient::__doRequest' => ['?string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'int'],
     'SoapClient::__getCookies' => ['array'],
     'SoapClient::__getFunctions' => ['array'],
     'SoapClient::__getLastRequest' => ['string'],

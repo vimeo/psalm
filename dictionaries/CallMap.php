@@ -12223,7 +12223,7 @@ return [
 'snmpwalkoid' => ['array|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
 'SoapClient::__call' => ['', 'function_name'=>'string', 'arguments'=>'array'],
 'SoapClient::__construct' => ['void', 'wsdl'=>'mixed', 'options='=>'array|null'],
-'SoapClient::__doRequest' => ['string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'bool'],
+'SoapClient::__doRequest' => ['?string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'bool'],
 'SoapClient::__getCookies' => ['array'],
 'SoapClient::__getFunctions' => ['array'],
 'SoapClient::__getLastRequest' => ['string'],
