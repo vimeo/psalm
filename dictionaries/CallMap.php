@@ -15151,7 +15151,7 @@ return [
 'urlencode' => ['string', 'string'=>'string'],
 'use_soap_error_handler' => ['bool', 'enable='=>'bool'],
 'user_error' => ['void', 'message'=>'string', 'error_level='=>'int'],
-'usleep' => ['void', 'microseconds'=>'positive-int'],
+'usleep' => ['void', 'microseconds'=>'positive-int|0'],
 'usort' => ['bool', '&rw_array'=>'array', 'callback'=>'callable(mixed,mixed):int'],
 'utf8_decode' => ['string', 'string'=>'string'],
 'utf8_encode' => ['string', 'string'=>'string'],
