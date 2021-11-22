@@ -112,6 +112,7 @@ class MethodCallPurityAnalyzer
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
                     && !$method_storage->if_false_assertions
+                    && !$method_storage->throws
                 ) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\UnusedMethodCall(
