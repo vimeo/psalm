@@ -14899,7 +14899,7 @@ return [
     'sin' => ['float', 'num'=>'float'],
     'sinh' => ['float', 'num'=>'float'],
     'sizeof' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
-    'sleep' => ['int|false', 'seconds'=>'positive-int'],
+    'sleep' => ['int|false', 'seconds'=>'0|positive-int'],
     'snmp2_get' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
     'snmp2_getnext' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
     'snmp2_real_walk' => ['array|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
