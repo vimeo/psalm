@@ -1,5 +1,5 @@
 {
-    "name": "vimeo/psalm",
+    "name": "ricardoboss/psalm",
     "type": "library",
     "description": "A static analysis tool for finding errors in PHP applications",
     "keywords": [
@@ -39,6 +39,9 @@
     },
     "provide": {
         "psalm/psalm": "self.version"
+    },
+    "replace": {
+        "vimeo/psalm": "self.version"
     },
     "require-dev": {
         "ext-curl": "*",
