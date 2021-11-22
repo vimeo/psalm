@@ -1,6 +1,9 @@
 <?php
 namespace {
     interface UnitEnum {
+        /** @var non-empty-string $name */
+        public readonly string $name;
+    
         /** @return non-empty-list<static> */
         public static function cases(): array;
     }
