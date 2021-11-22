@@ -134,7 +134,7 @@ class IteratorIterator implements OuterIterator {
  * @template TValue
  * @template TIterator as Traversable<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class AppendIterator extends IteratorIterator {
     public function __construct(){}
@@ -341,11 +341,12 @@ class FilterIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class CachingIterator extends IteratorIterator implements OuterIterator , ArrayAccess , Countable  {
     const CALL_TOSTRING = 1 ;
@@ -529,8 +530,9 @@ class GlobIterator extends FilesystemIterator implements Countable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class InfiniteIterator extends IteratorIterator {
     /**
@@ -554,10 +556,11 @@ class InfiniteIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
@@ -583,8 +586,9 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class NoRewindIterator extends IteratorIterator {
     /**
