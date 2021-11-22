@@ -319,8 +319,9 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue>
+ * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
 class FilterIterator extends IteratorIterator {
     /** @return bool */
@@ -379,10 +380,11 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
- * @template-extends FilterIterator<TKey, TValue>
+ * @template-extends FilterIterator<TKey, TValue, TIterator>
  */
 class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
     /**
@@ -829,9 +831,10 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
  * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends CallbackFilterIterator<TKey, TValue>
+ * @template-extends CallbackFilterIterator<TKey, TValue, TIterator>
  */
 class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements RecursiveIterator {
 
@@ -841,7 +844,7 @@ class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements 
      */
     public function __construct(RecursiveIterator $iterator, callable $callback) {}
     /**
-     * @return RecursiveCallbackFilterIterator<TKey, TValue>
+     * @return RecursiveCallbackFilterIterator<TKey, TValue, TIterator>
      */
     public function getChildren() {}
 
