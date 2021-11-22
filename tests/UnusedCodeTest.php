@@ -1162,7 +1162,6 @@ class UnusedCodeTest extends TestCase
                     $a = new A();
                     echo $a->getVal(null);',
             ],
-            ,
             'NotUnusedWhenThrows' => [
                 '<?php
                     declare(strict_types=1);
