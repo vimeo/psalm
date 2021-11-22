@@ -980,9 +980,7 @@ class MethodComparator
                 $implementer_called_class_name
             );
 
-            if (isset(
-                $implementer_called_class_storage->template_extended_params[$implementer_classlike_storage->name]
-            )) {
+            if ($implementer_called_class_storage->template_extended_params) {
                 self::transformTemplates(
                     $implementer_called_class_storage->template_extended_params,
                     $implementer_classlike_storage->name,
