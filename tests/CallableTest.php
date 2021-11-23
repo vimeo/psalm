@@ -1219,6 +1219,18 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'inexistantCallableinCallableString' => [
+                '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function c(string $c): void {
+                        $c();
+                    }
+
+                    c("hii");',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
