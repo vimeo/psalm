@@ -973,6 +973,7 @@ class TypeParseTest extends TestCase
             }
         }
 
+        /** @psalm-suppress InvalidArgument Psalm couldn't detect the function exists */
         $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');
         $reflectionParams = $reflectionFunc->getParameters();
 

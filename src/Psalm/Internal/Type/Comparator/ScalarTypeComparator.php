@@ -582,6 +582,11 @@ class ScalarTypeComparator
                 }
             }
 
+            if (!$input_callable) {
+                //we could not find a callable for the input type, so the input is not contained in the container
+                return false;
+            }
+
             return true;
         }
 
