@@ -811,7 +811,7 @@ class Config
                 self::CONFIG_NAMESPACE,
                 $deprecated_element
             );
-            if ($deprecated_elements_xml->count()) {
+            if ($deprecated_elements_xml->length) {
                 $deprecated_element_xml = $deprecated_elements_xml->item(0);
                 assert($deprecated_element_xml !== null);
                 $line = $deprecated_element_xml->getLineNo();
