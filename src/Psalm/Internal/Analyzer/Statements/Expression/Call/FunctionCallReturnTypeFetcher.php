@@ -341,10 +341,18 @@ class FunctionCallReturnTypeFetcher
                                     $min = 0;
                                     $max = 0;
                                     foreach ($atomic_types['array']->properties as $property) {
-                                        if (!$property->possibly_undefined) {
+                                        // empty, never and possibly undefined can't count for min value
+                                        if (!$property->possibly_undefined
+                                            && !$property->isEmpty()
+                                            && !$property->isNever()
+                                        ) {
                                             $min++;
                                         }
-                                        $max++;
+
+                                        //empty and never can't count for max value because we know keys are undefined
+                                        if (!$property->isEmpty() && !$property->isNever()) {
+                                            $max++;
+                                        }
                                     }
 
                                     if ($atomic_types['array']->sealed) {
