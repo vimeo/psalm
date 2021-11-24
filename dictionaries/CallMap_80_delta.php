@@ -909,13 +909,37 @@ return [
       'old' => ['void', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
       'new' => ['void', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
     ],
+    'mysqli::begin_transaction' => [
+      'old' => ['bool', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'flags='=>'int', 'name='=>'?string'],
+    ],
+    'mysqli::commit' => [
+      'old' => ['bool', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'flags='=>'int', 'name='=>'?string'],
+    ],
     'mysqli::connect' => [
       'old' => ['null|false', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
       'new' => ['null|false', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
     ],
+    'mysqli::rollback' => [
+      'old' => ['bool', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'flags='=>'int', 'name='=>'?string'],
+    ],
+    'mysqli_begin_transaction' => [
+      'old' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'?string'],
+    ],
+    'mysqli_commit' => [
+      'old' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'?string'],
+    ],
     'mysqli_connect' => [
       'old' => ['mysqli|false', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
       'new' => ['mysqli|false', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
+    ],
+    'mysqli_rollback' => [
+      'old' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'string'],
+      'new' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'?string'],
     ],
     'openssl_pkey_get_private' => [
       'old' => ['resource|false', 'private_key'=>'string', 'passphrase='=>'string'],
