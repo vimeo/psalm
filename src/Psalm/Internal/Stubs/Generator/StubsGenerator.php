@@ -385,6 +385,10 @@ class StubsGenerator
 
                 return new VirtualArray($new_items);
             }
+
+            if ($atomic_type instanceof Type\Atomic\TEnumCase) {
+                return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier($atomic_type->case_name));
+            }
         }
 
         return new VirtualString('Psalm could not infer this type');
