@@ -282,7 +282,7 @@ return [
     'mysqli_result' => [
         'current_field'  => 'int',
         'field_count' => 'int',
-        'lengths' => 'array',
+        'lengths' => 'array|null',
         'num_rows' => 'int',
         'type' => 'mixed',
     ],
