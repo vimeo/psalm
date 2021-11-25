@@ -631,6 +631,38 @@ class TaintTest extends TestCase
 
                     echo bar();'
             ],
+            'NoTaintForIntTypeHintUsingAnnotatedSink' => [
+                '<?php // --taint-analysis
+                    function fetch(int $id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . $id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+
+                    $value = $_GET["value"];
+                    $result = fetch($value);'
+            ],
+            'NoTaintForIntTypeCastUsingAnnotatedSink' => [
+                '<?php // --taint-analysis
+                    function fetch($id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . (int)$id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+
+                    $value = $_GET["value"];
+                    $result = fetch($value);'
+            ],
             'conditionallyEscapedTaintPassedTrueStaticCall' => [
                 '<?php
                     class U {
