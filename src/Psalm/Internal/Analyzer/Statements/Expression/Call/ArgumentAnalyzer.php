@@ -1505,10 +1505,10 @@ class ArgumentAnalyzer
             return $input_type;
         }
 
-        // numeric types can't be tainted
+        // numeric types can't be tainted, neither can bool
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && $input_type->isSingle()
-            && ($input_type->isInt() || $input_type->isFloat())
+            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
         ) {
             return $input_type;
         }
