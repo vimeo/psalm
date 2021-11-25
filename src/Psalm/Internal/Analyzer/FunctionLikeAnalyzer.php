@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -1032,7 +1033,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($statements_analyzer->data_flow_graph
                 && $function_param->location
             ) {
-                if ($function_param->type === null
+                //don't add to taint flow graph if the type can't transmit taints
+                if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    || $function_param->type === null
                     || !$function_param->type->isSingle()
                     || (!$function_param->type->isInt()
                         && !$function_param->type->isFloat()
