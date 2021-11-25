@@ -1032,40 +1032,47 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($statements_analyzer->data_flow_graph
                 && $function_param->location
             ) {
-                $param_assignment = DataFlowNode::getForAssignment(
-                    '$' . $function_param->name,
-                    $function_param->location
-                );
-
-                $statements_analyzer->data_flow_graph->addNode($param_assignment);
-
-                if ($cased_method_id) {
-                    $type_source = DataFlowNode::getForMethodArgument(
-                        $cased_method_id,
-                        $cased_method_id,
-                        $offset,
-                        $function_param->location,
-                        null
-                    );
-
-                    $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
-                }
-
-                if ($function_param->by_ref
-                    && $codebase->find_unused_variables
+                if ($function_param->type === null
+                    || !$function_param->type->isSingle()
+                    || (!$function_param->type->isInt()
+                        && !$function_param->type->isFloat()
+                        && !$function_param->type->isBool())
                 ) {
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $param_assignment,
-                        new DataFlowNode('variable-use', 'variable use', null),
-                        'variable-use'
+                    $param_assignment = DataFlowNode::getForAssignment(
+                        '$' . $function_param->name,
+                        $function_param->location
                     );
-                }
 
-                if ($storage->variadic) {
-                    $this->param_nodes += [$param_assignment->id => $param_assignment];
-                }
+                    $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
-                $var_type->parent_nodes += [$param_assignment->id => $param_assignment];
+                    if ($cased_method_id) {
+                        $type_source = DataFlowNode::getForMethodArgument(
+                            $cased_method_id,
+                            $cased_method_id,
+                            $offset,
+                            $function_param->location,
+                            null
+                        );
+
+                        $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
+                    }
+
+                    if ($function_param->by_ref
+                        && $codebase->find_unused_variables
+                    ) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $param_assignment,
+                            new DataFlowNode('variable-use', 'variable use', null),
+                            'variable-use'
+                        );
+                    }
+
+                    if ($storage->variadic) {
+                        $this->param_nodes += [$param_assignment->id => $param_assignment];
+                    }
+
+                    $var_type->parent_nodes += [$param_assignment->id => $param_assignment];
+                }
             }
 
             $context->vars_in_scope['$' . $function_param->name] = $var_type;
