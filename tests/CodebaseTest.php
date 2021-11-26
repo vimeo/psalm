@@ -143,7 +143,10 @@ class CodebaseTest extends TestCase
             '
         );
         $hook = new class implements AfterClassLikeVisitInterface {
-            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+            /**
+             * @return void
+             */
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
             {
                 $stmt = $event->getStmt();
                 $storage = $event->getStorage();

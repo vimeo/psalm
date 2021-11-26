@@ -540,7 +540,8 @@ class PluginTest extends \Psalm\Tests\TestCase
         );
 
         $hook = new class implements AfterCodebasePopulatedInterface {
-            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+            /** @return void */
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }
         };

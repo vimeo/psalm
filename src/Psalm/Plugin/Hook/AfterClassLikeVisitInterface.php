@@ -12,6 +12,8 @@ interface AfterClassLikeVisitInterface
 {
     /**
      * @param  FileManipulation[] $file_replacements
+     *
+     * @return void
      */
     public static function afterClassLikeVisit(
         ClassLike $stmt,
@@ -19,5 +21,5 @@ interface AfterClassLikeVisitInterface
         FileSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
-    ): void;
+    );
 }

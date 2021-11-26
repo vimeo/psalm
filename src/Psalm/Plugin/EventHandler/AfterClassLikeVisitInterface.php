@@ -5,5 +5,8 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 
 interface AfterClassLikeVisitInterface
 {
-    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void;
+    /**
+     * @return void
+     */
+    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event);
 }
