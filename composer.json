@@ -104,10 +104,10 @@
     "scripts": {
         "all-tests": [
             "phpcs",
-            "./psalm --find-dead-code",
+            "@php ./psalm --find-dead-code",
             "phpunit"
         ],
-        "psalm": "./psalm --find-dead-code",
+        "psalm": "@php ./psalm --find-dead-code",
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
         "tests": [
