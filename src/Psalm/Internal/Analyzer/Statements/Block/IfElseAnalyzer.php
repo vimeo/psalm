@@ -130,10 +130,10 @@ class IfElseAnalyzer
             $if_clauses = [];
         }
 
-        $if_clauses =             array_map(
-                /**
-                 * @return Clause
-                 */
+        $if_clauses = array_map(
+            /**
+             * @return Clause
+             */
             function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
                 $keys = array_keys($c->possibilities);
 
