@@ -50,6 +50,7 @@ class UnsetAnalyzer
                                 || $var->dim instanceof PhpParser\Node\Scalar\LNumber
                             ) {
                                 if (isset($atomic_root_type->properties[$var->dim->value])) {
+                                    $atomic_root_type->is_list = false;
                                     unset($atomic_root_type->properties[$var->dim->value]);
                                     $root_type->bustCache(); //remove id cache
                                 }
