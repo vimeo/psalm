@@ -12,10 +12,7 @@ class MethodSignatureTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
     use Traits\InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testExtendSoapClientWithDocblockTypes()
+    public function testExtendSoapClientWithDocblockTypes(): void
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
@@ -49,10 +46,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testExtendSoapClientWithNoDocblockTypes()
+    public function testExtendSoapClientWithNoDocblockTypes(): void
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
@@ -78,10 +72,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testExtendSoapClientWithParamType()
+    public function testExtendSoapClientWithParamType(): void
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
@@ -250,10 +241,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return void
-     */
-    public function testExtendDocblockParamTypeWithWrongDocblockParam()
+    public function testExtendDocblockParamTypeWithWrongDocblockParam(): void
     {
         $this->expectExceptionMessage('ImplementedParamTypeMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);

@@ -27,15 +27,13 @@ trait ValidCodeAnalysisTestTrait
      * @param array<string|int, string> $error_levels
      *
      * @small
-     *
-     * @return void
      */
     public function testValidCode(
         $code,
         $assertions = [],
         $error_levels = [],
         string $php_version = '7.3'
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP73-') !== false) {
             if (version_compare(PHP_VERSION, '7.3.0', '<')) {

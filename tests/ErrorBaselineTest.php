@@ -24,10 +24,7 @@ class ErrorBaselineTest extends TestCase
         $this->fileProvider = $this->prophesize(FileProvider::class);
     }
 
-    /**
-     * @return void
-     */
-    public function testLoadShouldParseXmlBaselineToPhpArray()
+    public function testLoadShouldParseXmlBaselineToPhpArray(): void
     {
         $baselineFilePath = 'baseline.xml';
 
@@ -95,10 +92,7 @@ class ErrorBaselineTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testLoadShouldThrowExceptionWhenFilesAreNotDefinedInBaselineFile()
+    public function testLoadShouldThrowExceptionWhenFilesAreNotDefinedInBaselineFile(): void
     {
         $this->expectException(ConfigException::class);
 
@@ -115,10 +109,7 @@ class ErrorBaselineTest extends TestCase
         ErrorBaseline::read($this->fileProvider->reveal(), $baselineFile);
     }
 
-    /**
-     * @return void
-     */
-    public function testLoadShouldThrowExceptionWhenBaselineFileDoesNotExist()
+    public function testLoadShouldThrowExceptionWhenBaselineFileDoesNotExist(): void
     {
         $this->expectException(ConfigException::class);
 
@@ -129,10 +120,7 @@ class ErrorBaselineTest extends TestCase
         ErrorBaseline::read($this->fileProvider->reveal(), $baselineFile);
     }
 
-    /**
-     * @return void
-     */
-    public function testCountTotalIssuesShouldReturnCorrectNumber()
+    public function testCountTotalIssuesShouldReturnCorrectNumber(): void
     {
         $existingIssues = [
             'sample/sample-file.php' => [
@@ -149,10 +137,7 @@ class ErrorBaselineTest extends TestCase
         $this->assertSame($totalIssues, 5);
     }
 
-    /**
-     * @return void
-     */
-    public function testCreateShouldAggregateIssuesPerFile()
+    public function testCreateShouldAggregateIssuesPerFile(): void
     {
         $baselineFile = 'baseline.xml';
 
@@ -342,10 +327,7 @@ class ErrorBaselineTest extends TestCase
         $this->assertSame('1', $file2Issues[1]->getAttribute('occurrences'));
     }
 
-    /**
-     * @return void
-     */
-    public function testUpdateShouldRemoveExistingIssuesWithoutAddingNewOnes()
+    public function testUpdateShouldRemoveExistingIssuesWithoutAddingNewOnes(): void
     {
         $baselineFile = 'baseline.xml';
 
@@ -481,10 +463,7 @@ class ErrorBaselineTest extends TestCase
         ], $remainingBaseline);
     }
 
-    /**
-     * @return void
-     */
-    public function testAddingACommentInBaselineDoesntTriggerNotice()
+    public function testAddingACommentInBaselineDoesntTriggerNotice(): void
     {
         $baselineFilePath = 'baseline.xml';
 

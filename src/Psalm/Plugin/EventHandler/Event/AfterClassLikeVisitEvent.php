@@ -34,8 +34,6 @@ class AfterClassLikeVisitEvent
 
     /**
      * @param  FileManipulation[] $file_replacements
-     *
-     * @return void
      */
     public function __construct(
         ClassLike $stmt,

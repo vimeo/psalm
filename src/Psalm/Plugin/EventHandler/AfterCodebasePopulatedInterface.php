@@ -7,8 +7,6 @@ interface AfterCodebasePopulatedInterface
 {
     /**
      * Called after codebase has been populated
-     *
-     * @return void
      */
-    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event);
+    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void;
 }

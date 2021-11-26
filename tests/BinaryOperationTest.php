@@ -10,10 +10,7 @@ class BinaryOperationTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testGMPOperations()
+    public function testGMPOperations(): void
     {
         if (class_exists('GMP') === false) {
             $this->markTestSkipped('Cannot run test, base class "GMP" does not exist!');

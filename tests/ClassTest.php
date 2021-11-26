@@ -8,10 +8,7 @@ class ClassTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testExtendsMysqli()
+    public function testExtendsMysqli(): void
     {
         if (class_exists('mysqli') === false) {
             $this->markTestSkipped('Cannot run test, base class "mysqli" does not exist!');
