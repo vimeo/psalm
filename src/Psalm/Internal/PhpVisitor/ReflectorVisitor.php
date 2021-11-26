@@ -40,11 +40,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     private $aliases;
 
     /**
-     * @var string[]
-     */
-    private $fq_classlike_names = [];
-
-    /**
      * @var FileScanner
      */
     private $file_scanner;
@@ -288,7 +283,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
-            if (!$this->fq_classlike_names && !$this->functionlike_node_scanners) {
+            if (!$this->functionlike_node_scanners) {
                 $this->exists_cond_expr = $node->cond;
 
                 if (Reflector\ExpressionResolver::enterConditional(
