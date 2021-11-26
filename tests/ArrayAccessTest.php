@@ -1024,6 +1024,13 @@ class ArrayAccessTest extends TestCase
                         return $p["name"];
                     }'
             ],
+            'unsetListKeyedArrayDisableListFlag' => [
+                '<?php
+                $a = ["a", "b"];
+                unset($a[0]);
+                ',
+                'assertions' => ['$a===' => 'array{1: "b"}']
+            ],
         ];
     }
 
