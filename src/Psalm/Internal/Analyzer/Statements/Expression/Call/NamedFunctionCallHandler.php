@@ -364,6 +364,39 @@ class NamedFunctionCallHandler
             return;
         }
 
+        if ($first_arg && $function_id === 'array_values') {
+            $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
+
+            if ($first_arg_type
+                && UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $first_arg_type,
+                    Type::getList()
+                )
+            ) {
+                if ($first_arg_type->from_docblock) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\RedundantCastGivenDocblockType(
+                            'The call to array_values is unnecessary given the docblock type',
+                            new CodeLocation($statements_analyzer, $function_name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\RedundantCast(
+                            'The call to array_values is unnecessary',
+                            new CodeLocation($statements_analyzer, $function_name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
         if ($first_arg && $function_id === 'strtolower') {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
