@@ -7,6 +7,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 
+use function array_is_list;
+
 class UnsetAnalyzer
 {
     public static function analyze(
@@ -50,8 +52,8 @@ class UnsetAnalyzer
                                 || $var->dim instanceof PhpParser\Node\Scalar\LNumber
                             ) {
                                 if (isset($atomic_root_type->properties[$var->dim->value])) {
-                                    $atomic_root_type->is_list = false;
                                     unset($atomic_root_type->properties[$var->dim->value]);
+                                    $atomic_root_type->is_list = array_is_list($atomic_root_type->properties);
                                     $root_type->bustCache(); //remove id cache
                                 }
 

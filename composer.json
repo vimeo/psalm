@@ -35,6 +35,7 @@
         "openlss/lib-array2xml": "^1.0",
         "sebastian/diff": "^3.0 || ^4.0",
         "symfony/console": "^3.4.17 || ^4.1.6 || ^5.0 || ^6.0",
+        "symfony/polyfill-php81": "^1.23",
         "webmozart/path-util": "^2.3"
     },
     "provide": {
