@@ -377,7 +377,7 @@ class NamedFunctionCallHandler
                 if ($first_arg_type->from_docblock) {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\RedundantCastGivenDocblockType(
-                            'The call to array_values is unnecessary given the docblock type',
+                            'The call to array_values is unnecessary given the list docblock type '.$first_arg_type,
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -387,7 +387,7 @@ class NamedFunctionCallHandler
                 } else {
                     if (IssueBuffer::accepts(
                         new \Psalm\Issue\RedundantCast(
-                            'The call to array_values is unnecessary',
+                            'The call to array_values is unnecessary, '.$first_arg_type.' is already a list',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()

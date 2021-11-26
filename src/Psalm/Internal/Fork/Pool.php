@@ -387,7 +387,7 @@ class Pool
             }
         }
 
-        return array_values($terminationMessages);
+        return $terminationMessages;
     }
 
     /**

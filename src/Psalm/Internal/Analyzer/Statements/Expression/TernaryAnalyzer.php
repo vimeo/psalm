@@ -83,28 +83,26 @@ class TernaryAnalyzer
             }
         }
 
-        $if_clauses = array_values(
-            array_map(
+        $if_clauses = array_map(
                 /**
                  * @return \Psalm\Internal\Clause
                  */
-                function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $cond_id): \Psalm\Internal\Clause {
-                    $keys = array_keys($c->possibilities);
+            function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $cond_id): \Psalm\Internal\Clause {
+                $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new \Psalm\Internal\Clause([], $cond_id, $cond_id, true);
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return new \Psalm\Internal\Clause([], $cond_id, $cond_id, true);
                         }
                     }
+                }
 
-                    return $c;
-                },
-                $if_clauses
-            )
+                return $c;
+            },
+            $if_clauses
         );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
