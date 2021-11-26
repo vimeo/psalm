@@ -140,10 +140,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
-    /**
-     * @return void
-     */
-    public function testIgnoreSymlinkedProjectDirectory()
+    public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
 
@@ -1378,8 +1375,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->assertFalse($this->project_analyzer->getConfig()->use_phpstorm_meta_path);
     }
 
-    /** @return void */
-    public function testSetsUniversalObjectCrates()
+    public function testSetsUniversalObjectCrates(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(

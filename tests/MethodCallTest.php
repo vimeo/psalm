@@ -10,10 +10,7 @@ class MethodCallTest extends TestCase
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return void
-     */
-    public function testExtendDocblockParamType()
+    public function testExtendDocblockParamType(): void
     {
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');

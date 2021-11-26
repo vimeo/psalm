@@ -26,8 +26,6 @@ trait InvalidCodeAnalysisTestTrait
      * @param string $error_message
      * @param array<int|string, string> $error_levels
      * @param bool $strict_mode
-     *
-     * @return void
      */
     public function testInvalidCode(
         $code,
@@ -35,7 +33,7 @@ trait InvalidCodeAnalysisTestTrait
         $error_levels = [],
         $strict_mode = false,
         string $php_version = '7.3'
-    ) {
+    ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP71-') !== false) {
             if (version_compare(PHP_VERSION, '7.1.0', '<')) {

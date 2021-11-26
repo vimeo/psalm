@@ -119,9 +119,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
     }
 
-    /**
-     * @return void
-     */
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null
