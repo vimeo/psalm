@@ -332,8 +332,7 @@ final class Psalm
             $progress
         );
 
-        self::initPhpVersion($options, $config, $project_analyzer);
-
+        CliUtils::initPhpVersion($options, $config, $project_analyzer);
 
         $start_time = microtime(true);
 
@@ -1068,21 +1067,6 @@ final class Psalm
                     $flow_graph->summarizeEdges()
                 )) .
                 "\n}\n");
-        }
-    }
-
-    private static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
-    {
-        if (!isset($options['php-version'])) {
-            $options['php-version'] = $config->getPhpVersion();
-        }
-
-        if (isset($options['php-version'])) {
-            if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
-            }
-
-            $project_analyzer->setPhpVersion($options['php-version']);
         }
     }
 

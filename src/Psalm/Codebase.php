@@ -278,6 +278,9 @@ class Codebase
      */
     public $php_minor_version = PHP_MINOR_VERSION;
 
+    /** @var 'cli'|'config'|'composer'|'tests'|'runtime' */
+    public $php_version_source = 'runtime';
+
     /**
      * @var bool
      */

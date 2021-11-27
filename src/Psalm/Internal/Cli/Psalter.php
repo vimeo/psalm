@@ -281,17 +281,7 @@ HELP;
             $keyed_issues = [];
         }
 
-        if (!isset($options['php-version'])) {
-            $options['php-version'] = $config->getPhpVersion();
-        }
-
-        if (isset($options['php-version'])) {
-            if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
-            }
-
-            $project_analyzer->setPhpVersion($options['php-version']);
-        }
+        CliUtils::initPhpVersion($options, $config, $project_analyzer);
 
         if (isset($options['codeowner'])) {
             $codeowner_files = self::loadCodeowners($providers);

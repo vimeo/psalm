@@ -68,7 +68,7 @@ trait ValidCodeAnalysisTestTrait
 
         $context = new Context();
 
-        $this->project_analyzer->setPhpVersion($php_version);
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->config->visitPreloadedStubFiles($codebase);

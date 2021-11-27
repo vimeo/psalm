@@ -23,7 +23,7 @@ class ValueTest extends \Psalm\Tests\TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
