@@ -6,8 +6,10 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
+use function basename;
 use function get_cfg_var;
 use function ini_get;
+use function strlen;
 use function strtr;
 use function substr;
 
@@ -118,6 +120,15 @@ class ConsoleReport extends Report
             return $reference;
         }
 
+        $file_basename = basename($data->file_name);
+        $file_path = substr($data->file_name, 0, -strlen($file_basename));
+
+        $reference = $file_path
+            . "\033[1;31m"
+            . $file_basename . ':' . $data->line_from . ':' . $data->column_from
+            . "\033[0m"
+        ;
+
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
             $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
@@ -126,6 +137,7 @@ class ConsoleReport extends Report
 
         $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);
         // $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
+
 
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }

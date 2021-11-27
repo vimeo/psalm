@@ -1079,7 +1079,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
         $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
 
         $this->assertStringContainsString(
-            "\033]8;;file://somefile.php#L3\033\\somefile.php:3:10\033]8;;\033\\",
+            "\033]8;;file://somefile.php#L3\033\\\033[1;31msomefile.php:3:10\033[0m\033]8;;\033\\",
             $output
         );
     }
