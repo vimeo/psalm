@@ -210,53 +210,43 @@ class ClassConstFetchAnalyzer
 
             $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-            if ($const_class_storage->is_enum) {
-                if (isset($const_class_storage->enum_cases[$stmt->name->name])) {
-                    $class_constant_type = new Type\Union([
-                        new Type\Atomic\TEnumCase($fq_class_name, $stmt->name->name)
-                    ]);
-                } else {
-                    $class_constant_type = null;
-                }
+            if ($fq_class_name === $context->self
+                || (
+                    $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
+                    $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
+                )
+            ) {
+                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+            } elseif ($context->self &&
+                ($codebase->classlikes->classExtends($context->self, $fq_class_name)
+                    || $codebase->classlikes->classExtends($fq_class_name, $context->self))
+            ) {
+                $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
-                if ($fq_class_name === $context->self
-                    || (
-                        $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
-                        $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
-                    )
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ($codebase->classlikes->classExtends($context->self, $fq_class_name)
-                        || $codebase->classlikes->classExtends($fq_class_name, $context->self))
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+            }
+
+            try {
+                $class_constant_type = $codebase->classlikes->getClassConstantType(
+                    $fq_class_name,
+                    $stmt->name->name,
+                    $class_visibility,
+                    $statements_analyzer
+                );
+            } catch (\InvalidArgumentException $_) {
+                return true;
+            } catch (\Psalm\Exception\CircularReferenceException $e) {
+                if (IssueBuffer::accepts(
+                    new CircularReference(
+                        'Constant ' . $const_id . ' contains a circular reference',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
 
-                try {
-                    $class_constant_type = $codebase->classlikes->getClassConstantType(
-                        $fq_class_name,
-                        $stmt->name->name,
-                        $class_visibility,
-                        $statements_analyzer
-                    );
-                } catch (\InvalidArgumentException $_) {
-                    return true;
-                } catch (\Psalm\Exception\CircularReferenceException $e) {
-                    if (IssueBuffer::accepts(
-                        new CircularReference(
-                            'Constant ' . $const_id . ' contains a circular reference',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    return true;
-                }
+                return true;
             }
 
             if (!$class_constant_type) {
@@ -519,53 +509,43 @@ class ClassConstFetchAnalyzer
 
             $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-            if ($const_class_storage->is_enum) {
-                if (isset($const_class_storage->enum_cases[$stmt->name->name])) {
-                    $class_constant_type = new Type\Union([
-                        new Type\Atomic\TEnumCase($fq_class_name, $stmt->name->name)
-                    ]);
-                } else {
-                    $class_constant_type = null;
-                }
+            if ($fq_class_name === $context->self
+                || (
+                    $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
+                    $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
+                )
+            ) {
+                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+            } elseif ($context->self &&
+                ($codebase->classlikes->classExtends($context->self, $fq_class_name)
+                    || $codebase->classlikes->classExtends($fq_class_name, $context->self))
+            ) {
+                $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {
-                if ($fq_class_name === $context->self
-                    || (
-                        $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
-                        $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
-                    )
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PRIVATE;
-                } elseif ($context->self &&
-                    ($codebase->classlikes->classExtends($context->self, $fq_class_name)
-                        || $codebase->classlikes->classExtends($fq_class_name, $context->self))
-                ) {
-                    $class_visibility = \ReflectionProperty::IS_PROTECTED;
-                } else {
-                    $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+            }
+
+            try {
+                $class_constant_type = $codebase->classlikes->getClassConstantType(
+                    $fq_class_name,
+                    $stmt->name->name,
+                    $class_visibility,
+                    $statements_analyzer
+                );
+            } catch (\InvalidArgumentException $_) {
+                return true;
+            } catch (\Psalm\Exception\CircularReferenceException $e) {
+                if (IssueBuffer::accepts(
+                    new CircularReference(
+                        'Constant ' . $const_id . ' contains a circular reference',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
 
-                try {
-                    $class_constant_type = $codebase->classlikes->getClassConstantType(
-                        $fq_class_name,
-                        $stmt->name->name,
-                        $class_visibility,
-                        $statements_analyzer
-                    );
-                } catch (\InvalidArgumentException $_) {
-                    return true;
-                } catch (\Psalm\Exception\CircularReferenceException $e) {
-                    if (IssueBuffer::accepts(
-                        new CircularReference(
-                            'Constant ' . $const_id . ' contains a circular reference',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-
-                    return true;
-                }
+                return true;
             }
 
             if (!$class_constant_type) {
