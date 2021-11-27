@@ -194,6 +194,33 @@ class EnumTest extends TestCase
                 [],
                 '8.1',
             ],
+            'constantOfAVariableEnumClassString' => [
+                '<?php
+                    enum A { const C = 3; }
+                    $e = A::class;
+                    $_z = $e::C;
+                ',
+                'assertions' => [
+                    '$_z===' => '3',
+                ],
+                [],
+                '8.1',
+            ],
+            'constantOfAVariableEnumInstance' => [
+                '<?php
+                    enum A {
+                        const C = 3;
+                        case AA;
+                    }
+                    $e = A::AA;
+                    $_z = $e::C;
+                ',
+                'assertions' => [
+                    '$_z===' => '3',
+                ],
+                [],
+                '8.1',
+            ],
             'EnumCaseInAttribute' => [
                 '<?php
                     class CreateController {
