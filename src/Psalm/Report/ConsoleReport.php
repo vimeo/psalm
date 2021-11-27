@@ -124,9 +124,9 @@ class ConsoleReport extends Report
         $file_path = substr($data->file_name, 0, -strlen($file_basename));
 
         $reference = $file_path
-            . "\e[1;31m"
+            . "\033[1;31m"
             . $file_basename . ':' . $data->line_from . ':' . $data->column_from
-            . "\e[0m"
+            . "\033[0m"
         ;
 
         if (null === $this->link_format) {
