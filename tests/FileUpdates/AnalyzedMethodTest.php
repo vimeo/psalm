@@ -36,7 +36,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             $config,
             $providers
         );
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**

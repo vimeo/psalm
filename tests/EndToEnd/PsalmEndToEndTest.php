@@ -115,11 +115,35 @@ class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit(1);
         $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 7.1 (inferred from composer.json)',
+            $result['STDERR']
+        );
         $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    public function testPsalmWithPHPVersionOverride(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--php-version=8.0'], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.0 (set by CLI argument)',
+            $result['STDERR']
+        );
+    }
+
+    public function testPsalmWithPHPVersionFromConfig(): void
+    {
+        $this->runPsalmInit(1, '7.4');
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 7.4 (set by config file)',
+            $result['STDERR']
+        );
     }
 
     public function testPsalmDiff(): void
@@ -212,7 +236,7 @@ class PsalmEndToEndTest extends TestCase
     /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
-    private function runPsalmInit(?int $level = null): array
+    private function runPsalmInit(?int $level = null, ?string $php_version = null): array
     {
         $args = ['--init'];
 
@@ -226,7 +250,9 @@ class PsalmEndToEndTest extends TestCase
         $psalm_config_contents = file_get_contents(self::$tmpDir . '/psalm.xml');
         $psalm_config_contents = \str_replace(
             'errorLevel="1"',
-            'errorLevel="1" cacheDirectory="' . self::$tmpDir . '/cache"',
+            'errorLevel="1" '
+            . 'cacheDirectory="' . self::$tmpDir . '/cache" '
+            . ($php_version ? ('phpVersion="' . $php_version . '"') : ''),
             $psalm_config_contents
         );
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalm_config_contents);

@@ -136,7 +136,7 @@ class VariadicTest extends TestCase
                 new Provider\FakeParserCacheProvider()
             )
         );
-        $project_analyzer->setPhpVersion('7.3');
+        $project_analyzer->setPhpVersion('7.3', 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);

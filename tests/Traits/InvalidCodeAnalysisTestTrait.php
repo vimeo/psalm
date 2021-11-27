@@ -66,7 +66,7 @@ trait InvalidCodeAnalysisTestTrait
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
-        $this->project_analyzer->setPhpVersion($php_version);
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

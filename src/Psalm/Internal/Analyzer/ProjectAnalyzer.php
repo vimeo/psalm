@@ -544,6 +544,33 @@ class ProjectAnalyzer
         return isset($this->project_files[$file_path]);
     }
 
+    private function generatePHPVersionMessage(): string
+    {
+        $codebase = $this->codebase;
+
+        $version = $codebase->php_major_version . '.' . $codebase->php_minor_version;
+
+        switch ($codebase->php_version_source) {
+            case 'cli':
+                $source = '(set by CLI argument)';
+                break;
+            case 'config':
+                $source = '(set by config file)';
+                break;
+            case 'composer':
+                $source = '(inferred from composer.json)';
+                break;
+            case 'tests':
+                $source = '(set by tests)';
+                break;
+            case 'runtime':
+                $source = '(inferred from current PHP version)';
+                break;
+        }
+
+        return "Target PHP version: $version $source\n";
+    }
+
     public function check(string $base_dir, bool $is_diff = false): void
     {
         $start_checks = (int)microtime(true);
@@ -574,6 +601,7 @@ class ProjectAnalyzer
             }
         }
 
+        $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startScanningFiles();
 
         $diff_no_files = false;
@@ -992,6 +1020,7 @@ class ProjectAnalyzer
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
+        $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
@@ -1123,6 +1152,7 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
+        $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
@@ -1164,6 +1194,7 @@ class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
+        $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
@@ -1262,7 +1293,10 @@ class ProjectAnalyzer
         $this->show_issues = false;
     }
 
-    public function setPhpVersion(string $version): void
+    /**
+     * @param 'cli'|'config'|'composer'|'tests' $source
+     */
+    public function setPhpVersion(string $version, string $source): void
     {
         if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[01])(\..*)?$/', $version)) {
             throw new \UnexpectedValueException('Expecting a version number in the format x.y');
@@ -1283,6 +1317,7 @@ class ProjectAnalyzer
 
         $this->codebase->php_major_version = $php_major_version;
         $this->codebase->php_minor_version = $php_minor_version;
+        $this->codebase->php_version_source = $source;
     }
 
     /**

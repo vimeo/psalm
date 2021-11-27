@@ -29,7 +29,7 @@ class FileReferenceTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->collectLocations();
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**

@@ -50,7 +50,7 @@ class StubTest extends TestCase
                 new Provider\FakeParserCacheProvider()
             )
         );
-        $project_analyzer->setPhpVersion('7.4');
+        $project_analyzer->setPhpVersion('7.4', 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
@@ -852,7 +852,7 @@ class StubTest extends TestCase
                 </psalm>'
             )
         );
-        $this->project_analyzer->setPhpVersion($php_version);
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $file_path = getcwd() . '/src/somefile.php';
 

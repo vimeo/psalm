@@ -361,7 +361,7 @@ class ForbiddenCodeTest extends TestCase
             )
         );
 
-        $p->setPhpVersion('7.4');
+        $p->setPhpVersion('7.4', 'tests');
 
         return $p;
     }

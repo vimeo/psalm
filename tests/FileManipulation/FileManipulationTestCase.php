@@ -68,7 +68,7 @@ abstract class FileManipulationTestCase extends \Psalm\Tests\TestCase
             $input_code
         );
 
-        $this->project_analyzer->setPhpVersion($php_version);
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $keyed_issues_to_fix = [];
 

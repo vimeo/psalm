@@ -67,7 +67,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
             )
         );
 
-        $p->setPhpVersion('7.3');
+        $p->setPhpVersion('7.3', 'tests');
 
         return $p;
     }

@@ -31,7 +31,7 @@ class FileMapTest extends \Psalm\Tests\TestCase
             $config,
             $providers
         );
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 

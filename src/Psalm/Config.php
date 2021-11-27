@@ -2225,7 +2225,12 @@ class Config
 
     public function getPhpVersion(): ?string
     {
-        return $this->configured_php_version ?? $this->getPHPVersionFromComposerJson();
+        return $this->getPhpVersionFromConfig() ?? $this->getPHPVersionFromComposerJson();
+    }
+
+    public function getPhpVersionFromConfig(): ?string
+    {
+        return $this->configured_php_version;
     }
 
     private function setBooleanAttribute(string $name, bool $value): void
@@ -2237,7 +2242,7 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    private function getPHPVersionFromComposerJson(): ?string
+    public function getPHPVersionFromComposerJson(): ?string
     {
         $composer_json_path = Composer::getJsonFilePath($this->base_dir);
 

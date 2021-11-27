@@ -103,7 +103,7 @@ class MethodSignatureTest extends TestCase
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
         $this->addFile(
             'somefile.php',
@@ -127,7 +127,7 @@ class MethodSignatureTest extends TestCase
 
     public function testMismatchingCovariantReturnIn74(): void
     {
-        $this->project_analyzer->setPhpVersion('7.4');
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
 
         $this->addFile(
             'somefile.php',
@@ -154,7 +154,7 @@ class MethodSignatureTest extends TestCase
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
         $this->addFile(
             'somefile.php',
@@ -176,7 +176,7 @@ class MethodSignatureTest extends TestCase
 
     public function testMismatchingCovariantReturnIn74WithSelf(): void
     {
-        $this->project_analyzer->setPhpVersion('7.4');
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
 
         $this->addFile(
             'somefile.php',
@@ -201,7 +201,7 @@ class MethodSignatureTest extends TestCase
         $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->expectException(\Psalm\Exception\CodeException::class);
 
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
         $this->addFile(
             'somefile.php',
@@ -222,7 +222,7 @@ class MethodSignatureTest extends TestCase
 
     public function testMismatchingCovariantParamIn74(): void
     {
-        $this->project_analyzer->setPhpVersion('7.4');
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
 
         $this->addFile(
             'somefile.php',

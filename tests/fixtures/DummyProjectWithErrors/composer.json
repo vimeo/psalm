@@ -3,6 +3,7 @@
     "description": "A sample project to be used when testing Psalm",
     "type": "project",
     "require": {
+        "php": ">= 7.1",
         "vimeo/psalm": "^4.3"
     },
     "autoload": {

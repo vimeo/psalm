@@ -5,6 +5,7 @@ namespace Psalm\Internal;
 use Composer\Autoload\ClassLoader;
 use Phar;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 
 use function assert;
@@ -621,5 +622,26 @@ HELP;
         }
 
         return (int)$limit;
+    }
+
+    public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
+    {
+        $source = null;
+
+        if (isset($options['php-version'])) {
+            if (!is_string($options['php-version'])) {
+                die('Expecting a version number in the format x.y' . PHP_EOL);
+            }
+            $version = $options['php-version'];
+            $source = 'cli';
+        } elseif ($version = $config->getPhpVersionFromConfig()) {
+            $source = 'config';
+        } elseif ($version = $config->getPHPVersionFromComposerJson()) {
+            $source = 'composer';
+        }
+
+        if ($version !== null && $source !== null) {
+            $project_analyzer->setPhpVersion($version, $source);
+        }
     }
 }

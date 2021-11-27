@@ -82,7 +82,7 @@ class TestCase extends BaseTestCase
             $providers
         );
 
-        $this->project_analyzer->setPhpVersion('7.4');
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
     public function tearDown() : void
@@ -180,13 +180,13 @@ class TestCase extends BaseTestCase
             parent::assertRegExp($pattern, $string, $message);
         }
     }
-    
+
     public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
     {
         $validKeys = array_filter($array, 'is_string', ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }
-    
+
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
         $isZeroOrString = /** @param mixed $key */ function ($key): bool {
@@ -195,19 +195,19 @@ class TestCase extends BaseTestCase
         $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }
-    
+
     public static function assertArrayValuesAreArrays(array $array, string $message = ''): void
     {
         $validValues = array_filter($array, 'is_array');
         self::assertTrue(count($array) === count($validValues), $message);
     }
-    
+
     public static function assertArrayValuesAreStrings(array $array, string $message = ''): void
     {
         $validValues = array_filter($array, 'is_string');
         self::assertTrue(count($array) === count($validValues), $message);
     }
-    
+
     public static function assertStringIsParsableType(string $type, string $message = ''): void
     {
         if ($type === '') {

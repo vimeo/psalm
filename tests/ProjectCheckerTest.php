@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\RuntimeCaches;
@@ -27,7 +28,7 @@ class ProjectCheckerTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public static function setUpBeforeClass() : void
@@ -49,7 +50,7 @@ class ProjectCheckerTest extends TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
@@ -79,6 +80,7 @@ class ProjectCheckerTest extends TestCase
                 </psalm>'
             )
         );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
         $this->project_analyzer->progress = new EchoProgress();
 
@@ -86,7 +88,13 @@ class ProjectCheckerTest extends TestCase
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
+        $this->assertSame(
+            'Target PHP version: 8.1 (set by tests)' . "\n"
+            . 'Scanning files...' . "\n"
+            . 'Analyzing files...' . "\n"
+            . "\n",
+            $output
+        );
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -261,13 +269,21 @@ class Bat
             )
         );
 
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
+        $this->assertSame(
+            'Target PHP version: 8.1 (set by tests)' . "\n"
+            . 'Scanning files...' . "\n"
+            . 'Analyzing files...' . "\n"
+            . "\n",
+            $output
+        );
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -293,6 +309,8 @@ class Bat
             )
         );
 
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
@@ -304,7 +322,13 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
+        $this->assertSame(
+            'Target PHP version: 8.1 (set by tests)' . "\n"
+            . 'Scanning files...' . "\n"
+            . 'Analyzing files...' . "\n"
+            . "\n",
+            $output
+        );
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
@@ -330,6 +354,8 @@ class Bat
             )
         );
 
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
         $this->project_analyzer->progress = new EchoProgress();
 
         ob_start();
@@ -341,7 +367,13 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n\n", $output);
+        $this->assertSame(
+            'Target PHP version: 8.1 (set by tests)' . "\n"
+            . 'Scanning files...' . "\n"
+            . 'Analyzing files...' . "\n"
+            . "\n",
+            $output
+        );
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 

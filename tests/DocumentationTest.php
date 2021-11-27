@@ -136,7 +136,7 @@ class DocumentationTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('8.0');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
     }
 
     public function testAllIssuesCoveredInConfigSchema(): void
@@ -204,7 +204,7 @@ class DocumentationTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $this->project_analyzer->setPhpVersion($php_version);
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         if ($check_references) {
             $this->project_analyzer->getCodebase()->reportUnusedCode();

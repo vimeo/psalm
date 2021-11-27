@@ -32,7 +32,7 @@ class UnusedCodeTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
-        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
@@ -56,7 +56,7 @@ class UnusedCodeTest extends TestCase
             $code
         );
 
-        $this->project_analyzer->setPhpVersion('8.0');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
 
         foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
