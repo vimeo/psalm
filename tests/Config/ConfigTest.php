@@ -20,6 +20,7 @@ use function error_get_last;
 use function get_class;
 use function getcwd;
 use function implode;
+use function in_array;
 use function is_array;
 use function preg_match;
 use function realpath;
@@ -144,20 +145,23 @@ class ConfigTest extends \Psalm\Tests\TestCase
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
 
-        $no_symlinking_error = 'symlink(): Cannot create symlink, error code(1314)';
+        $no_symlinking_error = [
+            'symlink(): Cannot create symlink, error code(1314)',
+            'symlink(): Permission denied',
+        ];
         $last_error = error_get_last();
         $check_symlink_error =
             !is_array($last_error) ||
             !isset($last_error['message']) ||
-            $no_symlinking_error !== $last_error['message'];
+            !in_array($last_error['message'], $no_symlinking_error);
 
         @symlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/a', dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
 
         if ($check_symlink_error) {
             $last_error = error_get_last();
 
-            if (is_array($last_error) && $no_symlinking_error === $last_error['message']) {
-                $this->markTestSkipped($no_symlinking_error);
+            if (is_array($last_error) && in_array($last_error['message'], $no_symlinking_error)) {
+                $this->markTestSkipped($last_error['message']);
             }
         }
 
