@@ -313,6 +313,10 @@ return [
       'old' => ['GMP|false', 'n'=>'GMP|string|int', 'k'=>'int'],
       'new' => ['GMP', 'n'=>'GMP|string|int', 'k'=>'int'],
     ],
+    'gmstrftime' => [
+      'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
+      'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
+    ],
     'hash_init' => [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
@@ -1136,6 +1140,10 @@ return [
     'strchr' => [
       'old' => ['string|false', 'haystack'=>'string', 'needle'=>'string|int', 'before_needle='=>'bool'],
       'new' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool'],
+    ],
+    'strftime' => [
+      'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
+      'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
     ],
     'stripos' => [
       'old' => ['int|false', 'haystack'=>'string', 'needle'=>'string|int', 'offset='=>'int'],
