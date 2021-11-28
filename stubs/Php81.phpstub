@@ -14,6 +14,27 @@ namespace {
         public static function from(string|int $value): static;
         public static function tryFrom(string|int $value): ?static;
     }
+
+    class ReflectionEnum extends ReflectionClass implements Reflector
+    {
+        public function getBackingType(): ?ReflectionType;
+        public function getCase(string $name): ReflectionEnumUnitCase;
+        /** @return list<ReflectionEnumUnitCase> */
+        public function getCases(): array;
+        public function hasCase(string $name): bool;
+        public function isBacked(): bool;
+    }
+
+    class ReflectionEnumUnitCase extends ReflectionClassConstant implements Reflector
+    {
+        public function getEnum(): ReflectionEnum;
+        public function getValue(): UnitEnum;
+    }
+
+    class ReflectionEnumBackedCase extends ReflectionEnumUnitCase implements Reflector
+    {
+        public function getBackingValue(): int|string;
+    }
 }
 
 namespace FTP {

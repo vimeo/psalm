@@ -17,6 +17,7 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
+    'enum_exists' => ['bool', 'class' => 'class-string', 'autoload=' => 'bool'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
     'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
@@ -36,6 +37,14 @@ return [
     'Fiber::getCurrent' => ['?self'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
+    'ReflectionEnum::getBackingType' => ['?ReflectionType'],
+    'ReflectionEnum::getCase' => ['ReflectionEnumUnitCase', 'name' => 'string'],
+    'ReflectionEnum::getCases' => ['list<ReflectionEnumUnitCase>'],
+    'ReflectionEnum::hasCase' => ['bool', 'name' => 'string'],
+    'ReflectionEnum::isBacked' => ['bool'],
+    'ReflectionEnumUnitCase::getEnum' => ['ReflectionEnum'],
+    'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
+    'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
   ],
 
   'changed' => [
