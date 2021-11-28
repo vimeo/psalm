@@ -3,9 +3,16 @@ namespace {
     interface UnitEnum {
         /** @var non-empty-string $name */
         public readonly string $name;
-    
+
         /** @return non-empty-list<static> */
         public static function cases(): array;
+    }
+
+    interface BackedEnum
+    {
+        public readonly int|string $value;
+        public static function from(string|int $value): static;
+        public static function tryFrom(string|int $value): ?static;
     }
 }
 
