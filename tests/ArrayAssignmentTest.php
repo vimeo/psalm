@@ -831,6 +831,7 @@ class ArrayAssignmentTest extends TestCase
             'keyedIntOffsetArrayValues' => [
                 '<?php
                     $a = ["hello", 5];
+                    /** @psalm-suppress RedundantCast */
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
@@ -2004,6 +2005,17 @@ class ArrayAssignmentTest extends TestCase
                      */
                     function baz(array $bar) : void {
                         foo((array) $bar);
+                    }',
+                'error_message' => 'RedundantCast',
+            ],
+            'arrayValuesOnList' => [
+                '<?php
+                    /**
+                     * @param list<int> $a
+                     * @return list<int>
+                     */
+                    function foo(array $a) : array {
+                        return array_values($a);
                     }',
                 'error_message' => 'RedundantCast',
             ],

@@ -2287,6 +2287,7 @@ class ClassTemplateTest extends TestCase
                          * @return static<U>
                          */
                         public function map(callable $callback) {
+                            /** @psalm-suppress RedundantCast */
                             return new static(array_values(array_map($callback, $this->elements)));
                         }
                     }

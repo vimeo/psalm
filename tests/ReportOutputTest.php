@@ -13,7 +13,6 @@ use Psalm\Report\JsonReport;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider;
 
-use function array_values;
 use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
@@ -815,7 +814,7 @@ echo $a;';
         $json_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json'])[0];
 
         $this->assertSame(
-            array_values($issue_data),
+            $issue_data,
             json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $json_report_options), true)
         );
     }

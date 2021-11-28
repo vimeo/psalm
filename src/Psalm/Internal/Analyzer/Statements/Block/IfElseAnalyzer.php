@@ -130,28 +130,26 @@ class IfElseAnalyzer
             $if_clauses = [];
         }
 
-        $if_clauses = array_values(
-            array_map(
-                /**
-                 * @return Clause
-                 */
-                function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
-                    $keys = array_keys($c->possibilities);
+        $if_clauses = array_map(
+            /**
+             * @return Clause
+             */
+            function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
+                $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return new Clause([], $cond_object_id, $cond_object_id, true);
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return new Clause([], $cond_object_id, $cond_object_id, true);
                         }
                     }
+                }
 
-                    return $c;
-                },
-                $if_clauses
-            )
+                return $c;
+            },
+            $if_clauses
         );
 
         $entry_clauses = $context->clauses;

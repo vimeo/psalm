@@ -209,7 +209,7 @@ class MatchAnalyzer
             }
 
             $all_match_condition = self::convertCondsToConditional(
-                \array_values($all_conds),
+                $all_conds,
                 $match_condition,
                 $match_condition->getAttributes()
             );
