@@ -300,7 +300,17 @@ class ClassLikeNodeScanner
                     $this->file_storage->has_visitor_issues = true;
                     $storage->has_visitor_issues = true;
                 }
-                // todo: $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
+                $storage->class_implements['backedenum'] = 'BackedEnum';
+                $storage->direct_class_interfaces['backedenum'] = 'BackedEnum';
+                $this->file_storage->required_interfaces['backedenum'] = 'BackedEnum';
+                $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
+                $storage->declaring_method_ids['from'] = new \Psalm\Internal\MethodIdentifier('BackedEnum', 'from');
+                $storage->appearing_method_ids['from'] = $storage->declaring_method_ids['from'];
+                $storage->declaring_method_ids['tryfrom'] = new \Psalm\Internal\MethodIdentifier(
+                    'BackedEnum',
+                    'tryfrom'
+                );
+                $storage->appearing_method_ids['tryfrom'] = $storage->declaring_method_ids['tryfrom'];
             }
 
             $this->codebase->scanner->queueClassLikeForScanning('UnitEnum');

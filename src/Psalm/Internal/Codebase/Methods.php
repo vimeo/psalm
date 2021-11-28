@@ -121,8 +121,16 @@ class Methods
             return false;
         }
 
-        if ($class_storage->is_enum && $method_name === 'cases') {
-            return true;
+        if ($class_storage->is_enum) {
+            if ($method_name === 'cases') {
+                return true;
+            }
+
+            if ($class_storage->enum_type
+                && \in_array($method_name, ['from', 'tryFrom'], true)
+            ) {
+                return true;
+            }
         }
 
         $source_file_path = $source ? $source->getFilePath() : $source_file_path;
@@ -686,21 +694,55 @@ class Methods
         $appearing_fq_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
         if ($appearing_fq_class_name === 'UnitEnum'
-            && $original_method_name === 'cases'
             && $original_class_storage->is_enum
-            && $original_class_storage->enum_cases
         ) {
-            $types = [];
+            if ($original_method_name === 'cases') {
+                if ($original_class_storage->enum_cases === []) {
+                    return Type::getEmptyArray();
+                }
+                $types = [];
 
-            foreach ($original_class_storage->enum_cases as $case_name => $_) {
-                $types[] = new Type\Union([new Type\Atomic\TEnumCase($original_fq_class_name, $case_name)]);
+                foreach ($original_class_storage->enum_cases as $case_name => $_) {
+                    $types[] = new Type\Union([new Type\Atomic\TEnumCase($original_fq_class_name, $case_name)]);
+                }
+
+                $list = new Type\Atomic\TKeyedArray($types);
+                $list->is_list = true;
+                $list->sealed = true;
+                return new Type\Union([$list]);
             }
+        }
 
-            $list = new Type\Atomic\TKeyedArray($types);
-            $list->is_list = true;
-            $list->sealed = true;
-
-            return new Type\Union([$list]);
+        if ($appearing_fq_class_name === 'BackedEnum'
+            && $original_class_storage->is_enum
+            && $original_class_storage->enum_type
+        ) {
+            if (($original_method_name === 'from'
+                || $original_method_name === 'tryfrom'
+                ) && $source_analyzer
+                && isset($args[0])
+                && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
+            ) {
+                $types = [];
+                foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
+                    if (UnionTypeComparator::isContainedBy(
+                        $source_analyzer->getCodebase(),
+                        \is_int($case_storage->value) ?
+                            Type::getInt(false, $case_storage->value) :
+                            Type::getString($case_storage->value),
+                        $first_arg_type
+                    )) {
+                        $types[] = new Type\Atomic\TEnumCase($original_fq_class_name, $case_name);
+                    }
+                }
+                if ($types) {
+                    if ($original_method_name === 'tryfrom') {
+                        $types[] = new Type\Atomic\TNull();
+                    }
+                    return new Type\Union($types);
+                }
+                return $original_method_name === 'tryfrom' ? Type::getNull() : Type::getNever();
+            }
         }
 
         if (!$appearing_fq_class_storage->user_defined

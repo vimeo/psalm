@@ -261,6 +261,109 @@ class EnumTest extends TestCase
                 [],
                 '8.1',
             ],
+            'casesOnEnumWithNoCasesReturnEmptyArray' => [
+                '<?php
+                    enum Status: int {}
+                    $_z = Status::cases();
+                ',
+                'assertions' => [
+                    '$_z===' => 'array<empty, empty>',
+                ],
+                [],
+                '8.1',
+            ],
+            'backedEnumFromReturnsInstanceOfThatEnum' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    function f(): Status {
+                        return Status::from(1);
+                    }
+                ',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
+            'backedEnumTryFromReturnsInstanceOfThatEnum' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    function f(): Status {
+                        return Status::tryFrom(rand(1, 10)) ?? Status::Open;
+                    }
+                ',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
+            'backedEnumFromReturnsSpecificCase' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    $_z = Status::from(2);
+                ',
+                'assertions' => [
+                    '$_z===' => 'enum(Status::Closed)',
+                ],
+                [],
+                '8.1',
+            ],
+            'backedEnumTryFromReturnsSpecificCase' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    $_z = Status::tryFrom(2);
+                ',
+                'assertions' => [
+                    '$_z===' => 'enum(Status::Closed)|null',
+                ],
+                [],
+                '8.1',
+            ],
+            'backedEnumFromReturnsUnionOfCases' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                        case Busted = 3;
+                    }
+
+                    $_z = Status::from(rand(1, 2));
+                ',
+                'assertions' => [
+                    '$_z===' => 'enum(Status::Closed)|enum(Status::Open)',
+                ],
+                [],
+                '8.1',
+            ],
+            'backedEnumTryFromReturnsUnionOfCases' => [
+                '<?php
+                    enum Status: int {
+                        case Open = 1;
+                        case Closed = 2;
+                        case Busted = 3;
+                    }
+
+                    $_z = Status::tryFrom(rand(1, 2));
+                ',
+                'assertions' => [
+                    '$_z===' => 'enum(Status::Closed)|enum(Status::Open)|null',
+                ],
+                [],
+                '8.1',
+            ],
         ];
     }
 

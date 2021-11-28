@@ -2354,8 +2354,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($storage->is_enum && $interface_method_name_lc === 'cases') {
-                        continue;
+                    if ($storage->is_enum) {
+                        if ($interface_method_name_lc === 'cases') {
+                            continue;
+                        }
+                        if ($storage->enum_type
+                            && in_array($interface_method_name_lc, ['from', 'tryfrom'], true)
+                        ) {
+                            continue;
+                        }
                     }
 
                     if (!$implementer_method_storage) {
