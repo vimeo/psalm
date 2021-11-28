@@ -618,7 +618,7 @@ class FunctionLikeNodeScanner
                 }
 
                 //no docblock type was provided for param but we have one for property
-                if ($param_storage->type === null && $var_comment_type) {
+                if ($var_comment_type) {
                     $param_storage->type = $var_comment_type;
                 }
 
