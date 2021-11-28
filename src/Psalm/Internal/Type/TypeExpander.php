@@ -215,9 +215,10 @@ class TypeExpander
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
                 if (strpos($return_type->const_name, '*') !== false) {
-                    $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
-
-                    $matching_constants = \array_keys($class_storage->constants);
+                    $matching_constants = \array_merge(
+                        \array_keys($class_storage->constants),
+                        \array_keys($class_storage->enum_cases)
+                    );
 
                     $const_name_part = \substr($return_type->const_name, 0, -1);
 
@@ -231,10 +232,6 @@ class TypeExpander
                         );
                     }
                 } else {
-                    if ($class_storage->is_enum) {
-                        return new Type\Atomic\TEnumCase($return_type->fq_classlike_name, $return_type->const_name);
-                    }
-
                     $matching_constants = [$return_type->const_name];
                 }
 

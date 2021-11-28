@@ -154,7 +154,7 @@ class EnumTest extends TestCase
                 [],
                 '8.1'
             ],
-            'SKIPPED-wildcardEnum' => [
+            'wildcardEnumAsParam' => [
                 '<?php
                     enum A {
                         case C_1;
@@ -170,6 +170,21 @@ class EnumTest extends TestCase
                     A::foo(A::C_1);
                     A::foo(A::C_2);
                     A::foo(A::C_3);',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
+            'wildcardEnumAsReturn' => [
+                '<?php
+                    enum E {
+                        const A = 1;
+                        case B;
+                    }
+
+                    /** @return E::* */
+                    function f(): mixed {
+                        return E::B;
+                    }',
                 'assertions' => [],
                 [],
                 '8.1',
