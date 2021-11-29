@@ -389,7 +389,7 @@ class NamedFunctionCallHandler
             return;
         }
 
-        if ($first_arg && $function_id === 'array_values') {
+        if ($first_arg && ($function_id === 'array_values' || $function_id === 'ksort')) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
