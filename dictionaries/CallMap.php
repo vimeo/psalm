@@ -87,7 +87,7 @@ namespace Phan\Language\Internal;
 return [
 '_' => ['string', 'message'=>'string'],
 '__halt_compiler' => ['void'],
-'abs' => ['int', 'num'=>'int'],
+'abs' => ['0|positive-int', 'num'=>'int'],
 'abs\'1' => ['float', 'num'=>'float'],
 'abs\'2' => ['numeric', 'num'=>'numeric'],
 'accelerator_get_configuration' => ['array'],
