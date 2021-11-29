@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -483,10 +485,13 @@ class AtomicPropertyFetchAnalyzer
         );
     }
 
+    /**
+     * @param PropertyFetch|StaticPropertyFetch $stmt
+     */
     public static function checkPropertyDeprecation(
         string $prop_name,
         string $declaring_property_class,
-        PhpParser\Node\Expr\PropertyFetch $stmt,
+        PhpParser\Node\Expr $stmt,
         StatementsAnalyzer $statements_analyzer
     ): void {
         $property_id = $declaring_property_class . '::$' . $prop_name;

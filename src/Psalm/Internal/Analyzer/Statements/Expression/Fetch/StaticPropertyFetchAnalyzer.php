@@ -265,6 +265,13 @@ class StaticPropertyFetchAnalyzer
             return false;
         }
 
+        AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
+            $stmt->name->name,
+            $declaring_property_class,
+            $stmt,
+            $statements_analyzer
+        );
+
         $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         $property = $class_storage->properties[$prop_name];
 

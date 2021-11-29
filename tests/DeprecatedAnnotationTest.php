@@ -232,6 +232,21 @@ class DeprecatedAnnotationTest extends TestCase
                     function foo(DeprecatedClass $deprecatedClass): void {}',
                 'error_message' => 'DeprecatedClass',
             ],
+            'deprecatedStaticPropertyFetch' => [
+                '<?php
+
+                    class Bar
+                    {
+                        /**
+                         * @deprecated
+                         */
+                        public static bool $deprecatedPropery = false;
+                    }
+
+                    Bar::$deprecatedPropery;
+                    ',
+                'error_message' => 'DeprecatedProperty',
+            ],
         ];
     }
 }
