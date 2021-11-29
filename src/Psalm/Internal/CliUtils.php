@@ -342,6 +342,9 @@ Basic configuration:
 
     --no-diff
         Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
+        
+    --php-version=PHP_VERSION
+        Explicitly set PHP version to analyse code against. 
 
 Surfacing issues:
     --show-info[=BOOLEAN]
