@@ -1305,10 +1305,6 @@ class FunctionCallTest extends TestCase
                     function takesInt(int $i) : void {}
 
                     if (preg_match("{foo}", "this is foo", $matches, PREG_OFFSET_CAPTURE)) {
-                        /**
-                         * @psalm-suppress MixedArrayAccess
-                         * @psalm-suppress MixedArgument
-                         */
                         takesInt($matches[0][1]);
                     }',
             ],
@@ -1449,7 +1445,10 @@ class FunctionCallTest extends TestCase
             ],
             'writeArgsAllowed' => [
                 '<?php
-                    /** @return false|int */
+                    /**
+                     * @param 0|256|512|768 $flags
+                     * @return false|int
+                     */
                     function safeMatch(string $pattern, string $subject, ?array $matches = null, int $flags = 0) {
                         return \preg_match($pattern, $subject, $matches, $flags);
                     }
