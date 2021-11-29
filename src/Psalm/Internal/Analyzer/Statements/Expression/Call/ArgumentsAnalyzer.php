@@ -635,7 +635,7 @@ class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id === 'preg_match_all' && count($args) > 3) {
+        if (($method_id === 'preg_match_all' || $method_id === 'preg_match') && count($args) > 3) {
             $args = array_reverse($args, true);
         }
 
