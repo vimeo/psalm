@@ -266,7 +266,7 @@ class StaticPropertyFetchAnalyzer
         }
 
         AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
-            $stmt->name->name,
+            $prop_name,
             $declaring_property_class,
             $stmt,
             $statements_analyzer
