@@ -85,16 +85,14 @@ class ConcatAnalyzer
                         $origin_location = null;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedOperand(
                             'Left operand cannot be mixed',
                             $arg_location,
                             $origin_location
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
                     $origin_locations = [];
@@ -114,16 +112,14 @@ class ConcatAnalyzer
                         $origin_location = null;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedOperand(
                             'Right operand cannot be mixed',
                             $arg_location,
                             $origin_location
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 return;
@@ -263,55 +259,47 @@ class ConcatAnalyzer
         $config = Config::getInstance();
 
         if ($operand_type->isNull()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NullOperand(
                     'Cannot concatenate with a ' . $operand_type,
                     new CodeLocation($statements_analyzer->getSource(), $operand)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
 
         if ($operand_type->isFalse()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new FalseOperand(
                     'Cannot concatenate with a ' . $operand_type,
                     new CodeLocation($statements_analyzer->getSource(), $operand)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
 
         if ($operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyNullOperand(
                     'Cannot concatenate with a possibly null ' . $operand_type,
                     new CodeLocation($statements_analyzer->getSource(), $operand)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyFalseOperand(
                     'Cannot concatenate with a possibly false ' . $operand_type,
                     new CodeLocation($statements_analyzer->getSource(), $operand)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $operand_type_match = true;
@@ -320,15 +308,13 @@ class ConcatAnalyzer
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
             if ($operand_type_part instanceof Type\Atomic\TTemplateParam && !$operand_type_part->as->isString()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedOperand(
                         "$side operand cannot be a non-string template param",
                         new CodeLocation($statements_analyzer->getSource(), $operand)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return;
             }
@@ -351,15 +337,13 @@ class ConcatAnalyzer
             $has_valid_operand = $has_valid_operand || $operand_type_part_match;
 
             if ($comparison_result->to_string_cast && $config->strict_binary_operands) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         "$side side of concat op expects string, '$operand_type' provided with a __toString method",
                         new CodeLocation($statements_analyzer->getSource(), $operand)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($operand_type->getAtomicTypes() as $atomic_type) {
@@ -388,16 +372,14 @@ class ConcatAnalyzer
                         }
 
                         if ($context->mutation_free && !$storage->mutation_free) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
                                     new CodeLocation($statements_analyzer, $operand)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } elseif ($statements_analyzer->getSource()
                                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
@@ -414,25 +396,21 @@ class ConcatAnalyzer
             && (!$comparison_result->scalar_type_match_found || $config->strict_binary_operands)
         ) {
             if ($has_valid_operand) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidOperand(
                         'Cannot concatenate with a ' . $operand_type,
                         new CodeLocation($statements_analyzer->getSource(), $operand)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidOperand(
                         'Cannot concatenate with a ' . $operand_type,
                         new CodeLocation($statements_analyzer->getSource(), $operand)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }

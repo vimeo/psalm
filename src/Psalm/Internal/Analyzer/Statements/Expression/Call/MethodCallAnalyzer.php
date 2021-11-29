@@ -139,15 +139,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
             && !self::hasNullsafe($stmt->var)
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
                     'Cannot call method ' . $stmt->name->name . ' on possibly null value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($class_type
@@ -155,15 +153,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             && $class_type->isFalsable()
             && !$class_type->ignore_falsable_issues
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyFalseReference(
                     'Cannot call method ' . $stmt->name->name . ' on possibly false value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $codebase = $statements_analyzer->getCodebase();
@@ -231,67 +227,57 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $invalid_class_type = $result->invalid_method_call_types[0];
 
             if ($result->has_valid_method_call_type || $result->has_mixed_method_call) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
                         'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
                         new CodeLocation($source, $stmt->name)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep going
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
                         'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
                         new CodeLocation($source, $stmt->name)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep going
-                }
+                );
             }
         }
 
         if ($result->non_existent_magic_method_ids) {
             if ($context->check_methods) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedMagicMethod(
                         'Magic method ' . $result->non_existent_magic_method_ids[0] . ' does not exist',
                         new CodeLocation($source, $stmt->name),
                         $result->non_existent_magic_method_ids[0]
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep going
-                }
+                );
             }
         }
 
         if ($result->non_existent_class_method_ids) {
             if ($context->check_methods) {
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
                             $result->non_existent_class_method_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep going
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
                             $result->non_existent_class_method_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep going
-                    }
+                    );
                 }
             }
 
@@ -301,27 +287,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($result->non_existent_interface_method_ids) {
             if ($context->check_methods) {
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
                             $result->non_existent_interface_method_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep going
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UndefinedInterfaceMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
                             $result->non_existent_interface_method_ids[0]
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep going
-                    }
+                    );
                 }
             }
 
@@ -331,31 +313,27 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($result->too_many_arguments && $result->too_many_arguments_method_ids) {
             $error_method_id = $result->too_many_arguments_method_ids[0];
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooManyArguments(
                     'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
                     (string) $error_method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($result->too_few_arguments && $result->too_few_arguments_method_ids) {
             $error_method_id = $result->too_few_arguments_method_ids[0];
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooFewArguments(
                     'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
                     (string) $error_method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $stmt_type = $result->return_type;
@@ -446,16 +424,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $storage->if_this_is_type
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new IfThisIsMismatch(
                             'Class is not ' . (string) $storage->if_this_is_type
                             . ' as required by psalm-if-this-is',
                             new CodeLocation($source, $stmt->name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep going
-                    }
+                    );
                 }
             }
         }

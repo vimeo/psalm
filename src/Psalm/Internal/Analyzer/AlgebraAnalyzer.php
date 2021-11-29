@@ -61,16 +61,14 @@ class AlgebraAnalyzer
                 && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantCondition(
                         $formula_2_clause . ' has already been asserted',
                         new CodeLocation($statements_analyzer, $stmt),
                         null
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($formula_2_clause->possibilities as $key => $values) {
@@ -79,15 +77,13 @@ class AlgebraAnalyzer
                     && !isset($new_assigned_var_ids[$key])
                     && count(array_unique($values)) < count($values)
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ParadoxicalCondition(
                             'Found a redundant condition when evaluating assertion (' . $formula_2_clause . ')',
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -102,16 +98,14 @@ class AlgebraAnalyzer
                         && !isset($new_assigned_var_ids[$key])
                         && count(array_unique($values)) < count($values)
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key,
                                 new CodeLocation($statements_analyzer, $stmt),
                                 null
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -161,15 +155,13 @@ class AlgebraAnalyzer
                             . ' contradicts a previously-established condition (' . $clause_1 . ')';
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ParadoxicalCondition(
                             $paradox_message,
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     return;
                 }

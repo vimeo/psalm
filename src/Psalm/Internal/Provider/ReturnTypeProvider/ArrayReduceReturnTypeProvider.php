@@ -103,15 +103,13 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
 
             if ($closure_atomic_type->params !== null) {
                 if (count($closure_atomic_type->params) < 1) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The closure passed to array_reduce at least one parameter',
                             new CodeLocation($statements_source, $function_call_arg)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     return Type::getMixed();
                 }
@@ -136,7 +134,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                             )
                         )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The first param of the closure passed to array_reduce must take '
                                 . $reduce_return_type . ' but only accepts ' . $carry_param->type,
@@ -144,9 +142,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 ?: new CodeLocation($statements_source, $function_call_arg)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     return Type::getMixed();
                 }
@@ -161,7 +157,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                         $item_param->type
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The second param of the closure passed to array_reduce must take '
                                 . $array_arg_atomic_type->type_params[1] . ' but only accepts ' . $item_param->type,
@@ -169,9 +165,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 ?: new CodeLocation($statements_source, $function_call_arg)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     return Type::getMixed();
                 }

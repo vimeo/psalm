@@ -288,15 +288,13 @@ class ClassLikeNodeScanner
                 if ($node->scalarType->name === 'string' || $node->scalarType->name === 'int') {
                     $storage->enum_type = $node->scalarType->name;
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidEnumBackingType(
                             'Enums cannot be backed by ' . $node->scalarType->name . ', string or int expected',
                             new CodeLocation($this->file_scanner, $node->scalarType),
                             $fq_classlike_name
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                     $this->file_storage->has_visitor_issues = true;
                     $storage->has_visitor_issues = true;
                 }

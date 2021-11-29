@@ -42,15 +42,13 @@ class ExitAnalyzer
         }
 
         if ($forbidden) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of ' . $forbidden,
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($stmt->expr) {
@@ -120,15 +118,13 @@ class ExitAnalyzer
             if ($context->mutation_free || $context->external_mutation_free) {
                 $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call ' . $function_name . ' with a non-integer argument from a mutation-free context',
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {

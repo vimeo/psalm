@@ -401,7 +401,7 @@ class AtomicPropertyFetchAnalyzer
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
             if ($context->self && !NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . $property_storage->internal
                             . ' but called from ' . $context->self,
@@ -409,9 +409,7 @@ class AtomicPropertyFetchAnalyzer
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($context->inside_unset) {
@@ -446,15 +444,13 @@ class AtomicPropertyFetchAnalyzer
                 && $class_property_type->allow_mutations)
         ) {
             if ($context->pure) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpurePropertyFetch(
                         'Cannot access a property on a mutable object from a pure context',
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
@@ -499,16 +495,14 @@ class AtomicPropertyFetchAnalyzer
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
             if ($property_storage->deprecated) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -669,16 +663,14 @@ class AtomicPropertyFetchAnalyzer
             if (!$class_exists) {
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedMagicPropertyFetch(
                         'Magic instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return false;
             }
@@ -905,15 +897,13 @@ class AtomicPropertyFetchAnalyzer
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             if ($context->pure) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpurePropertyFetch(
                         'Cannot access a property on a mutable object from a pure context',
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($context->inside_isset
                 && $statements_analyzer->getSource()
                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
@@ -926,39 +916,33 @@ class AtomicPropertyFetchAnalyzer
         }
 
         if ($stmt_var_id === '$this') {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new UndefinedThisPropertyFetch(
                     'Instance property ' . $property_id . ' is not defined',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $property_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } else {
             if ($has_magic_getter) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedMagicPropertyFetch(
                         'Magic instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedPropertyFetch(
                         'Instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -1021,27 +1005,23 @@ class AtomicPropertyFetchAnalyzer
 
         if (!$class_exists && !$interface_exists) {
             if ($lhs_type_part->from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedDocblockClass(
                         'Cannot get properties of undefined docblock class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $lhs_type_part->value
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedClass(
                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $lhs_type_part->value
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -1146,7 +1126,7 @@ class AtomicPropertyFetchAnalyzer
                     $declaring_class_storage->location->file_path
                 )
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingPropertyType(
                         'Property ' . $fq_class_name . '::$' . $prop_name
                         . ' does not have a declared type',
@@ -1154,9 +1134,7 @@ class AtomicPropertyFetchAnalyzer
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $class_property_type = Type::getMixed();

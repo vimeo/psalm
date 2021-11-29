@@ -168,15 +168,13 @@ class ArrayFetchAnalyzer
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
                 if (!$context->inside_isset) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new NullArrayAccess(
                             'Cannot access array value on null variable ' . $array_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
@@ -292,16 +290,14 @@ class ArrayFetchAnalyzer
                 && !$context->inside_unset
                 && ($stmt_var_type && !$stmt_var_type->hasMixed())
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id
                             . ' on ' . $stmt_var_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $stmt_type->possibly_undefined = false;
@@ -478,15 +474,13 @@ class ArrayFetchAnalyzer
         $array_access_type = null;
 
         if ($offset_type->isNull()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NullArrayOffset(
                     'Cannot access value on variable ' . $array_var_id . ' using null offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             if ($in_assignment) {
                 $offset_type->removeType('null');
@@ -496,16 +490,14 @@ class ArrayFetchAnalyzer
 
         if ($offset_type->isNullable() && !$context->inside_isset) {
             if (!$offset_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
                         'Cannot access value on variable ' . $array_var_id
                             . ' using possibly null offset ' . $offset_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($in_assignment) {
@@ -566,31 +558,27 @@ class ArrayFetchAnalyzer
                     if ($replacement_type) {
                         $array_access_type = Type::combineUnionTypes($array_access_type, clone $replacement_type);
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAssignment(
                                 'Cannot access array value on possibly null variable ' . $array_var_id .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
 
                         $array_access_type = new Type\Union([new TEmpty]);
                     }
                 } else {
                     if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $array_var_id .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNull());
@@ -704,27 +692,23 @@ class ArrayFetchAnalyzer
                 }
             } else {
                 if ($in_assignment) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 $array_access_type = Type::getMixed();
@@ -742,15 +726,13 @@ class ArrayFetchAnalyzer
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
                     'Cannot access value on variable ' . $array_var_id . ' using mixed offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } else {
             if (!$context->collect_initializations
                 && !$context->collect_mutations
@@ -775,16 +757,14 @@ class ArrayFetchAnalyzer
                     // do nothing
                 } elseif ($has_valid_expected_offset && $has_valid_absolute_offset) {
                     if (!$context->inside_unset) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
                                 'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
                                     . ', expecting ' . $invalid_offset_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 } else {
                     $good_types = [];
@@ -826,16 +806,14 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
                             'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -894,7 +872,7 @@ class ArrayFetchAnalyzer
             }
 
             if (!$found_match) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyUndefinedIntArrayOffset(
                         'Possibly undefined array offset \''
                             . $offset_type->getId() . '\' '
@@ -904,9 +882,7 @@ class ArrayFetchAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -944,7 +920,7 @@ class ArrayFetchAnalyzer
             }
 
             if (!$found_match) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyUndefinedStringArrayOffset(
                         'Possibly undefined array offset \''
                             . $offset_type->getId() . '\' '
@@ -954,9 +930,7 @@ class ArrayFetchAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -1027,25 +1001,21 @@ class ArrayFetchAnalyzer
 
         if (!$context->inside_isset) {
             if ($in_assignment) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
                         'Cannot access array value on mixed variable ' . $array_var_id,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedArrayAccess(
                         'Cannot access array value on mixed variable ' . $array_var_id,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -1329,16 +1299,14 @@ class ArrayFetchAnalyzer
                     if ($union_comparison_results->type_coerced_from_mixed
                         && !$offset_type->isMixed()
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new MixedArrayTypeCoercion(
                                 'Coercion from array offset type \'' . $offset_type->getId() . '\' '
                                 . 'to the expected type \'' . $expected_offset_type->getId() . '\'',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
                         $expected_offset_types[] = $expected_offset_type->getId();
                     }
@@ -1378,15 +1346,13 @@ class ArrayFetchAnalyzer
             && !$in_assignment
             && !$context->inside_isset
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new EmptyArrayAccess(
                     'Cannot access value on empty array variable ' . $array_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                //return Type::getMixed(true);
-            }
+            );
 
             if (!IssueBuffer::isRecording()) {
                 $array_access_type = Type::getMixed(true);
@@ -1933,15 +1899,13 @@ class ArrayFetchAnalyzer
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedStringOffsetAssignment(
                         'Right-hand-side of string offset assignment cannot be mixed',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 if (!$context->collect_initializations
                     && !$context->collect_mutations

@@ -98,15 +98,13 @@ class ReturnTypeAnalyzer
             )
         ) {
             if (!$return_type) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingReturnType(
                         'Method ' . $cased_method_id . ' does not have a return type',
                         new CodeLocation($function_like_analyzer, $function->name, null, true)
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
 
             return null;
@@ -313,16 +311,14 @@ class ReturnTypeAnalyzer
             }
 
             if ($union_comparison_results->to_string_cast) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects string, ' .
                         '\'' . $inferred_return_type . '\' provided with a __toString method',
                         $return_type_location
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
 
             return null;
@@ -353,16 +349,14 @@ class ReturnTypeAnalyzer
                         return null;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingClosureReturnType(
                             'Closure does not have a return type, expecting ' . $inferred_return_type->getId(),
                             new CodeLocation($function_like_analyzer, $function, null, true)
                         ),
                         $suppressed_issues,
                         !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 return null;
@@ -392,7 +386,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
                       (!$inferred_return_type->hasMixed() ? ', expecting ' . $inferred_return_type->getId() : ''),
@@ -400,9 +394,7 @@ class ReturnTypeAnalyzer
                 ),
                 $suppressed_issues,
                 !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
-            )) {
-                // fall through
-            }
+            );
 
             return null;
         }
@@ -643,7 +635,7 @@ class ReturnTypeAnalyzer
             }
 
             if ($union_comparison_results->to_string_cast) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects \'' .
                         $declared_return_type . '\', ' . '\'' . $inferred_return_type .
@@ -651,9 +643,7 @@ class ReturnTypeAnalyzer
                         $return_type_location
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (!$inferred_return_type->ignore_nullable_issues

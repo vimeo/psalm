@@ -240,16 +240,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ReservedWord(
                     $class_name . ' is a reserved word',
                     $code_location,
                     $class_name
                 ),
                 $suppressed_issues
-            )) {
-                // fall through
-            }
+            );
 
             return null;
         }
@@ -359,16 +357,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 || ($enum_exists && !$codebase->classlikes->enumHasCorrectCasing($fq_class_name))
             ) {
                 if ($codebase->classlikes->isUserDefined(strtolower($aliased_name))) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidClass(
                             'Class, interface or enum ' . $fq_class_name . ' has wrong casing',
                             $code_location,
                             $fq_class_name
                         ),
                         $suppressed_issues
-                    )) {
-                        // fall through here
-                    }
+                    );
                 }
             }
         }

@@ -57,16 +57,14 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $extended_interface
                     );
 
-                    if (\Psalm\IssueBuffer::accepts(
+                    \Psalm\IssueBuffer::maybeAdd(
                         new UndefinedInterface(
                             $extended_interface_name . ' is not an interface',
                             $code_location,
                             $extended_interface_name
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 if ($codebase->store_node_types && $extended_interface_name) {

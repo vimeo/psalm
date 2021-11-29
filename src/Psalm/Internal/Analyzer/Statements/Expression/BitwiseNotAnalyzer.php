@@ -65,25 +65,21 @@ class BitwiseNotAnalyzer
             if ($unacceptable_type || !$acceptable_types) {
                 $message = 'Cannot negate a non-numeric non-string type ' . $unacceptable_type;
                 if ($has_valid_operand) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $message,
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $message,
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());

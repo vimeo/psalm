@@ -104,15 +104,13 @@ class VariableFetchAnalyzer
 
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 if ($context->pure) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureVariable(
                             'Cannot reference $this in a pure context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
@@ -177,15 +175,13 @@ class VariableFetchAnalyzer
 
         if (!is_string($stmt->name)) {
             if ($context->pure) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpureVariable(
                         'Cannot reference an unknown variable in a pure context',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
@@ -237,31 +233,27 @@ class VariableFetchAnalyzer
                     || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 ) {
                     if ($context->is_global || $from_global) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new UndefinedGlobalVariable(
                                 'Cannot find referenced variable ' . $var_name . ' in global scope',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $var_name
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
 
                         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
                         return true;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
@@ -287,7 +279,7 @@ class VariableFetchAnalyzer
                         return true;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
                             'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
@@ -296,9 +288,7 @@ class VariableFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                         (bool) $statements_analyzer->getBranchPoint($var_name)
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
                     if ($codebase->alter_code) {
                         if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])) {
@@ -314,7 +304,7 @@ class VariableFetchAnalyzer
                         return true;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
@@ -322,9 +312,7 @@ class VariableFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                         (bool) $statements_analyzer->getBranchPoint($var_name)
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 if ($codebase->store_node_types
@@ -357,26 +345,22 @@ class VariableFetchAnalyzer
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
                             'Possibly undefined global variable ' . $var_name . ' defined in try block',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $var_name
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ' defined in try block',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 

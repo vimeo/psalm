@@ -143,16 +143,14 @@ class AtomicStaticCallAnalyzer
             }
 
             if (!$fq_class_name) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedClass(
                         'Type ' . $lhs_type_part->as . ' cannot be called as a class',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         (string) $lhs_type_part
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return;
             }
@@ -521,25 +519,21 @@ class AtomicStaticCallAnalyzer
 
                     if (!$context->inside_throw) {
                         if ($context->pure && !$callstatic_storage->pure) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call an impure method from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt_name)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } elseif ($context->mutation_free&& !$callstatic_storage->mutation_free) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method from a mutation-free context',
                                     new CodeLocation($statements_analyzer, $stmt_name)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } elseif ($statements_analyzer->getSource()
                             instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
@@ -676,20 +670,18 @@ class AtomicStaticCallAnalyzer
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         if ($class_storage->deprecated && $fq_class_name !== $context->self) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new DeprecatedClass(
                     $fq_class_name . ' is marked deprecated',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $class_storage->internal)) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . $class_storage->internal
                         . ' but called from ' . $context->self,
@@ -697,9 +689,7 @@ class AtomicStaticCallAnalyzer
                     $fq_class_name
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if (MethodVisibilityAnalyzer::analyze(
@@ -920,15 +910,13 @@ class AtomicStaticCallAnalyzer
                 );
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedMethodCall(
                     'Cannot call method on an unknown class',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -940,15 +928,13 @@ class AtomicStaticCallAnalyzer
                 return;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidStringClass(
                     'String cannot be used as a class',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -959,15 +945,13 @@ class AtomicStaticCallAnalyzer
             return;
         }
 
-        if (IssueBuffer::accepts(
+        IssueBuffer::maybeAdd(
             new UndefinedClass(
                 'Type ' . $lhs_type_part . ' cannot be called as a class',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 (string) $lhs_type_part
             ),
             $statements_analyzer->getSuppressedIssues()
-        )) {
-            // fall through
-        }
+        );
     }
 }

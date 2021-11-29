@@ -228,16 +228,14 @@ class MethodComparator
                 || (!$implementer_method_storage->abstract
                     && !$guide_method_storage->abstract)
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new OverriddenMethodAccess(
                         'Method ' . $cased_implementer_method_id . ' has different access level than '
                             . $cased_guide_method_id,
                         $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             } elseif (IssueBuffer::accepts(
                 new TraitMethodSignatureMismatch(
                     'Method ' . $cased_implementer_method_id . ' has different access level than '
@@ -254,7 +252,7 @@ class MethodComparator
             && $prevent_method_signature_mismatch
             && $prevent_abstract_override
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MethodSignatureMismatch(
                     'Method ' . $cased_guide_method_id . ' is declared final and cannot be overridden',
                     $code_location
@@ -262,9 +260,7 @@ class MethodComparator
                 $guide_method_storage->final_from_docblock ?
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues :
                     []
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($prevent_abstract_override
@@ -273,16 +269,14 @@ class MethodComparator
             && !$guide_classlike_storage->abstract
             && !$guide_classlike_storage->is_interface
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MethodSignatureMismatch(
                     'Method ' . $cased_implementer_method_id . ' cannot be abstract when inherited method '
                         . $cased_guide_method_id . ' is non-abstract',
                     $code_location
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($guide_method_storage->external_mutation_free
@@ -290,7 +284,7 @@ class MethodComparator
             && !$guide_method_storage->mutation_free_inferred
             && $prevent_method_signature_mismatch
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MissingImmutableAnnotation(
                     $cased_guide_method_id . ' is marked @psalm-immutable, but '
                         . $implementer_classlike_storage->name . '::'
@@ -299,9 +293,7 @@ class MethodComparator
                     $code_location
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-            )) {
-                // fall through
-            }
+            );
         }
     }
 
@@ -361,7 +353,7 @@ class MethodComparator
                                 !== strtolower($or_null_guide_param_signature_type->getId()))
                     ) {
                         if ($implementer_method_storage->cased_name === '__construct') {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ConstructorSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
@@ -376,11 +368,9 @@ class MethodComparator
                                         : $code_location
                                 ),
                                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                            )) {
-                                // fall through
-                            }
+                            );
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new MethodSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
@@ -395,9 +385,7 @@ class MethodComparator
                                         : $code_location
                                 ),
                                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
 
 
@@ -445,7 +433,7 @@ class MethodComparator
                             }
                         }
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new ParamNameMismatch(
                                 'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
                                     . $implementer_param->name . ', expecting $'
@@ -454,9 +442,7 @@ class MethodComparator
                                 $implementer_param->location
                             ),
                             $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -505,7 +491,7 @@ class MethodComparator
         if ($guide_classlike_storage->user_defined && $implementer_param->by_ref !== $guide_param->by_ref) {
             $config = \Psalm\Config::getInstance();
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MethodSignatureMismatch(
                     'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' is' .
                         ($implementer_param->by_ref ? '' : ' not') . ' passed by reference, but argument ' .
@@ -518,9 +504,7 @@ class MethodComparator
                         : $code_location
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-            )) {
-                // fall through
-            }
+            );
         }
     }
 
@@ -589,7 +573,7 @@ class MethodComparator
                     && !$guide_method_storage->abstract)
             ) {
                 if ($implementer_method_storage->cased_name === '__construct') {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ConstructorSignatureMismatch(
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
@@ -605,11 +589,9 @@ class MethodComparator
                                 : $code_location
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MethodSignatureMismatch(
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
@@ -625,12 +607,10 @@ class MethodComparator
                                 : $code_location
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
                             $implementer_param_signature_type . '\', expecting \'' .
@@ -644,9 +624,7 @@ class MethodComparator
                             : $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -763,7 +741,7 @@ class MethodComparator
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
                 if ($guide_classlike_storage->user_defined) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MoreSpecificImplementedParamType(
                             'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
                                 . ' has the more specific type \'' .
@@ -774,9 +752,7 @@ class MethodComparator
                                 ?: $code_location
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } else {
                 if (UnionTypeComparator::isContainedBy(
@@ -886,7 +862,7 @@ class MethodComparator
                 || (!$implementer_method_storage->abstract
                     && !$guide_method_storage->abstract)
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
                             . $implementer_signature_return_type . '\' is different to return type \''
@@ -894,11 +870,9 @@ class MethodComparator
                         $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
                             . $implementer_signature_return_type . '\' is different to return type \''
@@ -906,9 +880,7 @@ class MethodComparator
                         $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -1018,7 +990,7 @@ class MethodComparator
         )) {
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
@@ -1028,11 +1000,9 @@ class MethodComparator
                             ?: $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImplementedReturnTypeMismatch(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
@@ -1042,9 +1012,7 @@ class MethodComparator
                             ?: $code_location
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }

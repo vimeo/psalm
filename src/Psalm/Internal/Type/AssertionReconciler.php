@@ -344,15 +344,13 @@ class AssertionReconciler extends Reconciler
             $new_type_part = new TMixed();
 
             if ($code_location) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $assertion . ' cannot be used in an assertion',
                         $code_location
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -527,7 +525,7 @@ class AssertionReconciler extends Reconciler
             ) {
                 if ($assertion === 'null') {
                     if ($existing_var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
@@ -535,11 +533,9 @@ class AssertionReconciler extends Reconciler
                                 $existing_var_type->getId() . ' null'
                             ),
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new TypeDoesNotContainNull(
                                 'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
                                     . ' does not contain null',
@@ -547,16 +543,14 @@ class AssertionReconciler extends Reconciler
                                 $existing_var_type->getId()
                             ),
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 } elseif (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
                     || ($key !== '$this'
                         && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString()))
                 ) {
                     if ($existing_var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type->getId(),
@@ -564,11 +558,9 @@ class AssertionReconciler extends Reconciler
                                 $existing_var_type->getId() . ' ' . $new_type->getId()
                             ),
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
                                 'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
                                     . ' does not contain ' . $new_type->getId(),
@@ -576,9 +568,7 @@ class AssertionReconciler extends Reconciler
                                 $existing_var_type->getId() . ' ' . $new_type->getId()
                             ),
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -1402,16 +1392,14 @@ class AssertionReconciler extends Reconciler
 
         if ($existing_has_string && !$existing_has_object) {
             if (!$allow_string_comparison && $code_location) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
                         'Cannot allow string comparison to object for ' . $key,
                         $code_location,
                         null
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
 
                 return Type::getMixed();
             } else {

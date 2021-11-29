@@ -140,15 +140,13 @@ class ArrayAnalyzer
 
             foreach ($item_key_type->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof Type\Atomic\TMixed) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedArrayOffset(
                             'Cannot create mixed offset – expecting array-key',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // do nothing
-                    }
+                    );
 
                     $bad_types[] = $atomic_key_type;
 
@@ -168,15 +166,13 @@ class ArrayAnalyzer
                         && isset($atomic_key_type->methods['__toString'])
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
                             'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // do nothing
-                    }
+                    );
 
                     $bad_types[] = $atomic_key_type;
 
@@ -344,15 +340,13 @@ class ArrayAnalyzer
 
         if ($item_key_value !== null) {
             if (isset($array_creation_info->array_keys[$item_key_value])) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DuplicateArrayKey(
                         'Key \'' . $item_key_value . '\' already exists on array',
                         new CodeLocation($statements_analyzer->getSource(), $item)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $array_creation_info->array_keys[$item_key_value] = true;
@@ -493,15 +487,13 @@ class ArrayAnalyzer
                         if ($codebase->php_major_version < 8 ||
                             ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
                         ) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new DuplicateArrayKey(
                                     'String keys are not supported in unpacked arrays',
                                     new CodeLocation($statements_analyzer->getSource(), $item->value)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
 
                             return;
                         }
@@ -540,15 +532,13 @@ class ArrayAnalyzer
                         if ($codebase->php_major_version < 8 ||
                             ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
                         ) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new DuplicateArrayKey(
                                     'String keys are not supported in unpacked arrays',
                                     new CodeLocation($statements_analyzer->getSource(), $item->value)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
 
                             return;
                         }

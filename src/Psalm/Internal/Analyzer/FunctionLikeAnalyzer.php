@@ -260,16 +260,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
 
                 if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Cannot use ' . $param_name . ' as template name since the class already exists',
                             new CodeLocation($this, $this->function),
                             'resource'
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -370,7 +368,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
                 if ($overridden_storage->allow_named_arg_calls) {
-                    IssueBuffer::accepts(new MethodSignatureMismatch(
+                    IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
                         . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location
@@ -518,7 +516,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
                 ) {
-                    IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingClosureParamType(
                             'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
@@ -526,7 +524,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $storage->suppressed_issues + $this->getSuppressedIssues()
                     );
                 } else {
-                    IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingParamType(
                             'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
@@ -642,7 +640,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $container_type = new Type\Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $input_type, $container_type)) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new \Psalm\Issue\InvalidThrow(
                                 'Class supplied for @throws ' . $expected_exception
                                     . ' does not implement Throwable',
@@ -650,9 +648,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 $expected_exception
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     if ($codebase->alter_code) {
@@ -683,15 +679,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$is_expected) {
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingThrowsDocblock(
                             $possibly_thrown_exception . ' is thrown but not caught - please either catch'
                                 . ' or add a @throws annotation',
                             $codelocation
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -854,25 +848,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 if ($this instanceof ClosureAnalyzer) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
                             'Param ' . $var_name . ' is never referenced in this method',
                             $original_location
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UnusedParam(
                             'Param ' . $var_name . ' is never referenced in this method',
                             $original_location
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } else {
                 $fq_class_name = (string)$context->self;
@@ -1123,7 +1113,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MismatchingDocblockParamType(
                             'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
                                 '\', should be \'' . $signature_type . '\'',
@@ -1131,9 +1121,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ),
                         $storage->suppressed_issues,
                         true
-                    )) {
-                        // do nothing
-                    }
+                    );
 
                     if ($signature_type->check(
                         $this,
@@ -1166,16 +1154,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         true
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidParamDefault(
                             'Default value type ' . $default_type->getId() . ' for argument ' . ($offset + 1)
                                 . ' of method ' . $cased_method_id
                                 . ' does not match the given type ' . $param_type->getId(),
                             $function_param->type_location
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -1192,16 +1178,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             } else {
                 if ($param_type->isVoid()) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Parameter cannot be void',
                             $function_param->type_location,
                             'void'
                         ),
                         $this->suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 if ($param_type->check(
@@ -1504,7 +1488,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $actual_type->ignore_falsable_issues
                     )
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new ReferenceConstraintViolation(
                                 'Variable ' . '$' . $param->name . ' is limited to values of type '
                                     . $param_out_type->getId()
@@ -1516,9 +1500,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                     : $param->location
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }

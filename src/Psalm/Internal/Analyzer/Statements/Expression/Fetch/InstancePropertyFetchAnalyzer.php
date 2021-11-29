@@ -144,15 +144,13 @@ class InstancePropertyFetchAnalyzer
                 );
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedPropertyFetch(
                     'Cannot fetch property on mixed var ' . $stmt_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
@@ -184,15 +182,13 @@ class InstancePropertyFetchAnalyzer
                 && $stmt->name instanceof PhpParser\Node\Identifier
                 && !MethodCallAnalyzer::hasNullsafe($stmt->var)
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyNullPropertyFetch(
                         'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
             }
@@ -279,25 +275,21 @@ class InstancePropertyFetchAnalyzer
             $lhs_type_part = $invalid_fetch_types[0];
 
             if ($has_valid_fetch_type) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyFetch(
                         'Cannot fetch property on possible non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -377,16 +369,14 @@ class InstancePropertyFetchAnalyzer
                 ) {
                     $stmt_type->initialized = true;
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UninitializedProperty(
                             'Cannot use uninitialized property ' . $var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $var_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     $stmt_type->addType(new Type\Atomic\TNull);
                 }
@@ -461,15 +451,13 @@ class InstancePropertyFetchAnalyzer
                             && $stmt_type->allow_mutations)
                     ) {
                         if ($context->pure) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpurePropertyFetch(
                                     'Cannot access a property on a mutable object from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } elseif ($statements_analyzer->getSource()
                             instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations

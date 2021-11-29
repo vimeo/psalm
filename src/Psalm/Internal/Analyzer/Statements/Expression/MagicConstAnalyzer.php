@@ -24,15 +24,13 @@ class MagicConstAnalyzer
             $codebase = $statements_analyzer->getCodebase();
 
             if (!$context->self) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedConstant(
                         'Cannot get __class__ outside a class',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 $statements_analyzer->node_data->setType($stmt, Type::getClassString());
             } else {

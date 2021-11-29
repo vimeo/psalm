@@ -35,45 +35,39 @@ class MethodCallPurityAnalyzer
             && !$method_storage->mutation_free
             && !$method_pure_compatible
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ImpureMethodCall(
                     'Cannot call a non-mutation-free method '
                         . $cased_method_id . ' from a pure context',
                     new CodeLocation($statements_analyzer, $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } elseif ($context->mutation_free
             && !$method_storage->mutation_free
             && !$method_pure_compatible
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ImpureMethodCall(
                     'Cannot call a possibly-mutating method '
                         . $cased_method_id . ' from a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } elseif ($context->external_mutation_free
             && !$method_storage->mutation_free
             && $method_id->fq_class_name !== $context->self
             && !$method_pure_compatible
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ImpureMethodCall(
                     'Cannot call a possibly-mutating method '
                         . $cased_method_id . ' from a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } elseif (($method_storage->mutation_free
                 || ($method_storage->external_mutation_free
                     && ($stmt->var->getAttribute('external_mutation_free', false)
@@ -114,16 +108,14 @@ class MethodCallPurityAnalyzer
                     && !$method_storage->if_false_assertions
                     && !$method_storage->throws
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\UnusedMethodCall(
                             'The call to ' . $cased_method_id . ' is not used',
                             new CodeLocation($statements_analyzer, $stmt->name),
                             (string) $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif (!$method_storage->mutation_free_inferred) {
                     $stmt->setAttribute('pure', true);
                 }

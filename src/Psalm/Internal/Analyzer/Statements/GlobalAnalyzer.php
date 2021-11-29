@@ -22,15 +22,13 @@ class GlobalAnalyzer
         ?Context $global_context
     ) : void {
         if (!$context->collect_initializations && !$global_context) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidGlobal(
                     'Cannot use global scope here',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSource()->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $source = $statements_analyzer->getSource();

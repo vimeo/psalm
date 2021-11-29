@@ -944,7 +944,7 @@ class FunctionLikeNodeScanner
                         return [$function_id, $storage, null, null, null, null, false, null, true];
                     }
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DuplicateFunction(
                             'Method ' . $function_id . ' has already been defined'
                             . ($duplicate_function_storage->location
@@ -952,9 +952,7 @@ class FunctionLikeNodeScanner
                                 : ''),
                             new CodeLocation($this->file_scanner, $stmt, null, true)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     $this->file_storage->has_visitor_issues = true;
 
@@ -970,14 +968,12 @@ class FunctionLikeNodeScanner
                     $reflection_function = new \ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new DuplicateFunction(
                                 'Method ' . $function_id . ' has already been defined as a core function',
                                 new CodeLocation($this->file_scanner, $stmt, null, true)
                             )
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -1001,7 +997,7 @@ class FunctionLikeNodeScanner
                 if (!$this->codebase->register_stub_files) {
                     $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DuplicateMethod(
                             'Method ' . $function_id . ' has already been defined'
                             . ($duplicate_method_storage->location
@@ -1009,9 +1005,7 @@ class FunctionLikeNodeScanner
                                 : ''),
                             new CodeLocation($this->file_scanner, $stmt, null, true)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     $this->file_storage->has_visitor_issues = true;
 

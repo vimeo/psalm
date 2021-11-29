@@ -114,6 +114,19 @@ class IssueBuffer
         return self::add($e, $is_fixable);
     }
 
+    /**
+     * @param   string[]  $suppressed_issues
+     *
+     */
+    public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
+    {
+        if (self::isSuppressed($e, $suppressed_issues)) {
+            return;
+        }
+
+        self::add($e, $is_fixable);
+    }
+
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
         if (\strpos($issue_type, 'Tainted') === 0) {

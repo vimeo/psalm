@@ -241,27 +241,23 @@ class NamedFunctionCallHandler
         if ($function_id === 'var_dump'
             || $function_id === 'shell_exec'
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Unsafe ' . implode('', $function_name->parts),
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
         }
 
         if (isset($codebase->config->forbidden_functions[strtolower((string) $function_name)])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of ' . $function_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
 
             return;
         }
@@ -375,25 +371,21 @@ class NamedFunctionCallHandler
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\RedundantCastGivenDocblockType(
                             'The call to array_values is unnecessary given the list docblock type '.$first_arg_type,
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\RedundantCast(
                             'The call to array_values is unnecessary, '.$first_arg_type.' is already a list',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -408,25 +400,21 @@ class NamedFunctionCallHandler
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\RedundantCastGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\RedundantCast(
                             'The call to strtolower is unnecessary',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -440,23 +428,19 @@ class NamedFunctionCallHandler
 
             if ($first_arg_type && $first_arg_type->hasObjectType()) {
                 if ($first_arg_type->isSingle()) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\RawObjectIteration(
                             'Possibly undesired iteration over object properties',
                             new CodeLocation($statements_analyzer, $function_name)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\PossibleRawObjectIteration(
                             'Possibly undesired iteration over object properties',
                             new CodeLocation($statements_analyzer, $function_name)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }

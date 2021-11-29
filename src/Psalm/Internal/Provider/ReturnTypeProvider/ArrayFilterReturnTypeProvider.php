@@ -215,7 +215,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {
-                    IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidReturnType(
                             'No return type could be found in the closure passed to array_filter',
                             $code_location

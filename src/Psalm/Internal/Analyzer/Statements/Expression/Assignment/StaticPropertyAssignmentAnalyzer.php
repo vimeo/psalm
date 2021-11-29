@@ -110,16 +110,14 @@ class StaticPropertyAssignmentAnalyzer
             }
 
             if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return null;
             }
@@ -244,7 +242,7 @@ class StaticPropertyAssignmentAnalyzer
 
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedPropertyTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type `' . $assignment_value_type->getId() . '` provided',
@@ -256,11 +254,9 @@ class StaticPropertyAssignmentAnalyzer
                             $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep soldiering on
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PropertyTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
@@ -272,14 +268,12 @@ class StaticPropertyAssignmentAnalyzer
                             $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep soldiering on
-                    }
+                    );
                 }
             }
 
             if ($union_comparison_results->to_string_cast) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . '\'' . $assignment_value_type . '\' provided with a __toString method',
@@ -290,9 +284,7 @@ class StaticPropertyAssignmentAnalyzer
                         )
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (!$type_match_found && !$union_comparison_results->type_coerced) {

@@ -73,28 +73,24 @@ class PrintAnalyzer
         }
 
         if (isset($codebase->config->forbidden_functions['print'])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of print',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
         }
 
         if (!$context->collect_initializations && !$context->collect_mutations) {
             if ($context->mutation_free || $context->external_mutation_free) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call print from a mutation-free context',
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {

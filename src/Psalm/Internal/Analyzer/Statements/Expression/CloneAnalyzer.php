@@ -96,38 +96,32 @@ class CloneAnalyzer
             }
 
             if ($mixed_clone) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedClone(
                         'Cannot clone mixed',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($invalid_clones) {
                 if ($possibly_valid) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 return true;

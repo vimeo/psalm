@@ -133,15 +133,13 @@ class ElseAnalyzer
                         $outer_constraint_type
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by-reference constraint on ' . $var_id,
                             new CodeLocation($statements_analyzer, $else, $outer_context->include_location, true)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
                     $outer_context->byref_constraints[$var_id] = $byref_constraint;
                 }

@@ -54,57 +54,47 @@ class AttributeAnalyzer
 
         if ($attribute->fq_class_name === 'Attribute' && $classlike_storage) {
             if ($classlike_storage->is_trait) {
-                if (\Psalm\IssueBuffer::accepts(
+                \Psalm\IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Traits cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($classlike_storage->is_interface) {
-                if (\Psalm\IssueBuffer::accepts(
+                \Psalm\IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Interfaces cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($classlike_storage->abstract) {
-                if (\Psalm\IssueBuffer::accepts(
+                \Psalm\IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Abstract classes cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif (isset($classlike_storage->methods['__construct'])
                 && $classlike_storage->methods['__construct']->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ) {
-                if (\Psalm\IssueBuffer::accepts(
+                \Psalm\IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Classes with protected/private constructors cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($classlike_storage->is_enum) {
-                if (\Psalm\IssueBuffer::accepts(
+                \Psalm\IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Enums cannot act as attribute classes',
                         $attribute->name_location
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -235,29 +225,25 @@ class AttributeAnalyzer
                         32 => 'function/method parameter'
                     ];
 
-                    if (\Psalm\IssueBuffer::accepts(
+                    \Psalm\IssueBuffer::maybeAdd(
                         new InvalidAttribute(
                             'This attribute can not be used on a ' . $target_map[$target],
                             $attribute->name_location
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
 
         if (!$has_attribute_attribute) {
-            if (\Psalm\IssueBuffer::accepts(
+            \Psalm\IssueBuffer::maybeAdd(
                 new InvalidAttribute(
                     'The class ' . $attribute->fq_class_name . ' doesn’t have the Attribute attribute',
                     $attribute->name_location
                 ),
                 $source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
     }
 }

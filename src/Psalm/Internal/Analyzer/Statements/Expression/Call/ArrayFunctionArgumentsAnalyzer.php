@@ -766,7 +766,7 @@ class ArrayFunctionArgumentsAnalyzer
         if (count($closure_params) < $min_closure_param_count) {
             $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . ' arguments';
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooManyArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
@@ -774,9 +774,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -784,7 +782,7 @@ class ArrayFunctionArgumentsAnalyzer
         if ($required_param_count > $max_closure_param_count) {
             $argument_text = $max_closure_param_count === 1 ? 'one argument' : $max_closure_param_count . ' arguments';
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooFewArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
@@ -792,9 +790,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -880,7 +876,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedArgumentTypeCoercion(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
@@ -888,11 +884,9 @@ class ArrayFunctionArgumentsAnalyzer
                             $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep soldiering on
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ArgumentTypeCoercion(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
@@ -900,9 +894,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // keep soldiering on
-                    }
+                    );
                 }
             }
 
@@ -914,7 +906,7 @@ class ArrayFunctionArgumentsAnalyzer
                 );
 
                 if ($union_comparison_results->scalar_type_match_found) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidScalarArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
@@ -922,11 +914,9 @@ class ArrayFunctionArgumentsAnalyzer
                             $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($types_can_be_identical) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', possibly different type '
@@ -935,9 +925,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .

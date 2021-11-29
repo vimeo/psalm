@@ -599,16 +599,14 @@ class CallAnalyzer
             ) {
                 $function_id = $root_function_id;
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedFunction(
                         'Function ' . $cased_function_id . ' does not exist',
                         $code_location,
                         $function_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return false;
             }
@@ -1022,7 +1020,7 @@ class CallAnalyzer
                         )) {
                             if ($union_comparison_result->type_coerced) {
                                 if ($union_comparison_result->type_coerced_from_mixed) {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new MixedArgumentTypeCoercion(
                                             'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
@@ -1030,11 +1028,9 @@ class CallAnalyzer
                                             $function_id
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // continue
-                                    }
+                                    );
                                 } else {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new ArgumentTypeCoercion(
                                             'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
@@ -1042,12 +1038,10 @@ class CallAnalyzer
                                             $function_id
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // continue
-                                    }
+                                    );
                                 }
                             } elseif ($union_comparison_result->scalar_type_match_found) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidScalarArgument(
                                         'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
@@ -1055,11 +1049,9 @@ class CallAnalyzer
                                         $function_id
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // continue
-                                }
+                                );
                             } else {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidArgument(
                                         'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
@@ -1067,9 +1059,7 @@ class CallAnalyzer
                                         $function_id
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // continue
-                                }
+                                );
                             }
                         }
                     } else {
@@ -1108,7 +1098,7 @@ class CallAnalyzer
                     );
 
                     if (count($equality_types) > 1) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidArgument(
                                 'Incompatible types found for ' . $template_name . ' (must have only one of ' .
                                 implode(', ', $equality_types) . ')',
@@ -1116,14 +1106,12 @@ class CallAnalyzer
                                 $function_id
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // continue
-                        }
+                        );
                     } else {
                         foreach ($lower_bounds as $lower_bound) {
                             if ($lower_bound->equality_bound_classlike === null) {
                                 if (!in_array($lower_bound->type->getId(), $equality_types, true)) {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new InvalidArgument(
                                             'Incompatible types found for ' . $template_name . ' (' .
                                             $lower_bound->type->getId() . ' is not in ' .
@@ -1132,9 +1120,7 @@ class CallAnalyzer
                                             $function_id
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        // continue
-                                    }
+                                    );
                                 }
                             }
                         }

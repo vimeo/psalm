@@ -255,38 +255,32 @@ class ExistingAtomicStaticCallAnalyzer
                         ])
                     ))
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new AbstractMethodCall(
                         'Cannot call an abstract static method ' . $method_id . ' directly',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (!$context->inside_throw) {
                 if ($context->pure && !$method_storage->pure) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call an impure method from a pure context',
                             new CodeLocation($statements_analyzer, $stmt_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($context->mutation_free && !$method_storage->mutation_free) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call a possibly-mutating method from a mutation-free context',
                             new CodeLocation($statements_analyzer, $stmt_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($statements_analyzer->getSource()
                         instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations

@@ -235,16 +235,14 @@ class TryAnalyzer
                         && strtolower($fq_catch_class) !== 'throwable'
                         && !$codebase->interfaceExtends($fq_catch_class, 'Throwable'))
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidCatch(
                             'Class/interface ' . $fq_catch_class . ' cannot be caught',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_catch_class
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 $fq_catch_classes[] = $fq_catch_class;

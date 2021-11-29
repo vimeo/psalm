@@ -226,30 +226,26 @@ class IncludeAnalyzer
 
             $source = $statements_analyzer->getSource();
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MissingFile(
                     'Cannot find file ' . $path_to_file . ' to include',
                     new CodeLocation($source, $stmt)
                 ),
                 $source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } else {
             $var_id = ExpressionIdentifier::getArrayVarId($stmt->expr, null);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UnresolvableInclude(
                         'Cannot resolve the given expression to a file path',
                         new CodeLocation($source, $stmt)
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 

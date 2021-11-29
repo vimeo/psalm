@@ -895,7 +895,7 @@ class Reconciler
         if ($redundant) {
             if ($existing_var_type->from_property && $assertion === 'isset') {
                 if ($existing_var_type->from_static_property) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantPropertyInitializationCheck(
                             'Static property ' . $key . ' with type '
                                 . $old_var_type_string
@@ -903,23 +903,19 @@ class Reconciler
                             $code_location
                         ),
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantPropertyInitializationCheck(
                             'Property ' . $key . ' with type '
                                 . $old_var_type_string . ' should already be set in the constructor',
                             $code_location
                         ),
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
                         . ' for ' . $key
@@ -928,11 +924,9 @@ class Reconciler
                         $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
                         . ' for ' . $key
@@ -941,13 +935,11 @@ class Reconciler
                         $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         } else {
             if ($from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
@@ -956,9 +948,7 @@ class Reconciler
                         $old_var_type_string . ' ' . $assertion
                     ),
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 if ($assertion === 'null' && !$not) {
                     $issue = new TypeDoesNotContainNull(
@@ -978,12 +968,10 @@ class Reconciler
                     );
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     $issue,
                     $suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }

@@ -308,16 +308,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($function_call_info->function_storage->deprecated && $function_call_info->function_id) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedFunction(
                         'The function ' . $function_call_info->function_id . ' has been marked as deprecated',
                         $code_location,
                         $function_call_info->function_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // continue
-                }
+                );
             }
         }
 
@@ -537,29 +535,25 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new NullFunctionCall(
                         'Cannot call function on null value',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return $function_call_info;
             }
 
             if ($stmt_name_type->isNullable()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyNullFunctionCall(
                         'Cannot call function on possibly null value',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $invalid_function_call_types = [];
@@ -577,15 +571,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                 if ($var_type_part instanceof Type\Atomic\TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure && $context->pure) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new ImpureFunctionCall(
                                 'Cannot call an impure function from a mutation-free context',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     $function_call_info->function_params = $var_type_part->params;
@@ -616,15 +608,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TTemplateParam) {
                     $has_valid_function_call_type = true;
 
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedFunctionCall(
                             'Cannot call function on ' . $var_type_part->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($var_type_part instanceof TCallableObject
                     || $var_type_part instanceof TCallableString
                 ) {
@@ -711,25 +701,21 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $var_type_part = reset($invalid_function_call_types);
 
                 if ($has_valid_function_call_type) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidFunctionCall(
                             'Cannot treat type ' . $var_type_part . ' as callable',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidFunctionCall(
                             'Cannot treat type ' . $var_type_part . ' as callable',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 return $function_call_info;
@@ -963,15 +949,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 || ($callmap_function_pure === false)
             ) {
                 if ($context->mutation_free || $context->external_mutation_free) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'Cannot call an impure function from a mutation-free context',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
@@ -1004,16 +988,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->function_storage->return_type->isNever()
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UnusedFunctionCall(
                             'The call to ' . $function_call_info->function_id . ' is not used',
                             new CodeLocation($statements_analyzer, $function_name),
                             $function_call_info->function_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
                     $stmt->setAttribute('pure', true);
                 }

@@ -113,15 +113,13 @@ class TypeChecker extends NodeVisitor
             $this->checkResource($type);
         } elseif ($type instanceof TArray) {
             if (\count($type->type_params) > 2) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TooManyTemplateParams(
                         $type->getId(). ' has too many template params, expecting 2',
                         $this->code_location
                     ),
                     $this->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -186,16 +184,14 @@ class TypeChecker extends NodeVisitor
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 
             if ($class_storage->deprecated) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedClass(
                         'Class ' . $atomic->value . ' is marked as deprecated',
                         $this->code_location,
                         $atomic->value
                     ),
                     $this->source->getSuppressedIssues() + $this->suppressed_issues
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -221,27 +217,23 @@ class TypeChecker extends NodeVisitor
         $template_param_count = \count($atomic->type_params);
 
         if ($template_type_count > $template_param_count) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '
                         . $template_type_count,
                     $this->code_location
                 ),
                 $this->suppressed_issues
-            )) {
-                // fall through
-            }
+            );
         } elseif ($template_type_count < $template_param_count) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $atomic->getId(). ' has too many template params, expecting '
                         . $template_type_count,
                     $this->code_location
                 ),
                 $this->suppressed_issues
-            )) {
-                // fall through
-            }
+            );
         }
 
         $expected_type_param_keys = \array_keys($expected_type_params);
@@ -272,7 +264,7 @@ class TypeChecker extends NodeVisitor
                     );
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidTemplateParam(
                                 'Extended template param ' . $expected_template_name
                                     . ' of ' . $atomic->getId()
@@ -282,9 +274,7 @@ class TypeChecker extends NodeVisitor
                                 $this->code_location
                             ),
                             $this->suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -340,15 +330,13 @@ class TypeChecker extends NodeVisitor
         }
 
         if (!$is_defined) {
-            if (\Psalm\IssueBuffer::accepts(
+            \Psalm\IssueBuffer::maybeAdd(
                 new UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
                     $this->code_location
                 ),
                 $this->source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
     }
 
@@ -379,16 +367,14 @@ class TypeChecker extends NodeVisitor
                 ) {
                     // do nothing
                 } else {
-                    if (\Psalm\IssueBuffer::accepts(
+                    \Psalm\IssueBuffer::maybeAdd(
                         new \Psalm\Issue\InvalidTemplateParam(
                             'Template param ' . $atomic->param_name . ' of '
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
                             $this->code_location
                         ),
                         $this->source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -397,16 +383,14 @@ class TypeChecker extends NodeVisitor
     public function checkResource(TResource $atomic) : void
     {
         if (!$atomic->from_docblock) {
-            if (\Psalm\IssueBuffer::accepts(
+            \Psalm\IssueBuffer::maybeAdd(
                 new \Psalm\Issue\ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
                     'resource'
                 ),
                 $this->source->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
     }
 }
