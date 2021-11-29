@@ -101,28 +101,24 @@ class EchoAnalyzer
                 return false;
             }
         } elseif (isset($codebase->config->forbidden_functions['echo'])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of echo',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSource()->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
         }
 
         if (!$context->collect_initializations && !$context->collect_mutations) {
             if ($context->mutation_free || $context->external_mutation_free) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call echo from a mutation-free context',
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {

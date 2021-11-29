@@ -71,14 +71,12 @@ class ReturnAnalyzer
                     $file_storage->type_aliases
                 );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($source, $stmt)
                     )
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($var_comments as $var_comment) {
@@ -160,15 +158,13 @@ class ReturnAnalyzer
                 $stmt_type = $stmt_expr_type;
 
                 if ($stmt_type->isNever()) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new NoValue(
                             'This function or method call never returns output',
                             new CodeLocation($source, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     $stmt_type = Type::getEmpty();
                 }
@@ -326,29 +322,25 @@ class ReturnAnalyzer
                                 $origin_location = null;
                             }
 
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new MixedReturnStatement(
                                     'Could not infer a return type',
                                     $return_location,
                                     $origin_location
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
 
                             return;
                         }
 
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new MixedReturnStatement(
                                 'Possibly-mixed return value',
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     if ($local_return_type->isMixed()) {
@@ -393,17 +385,15 @@ class ReturnAnalyzer
                             if ($union_comparison_results->type_coerced_from_mixed) {
                                 if (!$union_comparison_results->type_coerced_from_as_mixed) {
                                     if ($inferred_type->hasMixed()) {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new MixedReturnStatement(
                                                 'Could not infer a return type',
                                                 new CodeLocation($source, $stmt->expr)
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     } else {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new MixedReturnTypeCoercion(
                                                 'The type \'' . $stmt_type->getId() . '\' is more general than the'
                                                     . ' declared return type \'' . $local_return_type->getId() . '\''
@@ -411,13 +401,11 @@ class ReturnAnalyzer
                                                 new CodeLocation($source, $stmt->expr)
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     }
                                 }
                             } else {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new LessSpecificReturnStatement(
                                         'The type \'' . $stmt_type->getId() . '\' is more general than the'
                                             . ' declared return type \'' . $local_return_type->getId() . '\''
@@ -425,9 +413,7 @@ class ReturnAnalyzer
                                         new CodeLocation($source, $stmt->expr)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
 
                             foreach ($local_return_type->getAtomicTypes() as $local_type_part) {
@@ -474,7 +460,7 @@ class ReturnAnalyzer
                                 }
                             }
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidReturnStatement(
                                     'The inferred type \'' . $inferred_type->getId()
                                         . '\' does not match the declared return '
@@ -482,9 +468,7 @@ class ReturnAnalyzer
                                     new CodeLocation($source, $stmt->expr)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
                     }
 
@@ -493,7 +477,7 @@ class ReturnAnalyzer
                         && !$local_return_type->isNullable()
                         && !$local_return_type->hasTemplate()
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new NullableReturnStatement(
                                 'The declared return type \'' . $local_return_type->getId() . '\' for '
                                     . $cased_method_id . ' is not nullable, but the function returns \''
@@ -501,9 +485,7 @@ class ReturnAnalyzer
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            //fall through
-                        }
+                        );
                     }
 
                     if (!$stmt_type->ignore_falsable_issues
@@ -512,7 +494,7 @@ class ReturnAnalyzer
                         && (!$local_return_type->hasBool() || $local_return_type->isTrue())
                         && !$local_return_type->hasScalar()
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new FalsableReturnStatement(
                                 'The declared return type \'' . $local_return_type . '\' for '
                                     . $cased_method_id . ' does not allow false, but the function returns \''
@@ -520,9 +502,7 @@ class ReturnAnalyzer
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             } else {
@@ -530,15 +510,13 @@ class ReturnAnalyzer
                     && !$storage->signature_return_type->isVoid()
                     && !$storage->has_yield
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidReturnStatement(
                             'Empty return statement is not expected in ' . $cased_method_id,
                             new CodeLocation($source, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }

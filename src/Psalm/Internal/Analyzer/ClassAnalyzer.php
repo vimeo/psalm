@@ -146,7 +146,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ReservedWord(
                     $class_name . ' is a reserved word',
                     new CodeLocation(
@@ -158,9 +158,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $class_name
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -259,16 +257,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Cannot use ' . $param_name . ' as template name since the class already exists',
                             new CodeLocation($this, $this->class),
                             'resource'
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -681,16 +677,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if ($property_storage->visibility > $guide_property_storage->visibility
                         && $property_storage->location
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new OverriddenPropertyAccess(
                                 'Property ' . $fq_class_name . '::$' . $property_name
                                     . ' has different access level than '
                                     . $storage->name . '::$' . $property_name,
                                 $property_storage->location
                             )
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
@@ -701,7 +695,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 )))
                         && $property_storage->location
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new NonInvariantPropertyType(
                                 'Property ' . $fq_class_name . '::$' . $property_name
                                     . ' has type '
@@ -718,9 +712,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location
                             ),
                             $property_storage->suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     if ($property_storage->type === null) {
@@ -795,7 +787,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         && !$property_type->equals($guide_property_type, false)
                         && $guide_class_storage->user_defined
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new NonInvariantDocblockPropertyType(
                                 'Property ' . $fq_class_name . '::$' . $property_name
                                     . ' has type ' . $property_type->getId()
@@ -805,9 +797,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location
                             ),
                             $property_storage->suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -928,7 +918,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $union_comparison_result
                     ) && !$union_comparison_result->type_coerced_from_mixed
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
                                 'Parameter '
                                     . $property_class_name . '::$' . $property_name
@@ -936,9 +926,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     '\', should be \'' . $property_storage->signature_type . '\'',
                                 $property_type_location
                             )
-                        )) {
-                            // do nothing
-                        }
+                        );
                     }
                 }
             }
@@ -1276,7 +1264,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             ? 'private or final '
                             : '';
 
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new PropertyNotSetInConstructor(
                                 'Property ' . $class_storage->name . '::$' . $property_name
                                     . ' is not defined in constructor of '
@@ -1286,9 +1274,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_id
                             ),
                             $storage->suppressed_issues + $this->getSuppressedIssues()
-                        )) {
-                            // do nothing
-                        }
+                        );
                     } elseif (!$property_storage->has_default) {
                         if (isset($this->inferred_property_types[$property_name])) {
                             $this->inferred_property_types[$property_name]->addType(new Type\Atomic\TNull());
@@ -1310,7 +1296,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$storage->abstract && $uninitialized_typed_properties) {
             foreach ($uninitialized_typed_properties as $id => $uninitialized_property) {
                 if ($uninitialized_property->location) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingConstructor(
                             $class_storage->name . ' has an uninitialized property ' . $id .
                                 ', but no constructor',
@@ -1318,9 +1304,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $class_storage->name . '::' . $uninitialized_variables[0]
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -1353,15 +1337,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return false;
             }
@@ -1384,15 +1366,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
 
             if ($trait_storage->deprecated) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedTrait(
                         'Trait ' . $fq_trait_name . ' is deprecated',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($trait_storage->extension_requirement !== null) {
@@ -1402,16 +1382,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
 
                 if (!$extensionRequirementMet) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ExtensionRequirementViolation(
                             $fq_trait_name . ' requires using class to extend ' . $extension_requirement
                                 . ', but ' . $storage->name . ' does not',
                             new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -1420,29 +1398,25 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
 
                 if (!$implementationRequirementMet) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImplementationRequirementViolation(
                             $fq_trait_name . ' requires using class to implement '
                                 . $implementation_requirement . ', but ' . $storage->name . ' does not',
                             new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                         ),
                         $storage->suppressed_issues + $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
             if ($storage->mutation_free && !$trait_storage->mutation_free) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name)
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
@@ -1586,16 +1560,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if (IssueBuffer::accepts(
+        IssueBuffer::maybeAdd(
             new MissingPropertyType(
                 $message,
                 new CodeLocation($source, $stmt->props[0]->name),
                 $property_id
             ),
             $this->source->getSuppressedIssues()
-        )) {
-            // fall through
-        }
+        );
     }
 
     private static function addOrUpdatePropertyType(
@@ -1993,27 +1965,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             : count($parent_storage->template_types);
 
         if ($expected_param_count > $given_param_count) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
                         . ' , expecting ' . $expected_param_count,
                     $code_location
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } elseif ($expected_param_count < $given_param_count) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $storage->name . ' has too many template params when extending ' . $parent_storage->name
                         . ' , expecting ' . $expected_param_count,
                     $code_location
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $storage_param_count = ($storage->template_types ? count($storage->template_types) : 0);
@@ -2022,27 +1990,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && $expected_param_count !== $storage_param_count
         ) {
             if ($expected_param_count > $storage_param_count) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingTemplateParam(
                         $storage->name . ' requires the same number of template params as ' . $parent_storage->name
                             . ' but saw ' . $storage_param_count,
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TooManyTemplateParams(
                         $storage->name . ' requires the same number of template params as ' . $parent_storage->name
                             . ' but saw ' . $storage_param_count,
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -2071,16 +2035,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     !== false
                                 && !empty($storage->template_covariants[$local_offset])
                             ) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidTemplateParam(
                                         'Cannot extend an invariant template param ' . $template_name
                                             . ' into a covariant context',
                                         $code_location
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
                         }
                     }
@@ -2090,7 +2052,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             if (!$t instanceof Type\Atomic\TTemplateParam
                                 || !isset($storage->template_types[$t->param_name])
                             ) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidTemplateParam(
                                         'Cannot extend a strictly-enforced parent template param '
                                             . $template_name
@@ -2098,13 +2060,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                         $code_location
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             } elseif ($storage->template_types[$t->param_name][$storage->name]->getId()
                                 !== $template_type->getId()
                             ) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidTemplateParam(
                                         'Cannot extend a strictly-enforced parent template param '
                                             . $template_name
@@ -2115,9 +2075,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                         $code_location
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
                         }
                     }
@@ -2141,7 +2099,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
 
                         if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidTemplateParam(
                                     'Extended template param ' . $template_name
                                         . ' expects type ' . $template_type_copy->getId()
@@ -2149,9 +2107,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                     $code_location
                                 ),
                                 $storage->suppressed_issues + $this->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } else {
                             $previous_extended[$template_name] = [
                                 $declaring_class => $extended_type
@@ -2247,16 +2203,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if (!$interface_storage->is_interface) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedInterface(
                         $fq_interface_name . ' is not an interface',
                         $code_location,
                         $fq_interface_name
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (isset($storage->template_type_implements_count[$fq_interface_name_lc])) {
@@ -2293,43 +2247,37 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 && !isset($storage->parent_classes['domnodelist'])
                 && !isset($storage->parent_classes['dateperiod'])
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidTraversableImplementation(
                         'Traversable should be implemented by implementing IteratorAggregate or Iterator',
                         $code_location,
                         $fq_class_name
                     )
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($interface_storage->deprecated) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedInterface(
                         $fq_interface_name . ' is marked deprecated',
                         $code_location,
                         $fq_interface_name
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($interface_storage->external_mutation_free
                 && !$storage->external_mutation_free
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
                         $fq_interface_name . ' is marked @psalm-immutable, but '
                         . $fq_class_name . ' is not marked @psalm-immutable',
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
@@ -2366,7 +2314,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     if (!$implementer_method_storage) {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new UnimplementedInterfaceMethod(
                                 'Method ' . $interface_method_name_lc . ' is not defined on class ' .
                                 $storage->name,
@@ -2404,7 +2352,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     if ($implementer_visibility !== self::VISIBILITY_PUBLIC) {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InaccessibleMethod(
                                 'Interface-defined method ' . $implementer_method_storage->cased_name
                                 . ' must be public in ' . $storage->name,
@@ -2417,7 +2365,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     if ($interface_method_storage->is_static && !$implementer_method_storage->is_static) {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new MethodSignatureMismatch(
                                 'Method ' . $implementer_method_storage->cased_name
                                 . ' should be static like '
@@ -2503,46 +2451,40 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             if ($parent_class_storage->is_trait || $parent_class_storage->is_interface) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedClass(
                         $parent_fq_class_name . ' is not a class',
                         $code_location,
                         $parent_fq_class_name . ' as class'
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($parent_class_storage->final) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidExtendClass(
                         'Class ' . $fq_class_name . ' may not inherit from final class ' . $parent_fq_class_name,
                         $code_location,
                         $fq_class_name
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($parent_class_storage->deprecated) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DeprecatedClass(
                         $parent_fq_class_name . ' is marked deprecated',
                         $code_location,
                         $parent_fq_class_name
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (!NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->internal)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InternalClass(
                         $parent_fq_class_name . ' is internal to ' . $parent_class_storage->internal
                         . ' but called from ' . $fq_class_name,
@@ -2550,38 +2492,32 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($parent_class_storage->external_mutation_free
                 && !$storage->external_mutation_free
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
                         $parent_fq_class_name . ' is marked @psalm-immutable, but '
                         . $fq_class_name . ' is not marked @psalm-immutable',
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($storage->mutation_free
                 && !$parent_class_storage->mutation_free
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $fq_class_name . ' is marked @psalm-immutable but ' . $parent_fq_class_name . ' is not',
                         $code_location
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if ($codebase->store_node_types) {

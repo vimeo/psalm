@@ -176,15 +176,13 @@ class StaticPropertyFetchAnalyzer
         }
 
         if ($context->mutation_free) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new \Psalm\Issue\ImpureStaticProperty(
                     'Cannot use a static property in a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         } elseif ($statements_analyzer->getSource()
                 instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
             && $statements_analyzer->getSource()->track_mutations
@@ -241,16 +239,14 @@ class StaticPropertyFetchAnalyzer
                 return true;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new UndefinedPropertyFetch(
                     'Static property ' . $property_id . ' is not defined',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $property_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return true;
         }
@@ -274,27 +270,23 @@ class StaticPropertyFetchAnalyzer
             }
 
             if ($context->inside_assignment) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             return true;

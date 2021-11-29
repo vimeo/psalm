@@ -853,16 +853,14 @@ class ClassLikes
             ) {
                 if ($find_unused_code) {
                     if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new UnusedClass(
                                 'Class ' . $classlike_storage->name . ' is never used',
                                 $classlike_storage->location,
                                 $classlike_storage->name
                             ),
                             $classlike_storage->suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
                         $this->checkMethodReferences($classlike_storage, $methods);
                         $this->checkPropertyReferences($classlike_storage);
@@ -1885,25 +1883,21 @@ class ClassLikes
 
                     if (!$method_return_referenced) {
                         if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new \Psalm\Issue\UnusedReturnValue(
                                     'The return value for this private method is never used',
                                     $method_storage->return_type_location
                                 ),
                                 $method_storage->suppressed_issues
-                            )) {
-                                // fall through
-                            }
+                            );
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new \Psalm\Issue\PossiblyUnusedReturnValue(
                                     'The return value for this method is never used',
                                     $method_storage->return_type_location
                                 ),
                                 $method_storage->suppressed_issues
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
                     }
                 }
@@ -1921,25 +1915,21 @@ class ClassLikes
                             )
                         ) {
                             if ($method_storage->final) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new \Psalm\Issue\UnusedParam(
                                         'Param #' . ($offset + 1) . ' is never referenced in this method',
                                         $param_storage->location
                                     ),
                                     $method_storage->suppressed_issues
-                                )) {
-                                    // fall through
-                                }
+                                );
                             } else {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new PossiblyUnusedParam(
                                         'Param #' . ($offset + 1) . ' is never referenced in this method',
                                         $param_storage->location
                                     ),
                                     $method_storage->suppressed_issues
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
                         }
                     }

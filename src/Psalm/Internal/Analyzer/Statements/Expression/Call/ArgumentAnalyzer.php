@@ -110,7 +110,7 @@ class ArgumentAnalyzer
                 }
 
                 if ($param_type && !$param_type->hasMixed()) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                 . ' cannot be mixed, expecting ' . $param_type,
@@ -118,9 +118,7 @@ class ArgumentAnalyzer
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -155,7 +153,7 @@ class ArgumentAnalyzer
                 }
 
                 if (count($values) < 12 || ($gt_count / count($values)) < 0.8) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidLiteralArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                 . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
@@ -163,9 +161,7 @@ class ArgumentAnalyzer
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -419,7 +415,7 @@ class ArgumentAnalyzer
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                             . ' cannot unpack ' . $arg_type->getId() . ', expecting iterable',
@@ -427,9 +423,7 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 if ($cased_method_id) {
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
@@ -503,7 +497,7 @@ class ArgumentAnalyzer
                 }
 
                 if (!$arg_key_allowed) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new NamedArgumentNotAllowed(
                             'Method ' . $cased_method_id
                                 . ' called with named unpacked array ' . $unpacked_atomic_array->getId()
@@ -512,9 +506,7 @@ class ArgumentAnalyzer
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } else {
                 $non_iterable = false;
@@ -546,19 +538,17 @@ class ArgumentAnalyzer
 
                 $issue_type = $possibly_matches ? PossiblyInvalidArgument::class : InvalidArgument::class;
                 if ($non_iterable) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new $issue_type(
                             'Tried to unpack non-iterable ' . $arg_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
                 if ($invalid_key) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new $issue_type(
                             'Method ' . $cased_method_id
                                 . ' called with unpacked iterable ' . $arg_type->getId()
@@ -568,24 +558,20 @@ class ArgumentAnalyzer
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
                 if ($invalid_string_key) {
                     if ($codebase->php_major_version < 8) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new $issue_type(
                                 'String keys not supported in unpacked arguments',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
                                 $cased_method_id
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new NamedArgumentNotAllowed(
                                 'Method ' . $cased_method_id
                                     . ' called with named unpacked iterable ' . $arg_type->getId()
@@ -594,9 +580,7 @@ class ArgumentAnalyzer
                                 $cased_method_id
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -604,16 +588,14 @@ class ArgumentAnalyzer
             }
         } else {
             if (!$allow_named_args && $arg->name !== null) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new NamedArgumentNotAllowed(
                         'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -745,7 +727,7 @@ class ArgumentAnalyzer
                 $origin_location = null;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
                         . ' cannot be ' . $input_type->getId() . ', expecting ' .
@@ -755,9 +737,7 @@ class ArgumentAnalyzer
                     $origin_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             if ($input_type->isMixed()) {
                 if (!$function_param->by_ref
@@ -802,15 +782,13 @@ class ArgumentAnalyzer
         }
 
         if ($input_type->isNever()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NoValue(
                     'This function or method call never returns output',
                     $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return null;
         }
@@ -970,7 +948,7 @@ class ArgumentAnalyzer
                     $origin_location = null;
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', parent type ' . $input_type->getId() . ' provided',
@@ -979,11 +957,9 @@ class ArgumentAnalyzer
                         $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep soldiering on
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', parent type ' . $input_type->getId() . ' provided',
@@ -991,23 +967,19 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // keep soldiering on
-                }
+                );
             }
         }
 
         if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                         $param_type->getId() . ', ' . $input_type->getId() . ' provided with a __toString method',
                     $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if (!$type_match_found && !$union_comparison_results->type_coerced) {
@@ -1022,7 +994,7 @@ class ArgumentAnalyzer
             $type = ($input_type->possibly_undefined ? 'possibly undefined ' : '') . $input_type->getId();
             if ($union_comparison_results->scalar_type_match_found) {
                 if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                                 $param_type->getId() . ', ' . $type . ' provided',
@@ -1030,12 +1002,10 @@ class ArgumentAnalyzer
                             $cased_method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($types_can_be_identical) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', possibly different type ' . $type . ' provided',
@@ -1043,11 +1013,9 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', ' . $type . ' provided',
@@ -1055,9 +1023,7 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             return null;
@@ -1080,7 +1046,7 @@ class ArgumentAnalyzer
 
         if (!$param_type->isNullable() && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
             if ($input_type->isNull()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new NullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
                             'null value provided to parameter with type ' . $param_type->getId(),
@@ -1088,15 +1054,13 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return null;
             }
 
             if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyNullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
                             'null value provided',
@@ -1104,9 +1068,7 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -1117,7 +1079,7 @@ class ArgumentAnalyzer
             $cased_method_id !== 'print'
         ) {
             if ($input_type->isFalse()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
                         $param_type->getId() . ' value expected',
@@ -1125,15 +1087,13 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 return null;
             }
 
             if ($input_type->isFalsable() && !$input_type->ignore_falsable_issues) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyFalseArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
                         $param_type->getId() . ' value expected',
@@ -1141,9 +1101,7 @@ class ArgumentAnalyzer
                         $cased_method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 

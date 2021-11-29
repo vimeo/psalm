@@ -612,16 +612,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $origin_location = null;
                         }
 
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new MixedMethodCall(
                                 $message,
                                 $name_code_location,
                                 $origin_location
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 

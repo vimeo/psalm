@@ -94,7 +94,7 @@ class NegatedAssertionReconciler extends Reconciler
 
                             if ($code_location) {
                                 if ($existing_var_type->from_static_property) {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new RedundantPropertyInitializationCheck(
                                             'Static property ' . $key . ' with type '
                                                 . $existing_var_type
@@ -102,22 +102,18 @@ class NegatedAssertionReconciler extends Reconciler
                                             $code_location
                                         ),
                                         $suppressed_issues
-                                    )) {
-                                        // fall through
-                                    }
+                                    );
                                 } elseif ($existing_var_type->from_property) {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new RedundantPropertyInitializationCheck(
                                             'Property ' . $key . ' with type '
                                                 . $existing_var_type . ' should already be set in the constructor',
                                             $code_location
                                         ),
                                         $suppressed_issues
-                                    )) {
-                                        // fall through
-                                    }
+                                    );
                                 } elseif ($existing_var_type->from_docblock) {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new DocblockTypeContradiction(
                                             'Cannot resolve types for ' . $key . ' with docblock-defined type '
                                                 . $existing_var_type . ' and !isset assertion',
@@ -125,11 +121,9 @@ class NegatedAssertionReconciler extends Reconciler
                                             null
                                         ),
                                         $suppressed_issues
-                                    )) {
-                                        // fall through
-                                    }
+                                    );
                                 } else {
-                                    if (IssueBuffer::accepts(
+                                    IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
                                             'Cannot resolve types for ' . $key . ' with type '
                                                 . $existing_var_type . ' and !isset assertion',
@@ -137,9 +131,7 @@ class NegatedAssertionReconciler extends Reconciler
                                             null
                                         ),
                                         $suppressed_issues
-                                    )) {
-                                        // fall through
-                                    }
+                                    );
                                 }
                             }
 

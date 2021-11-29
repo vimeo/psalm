@@ -219,14 +219,12 @@ class FileAnalyzer extends SourceAnalyzer
             foreach ($uncaught_throws as $possibly_thrown_exception => $codelocations) {
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UncaughtThrowInGlobalScope(
                             $possibly_thrown_exception . ' is thrown but not caught in global scope',
                             $codelocation
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -262,7 +260,7 @@ class FileAnalyzer extends SourceAnalyzer
 
                     $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidTypeImport(
                                 'Type alias ' . $alias->alias_name
                                 . ' imported from ' . $fq_source_classlike

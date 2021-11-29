@@ -489,16 +489,14 @@ class AssertionFinder
             && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
         ) {
             if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
                         $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
                         new CodeLocation($source, $conditional),
                         $var_type->getId() . ' ' . $other_type->getId()
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 // both side of the Identical can be asserted to the intersection of both
                 $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase);
@@ -833,51 +831,43 @@ class AssertionFinder
 
         if (!$negate) {
             if ($first_var_type->from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantConditionGivenDocblockType(
                         'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantCondition(
                         $first_var_type . ' always contains ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } else {
             if ($first_var_type->from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
                         '!' . $first_var_type . ' does not contain ' . $expected_type,
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
@@ -982,7 +972,7 @@ class AssertionFinder
                         $args = $expr->getArgs();
 
                         if (!array_key_exists($var_id, $args)) {
-                            IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable '.$var_id.' is not an argument so cannot be asserted',
                                     new CodeLocation($source, $expr)
@@ -997,7 +987,7 @@ class AssertionFinder
                         $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $source);
 
                         if (null === $arg_var_id) {
-                            IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
                                     in local scope',
@@ -1016,7 +1006,7 @@ class AssertionFinder
                             );
 
                             if (null !== $failedMessage) {
-                                IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidDocblock($failedMessage, new CodeLocation($source, $expr))
                                 );
                                 continue;
@@ -1031,7 +1021,7 @@ class AssertionFinder
                             $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
                         }
                     } else {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr)
@@ -1116,7 +1106,7 @@ class AssertionFinder
                         $args = $expr->getArgs();
 
                         if (!array_key_exists($var_id, $args)) {
-                            IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable '.$var_id.' is not an argument so cannot be asserted',
                                     new CodeLocation($source, $expr)
@@ -1130,7 +1120,7 @@ class AssertionFinder
                         $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $source);
 
                         if (null === $arg_var_id) {
-                            IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
                                      in local scope',
@@ -1149,7 +1139,7 @@ class AssertionFinder
                             );
 
                             if (null !== $failedMessage) {
-                                IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidDocblock($failedMessage, new CodeLocation($source, $expr))
                                 );
                                 continue;
@@ -1171,7 +1161,7 @@ class AssertionFinder
                         }
                         $if_types[$var_id] = [['!'.$assertion->rule[0][0]]];
                     } else {
-                        IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr)
@@ -2048,27 +2038,23 @@ class AssertionFinder
                     $var_type
                 )) {
                     if ($var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
                                 'Docblock-defined type ' . $var_type . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantCondition(
                                 $var_type . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -2151,15 +2137,13 @@ class AssertionFinder
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantIdentityWithTrue(
                         'The "!== false" part of this comparison is redundant',
                         new CodeLocation($source, $conditional)
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $false_type = Type::getFalse();
@@ -2174,27 +2158,23 @@ class AssertionFinder
                 $var_type
             )) {
                 if ($var_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
                             'Docblock-defined type ' . $var_type . ' can never contain false',
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' false'
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantCondition(
                             $var_type . ' can never contain false',
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' false'
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -2301,27 +2281,23 @@ class AssertionFinder
                     $var_type
                 )) {
                     if ($var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
                                 'Docblock-defined type ' . $var_type . ' can never contain true',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' true'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantCondition(
                                 $var_type . ' can never contain ' . $true_type,
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' true'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -2382,27 +2358,23 @@ class AssertionFinder
                     $var_type
                 )) {
                     if ($var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
                                 'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new RedundantCondition(
                                 $var_type->getId() . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -2454,14 +2426,12 @@ class AssertionFinder
         }
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new UnevaluatedCode(
                     'gettype cannot return this value',
                     new CodeLocation($source, $whichclass_expr)
                 )
-            )) {
-                // fall through
-            }
+            );
         } else {
             if ($var_name && $var_type) {
                 if ($var_type === 'class@anonymous') {
@@ -2767,27 +2737,23 @@ class AssertionFinder
                 $var_type
             )) {
                 if ($var_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             $var_type . ' does not contain null',
                             new CodeLocation($source, $conditional),
                             $var_type . ' null'
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TypeDoesNotContainNull(
                             $var_type . ' does not contain null',
                             new CodeLocation($source, $conditional),
                             $var_type->getId()
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -2879,15 +2845,13 @@ class AssertionFinder
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RedundantIdentityWithTrue(
                         'The "=== true" part of this comparison is redundant',
                         new CodeLocation($source, $conditional)
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             $true_type = Type::getTrue();
@@ -2898,27 +2862,23 @@ class AssertionFinder
                 $var_type
             )) {
                 if ($var_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             $var_type . ' does not contain true',
                             new CodeLocation($source, $conditional),
                             $var_type . ' true'
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain true',
                             new CodeLocation($source, $conditional),
                             $var_type . ' true'
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -3021,27 +2981,23 @@ class AssertionFinder
                     $var_type
                 )) {
                     if ($var_type->from_docblock) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 $var_type . ' does not contain false',
                                 new CodeLocation($source, $conditional),
                                 $var_type . ' false'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
                                 $var_type . ' does not contain false',
                                 new CodeLocation($source, $conditional),
                                 $var_type . ' false'
                             ),
                             $source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
             }
@@ -3098,27 +3054,23 @@ class AssertionFinder
                 $var_type
             )) {
                 if ($var_type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             $var_type . ' does not contain an empty array',
                             new CodeLocation($source, $conditional),
                             null
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain empty array',
                             new CodeLocation($source, $conditional),
                             null
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -3159,14 +3111,12 @@ class AssertionFinder
         $var_type = $string_expr->value;
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new UnevaluatedCode(
                     'gettype cannot return this value',
                     new CodeLocation($source, $string_expr)
                 )
-            )) {
-                // fall through
-            }
+            );
         } else {
             if ($var_name && $var_type) {
                 if ($var_type === 'class@anonymous') {
@@ -4049,7 +3999,7 @@ class AssertionFinder
                             $var_type
                         )) {
                             if ($var_type->from_docblock) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new RedundantConditionGivenDocblockType(
                                         $var_type->getId() . ' does not contain '
                                         . $instanceof_type->getId(),
@@ -4057,11 +4007,9 @@ class AssertionFinder
                                         $var_type->getId() . ' ' . $instanceof_type->getId()
                                     ),
                                     $source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             } else {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new RedundantCondition(
                                         $var_type->getId() . ' cannot be identical to '
                                         . $instanceof_type->getId(),
@@ -4069,9 +4017,7 @@ class AssertionFinder
                                         $var_type->getId() . ' ' . $instanceof_type->getId()
                                     ),
                                     $source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
                         }
                     }
@@ -4108,39 +4054,33 @@ class AssertionFinder
             $var_type
         )) {
             if ($var_type->from_docblock || $other_type->from_docblock) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         $var_type->getId() . ' does not contain ' . $other_type->getId(),
                         new CodeLocation($source, $conditional),
                         $var_type->getId() . ' ' . $other_type->getId()
                     ),
                     $source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 if ($conditional instanceof NotEqual || $conditional instanceof NotIdentical) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantCondition(
                             $var_type->getId() . ' can never contain ' . $other_type->getId(),
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' ' . $other_type->getId()
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
                             $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' ' . $other_type->getId()
                         ),
                         $source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }

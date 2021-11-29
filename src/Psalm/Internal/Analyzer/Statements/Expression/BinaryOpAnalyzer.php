@@ -227,15 +227,13 @@ class BinaryOpAnalyzer
                 && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
                     || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
             ) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidOperand(
                         'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
                         new CodeLocation($statements_analyzer, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
@@ -271,51 +269,43 @@ class BinaryOpAnalyzer
                                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
                                 ) {
                                     if ($atomic_right_type->from_docblock) {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new \Psalm\Issue\DocblockTypeContradiction(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     } else {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new \Psalm\Issue\TypeDoesNotContainType(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     }
                                 } else {
                                     if ($atomic_right_type->from_docblock) {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new \Psalm\Issue\RedundantConditionGivenDocblockType(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     } else {
-                                        if (IssueBuffer::accepts(
+                                        IssueBuffer::maybeAdd(
                                             new \Psalm\Issue\RedundantCondition(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
-                                        )) {
-                                            // fall through
-                                        }
+                                        );
                                     }
                                 }
                             }
@@ -471,16 +461,14 @@ class BinaryOpAnalyzer
                             $statements_analyzer->getSource()->inferred_has_mutation = true;
                             $statements_analyzer->getSource()->inferred_impure = true;
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
                     }
                 }
@@ -506,16 +494,14 @@ class BinaryOpAnalyzer
                             $statements_analyzer->getSource()->inferred_has_mutation = true;
                             $statements_analyzer->getSource()->inferred_impure = true;
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
                                     new CodeLocation($statements_analyzer, $stmt)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
                     }
                 }

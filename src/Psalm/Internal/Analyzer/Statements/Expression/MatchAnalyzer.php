@@ -123,15 +123,13 @@ class MatchAnalyzer
         $last_arm = array_shift($arms);
 
         if (!$last_arm) {
-            if (\Psalm\IssueBuffer::accepts(
+            \Psalm\IssueBuffer::maybeAdd(
                 new UnhandledMatchCondition(
                     'This match expression does not match anything',
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
 
             return false;
         }
@@ -259,16 +257,14 @@ class MatchAnalyzer
                     );
 
                     if ($array_literal_types) {
-                        if (\Psalm\IssueBuffer::accepts(
+                        \Psalm\IssueBuffer::maybeAdd(
                             new UnhandledMatchCondition(
                                 'This match expression is not exhaustive - consider values '
                                     . $vars_in_scope_reconciled[$switch_var_id]->getId(),
                                 new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // continue
-                        }
+                        );
                     }
                 }
             }

@@ -264,14 +264,12 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $methodsOfInterest = ['__clone', '__construct', '__destruct'];
 
         if (in_array($cased_method_name, $methodsOfInterest)) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MethodSignatureMustOmitReturnType(
                     'Method ' . $cased_method_name . ' must not declare a return type',
                     $code_location
                 )
-            )) {
-                // fall through
-            }
+            );
         }
     }
 

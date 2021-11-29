@@ -214,25 +214,21 @@ class ArithmeticOpAnalyzer
                 $first_left_message = $invalid_left_messages[0];
 
                 if ($has_valid_left_operand) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $first_left_message,
                             new CodeLocation($statements_source, $left)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $first_left_message,
                             new CodeLocation($statements_source, $left)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -240,38 +236,32 @@ class ArithmeticOpAnalyzer
                 $first_right_message = $invalid_right_messages[0];
 
                 if ($has_valid_right_operand) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $first_right_message,
                             new CodeLocation($statements_source, $right)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $first_right_message,
                             new CodeLocation($statements_source, $right)
                         ),
                         $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
             if ($has_string_increment && $statements_source) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new StringIncrement(
                         'Possibly unintended string increment',
                         new CodeLocation($statements_source, $left)
                     ),
                     $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }

@@ -253,15 +253,13 @@ class CastAnalyzer
             return true;
         }
 
-        if (IssueBuffer::accepts(
+        IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . get_class($stmt),
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             ),
             $statements_analyzer->getSuppressedIssues()
-        )) {
-            // fall through
-        }
+        );
 
         return false;
     }
@@ -401,25 +399,21 @@ class CastAnalyzer
 
         if ($invalid_casts) {
             if ($valid_strings || $castable_types) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(
                         $invalid_casts[0] . ' cannot be cast to string',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidCast(
                         $invalid_casts[0] . ' cannot be cast to string',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } elseif ($explicit_cast && !$castable_types) {
             // todo: emit error here

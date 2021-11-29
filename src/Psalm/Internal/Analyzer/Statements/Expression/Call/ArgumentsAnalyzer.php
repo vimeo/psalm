@@ -673,7 +673,7 @@ class ArgumentsAnalyzer
                                 if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
                                     if ($candidate_param->name === $key_type->value) {
                                         if (isset($matched_args[$candidate_param->name])) {
-                                            if (IssueBuffer::accepts(
+                                            IssueBuffer::maybeAdd(
                                                 new InvalidNamedArgument(
                                                     'Parameter $' . $key_type->value . ' has already been used in '
                                                     . ($cased_method_id ?: $method_id),
@@ -681,9 +681,7 @@ class ArgumentsAnalyzer
                                                     (string)$method_id
                                                 ),
                                                 $statements_analyzer->getSuppressedIssues()
-                                            )) {
-                                                // fall through
-                                            }
+                                            );
                                         }
 
                                         $matched_args[$candidate_param->name] = true;
@@ -695,7 +693,7 @@ class ArgumentsAnalyzer
                             }
 
                             if (!$param_found) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $key_type->value . ' does not exist on function '
                                         . ($cased_method_id ?: $method_id),
@@ -703,9 +701,7 @@ class ArgumentsAnalyzer
                                         (string)$method_id
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
                         }
                     }
@@ -715,7 +711,7 @@ class ArgumentsAnalyzer
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
                             if (isset($matched_args[$candidate_param->name])) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
                                             . ($cased_method_id ?: $method_id),
@@ -723,9 +719,7 @@ class ArgumentsAnalyzer
                                         (string) $method_id
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
                             }
 
                             $matched_args[$candidate_param->name] = true;
@@ -737,7 +731,7 @@ class ArgumentsAnalyzer
                 }
 
                 if (!isset($arg_function_params[$argument_offset])) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidNamedArgument(
                             'Parameter $' . $arg->name->name . ' does not exist on function '
                                 . ($cased_method_id ?: $method_id),
@@ -745,9 +739,7 @@ class ArgumentsAnalyzer
                             (string) $method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($function_param_count > $argument_offset) {
                 $arg_function_params[$argument_offset] = [$function_params[$argument_offset]];
@@ -846,27 +838,23 @@ class ArgumentsAnalyzer
 
         if ($method_id === 'array_map' || $method_id === 'array_filter') {
             if ($method_id === 'array_map' && count($args) < 2) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
                         $code_location,
                         $method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($method_id === 'array_filter' && count($args) < 1) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
                         $code_location,
                         $method_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
 
             ArrayFunctionArgumentsAnalyzer::checkArgumentsMatch(
@@ -934,15 +922,13 @@ class ArgumentsAnalyzer
                 )
             )
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
                     'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
                     new CodeLocation($statements_analyzer->getSource(), $arg->value)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return false;
         }
@@ -1120,16 +1106,14 @@ class ArgumentsAnalyzer
                 if (!isset($context->vars_in_scope[$var_id])
                     && $arg->value instanceof PhpParser\Node\Expr\Variable
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Variable ' . $var_id
                                 . ' must be defined prior to use within an unknown function or method',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 // we don't know if it exists, assume it's passed by reference
@@ -1421,7 +1405,7 @@ class ArgumentsAnalyzer
                 || ($method_id instanceof MethodIdentifier
                     && $method_id->method_name === '__construct'))
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new TooManyArguments(
                     'Too many arguments for ' . ($cased_method_id ?: $method_id)
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
@@ -1429,9 +1413,7 @@ class ArgumentsAnalyzer
                     (string)$method_id
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return;
         }
@@ -1462,7 +1444,7 @@ class ArgumentsAnalyzer
                         || ($method_id instanceof MethodIdentifier
                             && $method_id->method_name === '__construct'))
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TooFewArguments(
                             'Too few arguments for ' . $cased_method_id
                             . ' - expecting ' . $expected_param_count
@@ -1471,9 +1453,7 @@ class ArgumentsAnalyzer
                             (string)$method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
 
                     break;
                 }

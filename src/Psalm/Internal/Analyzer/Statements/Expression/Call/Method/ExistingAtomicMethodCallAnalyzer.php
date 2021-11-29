@@ -535,7 +535,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
                     if ($union_comparison_results->type_coerced) {
                         if ($union_comparison_results->type_coerced_from_mixed) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new MixedPropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
@@ -543,11 +543,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // keep soldiering on
-                            }
+                            );
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new PropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
@@ -555,9 +553,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // keep soldiering on
-                            }
+                            );
                         }
                     }
 
@@ -567,7 +563,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $second_arg_type,
                             $pseudo_set_type
                         )) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(
                                     $prop_name . ' with declared type \''
                                     . $pseudo_set_type
@@ -576,11 +572,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         } else {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new InvalidPropertyAssignmentValue(
                                     $prop_name . ' with declared type \''
                                     . $pseudo_set_type
@@ -589,9 +583,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $property_id
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
                         }
                     }
                 }

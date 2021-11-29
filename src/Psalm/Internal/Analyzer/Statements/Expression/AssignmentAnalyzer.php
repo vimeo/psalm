@@ -137,23 +137,19 @@ class AssignmentAnalyzer
                     $file_storage->type_aliases
                 );
             } catch (IncorrectDocblockException $e) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MissingDocblockType(
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     )
-                )) {
-                    // fall through
-                }
+                );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     )
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($var_comments as $var_comment) {
@@ -296,14 +292,12 @@ class AssignmentAnalyzer
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
             if ($context->vars_in_scope[$array_var_id]->by_ref) {
                 if ($context->mutation_free) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureByReferenceAssignment(
                             'Variable ' . $array_var_id . ' cannot be assigned to as it is passed by reference',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
@@ -384,16 +378,14 @@ class AssignmentAnalyzer
                     $origin_location = null;
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new MixedAssignment(
                         $message,
                         $issue_location,
                         $origin_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } else {
             if (!$context->collect_initializations
@@ -418,7 +410,7 @@ class AssignmentAnalyzer
                     $assign_value_type->ignore_falsable_issues
                 )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
                                 . $context->byref_constraints[$var_id]->type
@@ -427,9 +419,7 @@ class AssignmentAnalyzer
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -447,15 +437,13 @@ class AssignmentAnalyzer
         if (isset($context->protected_var_ids[$var_id])
             && $assign_value_type->hasLiteralInt()
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new LoopInvalidation(
                     'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
                     new CodeLocation($statements_analyzer->getSource(), $assign_var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
@@ -527,15 +515,13 @@ class AssignmentAnalyzer
 
         if ($var_id && isset($context->vars_in_scope[$var_id])) {
             if ($context->vars_in_scope[$var_id]->isVoid()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new AssignmentToVoid(
                         'Cannot assign ' . $var_id . ' to type void',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
 
                 $context->vars_in_scope[$var_id] = Type::getNull();
 
@@ -706,14 +692,12 @@ class AssignmentAnalyzer
 
             $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
         } catch (\UnexpectedValueException $e) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidDocblock(
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 )
-            )) {
-                // fall through
-            }
+            );
         }
     }
 
@@ -967,15 +951,13 @@ class AssignmentAnalyzer
                         && !strpos($var_id, '->')
                         && !strpos($var_id, '::')
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new \Psalm\Issue\NullReference(
                                 'Not expecting null argument passed by reference',
                                 $location
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
 
                     if ($stmt instanceof PhpParser\Node\Expr\Variable) {
@@ -1070,15 +1052,13 @@ class AssignmentAnalyzer
             && !$assign_value_type->isMixed()
             && !$assign_value_type->hasArrayAccessInterface($codebase)
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidArrayOffset(
                     'Cannot destructure non-array of type ' . $assign_value_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $assign_var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         $can_be_empty = true;
@@ -1135,15 +1115,13 @@ class AssignmentAnalyzer
                         $value_type = $assign_value_atomic_type->properties[$offset_value];
 
                         if ($value_type->possibly_undefined) {
-                            if (IssueBuffer::accepts(
+                            IssueBuffer::maybeAdd(
                                 new PossiblyUndefinedArrayOffset(
                                     'Possibly undefined array key',
                                     new CodeLocation($statements_analyzer->getSource(), $var)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            );
 
                             $value_type = clone $value_type;
                             $value_type->possibly_undefined = false;
@@ -1188,28 +1166,24 @@ class AssignmentAnalyzer
                     }
 
                     if ($assign_value_atomic_type->sealed) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidArrayOffset(
                                 'Cannot access value with offset ' . $offset,
                                 new CodeLocation($statements_analyzer->getSource(), $var)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
                 if ($assign_value_atomic_type instanceof Type\Atomic\TMixed) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
                     $has_null = true;
 
@@ -1358,15 +1332,13 @@ class AssignmentAnalyzer
                                 clone $assign_value_atomic_type->properties[$assign_var_item->key->value];
 
                             if ($new_assign_type->possibly_undefined) {
-                                if (IssueBuffer::accepts(
+                                IssueBuffer::maybeAdd(
                                     new PossiblyUndefinedArrayOffset(
                                         'Possibly undefined array key',
                                         new CodeLocation($statements_analyzer->getSource(), $var)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                );
 
                                 $new_assign_type->possibly_undefined = false;
                             }
@@ -1428,14 +1400,12 @@ class AssignmentAnalyzer
                             break;
                         }
                     } catch (\UnexpectedValueException $e) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),
                                 new CodeLocation($statements_analyzer->getSource(), $assign_var)
                             )
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -1572,15 +1542,13 @@ class AssignmentAnalyzer
             && !$context->collect_initializations
         ) {
             if ($context->mutation_free || $context->external_mutation_free) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new ImpurePropertyAssignment(
                         'Cannot assign to a property from a mutation-free context',
                         new CodeLocation($statements_analyzer, $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {

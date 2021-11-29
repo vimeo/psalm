@@ -74,14 +74,12 @@ class ForeachAnalyzer
                     $type_aliases
                 );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt)
                     )
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -374,29 +372,25 @@ class ForeachAnalyzer
         }
 
         if ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyNullIterator(
                     'Cannot iterate over nullable var ' . $iterator_type,
                     new CodeLocation($statements_analyzer->getSource(), $expr)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return null;
         }
 
         if ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyFalseIterator(
                     'Cannot iterate over falsable var ' . $iterator_type,
                     new CodeLocation($statements_analyzer->getSource(), $expr)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
 
             return null;
         }
@@ -509,15 +503,13 @@ class ForeachAnalyzer
                         $statements_analyzer->getSource()->inferred_impure = true;
                     }
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call a possibly-mutating iterator from a pure context',
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
                 if ($iterator_atomic_type->extra_types) {
@@ -589,15 +581,13 @@ class ForeachAnalyzer
                         $statements_analyzer->getSource()->inferred_impure = true;
                     }
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call a possibly-mutating Traversable::getIterator from a pure context',
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TNamedObject) {
                 if ($iterator_atomic_type->value !== 'Traversable' &&
@@ -644,64 +634,54 @@ class ForeachAnalyzer
                         $statements_analyzer->getSource()->inferred_impure = true;
                     }
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call a possibly-mutating iterator from a pure context',
                             new CodeLocation($statements_analyzer, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
 
         if ($raw_object_types) {
             if ($has_valid_iterator) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossibleRawObjectIteration(
                         'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new RawObjectIteration(
                         'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
         if ($invalid_iterator_types) {
             if ($has_valid_iterator) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidIterator(
                         'Cannot iterate over ' . $invalid_iterator_types[0],
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidIterator(
                         'Cannot iterate over ' . $invalid_iterator_types[0],
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 

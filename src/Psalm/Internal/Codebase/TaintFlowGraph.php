@@ -444,7 +444,7 @@ class TaintFlowGraph extends DataFlowGraph
                                 );
                         }
 
-                        IssueBuffer::accepts($issue);
+                        IssueBuffer::maybeAdd($issue);
                     }
                 }
             }

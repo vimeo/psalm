@@ -329,53 +329,45 @@ class IfConditionalAnalyzer
         if ($type !== null) {
             if ($type->isAlwaysFalsy()) {
                 if ($type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             'Operand of type ' . $type->getId() . ' is always false',
                             new CodeLocation($statements_analyzer, $stmt),
                             'false falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
                             'Operand of type ' . $type->getId() . ' is always false',
                             new CodeLocation($statements_analyzer, $stmt),
                             'false falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             } elseif ($type->isAlwaysTruthy() &&
                 (!$stmt instanceof PhpParser\Node\Expr\Assign || $emit_redundant_with_assignation)
             ) {
                 if ($type->from_docblock) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
                             'Operand of type ' . $type->getId() . ' is always true',
                             new CodeLocation($statements_analyzer, $stmt),
                             'true falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new RedundantCondition(
                             'Operand of type ' . $type->getId() . ' is always true',
                             new CodeLocation($statements_analyzer, $stmt),
                             'true falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }

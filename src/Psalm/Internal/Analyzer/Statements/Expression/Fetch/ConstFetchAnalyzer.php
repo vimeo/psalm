@@ -85,15 +85,13 @@ class ConstFetchAnalyzer
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, clone $const_type);
                 } elseif ($context->check_consts) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UndefinedConstant(
                             'Const ' . $const_name . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
         }
     }

@@ -24,15 +24,13 @@ class StaticAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->mutation_free) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new \Psalm\Issue\ImpureStaticVariable(
                     'Cannot use a static variable in a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
-            }
+            );
         }
 
         foreach ($stmt->vars as $var) {
@@ -58,23 +56,19 @@ class StaticAnalyzer
                         $statements_analyzer->getSource()->getTemplateTypeMap()
                     );
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\MissingDocblockType(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer, $var)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 } catch (DocblockParseException $e) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 foreach ($var_comments as $var_comment) {
@@ -127,14 +121,12 @@ class StaticAnalyzer
 
                         $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
                     } catch (\UnexpectedValueException $e) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),
                                 new CodeLocation($statements_analyzer, $var)
                             )
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -156,15 +148,13 @@ class StaticAnalyzer
                         $comment_type
                     )
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new \Psalm\Issue\ReferenceConstraintViolation(
                             $var_id . ' of type ' . $comment_type->getId() . ' cannot be assigned type '
                                 . $var_default_type->getId(),
                             new CodeLocation($statements_analyzer, $var)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 

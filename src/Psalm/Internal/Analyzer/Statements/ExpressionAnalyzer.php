@@ -406,15 +406,13 @@ class ExpressionAnalyzer
                 }
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of shell_exec',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
 
             return true;
         }

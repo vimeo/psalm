@@ -39,14 +39,12 @@ class YieldAnalyzer
                     $statements_analyzer->getAliases()
                 );
             } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     )
-                )) {
-                    // fall through
-                }
+                );
             }
 
             foreach ($var_comments as $var_comment) {

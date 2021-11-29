@@ -66,15 +66,13 @@ class EvalAnalyzer
         }
 
         if (isset($codebase->config->forbidden_functions['eval'])) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of eval',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                // continue
-            }
+            );
         }
 
         $context->check_classes = false;

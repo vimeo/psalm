@@ -455,23 +455,19 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $file_storage->type_aliases
                     );
                 } catch (\Psalm\Exception\IncorrectDocblockException $e) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 } catch (\Psalm\Exception\DocblockParseException $e) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
 
                 foreach ($var_comments as $var_comment) {
@@ -636,25 +632,21 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         foreach ($traced_variables as $traced_variable) {
             if (isset($context->vars_in_scope[$traced_variable])) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new Trace(
                         $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
                         new CodeLocation($statements_analyzer->source, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UndefinedTrace(
                         'Attempt to trace undefined variable ' . $traced_variable,
                         new CodeLocation($statements_analyzer->source, $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -671,14 +663,12 @@ class StatementsAnalyzer extends SourceAnalyzer
         try {
             $this->parsed_docblock = DocComment::parsePreservingLength($docblock);
         } catch (DocblockParseException $e) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new InvalidDocblock(
                     $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true)
                 )
-            )) {
-                // fall through
-            }
+            );
 
             $this->parsed_docblock = null;
         }
@@ -689,15 +679,13 @@ class StatementsAnalyzer extends SourceAnalyzer
             $trimmed = trim(\reset($comments->tags['psalm-scope-this']));
 
             if (!$codebase->classExists($trimmed)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new \Psalm\Issue\UndefinedDocblockClass(
                         'Scope class ' . $trimmed . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
                         $trimmed
                     )
-                )) {
-                    // fall through
-                }
+                );
             } else {
                 $this_type = Type::parseString($trimmed);
                 $context->self = $trimmed;
@@ -738,27 +726,23 @@ class StatementsAnalyzer extends SourceAnalyzer
                 && $average_destination_branches_converging > 1.1
             ) {
                 if ($source instanceof FunctionAnalyzer) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ComplexFunction(
                             'This function’s complexity is greater than the project limit'
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean). ')',
                             $function_storage->location
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 } elseif ($source instanceof MethodAnalyzer) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ComplexMethod(
                             'This method’s complexity is greater than the project limit'
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean) . ')',
                             $function_storage->location
                         ),
                         $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -828,13 +812,11 @@ class StatementsAnalyzer extends SourceAnalyzer
                     );
                 }
 
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     $issue,
                     $this->getSuppressedIssues(),
                     $issue instanceof UnusedVariable
-                )) {
-                    // fall through
-                }
+                );
             }
         }
     }
