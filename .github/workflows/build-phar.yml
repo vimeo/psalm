@@ -33,6 +33,7 @@ jobs:
         with:
           php-version: '7.4'
           tools: composer:v2
+          coverage: none
 
       - uses: actions/checkout@v2
 

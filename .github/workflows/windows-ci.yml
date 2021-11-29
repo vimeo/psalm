@@ -22,6 +22,7 @@ jobs:
         with:
           php-version: '8.0'
           tools: composer:v2
+          coverage: none
 
       - uses: actions/checkout@v2
 
