@@ -102,17 +102,26 @@
         "psalter"
     ],
     "scripts": {
-        "all-tests": [
-            "phpcs",
-            "@php ./psalm --find-dead-code",
-            "phpunit"
-        ],
-        "psalm": "@php ./psalm --find-dead-code",
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
+        "lint": "parallel-lint ./src ./tests",
+        "phpunit": "paratest --runner=WrapperRunner",
+        "phpunit-std": "phpunit",
+        "psalm": "@php ./psalm --find-dead-code",
         "tests": [
-            "phpcs",
-            "phpunit"
+            "@lint",
+            "@cs",
+            "@psalm",
+            "@phpunit"
         ]
+    },
+    "scripts-descriptions": {
+        "cs": "Checks that the code conforms to the coding standard.",
+        "cs-fix": "Automatically correct coding standard violations.",
+        "lint": "Runs unit tests.",
+        "phpunit": "Runs unit tests in parallel.",
+        "phpunit-std": "Runs unit tests.",
+        "psalm": "Runs static analysis.",
+        "tests": "Runs all available tests."
     }
 }
