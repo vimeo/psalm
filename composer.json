@@ -111,8 +111,8 @@
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
         "lint": "parallel-lint ./src ./tests",
-        "phpunit": "phpunit",
-        "phpunit-p": "paratest --runner=WrapperRunner",
+        "phpunit": "paratest --runner=WrapperRunner",
+        "phpunit-std": "phpunit",
         "psalm": "@php ./psalm --find-dead-code",
         "tests": [
             "@cs",
@@ -124,8 +124,8 @@
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
         "lint": "Runs unit tests.",
-        "phpunit": "Runs unit tests.",
-        "phpunit-p": "Runs unit tests in parallel.",
+        "phpunit": "Runs unit tests in parallel.",
+        "phpunit-std": "Runs unit tests.",
         "psalm": "Runs static analysis.",
         "tests": "Checks coding style and runs unit tests."
     }
