@@ -108,6 +108,7 @@
             "phpunit"
         ],
         "psalm": "@php ./psalm --find-dead-code",
+        "phpunit": "phpunit",
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
         "tests": [
