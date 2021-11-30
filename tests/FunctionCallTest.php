@@ -1339,7 +1339,7 @@ class FunctionCallTest extends TestCase
                     '$matches===' => 'array<array-key, array{string, int}>',
                 ],
             ],
-            'pregMatchWithFlagUnMatchedAsNull' => [
+            'PHP72-pregMatchWithFlagUnmatchedAsNull' => [
                 '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
@@ -1347,9 +1347,9 @@ class FunctionCallTest extends TestCase
                     '$matches===' => 'array<array-key, null|string>',
                 ],
             ],
-            'pregMatchWithFlagOffsetCaptureAndUnMatchedAsNull' => [
+            'PHP72-pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
                 '<?php
-                    $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE  | PREG_UNMATCHED_AS_NULL);',
+                    $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
                     '$r===' => '0|1|false',
                     '$matches===' => 'array<array-key, array{null|string, int}>',
