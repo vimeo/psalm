@@ -36,10 +36,6 @@ return [
       'old' => ['resource|false', 'command'=>'string', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
       'new' => ['resource|false', 'cmd'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
     ],
-    'RedisCluster::setOption' => [
-      'old' => ['bool', 'name'=>'string', 'value'=>'string'],
-      'new' => ['bool', 'name'=>'string|int', 'value'=>'string|int'],
-    ]
   ],
   'removed' => [
   ],
