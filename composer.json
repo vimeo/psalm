@@ -107,11 +107,11 @@
             "@php ./psalm --find-dead-code",
             "phpunit"
         ],
-        "psalm": "@php ./psalm --find-dead-code",
-        "phpunit": "phpunit",
-        "phpunit-p": "paratest --runner=WrapperRunner",
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
+        "phpunit": "phpunit",
+        "phpunit-p": "paratest --runner=WrapperRunner",
+        "psalm": "@php ./psalm --find-dead-code",
         "tests": [
             "phpcs",
             "phpunit"
@@ -119,11 +119,11 @@
     },
     "scripts-descriptions": {
         "all-tests": "Runs all available tests.",
-        "psalm": "Runs static analysis.",
-        "phpunit": "Runs unit tests.",
-        "phpunit-p": "Runs unit tests in parallel.",
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
+        "phpunit": "Runs unit tests.",
+        "phpunit-p": "Runs unit tests in parallel.",
+        "psalm": "Runs static analysis.",
         "tests": "Checks coding style and runs unit tests."
     }
 }
