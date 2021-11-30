@@ -10273,7 +10273,7 @@ return [
 'preg_filter' => ['null|string|string[]', 'pattern'=>'mixed', 'replacement'=>'mixed', 'subject'=>'mixed', 'limit='=>'int', '&w_count='=>'int'],
 'preg_grep' => ['array|false', 'pattern'=>'string', 'array'=>'array', 'flags='=>'int'],
 'preg_last_error' => ['int'],
-'preg_match' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'string[]', 'flags='=>'0|', 'offset='=>'int'],
+'preg_match' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'string[]', 'flags='=>'0', 'offset='=>'int'],
 'preg_match\'1' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'array', 'flags='=>'int', 'offset='=>'int'],
 'preg_match_all' => ['int|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'array', 'flags='=>'int', 'offset='=>'int'],
 'preg_quote' => ['string', 'str'=>'string', 'delimiter='=>'string'],

@@ -1282,6 +1282,13 @@ class FunctionCallTest extends TestCase
 
                     takesInt(preg_match("{foo}", "foo"));',
             ],
+            'pregMatch2' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo");',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                ],
+            ],
             'pregMatchWithMatches' => [
                 '<?php
                     /** @param string[] $matches */
@@ -1290,6 +1297,14 @@ class FunctionCallTest extends TestCase
                     preg_match("{foo}", "foo", $matches);
 
                     takesMatches($matches);',
+            ],
+            'pregMatchWithMatches2' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo", $matches);',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                    '$matches===' => 'array<array-key, string>',
+                ],
             ],
             'pregMatchWithOffset' => [
                 '<?php
@@ -1300,17 +1315,45 @@ class FunctionCallTest extends TestCase
 
                     takesMatches($matches);',
             ],
+            'pregMatchWithOffset2' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo", $matches, 0, 10);',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                    '$matches===' => 'array<array-key, string>',
+                ],
+            ],
             'pregMatchWithFlags' => [
                 '<?php
                     function takesInt(int $i) : void {}
 
                     if (preg_match("{foo}", "this is foo", $matches, PREG_OFFSET_CAPTURE)) {
-                        /**
-                         * @psalm-suppress MixedArrayAccess
-                         * @psalm-suppress MixedArgument
-                         */
                         takesInt($matches[0][1]);
                     }',
+            ],
+            'pregMatchWithFlagOffsetCapture' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE);',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                    '$matches===' => 'array<array-key, array{string, int}>',
+                ],
+            ],
+            'PHP72-pregMatchWithFlagUnmatchedAsNull' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo", $matches, PREG_UNMATCHED_AS_NULL);',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                    '$matches===' => 'array<array-key, null|string>',
+                ],
+            ],
+            'PHP72-pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
+                '<?php
+                    $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
+                'assertions' => [
+                    '$r===' => '0|1|false',
+                    '$matches===' => 'array<array-key, array{null|string, int}>',
+                ],
             ],
             'pregReplaceCallback' => [
                 '<?php
@@ -1449,7 +1492,10 @@ class FunctionCallTest extends TestCase
             ],
             'writeArgsAllowed' => [
                 '<?php
-                    /** @return false|int */
+                    /**
+                     * @param 0|256|512|768 $flags
+                     * @return false|int
+                     */
                     function safeMatch(string $pattern, string $subject, ?array $matches = null, int $flags = 0) {
                         return \preg_match($pattern, $subject, $matches, $flags);
                     }
