@@ -103,9 +103,9 @@
     ],
     "scripts": {
         "all-tests": [
-            "phpcs",
-            "@php ./psalm --find-dead-code",
-            "phpunit"
+            "@cs",
+            "@psalm",
+            "@phpunit"
         ],
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
@@ -113,8 +113,8 @@
         "phpunit-p": "paratest --runner=WrapperRunner",
         "psalm": "@php ./psalm --find-dead-code",
         "tests": [
-            "phpcs",
-            "phpunit"
+            "@cs",
+            "@phpunit"
         ]
     },
     "scripts-descriptions": {
