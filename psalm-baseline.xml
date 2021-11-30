@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@aed069bf8345aa69b5ccdcec7fcf8f961715e729">
+<files psalm-version="dev-master@6941ebfc5318e3782e59bfb85876e5edc1f7cca6">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -458,6 +458,31 @@
       <code>array_keys($template_type_map[$param_name])[0]</code>
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualClass.php">
+    <PropertyNotSetInConstructor occurrences="1">
+      <code>VirtualClass</code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualFunction.php">
+    <PropertyNotSetInConstructor occurrences="1">
+      <code>VirtualFunction</code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualInterface.php">
+    <PropertyNotSetInConstructor occurrences="1">
+      <code>VirtualInterface</code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualTrait.php">
+    <PropertyNotSetInConstructor occurrences="1">
+      <code>VirtualTrait</code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/VirtualConst.php">
+    <PropertyNotSetInConstructor occurrences="1">
+      <code>VirtualConst</code>
+    </PropertyNotSetInConstructor>
   </file>
   <file src="src/Psalm/Storage/Assertion.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
