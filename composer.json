@@ -103,12 +103,14 @@
     ],
     "scripts": {
         "all-tests": [
+            "@lint",
             "@cs",
             "@psalm",
             "@phpunit"
         ],
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
+        "lint": "parallel-lint ./src ./tests",
         "phpunit": "phpunit",
         "phpunit-p": "paratest --runner=WrapperRunner",
         "psalm": "@php ./psalm --find-dead-code",
@@ -121,6 +123,7 @@
         "all-tests": "Runs all available tests.",
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
+        "lint": "Runs unit tests.",
         "phpunit": "Runs unit tests.",
         "phpunit-p": "Runs unit tests in parallel.",
         "psalm": "Runs static analysis.",
