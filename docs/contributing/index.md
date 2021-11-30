@@ -34,10 +34,6 @@ Lastly, working to improve static analysis tools will also make you a better PHP
 
 Before you send a pull request, make sure you follow these guidelines:
 
-Run integration checks locally:
-
-- `composer cs` - checks the code is properly linted
-- `vendor/bin/paratest` - runs PHPUnit tests in parallel
-- `./psalm` - runs Psalm on itself
+Run integration checks locally: `composer tests`
 
 If you're adding new features or fixing bugs, don’t forget to add tests!
