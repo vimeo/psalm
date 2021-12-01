@@ -49,12 +49,15 @@
 
 
     <!-- **************************************************************************************************************
-      *  RULESET: SlevomatCodingStandard:  https://github.com/slevomat/coding-standard                                *
+      *  RULESET: SlevomatCodingStandard:                                                                             *
       ************************************************************************************************************** -->
 
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
-    <!-- Forbid usage of a function or a class constant via fallback global name -->
+    <!--
+        Handle imports from namespaces.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
             <property name="allowFallbackGlobalConstants" value="false"/>
@@ -67,18 +70,31 @@
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
+    <!--
+        Looks for unused imports from other namespaces.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesunuseduses-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
         <properties>
             <property name="searchAnnotations" value="true"/>
         </properties>
     </rule>
 
+    <!--
+        Checks whether uses at the top of a file are alphabetically sorted.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesalphabeticallysorteduses-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
             <property name="caseSensitive" value="true" />
         </properties>
     </rule>
 
+
+    <!--
+        Enforces configurable number of lines before/after/between use.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesusespacing-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
         <properties>
             <property name="linesCountBetweenUseTypes" value="1" />
