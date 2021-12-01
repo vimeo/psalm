@@ -34,7 +34,7 @@
       *  RULESET: PSR2                                                                                                *
       ************************************************************************************************************** -->
 
-    <rule ref="PSR2" />
+    <rule ref="PSR2"/>
 
     <rule ref="PSR2.Namespaces.UseDeclaration">
         <exclude-pattern>*</exclude-pattern>
@@ -45,7 +45,7 @@
       *  RULESET: Squiz                                                                                               *
       ************************************************************************************************************** -->
 
-    <rule ref="Squiz.Classes.SelfMemberReference" />
+    <rule ref="Squiz.Classes.SelfMemberReference"/>
 
 
     <!-- **************************************************************************************************************
@@ -86,7 +86,7 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
-            <property name="caseSensitive" value="true" />
+            <property name="caseSensitive" value="true"/>
         </properties>
     </rule>
 
@@ -97,7 +97,7 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
         <properties>
-            <property name="linesCountBetweenUseTypes" value="1" />
+            <property name="linesCountBetweenUseTypes" value="1"/>
         </properties>
     </rule>
 
