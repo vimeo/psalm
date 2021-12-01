@@ -4,6 +4,8 @@
     xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd"
     name="Psalm coding standard"
 >
+    <description>The coding standard for Psalm.</description>
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
     <!-- Forbid usage of a function or a class constant via fallback global name -->
