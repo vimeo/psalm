@@ -81,6 +81,10 @@ class ErrorBaseline
 
         $xmlSource = $fileProvider->getContents($baselineFile);
 
+        if ($xmlSource === '') {
+            throw new Exception\ConfigException('Baseline file is empty');
+        }
+
         $baselineDoc = new \DOMDocument();
         $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
 
