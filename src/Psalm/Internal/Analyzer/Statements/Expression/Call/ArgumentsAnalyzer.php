@@ -868,6 +868,22 @@ class ArgumentsAnalyzer
             return null;
         }
 
+        if ($method_id === 'get_class' && $args === []) {
+            //get_class without args only works when inside a class
+            if (!$context->self) {
+                IssueBuffer::maybeAdd(
+                    new TooFewArguments(
+                        'Cannot call get_class() without argument outside of class scope',
+                        $code_location,
+                        $method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+
+                return null;
+            }
+        }
+
         self::checkArgCount(
             $statements_analyzer,
             $codebase,

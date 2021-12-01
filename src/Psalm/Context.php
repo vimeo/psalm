@@ -107,6 +107,7 @@ class Context
 
     /**
      * @var string|null
+     * The name of the current class. Null if outside a class.
      */
     public $self;
 
