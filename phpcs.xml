@@ -12,6 +12,8 @@
 
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
+    <arg name="basepath" value="."/>
+
     <!-- **************************************************************************************************************
       *  Files to include/exclude                                                                                     *
       ************************************************************************************************************** -->
@@ -83,7 +85,7 @@
             <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
 
-        <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
+        <!--<exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>-->
     </rule>
 
     <!--
