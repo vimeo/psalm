@@ -7,15 +7,13 @@
     <description>The coding standard for Psalm.</description>
 
     <!-- **************************************************************************************************************
-      *  Files to include                                                                                             *
+      *  Files to include/exclude                                                                                     *
       ************************************************************************************************************** -->
+
     <file>bin/</file>
     <file>src/</file>
     <file>tests/</file>
 
-    <!-- **************************************************************************************************************
-      *  Files to exclude                                                                                             *
-      ************************************************************************************************************** -->
     <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
