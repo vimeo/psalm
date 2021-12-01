@@ -3748,7 +3748,7 @@ return [
 'get_resources' => ['array<int,resource>', 'type='=>'string'],
 'getallheaders' => ['array|false'],
 'getcwd' => ['string|false'],
-'getdate' => ['array{seconds: int<0, 59>, minutes: int<0, 59>, hours: int<0, 23>, mday: int<1, 31>, wday: int<0, 6>, mon: int<1, 12>, year: int<1970, 292277026596>, yday: int<0, 365>, weekday: "Monday"|"Tuesday"|"Wednesday"|"Thursday"|"Friday"|"Saturday"|"Sunday", month: "January"|"February"|"March"|"April"|"May"|"June"|"July"|"August"|"September"|"October"|"November"|"December", 0: int}', 'timestamp='=>'int'],
+'getdate' => ['array{seconds: int<0, 59>, minutes: int<0, 59>, hours: int<0, 23>, mday: int<1, 31>, wday: int<0, 6>, mon: int<1, 12>, year: int, yday: int<0, 365>, weekday: "Monday"|"Tuesday"|"Wednesday"|"Thursday"|"Friday"|"Saturday"|"Sunday", month: "January"|"February"|"March"|"April"|"May"|"June"|"July"|"August"|"September"|"October"|"November"|"December", 0: int}', 'timestamp='=>'int'],
 'getenv' => ['string|false', 'name'=>'string', 'local_only='=>'bool'],
 'getenv\'1' => ['array<string,string>'],
 'gethostbyaddr' => ['string|false', 'ip'=>'string'],
