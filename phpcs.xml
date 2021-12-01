@@ -6,6 +6,13 @@
 >
     <description>The coding standard for Psalm.</description>
 
+    <!-- **************************************************************************************************************
+      *  Files to include                                                                                             *
+      ************************************************************************************************************** -->
+    <file>bin/</file>
+    <file>src/</file>
+    <file>tests/</file>
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
     <!-- Forbid usage of a function or a class constant via fallback global name -->
@@ -44,9 +51,6 @@
         </properties>
     </rule>
     <rule ref="Squiz.Classes.SelfMemberReference" />
-    <file>bin/</file>
-    <file>src/</file>
-    <file>tests/</file>
 
     <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
 
