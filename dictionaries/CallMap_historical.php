@@ -11058,7 +11058,7 @@ return [
     'get_call_stack' => [''],
     'get_called_class' => ['class-string'],
     'get_cfg_var' => ['string|false', 'option'=>'string'],
-    'get_class' => ['class-string|false', 'object='=>'object'],
+    'get_class' => ['class-string', 'object='=>'object'],
     'get_class_methods' => ['list<string>|null', 'object_or_class'=>'mixed'],
     'get_class_vars' => ['array<string,mixed>', 'class'=>'string'],
     'get_current_user' => ['string'],
