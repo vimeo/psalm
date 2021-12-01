@@ -4,9 +4,78 @@
     xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd"
     name="Psalm coding standard"
 >
+    <description>The coding standard for Psalm.</description>
+
+    <!-- **************************************************************************************************************
+      *  Configuration                                                                                                *
+      ************************************************************************************************************** -->
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
-    <rule ref="PSR2" />
-    <!-- Forbid usage of a function or a class constant via fallback global name -->
+
+    <arg name="basepath" value="."/>
+
+    <!-- **************************************************************************************************************
+      *  Files to include/exclude                                                                                     *
+      ************************************************************************************************************** -->
+
+    <file>bin/</file>
+    <file>src/</file>
+    <file>tests/</file>
+
+    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
+    <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
+    <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
+    <exclude-pattern>tests/fixtures/</exclude-pattern>
+
+
+    <!-- **************************************************************************************************************
+      *  STANDARD:  Generic                                                                                           *
+      ************************************************************************************************************** -->
+
+    <!--
+        Restrict line length.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/Generic/Docs/Files/LineLengthStandard.xml
+     -->
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>tests</exclude-pattern>
+        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
+    </rule>
+
+
+    <!-- **************************************************************************************************************
+      *  STANDARD:  PSR2                                                                                              *
+      ************************************************************************************************************** -->
+
+    <rule ref="PSR2"/>
+
+    <!--
+        Namespace Declarations.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/PSR2/Docs/Namespaces/UseDeclarationStandard.xml
+     -->
+    <rule ref="PSR2.Namespaces.UseDeclaration">
+        <exclude-pattern>*</exclude-pattern>
+    </rule>
+
+
+    <!-- **************************************************************************************************************
+      *  STANDARD:  Squiz                                                                                             *
+      ************************************************************************************************************** -->
+
+    <!--
+        The self keyword should be used instead of the current class name.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/Squiz/Docs/Classes/SelfMemberReferenceStandard.xml
+     -->
+    <rule ref="Squiz.Classes.SelfMemberReference"/>
+
+
+    <!-- **************************************************************************************************************
+      *  STANDARD:  SlevomatCodingStandard                                                                            *
+      ************************************************************************************************************** -->
+
+    <!--
+        Handle imports from namespaces.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
             <property name="allowFallbackGlobalConstants" value="false"/>
@@ -15,40 +84,38 @@
             <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
             <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
+
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
-    <rule ref="Generic.Files.LineLength">
-        <exclude-pattern>tests</exclude-pattern>
-        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
-    </rule>
-    <rule ref="PSR2.Namespaces.UseDeclaration">
-        <exclude-pattern>*</exclude-pattern>
-    </rule>
-
+    <!--
+        Looks for unused imports from other namespaces.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesunuseduses-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
         <properties>
             <property name="searchAnnotations" value="true"/>
         </properties>
     </rule>
+
+    <!--
+        Checks whether uses at the top of a file are alphabetically sorted.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesalphabeticallysorteduses-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
-            <property name="caseSensitive" value="true" />
+            <property name="caseSensitive" value="true"/>
         </properties>
     </rule>
+
+    <!--
+        Enforces configurable number of lines before/after/between use.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesusespacing-
+     -->
     <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
         <properties>
-            <property name="linesCountBetweenUseTypes" value="1" />
+            <property name="linesCountBetweenUseTypes" value="1"/>
         </properties>
     </rule>
-    <rule ref="Squiz.Classes.SelfMemberReference" />
-    <file>bin/</file>
-    <file>src/</file>
-    <file>tests/</file>
 
-    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
-
-    <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
-    <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
-    <exclude-pattern>tests/fixtures/</exclude-pattern>
 </ruleset>
