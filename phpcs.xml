@@ -31,8 +31,18 @@
         <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
     </rule>
 
-    <config name="installed_paths" value="../../slevomat/coding-standard"/>
+
+    <!-- **************************************************************************************************************
+      *  RULESET: PSR2                                                                                                *
+      ************************************************************************************************************** -->
+
     <rule ref="PSR2" />
+
+    <rule ref="PSR2.Namespaces.UseDeclaration">
+        <exclude-pattern>*</exclude-pattern>
+    </rule>
+
+    <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <!-- Forbid usage of a function or a class constant via fallback global name -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
@@ -43,10 +53,6 @@
             <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
-    </rule>
-
-    <rule ref="PSR2.Namespaces.UseDeclaration">
-        <exclude-pattern>*</exclude-pattern>
     </rule>
 
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
