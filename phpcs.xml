@@ -22,6 +22,15 @@
     <exclude-pattern>tests/fixtures/</exclude-pattern>
 
 
+    <!-- **************************************************************************************************************
+      *  RULESET: Generic                                                                                             *
+      ************************************************************************************************************** -->
+
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>tests</exclude-pattern>
+        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
+    </rule>
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
     <!-- Forbid usage of a function or a class constant via fallback global name -->
@@ -36,10 +45,6 @@
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
-    <rule ref="Generic.Files.LineLength">
-        <exclude-pattern>tests</exclude-pattern>
-        <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
-    </rule>
     <rule ref="PSR2.Namespaces.UseDeclaration">
         <exclude-pattern>*</exclude-pattern>
     </rule>
