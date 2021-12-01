@@ -30,6 +30,10 @@
       *  STANDARD:  Generic                                                                                           *
       ************************************************************************************************************** -->
 
+    <!--
+        Restrict line length.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/Generic/Docs/Files/LineLengthStandard.xml
+     -->
     <rule ref="Generic.Files.LineLength">
         <exclude-pattern>tests</exclude-pattern>
         <exclude-pattern>src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php</exclude-pattern>
@@ -42,6 +46,10 @@
 
     <rule ref="PSR2"/>
 
+    <!--
+        Namespace Declarations.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/PSR2/Docs/Namespaces/UseDeclarationStandard.xml
+     -->
     <rule ref="PSR2.Namespaces.UseDeclaration">
         <exclude-pattern>*</exclude-pattern>
     </rule>
@@ -51,6 +59,10 @@
       *  STANDARD:  Squiz                                                                                             *
       ************************************************************************************************************** -->
 
+    <!--
+        The self keyword should be used instead of the current class name.
+        https://github.com/squizlabs/PHP_CodeSniffer/blob/master/src/Standards/Squiz/Docs/Classes/SelfMemberReferenceStandard.xml
+     -->
     <rule ref="Squiz.Classes.SelfMemberReference"/>
 
 
@@ -93,7 +105,6 @@
             <property name="caseSensitive" value="true"/>
         </properties>
     </rule>
-
 
     <!--
         Enforces configurable number of lines before/after/between use.
