@@ -85,7 +85,7 @@
             <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
 
-        <!--<exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>-->
+        <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
     <!--
