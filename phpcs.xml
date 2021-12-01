@@ -49,7 +49,7 @@
 
 
     <!-- **************************************************************************************************************
-      *  RULESET: SlevomatCodingStandard                                                                              *
+      *  RULESET: SlevomatCodingStandard:  https://github.com/slevomat/coding-standard                                *
       ************************************************************************************************************** -->
 
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
