@@ -2273,6 +2273,12 @@ class FunctionCallTest extends TestCase
                     takesAString(false);',
                 'error_message' => 'InvalidArgument'
             ],
+            'getClassWithoutArgsOutsideClass' => [
+                '<?php
+
+                    echo get_class();',
+                'error_message' => 'TooFewArguments',
+            ],
         ];
     }
 
