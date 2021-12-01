@@ -13,6 +13,15 @@
     <file>src/</file>
     <file>tests/</file>
 
+    <!-- **************************************************************************************************************
+      *  Files to exclude                                                                                             *
+      ************************************************************************************************************** -->
+    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
+    <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
+    <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
+    <exclude-pattern>tests/fixtures/</exclude-pattern>
+
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <rule ref="PSR2" />
     <!-- Forbid usage of a function or a class constant via fallback global name -->
@@ -52,9 +61,4 @@
     </rule>
     <rule ref="Squiz.Classes.SelfMemberReference" />
 
-    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
-
-    <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
-    <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
-    <exclude-pattern>tests/fixtures/</exclude-pattern>
 </ruleset>
