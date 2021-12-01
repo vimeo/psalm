@@ -879,9 +879,9 @@ class ArgumentsAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            }
 
-            return null;
+                return null;
+            }
         }
 
         self::checkArgCount(
