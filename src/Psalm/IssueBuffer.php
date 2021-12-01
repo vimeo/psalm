@@ -102,8 +102,8 @@ class IssueBuffer
     private static $server = [];
 
     /**
-     * @param   string[]  $suppressed_issues
-     *
+     * This will add an issue to be emitted if it's not suppressed and return if it has been added
+     * @param string[]  $suppressed_issues
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
@@ -115,8 +115,8 @@ class IssueBuffer
     }
 
     /**
-     * @param   string[]  $suppressed_issues
-     *
+     * This will add an issue to be emitted if it's not suppressed
+     * @param string[]  $suppressed_issues
      */
     public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
     {
@@ -127,6 +127,9 @@ class IssueBuffer
         self::add($e, $is_fixable);
     }
 
+    /**
+     * This is part of the findUnusedPsalmSuppress feature
+     */
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
         if (\strpos($issue_type, 'Tainted') === 0) {
@@ -145,8 +148,11 @@ class IssueBuffer
     }
 
     /**
+     * This will return true if an issue is ready to be added for emission. Reasons for not returning true include:
+     * - The issue is suppressed in config
+     * - We're in a recording state
+     * - The issue is included in the list of issues to be suppressed in param
      * @param   string[]  $suppressed_issues
-     *
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
     {
@@ -214,6 +220,7 @@ class IssueBuffer
     }
 
     /**
+     * Add an issue to be emitted
      * @throws  Exception\CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
@@ -300,6 +307,9 @@ class IssueBuffer
         return true;
     }
 
+    /**
+     * This will try to remove an issue that has been added for emission
+     */
     public static function remove(string $file_path, string $issue_type, int $file_offset) : void
     {
         if (!isset(self::$issues_data[$file_path])) {
@@ -855,17 +865,27 @@ class IssueBuffer
         return $current_data;
     }
 
+    /**
+     * Return whether or not we're in a recording state regarding startRecording/stopRecording status
+     */
     public static function isRecording(): bool
     {
         return self::$recording_level > 0;
     }
 
+    /**
+     * Increase the recording level in order to start recording issues instead of adding them while in a loop
+     */
     public static function startRecording(): void
     {
         ++self::$recording_level;
         self::$recorded_issues[self::$recording_level] = [];
     }
 
+    /**
+     * Decrease the recording level after leaving a loop
+     * @see startRecording
+     */
     public static function stopRecording(): void
     {
         if (self::$recording_level === 0) {
@@ -876,6 +896,7 @@ class IssueBuffer
     }
 
     /**
+     * This will return the recorded issues for the current recording level
      * @return array<int, CodeIssue>
      */
     public static function clearRecordingLevel(): array
@@ -891,6 +912,9 @@ class IssueBuffer
         return $recorded_issues;
     }
 
+    /**
+     * This will try to add issues that has been retrieved through clearRecordingLevel or record them at a lower level
+     */
     public static function bubbleUp(CodeIssue $e): void
     {
         if (self::$recording_level === 0) {
