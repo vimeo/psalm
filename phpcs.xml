@@ -49,7 +49,13 @@
 
     <rule ref="Squiz.Classes.SelfMemberReference" />
 
+
+    <!-- **************************************************************************************************************
+      *  RULESET: SlevomatCodingStandard                                                                              *
+      ************************************************************************************************************** -->
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
+
     <!-- Forbid usage of a function or a class constant via fallback global name -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
@@ -59,6 +65,7 @@
             <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
             <property name="allowFullyQualifiedGlobalClasses" value="true"/>
         </properties>
+
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
@@ -67,11 +74,13 @@
             <property name="searchAnnotations" value="true"/>
         </properties>
     </rule>
+
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
             <property name="caseSensitive" value="true" />
         </properties>
     </rule>
+
     <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
         <properties>
             <property name="linesCountBetweenUseTypes" value="1" />
