@@ -148,11 +148,11 @@ class IssueBuffer
     }
 
     /**
-     * This will return true if an issue is ready to be added for emission. Reasons for not returning true include:
+     * This will return false if an issue is ready to be added for emission. Reasons for not returning false include:
      * - The issue is suppressed in config
      * - We're in a recording state
      * - The issue is included in the list of issues to be suppressed in param
-     * @param   string[]  $suppressed_issues
+     * @param string[] $suppressed_issues
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
     {
