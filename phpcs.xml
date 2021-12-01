@@ -42,6 +42,13 @@
         <exclude-pattern>*</exclude-pattern>
     </rule>
 
+
+    <!-- **************************************************************************************************************
+      *  RULESET: Squiz                                                                                               *
+      ************************************************************************************************************** -->
+
+    <rule ref="Squiz.Classes.SelfMemberReference" />
+
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
     <!-- Forbid usage of a function or a class constant via fallback global name -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
@@ -70,6 +77,5 @@
             <property name="linesCountBetweenUseTypes" value="1" />
         </properties>
     </rule>
-    <rule ref="Squiz.Classes.SelfMemberReference" />
 
 </ruleset>
