@@ -78,11 +78,21 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
-            <property name="allowFallbackGlobalConstants" value="false"/>
-            <property name="allowFallbackGlobalFunctions" value="false"/>
-            <property name="allowFullyQualifiedGlobalConstants" value="true"/>
-            <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
-            <property name="allowFullyQualifiedGlobalClasses" value="true"/>
+            <property name="allowFullyQualifiedExceptions" type="bool" value="true"/>
+            <property name="allowFullyQualifiedGlobalFunctions" type="bool" value="true"/>
+            <property name="allowFullyQualifiedGlobalConstants" type="bool" value="true"/>
+            <property name="allowFullyQualifiedGlobalClasses" type="bool" value="true"/>
+
+			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="true"/>
+			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="true"/>
+			<property name="allowFullyQualifiedNameForCollidingConstants" type="bool" value="true"/>
+
+			<property name="allowFallbackGlobalFunctions" type="bool" value="true"/>
+			<property name="allowFallbackGlobalConstants" type="bool" value="true"/>
+
+            <property name="allowPartialUses" type="bool" value="true"/>
+
+			<property name="searchAnnotations" type="bool" value="false"/>
         </properties>
 
         <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
