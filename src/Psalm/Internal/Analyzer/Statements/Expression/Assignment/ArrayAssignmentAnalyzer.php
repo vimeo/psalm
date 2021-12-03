@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -9,7 +11,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -253,7 +257,7 @@ class ArrayAssignmentAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidArrayAssignment(
                         'Assigning to the output of a function has no effect',
-                        new \Psalm\CodeLocation($statements_analyzer->getSource(), $root_array_expr)
+                        new CodeLocation($statements_analyzer->getSource(), $root_array_expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )
@@ -270,7 +274,7 @@ class ArrayAssignmentAnalyzer
      * @param non-empty-list<Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Type\Union $child_stmt_type,
         Type\Union $current_type,
         array $key_values
@@ -390,9 +394,9 @@ class ArrayAssignmentAnalyzer
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
-            $var_location = new \Psalm\CodeLocation($statements_analyzer->getSource(), $expr->var);
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
-            $parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+            $parent_node = DataFlowNode::getForAssignment(
                 $var_var_id ?: 'assignment',
                 $var_location
             );
@@ -443,7 +447,7 @@ class ArrayAssignmentAnalyzer
 
     private static function updateArrayAssignmentChildType(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         ?PhpParser\Node\Expr $current_dim,
         Context $context,
         Type\Union $value_type,
@@ -525,7 +529,7 @@ class ArrayAssignmentAnalyzer
                      */
                     $offset_type_part = \array_values($key_type->getAtomicTypes())[0];
 
-                    $template_result = new \Psalm\Internal\Type\TemplateResult(
+                    $template_result = new TemplateResult(
                         [],
                         [
                             $offset_type_part->param_name => [
@@ -651,7 +655,7 @@ class ArrayAssignmentAnalyzer
      */
     private static function analyzeNestedArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assignment_type,

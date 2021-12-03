@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -12,10 +13,14 @@ use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Type;
+use SebastianBergmann\Diff\Differ;
+use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 
 use function array_filter;
 use function array_intersect_key;
@@ -410,7 +415,7 @@ class Analyzer
 
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $pool = new \Psalm\Internal\Fork\Pool(
+            $pool = new Pool(
                 $process_file_paths,
                 function (): void {
                     $project_analyzer = ProjectAnalyzer::getInstance();
@@ -573,7 +578,7 @@ class Analyzer
                     } else {
                         foreach ($possible_param_types as $offset => $possible_param_type) {
                             $this->possible_method_param_types[$declaring_method_id][$offset]
-                                = \Psalm\Type::combineUnionTypes(
+                                = Type::combineUnionTypes(
                                     $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
                                     $possible_param_type,
                                     $codebase
@@ -1323,7 +1328,7 @@ class Analyzer
     /**
      * @return array{int, int}
      */
-    public function getTotalTypeCoverage(\Psalm\Codebase $codebase): array
+    public function getTotalTypeCoverage(Codebase $codebase): array
     {
         $mixed_count = 0;
         $nonmixed_count = 0;
@@ -1344,7 +1349,7 @@ class Analyzer
         return [$mixed_count, $nonmixed_count];
     }
 
-    public function getTypeInferenceSummary(\Psalm\Codebase $codebase): string
+    public function getTypeInferenceSummary(Codebase $codebase): string
     {
         $all_deep_scanned_files = [];
 
@@ -1473,8 +1478,8 @@ class Analyzer
         if ($dry_run) {
             echo $file_path . ':' . "\n";
 
-            $differ = new \SebastianBergmann\Diff\Differ(
-                new \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder([
+            $differ = new Differ(
+                new StrictUnifiedDiffOutputBuilder([
                     'fromFile' => $file_path,
                     'toFile' => $file_path,
                 ])

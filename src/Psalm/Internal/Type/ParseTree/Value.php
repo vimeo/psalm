@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Internal\Type\ParseTree;
 
+use Psalm\Internal\Type\ParseTree;
+
 /**
  * @internal
  */
-class Value extends \Psalm\Internal\Type\ParseTree
+class Value extends ParseTree
 {
     /**
      * @var string
@@ -34,7 +36,7 @@ class Value extends \Psalm\Internal\Type\ParseTree
         int $offset_start,
         int $offset_end,
         ?string $text,
-        \Psalm\Internal\Type\ParseTree $parent = null
+        ParseTree $parent = null
     ) {
         $this->offset_start = $offset_start;
         $this->offset_end = $offset_end;

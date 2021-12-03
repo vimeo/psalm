@@ -6,9 +6,11 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -313,12 +315,12 @@ class IfAnalyzer
                 ) {
                     $parent_source = $statements_analyzer->getSource();
 
-                    $functionlike_storage = $parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
                         ? $parent_source->getFunctionLikeStorage($statements_analyzer)
                         : null;
 
                     if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                            || (!$parent_source->getSource() instanceof TraitAnalyzer
                                 && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
                     ) {
                         $codebase = $statements_analyzer->getCodebase();

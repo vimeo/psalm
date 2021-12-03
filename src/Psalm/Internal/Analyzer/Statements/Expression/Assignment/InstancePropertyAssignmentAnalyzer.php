@@ -9,17 +9,28 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
@@ -50,6 +61,8 @@ use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -169,7 +182,7 @@ class InstancePropertyAssignmentAnalyzer
                 continue;
             }
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -339,8 +352,8 @@ class InstancePropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
-        \Psalm\Storage\PropertyStorage $property_storage,
-        \Psalm\Storage\ClassLikeStorage $declaring_class_storage,
+        PropertyStorage $property_storage,
+        ClassLikeStorage $declaring_class_storage,
         Context $context
     ): void {
         $codebase = $statements_analyzer->getCodebase();
@@ -382,7 +395,7 @@ class InstancePropertyAssignmentAnalyzer
                 } elseif (!$declaring_class_storage->mutation_free
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
                     && $statements_analyzer->getSource()
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        instanceof FunctionLikeAnalyzer
                 ) {
                     $codebase->analyzer->addMutableClass($declaring_class_storage->name);
                 }
@@ -429,7 +442,7 @@ class InstancePropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        ClassLikeStorage $class_storage,
         Type\Union $assignment_value_type,
         Context $context
     ) : void {
@@ -607,7 +620,7 @@ class InstancePropertyAssignmentAnalyzer
         ?PhpParser\Node\Expr $assignment_value,
         Context $context,
         bool $direct_assignment,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Type\Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id
@@ -657,8 +670,8 @@ class InstancePropertyAssignmentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -686,8 +699,8 @@ class InstancePropertyAssignmentAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
@@ -823,7 +836,7 @@ class InstancePropertyAssignmentAnalyzer
      */
     private static function analyzeAtomicAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PropertyFetch $stmt,
         ?PhpParser\Node\Expr $assignment_value,
         string $prop_name,
@@ -934,7 +947,7 @@ class InstancePropertyAssignmentAnalyzer
                     }
 
                     if (!$codebase->methods->methodExists(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $fq_class_name,
                             '__set'
                         )
@@ -964,7 +977,7 @@ class InstancePropertyAssignmentAnalyzer
 
         $has_magic_setter = false;
 
-        $set_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__set');
+        $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
         if ((!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
                 || ($lhs_var_id !== '$this'
@@ -1205,14 +1218,14 @@ class InstancePropertyAssignmentAnalyzer
             foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
                 if ($declaring_property_id === $original_property_id) {
                     $file_manipulations = [
-                        new \Psalm\FileManipulation(
+                        new FileManipulation(
                             (int)$stmt->name->getAttribute('startFilePos'),
                             (int)$stmt->name->getAttribute('endFilePos') + 1,
                             $new_property_name
                         )
                     ];
 
-                    \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    FileManipulationBuffer::add(
                         $statements_analyzer->getFilePath(),
                         $file_manipulations
                     );
@@ -1272,7 +1285,7 @@ class InstancePropertyAssignmentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
                 } elseif ($statements_analyzer->getSource()
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
@@ -1316,7 +1329,7 @@ class InstancePropertyAssignmentAnalyzer
         if (!$class_property_type->isMixed()) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-            $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $class_property_type = TypeExpander::expandUnion(
                 $codebase,
                 clone $class_property_type,
                 $fq_class_name,
@@ -1327,7 +1340,7 @@ class InstancePropertyAssignmentAnalyzer
                 $class_storage->final
             );
 
-            $class_property_type = \Psalm\Internal\Codebase\Methods::localizeType(
+            $class_property_type = Methods::localizeType(
                 $codebase,
                 $class_property_type,
                 $fq_class_name,
@@ -1344,7 +1357,7 @@ class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            $assignment_value_type = \Psalm\Internal\Codebase\Methods::localizeType(
+            $assignment_value_type = Methods::localizeType(
                 $codebase,
                 $assignment_value_type,
                 $fq_class_name,
@@ -1354,7 +1367,7 @@ class InstancePropertyAssignmentAnalyzer
             if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
                 $origin_locations = [];
 
-                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
                         $origin_locations = array_merge(
                             $origin_locations,
@@ -1395,7 +1408,7 @@ class InstancePropertyAssignmentAnalyzer
         Codebase $codebase,
         string $fq_class_name,
         string $property_name,
-        \Psalm\Storage\ClassLikeStorage $storage
+        ClassLikeStorage $storage
     ) : ?Type\Union {
         $property_class_name = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
@@ -1417,7 +1430,7 @@ class InstancePropertyAssignmentAnalyzer
         $property_type = clone $property_storage->type;
 
         $fleshed_out_type = !$property_type->isMixed()
-            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
+            ? TypeExpander::expandUnion(
                 $codebase,
                 $property_type,
                 $fq_class_name,
@@ -1438,13 +1451,13 @@ class InstancePropertyAssignmentAnalyzer
             true
         );
 
-        $template_result = new \Psalm\Internal\Type\TemplateResult(
+        $template_result = new TemplateResult(
             $class_template_params ?: [],
             []
         );
 
         if ($class_template_params) {
-            $fleshed_out_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
+            $fleshed_out_type = TemplateStandinTypeReplacer::replace(
                 $fleshed_out_type,
                 $template_result,
                 $codebase,
@@ -1501,7 +1514,7 @@ class InstancePropertyAssignmentAnalyzer
             $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
         }
 
-        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+        MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,

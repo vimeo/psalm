@@ -4,10 +4,11 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use PhpParser\Node;
+use Psalm\NodeTypeProvider;
 use Psalm\Type\Union;
 use SplObjectStorage;
 
-class NodeDataProvider implements \Psalm\NodeTypeProvider
+class NodeDataProvider implements NodeTypeProvider
 {
     /** @var SplObjectStorage<Node, Union> */
     private $node_types;

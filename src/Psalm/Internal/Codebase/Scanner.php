@@ -4,13 +4,17 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Type;
 use ReflectionClass;
 
 use function array_filter;
@@ -275,7 +279,7 @@ class Scanner
                 $public_mapped_properties = PropertyMap::getPropertyMap()[$fq_classlike_name_lc];
 
                 foreach ($public_mapped_properties as $public_mapped_property) {
-                    $property_type = \Psalm\Type::parseString($public_mapped_property);
+                    $property_type = Type::parseString($public_mapped_property);
                     $property_type->queueClassLikesForScanning(
                         $this->codebase,
                         null,
@@ -351,12 +355,12 @@ class Scanner
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $pool = new \Psalm\Internal\Fork\Pool(
+            $pool = new Pool(
                 $process_file_paths,
                 function () {
                     $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 
-                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $project_analyzer = ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
@@ -375,14 +379,14 @@ class Scanner
                 function () {
                     $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
 
-                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $project_analyzer = ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     return [
                         'classlikes_data' => $codebase->classlikes->getThreadData(),
                         'scanner_data' => $codebase->scanner->getThreadData(),
-                        'issues' => \Psalm\IssueBuffer::getIssuesData(),
+                        'issues' => IssueBuffer::getIssuesData(),
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
@@ -405,7 +409,7 @@ class Scanner
             $forked_pool_data = $pool->wait();
 
             foreach ($forked_pool_data as $pool_data) {
-                \Psalm\IssueBuffer::addIssues($pool_data['issues']);
+                IssueBuffer::addIssues($pool_data['issues']);
 
                 $this->codebase->statements_provider->addChangedMembers(
                     $pool_data['changed_members']

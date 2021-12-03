@@ -1,10 +1,14 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-class AssignmentInConditionalTest extends \Psalm\Tests\TestCase
+use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+class AssignmentInConditionalTest extends TestCase
 {
-    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

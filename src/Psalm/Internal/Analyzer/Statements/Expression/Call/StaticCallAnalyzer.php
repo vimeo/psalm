@@ -14,10 +14,13 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -243,8 +246,8 @@ class StaticCallAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         string $cased_method_id,
         Type\Union $return_type_candidate,
-        ?\Psalm\Storage\MethodStorage $method_storage,
-        ?\Psalm\Internal\Type\TemplateResult $template_result,
+        ?MethodStorage $method_storage,
+        ?TemplateResult $template_result,
         ?Context $context = null
     ) : void {
         if (!$statements_analyzer->data_flow_graph) {
@@ -296,7 +299,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                     $codebase
                 );
 
-                $expanded_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $expanded_type = TypeExpander::expandUnion(
                     $statements_analyzer->getCodebase(),
                     $conditionally_removed_taint,
                     null,

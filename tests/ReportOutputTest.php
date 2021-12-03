@@ -3,9 +3,12 @@
 namespace Psalm\Tests;
 
 use DOMDocument;
+use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
@@ -31,13 +34,13 @@ class ReportOutputTest extends TestCase
 
         $config = new TestConfig();
         $config->throw_exception = false;
-        $config->setCustomErrorLevel('PossiblyUndefinedGlobalVariable', \Psalm\Config::REPORT_INFO);
+        $config->setCustomErrorLevel('PossiblyUndefinedGlobalVariable', Config::REPORT_INFO);
 
         $json_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json']);
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
@@ -822,7 +825,7 @@ echo $a;';
     public function testFilteredJsonReportIsStillArray(): void
     {
         $issues_data = [
-            22 => new \Psalm\Internal\Analyzer\IssueData(
+            22 => new IssueData(
                 'info',
                 15,
                 15,

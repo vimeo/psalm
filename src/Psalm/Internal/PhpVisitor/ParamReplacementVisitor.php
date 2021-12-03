@@ -3,6 +3,8 @@ namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Scanner\DocblockParser;
 
 /**
  * @internal
@@ -63,7 +65,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassMethod
             && ($docblock = $node->getDocComment())
         ) {
-            $parsed_docblock = \Psalm\Internal\Scanner\DocblockParser::parse(
+            $parsed_docblock = DocblockParser::parse(
                 $docblock->getText(),
                 $docblock->getStartFilePos()
             );
@@ -77,7 +79,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                         || $tag_name === 'phpstan-param'
                         || $tag_name === 'phan-param'
                     ) {
-                        $parts = \Psalm\Internal\Analyzer\CommentAnalyzer::splitDocLine($tag);
+                        $parts = CommentAnalyzer::splitDocLine($tag);
 
                         if (($parts[1] ?? '') === '$' . $this->old_name) {
                             $parsed_docblock->tags[$tag_name][$i] = \str_replace(

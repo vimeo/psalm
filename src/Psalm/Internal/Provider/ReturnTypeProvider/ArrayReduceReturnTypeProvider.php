@@ -4,11 +4,14 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function count;
@@ -17,7 +20,7 @@ use function in_array;
 use function strpos;
 use function strtolower;
 
-class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -32,7 +35,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
@@ -222,7 +225,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 continue;
                             }
 
-                            $method_id = new \Psalm\Internal\MethodIdentifier(
+                            $method_id = new MethodIdentifier(
                                 $callable_fq_class_name,
                                 strtolower($method_name)
                             );

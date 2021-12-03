@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -21,6 +22,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -31,6 +33,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -251,14 +254,14 @@ class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
-        $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
+        $replace_template_result = new TemplateResult(
             $template_types,
             []
         );
 
         $existing_type = $statements_analyzer->node_data->getType($arg->value);
 
-        \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
+        TemplateStandinTypeReplacer::replace(
             $generic_param_type,
             $replace_template_result,
             $codebase,
@@ -303,7 +306,7 @@ class ArgumentsAnalyzer
             $function_like_params = [];
 
             foreach ($template_result->lower_bounds as $template_name => $_) {
-                $function_like_params[] = new \Psalm\Storage\FunctionLikeParameter(
+                $function_like_params[] = new FunctionLikeParameter(
                     'function',
                     false,
                     new Type\Union([
@@ -326,12 +329,12 @@ class ArgumentsAnalyzer
             $replaced_type = clone $param->type;
         }
 
-        $replace_template_result = new \Psalm\Internal\Type\TemplateResult(
+        $replace_template_result = new TemplateResult(
             array_map(
                 function ($template_map) use ($codebase) {
                     return array_map(
                         function ($lower_bounds) use ($codebase) {
-                            return \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                                 $lower_bounds,
                                 $codebase
                             );
@@ -344,7 +347,7 @@ class ArgumentsAnalyzer
             []
         );
 
-        $replaced_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
+        $replaced_type = TemplateStandinTypeReplacer::replace(
             $replaced_type,
             $replace_template_result,
             $codebase,
@@ -599,7 +602,7 @@ class ArgumentsAnalyzer
                     if ($function_params[$i]->default_type instanceof Type\Union) {
                         $default_type = $function_params[$i]->default_type;
                     } else {
-                        $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                        $default_type_atomic = ConstantTypeResolver::resolve(
                             $codebase->classlikes,
                             $function_params[$i]->default_type,
                             $statements_analyzer
@@ -1364,7 +1367,7 @@ class ArgumentsAnalyzer
                 continue;
             }
 
-            $fleshed_out_param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $fleshed_out_param_type = TypeExpander::expandUnion(
                 $codebase,
                 $function_param->type,
                 $class_storage->name ?? null,
@@ -1416,7 +1419,7 @@ class ArgumentsAnalyzer
             && count($args) > count($function_params)
             && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
             && ($in_call_map
-                || !$function_storage instanceof \Psalm\Storage\MethodStorage
+                || !$function_storage instanceof MethodStorage
                 || $function_storage->is_static
                 || ($method_id instanceof MethodIdentifier
                     && $method_id->method_name === '__construct'))
@@ -1455,7 +1458,7 @@ class ArgumentsAnalyzer
                 if (!$param->is_optional
                     && !$param->is_variadic
                     && ($in_call_map
-                        || !$function_storage instanceof \Psalm\Storage\MethodStorage
+                        || !$function_storage instanceof MethodStorage
                         || $function_storage->is_static
                         || ($method_id instanceof MethodIdentifier
                             && $method_id->method_name === '__construct'))
@@ -1483,7 +1486,7 @@ class ArgumentsAnalyzer
                     if ($param->default_type instanceof Type\Union) {
                         $default_type = clone $param->default_type;
                     } else {
-                        $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                        $default_type_atomic = ConstantTypeResolver::resolve(
                             $codebase->classlikes,
                             $param->default_type,
                             $statements_analyzer

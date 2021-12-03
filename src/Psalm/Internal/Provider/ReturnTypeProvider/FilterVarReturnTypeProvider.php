@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
-class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -21,7 +23,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             throw new \UnexpectedValueException();
         }
 

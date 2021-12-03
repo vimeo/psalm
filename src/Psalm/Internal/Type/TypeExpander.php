@@ -2,6 +2,9 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\SimpleAssertionReconciler;
+use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEmpty;
@@ -392,7 +395,7 @@ class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+            return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
         if ($return_type instanceof Type\Atomic\TIntMaskOf) {
@@ -429,7 +432,7 @@ class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+            return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
         if ($return_type instanceof Type\Atomic\TArray
@@ -761,7 +764,7 @@ class TypeExpander
                     $codebase
                 );
 
-                $if_conditional_return_type = \Psalm\Internal\Type\SimpleAssertionReconciler::reconcile(
+                $if_conditional_return_type = SimpleAssertionReconciler::reconcile(
                     $assertion,
                     $codebase,
                     $if_conditional_return_type
@@ -779,7 +782,7 @@ class TypeExpander
                     $codebase
                 );
 
-                $else_conditional_return_type = \Psalm\Internal\Type\SimpleNegatedAssertionReconciler::reconcile(
+                $else_conditional_return_type = SimpleNegatedAssertionReconciler::reconcile(
                     $assertion,
                     $else_conditional_return_type
                 );

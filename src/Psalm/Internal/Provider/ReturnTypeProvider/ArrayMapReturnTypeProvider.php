@@ -4,7 +4,11 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
@@ -15,6 +19,7 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function array_map;
@@ -23,7 +28,7 @@ use function explode;
 use function in_array;
 use function strpos;
 
-class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -38,7 +43,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
@@ -242,7 +247,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     private static function executeFakeCall(
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
         ?array &$assertions = null
@@ -266,19 +271,19 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
         $context->inside_call = true;
 
         if ($fake_call instanceof PhpParser\Node\Expr\StaticCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::analyze(
+            StaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\MethodCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\FuncCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer::analyze(
+            FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
@@ -323,7 +328,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
+        StatementsAnalyzer $statements_source,
         array $mapping_function_ids,
         Context $context,
         PhpParser\Node\Arg $function_call_arg,

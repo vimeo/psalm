@@ -4,8 +4,11 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider;
 
 use function substr;
@@ -22,12 +25,12 @@ class JsonOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        $stdout_report_options = new \Psalm\Report\ReportOptions();
-        $stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+        $stdout_report_options = new ReportOptions();
+        $stdout_report_options->format = Report::TYPE_JSON;
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),

@@ -5,6 +5,7 @@ use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -495,7 +496,7 @@ class TypeParser
                 if ($tree_type instanceof TTemplateParam) {
                     $template_type_map[$tree_type->param_name] = ['class-string-map' => $tree_type->as];
                 } elseif ($tree_type instanceof TNamedObject) {
-                    $template_type_map[$tree_type->value] = ['class-string-map' => \Psalm\Type::getObject()];
+                    $template_type_map[$tree_type->value] = ['class-string-map' => Type::getObject()];
                 }
             }
 
@@ -534,7 +535,7 @@ class TypeParser
 
         if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
             if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = \Psalm\Type::getArrayKey();
+                $generic_params[0] = Type::getArrayKey();
             }
 
             if (count($generic_params) !== 2) {
@@ -557,7 +558,7 @@ class TypeParser
 
         if ($generic_type_value === 'non-empty-array') {
             if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = \Psalm\Type::getArrayKey();
+                $generic_params[0] = Type::getArrayKey();
             }
 
             if (count($generic_params) !== 2) {
@@ -966,7 +967,7 @@ class TypeParser
                         continue;
                     }
 
-                    $intersection_type = \Psalm\Type::intersectUnionTypes(
+                    $intersection_type = Type::intersectUnionTypes(
                         $properties[$property],
                         $property_type,
                         $codebase

@@ -2,16 +2,26 @@
 
 namespace Psalm\Internal\Cli;
 
+use Composer\Autoload\ClassLoader;
+use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function array_key_exists;
@@ -192,14 +202,14 @@ HELP;
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
+            function () use ($current_dir, $options, $vendor_dir): ?ClassLoader {
                 return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
 
 
         // If Xdebug is enabled, restart without it
-        (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
+        (new XdebugHandler('PSALTER'))->check();
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
@@ -208,7 +218,7 @@ HELP;
         $config = CliUtils::initializeConfig(
             $path_to_config,
             $current_dir,
-            \Psalm\Report::TYPE_CONSOLE,
+            Report::TYPE_CONSOLE,
             $first_autoloader
         );
         $config->setIncludeCollector($include_collector);
@@ -221,17 +231,17 @@ HELP;
         $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
         if (isset($options['no-cache'])) {
-            $providers = new \Psalm\Internal\Provider\Providers(
-                new \Psalm\Internal\Provider\FileProvider()
+            $providers = new Providers(
+                new FileProvider()
             );
         } else {
-            $providers = new \Psalm\Internal\Provider\Providers(
-                new \Psalm\Internal\Provider\FileProvider(),
-                new \Psalm\Internal\Provider\ParserCacheProvider($config, false),
-                new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
-                new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+            $providers = new Providers(
+                new FileProvider(),
+                new ParserCacheProvider($config, false),
+                new FileStorageCacheProvider($config),
+                new ClassLikeStorageCacheProvider($config),
                 null,
-                new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
             );
         }
 
@@ -245,7 +255,7 @@ HELP;
             ? new DebugProgress()
             : new DefaultProgress();
 
-        $stdout_report_options = new \Psalm\Report\ReportOptions();
+        $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
 
         $project_analyzer = new ProjectAnalyzer(
@@ -320,7 +330,7 @@ HELP;
                 die('--add-newline-between-docblock-annotations expects a boolean value [true|false|1|0]' . PHP_EOL);
             }
 
-            \Psalm\Internal\Scanner\ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
+            ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
         }
 
         $plugins = [];

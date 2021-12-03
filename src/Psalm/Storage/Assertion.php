@@ -1,8 +1,11 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_map;
 use function implode;
@@ -36,7 +39,7 @@ class Assertion
     public function getUntemplatedCopy(
         array $inferred_lower_bounds,
         ?string $this_var_id,
-        ?\Psalm\Codebase $codebase
+        ?Codebase $codebase
     ) : self {
         return new Assertion(
             \is_string($this->var_id) && $this_var_id
@@ -52,7 +55,7 @@ class Assertion
                     $first_rule = $rules[0];
 
                     if ($inferred_lower_bounds) {
-                        $rule_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($first_rule);
+                        $rule_tokens = TypeTokenizer::tokenize($first_rule);
 
                         $substitute = false;
 
@@ -68,7 +71,7 @@ class Assertion
 
                                     $first_type = \array_values($bound_type->getAtomicTypes())[0];
 
-                                    if ($first_type instanceof \Psalm\Type\Atomic\TTemplateParam) {
+                                    if ($first_type instanceof TTemplateParam) {
                                         $rule_token[0] = $first_type->param_name;
                                     } else {
                                         $rule_token[0] = $first_type->getKey();

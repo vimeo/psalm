@@ -839,8 +839,8 @@ class AnnotationTest extends TestCase
                     }',
                 [],
                 [
-                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
-                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                    'InvalidDocblock' => Config::REPORT_INFO,
+                    'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
             'objectWithPropertiesAnnotation' => [
@@ -1456,7 +1456,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingReturnType',
                 [
-                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                    'InvalidDocblock' => Config::REPORT_INFO,
                 ],
             ],
             'invalidDocblockReturn' => [

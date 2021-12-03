@@ -2,6 +2,7 @@
 namespace Psalm\Report;
 
 use Psalm\Config;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
@@ -96,7 +97,7 @@ class SarifReport extends Report
                 ];
 
                 foreach ($issue_data->taint_trace as $trace) {
-                    if ($trace instanceof \Psalm\Internal\Analyzer\DataFlowNodeData
+                    if ($trace instanceof DataFlowNodeData
                         && $trace->line_from > 0
                     ) {
                         $jsonEntry['codeFlows'][0]['threadFlows'][0]['locations'][] = [

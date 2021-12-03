@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -34,7 +35,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
+class MethodCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

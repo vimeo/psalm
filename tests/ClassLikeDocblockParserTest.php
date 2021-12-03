@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
+use PhpParser\Comment\Doc;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
+use Psalm\Tests\TestCase;
 
-class ClassLikeDocblockParserTest extends \Psalm\Tests\TestCase
+class ClassLikeDocblockParserTest extends TestCase
 {
     public function testDocblockDescription(): void
     {
@@ -15,7 +17,7 @@ class ClassLikeDocblockParserTest extends \Psalm\Tests\TestCase
  */
 ';
         $node = new Class_(null);
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
 
         $this->assertSame('Some Description', $class_docblock->description);
@@ -29,7 +31,7 @@ class ClassLikeDocblockParserTest extends \Psalm\Tests\TestCase
  */
 ';
         $node = new Class_(null);
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
         $this->assertSame([['T', 'of', 'string', true, 33]], $class_docblock->templates);
     }

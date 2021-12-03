@@ -8,9 +8,12 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileSource;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
@@ -18,9 +21,13 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
 use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
 use Psalm\PluginRegistrationSocket;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type\Union;
 
@@ -36,7 +43,7 @@ use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
 
-class PluginTest extends \Psalm\Tests\TestCase
+class PluginTest extends TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -60,16 +67,16 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        return new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
-            new \Psalm\Report\ReportOptions()
+            new ReportOptions()
         );
     }
 
@@ -805,7 +812,7 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->assertTrue(isset($context->vars_in_scope['$a']));
 
         foreach ($context->vars_in_scope['$a']->getAtomicTypes() as $type) {
-            $this->assertInstanceOf(\Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString::class, $type);
+            $this->assertInstanceOf(TSqlSelectString::class, $type);
         }
     }
 
@@ -954,11 +961,11 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
 
-        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+        $this->project_analyzer->stdout_report_options->format = Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        IssueBuffer::finish($this->project_analyzer, true, microtime(true));
         ob_end_clean();
     }
 

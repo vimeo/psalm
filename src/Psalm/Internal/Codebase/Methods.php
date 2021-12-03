@@ -5,6 +5,10 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -13,6 +17,7 @@ use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -385,13 +390,13 @@ class Methods
                     return $function_callables[0]->params;
                 }
 
-                if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                if ($context && $source instanceof StatementsAnalyzer) {
                     $was_inside_call = $context->inside_call;
 
                     $context->inside_call = true;
 
                     foreach ($args as $arg) {
-                        \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::analyze(
+                        ExpressionAnalyzer::analyze(
                             $source,
                             $arg->value,
                             $context
@@ -652,7 +657,7 @@ class Methods
     public function getMethodReturnType(
         MethodIdentifier $method_id,
         ?string &$self_class,
-        ?\Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
+        ?SourceAnalyzer $source_analyzer = null,
         ?array $args = null
     ): ?Type\Union {
         $original_fq_class_name = $method_id->fq_class_name;
@@ -844,7 +849,7 @@ class Methods
                 $overridden_class_storage =
                     $this->classlike_storage_provider->get($overridden_method_id->fq_class_name);
 
-                $overridden_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $overridden_storage_return_type = TypeExpander::expandUnion(
                     $source_analyzer->getCodebase(),
                     clone $overridden_storage->return_type,
                     $overridden_method_id->fq_class_name,
@@ -1146,7 +1151,7 @@ class Methods
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
-            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $method_id)) {
+            if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 return null;
             }
 

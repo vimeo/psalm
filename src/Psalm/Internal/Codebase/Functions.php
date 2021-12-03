@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use PhpParser\Node\Expr\Closure;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -9,6 +10,7 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TNamedObject;
@@ -384,7 +386,7 @@ class Functions
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
-        ?\Psalm\NodeTypeProvider $type_provider,
+        ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true
@@ -555,7 +557,7 @@ class Functions
         }
 
         $must_use = $function_id !== 'array_map'
-            || (isset($args[0]) && !$args[0]->value instanceof \PhpParser\Node\Expr\Closure);
+            || (isset($args[0]) && !$args[0]->value instanceof Closure);
 
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {

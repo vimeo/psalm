@@ -4,10 +4,13 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
@@ -66,7 +69,7 @@ class CastAnalyzer
                         new Type\Atomic\TLiteralInt(1),
                     ]);
 
-                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                     ) {
                         $type->parent_nodes = $maybe_type->parent_nodes;
                     }
@@ -78,7 +81,7 @@ class CastAnalyzer
             if ($as_int) {
                 $type = $valid_int_type ?? Type::getInt();
 
-                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 ) {
                     $type->parent_nodes = $maybe_type->parent_nodes ?? [];
                 }
@@ -104,7 +107,7 @@ class CastAnalyzer
 
             $type = Type::getFloat();
 
-            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
@@ -129,7 +132,7 @@ class CastAnalyzer
 
             $type = Type::getBool();
 
-            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
@@ -179,7 +182,7 @@ class CastAnalyzer
 
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
-            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
@@ -336,7 +339,7 @@ class CastAnalyzer
 
                 foreach ($intersection_types as $intersection_type) {
                     if ($intersection_type instanceof TNamedObject) {
-                        $intersection_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $intersection_method_id = new MethodIdentifier(
                             $intersection_type->value,
                             '__tostring'
                         );
@@ -424,7 +427,7 @@ class CastAnalyzer
         if (!$valid_types) {
             $str_type = Type::getString();
         } else {
-            $str_type = \Psalm\Internal\Type\TypeCombiner::combine(
+            $str_type = TypeCombiner::combine(
                 $valid_types,
                 $codebase
             );
@@ -455,7 +458,7 @@ class CastAnalyzer
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['RedundantCastGivenDocblockType'])
             ) {
-                $file_manipulation = new \Psalm\FileManipulation(
+                $file_manipulation = new FileManipulation(
                     (int) $stmt->getAttribute('startFilePos'),
                     (int) $stmt->expr->getAttribute('startFilePos'),
                     ''
@@ -470,7 +473,7 @@ class CastAnalyzer
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['RedundantCast'])
             ) {
-                $file_manipulation = new \Psalm\FileManipulation(
+                $file_manipulation = new FileManipulation(
                     (int) $stmt->getAttribute('startFilePos'),
                     (int) $stmt->expr->getAttribute('startFilePos'),
                     ''

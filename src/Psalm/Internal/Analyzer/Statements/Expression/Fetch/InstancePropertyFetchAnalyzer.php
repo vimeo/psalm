@@ -3,12 +3,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\MixedPropertyFetch;
@@ -131,8 +133,8 @@ class InstancePropertyFetchAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -170,8 +172,8 @@ class InstancePropertyFetchAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
         }
@@ -305,7 +307,7 @@ class InstancePropertyFetchAnalyzer
         string $var_id,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         ?string $stmt_var_id,
         bool $in_assignment
     ): void {
@@ -318,8 +320,8 @@ class InstancePropertyFetchAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
@@ -459,7 +461,7 @@ class InstancePropertyFetchAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
                         } elseif ($statements_analyzer->getSource()
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_impure = true;

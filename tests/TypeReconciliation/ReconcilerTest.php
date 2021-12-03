@@ -4,10 +4,13 @@ namespace Psalm\Tests\TypeReconciliation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Tests\TestCase;
 use Psalm\Type;
 
-class ReconcilerTest extends \Psalm\Tests\TestCase
+class ReconcilerTest extends TestCase
 {
     /** @var FileAnalyzer */
     protected $file_analyzer;
@@ -23,7 +26,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
         $this->file_analyzer->context = new Context();
         $this->statements_analyzer = new StatementsAnalyzer(
             $this->file_analyzer,
-            new \Psalm\Internal\Provider\NodeDataProvider()
+            new NodeDataProvider()
         );
 
         $this->addFile('newfile.php', '
@@ -42,7 +45,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
      */
     public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
     {
-        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+        $reconciled = AssertionReconciler::reconcile(
             $assertion,
             Type::parseString($original_type),
             null,
@@ -204,7 +207,7 @@ class ReconcilerTest extends \Psalm\Tests\TestCase
         );
         $this->project_analyzer->getCodebase()->scanFiles();
 
-        $reconciled = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+        $reconciled = AssertionReconciler::reconcile(
             $assertion,
             new Type\Union([
                 new Type\Atomic\TLiteralString(''),

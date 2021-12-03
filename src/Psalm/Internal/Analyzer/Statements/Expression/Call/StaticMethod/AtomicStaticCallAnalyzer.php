@@ -6,16 +6,20 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InternalClass;
@@ -29,6 +33,8 @@ use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -258,7 +264,7 @@ class AtomicStaticCallAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator::recordArgumentPositions(
+            ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
                 $stmt,
                 $codebase,
@@ -391,7 +397,7 @@ class AtomicStaticCallAnalyzer
                         $mixin_candidate_type = $new_mixin_candidate_type;
                     }
 
-                    $new_lhs_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $new_lhs_type = TypeExpander::expandUnion(
                         $codebase,
                         $mixin_candidate_type,
                         $fq_class_name,
@@ -535,7 +541,7 @@ class AtomicStaticCallAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
                         } elseif ($statements_analyzer->getSource()
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
                             && !$callstatic_storage->pure
                         ) {
@@ -788,8 +794,8 @@ class AtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         string $fq_class_name,
         array $args,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
-        \Psalm\Storage\MethodStorage $pseudo_method_storage,
+        ClassLikeStorage $class_storage,
+        MethodStorage $pseudo_method_storage,
         Context $context
     ): ?bool {
         if (ArgumentsAnalyzer::analyze(
@@ -853,7 +859,7 @@ class AtomicStaticCallAnalyzer
         if ($pseudo_method_storage->return_type) {
             $return_type_candidate = clone $pseudo_method_storage->return_type;
 
-            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
                 $return_type_candidate,
                 $fq_class_name,
@@ -862,7 +868,7 @@ class AtomicStaticCallAnalyzer
             );
 
             if ($method_storage) {
-                \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::taintReturnType(
+                StaticCallAnalyzer::taintReturnType(
                     $statements_analyzer,
                     $stmt,
                     $method_id,

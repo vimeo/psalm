@@ -4,6 +4,8 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TIterable;
@@ -40,7 +42,7 @@ class TemplateInferredTypeReplacer
             if ($atomic_type instanceof Atomic\TTemplateParam) {
                 $template_type = null;
 
-                $traversed_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getRootTemplateType(
+                $traversed_type = TemplateStandinTypeReplacer::getRootTemplateType(
                     $inferred_lower_bounds,
                     $atomic_type->param_name,
                     $atomic_type->defining_class,
@@ -292,7 +294,7 @@ class TemplateInferredTypeReplacer
 
                         $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                             = [
-                            new \Psalm\Internal\Type\TemplateBound(
+                            new TemplateBound(
                                 $if_candidate_type
                             )
                         ];
@@ -322,7 +324,7 @@ class TemplateInferredTypeReplacer
 
                         $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                             = [
-                            new \Psalm\Internal\Type\TemplateBound(
+                            new TemplateBound(
                                 $else_candidate_type
                             )
                         ];

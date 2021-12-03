@@ -7,9 +7,12 @@ use DOMDocument;
 use DOMXPath;
 use PHPUnit\Framework\Constraint\Constraint;
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 
@@ -128,9 +131,9 @@ class DocumentationTest extends TestCase
 
         $this->file_provider = new FakeFileProvider();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -141,7 +144,7 @@ class DocumentationTest extends TestCase
 
     public function testAllIssuesCoveredInConfigSchema(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_issues[] = 'PluginIssue'; // not an ordinary issue
         sort($all_issues);
 
@@ -164,7 +167,7 @@ class DocumentationTest extends TestCase
 
     public function testAllIssuesCovered(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
 
@@ -329,7 +332,7 @@ class DocumentationTest extends TestCase
 
     public function testShortcodesAreUnique(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {

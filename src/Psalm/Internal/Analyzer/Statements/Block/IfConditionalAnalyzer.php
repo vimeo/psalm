@@ -222,7 +222,7 @@ class IfConditionalAnalyzer
 
         $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
 
-        return new \Psalm\Internal\Scope\IfConditionalScope(
+        return new IfConditionalScope(
             $if_context,
             $post_if_context,
             $cond_referenced_var_ids,

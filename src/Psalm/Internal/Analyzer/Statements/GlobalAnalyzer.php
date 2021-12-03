@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 
@@ -54,7 +55,7 @@ class GlobalAnalyzer
 
                         $context->vars_possibly_in_scope[$var_id] = true;
 
-                        $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
+                        $context->byref_constraints[$var_id] = new ReferenceConstraint();
                     }
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Aliases;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Type;
 
 use function array_splice;
 use function array_unshift;
@@ -491,7 +492,7 @@ class TypeTokenizer
                     $l += $diff;
                 }
             } else {
-                $type_tokens[$i][0] = \Psalm\Type::getFQCLNFromString(
+                $type_tokens[$i][0] = Type::getFQCLNFromString(
                     $string_type_token[0],
                     $aliases
                 );

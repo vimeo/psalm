@@ -3,7 +3,10 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
@@ -150,7 +153,7 @@ class Reflection
         $class_constants = $reflected_class->getConstants();
 
         foreach ($class_constants as $name => $value) {
-            $storage->constants[$name] = new \Psalm\Storage\ClassConstantStorage(
+            $storage->constants[$name] = new ClassConstantStorage(
                 ClassLikeAnalyzer::getTypeFromValue($value),
                 ClassLikeAnalyzer::VISIBILITY_PUBLIC,
                 null
@@ -262,7 +265,7 @@ class Reflection
         $storage->mutation_free = $storage->external_mutation_free
             = ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone');
 
-        $class_storage->declaring_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
+        $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_class->name,
             $method_name_lc
         );
@@ -354,7 +357,7 @@ class Reflection
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $this->codebase,
                     $function_id,
                     [],

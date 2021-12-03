@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Storage\ClassLikeStorage;
 
 use function strtolower;
 
-class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\ClassLikeStorageCacheProvider
+class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvider
 {
     /** @var array<string, ClassLikeStorage> */
     private $cache = [];

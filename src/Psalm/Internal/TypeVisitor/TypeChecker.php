@@ -4,11 +4,13 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
@@ -239,7 +241,7 @@ class TypeChecker extends NodeVisitor
         $expected_type_param_keys = \array_keys($expected_type_params);
 
         foreach ($atomic->type_params as $i => $type_param) {
-            $this->prevent_template_covariance = $this->source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+            $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
                 && $this->source->getMethodName() !== '__construct'
                 && empty($expected_param_covariants[$i]);
 
@@ -247,7 +249,7 @@ class TypeChecker extends NodeVisitor
                 $expected_template_name = $expected_type_param_keys[$i];
 
                 foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
-                    $expected_type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $expected_type_param = TypeExpander::expandUnion(
                         $codebase,
                         $expected_type_param,
                         $defining_class,
@@ -255,7 +257,7 @@ class TypeChecker extends NodeVisitor
                         null
                     );
 
-                    $type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $type_param = TypeExpander::expandUnion(
                         $codebase,
                         $type_param,
                         $defining_class,
@@ -330,7 +332,7 @@ class TypeChecker extends NodeVisitor
         }
 
         if (!$is_defined) {
-            \Psalm\IssueBuffer::maybeAdd(
+            IssueBuffer::maybeAdd(
                 new UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
                     $this->code_location
@@ -340,7 +342,7 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    public function checkTemplateParam(\Psalm\Type\Atomic\TTemplateParam $atomic) : void
+    public function checkTemplateParam(TTemplateParam $atomic) : void
     {
         if ($this->prevent_template_covariance
             && \strpos($atomic->defining_class, 'fn-') !== 0
@@ -357,7 +359,7 @@ class TypeChecker extends NodeVisitor
                 && isset($class_storage->template_covariants[$template_offset])
                 && $class_storage->template_covariants[$template_offset]
             ) {
-                $method_storage = $this->source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+                $method_storage = $this->source instanceof MethodAnalyzer
                     ? $this->source->getFunctionLikeStorage()
                     : null;
 
@@ -367,8 +369,8 @@ class TypeChecker extends NodeVisitor
                 ) {
                     // do nothing
                 } else {
-                    \Psalm\IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\InvalidTemplateParam(
+                    IssueBuffer::maybeAdd(
+                        new InvalidTemplateParam(
                             'Template param ' . $atomic->param_name . ' of '
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
                             $this->code_location
@@ -383,8 +385,8 @@ class TypeChecker extends NodeVisitor
     public function checkResource(TResource $atomic) : void
     {
         if (!$atomic->from_docblock) {
-            \Psalm\IssueBuffer::maybeAdd(
-                new \Psalm\Issue\ReservedWord(
+            IssueBuffer::maybeAdd(
+                new ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
                     'resource'

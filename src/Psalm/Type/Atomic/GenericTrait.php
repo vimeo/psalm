@@ -270,7 +270,7 @@ trait GenericTrait
             );
 
             if ($this instanceof Atomic\TArray && $offset === 0 && $type_param->isMixed()) {
-                $this->type_params[0] = \Psalm\Type::getArrayKey();
+                $this->type_params[0] = Type::getArrayKey();
             }
         }
 

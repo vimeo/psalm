@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Internal\Type\TypeAlias;
 
+use Psalm\Internal\Type\TypeAlias;
+
 /**
  * @psalm-immutable
  */
-class InlineTypeAlias implements \Psalm\Internal\Type\TypeAlias
+class InlineTypeAlias implements TypeAlias
 {
     /**
      * @var list<array{0: string, 1: int}>

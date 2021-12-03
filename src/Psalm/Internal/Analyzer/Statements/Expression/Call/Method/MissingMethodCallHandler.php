@@ -4,15 +4,18 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 
 use function array_map;
@@ -25,9 +28,9 @@ class MissingMethodCallHandler
         Codebase $codebase,
         PhpParser\Node\Expr\MethodCall $stmt,
         MethodIdentifier $method_id,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        ClassLikeStorage $class_storage,
         Context $context,
-        \Psalm\Config $config,
+        Config $config,
         ?Type\Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result
     ) : ?AtomicCallContext {
@@ -102,7 +105,7 @@ class MissingMethodCallHandler
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
-                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $fq_class_name,
@@ -195,7 +198,7 @@ class MissingMethodCallHandler
         MethodIdentifier $method_id,
         bool $is_interface,
         Context $context,
-        \Psalm\Config $config,
+        Config $config,
         ?Type\Union $all_intersection_return_type,
         array $all_intersection_existent_method_ids,
         ?string $intersection_method_id,
@@ -251,7 +254,7 @@ class MissingMethodCallHandler
                     ) ?? Type::getMixed();
                 }
 
-                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $fq_class_name,

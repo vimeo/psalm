@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
@@ -18,7 +19,7 @@ class IssueBufferTest extends TestCase
         IssueBuffer::clear();
         IssueBuffer::addIssues([
             '/path/one.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,
@@ -37,7 +38,7 @@ class IssueBufferTest extends TestCase
                 )
             ],
             '/path/two.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,
@@ -56,7 +57,7 @@ class IssueBufferTest extends TestCase
                 )
             ],
             '/path/three.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,

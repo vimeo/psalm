@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Internal\Type\TypeAlias;
 
-class ClassTypeAlias implements \Psalm\Internal\Type\TypeAlias
+use Psalm\Internal\Type\TypeAlias;
+
+class ClassTypeAlias implements TypeAlias
 {
     /**
      * @var list<\Psalm\Type\Atomic>

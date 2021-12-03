@@ -4,8 +4,11 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -99,7 +102,7 @@ class TemplateStandinTypeReplacer
             }
 
             if (count($atomic_types) > 1) {
-                $new_union_type = \Psalm\Internal\Type\TypeCombiner::combine(
+                $new_union_type = TypeCombiner::combine(
                     $atomic_types,
                     $codebase
                 );
@@ -261,7 +264,7 @@ class TemplateStandinTypeReplacer
                             if ($template_type instanceof Atomic\TKeyedArray) {
                                 $key_type = $template_type->getGenericKeyType();
                             } elseif ($template_type instanceof Atomic\TList) {
-                                $key_type = \Psalm\Type::getInt();
+                                $key_type = Type::getInt();
                             } else {
                                 $key_type = clone $template_type->type_params[0];
                             }
@@ -543,7 +546,7 @@ class TemplateStandinTypeReplacer
         if ($atomic_type->extra_types) {
             foreach ($atomic_type->extra_types as $extra_type) {
                 $extra_type = self::replace(
-                    new \Psalm\Type\Union([$extra_type]),
+                    new Union([$extra_type]),
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -823,7 +826,7 @@ class TemplateStandinTypeReplacer
                         $generic_param,
                         $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
                     )) {
-                        $intersection_type = \Psalm\Type::intersectUnionTypes(
+                        $intersection_type = Type::intersectUnionTypes(
                             $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type,
                             $generic_param,
                             $codebase
@@ -841,7 +844,7 @@ class TemplateStandinTypeReplacer
                         $template_result->upper_bounds_unintersectable_types[] = $generic_param;
 
                         $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
-                            = \Psalm\Type::getMixed();
+                            = Type::getMixed();
                     }
                 } else {
                     $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
@@ -893,8 +896,8 @@ class TemplateStandinTypeReplacer
                         $input_atomic_type->as_type
                             ? new Union([$input_atomic_type->as_type])
                             : ($input_atomic_type->as === 'object'
-                                ? \Psalm\Type::getObject()
-                                : \Psalm\Type::getMixed()),
+                                ? Type::getObject()
+                                : Type::getMixed()),
                         $input_atomic_type->defining_class
                     );
                 } elseif ($input_atomic_type instanceof Atomic\TClassString) {
@@ -918,7 +921,7 @@ class TemplateStandinTypeReplacer
                 $generic_param = new Union($valid_input_atomic_types);
                 $generic_param->setFromDocblock();
             } elseif ($was_single) {
-                $generic_param = \Psalm\Type::getMixed();
+                $generic_param = Type::getMixed();
             }
 
             if ($atomic_type->as_type) {
@@ -954,7 +957,7 @@ class TemplateStandinTypeReplacer
                 if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
                     $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [
                         new TemplateBound(
-                            \Psalm\Type::combineUnionTypes(
+                            Type::combineUnionTypes(
                                 $generic_param,
                                 self::getMostSpecificTypeFromBounds(
                                     $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -1087,7 +1090,7 @@ class TemplateStandinTypeReplacer
 
             $had_invariant = $had_invariant ?: $template_bound->equality_bound_classlike !== null;
 
-            $current_type = \Psalm\Type::combineUnionTypes(
+            $current_type = Type::combineUnionTypes(
                 $current_type,
                 $template_bound->type,
                 $codebase
@@ -1096,7 +1099,7 @@ class TemplateStandinTypeReplacer
             $last_arg_offset = $template_bound->arg_offset;
         }
 
-        return $current_type ?? \Psalm\Type::getMixed();
+        return $current_type ?? Type::getMixed();
     }
 
     /**
@@ -1155,7 +1158,7 @@ class TemplateStandinTypeReplacer
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $et) {
                         if ($et instanceof Atomic\TTemplateParam) {
-                            $ets = \Psalm\Internal\Codebase\Methods::getExtendedTemplatedTypes(
+                            $ets = Methods::getExtendedTemplatedTypes(
                                 $et,
                                 $template_extends
                             );
@@ -1176,14 +1179,14 @@ class TemplateStandinTypeReplacer
                                 \array_keys($input_class_storage->template_types)
                             );
 
-                            $candidate_param_type = $input_type_params[$old_params_offset] ?? \Psalm\Type::getMixed();
+                            $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
                         } else {
                             $candidate_param_type = new Union([clone $et]);
                         }
 
                         $candidate_param_type->from_template_default = true;
 
-                        $new_input_param = \Psalm\Type::combineUnionTypes(
+                        $new_input_param = Type::combineUnionTypes(
                             $new_input_param,
                             $candidate_param_type
                         );

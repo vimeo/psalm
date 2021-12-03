@@ -3,6 +3,7 @@ namespace Psalm\Internal\Scanner;
 
 use PhpParser;
 use PhpParser\NodeTraverser;
+use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Internal\PhpVisitor\ReflectorVisitor;
@@ -108,8 +109,8 @@ class FileScanner implements FileSource
         return $this->file_name;
     }
 
-    public function getAliases(): \Psalm\Aliases
+    public function getAliases(): Aliases
     {
-        return new \Psalm\Aliases();
+        return new Aliases();
     }
 }

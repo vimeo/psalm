@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -77,7 +78,7 @@ class GenericTypeComparator
 
         $container_type_params_covariant = [];
 
-        $input_type_params = \Psalm\Internal\Type\TemplateStandinTypeReplacer::getMappedGenericTypeParams(
+        $input_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
             $input_type_part,
             $container_type_part,

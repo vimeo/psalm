@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpTraverser;
 
 use PhpParser\Node;
+use PhpParser\NodeTraverser;
 
 use function array_pop;
 use function array_splice;
@@ -11,7 +12,7 @@ use function gettype;
 /**
  * @internal
  */
-class CustomTraverser extends \PhpParser\NodeTraverser
+class CustomTraverser extends NodeTraverser
 {
     public function __construct()
     {

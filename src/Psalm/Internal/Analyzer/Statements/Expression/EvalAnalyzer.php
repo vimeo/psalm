@@ -11,6 +11,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\TaintKind;
 
 /**
  * @internal
@@ -43,7 +44,7 @@ class EvalAnalyzer
                     $arg_location
                 );
 
-                $eval_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_EVAL];
+                $eval_param_sink->taints = [TaintKind::INPUT_EVAL];
 
                 $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 

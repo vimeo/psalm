@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Psalm\Aliases;
 use Psalm\Codebase;
+use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -173,7 +174,7 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getTemplateTypeMap();
     }
 
-    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    public function getNodeTypeProvider() : NodeTypeProvider
     {
         return $this->source->getNodeTypeProvider();
     }

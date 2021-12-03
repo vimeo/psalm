@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
@@ -54,7 +55,7 @@ class CloneAnalyzer
                     if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value)) {
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
-                        $clone_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $clone_method_id = new MethodIdentifier(
                             $clone_type_part->value,
                             '__clone'
                         );

@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+
 use function class_exists;
 
 use const DIRECTORY_SEPARATOR;
@@ -65,7 +68,7 @@ class BinaryOperationTest extends TestCase
             '$t' => 'GMP',
         ];
 
-        $context = new \Psalm\Context();
+        $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
 
@@ -81,7 +84,7 @@ class BinaryOperationTest extends TestCase
 
     public function testStrictTrueEquivalence(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->strict_binary_operands = true;
 
         $this->addFile(
@@ -99,12 +102,12 @@ class BinaryOperationTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testStringFalseInequivalence(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->strict_binary_operands = true;
 
         $this->addFile(
@@ -122,7 +125,7 @@ class BinaryOperationTest extends TestCase
         $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

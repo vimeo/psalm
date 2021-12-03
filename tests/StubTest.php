@@ -3,8 +3,10 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 
@@ -41,11 +43,11 @@ class StubTest extends TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
-        $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )

@@ -18,7 +18,7 @@ use function get_class;
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
  */
-class TList extends \Psalm\Type\Atomic
+class TList extends Atomic
 {
     /**
      * @var Union

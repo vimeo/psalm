@@ -3,6 +3,7 @@ namespace Psalm\Internal\FileManipulation;
 
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FileProvider;
 
 use function array_merge;
@@ -83,7 +84,7 @@ class FileManipulationBuffer
         $bounds = $code_location->getSnippetBounds();
 
         if ($swallow_newlines) {
-            $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+            $project_analyzer = ProjectAnalyzer::getInstance();
 
             $codebase = $project_analyzer->getCodebase();
 
@@ -112,7 +113,7 @@ class FileManipulationBuffer
     {
         $bounds = $code_location->getSelectionBounds();
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
         $codebase = $project_analyzer->getCodebase();
 

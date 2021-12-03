@@ -7,10 +7,14 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\MixedArrayOffset;
+use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
@@ -45,8 +49,8 @@ class ArrayAnalyzer
 
         foreach ($stmt->items as $item) {
             if ($item === null) {
-                \Psalm\IssueBuffer::add(
-                    new \Psalm\Issue\ParseError(
+                IssueBuffer::add(
+                    new ParseError(
                         'Array element cannot be empty',
                         new CodeLocation($statements_analyzer, $stmt)
                     )
@@ -248,12 +252,12 @@ class ArrayAnalyzer
             );
 
             if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-                && $data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                && $data_flow_graph instanceof VariableUseGraph
                 && $unpacked_array_type->parent_nodes
             ) {
                 $var_location = new CodeLocation($statements_analyzer->getSource(), $item->value);
 
-                $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                $new_parent_node = DataFlowNode::getForAssignment(
                     'array',
                     $var_location
                 );
@@ -354,18 +358,18 @@ class ArrayAnalyzer
 
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-            && ($data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            && ($data_flow_graph instanceof VariableUseGraph
                 || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                 if ($item_value_type->parent_nodes
                     && !($item_value_type->isSingle()
                         && $item_value_type->hasLiteralValue()
-                        && $data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph)
+                        && $data_flow_graph instanceof TaintFlowGraph)
                 ) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
-                    $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                    $new_parent_node = DataFlowNode::getForAssignment(
                         'array'
                             . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
                         $var_location
@@ -397,11 +401,11 @@ class ArrayAnalyzer
                     && $item_key_value === null
                     && !($item_key_type->isSingle()
                         && $item_key_type->hasLiteralValue()
-                        && $data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph)
+                        && $data_flow_graph instanceof TaintFlowGraph)
                 ) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
-                    $new_parent_node = \Psalm\Internal\DataFlow\DataFlowNode::getForAssignment(
+                    $new_parent_node = DataFlowNode::getForAssignment(
                         'array',
                         $var_location
                     );

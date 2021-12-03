@@ -4,6 +4,12 @@ namespace Psalm\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
+use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -1488,7 +1494,7 @@ class Union implements TypeNode
             return true;
         }
 
-        $checker = new \Psalm\Internal\TypeVisitor\TypeChecker(
+        $checker = new TypeChecker(
             $source,
             $code_location,
             $suppressed_issues,
@@ -1515,7 +1521,7 @@ class Union implements TypeNode
         ?FileStorage $file_storage = null,
         array $phantom_classes = []
     ): void {
-        $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(
+        $scanner_visitor = new TypeScanner(
             $codebase->scanner,
             $file_storage,
             $phantom_classes
@@ -1529,7 +1535,7 @@ class Union implements TypeNode
      */
     public function containsClassLike(string $fq_class_like_name) : bool
     {
-        $classlike_visitor = new \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor($fq_class_like_name);
+        $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
         $classlike_visitor->traverseArray($this->types);
 
@@ -1538,7 +1544,7 @@ class Union implements TypeNode
 
     public function containsAnyLiteral() : bool
     {
-        $literal_visitor = new \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor();
+        $literal_visitor = new ContainsLiteralVisitor();
 
         $literal_visitor->traverseArray($this->types);
 
@@ -1550,7 +1556,7 @@ class Union implements TypeNode
      */
     public function getTemplateTypes(): array
     {
-        $template_type_collector = new \Psalm\Internal\TypeVisitor\TemplateTypeCollector();
+        $template_type_collector = new TemplateTypeCollector();
 
         $template_type_collector->traverseArray($this->types);
 
@@ -1561,7 +1567,7 @@ class Union implements TypeNode
     {
         $this->from_docblock = true;
 
-        (new \Psalm\Internal\TypeVisitor\FromDocblockSetter())->traverseArray($this->types);
+        (new FromDocblockSetter())->traverseArray($this->types);
     }
 
     public function replaceClassLike(string $old, string $new) : void

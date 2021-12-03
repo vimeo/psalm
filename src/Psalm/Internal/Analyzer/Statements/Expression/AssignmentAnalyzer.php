@@ -3,10 +3,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
@@ -15,12 +19,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -33,6 +42,7 @@ use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\NoValue;
+use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
@@ -298,7 +308,7 @@ class AssignmentAnalyzer
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         )
                     );
-                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
@@ -344,8 +354,8 @@ class AssignmentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -392,8 +402,8 @@ class AssignmentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
@@ -610,7 +620,7 @@ class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $var_comment_type = TypeExpander::expandUnion(
                 $codebase,
                 $var_comment->type,
                 $context->self,
@@ -707,7 +717,7 @@ class AssignmentAnalyzer
      */
     private static function taintAssignment(
         Type\Union $type,
-        \Psalm\Internal\Codebase\DataFlowGraph $data_flow_graph,
+        DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
         array $removed_taints,
@@ -859,7 +869,7 @@ class AssignmentAnalyzer
         if ($lhs_var_id) {
             $context->vars_in_scope[$lhs_var_id] = $assignment_type;
             $context->hasVariable($lhs_var_id);
-            $context->byref_constraints[$lhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+            $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint();
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                 foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
@@ -877,7 +887,7 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
             }
 
-            $context->byref_constraints[$rhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+            $context->byref_constraints[$rhs_var_id] = new ReferenceConstraint();
         }
 
         if ($statements_analyzer->data_flow_graph
@@ -935,7 +945,7 @@ class AssignmentAnalyzer
             $var_not_in_scope = false;
 
             if (!$by_ref_type->hasMixed() && $constrain_type) {
-                $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
+                $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
             }
 
             if (!$context->hasVariable($var_id)) {
@@ -952,7 +962,7 @@ class AssignmentAnalyzer
                         && !strpos($var_id, '::')
                     ) {
                         IssueBuffer::maybeAdd(
-                            new \Psalm\Issue\NullReference(
+                            new NullReference(
                                 'Not expecting null argument passed by reference',
                                 $location
                             ),
@@ -1038,7 +1048,7 @@ class AssignmentAnalyzer
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assign_value_type,
@@ -1386,7 +1396,7 @@ class AssignmentAnalyzer
 
                     try {
                         if ($var_comment->var_id === $list_var_id) {
-                            $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $var_comment_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $var_comment->type,
                                 $context->self,
@@ -1464,7 +1474,7 @@ class AssignmentAnalyzer
 
     private static function analyzePropertyAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $assign_var,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
@@ -1549,7 +1559,7 @@ class AssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
                 if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
@@ -1565,7 +1575,7 @@ class AssignmentAnalyzer
 
     private static function analyzeAssignmentToVariable(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\Variable $assign_var,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assign_value_type,
@@ -1642,7 +1652,7 @@ class AssignmentAnalyzer
                     $var_object_id = \spl_object_id($assign_var);
                     $cond_object_id = \spl_object_id($assign_value);
 
-                    $right_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                    $right_clauses = FormulaGenerator::getFormula(
                         $cond_object_id,
                         $cond_object_id,
                         $assign_value,
@@ -1656,8 +1666,8 @@ class AssignmentAnalyzer
                         $right_clauses
                     );
 
-                    $assignment_clauses = \Psalm\Internal\Algebra::combineOredClauses(
-                        [new \Psalm\Internal\Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
+                    $assignment_clauses = Algebra::combineOredClauses(
+                        [new Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
                         $right_clauses,
                         $cond_object_id
                     );

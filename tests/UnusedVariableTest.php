@@ -3,7 +3,9 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
 
@@ -23,9 +25,9 @@ class UnusedVariableTest extends TestCase
 
         $this->file_provider = new FakeFileProvider();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )

@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
+use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
@@ -235,9 +237,9 @@ class TaintFlowGraph extends DataFlowGraph
     ) : array {
         $new_sources = [];
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;

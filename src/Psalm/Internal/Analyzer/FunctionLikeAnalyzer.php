@@ -9,16 +9,24 @@ use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidParamDefault;
+use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
@@ -30,6 +38,7 @@ use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
@@ -140,7 +149,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public function analyze(
         Context $context,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        NodeDataProvider $type_provider,
         ?Context $global_context = null,
         bool $add_mutations = false
     ): ?bool {
@@ -289,14 +298,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && strtolower((string) $this->getMethodId()) === $original_method_id
             ) {
                 $file_manipulations = [
-                    new \Psalm\FileManipulation(
+                    new FileManipulation(
                         (int) $this->function->name->getAttribute('startFilePos'),
                         (int) $this->function->name->getAttribute('endFilePos') + 1,
                         $new_method_name
                     )
                 ];
 
-                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                FileManipulationBuffer::add(
                     $this->getFilePath(),
                     $file_manipulations
                 );
@@ -304,7 +313,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($storage instanceof MethodStorage
-            && $method_id instanceof \Psalm\Internal\MethodIdentifier
+            && $method_id instanceof MethodIdentifier
             && $overridden_method_ids
         ) {
             $params = $codebase->methods->getMethodParams(
@@ -458,7 +467,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             $inferred_return_type = $inferred_return_types
-                ? \Psalm\Type::combineUnionTypeArray(
+                ? Type::combineUnionTypeArray(
                     $inferred_return_types,
                     $codebase
                 )
@@ -487,7 +496,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             $traverser = new PhpParser\NodeTraverser;
 
-            $node_counter = new \Psalm\Internal\PhpVisitor\NodeCounterVisitor();
+            $node_counter = new NodeCounterVisitor();
             $traverser->addVisitor($node_counter);
             $traverser->traverse($function_stmts);
 
@@ -559,14 +568,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             $closure_return_type = $closure_return_types
-                ? \Psalm\Type::combineUnionTypeArray(
+                ? Type::combineUnionTypeArray(
                     $closure_return_types,
                     $codebase
                 )
                 : Type::getVoid();
 
             $closure_yield_type = $closure_yield_types
-                ? \Psalm\Type::combineUnionTypeArray(
+                ? Type::combineUnionTypeArray(
                     $closure_yield_types,
                     $codebase
                 )
@@ -641,7 +650,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $input_type, $container_type)) {
                         IssueBuffer::maybeAdd(
-                            new \Psalm\Issue\InvalidThrow(
+                            new InvalidThrow(
                                 'Class supplied for @throws ' . $expected_exception
                                     . ' does not implement Throwable',
                                 $storage->throw_locations[$expected_exception],
@@ -771,7 +780,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $file_manipulations = $event->getFileReplacements();
 
         if ($file_manipulations) {
-            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+            FileManipulationBuffer::add(
                 $this->getFilePath(),
                 $file_manipulations
             );
@@ -792,7 +801,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     private function checkParamReferences(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
-        ?\Psalm\Storage\ClassLikeStorage $class_storage,
+        ?ClassLikeStorage $class_storage,
         Context $context
     ) : void {
         $codebase = $statements_analyzer->getCodebase();
@@ -837,7 +846,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
 
-            if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
             ) {
                 continue;
@@ -963,7 +972,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($signature_type) {
-                $signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $signature_type = TypeExpander::expandUnion(
                     $codebase,
                     $signature_type,
                     $context->self,
@@ -975,7 +984,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->type) {
                 $param_type = clone $function_param->type;
 
-                $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $param_type = TypeExpander::expandUnion(
                     $codebase,
                     $param_type,
                     $context->self,
@@ -1317,7 +1326,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $storage->return_type_location
             && $storage->return_type_location !== $storage->signature_return_type_location
         ) {
-            $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $replace_type = TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
                 $context->self,
@@ -1341,7 +1350,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $function_param->type_location !== $function_param->signature_type_location
                 && $function_param->type_location->file_path === $this->getFilePath()
             ) {
-                $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $replace_type = TypeExpander::expandUnion(
                     $codebase,
                     $function_param->type,
                     $context->self,
@@ -1695,7 +1704,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return $this->local_return_type;
         }
 
-        $this->local_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $this->local_return_type = TypeExpander::expandUnion(
             $this->codebase,
             $storage_return_type,
             $this->getFQCLN(),
@@ -1722,8 +1731,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     private function getFunctionInformation(
         Context $context,
         Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
-        \Psalm\Storage\FunctionLikeStorage $storage,
+        NodeDataProvider $type_provider,
+        FunctionLikeStorage $storage,
         bool $add_mutations
     ): ?array {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
@@ -1898,7 +1907,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->calling_function_id = strtolower($cased_method_id);
         } elseif ($this instanceof ClosureAnalyzer) {
             if ($storage->return_type) {
-                $closure_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $closure_return_type = TypeExpander::expandUnion(
                     $codebase,
                     $storage->return_type,
                     $context->self,

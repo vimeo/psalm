@@ -2,9 +2,13 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Aliases;
+use Psalm\Codebase;
+use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
@@ -29,11 +33,11 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     public static function infer(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         PhpParser\Node\Expr $stmt,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Type\Union {
@@ -426,11 +430,11 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     private static function inferArrayType(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         PhpParser\Node\Expr\Array_ $stmt,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Type\Union {
@@ -513,12 +517,12 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     private static function handleArrayItem(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): bool {

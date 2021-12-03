@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Plugin;
 
+use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
 use function array_filter;
@@ -28,7 +30,7 @@ use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const STDERR;
 
-class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
+class Shepherd implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
@@ -68,7 +70,7 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
-                'level' => \Psalm\Config::getInstance()->level
+                'level' => Config::getInstance()->level
             ];
 
             $payload = json_encode($data);

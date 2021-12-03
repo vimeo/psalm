@@ -8,9 +8,12 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-class SymbolLookupTest extends \Psalm\Tests\TestCase
+class SymbolLookupTest extends TestCase
 {
     public function setUp() : void
     {
@@ -22,11 +25,11 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
+            new ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider(),
-            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(

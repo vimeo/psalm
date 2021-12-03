@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_merge;
@@ -40,7 +41,7 @@ class TIterable extends Atomic
             $this->has_docblock_params = true;
             $this->type_params = $type_params;
         } else {
-            $this->type_params = [\Psalm\Type::getMixed(), \Psalm\Type::getMixed()];
+            $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
     }
 

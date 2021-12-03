@@ -3,14 +3,21 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\DeprecatedFunction;
@@ -41,6 +48,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
+use Psalm\Type\TaintKind;
 
 use function array_map;
 use function array_merge;
@@ -157,7 +165,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
-                $function_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+                $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
                     $stmt->getArgs(),
@@ -652,7 +660,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $parts = explode('::', strtolower($var_type_part->value));
                             $fq_class_name = $parts[0];
                             $fq_class_name = \preg_replace('/^\\\\/', '', $fq_class_name);
-                            $potential_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, $parts[1]);
+                            $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
@@ -678,7 +686,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif (!$var_type_part instanceof TNamedObject
                     || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value)
                     || !$codebase->methods->methodExists(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $var_type_part->value,
                             '__invoke'
                         )
@@ -728,7 +736,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
 
-                $custom_call_sink = \Psalm\Internal\DataFlow\TaintSink::getForMethodArgument(
+                $custom_call_sink = TaintSink::getForMethodArgument(
                     'variable-call',
                     'variable-call',
                     0,
@@ -736,7 +744,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $arg_location
                 );
 
-                $custom_call_sink->taints = [\Psalm\Type\TaintKind::INPUT_CALLABLE];
+                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 
@@ -790,7 +798,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $statements_analyzer->node_data->setType($function_name, new Type\Union([$atomic_type]));
 
-        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+        MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,
@@ -823,7 +831,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
     private static function processAssertFunctionEffects(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Arg $first_arg,
         Context $context
@@ -839,7 +847,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $codebase
         );
 
-        \Psalm\Internal\Analyzer\AlgebraAnalyzer::checkForParadox(
+        AlgebraAnalyzer::checkForParadox(
             $context->clauses,
             $assert_clauses,
             $statements_analyzer,
@@ -884,8 +892,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                                    instanceof FunctionLikeAnalyzer)
+                                || !$parent_source->getSource() instanceof TraitAnalyzer)
                     ) {
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                     }
@@ -914,7 +922,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
     private static function checkFunctionCallPurity(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node $function_name,
         FunctionCallInfo $function_call_info,
@@ -928,7 +936,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 || $context->external_mutation_free
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
-                || ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                || ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations))
         ) {
             $must_use = true;
@@ -956,7 +964,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_has_mutation = true;

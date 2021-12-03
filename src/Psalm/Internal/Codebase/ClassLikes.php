@@ -2,26 +2,40 @@
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
+use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
+use Psalm\Internal\FileManipulation\CodeMigration;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\TraitFinder;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
+use Psalm\Issue\PossiblyUnusedReturnValue;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedMethod;
+use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedProperty;
+use Psalm\Issue\UnusedReturnValue;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualNode;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -786,9 +800,9 @@ class ClassLikes
 
         $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
 
-        $trait_finder = new \Psalm\Internal\PhpVisitor\TraitFinder($fq_trait_name);
+        $trait_finder = new TraitFinder($fq_trait_name);
 
-        $traverser = new \PhpParser\NodeTraverser();
+        $traverser = new NodeTraverser();
         $traverser->addVisitor(
             $trait_finder
         );
@@ -837,7 +851,7 @@ class ClassLikes
 
         $progress->debug('Checking class references' . PHP_EOL);
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
@@ -911,7 +925,7 @@ class ClassLikes
 
     public static function makeImmutable(
         PhpParser\Node\Stmt\Class_ $class_stmt,
-        \Psalm\Internal\Analyzer\ProjectAnalyzer $project_analyzer,
+        ProjectAnalyzer $project_analyzer,
         string $file_path
     ) : void {
         $manipulator = ClassDocblockManipulator::getForClass(
@@ -929,7 +943,7 @@ class ClassLikes
             $progress = new VoidProgress();
         }
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         if (!$codebase->methods_to_move) {
@@ -945,7 +959,7 @@ class ClassLikes
 
             try {
                 $source_method_storage = $methods->getStorage(
-                    new \Psalm\Internal\MethodIdentifier(...$source_parts)
+                    new MethodIdentifier(...$source_parts)
                 );
             } catch (\InvalidArgumentException $e) {
                 continue;
@@ -973,7 +987,7 @@ class ClassLikes
                 FileManipulationBuffer::add(
                     $source_method_storage->stmt_location->file_path,
                     [
-                        new \Psalm\FileManipulation(
+                        new FileManipulation(
                             $old_method_name_bounds[0],
                             $old_method_name_bounds[1],
                             $destination_name
@@ -991,7 +1005,7 @@ class ClassLikes
                     ++$insert_pos;
                 }
 
-                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                $code_migrations[] = new CodeMigration(
                     $source_method_storage->stmt_location->file_path,
                     $old_method_bounds[0],
                     $old_method_bounds[1],
@@ -1010,7 +1024,7 @@ class ClassLikes
             $progress = new VoidProgress();
         }
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         if (!$codebase->properties_to_move) {
@@ -1046,7 +1060,7 @@ class ClassLikes
                 ) {
                     $bounds = $source_property_storage->type_location->getSelectionBounds();
 
-                    $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $replace_type = TypeExpander::expandUnion(
                         $codebase,
                         $source_property_storage->type,
                         $source_classlike_storage->name,
@@ -1071,7 +1085,7 @@ class ClassLikes
                 FileManipulationBuffer::add(
                     $source_property_storage->stmt_location->file_path,
                     [
-                        new \Psalm\FileManipulation(
+                        new FileManipulation(
                             $old_property_name_bounds[0],
                             $old_property_name_bounds[1],
                             '$' . $destination_name
@@ -1089,7 +1103,7 @@ class ClassLikes
                     ++$insert_pos;
                 }
 
-                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                $code_migrations[] = new CodeMigration(
                     $source_property_storage->stmt_location->file_path,
                     $old_property_bounds[0],
                     $old_property_bounds[1],
@@ -1108,7 +1122,7 @@ class ClassLikes
             $progress = new VoidProgress();
         }
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         if (!$codebase->class_constants_to_move) {
@@ -1147,7 +1161,7 @@ class ClassLikes
                 FileManipulationBuffer::add(
                     $source_const_stmt_location->file_path,
                     [
-                        new \Psalm\FileManipulation(
+                        new FileManipulation(
                             $old_const_name_bounds[0],
                             $old_const_name_bounds[1],
                             $destination_name
@@ -1165,7 +1179,7 @@ class ClassLikes
                     ++$insert_pos;
                 }
 
-                $code_migrations[] = new \Psalm\Internal\FileManipulation\CodeMigration(
+                $code_migrations[] = new CodeMigration(
                     $source_const_stmt_location->file_path,
                     $old_const_bounds[0],
                     $old_const_bounds[1],
@@ -1182,8 +1196,8 @@ class ClassLikes
      * @param lowercase-string|null $calling_method_id
      */
     public function handleClassLikeReferenceInMigration(
-        \Psalm\Codebase $codebase,
-        \Psalm\StatementsSource $source,
+        Codebase $codebase,
+        StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
         ?string $calling_method_id,
@@ -1232,7 +1246,7 @@ class ClassLikes
                 $destination_class_name = array_pop($destination_parts);
                 $file_manipulations = [];
 
-                $file_manipulations[] = new \Psalm\FileManipulation(
+                $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
                     $destination_class_name
@@ -1277,7 +1291,7 @@ class ClassLikes
                 }
             }
 
-            $file_manipulations[] = new \Psalm\FileManipulation(
+            $file_manipulations[] = new FileManipulation(
                 (int) $class_name_node->getAttribute('startFilePos'),
                 (int) $class_name_node->getAttribute('endFilePos') + 1,
                 Type::getStringFromFQCLN(
@@ -1308,7 +1322,7 @@ class ClassLikes
                 $destination_class_name = array_pop($destination_parts);
                 $file_manipulations = [];
 
-                $file_manipulations[] = new \Psalm\FileManipulation(
+                $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
                     $destination_class_name
@@ -1343,7 +1357,7 @@ class ClassLikes
             } else {
                 $file_manipulations = [];
 
-                $file_manipulations[] = new \Psalm\FileManipulation(
+                $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
                     Type::getStringFromFQCLN(
@@ -1367,8 +1381,8 @@ class ClassLikes
      * @param lowercase-string|null $calling_method_id
      */
     public function handleDocblockTypeInMigration(
-        \Psalm\Codebase $codebase,
-        \Psalm\StatementsSource $source,
+        Codebase $codebase,
+        StatementsSource $source,
         Type\Union $type,
         CodeLocation $type_location,
         ?string $calling_method_id
@@ -1445,7 +1459,7 @@ class ClassLikes
 
                     $file_manipulations = [];
 
-                    $file_manipulations[] = new \Psalm\FileManipulation(
+                    $file_manipulations[] = new FileManipulation(
                         $bounds[0],
                         $bounds[1],
                         $type->toNamespacedString(
@@ -1501,7 +1515,7 @@ class ClassLikes
         bool $add_class_constant = false,
         bool $allow_self = false
     ) : void {
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
@@ -1512,7 +1526,7 @@ class ClassLikes
 
         $file_manipulations = [];
 
-        $file_manipulations[] = new \Psalm\FileManipulation(
+        $file_manipulations[] = new FileManipulation(
             $source_start,
             $source_end,
             Type::getStringFromFQCLN(
@@ -1537,7 +1551,7 @@ class ClassLikes
         int $source_start,
         int $source_end
     ) : void {
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
@@ -1548,7 +1562,7 @@ class ClassLikes
 
         $file_manipulations = [];
 
-        $file_manipulations[] = new \Psalm\FileManipulation(
+        $file_manipulations[] = new FileManipulation(
             $source_start,
             $source_end,
             $type->toNamespacedString(
@@ -1614,7 +1628,7 @@ class ClassLikes
         string $class_name,
         string $constant_name,
         int $visibility,
-        ?\Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
     ) : ?Type\Union {
         $class_name = strtolower($class_name);
@@ -1659,7 +1673,7 @@ class ClassLikes
 
     private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods): void
     {
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->appearing_method_ids as $method_name => $appearing_method_id) {
@@ -1884,7 +1898,7 @@ class ClassLikes
                     if (!$method_return_referenced) {
                         if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
                             IssueBuffer::maybeAdd(
-                                new \Psalm\Issue\UnusedReturnValue(
+                                new UnusedReturnValue(
                                     'The return value for this private method is never used',
                                     $method_storage->return_type_location
                                 ),
@@ -1892,7 +1906,7 @@ class ClassLikes
                             );
                         } else {
                             IssueBuffer::maybeAdd(
-                                new \Psalm\Issue\PossiblyUnusedReturnValue(
+                                new PossiblyUnusedReturnValue(
                                     'The return value for this method is never used',
                                     $method_storage->return_type_location
                                 ),
@@ -1916,7 +1930,7 @@ class ClassLikes
                         ) {
                             if ($method_storage->final) {
                                 IssueBuffer::maybeAdd(
-                                    new \Psalm\Issue\UnusedParam(
+                                    new UnusedParam(
                                         'Param #' . ($offset + 1) . ' is never referenced in this method',
                                         $param_storage->location
                                     ),
@@ -1940,7 +1954,7 @@ class ClassLikes
 
     private function findPossibleMethodParamTypes(ClassLikeStorage $classlike_storage): void
     {
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->appearing_method_ids as $method_name => $appearing_method_id) {
@@ -2006,7 +2020,7 @@ class ClassLikes
                                 if ($method_storage->params[$offset]->default_type instanceof Type\Union) {
                                     $default_type = clone $method_storage->params[$offset]->default_type;
                                 } else {
-                                    $default_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                                    $default_type_atomic = ConstantTypeResolver::resolve(
                                         $codebase->classlikes,
                                         $method_storage->params[$offset]->default_type,
                                         null
@@ -2015,7 +2029,7 @@ class ClassLikes
                                     $default_type = new Type\Union([$default_type_atomic]);
                                 }
 
-                                $possible_type = \Psalm\Type::combineUnionTypes(
+                                $possible_type = Type::combineUnionTypes(
                                     $possible_type,
                                     $default_type
                                 );
@@ -2061,7 +2075,7 @@ class ClassLikes
 
     private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
     {
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {

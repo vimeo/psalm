@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -261,7 +262,7 @@ class ConstFetchAnalyzer
 
     public static function getConstName(
         PhpParser\Node\Expr $first_arg_value,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        NodeDataProvider $type_provider,
         Codebase $codebase,
         Aliases $aliases
     ) : ?string {

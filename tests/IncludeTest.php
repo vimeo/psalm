@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 
 use function getcwd;
@@ -41,7 +42,7 @@ class IncludeTest extends TestCase
         $config->skip_checks_on_unresolvable_includes = true;
 
         foreach ($error_levels as $error_level) {
-            $config->setCustomErrorLevel($error_level, \Psalm\Config::REPORT_SUPPRESS);
+            $config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $codebase->scanFiles();

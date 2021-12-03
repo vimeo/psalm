@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\FunctionLike;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -28,7 +29,7 @@ class ReturnTypeCollector
      */
     public static function getReturnTypes(
         Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
         bool $collapse_types = false
@@ -294,7 +295,7 @@ class ReturnTypeCollector
      */
     protected static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes
+        NodeDataProvider $nodes
     ): array {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;

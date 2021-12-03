@@ -4,13 +4,19 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
@@ -270,7 +276,7 @@ class BinaryOpAnalyzer
                                 ) {
                                     if ($atomic_right_type->from_docblock) {
                                         IssueBuffer::maybeAdd(
-                                            new \Psalm\Issue\DocblockTypeContradiction(
+                                            new DocblockTypeContradiction(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
@@ -279,7 +285,7 @@ class BinaryOpAnalyzer
                                         );
                                     } else {
                                         IssueBuffer::maybeAdd(
-                                            new \Psalm\Issue\TypeDoesNotContainType(
+                                            new TypeDoesNotContainType(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
@@ -290,7 +296,7 @@ class BinaryOpAnalyzer
                                 } else {
                                     if ($atomic_right_type->from_docblock) {
                                         IssueBuffer::maybeAdd(
-                                            new \Psalm\Issue\RedundantConditionGivenDocblockType(
+                                            new RedundantConditionGivenDocblockType(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
@@ -299,7 +305,7 @@ class BinaryOpAnalyzer
                                         );
                                     } else {
                                         IssueBuffer::maybeAdd(
-                                            new \Psalm\Issue\RedundantCondition(
+                                            new RedundantCondition(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
                                                 null
@@ -444,7 +450,7 @@ class BinaryOpAnalyzer
                 if ($atomic_type instanceof TNamedObject) {
                     try {
                         $storage = $codebase->methods->getStorage(
-                            new \Psalm\Internal\MethodIdentifier(
+                            new MethodIdentifier(
                                 $atomic_type->value,
                                 '__tostring'
                             )
@@ -455,7 +461,7 @@ class BinaryOpAnalyzer
 
                     if (!$storage->mutation_free) {
                         if ($statements_analyzer->getSource()
-                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -478,7 +484,7 @@ class BinaryOpAnalyzer
                 if ($atomic_type instanceof TNamedObject) {
                     try {
                         $storage = $codebase->methods->getStorage(
-                            new \Psalm\Internal\MethodIdentifier(
+                            new MethodIdentifier(
                                 $atomic_type->value,
                                 '__tostring'
                             )
@@ -488,7 +494,7 @@ class BinaryOpAnalyzer
                     }
 
                     if (!$storage->mutation_free) {
-                        if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_has_mutation = true;

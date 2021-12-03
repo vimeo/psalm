@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -11,7 +12,7 @@ use function implode;
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
  */
-class TTemplateParam extends \Psalm\Type\Atomic
+class TTemplateParam extends Atomic
 {
     use HasIntersectionTrait;
 

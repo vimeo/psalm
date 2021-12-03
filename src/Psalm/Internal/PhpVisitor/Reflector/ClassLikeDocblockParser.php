@@ -2,6 +2,10 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Comment\Doc;
+use PhpParser\Node;
+use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
@@ -9,6 +13,7 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTreeCreator;
@@ -45,7 +50,7 @@ class ClassLikeDocblockParser
      * @psalm-suppress MixedArrayAccess
      */
     public static function parse(
-        \PhpParser\Node $node,
+        Node $node,
         PhpParser\Comment\Doc $comment,
         Aliases $aliases
     ): ClassLikeDocblockComment {
@@ -414,7 +419,7 @@ class ClassLikeDocblockParser
                 try {
                     $has_errors = false;
 
-                    $statements = \Psalm\Internal\Provider\StatementsProvider::parseStatements(
+                    $statements = StatementsProvider::parseStatements(
                         $php_string,
                         $codebase->php_major_version . '.' . $codebase->php_minor_version,
                         $has_errors
@@ -424,9 +429,9 @@ class ClassLikeDocblockParser
                 }
 
                 if (!$statements
-                    || !$statements[0] instanceof \PhpParser\Node\Stmt\Class_
+                    || !$statements[0] instanceof Class_
                     || !isset($statements[0]->stmts[0])
-                    || !$statements[0]->stmts[0] instanceof \PhpParser\Node\Stmt\ClassMethod
+                    || !$statements[0]->stmts[0] instanceof ClassMethod
                 ) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
@@ -440,7 +445,7 @@ class ClassLikeDocblockParser
 
                 if ($doc_comment = $statements[0]->stmts[0]->getDocComment()) {
                     $statements[0]->stmts[0]->setDocComment(
-                        new \PhpParser\Comment\Doc(
+                        new Doc(
                             $doc_comment->getText(),
                             $comment->getStartLine() + substr_count(
                                 $comment->getText(),

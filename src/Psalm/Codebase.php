@@ -2,8 +2,14 @@
 namespace Psalm;
 
 use LanguageServerProtocol\Command;
+use LanguageServerProtocol\CompletionItem;
+use LanguageServerProtocol\CompletionItemKind;
+use LanguageServerProtocol\InsertTextFormat;
+use LanguageServerProtocol\ParameterInformation;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use LanguageServerProtocol\SignatureInformation;
+use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -12,6 +18,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\Reflection;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -24,6 +34,7 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\TaintKindGroup;
 
 use function array_combine;
 use function array_merge;
@@ -531,7 +542,7 @@ class Codebase
 
     public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
     {
-        return \Psalm\Internal\Codebase\Reflection::getPsalmTypeFromReflectionType($type);
+        return Reflection::getPsalmTypeFromReflectionType($type);
     }
 
     public function createFileStorageForPath(string $file_path): FileStorage
@@ -769,11 +780,11 @@ class Codebase
         string $function_id
     ): FunctionLikeStorage {
         $doesMethodExist =
-            \Psalm\Internal\MethodIdentifier::isValidMethodIdReference($function_id)
+            MethodIdentifier::isValidMethodIdReference($function_id)
             && $this->methodExists($function_id);
 
         if ($doesMethodExist) {
-            $method_id = \Psalm\Internal\MethodIdentifier::wrap($function_id);
+            $method_id = MethodIdentifier::wrap($function_id);
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -937,7 +948,7 @@ class Codebase
         if (strpos($symbol, '::')) {
             $symbol = substr($symbol, 0, -2);
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+            $method_id = new MethodIdentifier(...explode('::', $symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -979,7 +990,7 @@ class Codebase
                     $symbol = substr($symbol, 0, -2);
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+                    $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1118,7 +1129,7 @@ class Codebase
                     $symbol = substr($symbol, 0, -2);
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+                    $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1290,12 +1301,12 @@ class Codebase
     public function getSignatureInformation(
         string $function_symbol,
         string $file_path = null
-    ): ?\LanguageServerProtocol\SignatureInformation {
+    ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
         if (strpos($function_symbol, '::') !== false) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $function_symbol));
+            $method_id = new MethodIdentifier(...explode('::', $function_symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1342,7 +1353,7 @@ class Codebase
 
         foreach ($params as $i => $param) {
             $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
-            $parameters[] = new \LanguageServerProtocol\ParameterInformation(
+            $parameters[] = new ParameterInformation(
                 [
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
@@ -1359,7 +1370,7 @@ class Codebase
 
         $signature_label .= ')';
 
-        return new \LanguageServerProtocol\SignatureInformation(
+        return new SignatureInformation(
             $signature_label,
             $parameters,
             $signature_documentation
@@ -1497,9 +1508,9 @@ class Codebase
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
                         if ($method_storage->is_static || $gap === '->') {
-                            $completion_item = new \LanguageServerProtocol\CompletionItem(
+                            $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
-                                \LanguageServerProtocol\CompletionItemKind::METHOD,
+                                CompletionItemKind::METHOD,
                                 (string)$method_storage,
                                 $method_storage->description,
                                 (string)$method_storage->visibility,
@@ -1512,7 +1523,7 @@ class Codebase
                                 2
                             );
 
-                            $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+                            $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
 
                             $completion_items[] = $completion_item;
                         }
@@ -1524,9 +1535,9 @@ class Codebase
                         );
 
                         if ($property_storage->is_static || $gap === '->') {
-                            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                            $completion_items[] = new CompletionItem(
                                 '$' . $property_name,
-                                \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                                CompletionItemKind::PROPERTY,
                                 $property_storage->getInfo(),
                                 $property_storage->description,
                                 (string)$property_storage->visibility,
@@ -1537,9 +1548,9 @@ class Codebase
                     }
 
                     foreach ($class_storage->constants as $const_name => $const) {
-                        $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_items[] = new CompletionItem(
                             $const_name,
-                            \LanguageServerProtocol\CompletionItemKind::VARIABLE,
+                            CompletionItemKind::VARIABLE,
                             'const ' . $const_name,
                             $const->description,
                             null,
@@ -1633,7 +1644,7 @@ class Codebase
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
-                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                    $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
                             $position
@@ -1642,7 +1653,7 @@ class Codebase
                     );
                 } else {
                     $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
-                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                    $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
                             $position
@@ -1661,9 +1672,9 @@ class Codebase
                 $description = null;
             }
 
-            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+            $completion_items[] = new CompletionItem(
                 $fq_class_name,
-                \LanguageServerProtocol\CompletionItemKind::CLASS_,
+                CompletionItemKind::CLASS_,
                 null,
                 $description,
                 null,
@@ -1707,9 +1718,9 @@ class Codebase
             if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
                 $function_name = '\\' . $function_name;
             }
-            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+            $completion_items[] = new CompletionItem(
                 $function_name,
-                \LanguageServerProtocol\CompletionItemKind::FUNCTION,
+                CompletionItemKind::FUNCTION,
                 $function->getSignature(false),
                 $function->description,
                 null,
@@ -1736,9 +1747,9 @@ class Codebase
             if ($atomic_type instanceof Type\Atomic\TBool) {
                 $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
                 foreach ($bools as $property_name) {
-                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $completion_items[] = new CompletionItem(
                         $property_name,
-                        \LanguageServerProtocol\CompletionItemKind::VALUE,
+                        CompletionItemKind::VALUE,
                         'bool',
                         null,
                         null,
@@ -1747,9 +1758,9 @@ class Codebase
                     );
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     $atomic_type->value,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1757,9 +1768,9 @@ class Codebase
                     "'$atomic_type->value'"
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     (string) $atomic_type->value,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1768,9 +1779,9 @@ class Codebase
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     $const,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1793,9 +1804,9 @@ class Codebase
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as $property_name => $property) {
-                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $completion_items[] = new CompletionItem(
                         (string) $property_name,
-                        \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                        CompletionItemKind::PROPERTY,
                         (string) $property,
                         null,
                         null,
@@ -1924,14 +1935,14 @@ class Codebase
     public function addTaintSource(
         Type\Union $expr_type,
         string $taint_id,
-        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $source = new \Psalm\Internal\DataFlow\TaintSource(
+        $source = new TaintSource(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1953,14 +1964,14 @@ class Codebase
      */
     public function addTaintSink(
         string $taint_id,
-        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = new \Psalm\Internal\DataFlow\TaintSink(
+        $sink = new TaintSink(
             $taint_id,
             $taint_id,
             $code_location,

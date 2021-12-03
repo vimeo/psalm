@@ -4,7 +4,10 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -61,7 +64,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?\Psalm\Internal\Provider\NodeDataProvider $nodes
+        ?NodeDataProvider $nodes
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
@@ -89,7 +92,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         array $callables,
         array $args,
-        ?\Psalm\NodeTypeProvider $nodes,
+        ?NodeTypeProvider $nodes,
         string $method_id
     ): TCallable {
         if (count($callables) === 1) {
@@ -170,7 +173,7 @@ class InternalCallMapHandler
                     }
                 }
 
-                $arg_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                $arg_result = new TypeComparisonResult();
 
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,

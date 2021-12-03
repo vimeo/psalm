@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
+use PhpParser\Comment\Doc;
 use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\ParsedDocblock;
@@ -139,7 +140,7 @@ class DocCommentTest extends BaseTestCase
  */
 ';
         $docComment = DocComment::parsePreservingLength(
-            new \PhpParser\Comment\Doc($expectedDoc)
+            new Doc($expectedDoc)
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));
@@ -161,7 +162,7 @@ class DocCommentTest extends BaseTestCase
      */
     ';
         $docComment = DocComment::parsePreservingLength(
-            new \PhpParser\Comment\Doc($expectedDoc)
+            new Doc($expectedDoc)
         );
 
         $this->assertSame($expectedDoc, $docComment->render('    '));
@@ -185,7 +186,7 @@ class DocCommentTest extends BaseTestCase
  */
 ';
         $docComment = DocComment::parsePreservingLength(
-            new \PhpParser\Comment\Doc($expectedDoc)
+            new Doc($expectedDoc)
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));

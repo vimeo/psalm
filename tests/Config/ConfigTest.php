@@ -1,15 +1,20 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use Composer\Autoload\ClassLoader;
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_map;
@@ -31,7 +36,7 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-class ConfigTest extends \Psalm\Tests\TestCase
+class ConfigTest extends TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -58,11 +63,11 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
-        $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -787,7 +792,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                 function ($issue_name): string {
                     return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
                 },
-                \Psalm\Config\IssueHandler::getAllIssueTypes()
+                IssueHandler::getAllIssueTypes()
             )
         );
 
@@ -1311,7 +1316,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $classloader = new \Composer\Autoload\ClassLoader();
+        $classloader = new ClassLoader();
         $classloader->addPsr4(
             'Psalm\\',
             [

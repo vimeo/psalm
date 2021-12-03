@@ -3,6 +3,7 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
+use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMDocument;
 use LogicException;
@@ -18,6 +19,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassIssue;
@@ -1375,9 +1377,9 @@ class Config
             $this->filetype_analyzers[$extension] = $className;
         }
 
-        new \Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter();
+        new HtmlFunctionTainter();
 
-        $socket->registerHooksFromClass(\Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter::class);
+        $socket->registerHooksFromClass(HtmlFunctionTainter::class);
     }
 
     private static function requirePath(string $path): void
@@ -1701,7 +1703,7 @@ class Config
         // this string is replaced by scoper for Phars, so be careful
         $issue_class = 'Psalm\\Issue\\' . $issue_type;
 
-        if (!class_exists($issue_class) || !is_a($issue_class, \Psalm\Issue\CodeIssue::class, true)) {
+        if (!class_exists($issue_class) || !is_a($issue_class, CodeIssue::class, true)) {
             return self::REPORT_ERROR;
         }
 
@@ -2258,8 +2260,8 @@ class Config
                 $constraint = $version_parser->parseConstraints($php_version);
 
                 foreach (['5.4', '5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1'] as $candidate) {
-                    if ($constraint->matches(new \Composer\Semver\Constraint\Constraint('<=', "$candidate.0.0-dev"))
-                        || $constraint->matches(new \Composer\Semver\Constraint\Constraint('<=', "$candidate.999"))
+                    if ($constraint->matches(new Constraint('<=', "$candidate.0.0-dev"))
+                        || $constraint->matches(new Constraint('<=', "$candidate.999"))
                     ) {
                         return $candidate;
                     }

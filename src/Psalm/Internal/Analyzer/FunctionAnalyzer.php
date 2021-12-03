@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use Psalm\Config;
 use Psalm\Context;
 
 use function is_string;
@@ -85,7 +86,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
             $function_context = new Context($context->self);
             $function_context->strict_types = $context->strict_types;
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
             $function_context->collect_exceptions = $config->check_for_throws_docblock;
 
             if ($function_analyzer = $statements_analyzer->getFunctionAnalyzer($fq_function_name)) {

@@ -5,6 +5,8 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -58,7 +60,7 @@ use function substr;
  * the known type using the assertion. For example: old type is `int` assertion is `>5` result is `int<6, max>`.
  * Complex reconciliation takes part in AssertionReconciler if this class couldn't handle the reconciliation
  */
-class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
+class SimpleAssertionReconciler extends Reconciler
 {
     /**
      * @param   string[]  $suppressed_issues
@@ -1866,7 +1868,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return \Psalm\Internal\Type\TypeCombiner::combine($array_types);
+            return TypeCombiner::combine($array_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1971,7 +1973,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return \Psalm\Internal\Type\TypeCombiner::combine($array_types);
+            return TypeCombiner::combine($array_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -2098,7 +2100,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($array_types) {
-            return \Psalm\Internal\Type\TypeCombiner::combine($array_types);
+            return TypeCombiner::combine($array_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -2149,7 +2151,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
                 $callable_types[] = new Type\Atomic\TCallableString();
                 $did_remove_type = true;
             } elseif (get_class($type) === Type\Atomic\TLiteralString::class
-                && \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($type->value)
+                && InternalCallMapHandler::inCallMap($type->value)
             ) {
                 $callable_types[] = $type;
                 $did_remove_type = true;
@@ -2208,7 +2210,7 @@ class SimpleAssertionReconciler extends \Psalm\Type\Reconciler
         }
 
         if ($callable_types) {
-            return \Psalm\Internal\Type\TypeCombiner::combine($callable_types);
+            return TypeCombiner::combine($callable_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;

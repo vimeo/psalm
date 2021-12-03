@@ -5,9 +5,13 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
@@ -59,8 +63,8 @@ class ConcatAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
@@ -129,8 +133,8 @@ class ConcatAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
@@ -304,7 +308,7 @@ class ConcatAnalyzer
 
         $operand_type_match = true;
         $has_valid_operand = false;
-        $comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+        $comparison_result = new TypeComparisonResult();
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
             if ($operand_type_part instanceof Type\Atomic\TTemplateParam && !$operand_type_part->as->isString()) {
@@ -348,7 +352,7 @@ class ConcatAnalyzer
 
             foreach ($operand_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TNamedObject) {
-                    $to_string_method_id = new \Psalm\Internal\MethodIdentifier(
+                    $to_string_method_id = new MethodIdentifier(
                         $atomic_type->value,
                         '__tostring'
                     );
@@ -381,7 +385,7 @@ class ConcatAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
                         } elseif ($statements_analyzer->getSource()
-                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                                instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
                         ) {
                             $statements_analyzer->getSource()->inferred_has_mutation = true;

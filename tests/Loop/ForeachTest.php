@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Tests\Loop;
 
+use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
 use const DIRECTORY_SEPARATOR;
 
-class ForeachTest extends \Psalm\Tests\TestCase
+class ForeachTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;

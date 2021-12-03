@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Represents a list key created from foreach ($list as $key => $value)
  */
@@ -36,7 +38,7 @@ class TDependentListKey extends TInt implements DependentType
         return 'int';
     }
 
-    public function getReplacement() : \Psalm\Type\Atomic
+    public function getReplacement() : Atomic
     {
         return new TInt();
     }

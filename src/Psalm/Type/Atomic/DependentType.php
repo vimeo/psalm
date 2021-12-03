@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 interface DependentType
 {
     public function getVarId() : string;
@@ -8,5 +10,5 @@ interface DependentType
     /**
      * This returns a replacement type for when the dependent data is invalidated
      */
-    public function getReplacement() : \Psalm\Type\Atomic;
+    public function getReplacement() : Atomic;
 }

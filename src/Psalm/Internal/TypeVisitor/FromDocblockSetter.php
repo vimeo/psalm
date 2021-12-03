@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 
@@ -16,7 +17,7 @@ class FromDocblockSetter extends NodeVisitor
     {
         $type->from_docblock = true;
 
-        if ($type instanceof \Psalm\Type\Atomic\TTemplateParam
+        if ($type instanceof TTemplateParam
             && $type->as->isMixed()
         ) {
             return NodeVisitor::DONT_TRAVERSE_CHILDREN;

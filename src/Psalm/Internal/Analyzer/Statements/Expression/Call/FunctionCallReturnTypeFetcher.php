@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -36,7 +37,7 @@ class FunctionCallReturnTypeFetcher
      */
     public static function fetch(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Name $function_name,
         string $function_id,

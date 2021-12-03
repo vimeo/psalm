@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 
 use function implode;
@@ -78,7 +79,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this, new \Psalm\Internal\Provider\NodeDataProvider());
+            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
             $context = new Context();
             $context->is_global = true;
             $context->defineGlobals();

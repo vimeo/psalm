@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function in_array;
@@ -13,7 +14,7 @@ use const E_USER_ERROR;
 use const E_USER_NOTICE;
 use const E_USER_WARNING;
 
-class TriggerErrorReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class TriggerErrorReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

@@ -22,7 +22,7 @@ use function sort;
 /**
  * Represents an 'object-like array' - an array with known keys.
  */
-class TKeyedArray extends \Psalm\Type\Atomic
+class TKeyedArray extends Atomic
 {
     /**
      * @var non-empty-array<string|int, Union>

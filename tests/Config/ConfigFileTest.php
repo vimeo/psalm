@@ -4,6 +4,7 @@ namespace Psalm\Tests\Config;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\TestCase;
 
 use function file_get_contents;
 use function file_put_contents;
@@ -16,7 +17,7 @@ use function unlink;
 use const PHP_EOL;
 
 /** @group PluginManager */
-class ConfigFileTest extends \Psalm\Tests\TestCase
+class ConfigFileTest extends TestCase
 {
     /** @var string */
     private $file_path;

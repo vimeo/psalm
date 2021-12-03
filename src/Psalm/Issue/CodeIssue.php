@@ -2,6 +2,7 @@
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\IssueData;
 
 use function array_pop;
 use function explode;
@@ -85,7 +86,7 @@ abstract class CodeIssue
         return $this->message;
     }
 
-    public function toIssueData(string $severity): \Psalm\Internal\Analyzer\IssueData
+    public function toIssueData(string $severity): IssueData
     {
         $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
@@ -94,7 +95,7 @@ abstract class CodeIssue
         $fqcn_parts = explode('\\', static::class);
         $issue_type = array_pop($fqcn_parts);
 
-        return new \Psalm\Internal\Analyzer\IssueData(
+        return new IssueData(
             $severity,
             $location->getLineNumber(),
             $location->getEndLineNumber(),

@@ -4,7 +4,10 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
@@ -134,7 +137,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                 }
 
-                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                     && $context->hasVariable($use_var_id)
                 ) {
                     $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
@@ -169,7 +172,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         } else {
             $traverser = new PhpParser\NodeTraverser;
 
-            $short_closure_visitor = new \Psalm\Internal\PhpVisitor\ShortClosureVisitor();
+            $short_closure_visitor = new ShortClosureVisitor();
 
             $traverser->addVisitor($short_closure_visitor);
             $traverser->traverse($stmt->getStmts());
@@ -178,7 +181,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 if ($context->hasVariable($use_var_id)) {
                     $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
 
-                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
 
                         foreach ($parent_nodes as $parent_node) {
@@ -200,13 +203,13 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false);
 
         if ($closure_analyzer->inferred_impure
-            && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
         ) {
             $statements_analyzer->getSource()->inferred_impure = true;
         }
 
         if ($closure_analyzer->inferred_has_mutation
-            && $statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
         ) {
             $statements_analyzer->getSource()->inferred_has_mutation = true;
         }

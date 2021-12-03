@@ -2,9 +2,10 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 
-class PdoStatementReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
+class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {

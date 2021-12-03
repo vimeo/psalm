@@ -11,6 +11,8 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
+use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Issue\ContinueOutsideLoop;
@@ -114,7 +116,7 @@ class SwitchCaseAnalyzer
 
             $traverser = new PhpParser\NodeTraverser;
             $traverser->addVisitor(
-                new \Psalm\Internal\PhpVisitor\ConditionCloningVisitor(
+                new ConditionCloningVisitor(
                     $statements_analyzer->node_data
                 )
             );
@@ -464,7 +466,7 @@ class SwitchCaseAnalyzer
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(
-            new \Psalm\Internal\PhpVisitor\TypeMappingVisitor(
+            new TypeMappingVisitor(
                 $statements_analyzer->node_data,
                 $old_node_data
             )

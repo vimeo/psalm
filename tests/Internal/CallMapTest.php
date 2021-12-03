@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Internal;
 
 use FilesystemIterator;
+use Psalm\Tests\TestCase;
 use RegexIterator;
 
 use function array_diff;
@@ -18,7 +19,7 @@ use function uksort;
 
 use const DIRECTORY_SEPARATOR;
 
-class CallMapTest extends \Psalm\Tests\TestCase
+class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 

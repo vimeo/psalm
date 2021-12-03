@@ -2,11 +2,14 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
@@ -19,6 +22,7 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 use function array_map;
 use function array_reverse;
@@ -123,10 +127,10 @@ class MatchAnalyzer
         $last_arm = array_shift($arms);
 
         if (!$last_arm) {
-            \Psalm\IssueBuffer::maybeAdd(
+            IssueBuffer::maybeAdd(
                 new UnhandledMatchCondition(
                     'This match expression does not match anything',
-                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
+                    new CodeLocation($statements_analyzer->getSource(), $match_condition)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
@@ -225,15 +229,15 @@ class MatchAnalyzer
                 false
             );
 
-            $reconcilable_types = \Psalm\Internal\Algebra::getTruthsFromFormula(
-                \Psalm\Internal\Algebra::negateFormula($clauses)
+            $reconcilable_types = Algebra::getTruthsFromFormula(
+                Algebra::negateFormula($clauses)
             );
 
             // if the if has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
-                $vars_in_scope_reconciled = \Psalm\Type\Reconciler::reconcileKeyedTypes(
+                $vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
                     $context->vars_in_scope,
@@ -257,11 +261,11 @@ class MatchAnalyzer
                     );
 
                     if ($array_literal_types) {
-                        \Psalm\IssueBuffer::maybeAdd(
+                        IssueBuffer::maybeAdd(
                             new UnhandledMatchCondition(
                                 'This match expression is not exhaustive - consider values '
                                     . $vars_in_scope_reconciled[$switch_var_id]->getId(),
-                                new \Psalm\CodeLocation($statements_analyzer->getSource(), $match_condition)
+                                new CodeLocation($statements_analyzer->getSource(), $match_condition)
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         );

@@ -2,15 +2,17 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function array_shift;
 use function assert;
 
-class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -28,7 +30,7 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\EventHandler\Fu
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
         $context = $event->getContext();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+        if (!$statements_source instanceof StatementsAnalyzer
             || !$call_args
         ) {
             return Type::getMixed();

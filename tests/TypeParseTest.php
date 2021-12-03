@@ -1,8 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 
 use function function_exists;
@@ -19,12 +24,12 @@ class TypeParseTest extends TestCase
 
         $config = new TestConfig();
 
-        $providers = new \Psalm\Internal\Provider\Providers(
+        $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\FakeParserCacheProvider()
+            new FakeParserCacheProvider()
         );
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers
         );
@@ -979,28 +984,28 @@ class TypeParseTest extends TestCase
 
         $this->assertSame(
             'string',
-            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[0]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[0]->getType())
         );
 
         $this->assertSame(
             'array<array-key, mixed>',
-            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[1]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[1]->getType())
         );
 
         $this->assertSame(
             'int|null',
-            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
         );
 
         $this->assertSame(
             'string',
-            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())
         );
     }
 
     public function testValidCallMapType(): void
     {
-        $callmap_types = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallMap();
+        $callmap_types = InternalCallMapHandler::getCallMap();
 
         foreach ($callmap_types as $signature) {
             $return_type = $signature[0] ?? null;
@@ -1015,7 +1020,7 @@ class TypeParseTest extends TestCase
                 }
 
                 try {
-                    \Psalm\Type::parseString($return_type);
+                    Type::parseString($return_type);
                 } catch (\Psalm\Exception\TypeParseTreeException $e) {
                     self::assertTrue(false, $e . ' | ' . print_r($signature, true));
                 }
@@ -1027,7 +1032,7 @@ class TypeParseTest extends TestCase
                 }
 
                 try {
-                    \Psalm\Type::parseString($param_type_1);
+                    Type::parseString($param_type_1);
                 } catch (\Psalm\Exception\TypeParseTreeException $e) {
                     self::assertTrue(false, $e . ' | ' . print_r($signature, true));
                 }
@@ -1035,7 +1040,7 @@ class TypeParseTest extends TestCase
 
             if ($param_type_2 && $param_type_2 !== 'mixed') {
                 try {
-                    \Psalm\Type::parseString($param_type_2);
+                    Type::parseString($param_type_2);
                 } catch (\Psalm\Exception\TypeParseTreeException $e) {
                     self::assertTrue(false, $e . ' | ' . print_r($signature, true));
                 }
@@ -1043,7 +1048,7 @@ class TypeParseTest extends TestCase
 
             if ($param_type_3 && $param_type_3 !== 'mixed') {
                 try {
-                    \Psalm\Type::parseString($param_type_3);
+                    Type::parseString($param_type_3);
                 } catch (\Psalm\Exception\TypeParseTreeException $e) {
                     self::assertTrue(false, $e . ' | ' . print_r($signature, true));
                 }
@@ -1051,7 +1056,7 @@ class TypeParseTest extends TestCase
 
             if ($param_type_4 && $param_type_4 !== 'mixed') {
                 try {
-                    \Psalm\Type::parseString($param_type_4);
+                    Type::parseString($param_type_4);
                 } catch (\Psalm\Exception\TypeParseTreeException $e) {
                     self::assertTrue(false, $e . ' | ' . print_r($signature, true));
                 }

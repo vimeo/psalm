@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -807,7 +808,7 @@ class Populator
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    $interface_method_implementers[$method_name][] = new \Psalm\Internal\MethodIdentifier(
+                    $interface_method_implementers[$method_name][] = new MethodIdentifier(
                         $implemented_interface_storage->name,
                         $method_name
                     );
@@ -1067,7 +1068,7 @@ class Populator
                     continue;
                 }
 
-                $implemented_method_id = new \Psalm\Internal\MethodIdentifier(
+                $implemented_method_id = new MethodIdentifier(
                     $fq_class_name,
                     $aliased_method_name
                 );

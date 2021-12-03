@@ -2,7 +2,9 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use ReflectionProperty;
 
@@ -15,8 +17,8 @@ class ConstantTypeResolver
 {
     public static function resolve(
         ClassLikes $classlikes,
-        \Psalm\Internal\Scanner\UnresolvedConstantComponent $c,
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer = null,
+        UnresolvedConstantComponent $c,
+        StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
     ) : Type\Atomic {
         $c_id = \spl_object_id($c);

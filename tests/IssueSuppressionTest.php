@@ -34,7 +34,7 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testIssueSuppressedOnStatement(): void
@@ -49,7 +49,7 @@ class IssueSuppressionTest extends TestCase
                 echo strlen("hello");'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testUnusedSuppressAllOnFunction(): void
@@ -67,7 +67,7 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testUnusedSuppressAllOnStatement(): void
@@ -81,7 +81,7 @@ class IssueSuppressionTest extends TestCase
                 /** @psalm-suppress all */
                 print("foo");'
         );
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testMissingThrowsDocblockSuppressed(): void

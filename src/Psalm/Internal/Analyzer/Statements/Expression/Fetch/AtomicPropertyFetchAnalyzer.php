@@ -5,17 +5,23 @@ use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -227,7 +233,7 @@ class AtomicPropertyFetchAnalyzer
         );
 
         // add method before changing fq_class_name
-        $get_method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__get');
+        $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists
             && $class_storage->namedMixins
@@ -378,14 +384,14 @@ class AtomicPropertyFetchAnalyzer
             foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
                 if ($declaring_property_id === $original_property_id) {
                     $file_manipulations = [
-                        new \Psalm\FileManipulation(
+                        new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             $new_property_name
                         )
                     ];
 
-                    \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    FileManipulationBuffer::add(
                         $statements_analyzer->getFilePath(),
                         $file_manipulations
                     );
@@ -453,7 +459,7 @@ class AtomicPropertyFetchAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_impure = true;
@@ -514,7 +520,7 @@ class AtomicPropertyFetchAnalyzer
 
     private static function propertyFetchCanBeAnalyzed(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
         string $fq_class_name,
@@ -527,8 +533,8 @@ class AtomicPropertyFetchAnalyzer
         bool $override_property_visibility,
         bool $class_exists,
         ?string $declaring_property_class,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
-        \Psalm\Internal\MethodIdentifier $get_method_id,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $get_method_id,
         bool $in_assignment
     ) : bool {
         if ((!$naive_property_exists
@@ -630,7 +636,7 @@ class AtomicPropertyFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['InternalMethod']);
             }
 
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_method_call,
                 $context,
@@ -685,7 +691,7 @@ class AtomicPropertyFetchAnalyzer
     }
 
     public static function localizePropertyType(
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Type\Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
@@ -760,7 +766,7 @@ class AtomicPropertyFetchAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Type\Union $type,
         string $property_id,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        ClassLikeStorage $class_storage,
         bool $in_assignment,
         ?Context $context = null
     ) : void {
@@ -911,7 +917,7 @@ class AtomicPropertyFetchAnalyzer
                 );
             } elseif ($context->inside_isset
                 && $statements_analyzer->getSource()
-                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_impure = true;
@@ -965,7 +971,7 @@ class AtomicPropertyFetchAnalyzer
      */
     private static function handleNonExistentClass(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         TNamedObject $lhs_type_part,
         array $intersection_types,
@@ -1033,7 +1039,7 @@ class AtomicPropertyFetchAnalyzer
 
     private static function handleNonExistentProperty(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
         Config $config,
@@ -1107,7 +1113,7 @@ class AtomicPropertyFetchAnalyzer
 
     private static function getClassPropertyType(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Config $config,
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
@@ -1144,7 +1150,7 @@ class AtomicPropertyFetchAnalyzer
 
             $class_property_type = Type::getMixed();
         } else {
-            $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $class_property_type = TypeExpander::expandUnion(
                 $codebase,
                 clone $class_property_type,
                 $declaring_class_storage->name,

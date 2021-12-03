@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -294,7 +295,7 @@ class ClassConstFetchAnalyzer
                         $file_manipulations = [];
 
                         if (strtolower($new_fq_class_name) !== $fq_class_name_lc) {
-                            $file_manipulations[] = new \Psalm\FileManipulation(
+                            $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
                                 Type::getStringFromFQCLN(
@@ -306,7 +307,7 @@ class ClassConstFetchAnalyzer
                             );
                         }
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
+                        $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             $new_const_name
@@ -580,7 +581,7 @@ class ClassConstFetchAnalyzer
 
                         $file_manipulations = [];
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
+                        $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             $new_const_name

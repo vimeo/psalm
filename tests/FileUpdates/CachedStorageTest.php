@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_keys;
@@ -13,7 +14,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class CachedStorageTest extends \Psalm\Tests\TestCase
+class CachedStorageTest extends TestCase
 {
     public function setUp() : void
     {

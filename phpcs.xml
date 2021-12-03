@@ -94,8 +94,6 @@
 
 			<property name="searchAnnotations" type="bool" value="false"/>
         </properties>
-
-        <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
     </rule>
 
     <!--

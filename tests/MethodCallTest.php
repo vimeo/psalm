@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Context;
+
 use function class_exists;
 
 use const DIRECTORY_SEPARATOR;
@@ -22,7 +24,7 @@ class MethodCallTest extends TestCase
                 new SoapFault("1", "faultstring", "faultactor");'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testMethodCallMemoize(): void
@@ -55,7 +57,7 @@ class MethodCallTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testPropertyMethodCallMemoize(): void
@@ -87,7 +89,7 @@ class MethodCallTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testPropertyMethodCallMutationFreeMemoize(): void
@@ -122,7 +124,7 @@ class MethodCallTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testUnchainedMethodCallMemoize(): void
@@ -155,7 +157,7 @@ class MethodCallTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testUnchainedMutationFreeMethodCallMemoize(): void
@@ -191,7 +193,7 @@ class MethodCallTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

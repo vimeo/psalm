@@ -9,6 +9,7 @@ use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
 use function explode;
@@ -243,7 +244,7 @@ class Properties
         return null;
     }
 
-    public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage
+    public function getStorage(string $property_id): PropertyStorage
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);

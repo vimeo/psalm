@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\MissingDependency;
@@ -123,7 +124,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             ) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
-                $method_analyzer->analyze($context, new \Psalm\Internal\Provider\NodeDataProvider(), null, true);
+                $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
@@ -168,7 +169,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                             $method_analyzer->analyze(
                                 $context,
-                                new \Psalm\Internal\Provider\NodeDataProvider(),
+                                new NodeDataProvider(),
                                 null,
                                 true
                             );

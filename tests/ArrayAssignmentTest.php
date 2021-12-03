@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Type;
 
 class ArrayAssignmentTest extends TestCase
 {
@@ -19,8 +20,8 @@ class ArrayAssignmentTest extends TestCase
         );
 
         $context = new Context();
-        $context->vars_in_scope['$b'] = \Psalm\Type::getBool();
-        $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
+        $context->vars_in_scope['$b'] = Type::getBool();
+        $context->vars_in_scope['$foo'] = Type::getArray();
 
         $this->analyzeFile('somefile.php', $context);
 

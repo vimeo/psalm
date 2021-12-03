@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -128,7 +129,7 @@ class DoAnalyzer
                     $statements_analyzer,
                     [],
                     true,
-                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
         }
 

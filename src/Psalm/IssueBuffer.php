@@ -1,13 +1,19 @@
 <?php
 namespace Psalm;
 
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
+use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
+use Psalm\Internal\Provider\FileProvider;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
+use Psalm\Issue\MixedIssue;
+use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Report;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
@@ -19,6 +25,7 @@ use Psalm\Report\JsonSummaryReport;
 use Psalm\Report\JunitReport;
 use Psalm\Report\PhpStormReport;
 use Psalm\Report\PylintReport;
+use Psalm\Report\ReportOptions;
 use Psalm\Report\SarifReport;
 use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
@@ -279,11 +286,11 @@ class IssueBuffer
         }
 
         if ($config->throw_exception) {
-            \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+            FileAnalyzer::clearCache();
 
-            $message = $e instanceof \Psalm\Issue\TaintedInput
+            $message = $e instanceof TaintedInput
                 ? $e->getJourneyMessage()
-                : ($e instanceof \Psalm\Issue\MixedIssue
+                : ($e instanceof MixedIssue
                     ? $e->getMixedOriginMessage()
                     : $e->message);
 
@@ -416,7 +423,7 @@ class IssueBuffer
         }
     }
 
-    public static function processUnusedSuppressions(\Psalm\Internal\Provider\FileProvider $file_provider) : void
+    public static function processUnusedSuppressions(FileProvider $file_provider) : void
     {
         $config = Config::getInstance();
 
@@ -510,7 +517,7 @@ class IssueBuffer
         if (self::$issues_data) {
             if (in_array(
                 $project_analyzer->stdout_report_options->format,
-                [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
             )) {
                 echo "\n";
             }
@@ -600,7 +607,7 @@ class IssueBuffer
             $build_info = (new BuildInfoCollector(self::$server))->collect();
 
             try {
-                $source_control_info = (new \Psalm\Internal\ExecutionEnvironment\GitInfoCollector())->collect();
+                $source_control_info = (new GitInfoCollector())->collect();
             } catch (\RuntimeException $e) {
                 // do nothing
             }
@@ -637,7 +644,7 @@ class IssueBuffer
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -749,7 +756,7 @@ class IssueBuffer
      */
     public static function getOutput(
         array $issues_data,
-        \Psalm\Report\ReportOptions $report_options,
+        ReportOptions $report_options,
         array $mixed_counts = [0, 0]
     ): string {
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -16,6 +17,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -117,7 +119,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate->ignore_falsable_issues = true;
             }
 
-            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,
                 $fq_class_name,
@@ -142,7 +144,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate = clone $return_type_candidate;
 
                 if ($template_result->lower_bounds) {
-                    $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
@@ -164,7 +166,7 @@ class MethodCallReturnTypeFetcher
                     $codebase
                 );
 
-                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
@@ -186,7 +188,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_location = $secondary_return_type_location;
                 }
 
-                $config = \Psalm\Config::getInstance();
+                $config = Config::getInstance();
 
                 // only check the type locally if it's defined externally
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
@@ -572,7 +574,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if ($template_result->lower_bounds) {
-            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,
                 null,

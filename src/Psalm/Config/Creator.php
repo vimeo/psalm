@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Internal\Composer;
 
@@ -87,10 +88,10 @@ class Creator
         string $current_dir,
         ?string $suggested_dir,
         string $vendor_dir
-    ) : \Psalm\Config {
+    ) : Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 
-        return \Psalm\Config::loadFromXML($current_dir, $config_contents);
+        return Config::loadFromXML($current_dir, $config_contents);
     }
 
     /**

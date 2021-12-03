@@ -2,6 +2,7 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
@@ -22,6 +23,8 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\PropertyMap;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
@@ -34,8 +37,11 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\MissingDocblockType;
+use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
@@ -228,7 +234,7 @@ class ClassLikeNodeScanner
             && $this->aliases->uses[strtolower($class_name)] !== $fq_classlike_name
         ) {
             IssueBuffer::add(
-                new \Psalm\Issue\ParseError(
+                new ParseError(
                     'Class name ' . $class_name . ' clashes with a use statement alias',
                     $name_location ?? $class_location
                 )
@@ -302,9 +308,9 @@ class ClassLikeNodeScanner
                 $storage->direct_class_interfaces['backedenum'] = 'BackedEnum';
                 $this->file_storage->required_interfaces['backedenum'] = 'BackedEnum';
                 $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
-                $storage->declaring_method_ids['from'] = new \Psalm\Internal\MethodIdentifier('BackedEnum', 'from');
+                $storage->declaring_method_ids['from'] = new MethodIdentifier('BackedEnum', 'from');
                 $storage->appearing_method_ids['from'] = $storage->declaring_method_ids['from'];
-                $storage->declaring_method_ids['tryfrom'] = new \Psalm\Internal\MethodIdentifier(
+                $storage->declaring_method_ids['tryfrom'] = new MethodIdentifier(
                     'BackedEnum',
                     'tryfrom'
                 );
@@ -317,7 +323,7 @@ class ClassLikeNodeScanner
             $this->file_storage->required_interfaces['unitenum'] = 'UnitEnum';
             $storage->final = true;
 
-            $storage->declaring_method_ids['cases'] = new \Psalm\Internal\MethodIdentifier(
+            $storage->declaring_method_ids['cases'] = new MethodIdentifier(
                 'UnitEnum',
                 'cases'
             );
@@ -1155,7 +1161,7 @@ class ClassLikeNodeScanner
         $storage->mutation_free = $storage->external_mutation_free = true;
         $storage->mutation_free_inferred = true;
 
-        $class_storage->declaring_method_ids['__construct'] = new \Psalm\Internal\MethodIdentifier(
+        $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,
             '__construct'
         );
@@ -1194,7 +1200,7 @@ class ClassLikeNodeScanner
         foreach ($stmt->consts as $const) {
             $const_type = SimpleTypeInferer::infer(
                 $this->codebase,
-                new \Psalm\Internal\Provider\NodeDataProvider(),
+                new NodeDataProvider(),
                 $const->value,
                 $this->aliases,
                 null,
@@ -1215,7 +1221,7 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            $storage->constants[$const->name->name] = $constant_storage = new \Psalm\Storage\ClassConstantStorage(
+            $storage->constants[$const->name->name] = $constant_storage = new ClassConstantStorage(
                 $const_type,
                 $stmt->isProtected()
                     ? ClassLikeAnalyzer::VISIBILITY_PROTECTED
@@ -1234,7 +1240,7 @@ class ClassLikeNodeScanner
             );
 
             if ($const_type
-                && $const->value instanceof \PhpParser\Node\Expr\BinaryOp\Concat
+                && $const->value instanceof Concat
                 && $const_type->isSingle()
                 && get_class(array_values($const_type->getAtomicTypes())[0]) === Type\Atomic\TString::class
             ) {
@@ -1243,7 +1249,7 @@ class ClassLikeNodeScanner
             }
 
             if ($const_type) {
-                $existing_constants[$const->name->name] = new \Psalm\Storage\ClassConstantStorage(
+                $existing_constants[$const->name->name] = new ClassConstantStorage(
                     $const_type,
                     $stmt->isProtected()
                         ? ClassLikeAnalyzer::VISIBILITY_PROTECTED
@@ -1309,7 +1315,7 @@ class ClassLikeNodeScanner
         if ($stmt->expr !== null) {
             $case_type = SimpleTypeInferer::infer(
                 $this->codebase,
-                new \Psalm\Internal\Provider\NodeDataProvider(),
+                new NodeDataProvider(),
                 $stmt->expr,
                 $this->aliases,
                 $this->file_scanner,
@@ -1335,7 +1341,7 @@ class ClassLikeNodeScanner
         $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
-            $storage->enum_cases[$stmt->name->name] = new \Psalm\Storage\EnumCaseStorage(
+            $storage->enum_cases[$stmt->name->name] = new EnumCaseStorage(
                 $enum_value,
                 $case_location
             );
@@ -1461,7 +1467,7 @@ class ClassLikeNodeScanner
                 if ($property->default) {
                     $property_storage->suggested_type = SimpleTypeInferer::infer(
                         $this->codebase,
-                        new \Psalm\Internal\Provider\NodeDataProvider(),
+                        new NodeDataProvider(),
                         $property->default,
                         $this->aliases,
                         null,

@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Stmt\VirtualExpression;
@@ -60,7 +61,7 @@ class OrAnalyzer
             || !$stmt->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || !$stmt->left->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
         ) {
-            $if_scope = new \Psalm\Internal\Scope\IfScope();
+            $if_scope = new IfScope();
 
             try {
                 $if_conditional_scope = IfConditionalAnalyzer::analyze(

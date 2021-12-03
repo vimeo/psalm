@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use SimpleXMLElement;
 
 use function array_filter;
@@ -18,7 +19,7 @@ class IssueHandler
     /**
      * @var string
      */
-    private $error_level = \Psalm\Config::REPORT_ERROR;
+    private $error_level = Config::REPORT_ERROR;
 
     /**
      * @var array<ErrorLevelFileFilter>
@@ -32,7 +33,7 @@ class IssueHandler
         if (isset($e['errorLevel'])) {
             $handler->error_level = (string) $e['errorLevel'];
 
-            if (!in_array($handler->error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
+            if (!in_array($handler->error_level, Config::$ERROR_LEVELS, true)) {
                 throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $handler->error_level);
             }
         }
@@ -55,7 +56,7 @@ class IssueHandler
 
     public function setErrorLevel(string $error_level): void
     {
-        if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
+        if (!in_array($error_level, Config::$ERROR_LEVELS, true)) {
             throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $error_level);
         }
 

@@ -11,6 +11,8 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
+use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -48,7 +50,7 @@ class LoopAnalyzer
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
-        $assignment_mapper = new \Psalm\Internal\PhpVisitor\AssignmentMapVisitor($loop_scope->loop_context->self);
+        $assignment_mapper = new AssignmentMapVisitor($loop_scope->loop_context->self);
         $traverser->addVisitor($assignment_mapper);
 
         $traverser->traverse(array_merge($pre_conditions, $stmts, $post_expressions));
@@ -372,7 +374,7 @@ class LoopAnalyzer
                 $traverser = new PhpParser\NodeTraverser;
 
                 $traverser->addVisitor(
-                    new \Psalm\Internal\PhpVisitor\NodeCleanerVisitor(
+                    new NodeCleanerVisitor(
                         $statements_analyzer->node_data
                     )
                 );

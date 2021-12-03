@@ -11,11 +11,13 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\TaintedInput;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
@@ -268,7 +270,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             foreach ($node->consts as $const) {
                 $const_type = SimpleTypeInferer::infer(
                     $this->codebase,
-                    new \Psalm\Internal\Provider\NodeDataProvider(),
+                    new NodeDataProvider(),
                     $const->value,
                     $this->aliases
                 ) ?? Type::getMixed();
@@ -567,7 +569,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         $fqcn_parts = \explode('\\', \get_class($e));
                         $issue_type = \array_pop($fqcn_parts);
 
-                        $message = $e instanceof \Psalm\Issue\TaintedInput
+                        $message = $e instanceof TaintedInput
                             ? $e->getJourneyMessage()
                             : $e->message;
 

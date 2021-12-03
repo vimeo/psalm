@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `object` type
  */
-class TObject extends \Psalm\Type\Atomic
+class TObject extends Atomic
 {
     public function __toString(): string
     {

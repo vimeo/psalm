@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Fork;
 
+use Composer\XdebugHandler\XdebugHandler;
+
 use function array_filter;
 use function extension_loaded;
 use function file_get_contents;
@@ -11,7 +13,7 @@ use function preg_replace;
 /**
  * @internal
  */
-class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
+class PsalmRestarter extends XdebugHandler
 {
     /**
      * @var bool

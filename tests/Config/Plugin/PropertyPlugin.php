@@ -2,10 +2,11 @@
 namespace Psalm\Test\Config\Plugin;
 
 use Psalm\Plugin;
+use Psalm\Plugin\PluginEntryPointInterface;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class PropertyPlugin implements \Psalm\Plugin\PluginEntryPointInterface
+class PropertyPlugin implements PluginEntryPointInterface
 {
     public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

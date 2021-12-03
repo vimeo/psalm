@@ -9,7 +9,9 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -18,6 +20,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
@@ -123,7 +126,7 @@ class ForeachAnalyzer
                 continue;
             }
 
-            $comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $comment_type = TypeExpander::expandUnion(
                 $codebase,
                 $var_comment->type,
                 $context->self,
@@ -286,7 +289,7 @@ class ForeachAnalyzer
                 continue;
             }
 
-            $comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $comment_type = TypeExpander::expandUnion(
                 $codebase,
                 $var_comment->type,
                 $context->self,
@@ -496,7 +499,7 @@ class ForeachAnalyzer
 
                 if (!$context->pure) {
                     if ($statements_analyzer->getSource()
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            instanceof FunctionLikeAnalyzer
                         && $statements_analyzer->getSource()->track_mutations
                     ) {
                         $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -574,7 +577,7 @@ class ForeachAnalyzer
 
                 if (!$context->pure) {
                     if ($statements_analyzer->getSource()
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            instanceof FunctionLikeAnalyzer
                         && $statements_analyzer->getSource()->track_mutations
                     ) {
                         $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -627,7 +630,7 @@ class ForeachAnalyzer
 
                 if (!$context->pure) {
                     if ($statements_analyzer->getSource()
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                            instanceof FunctionLikeAnalyzer
                         && $statements_analyzer->getSource()->track_mutations
                     ) {
                         $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -780,7 +783,7 @@ class ForeachAnalyzer
 
                     $context->inside_call = true;
 
-                    \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                    MethodCallAnalyzer::analyze(
                         $statements_analyzer,
                         $fake_method_call,
                         $context
@@ -1035,7 +1038,7 @@ class ForeachAnalyzer
 
         $context->inside_call = true;
 
-        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+        MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context

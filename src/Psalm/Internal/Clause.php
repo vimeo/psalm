@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal;
 
+use Psalm\Internal\Algebra;
+
 use function array_diff;
 use function array_keys;
 use function array_map;
@@ -260,7 +262,7 @@ class Clause
                     || strpos($type, '(')
                     || strpos($type, 'getclass-')
                 ) {
-                    $impossibility[] = \Psalm\Internal\Algebra::negateType($type);
+                    $impossibility[] = Algebra::negateType($type);
                 }
             }
 

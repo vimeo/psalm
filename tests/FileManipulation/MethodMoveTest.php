@@ -2,14 +2,17 @@
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-class MethodMoveTest extends \Psalm\Tests\TestCase
+class MethodMoveTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
@@ -38,9 +41,9 @@ class MethodMoveTest extends \Psalm\Tests\TestCase
 
         $config = new TestConfig();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )

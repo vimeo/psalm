@@ -4,11 +4,15 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureStaticProperty;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedPropertyFetch;
@@ -177,14 +181,14 @@ class StaticPropertyFetchAnalyzer
 
         if ($context->mutation_free) {
             IssueBuffer::maybeAdd(
-                new \Psalm\Issue\ImpureStaticProperty(
+                new ImpureStaticProperty(
                     'Cannot use a static property in a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
         } elseif ($statements_analyzer->getSource()
-                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                instanceof FunctionLikeAnalyzer
             && $statements_analyzer->getSource()->track_mutations
         ) {
             $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -329,7 +333,7 @@ class StaticPropertyFetchAnalyzer
                         $file_manipulations = [];
 
                         if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
-                            $file_manipulations[] = new \Psalm\FileManipulation(
+                            $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
                                 Type::getStringFromFQCLN(
@@ -341,7 +345,7 @@ class StaticPropertyFetchAnalyzer
                             );
                         }
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
+                        $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             '$' . $new_property_name
@@ -355,7 +359,7 @@ class StaticPropertyFetchAnalyzer
 
         if ($var_id) {
             if ($property->type) {
-                $context->vars_in_scope[$var_id] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $context->vars_in_scope[$var_id] = TypeExpander::expandUnion(
                     $codebase,
                     clone $property->type,
                     $class_storage->name,

@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_keys;
@@ -15,7 +20,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class TemporaryUpdateTest extends \Psalm\Tests\TestCase
+class TemporaryUpdateTest extends TestCase
 {
     public function setUp() : void
     {
@@ -28,11 +33,11 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
+            new ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider(),
-            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
@@ -86,7 +91,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
 
-        $data = \Psalm\IssueBuffer::clear();
+        $data = IssueBuffer::clear();
 
         $found_positions = [];
 
@@ -112,7 +117,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
 
-            $data = \Psalm\IssueBuffer::clear();
+            $data = IssueBuffer::clear();
 
             $found_positions = [];
 
@@ -140,7 +145,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
 
-            $data = \Psalm\IssueBuffer::clear();
+            $data = IssueBuffer::clear();
 
             $found_positions = [];
 
@@ -304,7 +309,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[373], [374], [375]],
                 [
-                    'MixedAssignment' => \Psalm\Config::REPORT_INFO,
+                    'MixedAssignment' => Config::REPORT_INFO,
                 ],
             ],
             'fixReturnType' => [
@@ -354,7 +359,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[196, 144, 339, 290], [345, 296], []],
                 [
-                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                    'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
             'resolveNamesInDifferentFunction' => [
@@ -398,7 +403,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[333], []],
                 [
-                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                    'InvalidDocblock' => Config::REPORT_INFO,
                 ],
             ],
             'bridgeStatements' => [
@@ -444,7 +449,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[136, 273], [279], [193, 144]],
                 [
-                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                    'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
             'colonReturnType' => [
@@ -480,7 +485,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[136, 273], [144, 136, 275]],
                 [
-                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                    'MissingReturnType' => Config::REPORT_INFO,
                 ],
                 false,
             ],

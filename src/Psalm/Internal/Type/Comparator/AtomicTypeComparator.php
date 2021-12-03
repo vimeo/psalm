@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -536,7 +537,7 @@ class AtomicTypeComparator
                     }
 
                     if ($codebase->methods->methodExists(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $input_type_part->value,
                             '__tostring'
                         )

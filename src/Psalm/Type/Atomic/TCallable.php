@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `callable` type. Can result from an `is_callable` check.
  */
-class TCallable extends \Psalm\Type\Atomic
+class TCallable extends Atomic
 {
     use CallableTrait;
 

@@ -6,6 +6,7 @@ use Psalm\Config;
 use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Scanner\ParsedDocblock;
 
 use function array_shift;
 use function count;
@@ -171,7 +172,7 @@ class PropertyDocblockManipulator
         if ($docblock) {
             $parsed_docblock = DocComment::parsePreservingLength($docblock);
         } else {
-            $parsed_docblock = new \Psalm\Internal\Scanner\ParsedDocblock('', []);
+            $parsed_docblock = new ParsedDocblock('', []);
         }
 
         $modified_docblock = false;

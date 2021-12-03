@@ -6,6 +6,7 @@ use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
 
@@ -157,7 +158,7 @@ class ErrorBaselineTest extends TestCase
             $baselineFile,
             [
                 'sample/sample-file.php' => [
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -174,7 +175,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -191,7 +192,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -208,7 +209,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -225,7 +226,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'info',
                         0,
                         0,
@@ -244,7 +245,7 @@ class ErrorBaselineTest extends TestCase
                     ),
                 ],
                 'sample/sample-file2.php' => [
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -261,7 +262,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -278,7 +279,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -355,7 +356,7 @@ class ErrorBaselineTest extends TestCase
 
         $newIssues = [
             'sample/sample-file.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -372,7 +373,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -389,7 +390,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -406,7 +407,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -425,7 +426,7 @@ class ErrorBaselineTest extends TestCase
                 ),
             ],
             'sample/sample-file2.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,

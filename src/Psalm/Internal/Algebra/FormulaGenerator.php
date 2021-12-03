@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
@@ -121,7 +122,7 @@ class FormulaGenerator
             ) {
                 $anded_assertions = null;
 
-                if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                if ($cache && $source instanceof StatementsAnalyzer) {
                     $anded_assertions = $source->node_data->getAssertions($conditional->expr);
                 }
 
@@ -135,7 +136,7 @@ class FormulaGenerator
                         $cache
                     );
 
-                    if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                    if ($cache && $source instanceof StatementsAnalyzer) {
                         $source->node_data->setAssertions($conditional->expr, $anded_assertions);
                     }
                 }
@@ -392,7 +393,7 @@ class FormulaGenerator
 
         $anded_assertions = null;
 
-        if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if ($cache && $source instanceof StatementsAnalyzer) {
             $anded_assertions = $source->node_data->getAssertions($conditional);
         }
 
@@ -406,7 +407,7 @@ class FormulaGenerator
                 $cache
             );
 
-            if ($cache && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+            if ($cache && $source instanceof StatementsAnalyzer) {
                 $source->node_data->setAssertions($conditional, $anded_assertions);
             }
         }

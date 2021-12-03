@@ -4,7 +4,11 @@ namespace Psalm\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -235,10 +239,10 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+            if (($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && (!$result_type->hasScalarType()
                         || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type->parent_nodes = $before_adjustment->parent_nodes;
@@ -724,7 +728,7 @@ class Reconciler
                                 $class_property_type = Type::getMixed();
                             } else {
                                 if (substr($property_name, -2) === '()') {
-                                    $method_id = new \Psalm\Internal\MethodIdentifier(
+                                    $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
                                         strtolower(substr($property_name, 0, -2))
                                     );
@@ -751,7 +755,7 @@ class Reconciler
                                     );
 
                                     if ($method_return_type) {
-                                        $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                        $class_property_type = TypeExpander::expandUnion(
                                             $codebase,
                                             clone $method_return_type,
                                             $declaring_class,
@@ -849,7 +853,7 @@ class Reconciler
         );
 
         if ($class_property_type) {
-            return \Psalm\Internal\Type\TypeExpander::expandUnion(
+            return TypeExpander::expandUnion(
                 $codebase,
                 clone $class_property_type,
                 $declaring_class_storage->name,

@@ -2,8 +2,9 @@
 namespace Psalm\Tests\Internal\Codebase;
 
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Tests\TestCase;
 
-class InternalCallMapHandlerTest extends \Psalm\Tests\TestCase
+class InternalCallMapHandlerTest extends TestCase
 {
     /**
      * @covers InternalCallMapHandler::getCallMap

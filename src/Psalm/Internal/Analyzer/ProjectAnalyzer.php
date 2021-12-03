@@ -1,21 +1,25 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use Amp\Loop;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\ProtocolStreamReader;
 use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -456,7 +460,7 @@ class ProjectAnalyzer
                 new ProtocolStreamWriter($socket),
                 $this
             );
-            \Amp\Loop::run();
+            Loop::run();
         } elseif ($socket_server_mode && $address) {
             // Run a TCP Server
             $tcpServer = stream_socket_server('tcp://' . $address, $errno, $errstr);
@@ -519,7 +523,7 @@ class ProjectAnalyzer
                         new ProtocolStreamWriter($socket),
                         $this
                     );
-                    \Amp\Loop::run();
+                    Loop::run();
                 }
             }
         } else {
@@ -530,7 +534,7 @@ class ProjectAnalyzer
                 new ProtocolStreamWriter(STDOUT),
                 $this
             );
-            \Amp\Loop::run();
+            Loop::run();
         }
     }
 
@@ -768,14 +772,14 @@ class ProjectAnalyzer
                 continue;
             }
 
-            $source_method_id = new \Psalm\Internal\MethodIdentifier(
+            $source_method_id = new MethodIdentifier(
                 $source_parts[0],
                 strtolower($source_parts[1])
             );
 
             if ($this->codebase->methods->methodExists($source_method_id)) {
                 if ($this->codebase->methods->methodExists(
-                    new \Psalm\Internal\MethodIdentifier(
+                    new MethodIdentifier(
                         $destination_parts[0],
                         strtolower($destination_parts[1])
                     )
@@ -930,7 +934,7 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
-        $migration_manipulations = \Psalm\Internal\FileManipulation\FileManipulationBuffer::getMigrationManipulations(
+        $migration_manipulations = FileManipulationBuffer::getMigrationManipulations(
             $this->codebase->file_provider
         );
 
@@ -1216,7 +1220,7 @@ class ProjectAnalyzer
         if ($this->stdout_report_options
             && in_array(
                 $this->stdout_report_options->format,
-                [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
             )
             && $this->codebase->collect_references
         ) {
@@ -1311,8 +1315,8 @@ class ProjectAnalyzer
             || $this->codebase->php_minor_version !== $php_minor_version
         ) {
             // reset lexer and parser when php version changes
-            \Psalm\Internal\Provider\StatementsProvider::clearLexer();
-            \Psalm\Internal\Provider\StatementsProvider::clearParser();
+            StatementsProvider::clearLexer();
+            StatementsProvider::clearParser();
         }
 
         $this->codebase->php_major_version = $php_major_version;
@@ -1378,7 +1382,7 @@ class ProjectAnalyzer
     }
 
     public function getMethodMutations(
-        \Psalm\Internal\MethodIdentifier $original_method_id,
+        MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
         string $root_file_name
@@ -1427,7 +1431,7 @@ class ProjectAnalyzer
     }
 
     public function getFunctionLikeAnalyzer(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         string $file_path
     ) : ?FunctionLikeAnalyzer {
         $file_analyzer = new FileAnalyzer(

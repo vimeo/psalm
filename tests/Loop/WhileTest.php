@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Tests\Loop;
 
+use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits;
 
-class WhileTest extends \Psalm\Tests\TestCase
+class WhileTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;
     use Traits\ValidCodeAnalysisTestTrait;

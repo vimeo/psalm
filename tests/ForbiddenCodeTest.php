@@ -4,6 +4,8 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 
 use function dirname;
@@ -351,11 +353,11 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
-        $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )

@@ -1,12 +1,14 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function in_array;
 
-class StrReplaceReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -27,7 +29,7 @@ class StrReplaceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+        if (!$statements_source instanceof StatementsAnalyzer
             || \count($call_args) < 3
         ) {
             return Type::getMixed();

@@ -3,12 +3,16 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
@@ -16,7 +20,7 @@ use function array_map;
 use function count;
 use function is_string;
 
-class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -74,7 +78,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                         static function ($keyed_type) use ($statements_source, $context) {
                             $prev_keyed_type = $keyed_type;
 
-                            $keyed_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+                            $keyed_type = AssertionReconciler::reconcile(
                                 '!falsy',
                                 clone $keyed_type,
                                 '',
@@ -110,7 +114,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
         }
 
         if (!isset($call_args[1])) {
-            $inner_type = \Psalm\Internal\Type\AssertionReconciler::reconcile(
+            $inner_type = AssertionReconciler::reconcile(
                 '!falsy',
                 clone $inner_type,
                 '',
@@ -244,7 +248,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                         $cond_object_id = \spl_object_id($stmt->expr);
 
                         try {
-                            $filter_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                            $filter_clauses = FormulaGenerator::getFormula(
                                 $cond_object_id,
                                 $cond_object_id,
                                 $stmt->expr,
@@ -256,7 +260,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                             $filter_clauses = [];
                         }
 
-                        $assertions = \Psalm\Internal\Algebra::getTruthsFromFormula(
+                        $assertions = Algebra::getTruthsFromFormula(
                             $filter_clauses,
                             $cond_object_id
                         );

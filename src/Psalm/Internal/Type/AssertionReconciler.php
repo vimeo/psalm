@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\InvalidDocblock;
@@ -613,7 +614,7 @@ class AssertionReconciler extends Reconciler
                     continue;
                 }
 
-                $atomic_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                $atomic_comparison_results = new TypeComparisonResult();
 
                 if ($existing_type_part instanceof TNamedObject) {
                     $existing_type_part->was_static = false;

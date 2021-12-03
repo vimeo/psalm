@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\CodeLocation;
 
+use Psalm\CodeLocation;
+
 use function substr;
 use function substr_count;
 
-class Raw extends \Psalm\CodeLocation
+class Raw extends CodeLocation
 {
     public function __construct(
         string $file_contents,

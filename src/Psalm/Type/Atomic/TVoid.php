@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `void` type, normally just used to annotate a function/method that returns nothing
  */
-class TVoid extends \Psalm\Type\Atomic
+class TVoid extends Atomic
 {
     public function __toString(): string
     {

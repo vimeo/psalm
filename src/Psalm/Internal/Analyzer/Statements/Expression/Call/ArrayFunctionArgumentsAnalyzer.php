@@ -11,7 +11,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
@@ -638,7 +641,7 @@ class ArrayFunctionArgumentsAnalyzer
                             return;
                         }
 
-                        $function_id_part = new \Psalm\Internal\MethodIdentifier(
+                        $function_id_part = new MethodIdentifier(
                             $callable_fq_class_name,
                             strtolower($method_name)
                         );
@@ -827,7 +830,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $closure_param_type = clone $closure_param_type;
                 $closure_type->return_type = clone $closure_type->return_type;
 
-                $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $template_result = new TemplateResult(
                     [],
                     []
                 );
@@ -863,7 +866,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,

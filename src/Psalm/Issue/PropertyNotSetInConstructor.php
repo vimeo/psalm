@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Issue;
 
+use Psalm\CodeLocation;
+
 class PropertyNotSetInConstructor extends PropertyIssue
 {
     public const ERROR_LEVEL = 2;
@@ -8,7 +10,7 @@ class PropertyNotSetInConstructor extends PropertyIssue
 
     public function __construct(
         string $message,
-        \Psalm\CodeLocation $code_location,
+        CodeLocation $code_location,
         string $property_id
     ) {
         parent::__construct($message, $code_location, $property_id);

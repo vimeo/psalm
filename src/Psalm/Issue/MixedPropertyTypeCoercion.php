@@ -12,7 +12,7 @@ class MixedPropertyTypeCoercion extends PropertyIssue implements MixedIssue
 
     public function __construct(
         string $message,
-        \Psalm\CodeLocation $code_location,
+        CodeLocation $code_location,
         string $property_id,
         ?CodeLocation $origin_location = null
     ) {

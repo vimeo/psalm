@@ -2,6 +2,8 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+use PhpParser\ErrorHandler\Collecting;
+use Psalm\Internal\PhpVisitor\OffsetShifterVisitor;
 
 use function count;
 use function preg_replace;
@@ -153,7 +155,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                         }
 
-                        $error_handler = new \PhpParser\ErrorHandler\Collecting();
+                        $error_handler = new Collecting();
 
                         $fake_class = '<?php class _ {' . $method_contents . '}';
 
@@ -255,7 +257,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         }
 
                         $renumbering_traverser = new PhpParser\NodeTraverser;
-                        $position_shifter = new \Psalm\Internal\PhpVisitor\OffsetShifterVisitor(
+                        $position_shifter = new OffsetShifterVisitor(
                             $stmt_start_pos - 15,
                             $current_line,
                             $extra_offsets

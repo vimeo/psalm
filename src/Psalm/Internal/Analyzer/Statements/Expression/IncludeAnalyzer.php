@@ -6,14 +6,17 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\TaintKind;
 
 use function constant;
 use function defined;
@@ -120,7 +123,7 @@ class IncludeAnalyzer
                 $arg_location
             );
 
-            $include_param_sink->taints = [\Psalm\Type\TaintKind::INPUT_INCLUDE];
+            $include_param_sink->taints = [TaintKind::INPUT_INCLUDE];
 
             $statements_analyzer->data_flow_graph->addSink($include_param_sink);
 
@@ -172,7 +175,7 @@ class IncludeAnalyzer
                     str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL
                 );
 
-                $include_file_analyzer = new \Psalm\Internal\Analyzer\FileAnalyzer(
+                $include_file_analyzer = new FileAnalyzer(
                     $current_file_analyzer->project_analyzer,
                     $path_to_file,
                     $file_name
@@ -263,7 +266,7 @@ class IncludeAnalyzer
      */
     public static function getPathTo(
         PhpParser\Node\Expr $stmt,
-        ?\Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        ?NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
         string $file_name,
         Config $config

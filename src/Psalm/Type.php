@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use LogicException;
+use Psalm\Config;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -230,7 +231,7 @@ abstract class Type
         $type = null;
 
         if ($value !== null) {
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
 
             $event = new StringInterpreterEvent($value);
 

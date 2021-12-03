@@ -10,6 +10,8 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
+use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -36,7 +38,7 @@ class TernaryAnalyzer
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $if_scope = new \Psalm\Internal\Scope\IfScope();
+        $if_scope = new IfScope();
 
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
@@ -87,7 +89,7 @@ class TernaryAnalyzer
                 /**
                  * @return \Psalm\Internal\Clause
                  */
-            function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $cond_id): \Psalm\Internal\Clause {
+            function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
                 $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
@@ -95,7 +97,7 @@ class TernaryAnalyzer
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
                         if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new \Psalm\Internal\Clause([], $cond_id, $cond_id, true);
+                            return new Clause([], $cond_id, $cond_id, true);
                         }
                     }
                 }

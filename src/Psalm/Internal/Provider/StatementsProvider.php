@@ -2,6 +2,17 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
+use PhpParser\ErrorHandler\Collecting;
+use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\Config;
+use Psalm\Internal\Diff\FileDiffer;
+use Psalm\Internal\Diff\FileStatementsDiffer;
+use Psalm\Internal\PhpTraverser\CustomTraverser;
+use Psalm\Internal\PhpVisitor\CloningVisitor;
+use Psalm\Internal\PhpVisitor\PartialParserVisitor;
+use Psalm\Internal\PhpVisitor\SimpleNameResolver;
+use Psalm\Issue\ParseError;
+use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 
@@ -110,7 +121,7 @@ class StatementsProvider
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && \strpos($file_path, 'vendor'))
@@ -165,11 +176,11 @@ class StatementsProvider
                 && $existing_file_contents
                 && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5000
             ) {
-                $file_changes = \Psalm\Internal\Diff\FileDiffer::getDiff($existing_file_contents, $file_contents);
+                $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
 
                 if (count($file_changes) < 10) {
                     $traverser = new PhpParser\NodeTraverser;
-                    $traverser->addVisitor(new \Psalm\Internal\PhpVisitor\CloningVisitor);
+                    $traverser->addVisitor(new CloningVisitor);
                     // performs a deep clone
                     /** @var list<PhpParser\Node\Stmt> */
                     $existing_statements_copy = $traverser->traverse($existing_statements);
@@ -192,7 +203,7 @@ class StatementsProvider
 
             if ($existing_file_contents && $existing_statements && (!$has_errors || $stmts)) {
                 [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map, $deletion_ranges]
-                    = \Psalm\Internal\Diff\FileStatementsDiffer::diff(
+                    = FileStatementsDiffer::diff(
                         $existing_statements,
                         $stmts,
                         $existing_file_contents,
@@ -428,11 +439,11 @@ class StatementsProvider
 
         $used_cached_statements = false;
 
-        $error_handler = new \PhpParser\ErrorHandler\Collecting();
+        $error_handler = new Collecting();
 
         if ($existing_statements && $file_changes && $existing_file_contents) {
-            $clashing_traverser = new \Psalm\Internal\PhpTraverser\CustomTraverser;
-            $offset_analyzer = new \Psalm\Internal\PhpVisitor\PartialParserVisitor(
+            $clashing_traverser = new CustomTraverser;
+            $offset_analyzer = new PartialParserVisitor(
                 self::$parser,
                 $error_handler,
                 $file_changes,
@@ -467,15 +478,15 @@ class StatementsProvider
         }
 
         if ($error_handler->hasErrors() && $file_path) {
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
             $has_errors = true;
 
             foreach ($error_handler->getErrors() as $error) {
                 if ($error->hasColumnInfo()) {
-                    \Psalm\IssueBuffer::add(
-                        new \Psalm\Issue\ParseError(
+                    IssueBuffer::add(
+                        new ParseError(
                             $error->getMessage(),
-                            new \Psalm\CodeLocation\ParseErrorLocation(
+                            new ParseErrorLocation(
                                 $error,
                                 $file_contents,
                                 $file_path,
@@ -490,7 +501,7 @@ class StatementsProvider
         $error_handler->clearErrors();
 
         $resolving_traverser = new PhpParser\NodeTraverser;
-        $name_resolver = new \Psalm\Internal\PhpVisitor\SimpleNameResolver(
+        $name_resolver = new SimpleNameResolver(
             $error_handler,
             $used_cached_statements ? $file_changes : []
         );

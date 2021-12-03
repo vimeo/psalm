@@ -5,6 +5,7 @@ use PhpParser;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -12,11 +13,15 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\DuplicateFunction;
@@ -24,7 +29,9 @@ use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
+use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -278,7 +285,7 @@ class FunctionLikeNodeScanner
 
                 foreach ($stmt->stmts as $function_stmt) {
                     if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
-                        $final_actions = \Psalm\Internal\Analyzer\ScopeAnalyzer::getControlActions(
+                        $final_actions = ScopeAnalyzer::getControlActions(
                             $function_stmt->stmts,
                             null,
                             $this->config->exit_functions,
@@ -286,7 +293,7 @@ class FunctionLikeNodeScanner
                             false
                         );
 
-                        if ($final_actions !== [\Psalm\Internal\Analyzer\ScopeAnalyzer::ACTION_END]) {
+                        if ($final_actions !== [ScopeAnalyzer::ACTION_END]) {
                             $var_assertions = [];
                             break;
                         }
@@ -303,13 +310,13 @@ class FunctionLikeNodeScanner
                         );
 
                         try {
-                            $negated_formula = \Psalm\Internal\Algebra::negateFormula($if_clauses);
+                            $negated_formula = Algebra::negateFormula($if_clauses);
                         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
                             $var_assertions = [];
                             break;
                         }
 
-                        $rules = \Psalm\Internal\Algebra::getTruthsFromFormula($negated_formula);
+                        $rules = Algebra::getTruthsFromFormula($negated_formula);
 
                         if (!$rules) {
                             $var_assertions = [];
@@ -326,12 +333,12 @@ class FunctionLikeNodeScanner
                             if (isset($existing_params[$var_id])) {
                                 $param_offset = $existing_params[$var_id];
 
-                                $var_assertions[] = new \Psalm\Storage\Assertion(
+                                $var_assertions[] = new Assertion(
                                     $param_offset,
                                     $rule
                                 );
                             } elseif (strpos($var_id, '$this->') === 0) {
-                                $var_assertions[] = new \Psalm\Storage\Assertion(
+                                $var_assertions[] = new Assertion(
                                     $var_id,
                                     $rule
                                 );
@@ -575,7 +582,7 @@ class FunctionLikeNodeScanner
 
                 if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
                     IssueBuffer::add(
-                        new \Psalm\Issue\ParseError(
+                        new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
                             $param_storage->location
                         )
@@ -637,18 +644,18 @@ class FunctionLikeNodeScanner
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
-                switch ($param->flags & \PhpParser\Node\Stmt\Class_::VISIBILITY_MODIFIER_MASK) {
-                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC:
+                switch ($param->flags & Class_::VISIBILITY_MODIFIER_MASK) {
+                    case Class_::MODIFIER_PUBLIC:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED:
+                    case Class_::MODIFIER_PROTECTED:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case \PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE:
+                    case Class_::MODIFIER_PRIVATE:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                         break;
                 }
@@ -832,7 +839,7 @@ class FunctionLikeNodeScanner
         if ($param->default) {
             $default_type = SimpleTypeInferer::infer(
                 $this->codebase,
-                new \Psalm\Internal\Provider\NodeDataProvider(),
+                new NodeDataProvider(),
                 $param->default,
                 $this->aliases,
                 null,
@@ -1071,7 +1078,7 @@ class FunctionLikeNodeScanner
                 );
             }
 
-            $method_id = new \Psalm\Internal\MethodIdentifier(
+            $method_id = new MethodIdentifier(
                 $fq_classlike_name,
                 $method_name_lc
             );

@@ -8,9 +8,10 @@ use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\TestCase;
 
 /** @group PluginManager */
-class PluginListTest extends \Psalm\Tests\TestCase
+class PluginListTest extends TestCase
 {
     use ProphecyTrait;
 

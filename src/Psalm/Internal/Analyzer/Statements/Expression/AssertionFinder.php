@@ -16,12 +16,15 @@ use PhpParser\Node\Scalar\LNumber;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\FileSource;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\RedundantCondition;
@@ -914,7 +917,7 @@ class AssertionFinder
                         if (strpos($rule, 'class-constant(') === 0) {
                             $codebase = $source->getCodebase();
                             try {
-                                $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $assertion->rule[$i][$j] = TypeExpander::expandUnion(
                                     $codebase,
                                     Type::parseString(substr($rule, 15, -1)),
                                     null,
@@ -1050,7 +1053,7 @@ class AssertionFinder
                             $codebase = $source->getCodebase();
 
                             try {
-                                $assertion->rule[$i][$j] = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                $assertion->rule[$i][$j] = TypeExpander::expandUnion(
                                     $codebase,
                                     Type::parseString(substr($rule, 15, -1)),
                                     null,
@@ -2258,7 +2261,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                $if_types = Algebra::negateTypes($notif_types);
             }
         }
 
@@ -2962,7 +2965,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = \Psalm\Internal\Algebra::negateTypes($notif_types);
+                $if_types = Algebra::negateTypes($notif_types);
             }
         }
 
@@ -3448,7 +3451,7 @@ class AssertionFinder
 
             if (($first_arg_type = $source->node_data->getType($first_arg))
                 && $first_arg_type->isSingleStringLiteral()
-                && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                && $source->getSource()->getSource() instanceof TraitAnalyzer
                 && $first_arg_type->getSingleStringLiteral()->value === $this_class_name
             ) {
                 // do nothing
@@ -4041,7 +4044,7 @@ class AssertionFinder
     ): void {
         $parent_source = $source->getSource();
 
-        if ($parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+        if ($parent_source->getSource() instanceof TraitAnalyzer
             && (($var_type->isSingleStringLiteral()
                     && $var_type->getSingleStringLiteral()->value === $this_class_name)
                 || ($other_type->isSingleStringLiteral()

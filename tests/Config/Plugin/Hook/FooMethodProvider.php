@@ -7,7 +7,10 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 class FooMethodProvider implements
     MethodExistenceProviderInterface,
@@ -39,7 +42,7 @@ class FooMethodProvider implements
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
-            return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
+            return [new FunctionLikeParameter('first', false, Type::getString())];
         }
 
         return null;
@@ -51,7 +54,7 @@ class FooMethodProvider implements
         if ($method_name_lowercase === 'magicmethod') {
             return Type::getString();
         } else {
-            return new \Psalm\Type\Union([new \Psalm\Type\Atomic\TNamedObject('NS\\Foo2')]);
+            return new Union([new TNamedObject('NS\\Foo2')]);
         }
     }
 }

@@ -14,11 +14,16 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -101,8 +106,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
@@ -560,8 +565,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
@@ -648,13 +653,13 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
      * @return array{Type\Atomic\TNamedObject, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
      */
     private static function handleTemplatedMixins(
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        ClassLikeStorage $class_storage,
         Type\Atomic\TNamedObject $lhs_type_part,
         string $method_name_lc,
         Codebase $codebase,
         Context $context,
         MethodIdentifier $method_id,
-        \Psalm\StatementsSource $source,
+        StatementsSource $source,
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name
@@ -736,13 +741,13 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
      * @return array{Type\Atomic\TNamedObject, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
      */
     private static function handleRegularMixins(
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        ClassLikeStorage $class_storage,
         Type\Atomic\TNamedObject $lhs_type_part,
         string $method_name_lc,
         Codebase $codebase,
         Context $context,
         MethodIdentifier $method_id,
-        \Psalm\StatementsSource $source,
+        StatementsSource $source,
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
@@ -790,11 +795,11 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $lhs_type_part = clone $mixin;
 
                 $lhs_type_part->replaceTemplateTypesWithArgTypes(
-                    new \Psalm\Internal\Type\TemplateResult([], $mixin_class_template_params ?: []),
+                    new TemplateResult([], $mixin_class_template_params ?: []),
                     $codebase
                 );
 
-                $lhs_type_expanded = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $lhs_type_expanded = TypeExpander::expandUnion(
                     $codebase,
                     new Type\Union([$lhs_type_part]),
                     $mixin_declaring_class_storage->name,

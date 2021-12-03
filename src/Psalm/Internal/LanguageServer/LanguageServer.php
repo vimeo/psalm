@@ -17,10 +17,12 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace;
+use Psalm\IssueBuffer;
 use Throwable;
 
 use function Amp\asyncCoroutine;
@@ -350,7 +352,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function emitIssues(array $uris): void
     {
-        $data = \Psalm\IssueBuffer::clear();
+        $data = IssueBuffer::clear();
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
@@ -369,10 +371,10 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         new Position($end_line - 1, $end_column - 1)
                     );
                     switch ($severity) {
-                        case \Psalm\Config::REPORT_INFO:
+                        case Config::REPORT_INFO:
                             $diagnostic_severity = DiagnosticSeverity::WARNING;
                             break;
-                        case \Psalm\Config::REPORT_ERROR:
+                        case Config::REPORT_ERROR:
                         default:
                             $diagnostic_severity = DiagnosticSeverity::ERROR;
                             break;

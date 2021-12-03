@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+
 class TryCatchTest extends TestCase
 {
     use Traits\ValidCodeAnalysisTestTrait;
@@ -106,8 +108,8 @@ class TryCatchTest extends TestCase
                     if (!$foo) {}',
                 'assertions' => [],
                 'error_message' => [
-                    'UndefinedGlobalVariable' => \Psalm\Config::REPORT_INFO,
-                    'MixedMethodCall' => \Psalm\Config::REPORT_INFO,
+                    'UndefinedGlobalVariable' => Config::REPORT_INFO,
+                    'MixedMethodCall' => Config::REPORT_INFO,
                 ],
             ],
             'issetAfterTryCatchWithoutAssignmentInCatch' => [

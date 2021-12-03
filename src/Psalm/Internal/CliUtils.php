@@ -3,10 +3,13 @@
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
+use PackageVersions\Versions;
 use Phar;
 use Psalm\Config;
+use Psalm\Config\Creator;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Report;
 
 use function assert;
 use function count;
@@ -142,8 +145,8 @@ final class CliUtils
             exit(1);
         }
 
-        define('PSALM_VERSION', \PackageVersions\Versions::getVersion('vimeo/psalm'));
-        define('PHP_PARSER_VERSION', \PackageVersions\Versions::getVersion('nikic/php-parser'));
+        define('PSALM_VERSION', Versions::getVersion('vimeo/psalm'));
+        define('PHP_PARSER_VERSION', Versions::getVersion('nikic/php-parser'));
 
         return $first_autoloader;
     }
@@ -495,7 +498,7 @@ HELP;
                     $config = Config::getConfigForPath($current_dir, $current_dir);
                 } catch (\Psalm\Exception\ConfigNotFoundException $e) {
                     if (!$create_if_non_existent) {
-                        if (in_array($output_format, [\Psalm\Report::TYPE_CONSOLE, \Psalm\Report::TYPE_PHP_STORM])) {
+                        if (in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM])) {
                             fwrite(
                                 STDERR,
                                 'Could not locate a config XML file in path ' . $current_dir
@@ -507,7 +510,7 @@ HELP;
                         throw $e;
                     }
 
-                    $config = \Psalm\Config\Creator::createBareConfig(
+                    $config = Creator::createBareConfig(
                         $current_dir,
                         null,
                         self::getVendorDir($current_dir)

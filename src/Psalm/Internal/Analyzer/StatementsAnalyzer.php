@@ -29,18 +29,22 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\Trace;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\Issue\UndefinedTrace;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnusedForeachValue;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
+use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Type;
 
@@ -141,7 +145,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     public $foreach_var_locations = [];
 
-    public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
+    public function __construct(SourceAnalyzer $source, NodeDataProvider $node_data)
     {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
@@ -251,7 +255,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 $var_id = '$' . $var->name;
 
                                 if ($var_id !== '$argv' && $var_id !== '$argc') {
-                                    $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
+                                    $context->byref_constraints[$var_id] = new ReferenceConstraint();
                                 }
                             }
                         }
@@ -680,7 +684,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
             if (!$codebase->classExists($trimmed)) {
                 IssueBuffer::maybeAdd(
-                    new \Psalm\Issue\UndefinedDocblockClass(
+                    new UndefinedDocblockClass(
                         'Scope class ' . $trimmed . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
                         $trimmed
@@ -1021,7 +1025,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @return \Psalm\Internal\Provider\NodeDataProvider
      */
-    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    public function getNodeTypeProvider() : NodeTypeProvider
     {
         return $this->node_data;
     }
