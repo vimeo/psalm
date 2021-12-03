@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 class ClassLikeStringTest extends TestCase
 {
@@ -12,7 +13,7 @@ class ClassLikeStringTest extends TestCase
     public function testDontAllowStringStandInForNewClass(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(
@@ -31,7 +32,7 @@ class ClassLikeStringTest extends TestCase
     public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         Config::getInstance()->allow_string_standin_for_class = false;
 
         $this->addFile(

@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
@@ -81,7 +83,7 @@ class OrAnalyzer
                 if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
                     $post_leaving_if_context = clone $context;
                 }
-            } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+            } catch (ScopeAnalysisException $e) {
                 return false;
             }
         } else {
@@ -139,7 +141,7 @@ class OrAnalyzer
 
         try {
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             try {
                 $negated_left_clauses = FormulaGenerator::getFormula(
                     $left_cond_id,
@@ -150,7 +152,7 @@ class OrAnalyzer
                     $codebase,
                     false
                 );
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $e) {
                 return false;
             }
         }

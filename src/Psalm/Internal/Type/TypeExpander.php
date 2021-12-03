@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
@@ -247,7 +248,7 @@ class TypeExpander
                             $matching_constant,
                             \ReflectionProperty::IS_PRIVATE
                         );
-                    } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    } catch (CircularReferenceException $e) {
                         $class_constant = null;
                     }
 
@@ -337,7 +338,7 @@ class TypeExpander
                         $return_type->const_name,
                         \ReflectionProperty::IS_PRIVATE
                     );
-                } catch (\Psalm\Exception\CircularReferenceException $e) {
+                } catch (CircularReferenceException $e) {
                     $class_constant_type = null;
                 }
 

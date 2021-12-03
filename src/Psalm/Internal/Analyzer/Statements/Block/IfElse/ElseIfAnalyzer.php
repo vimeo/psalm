@@ -5,6 +5,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -62,7 +64,7 @@ class ElseIfAnalyzer
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
             $entry_clauses = $if_conditional_scope->entry_clauses;
-        } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $e) {
             return false;
         }
 
@@ -191,7 +193,7 @@ class ElseIfAnalyzer
             $negated_elseif_types = Algebra::getTruthsFromFormula(
                 Algebra::negateFormula($elseif_clauses)
             );
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
         }
@@ -424,7 +426,7 @@ class ElseIfAnalyzer
                     Algebra::negateFormula($elseif_clauses)
                 )
             );
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
         }
 

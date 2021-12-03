@@ -3,6 +3,7 @@ namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use function is_int;
 use function preg_quote;
@@ -72,7 +73,7 @@ trait InvalidCodeAnalysisTestTrait
 
         // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         if (\method_exists($this, 'expectExceptionMessageMatches')) {
             $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');

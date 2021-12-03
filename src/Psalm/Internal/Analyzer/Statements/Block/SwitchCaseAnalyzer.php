@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -431,7 +432,7 @@ class SwitchCaseAnalyzer
         if ($case_clauses && $case_equality_expr) {
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $e) {
                 $case_equality_expr_id = \spl_object_id($case_equality_expr);
 
                 try {
@@ -445,7 +446,7 @@ class SwitchCaseAnalyzer
                         false,
                         false
                     );
-                } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                } catch (ComplicatedExpressionException $e) {
                     $negated_case_clauses = [];
                 }
             }

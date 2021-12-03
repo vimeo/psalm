@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
@@ -40,7 +41,7 @@ class AlgebraAnalyzer
     ): void {
         try {
             $negated_formula2 = Algebra::negateFormula($formula_2);
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             return;
         }
 

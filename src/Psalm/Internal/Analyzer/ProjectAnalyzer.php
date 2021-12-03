@@ -5,6 +5,7 @@ use Amp\Loop;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\RefactorException;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -735,14 +736,14 @@ class ProjectAnalyzer
             $destination_parts = explode('::', $destination);
 
             if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])) {
-                throw new \Psalm\Exception\RefactorException(
+                throw new RefactorException(
                     'Source class ' . $source_parts[0] . ' doesn’t exist'
                 );
             }
 
             if (count($source_parts) === 1 && count($destination_parts) === 1) {
                 if ($this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' already exists'
                     );
                 }
@@ -784,13 +785,13 @@ class ProjectAnalyzer
                         strtolower($destination_parts[1])
                     )
                 )) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination method ' . $destination . ' already exists'
                     );
                 }
 
                 if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist'
                     );
                 }
@@ -806,7 +807,7 @@ class ProjectAnalyzer
                             $destination_class_storage->parent_classes[strtolower($source_method_id->fq_class_name)]
                         )
                     ) {
-                        throw new \Psalm\Exception\RefactorException(
+                        throw new RefactorException(
                             'Cannot move non-static method ' . $source
                                 . ' into unrelated class ' . $destination_parts[0]
                         );
@@ -823,25 +824,25 @@ class ProjectAnalyzer
 
             if ($source_parts[1][0] === '$') {
                 if ($destination_parts[1][0] !== '$') {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination property must be of the form Foo::$bar'
                     );
                 }
 
                 if (!$this->codebase->properties->propertyExists($source, true)) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Property ' . $source . ' does not exist'
                     );
                 }
 
                 if ($this->codebase->properties->propertyExists($destination, true)) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination property ' . $destination . ' already exists'
                     );
                 }
 
                 if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist'
                     );
                 }
@@ -852,7 +853,7 @@ class ProjectAnalyzer
                     $source_storage = $this->codebase->properties->getStorage($source);
 
                     if (!$source_storage->is_static) {
-                        throw new \Psalm\Exception\RefactorException(
+                        throw new RefactorException(
                             'Cannot move non-static property ' . $source
                         );
                     }
@@ -873,7 +874,7 @@ class ProjectAnalyzer
 
             if (isset($source_class_constants[$source_parts[1]])) {
                 if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist'
                     );
                 }
@@ -884,7 +885,7 @@ class ProjectAnalyzer
                 );
 
                 if (isset($destination_class_constants[$destination_parts[1]])) {
-                    throw new \Psalm\Exception\RefactorException(
+                    throw new RefactorException(
                         'Destination constant ' . $destination . ' already exists'
                     );
                 }
@@ -901,7 +902,7 @@ class ProjectAnalyzer
                 continue;
             }
 
-            throw new \Psalm\Exception\RefactorException(
+            throw new RefactorException(
                 'Psalm cannot locate ' . $source
             );
         }

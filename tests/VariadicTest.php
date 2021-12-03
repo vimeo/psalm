@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\Providers;
@@ -18,7 +19,7 @@ class VariadicTest extends TestCase
     public function testVariadicArrayBadParam(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php

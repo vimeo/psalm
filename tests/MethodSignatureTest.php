@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use function class_exists;
 
@@ -101,7 +102,7 @@ class MethodSignatureTest extends TestCase
     public function testMismatchingCovariantReturnIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
@@ -152,7 +153,7 @@ class MethodSignatureTest extends TestCase
     public function testMismatchingCovariantReturnIn73WithSelf(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
@@ -199,7 +200,7 @@ class MethodSignatureTest extends TestCase
     public function testMismatchingCovariantParamIn73(): void
     {
         $this->expectExceptionMessage('MethodSignatureMismatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
 
@@ -244,7 +245,7 @@ class MethodSignatureTest extends TestCase
     public function testExtendDocblockParamTypeWithWrongDocblockParam(): void
     {
         $this->expectExceptionMessage('ImplementedParamTypeMismatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         if (class_exists('SoapClient') === false) {
             $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
         }
@@ -279,7 +280,7 @@ class MethodSignatureTest extends TestCase
 
     public function testExtendDocblockParamTypeWithWrongParam() : void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MethodSignatureMismatch');
 
         if (class_exists('SoapClient') === false) {

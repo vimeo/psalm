@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ReferenceConstraint;
@@ -60,7 +61,7 @@ class StaticAnalyzer
                         $statements_analyzer->getSource()->getAliases(),
                         $statements_analyzer->getSource()->getTemplateTypeMap()
                     );
-                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),

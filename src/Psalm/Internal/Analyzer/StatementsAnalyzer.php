@@ -7,6 +7,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Block\DoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForAnalyzer;
@@ -458,14 +459,14 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $template_type_map,
                         $file_storage->type_aliases
                     );
-                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
                     );
-                } catch (\Psalm\Exception\DocblockParseException $e) {
+                } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),

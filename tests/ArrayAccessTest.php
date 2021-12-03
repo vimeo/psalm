@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -13,7 +14,7 @@ class ArrayAccessTest extends TestCase
 
     public function testEnsureArrayOffsetsExist(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -88,7 +89,7 @@ class ArrayAccessTest extends TestCase
 
     public function testComplainAfterFirstIsset(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -106,7 +107,7 @@ class ArrayAccessTest extends TestCase
 
     public function testEnsureArrayIntOffsetsExist(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         Config::getInstance()->ensure_array_int_offsets_exist = true;
@@ -186,7 +187,7 @@ class ArrayAccessTest extends TestCase
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
@@ -296,7 +297,7 @@ class ArrayAccessTest extends TestCase
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
@@ -319,7 +320,7 @@ class ArrayAccessTest extends TestCase
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(

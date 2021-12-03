@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\CodeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
@@ -573,7 +574,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                             ? $e->getJourneyMessage()
                             : $e->message;
 
-                        throw new \Psalm\Exception\CodeException(
+                        throw new CodeException(
                             'Error with core stub file docblocks: '
                                 . $issue_type
                                 . ' - ' . $e->getShortLocationWithPrevious()

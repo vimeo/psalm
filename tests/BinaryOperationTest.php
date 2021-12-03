@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use function class_exists;
 
@@ -99,7 +100,7 @@ class BinaryOperationTest extends TestCase
                 }'
         );
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
         $this->analyzeFile('somefile.php', new Context());
@@ -122,7 +123,7 @@ class BinaryOperationTest extends TestCase
                 }'
         );
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
         $this->analyzeFile('somefile.php', new Context());

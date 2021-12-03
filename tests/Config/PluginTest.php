@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
@@ -83,7 +84,7 @@ class PluginTest extends TestCase
     public function testStringAnalyzerPlugin(): void
     {
         $this->expectExceptionMessage('InvalidClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -117,7 +118,7 @@ class PluginTest extends TestCase
     public function testStringAnalyzerPluginWithClassConstant(): void
     {
         $this->expectExceptionMessage('InvalidClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -155,7 +156,7 @@ class PluginTest extends TestCase
     public function testStringAnalyzerPluginWithClassConstantConcat(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -226,7 +227,7 @@ class PluginTest extends TestCase
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -264,7 +265,7 @@ class PluginTest extends TestCase
     public function testEchoAnalyzerPluginWithUnescapedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -398,7 +399,7 @@ class PluginTest extends TestCase
     public function testFloatCheckerPlugin(): void
     {
         $this->expectExceptionMessage('NoFloatAssignment');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -819,7 +820,7 @@ class PluginTest extends TestCase
     public function testPropertyProviderHooksInvalidAssignment(): void
     {
         $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -860,7 +861,7 @@ class PluginTest extends TestCase
     public function testMethodProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -903,7 +904,7 @@ class PluginTest extends TestCase
     public function testFunctionProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1146,7 +1147,7 @@ class PluginTest extends TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());

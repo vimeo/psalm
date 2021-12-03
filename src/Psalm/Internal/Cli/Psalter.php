@@ -5,6 +5,7 @@ namespace Psalm\Internal\Cli;
 use Composer\Autoload\ClassLoader;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
+use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
@@ -376,7 +377,7 @@ HELP;
         } else {
             try {
                 $project_analyzer->setIssuesToFix($keyed_issues);
-            } catch (\Psalm\Exception\UnsupportedIssueToFixException $e) {
+            } catch (UnsupportedIssueToFixException $e) {
                 fwrite(STDERR, $e->getMessage() . PHP_EOL);
                 exit(1);
             }

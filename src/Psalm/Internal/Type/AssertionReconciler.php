@@ -3,6 +3,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -192,7 +193,7 @@ class AssertionReconciler extends Reconciler
 
             try {
                 $new_type = Type::parseString($assertion, null, $template_type_map);
-            } catch (\Psalm\Exception\TypeParseTreeException $e) {
+            } catch (TypeParseTreeException $e) {
                 $new_type = Type::getMixed();
             }
         }
@@ -341,7 +342,7 @@ class AssertionReconciler extends Reconciler
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
-        } catch (\Psalm\Exception\TypeParseTreeException $e) {
+        } catch (TypeParseTreeException $e) {
             $new_type_part = new TMixed();
 
             if ($code_location) {

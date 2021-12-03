@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
 use function stripos;
@@ -25,7 +26,7 @@ class ProjectFileFilter extends FileFilter
 
         if (isset($e->ignoreFiles)) {
             if (!$inclusive) {
-                throw new \Psalm\Exception\ConfigException('Cannot nest ignoreFiles inside itself');
+                throw new ConfigException('Cannot nest ignoreFiles inside itself');
             }
 
             /** @var \SimpleXMLElement $e->ignoreFiles */

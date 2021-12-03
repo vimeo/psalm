@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
@@ -286,7 +287,7 @@ class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (\InvalidArgumentException | \Psalm\Exception\CircularReferenceException $e) {
+                    } catch (\InvalidArgumentException | CircularReferenceException $e) {
                         return null;
                     }
                 }

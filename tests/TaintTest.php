@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 
@@ -44,7 +45,7 @@ class TaintTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . \preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';

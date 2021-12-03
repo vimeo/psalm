@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 
 use function getcwd;
@@ -85,7 +86,7 @@ class IncludeTest extends TestCase
         $config = $codebase->config;
         $config->skip_checks_on_unresolvable_includes = false;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->scanFiles();

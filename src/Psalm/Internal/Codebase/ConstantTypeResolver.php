@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant;
@@ -24,7 +25,7 @@ class ConstantTypeResolver
         $c_id = \spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
-            throw new \Psalm\Exception\CircularReferenceException('Found a circular reference');
+            throw new CircularReferenceException('Found a circular reference');
         }
 
         if ($c instanceof UnresolvedConstant\ScalarValue) {

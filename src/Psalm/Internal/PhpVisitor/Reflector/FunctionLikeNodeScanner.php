@@ -11,6 +11,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
@@ -311,7 +312,7 @@ class FunctionLikeNodeScanner
 
                         try {
                             $negated_formula = Algebra::negateFormula($if_clauses);
-                        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException $e) {
                             $var_assertions = [];
                             break;
                         }

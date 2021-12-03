@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -86,7 +87,7 @@ class ErrorAfterUpdateTest extends TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));

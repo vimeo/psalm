@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use function getcwd;
 
@@ -15,7 +16,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testIssueSuppressedOnFunction(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -39,7 +40,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testIssueSuppressedOnStatement(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -54,7 +55,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testUnusedSuppressAllOnFunction(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
 
@@ -72,7 +73,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testUnusedSuppressAllOnStatement(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -111,7 +112,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -131,7 +132,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testMissingThrowsDocblockSuppressedDuplicate(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -178,7 +179,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_in_global_scope = true;
 

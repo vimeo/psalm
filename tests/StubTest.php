@@ -3,6 +3,10 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Exception\ConfigException;
+use Psalm\Exception\InvalidClasslikeOverrideException;
+use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -62,7 +66,7 @@ class StubTest extends TestCase
 
     public function testNonexistentStubFile(): void
     {
-        $this->expectException(\Psalm\Exception\ConfigException::class);
+        $this->expectException(ConfigException::class);
         $this->expectExceptionMessage('Cannot resolve stubfile path');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -395,7 +399,7 @@ class StubTest extends TestCase
     public function testStubVariadicFunctionWrongArgType(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -428,7 +432,7 @@ class StubTest extends TestCase
     public function testUserVariadicWithFalseVariadic(): void
     {
         $this->expectExceptionMessage('TooManyArguments');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -651,7 +655,7 @@ class StubTest extends TestCase
     public function testNoStubFunction(): void
     {
         $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -984,7 +988,7 @@ class StubTest extends TestCase
     public function testStubFileWithPartialClassDefinitionWithCoercion(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -1029,7 +1033,7 @@ class StubTest extends TestCase
     public function testStubFileWithPartialClassDefinitionGeneralReturnType(): void
     {
         $this->expectExceptionMessage('InvalidReturnStatement');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -1194,7 +1198,7 @@ class StubTest extends TestCase
                 echo "hello";'
         );
 
-        $this->expectException(\Psalm\Exception\InvalidClasslikeOverrideException::class);
+        $this->expectException(InvalidClasslikeOverrideException::class);
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -1225,7 +1229,7 @@ class StubTest extends TestCase
                 echo "hello";'
         );
 
-        $this->expectException(\Psalm\Exception\InvalidMethodOverrideException::class);
+        $this->expectException(InvalidMethodOverrideException::class);
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -1291,7 +1295,7 @@ class StubTest extends TestCase
                 }'
         );
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('A|null');
 
         $this->analyzeFile($file_path, new Context());

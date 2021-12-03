@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
+use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -202,7 +203,7 @@ class IncludeAnalyzer
                         $context,
                         $global_context
                     );
-                } catch (\Psalm\Exception\UnpreparedAnalysisException $e) {
+                } catch (UnpreparedAnalysisException $e) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
                         $context->check_variables = false;

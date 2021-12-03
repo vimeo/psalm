@@ -11,6 +11,7 @@ use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
 use PhpParser;
+use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -1196,7 +1197,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);
@@ -1249,7 +1250,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);
@@ -1385,7 +1386,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
@@ -234,7 +235,7 @@ class ClassConstFetchAnalyzer
                 );
             } catch (\InvalidArgumentException $_) {
                 return true;
-            } catch (\Psalm\Exception\CircularReferenceException $e) {
+            } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -521,7 +522,7 @@ class ClassConstFetchAnalyzer
                 );
             } catch (\InvalidArgumentException $_) {
                 return true;
-            } catch (\Psalm\Exception\CircularReferenceException $e) {
+            } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',

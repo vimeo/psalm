@@ -6,6 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Psalm\Config;
 use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
+use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -531,7 +532,7 @@ final class Psalm
                     $init_level,
                     $vendor_dir
                 );
-            } catch (\Psalm\Exception\ConfigCreationException $e) {
+            } catch (ConfigCreationException $e) {
                 die($e->getMessage() . PHP_EOL);
             }
 
@@ -565,7 +566,7 @@ final class Psalm
             $config_level = (int) $options['error-level'];
 
             if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new \Psalm\Exception\ConfigException(
+                throw new ConfigException(
                     'Invalid error level ' . $config_level
                 );
             }
@@ -645,7 +646,7 @@ final class Psalm
                 new FileProvider,
                 $options['set-baseline']
             );
-        } catch (\Psalm\Exception\ConfigException $e) {
+        } catch (ConfigException $e) {
             $issue_baseline = [];
         }
 
@@ -701,7 +702,7 @@ final class Psalm
                 echo str_repeat('-', 30) . "\n";
                 echo $total_fixed_issues . ' errors fixed' . "\n";
             }
-        } catch (\Psalm\Exception\ConfigException $exception) {
+        } catch (ConfigException $exception) {
             fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
             exit(1);
         }
@@ -768,7 +769,7 @@ final class Psalm
                 $init_level,
                 $vendor_dir
             );
-        } catch (\Psalm\Exception\ConfigCreationException $e) {
+        } catch (ConfigCreationException $e) {
             die($e->getMessage() . PHP_EOL);
         }
 
@@ -1049,7 +1050,7 @@ final class Psalm
                     new FileProvider,
                     $baseline_file_path
                 );
-            } catch (\Psalm\Exception\ConfigException $exception) {
+            } catch (ConfigException $exception) {
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
                 exit(1);
             }

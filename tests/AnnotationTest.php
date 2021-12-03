@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -141,7 +142,7 @@ class AnnotationTest extends TestCase
 
     public function testPhpStormGenericsInvalidArgument(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidScalarArgument');
 
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -163,7 +164,7 @@ class AnnotationTest extends TestCase
 
     public function testPhpStormGenericsNoTypehint(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyInvalidMethodCall');
 
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -182,7 +183,7 @@ class AnnotationTest extends TestCase
 
     public function testInvalidParamDefault(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
 
         $this->addFile(
@@ -219,7 +220,7 @@ class AnnotationTest extends TestCase
 
     public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
 
         Config::getInstance()->add_param_default_to_docblock_type = true;

@@ -2,6 +2,7 @@
 namespace Psalm\Type;
 
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
@@ -289,11 +290,11 @@ abstract class Atomic implements TypeNode
         }
 
         if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
-            throw new \Psalm\Exception\TypeParseTreeException('Unrecognized type ' . $value);
+            throw new TypeParseTreeException('Unrecognized type ' . $value);
         }
 
         if (is_numeric($value[0])) {
-            throw new \Psalm\Exception\TypeParseTreeException('First character of type cannot be numeric');
+            throw new TypeParseTreeException('First character of type cannot be numeric');
         }
 
         if (isset($template_type_map[$value])) {
@@ -313,7 +314,7 @@ abstract class Atomic implements TypeNode
                 return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
             }
 
-            throw new \Psalm\Exception\TypeParseTreeException('Invalid type alias ' . $value . ' provided');
+            throw new TypeParseTreeException('Invalid type alias ' . $value . ' provided');
         }
 
         return new TNamedObject($value);

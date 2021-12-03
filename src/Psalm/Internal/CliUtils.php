@@ -7,6 +7,8 @@ use PackageVersions\Versions;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
+use Psalm\Exception\ConfigException;
+use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Report;
@@ -496,7 +498,7 @@ HELP;
             } else {
                 try {
                     $config = Config::getConfigForPath($current_dir, $current_dir);
-                } catch (\Psalm\Exception\ConfigNotFoundException $e) {
+                } catch (ConfigNotFoundException $e) {
                     if (!$create_if_non_existent) {
                         if (in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM])) {
                             fwrite(
@@ -517,7 +519,7 @@ HELP;
                     );
                 }
             }
-        } catch (\Psalm\Exception\ConfigException $e) {
+        } catch (ConfigException $e) {
             fwrite(
                 STDERR,
                 $e->getMessage() . PHP_EOL

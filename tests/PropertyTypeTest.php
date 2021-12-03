@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,7 +15,7 @@ class PropertyTypeTest extends TestCase
     public function testForgetPropertyAssignments(): void
     {
         $this->expectExceptionMessage('NullableReturnStatement');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
@@ -193,7 +194,7 @@ class PropertyTypeTest extends TestCase
         Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->expectExceptionMessage('TypeDoesNotContainNull - somefile.php:22:29');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         $this->addFile(
             'somefile.php',
@@ -231,7 +232,7 @@ class PropertyTypeTest extends TestCase
         Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->expectExceptionMessage('TypeDoesNotContainNull - somefile.php:18:29');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
 
         $this->addFile(
             'somefile.php',

@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -116,7 +117,7 @@ class IfConditionalAnalyzer
                 $externally_applied_if_cond_expr,
                 $outer_context
             ) === false) {
-                throw new \Psalm\Exception\ScopeAnalysisException();
+                throw new ScopeAnalysisException();
             }
         }
 
@@ -164,7 +165,7 @@ class IfConditionalAnalyzer
             $if_conditional_context->inside_conditional = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
-                throw new \Psalm\Exception\ScopeAnalysisException();
+                throw new ScopeAnalysisException();
             }
 
             $if_conditional_context->inside_conditional = false;

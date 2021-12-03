@@ -5,6 +5,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\PluginRegistrationSocket;
@@ -202,7 +203,7 @@ class CodebaseTest extends TestCase
         $this->codebase->classlike_storage_provider->create('A');
         $this->codebase->classlike_storage_provider->create('B');
 
-        $this->expectException(\Psalm\Exception\UnpopulatedClasslikeException::class);
+        $this->expectException(UnpopulatedClasslikeException::class);
 
         $this->codebase->classExtends('A', 'B');
     }

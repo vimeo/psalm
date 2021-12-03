@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
@@ -97,7 +98,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenEchoFunctionViaFunctions(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -124,7 +125,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenEchoFunctionViaFlag(): void
     {
         $this->expectExceptionMessage('ForbiddenEcho');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -168,7 +169,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenPrintFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -217,7 +218,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenVarExportFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -245,7 +246,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenEmptyFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -272,7 +273,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenExitFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -300,7 +301,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenDieFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -328,7 +329,7 @@ class ForbiddenCodeTest extends TestCase
     public function testForbiddenEvalExpression(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),

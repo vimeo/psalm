@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -494,7 +495,7 @@ class LoopAnalyzer
 
             try {
                 $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $e) {
                 $negated_pre_condition_clauses = [];
             }
 

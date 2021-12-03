@@ -5,6 +5,7 @@ use Composer\Autoload\ClassLoader;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -936,7 +937,7 @@ class ConfigTest extends TestCase
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -984,7 +985,7 @@ class ConfigTest extends TestCase
     public function testInvalidThrowValidCatch(): void
     {
         $this->expectExceptionMessage('InvalidThrow');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -1266,7 +1267,7 @@ class ConfigTest extends TestCase
 
     public function testNotIgnoredException() : void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MissingThrowsDocblock');
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

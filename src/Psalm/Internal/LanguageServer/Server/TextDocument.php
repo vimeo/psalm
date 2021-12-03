@@ -17,6 +17,7 @@ use LanguageServerProtocol\TextDocumentIdentifier;
 use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
+use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\LanguageServer\LanguageServer;
 
 use function count;
@@ -165,7 +166,7 @@ class TextDocument
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -209,7 +210,7 @@ class TextDocument
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -265,7 +266,7 @@ class TextDocument
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -311,7 +312,7 @@ class TextDocument
 
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
