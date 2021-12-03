@@ -226,7 +226,7 @@ final class Psalm
 
         $config->setIncludeCollector($include_collector);
 
-        $in_ci = self::runningInCI();        // disable progressbar on CI
+        $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
 
         if ($in_ci) {
             $options['long-progress'] = true;
@@ -815,17 +815,6 @@ final class Psalm
         }
         echo 'Cache directory deleted' . PHP_EOL;
         exit;
-    }
-
-    private static function runningInCI(): bool
-    {
-        return isset($_SERVER['TRAVIS'])
-            || isset($_SERVER['CIRCLECI'])
-            || isset($_SERVER['APPVEYOR'])
-            || isset($_SERVER['JENKINS_URL'])
-            || isset($_SERVER['SCRUTINIZER'])
-            || isset($_SERVER['GITLAB_CI'])
-            || isset($_SERVER['GITHUB_WORKFLOW']);
     }
 
     private static function getCurrentDir(array $options): string

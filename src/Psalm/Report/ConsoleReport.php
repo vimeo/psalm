@@ -4,6 +4,7 @@ namespace Psalm\Report;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\CliUtils;
 use Psalm\Report;
 
 use function basename;
@@ -128,6 +129,10 @@ class ConsoleReport extends Report
             . $file_basename . ':' . $data->line_from . ':' . $data->column_from
             . "\033[0m"
         ;
+
+        if (CliUtils::runningInCI()) {
+            return $reference;
+        }
 
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
