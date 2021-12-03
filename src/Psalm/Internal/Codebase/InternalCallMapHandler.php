@@ -11,6 +11,7 @@ use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+use UnexpectedValueException;
 
 use function array_shift;
 use function assert;
@@ -70,7 +71,7 @@ class InternalCallMapHandler
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
         if ($possible_callables === null) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Not expecting $function_param_options to be null for ' . $method_id
             );
         }

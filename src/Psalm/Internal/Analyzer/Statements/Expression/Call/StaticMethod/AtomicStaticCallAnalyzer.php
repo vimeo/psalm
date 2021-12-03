@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
+use Exception;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -851,7 +852,7 @@ class AtomicStaticCallAnalyzer
                     new CodeLocation($statements_analyzer, $stmt),
                     $context
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // do nothing
             }
         }

@@ -2,6 +2,8 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+use ReflectionClass;
+use Throwable;
 
 use function count;
 use function end;
@@ -65,8 +67,8 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
         }
 
         try {
-            $reflection_trait = new \ReflectionClass($this->fq_trait_name);
-        } catch (\Throwable $t) {
+            $reflection_trait = new ReflectionClass($this->fq_trait_name);
+        } catch (Throwable $t) {
             return null;
         }
 

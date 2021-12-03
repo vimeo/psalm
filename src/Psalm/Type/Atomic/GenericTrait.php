@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_map;
 use function array_values;
@@ -227,7 +228,7 @@ trait GenericTrait
                 } elseif ($offset === 1) {
                     $input_type_param = $input_type->getGenericValueType();
                 } else {
-                    throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
+                    throw new UnexpectedValueException('Not expecting offset of ' . $offset);
                 }
             } elseif ($input_type instanceof Atomic\TNamedObject
                 && isset($input_object_type_params[$offset])

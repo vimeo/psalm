@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
+use Closure;
+use Exception;
 use PhpParser;
 
 use function array_reverse;
@@ -27,7 +29,7 @@ class AstDiffer
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
-        \Closure $is_equal,
+        Closure $is_equal,
         array $a,
         array $b,
         string $a_code,
@@ -66,7 +68,7 @@ class AstDiffer
                 }
             }
         }
-        throw new \Exception('Should not happen');
+        throw new Exception('Should not happen');
     }
 
     /**

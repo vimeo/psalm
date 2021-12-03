@@ -6,6 +6,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function in_array;
 
@@ -37,7 +38,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
         if (!$statements_source instanceof StatementsAnalyzer) {
-            throw new \UnexpectedValueException();
+            throw new UnexpectedValueException();
         }
 
         $filter_type = null;

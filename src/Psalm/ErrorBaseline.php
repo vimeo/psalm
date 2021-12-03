@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use DOMDocument;
+use DOMElement;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
@@ -86,7 +88,7 @@ class ErrorBaseline
             throw new Exception\ConfigException('Baseline file is empty');
         }
 
-        $baselineDoc = new \DOMDocument();
+        $baselineDoc = new DOMDocument();
         $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
 
         $filesElement = $baselineDoc->getElementsByTagName('files');
@@ -108,7 +110,7 @@ class ErrorBaseline
             $files[$fileName] = [];
 
             foreach ($file->childNodes as $issue) {
-                if (!$issue instanceof \DOMElement) {
+                if (!$issue instanceof DOMElement) {
                     continue;
                 }
 
@@ -242,7 +244,7 @@ class ErrorBaseline
         array $groupedIssues,
         bool $include_php_versions
     ): void {
-        $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
+        $baselineDoc = new DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 

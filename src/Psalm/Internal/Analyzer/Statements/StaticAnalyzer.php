@@ -17,6 +17,7 @@ use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function is_string;
 
@@ -126,7 +127,7 @@ class StaticAnalyzer
                         }
 
                         $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),

@@ -5,6 +5,8 @@ namespace Psalm\Internal\LanguageServer;
 use AdvancedJsonRpc;
 use Amp\Promise;
 use Amp\Success;
+use Generator;
+use InvalidArgumentException;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
@@ -117,7 +119,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 /**
                  * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
-                function (Message $msg): \Generator {
+                function (Message $msg): Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -466,7 +468,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
-            } catch (\Throwable $err) {
+            } catch (Throwable $err) {
                 // do nothing
             }
         }
@@ -490,7 +492,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 3,
                 'telemetry/event'
             );
-        } catch (\Throwable $err) {
+        } catch (Throwable $err) {
             // do nothing
         }
         new Success(null);
@@ -530,7 +532,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             || $fragments['scheme'] !== 'file'
             || !isset($fragments['path'])
         ) {
-            throw new \InvalidArgumentException("Not a valid file URI: $uri");
+            throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
 
         $filepath = urldecode($fragments['path']);

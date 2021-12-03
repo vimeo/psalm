@@ -11,6 +11,8 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use ReflectionClass;
+use ReflectionFunction;
 
 use function assert;
 use function class_exists;
@@ -358,7 +360,7 @@ class ExpressionResolver
             && $function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
             && function_exists($function->getArgs()[0]->value->value)
         ) {
-            $reflection_function = new \ReflectionFunction($function->getArgs()[0]->value->value);
+            $reflection_function = new ReflectionFunction($function->getArgs()[0]->value->value);
 
             if ($reflection_function->isInternal()) {
                 return true;
@@ -383,7 +385,7 @@ class ExpressionResolver
             }
 
             if ($string_value && class_exists($string_value)) {
-                $reflection_class = new \ReflectionClass($string_value);
+                $reflection_class = new ReflectionClass($string_value);
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
@@ -413,7 +415,7 @@ class ExpressionResolver
             }
 
             if ($string_value && interface_exists($string_value)) {
-                $reflection_class = new \ReflectionClass($string_value);
+                $reflection_class = new ReflectionClass($string_value);
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(

@@ -16,6 +16,8 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Type;
 use ReflectionClass;
+use Throwable;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -232,7 +234,7 @@ class Scanner
     public function getClassLikeFilePath(string $fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
-            throw new \UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
+            throw new UnexpectedValueException('Could not find file for ' . $fq_classlike_name_lc);
         }
 
         return $this->classlike_files[$fq_classlike_name_lc];
@@ -511,7 +513,7 @@ class Scanner
                     $this->progress->debug('Using reflection to get metadata for ' . $fq_classlike_name . "\n");
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $reflected_class = new \ReflectionClass($fq_classlike_name);
+                    $reflected_class = new ReflectionClass($fq_classlike_name);
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
                 } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
@@ -556,7 +558,7 @@ class Scanner
         if (isset($this->scanned_files[$file_path])
             && (!$will_analyze || $this->scanned_files[$file_path])
         ) {
-            throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
+            throw new UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
         if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
@@ -705,7 +707,7 @@ class Scanner
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     return new ReflectionClass($fq_class_name);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // do not cache any results here (as case-sensitive filenames can screw things up)
 
                     return null;

@@ -10,6 +10,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use UnexpectedValueException;
 
 use function array_pop;
 use function end;
@@ -76,7 +77,7 @@ class MethodVisibilityAnalyzer
                 return null;
             }
 
-            throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
+            throw new UnexpectedValueException('$declaring_method_id not expected to be null here');
         }
 
         $appearing_method_id = $codebase_methods->getAppearingMethodId($method_id);

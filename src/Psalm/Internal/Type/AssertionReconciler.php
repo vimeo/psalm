@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use Exception;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
@@ -273,7 +274,7 @@ class AssertionReconciler extends Reconciler
 
             try {
                 return Type::parseString($assertion, null, $template_type_map);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return Type::getMixed();
             }
         }

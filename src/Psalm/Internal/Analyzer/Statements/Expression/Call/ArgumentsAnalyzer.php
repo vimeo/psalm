@@ -38,6 +38,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use UnexpectedValueException;
 
 use function array_map;
 use function array_reverse;
@@ -375,7 +376,7 @@ class ArgumentsAnalyzer
                 $statements_analyzer->getFilePath(),
                 $closure_id
             );
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             return;
         }
 

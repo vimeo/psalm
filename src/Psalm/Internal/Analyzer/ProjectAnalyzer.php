@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use Amp\Loop;
+use InvalidArgumentException;
+use LogicException;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
@@ -49,6 +51,8 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Type;
+use ReflectionProperty;
+use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff;
@@ -403,7 +407,7 @@ class ProjectAnalyzer
                 }
             }
 
-            throw new \UnexpectedValueException('Unknown report format ' . $report_file_path);
+            throw new UnexpectedValueException('Unknown report format ' . $report_file_path);
         }
 
         return $report_options;
@@ -587,7 +591,7 @@ class ProjectAnalyzer
         $start_checks = (int)microtime(true);
 
         if (!$base_dir) {
-            throw new \InvalidArgumentException('Cannot work with empty base_dir');
+            throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
 
         $diff_files = null;
@@ -716,7 +720,7 @@ class ProjectAnalyzer
     public function interpretRefactors() : void
     {
         if (!$this->codebase->alter_code) {
-            throw new \UnexpectedValueException('Should not be checking references');
+            throw new UnexpectedValueException('Should not be checking references');
         }
 
         // interpret wildcards
@@ -875,7 +879,7 @@ class ProjectAnalyzer
 
             $source_class_constants = $this->codebase->classlikes->getConstantsForClass(
                 $source_parts[0],
-                \ReflectionProperty::IS_PRIVATE
+                ReflectionProperty::IS_PRIVATE
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
@@ -887,7 +891,7 @@ class ProjectAnalyzer
 
                 $destination_class_constants = $this->codebase->classlikes->getConstantsForClass(
                     $destination_parts[0],
-                    \ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (isset($destination_class_constants[$destination_parts[1]])) {
@@ -917,7 +921,7 @@ class ProjectAnalyzer
     public function prepareMigration() : void
     {
         if (!$this->codebase->alter_code) {
-            throw new \UnexpectedValueException('Should not be checking references');
+            throw new UnexpectedValueException('Should not be checking references');
         }
 
         $this->codebase->classlikes->moveMethods(
@@ -938,7 +942,7 @@ class ProjectAnalyzer
     public function migrateCode() : void
     {
         if (!$this->codebase->alter_code) {
-            throw new \UnexpectedValueException('Should not be checking references');
+            throw new UnexpectedValueException('Should not be checking references');
         }
 
         $migration_manipulations = FileManipulationBuffer::getMigrationManipulations(
@@ -998,7 +1002,7 @@ class ProjectAnalyzer
     public function findReferencesTo(string $symbol): void
     {
         if (!$this->stdout_report_options) {
-            throw new \UnexpectedValueException('Not expecting to emit output');
+            throw new UnexpectedValueException('Not expecting to emit output');
         }
 
         $locations = $this->codebase->findReferencesToSymbol($symbol);
@@ -1103,7 +1107,7 @@ class ProjectAnalyzer
         $file_extensions = $config->getFileExtensions();
 
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
-            throw new \UnexpectedValueException('Parser cache provider cannot be null here');
+            throw new UnexpectedValueException('Parser cache provider cannot be null here');
         }
 
         $diff_files = [];
@@ -1310,7 +1314,7 @@ class ProjectAnalyzer
     public function setPhpVersion(string $version, string $source): void
     {
         if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[01])(\..*)?$/', $version)) {
-            throw new \UnexpectedValueException('Expecting a version number in the format x.y');
+            throw new UnexpectedValueException('Expecting a version number in the format x.y');
         }
 
         [$php_major_version, $php_minor_version] = explode('.', $version);
@@ -1523,7 +1527,7 @@ class ProjectAnalyzer
             }
         }
 
-        throw new \LogicException('failed to detect number of CPUs!');
+        throw new LogicException('failed to detect number of CPUs!');
     }
 
     /**

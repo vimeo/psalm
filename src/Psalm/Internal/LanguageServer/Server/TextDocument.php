@@ -19,6 +19,7 @@ use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\LanguageServer\LanguageServer;
+use UnexpectedValueException;
 
 use function count;
 use function error_log;
@@ -120,7 +121,7 @@ class TextDocument
         if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
         } else {
-            throw new \UnexpectedValueException('Not expecting partial diff');
+            throw new UnexpectedValueException('Not expecting partial diff');
         }
 
         if ($this->onchange_line_limit !== null) {

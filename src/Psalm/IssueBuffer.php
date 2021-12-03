@@ -30,6 +30,8 @@ use Psalm\Report\SarifReport;
 use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
+use RuntimeException;
+use UnexpectedValueException;
 
 use function array_keys;
 use function array_merge;
@@ -507,7 +509,7 @@ class IssueBuffer
         array $issue_baseline = []
     ): void {
         if (!$project_analyzer->stdout_report_options) {
-            throw new \UnexpectedValueException('Cannot finish without stdout report options');
+            throw new UnexpectedValueException('Cannot finish without stdout report options');
         }
 
         $codebase = $project_analyzer->getCodebase();
@@ -618,7 +620,7 @@ class IssueBuffer
 
             try {
                 $source_control_info = (new GitInfoCollector())->collect();
-            } catch (\RuntimeException $e) {
+            } catch (RuntimeException $e) {
                 // do nothing
             }
 
@@ -635,12 +637,12 @@ class IssueBuffer
 
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {
-                throw new \UnexpectedValueException('Output path should not be null here');
+                throw new UnexpectedValueException('Output path should not be null here');
             }
 
             $folder = dirname($report_options->output_path);
             if (!is_dir($folder) && !mkdir($folder, 0777, true) && !is_dir($folder)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $folder));
+                throw new RuntimeException(sprintf('Directory "%s" was not created', $folder));
             }
             file_put_contents(
                 $report_options->output_path,
@@ -906,7 +908,7 @@ class IssueBuffer
     public static function stopRecording(): void
     {
         if (self::$recording_level === 0) {
-            throw new \UnexpectedValueException('Cannot stop recording - already at base level');
+            throw new UnexpectedValueException('Cannot stop recording - already at base level');
         }
 
         --self::$recording_level;
@@ -919,7 +921,7 @@ class IssueBuffer
     public static function clearRecordingLevel(): array
     {
         if (self::$recording_level === 0) {
-            throw new \UnexpectedValueException('Not currently recording');
+            throw new UnexpectedValueException('Not currently recording');
         }
 
         $recorded_issues = self::$recorded_issues[self::$recording_level];

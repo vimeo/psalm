@@ -2,6 +2,7 @@
 namespace Psalm\Internal\PluginManager;
 
 use Psalm\Internal\Composer;
+use RuntimeException;
 
 use function array_filter;
 use function json_encode;
@@ -28,7 +29,7 @@ class PluginListFactory
     {
         try {
             $config_file = new ConfigFile($current_dir, $config_file_path);
-        } catch (\RuntimeException $exception) {
+        } catch (RuntimeException $exception) {
             $config_file = null;
         }
         $composer_lock = new ComposerLock($this->findLockFiles());

@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
+use Exception;
+
 use function array_reverse;
 use function count;
 use function explode;
@@ -60,7 +62,7 @@ class FileDiffer
                 }
             }
         }
-        throw new \Exception('Should not happen');
+        throw new Exception('Should not happen');
     }
 
     /**

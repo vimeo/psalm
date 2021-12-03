@@ -423,7 +423,7 @@ class AssertionFinder
             } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
             } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
+                throw new UnexpectedValueException('$count_equality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
@@ -624,7 +624,7 @@ class AssertionFinder
             } elseif ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
             } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
+                throw new UnexpectedValueException('$count_equality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
@@ -2005,7 +2005,7 @@ class AssertionFinder
         } elseif ($null_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('Bad null variable position');
+            throw new UnexpectedValueException('Bad null variable position');
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2089,7 +2089,7 @@ class AssertionFinder
         } elseif ($false_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('Bad false variable position');
+            throw new UnexpectedValueException('Bad false variable position');
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2208,7 +2208,7 @@ class AssertionFinder
         } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('Bad null variable position');
+            throw new UnexpectedValueException('Bad null variable position');
         }
 
         if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
@@ -2329,7 +2329,7 @@ class AssertionFinder
         } elseif ($empty_array_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('Bad empty array variable position');
+            throw new UnexpectedValueException('Bad empty array variable position');
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2407,7 +2407,7 @@ class AssertionFinder
             $whichclass_expr = $conditional->right;
             $gettype_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$gettype_position value');
+            throw new UnexpectedValueException('$gettype_position value');
         }
 
         /** @var PhpParser\Node\Expr\FuncCall $gettype_expr */
@@ -2427,7 +2427,7 @@ class AssertionFinder
                 $source->getAliases()
             );
         } else {
-            throw new \UnexpectedValueException('Shouldn’t get here');
+            throw new UnexpectedValueException('Shouldn’t get here');
         }
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
@@ -2473,7 +2473,7 @@ class AssertionFinder
             $whichclass_expr = $conditional->right;
             $get_debug_type_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$gettype_position value');
+            throw new UnexpectedValueException('$gettype_position value');
         }
 
         /** @var PhpParser\Node\Expr\FuncCall $get_debug_type_expr */
@@ -2493,7 +2493,7 @@ class AssertionFinder
                 $source->getAliases()
             );
         } else {
-            throw new \UnexpectedValueException('Shouldn’t get here');
+            throw new UnexpectedValueException('Shouldn’t get here');
         }
 
         if ($var_name && $var_type) {
@@ -2530,7 +2530,7 @@ class AssertionFinder
             $whichclass_expr = $conditional->right;
             $getclass_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$getclass_position value');
+            throw new UnexpectedValueException('$getclass_position value');
         }
 
         if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall) {
@@ -2632,7 +2632,7 @@ class AssertionFinder
             $var_type = $source->node_data->getType($conditional->left);
             $other_type = $source->node_data->getType($conditional->right);
         } else {
-            throw new \UnexpectedValueException('$typed_value_position value');
+            throw new UnexpectedValueException('$typed_value_position value');
         }
 
         if ($var_type) {
@@ -2704,7 +2704,7 @@ class AssertionFinder
         } elseif ($null_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('$null_position value');
+            throw new UnexpectedValueException('$null_position value');
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2786,7 +2786,7 @@ class AssertionFinder
         } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('Unrecognised position');
+            throw new UnexpectedValueException('Unrecognised position');
         }
 
         if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
@@ -2912,7 +2912,7 @@ class AssertionFinder
         } elseif ($false_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('$false_position value');
+            throw new UnexpectedValueException('$false_position value');
         }
 
         if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
@@ -3029,7 +3029,7 @@ class AssertionFinder
         } elseif ($empty_array_position === self::ASSIGNMENT_TO_LEFT) {
             $base_conditional = $conditional->right;
         } else {
-            throw new \UnexpectedValueException('$empty_array_position value');
+            throw new UnexpectedValueException('$empty_array_position value');
         }
 
         $var_name = ExpressionIdentifier::getArrayVarId(
@@ -3102,7 +3102,7 @@ class AssertionFinder
             $string_expr = $conditional->right;
             $gettype_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$gettype_position value');
+            throw new UnexpectedValueException('$gettype_position value');
         }
 
         /** @var PhpParser\Node\Expr\FuncCall $gettype_expr */
@@ -3158,7 +3158,7 @@ class AssertionFinder
             $whichclass_expr = $conditional->right;
             $get_debug_type_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$gettype_position value');
+            throw new UnexpectedValueException('$gettype_position value');
         }
 
         /** @var PhpParser\Node\Expr\FuncCall $get_debug_type_expr */
@@ -3178,7 +3178,7 @@ class AssertionFinder
                 $source->getAliases()
             );
         } else {
-            throw new \UnexpectedValueException('Shouldn’t get here');
+            throw new UnexpectedValueException('Shouldn’t get here');
         }
 
         if ($var_name && $var_type) {
@@ -3215,7 +3215,7 @@ class AssertionFinder
             $whichclass_expr = $conditional->right;
             $getclass_expr = $conditional->left;
         } else {
-            throw new \UnexpectedValueException('$getclass_position value');
+            throw new UnexpectedValueException('$getclass_position value');
         }
 
         if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall && isset($getclass_expr->getArgs()[0])) {
@@ -3327,7 +3327,7 @@ class AssertionFinder
             $var_type = $source->node_data->getType($conditional->left);
             $other_type = $source->node_data->getType($conditional->right);
         } else {
-            throw new \UnexpectedValueException('$typed_value_position value');
+            throw new UnexpectedValueException('$typed_value_position value');
         }
 
         if ($var_name && $var_type) {
@@ -3748,7 +3748,7 @@ class AssertionFinder
             if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $counted_expr = $conditional->left;
             } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
+                throw new UnexpectedValueException('$count_equality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
@@ -3777,7 +3777,7 @@ class AssertionFinder
             if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
             } else {
-                throw new \UnexpectedValueException('$count_inequality_position value');
+                throw new UnexpectedValueException('$count_inequality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
@@ -3864,7 +3864,7 @@ class AssertionFinder
             if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
             } else {
-                throw new \UnexpectedValueException('$count_equality_position value');
+                throw new UnexpectedValueException('$count_equality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
@@ -3889,7 +3889,7 @@ class AssertionFinder
             if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $count_expr = $conditional->left;
             } else {
-                throw new \UnexpectedValueException('$count_inequality_position value');
+                throw new UnexpectedValueException('$count_inequality_position value');
             }
 
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */

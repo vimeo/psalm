@@ -23,6 +23,7 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
@@ -207,7 +208,7 @@ class MatchAnalyzer
 
             foreach ($arms as $arm) {
                 if (!$arm->conds) {
-                    throw new \UnexpectedValueException('bad');
+                    throw new UnexpectedValueException('bad');
                 }
 
                 $all_conds = array_merge($arm->conds, $all_conds);

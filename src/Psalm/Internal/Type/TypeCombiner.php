@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -51,6 +52,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_intersect_key;
@@ -227,7 +229,7 @@ class TypeCombiner
 
         if ($combination->array_type_params) {
             if (count($combination->array_type_params) !== 2) {
-                throw new \UnexpectedValueException('Unexpected number of parameters');
+                throw new UnexpectedValueException('Unexpected number of parameters');
             }
 
             $new_types[] = self::getArrayTypeFromGenericParams(
@@ -359,7 +361,7 @@ class TypeCombiner
         }
 
         if (!$new_types && !$has_never) {
-            throw new \UnexpectedValueException('There should be types here');
+            throw new UnexpectedValueException('There should be types here');
         } elseif (!$new_types && $has_never) {
             $union_type = Type::getNever();
         } else {
@@ -1316,7 +1318,7 @@ class TypeCombiner
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return [];
         }
 

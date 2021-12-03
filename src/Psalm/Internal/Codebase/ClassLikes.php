@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
@@ -38,7 +39,9 @@ use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use ReflectionClass;
 use ReflectionProperty;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -180,7 +183,7 @@ class ClassLikes
         foreach ($predefined_classes as $predefined_class) {
             $predefined_class = preg_replace('/^\\\/', '', $predefined_class);
             /** @psalm-suppress ArgumentTypeCoercion */
-            $reflection_class = new \ReflectionClass($predefined_class);
+            $reflection_class = new ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined()) {
                 $predefined_class_lc = strtolower($predefined_class);
@@ -196,7 +199,7 @@ class ClassLikes
         foreach ($predefined_interfaces as $predefined_interface) {
             $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface);
             /** @psalm-suppress ArgumentTypeCoercion */
-            $reflection_class = new \ReflectionClass($predefined_interface);
+            $reflection_class = new ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined()) {
                 $predefined_interface_lc = strtolower($predefined_interface);
@@ -796,7 +799,7 @@ class ClassLikes
         $storage = $this->classlike_storage_provider->get($fq_trait_name);
 
         if (!$storage->location) {
-            throw new \UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
+            throw new UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
         $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
@@ -818,7 +821,7 @@ class ClassLikes
             return $trait_node;
         }
 
-        throw new \UnexpectedValueException('Could not locate trait statement');
+        throw new UnexpectedValueException('Could not locate trait statement');
     }
 
     /**
@@ -858,7 +861,7 @@ class ClassLikes
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -962,7 +965,7 @@ class ClassLikes
                 $source_method_storage = $methods->getStorage(
                     new MethodIdentifier(...$source_parts)
                 );
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -970,7 +973,7 @@ class ClassLikes
 
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -1039,7 +1042,7 @@ class ClassLikes
         foreach ($codebase->properties_to_move as $source => $destination) {
             try {
                 $source_property_storage = $properties->getStorage($source);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -1522,7 +1525,7 @@ class ClassLikes
         $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
 
         if (!$destination_class_storage->aliases) {
-            throw new \UnexpectedValueException('Aliases should not be null');
+            throw new UnexpectedValueException('Aliases should not be null');
         }
 
         $file_manipulations = [];
@@ -1558,7 +1561,7 @@ class ClassLikes
         $destination_class_storage = $codebase->classlike_storage_provider->get($destination_fq_class_name);
 
         if (!$destination_class_storage->aliases) {
-            throw new \UnexpectedValueException('Aliases should not be null');
+            throw new UnexpectedValueException('Aliases should not be null');
         }
 
         $file_manipulations = [];
@@ -1698,7 +1701,7 @@ class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     continue;
                 }
 
@@ -1784,7 +1787,7 @@ class ClassLikes
                         foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
                             try {
                                 $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
-                            } catch (\InvalidArgumentException $e) {
+                            } catch (InvalidArgumentException $e) {
                                 continue;
                             }
 
@@ -1979,7 +1982,7 @@ class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     continue;
                 }
 
@@ -2318,7 +2321,7 @@ class ClassLikes
 
         try {
             return $this->classlike_storage_provider->get($fq_class_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return null;
         }
     }

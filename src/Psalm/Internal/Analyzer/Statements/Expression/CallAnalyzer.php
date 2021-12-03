@@ -34,6 +34,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
@@ -303,7 +304,7 @@ class CallAnalyzer
             }
 
             if (!isset($declaring_class_storage->methods[$declaring_method_name])) {
-                throw new \UnexpectedValueException('Storage should not be empty here');
+                throw new UnexpectedValueException('Storage should not be empty here');
             }
 
             $method_storage = $declaring_class_storage->methods[$declaring_method_name];
@@ -526,7 +527,7 @@ class CallAnalyzer
         }
 
         if (!isset($callable_arg->items[0]) || !isset($callable_arg->items[1])) {
-            throw new \UnexpectedValueException('These should never be unset');
+            throw new UnexpectedValueException('These should never be unset');
         }
 
         $class_arg = $callable_arg->items[0]->value;
@@ -570,7 +571,7 @@ class CallAnalyzer
                         if ($extra_type instanceof Type\Atomic\TTemplateParam
                             || $extra_type instanceof Type\Atomic\TObjectWithProperties
                         ) {
-                            throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                            throw new UnexpectedValueException('Shouldn’t get a generic param here');
                         }
 
                         $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;

@@ -21,6 +21,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_map;
 use function array_shift;
@@ -293,7 +294,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $context
             );
         } else {
-            throw new \UnexpectedValueException('UnrecognizedCall');
+            throw new UnexpectedValueException('UnrecognizedCall');
         }
 
         $codebase = $statements_analyzer->getCodebase();

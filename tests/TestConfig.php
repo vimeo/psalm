@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Internal\IncludeCollector;
+use SimpleXMLElement;
 
 use function getcwd;
 
@@ -29,7 +30,7 @@ class TestConfig extends Config
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = Config\ProjectFileFilter::loadFromXMLElement(
-                new \SimpleXMLElement($this->getContents()),
+                new SimpleXMLElement($this->getContents()),
                 $this->base_dir,
                 true
             );

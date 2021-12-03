@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests\EndToEnd;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
@@ -46,7 +47,7 @@ class PsalmEndToEndTest extends TestCase
 
         $getcwd = getcwd();
         if (!is_string($getcwd)) {
-            throw new \Exception('Couldn\'t get working directory');
+            throw new Exception('Couldn\'t get working directory');
         }
 
         mkdir(self::$tmpDir . '/src');

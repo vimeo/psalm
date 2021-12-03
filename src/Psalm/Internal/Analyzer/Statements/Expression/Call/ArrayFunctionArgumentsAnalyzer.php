@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_shift;
@@ -651,7 +652,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                         try {
                             $method_storage = $codebase->methods->getStorage($function_id_part);
-                        } catch (\UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException $e) {
                             // the method may not exist, but we're suppressing that issue
                             continue;
                         }
@@ -680,7 +681,7 @@ class ArrayFunctionArgumentsAnalyzer
                         $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
                         if ($callmap_callables === null) {
-                            throw new \UnexpectedValueException('This should not happen');
+                            throw new UnexpectedValueException('This should not happen');
                         }
 
                         $passing_callmap_callables = [];
@@ -758,7 +759,7 @@ class ArrayFunctionArgumentsAnalyzer
         $closure_params = $closure_type->params;
 
         if ($closure_params === null) {
-            throw new \UnexpectedValueException('Closure params should not be null here');
+            throw new UnexpectedValueException('Closure params should not be null here');
         }
 
         $required_param_count = 0;

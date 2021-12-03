@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_diff;
 use function array_filter;
@@ -107,7 +108,7 @@ class DoAnalyzer
 
         // because it's a do {} while, inner loop vars belong to the main context
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('There should be an inner loop context');
+            throw new UnexpectedValueException('There should be an inner loop context');
         }
 
         $negated_while_clauses = Algebra::negateFormula($while_clauses);

@@ -5,6 +5,7 @@ use PhpMyAdmin\SqlParser\Parser;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
+use Throwable;
 
 use function stripos;
 
@@ -20,7 +21,7 @@ class SqlStringProvider implements StringInterpreterInterface
                 if (!$parser->errors) {
                     return new StringProvider\TSqlSelectString($value);
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // fall through
             }
         }

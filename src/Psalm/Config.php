@@ -6,6 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMDocument;
+use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
 use Psalm\Config\IssueHandler;
@@ -33,8 +34,11 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
 use SimpleXMLIterator;
+use Throwable;
+use UnexpectedValueException;
 use Webmozart\PathUtil\Path;
 use XdgBaseDir\Xdg;
+use stdClass;
 
 use function array_map;
 use function array_merge;
@@ -151,7 +155,7 @@ class Config
      * @var array<int, class-string>
      */
     protected $universal_object_crates = [
-        \stdClass::class,
+        stdClass::class,
         SimpleXMLElement::class,
         SimpleXMLIterator::class,
     ];
@@ -630,7 +634,7 @@ class Config
         $base_dir = dirname($file_path) . DIRECTORY_SEPARATOR;
 
         if ($file_contents === false) {
-            throw new \InvalidArgumentException('Cannot open ' . $file_path);
+            throw new InvalidArgumentException('Cannot open ' . $file_path);
         }
 
         try {
@@ -1212,7 +1216,7 @@ class Config
             return self::$instance;
         }
 
-        throw new \UnexpectedValueException('No config initialized');
+        throw new UnexpectedValueException('No config initialized');
     }
 
     public function setComposerClassLoader(?ClassLoader $loader = null): void
@@ -1270,7 +1274,7 @@ class Config
     public function addPluginPath(string $path): void
     {
         if (!file_exists($path)) {
-            throw new \InvalidArgumentException('Cannot find plugin file ' . $path);
+            throw new InvalidArgumentException('Cannot find plugin file ' . $path);
         }
 
         $this->plugin_paths[] = $path;
@@ -1320,7 +1324,7 @@ class Config
                     self::requirePath($plugin_class_path);
                 } else {
                     if (!class_exists($plugin_class_name)) {
-                        throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                        throw new UnexpectedValueException($plugin_class_name . ' is not a known class');
                     }
                 }
 
@@ -1331,7 +1335,7 @@ class Config
                  */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
             }
 
@@ -1366,7 +1370,7 @@ class Config
             try {
                 $plugin_object = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin_object($socket);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
@@ -1411,7 +1415,7 @@ class Config
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
         if (!count($declared_classes)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Plugins must have at least one class in the file - ' . $path . ' has ' .
                     count($declared_classes)
             );
@@ -1424,7 +1428,7 @@ class Config
             $must_extend
         )
         ) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not'
             );
         }
@@ -1495,7 +1499,7 @@ class Config
             try {
                 $file_storage = $codebase->file_storage_provider->get($file_path);
                 $dependent_files += $file_storage->required_by_file_paths;
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 // do nothing
             }
         }
@@ -1867,7 +1871,7 @@ class Config
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate PHP 8.0 classes');
+                throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
             }
 
             $core_generic_files[] = $stringable_path;
@@ -1877,7 +1881,7 @@ class Config
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
 
             if (!file_exists($stringable_path)) {
-                throw new \UnexpectedValueException('Cannot locate PHP 8.1 classes');
+                throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
             }
 
             $core_generic_files[] = $stringable_path;
@@ -1966,7 +1970,7 @@ class Config
 
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
-                throw new \UnexpectedValueException('Cannot locate ' . $stub_path);
+                throw new UnexpectedValueException('Cannot locate ' . $stub_path);
             }
         }
 
@@ -2183,7 +2187,7 @@ class Config
             $objects = scandir($dir, SCANDIR_SORT_NONE);
 
             if ($objects === false) {
-                throw new \UnexpectedValueException('Not expecting false here');
+                throw new UnexpectedValueException('Not expecting false here');
             }
 
             foreach ($objects as $object) {
@@ -2254,7 +2258,7 @@ class Config
 
         if (file_exists($composer_json_path)) {
             if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
-                throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+                throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
             $php_version = $composer_json['require']['php'] ?? null;
 
@@ -2279,7 +2283,7 @@ class Config
     public function addUniversalObjectCrate(string $class): void
     {
         if (!class_exists($class)) {
-            throw new \UnexpectedValueException($class . ' is not a known class');
+            throw new UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = $class;
     }

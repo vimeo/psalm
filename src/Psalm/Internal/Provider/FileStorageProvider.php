@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use InvalidArgumentException;
 use Psalm\Storage\FileStorage;
 
 use function array_merge;
@@ -42,7 +43,7 @@ class FileStorageProvider
         $file_path = strtolower($file_path);
 
         if (!isset(self::$storage[$file_path])) {
-            throw new \InvalidArgumentException('Could not get file storage for ' . $file_path);
+            throw new InvalidArgumentException('Could not get file storage for ' . $file_path);
         }
 
         return self::$storage[$file_path];

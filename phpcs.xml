@@ -81,7 +81,7 @@
             <property name="allowFullyQualifiedExceptions" type="bool" value="false"/>
             <property name="allowFullyQualifiedGlobalFunctions" type="bool" value="false"/>
             <property name="allowFullyQualifiedGlobalConstants" type="bool" value="false"/>
-            <property name="allowFullyQualifiedGlobalClasses" type="bool" value="true"/>
+            <property name="allowFullyQualifiedGlobalClasses" type="bool" value="false"/>
 
 			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="true"/>
 			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="true"/>

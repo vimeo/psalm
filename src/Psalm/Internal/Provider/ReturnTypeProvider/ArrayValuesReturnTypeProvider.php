@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_shift;
@@ -71,7 +72,7 @@ class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         if (!$return_atomic_type) {
-            throw new \UnexpectedValueException('This should never happen');
+            throw new UnexpectedValueException('This should never happen');
         }
 
         return new Type\Union([$return_atomic_type]);

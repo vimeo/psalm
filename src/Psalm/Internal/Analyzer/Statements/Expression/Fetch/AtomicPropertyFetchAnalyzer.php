@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
+use InvalidArgumentException;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
@@ -244,7 +245,7 @@ class AtomicPropertyFetchAnalyzer
 
                 try {
                     $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     $new_class_storage = null;
                 }
 

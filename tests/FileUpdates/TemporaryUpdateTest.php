@@ -11,6 +11,7 @@ use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use UnexpectedValueException;
 
 use function array_keys;
 use function array_shift;
@@ -76,7 +77,7 @@ class TemporaryUpdateTest extends TestCase
         }
 
         if (!$file_stages) {
-            throw new \UnexpectedValueException('$file_stages should not be empty');
+            throw new UnexpectedValueException('$file_stages should not be empty');
         }
 
         $start_files = array_shift($file_stages);

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Codebase;
@@ -14,6 +15,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
+use ReflectionProperty;
 
 use function array_merge;
 use function array_shift;
@@ -279,7 +281,7 @@ class SimpleTypeInferer
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
-                            \ReflectionProperty::IS_PRIVATE,
+                            ReflectionProperty::IS_PRIVATE,
                             $file_source
                         );
 
@@ -288,7 +290,7 @@ class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (\InvalidArgumentException | CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException $e) {
                         return null;
                     }
                 }

@@ -7,6 +7,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+use UnexpectedValueException;
 
 use function count;
 use function strpos;
@@ -60,7 +61,7 @@ class FileReferenceTest extends TestCase
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
 
         if (!$found_references) {
-            throw new \UnexpectedValueException('No file references found in this file');
+            throw new UnexpectedValueException('No file references found in this file');
         }
 
         $this->assertSame(count($found_references), count($expected_locations));

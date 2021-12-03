@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
@@ -11,6 +12,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Throwable;
 
 use function array_keys;
 use function array_merge;
@@ -420,7 +422,7 @@ class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     // do nothing
                 }
             }
@@ -482,7 +484,7 @@ class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     // do nothing
                 }
             }
@@ -1122,7 +1124,7 @@ class TemplateStandinTypeReplacer
             $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
             $container_class_storage = $codebase->classlike_storage_provider->get($container_type_part->value);
             $container_type_params_covariant = $container_class_storage->template_covariants;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $input_class_storage = null;
         }
 

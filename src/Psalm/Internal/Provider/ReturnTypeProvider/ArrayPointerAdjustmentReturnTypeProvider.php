@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_shift;
@@ -67,7 +68,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         }
 
         if (!$value_type) {
-            throw new \UnexpectedValueException('This should never happen');
+            throw new UnexpectedValueException('This should never happen');
         }
 
         if ($value_type->isEmpty()) {

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use InvalidArgumentException;
+use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -162,7 +164,7 @@ class TypeParser
             );
 
             if (!$callable_type instanceof TCallable && !$callable_type instanceof TClosure) {
-                throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
+                throw new InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
             if (!isset($parse_tree->children[1])) {
@@ -307,7 +309,7 @@ class TypeParser
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
-            throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
+            throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
@@ -433,7 +435,7 @@ class TypeParser
             );
         }
 
-        throw new \LogicException('Should never get here');
+        throw new LogicException('Should never get here');
     }
 
     /**

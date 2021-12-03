@@ -49,6 +49,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
+use UnexpectedValueException;
 
 use function array_map;
 use function array_merge;
@@ -489,7 +490,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $function_call_info->defined_constants = $function_storage->defined_constants;
                             $function_call_info->global_variables = $function_storage->global_variables;
                         }
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         $function_call_info->function_params = [
                             new FunctionLikeParameter('args', false, null, null, null, false, false, true)
                         ];

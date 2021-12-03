@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TypeCombiner;
@@ -21,6 +22,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -424,7 +426,7 @@ class Union implements TypeNode
 
         $assertions = array_unique($assertions);
         if (count($assertions) !== 1) {
-            throw new \UnexpectedValueException('Should only be one type per assertion');
+            throw new UnexpectedValueException('Should only be one type per assertion');
         }
 
         return reset($assertions);
@@ -1388,7 +1390,7 @@ class Union implements TypeNode
     public function getSingleStringLiteral(): TLiteralString
     {
         if (count($this->types) !== 1 || count($this->literal_string_types) !== 1) {
-            throw new \InvalidArgumentException('Not a string literal');
+            throw new InvalidArgumentException('Not a string literal');
         }
 
         return reset($this->literal_string_types);
@@ -1469,7 +1471,7 @@ class Union implements TypeNode
     public function getSingleIntLiteral(): TLiteralInt
     {
         if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
-            throw new \InvalidArgumentException('Not an int literal');
+            throw new InvalidArgumentException('Not an int literal');
         }
 
         return reset($this->literal_int_types);
@@ -1704,7 +1706,7 @@ class Union implements TypeNode
     public function getSingleFloatLiteral(): TLiteralFloat
     {
         if (count($this->types) !== 1 || count($this->literal_float_types) !== 1) {
-            throw new \InvalidArgumentException('Not a float literal');
+            throw new InvalidArgumentException('Not a float literal');
         }
 
         return reset($this->literal_float_types);

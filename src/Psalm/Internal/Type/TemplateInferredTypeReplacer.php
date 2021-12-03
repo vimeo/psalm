@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -12,6 +13,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_shift;
@@ -111,7 +113,7 @@ class TemplateInferredTypeReplacer
                                         }
                                     }
                                 }
-                            } catch (\InvalidArgumentException $e) {
+                            } catch (InvalidArgumentException $e) {
                             }
                         }
                     }
@@ -375,7 +377,7 @@ class TemplateInferredTypeReplacer
 
         if ($is_mixed) {
             if (!$new_types) {
-                throw new \UnexpectedValueException('This array should be full');
+                throw new UnexpectedValueException('This array should be full');
             }
 
             $union->replaceTypes(

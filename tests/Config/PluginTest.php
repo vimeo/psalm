@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
@@ -31,6 +32,7 @@ use Psalm\Tests\Internal\Provider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type\Union;
+use stdClass;
 
 use function define;
 use function defined;
@@ -997,7 +999,7 @@ class PluginTest extends TestCase
 
     public function testPluginInvalidAbsoluteFilenameThrowsException() : void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1035,7 +1037,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $mock = $this->getMockBuilder(\stdClass::class)->setMethods(['check'])->getMock();
+        $mock = $this->getMockBuilder(stdClass::class)->setMethods(['check'])->getMock();
         $mock->expects($this->exactly(4))
             ->method('check')
             ->withConsecutive(

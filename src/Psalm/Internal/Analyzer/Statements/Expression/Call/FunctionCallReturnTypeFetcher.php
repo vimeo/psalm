@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use InvalidArgumentException;
 use PhpParser;
 use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
@@ -21,6 +22,7 @@ use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_values;
@@ -193,13 +195,13 @@ class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
             } else {
                 if (!$callmap_callable) {
-                    throw new \UnexpectedValueException('We should have a callmap callable here');
+                    throw new UnexpectedValueException('We should have a callmap callable here');
                 }
 
                 $stmt_type = self::getReturnTypeFromCallMapWithArgs(

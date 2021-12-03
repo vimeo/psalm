@@ -65,6 +65,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -704,7 +705,7 @@ class AssignmentAnalyzer
             $var_comment_type->parent_nodes = $parent_nodes;
 
             $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             IssueBuffer::maybeAdd(
                 new InvalidDocblock(
                     $e->getMessage(),
@@ -810,7 +811,7 @@ class AssignmentAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight) {
             $operation = new VirtualShiftRight($stmt->var, $stmt->expr, $stmt->getAttributes());
         } else {
-            throw new \UnexpectedValueException('Unknown assign op');
+            throw new UnexpectedValueException('Unknown assign op');
         }
 
         $fake_assignment = new VirtualAssign(
@@ -1412,7 +1413,7 @@ class AssignmentAnalyzer
                             $new_assign_type = $var_comment_type;
                             break;
                         }
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),

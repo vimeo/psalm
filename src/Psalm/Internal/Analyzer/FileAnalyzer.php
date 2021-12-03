@@ -24,6 +24,7 @@ use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
@@ -428,7 +429,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         if (!isset($this_context->vars_in_scope['$this'])) {
-            throw new \UnexpectedValueException('Should exist');
+            throw new UnexpectedValueException('Should exist');
         }
 
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
@@ -659,7 +660,7 @@ class FileAnalyzer extends SourceAnalyzer
     public function getNodeTypeProvider() : NodeTypeProvider
     {
         if (!$this->node_data) {
-            throw new \UnexpectedValueException('There should be a node type provider');
+            throw new UnexpectedValueException('There should be a node type provider');
         }
 
         return $this->node_data;

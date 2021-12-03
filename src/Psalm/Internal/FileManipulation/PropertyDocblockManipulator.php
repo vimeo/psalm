@@ -7,6 +7,7 @@ use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use UnexpectedValueException;
 
 use function array_shift;
 use function count;
@@ -99,7 +100,7 @@ class PropertyDocblockManipulator
         if (count($stmt->props) > 1) {
             $config = Config::getInstance();
             if ($config->isInProjectDirs($file_path)) {
-                throw new \UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
+                throw new UnexpectedValueException('Cannot replace multiple inline properties in ' . $file_path);
             }
 
             $this->indentation = '';

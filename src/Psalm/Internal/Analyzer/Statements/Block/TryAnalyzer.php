@@ -16,6 +16,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_intersect_key;
 use function array_map;
@@ -193,7 +194,7 @@ class TryAnalyzer
             $fq_catch_classes = [];
 
             if (!$catch->types) {
-                throw new \UnexpectedValueException('Very bad');
+                throw new UnexpectedValueException('Very bad');
             }
 
             foreach ($catch->types as $catch_type) {

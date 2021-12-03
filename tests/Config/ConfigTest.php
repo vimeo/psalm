@@ -2,6 +2,7 @@
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use ErrorException;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -205,7 +206,7 @@ class ConfigTest extends TestCase
             $last_error = error_get_last();
 
             if (is_array($last_error) && !preg_match($regex, $last_error['message'])) {
-                throw new \ErrorException(
+                throw new ErrorException(
                     $last_error['message'],
                     0,
                     $last_error['type'],

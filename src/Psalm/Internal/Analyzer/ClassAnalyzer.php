@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use Exception;
+use InvalidArgumentException;
+use LogicException;
 use PhpParser;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
@@ -69,6 +72,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
@@ -108,7 +112,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     {
         if (!$fq_class_name) {
             if (!$class instanceof PhpParser\Node\Stmt\Class_) {
-                throw new \UnexpectedValueException('Anonymous enums are not allowed');
+                throw new UnexpectedValueException('Anonymous enums are not allowed');
             }
 
             $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
@@ -137,7 +141,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $class = $this->class;
 
         if (!$class instanceof PhpParser\Node\Stmt\Class_ && !$class instanceof PhpParser\Node\Stmt\Enum_) {
-            throw new \LogicException('Something went badly wrong');
+            throw new LogicException('Something went badly wrong');
         }
 
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
@@ -551,7 +555,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     try {
                         $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         continue;
                     }
 
@@ -1649,7 +1653,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         try {
             $method_analyzer = new MethodAnalyzer($stmt, $source);
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             IssueBuffer::add(
                 new ParseError(
                     'Problem loading method: ' . $e->getMessage(),
@@ -1680,7 +1684,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $declaring_method_storage = $method_analyzer->getFunctionLikeStorage();
 
                 if (!$declaring_method_storage instanceof MethodStorage) {
-                    throw new \LogicException('This should never happen');
+                    throw new LogicException('This should never happen');
                 }
 
                 if ($declaring_method_id && $declaring_method_storage->abstract) {
@@ -2202,7 +2206,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 return false;
             }
 
@@ -2238,7 +2242,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 return false;
             }
 
@@ -2425,7 +2429,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         if (!$parent_fq_class_name) {
-            throw new \UnexpectedValueException('Parent class should be filled in for ' . $fq_class_name);
+            throw new UnexpectedValueException('Parent class should be filled in for ' . $fq_class_name);
         }
 
         $parent_reference_location = new CodeLocation($this, $extended_class);
@@ -2561,7 +2565,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->template_extended_count ?? 0
                 );
             }
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             // do nothing
         }
     }

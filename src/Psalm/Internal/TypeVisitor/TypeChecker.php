@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
@@ -24,6 +25,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use ReflectionProperty;
 
 use function array_keys;
 use function array_search;
@@ -214,7 +216,7 @@ class TypeChecker extends NodeVisitor
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return;
         }
 
@@ -330,7 +332,7 @@ class TypeChecker extends NodeVisitor
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $atomic->const_name,
-                \ReflectionProperty::IS_PRIVATE,
+                ReflectionProperty::IS_PRIVATE,
                 null
             );
 

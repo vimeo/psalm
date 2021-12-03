@@ -2,6 +2,8 @@
 namespace Psalm\Config;
 
 use Psalm\Exception\ConfigException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use SimpleXMLElement;
 
 use function array_filter;
@@ -184,7 +186,7 @@ class FileFilter
                 }
 
                 /** @var \RecursiveDirectoryIterator */
-                $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory_path));
+                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory_path));
                 $iterator->rewind();
 
                 while ($iterator->valid()) {

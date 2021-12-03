@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use LogicException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -14,6 +15,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use UnexpectedValueException;
 
 use function in_array;
 use function strtolower;
@@ -42,7 +44,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         if (!$storage) {
             try {
                 $storage = $codebase->methods->getStorage($method_id);
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 $class_storage = $codebase->classlike_storage_provider->get($source_fqcln_lc);
 
                 if (!$class_storage->parent_classes) {
@@ -93,7 +95,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 return true;
             }
 
-            throw new \LogicException('Declaring method for ' . $original_method_id . ' should not be null');
+            throw new LogicException('Declaring method for ' . $original_method_id . ' should not be null');
         }
 
         $storage = $codebase_methods->getStorage($method_id);

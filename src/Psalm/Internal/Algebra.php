@@ -2,6 +2,7 @@
 namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
+use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
@@ -345,7 +346,7 @@ class Algebra
 
         if (!$clause->wedge) {
             if ($clause->impossibilities === null) {
-                throw new \UnexpectedValueException('$clause->impossibilities should not be null');
+                throw new UnexpectedValueException('$clause->impossibilities should not be null');
             }
 
             foreach ($clause->impossibilities as $var => $impossible_types) {
@@ -374,7 +375,7 @@ class Algebra
 
             foreach ($seed_clauses as $grouped_clause) {
                 if ($clause->impossibilities === null) {
-                    throw new \UnexpectedValueException('$clause->impossibilities should not be null');
+                    throw new UnexpectedValueException('$clause->impossibilities should not be null');
                 }
 
                 foreach ($clause->impossibilities as $var => $impossible_types) {

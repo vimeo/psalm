@@ -35,6 +35,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_intersect_key;
 use function array_keys;
@@ -325,7 +326,7 @@ class ForeachAnalyzer
         }
 
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('There should be an inner loop context');
+            throw new UnexpectedValueException('There should be an inner loop context');
         }
 
         $foreach_context->loop_scope = null;
@@ -560,7 +561,7 @@ class ForeachAnalyzer
                 }
 
                 if (!$intersection_value_type || !$intersection_key_type) {
-                    throw new \UnexpectedValueException('Should not happen');
+                    throw new UnexpectedValueException('Should not happen');
                 }
 
                 $value_type = Type::combineUnionTypes($value_type, $intersection_value_type);
@@ -715,7 +716,7 @@ class ForeachAnalyzer
             if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam
                 || $iterator_atomic_type instanceof Type\Atomic\TObjectWithProperties
             ) {
-                throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                throw new UnexpectedValueException('Shouldn’t get a generic param here');
             }
 
 

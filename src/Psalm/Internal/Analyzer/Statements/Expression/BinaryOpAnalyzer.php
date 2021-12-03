@@ -21,6 +21,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function in_array;
 use function strlen;
@@ -366,7 +367,7 @@ class BinaryOpAnalyzer
         string $type = 'binaryop'
     ) : void {
         if ($stmt->getLine() === -1) {
-            throw new \UnexpectedValueException('bad');
+            throw new UnexpectedValueException('bad');
         }
         $result_type = $statements_analyzer->node_data->getType($stmt);
         if (!$result_type) {
@@ -458,7 +459,7 @@ class BinaryOpAnalyzer
                                 '__tostring'
                             )
                         );
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         continue;
                     }
 
@@ -492,7 +493,7 @@ class BinaryOpAnalyzer
                                 '__tostring'
                             )
                         );
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         continue;
                     }
 

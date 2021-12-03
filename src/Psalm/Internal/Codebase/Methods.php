@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -23,6 +24,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -126,7 +128,7 @@ class Methods
 
         try {
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return false;
         }
 
@@ -383,7 +385,7 @@ class Methods
                 $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
 
                 if ($function_callables === null) {
-                    throw new \UnexpectedValueException(
+                    throw new UnexpectedValueException(
                         'Not expecting $function_callables to be null for ' . $callmap_id
                     );
                 }
@@ -491,7 +493,7 @@ class Methods
             return $params;
         }
 
-        throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
+        throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
     }
 
     public static function localizeType(
@@ -798,7 +800,7 @@ class Methods
             $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $appearing_method_id);
 
             if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                throw new \UnexpectedValueException('Shouldn’t get here');
+                throw new UnexpectedValueException('Shouldn’t get here');
             }
 
             $return_type_candidate = $callmap_callables[0]->return_type;
@@ -1159,7 +1161,7 @@ class Methods
                 return null;
             }
 
-            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+            throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
         $storage = $this->getStorage($declaring_method_id);
@@ -1193,7 +1195,7 @@ class Methods
             if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 $declaring_method_id = $method_id;
             } else {
-                throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+                throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
             }
         }
 
@@ -1206,14 +1208,14 @@ class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (\InvalidArgumentException $e) {
-            throw new \UnexpectedValueException($e->getMessage());
+        } catch (InvalidArgumentException $e) {
+            throw new UnexpectedValueException($e->getMessage());
         }
 
         $method_name = $method_id->method_name;
 
         if (!isset($class_storage->methods[$method_name])) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id
             );
         }
@@ -1225,7 +1227,7 @@ class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return false;
         }
 

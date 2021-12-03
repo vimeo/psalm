@@ -15,6 +15,7 @@ use Psalm\Report;
 use Psalm\Report\JsonReport;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider;
+use UnexpectedValueException;
 
 use function file_get_contents;
 use function json_decode;
@@ -62,7 +63,7 @@ class ReportOutputTest extends TestCase
 
     public function testReportFormatException(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(UnexpectedValueException::class);
         $config = new TestConfig();
         $config->throw_exception = false;
 

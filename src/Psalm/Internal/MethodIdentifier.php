@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal;
 
+use InvalidArgumentException;
+
 use function explode;
 use function is_string;
 use function preg_replace;
@@ -52,7 +54,7 @@ class MethodIdentifier
     public static function fromMethodIdReference(string $method_id): self
     {
         if (!static::isValidMethodIdReference($method_id)) {
-            throw new \InvalidArgumentException('Invalid method id reference provided: ' . $method_id);
+            throw new InvalidArgumentException('Invalid method id reference provided: ' . $method_id);
         }
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);

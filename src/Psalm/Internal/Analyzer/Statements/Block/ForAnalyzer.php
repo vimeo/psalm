@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_intersect_key;
 use function array_merge;
@@ -92,7 +93,7 @@ class ForAnalyzer
         }
 
         if (!$inner_loop_context) {
-            throw new \UnexpectedValueException('There should be an inner loop context');
+            throw new UnexpectedValueException('There should be an inner loop context');
         }
 
         $always_enters_loop = false;

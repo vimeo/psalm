@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TTemplateParam;
+use ReflectionProperty;
 
 use function array_filter;
 use function array_keys;
@@ -250,7 +251,7 @@ class TypeExpander
                         $class_constant = $codebase->classlikes->getClassConstantType(
                             $return_type->fq_classlike_name,
                             $matching_constant,
-                            \ReflectionProperty::IS_PRIVATE
+                            ReflectionProperty::IS_PRIVATE
                         );
                     } catch (CircularReferenceException $e) {
                         $class_constant = null;
@@ -340,7 +341,7 @@ class TypeExpander
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $return_type->fq_classlike_name,
                         $return_type->const_name,
-                        \ReflectionProperty::IS_PRIVATE
+                        ReflectionProperty::IS_PRIVATE
                     );
                 } catch (CircularReferenceException $e) {
                     $class_constant_type = null;

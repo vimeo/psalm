@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use Exception;
 use PhpParser\Node\Expr\Closure;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -14,6 +15,7 @@ use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function array_shift;
 use function count;
@@ -113,7 +115,7 @@ class Functions
                 return $this->reflection->getFunctionStorage($function_id);
             }
 
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Expecting non-empty $root_file_path and $checked_file_path'
             );
         }
@@ -131,7 +133,7 @@ class Functions
                 }
             }
 
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path
             );
         }
@@ -141,7 +143,7 @@ class Functions
         $declaring_file_storage = $this->file_storage_provider->get($declaring_file_path);
 
         if (!isset($declaring_file_storage->functions[$function_id])) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
             );
         }
@@ -225,7 +227,7 @@ class Functions
             $function_name = substr($function_name, 1);
 
             if ($function_name === '') {
-                throw new \UnexpectedValueException('Malformed function name');
+                throw new UnexpectedValueException('Malformed function name');
             }
 
             return $function_name;
@@ -314,7 +316,7 @@ class Functions
                 if (strpos($alias_name, $stub) === 0) {
                     try {
                         $match_function_patterns[] = $function_name;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                     }
                 }
             }
@@ -537,7 +539,7 @@ class Functions
 
                         try {
                             return $codebase->methods->getStorage($count_method_id)->mutation_free;
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             // do nothing
                         }
                     }

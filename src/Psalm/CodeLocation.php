@@ -1,8 +1,11 @@
 <?php
 namespace Psalm;
 
+use Exception;
+use LogicException;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use UnexpectedValueException;
 
 use function explode;
 use function max;
@@ -197,7 +200,7 @@ class CodeLocation
             }
 
             if (!isset($preview_lines[$i])) {
-                throw new \Exception('Should have offset');
+                throw new Exception('Should have offset');
             }
 
             $key_line = $preview_lines[$i];
@@ -245,7 +248,7 @@ class CodeLocation
                     break;
 
                 default:
-                    throw new \UnexpectedValueException('Unrecognised regex type ' . $this->regex_type);
+                    throw new UnexpectedValueException('Unrecognised regex type ' . $this->regex_type);
             }
 
             $preview_snippet = mb_strcut(
@@ -260,7 +263,7 @@ class CodeLocation
 
             if (preg_match($regex, $preview_snippet, $matches, PREG_OFFSET_CAPTURE)) {
                 if (!isset($matches[1]) || $matches[1][1] === -1) {
-                    throw new \LogicException(
+                    throw new LogicException(
                         "Failed to match anything to 1st capturing group, "
                         . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type
                     );

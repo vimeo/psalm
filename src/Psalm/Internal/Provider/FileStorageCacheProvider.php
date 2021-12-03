@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Storage\FileStorage;
+use UnexpectedValueException;
 
 use function array_merge;
 use function dirname;
@@ -60,7 +61,7 @@ class FileStorageCacheProvider
 
         foreach ($dependent_files as $dependent_file_path) {
             if (!file_exists($dependent_file_path)) {
-                throw new \UnexpectedValueException($dependent_file_path . ' must exist');
+                throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
@@ -154,7 +155,7 @@ class FileStorageCacheProvider
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
-            throw new \UnexpectedValueException('No cache directory defined');
+            throw new UnexpectedValueException('No cache directory defined');
         }
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_STORAGE_CACHE_DIRECTORY;

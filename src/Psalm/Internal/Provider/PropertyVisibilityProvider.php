@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
@@ -49,13 +50,13 @@ class PropertyVisibilityProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyPropertyVisibilityProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
+            $callable = Closure::fromCallable([$class, 'isPropertyVisible']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerLegacyClosure($fq_classlike_name, $callable);
             }
         } elseif (is_subclass_of($class, PropertyVisibilityProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
+            $callable = Closure::fromCallable([$class, 'isPropertyVisible']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
@@ -66,7 +67,7 @@ class PropertyVisibilityProvider
     /**
      * @param \Closure(PropertyVisibilityProviderEvent) : ?bool $c
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
@@ -81,7 +82,7 @@ class PropertyVisibilityProvider
      *     CodeLocation
      *   ) : ?bool $c
      */
-    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }

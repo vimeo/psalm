@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
+use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
@@ -20,6 +21,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function end;
 use function strtolower;
@@ -203,7 +205,7 @@ class CallableTypeComparator
                 }
 
                 $codebase->methods->getStorage($method_id);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return false;
             }
         }
@@ -297,7 +299,7 @@ class CallableTypeComparator
                     $return_type,
                     $function_storage->pure
                 );
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -362,7 +364,7 @@ class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure
                     );
-                } catch (\UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $e) {
                     // do nothing
                 }
             }

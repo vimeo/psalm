@@ -21,6 +21,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use UnexpectedValueException;
 
 use function array_filter;
 use function count;
@@ -112,7 +113,7 @@ class MethodCallReturnTypeFetcher
                 $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
 
                 if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                    throw new \UnexpectedValueException('Shouldn’t get here');
+                    throw new UnexpectedValueException('Shouldn’t get here');
                 }
 
                 $return_type_candidate = $callmap_callables[0]->return_type;

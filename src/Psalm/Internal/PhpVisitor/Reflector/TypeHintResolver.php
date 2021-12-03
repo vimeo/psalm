@@ -8,6 +8,7 @@ use Psalm\Internal\Codebase\Scanner as CodebaseScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function implode;
 use function reset;
@@ -31,7 +32,7 @@ class TypeHintResolver
             $type = null;
 
             if (!$hint->types) {
-                throw new \UnexpectedValueException('bad');
+                throw new UnexpectedValueException('bad');
             }
 
             foreach ($hint->types as $atomic_typehint) {

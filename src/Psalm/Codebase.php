@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use Exception;
+use InvalidArgumentException;
 use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionItem;
 use LanguageServerProtocol\CompletionItemKind;
@@ -36,6 +38,9 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\TaintKindGroup;
+use ReflectionProperty;
+use ReflectionType;
+use UnexpectedValueException;
 
 use function array_combine;
 use function array_merge;
@@ -543,7 +548,7 @@ class Codebase
         }
     }
 
-    public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
+    public static function getPsalmTypeFromReflection(?ReflectionType $type) : Type\Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
@@ -559,7 +564,7 @@ class Codebase
     public function findReferencesToSymbol(string $symbol): array
     {
         if (!$this->collect_locations) {
-            throw new \UnexpectedValueException('Should not be checking references');
+            throw new UnexpectedValueException('Should not be checking references');
         }
 
         if (strpos($symbol, '::$') !== false) {
@@ -619,7 +624,7 @@ class Codebase
             return $file_storage->functions[$closure_id];
         }
 
-        throw new \UnexpectedValueException(
+        throw new UnexpectedValueException(
             'Expecting ' . $closure_id . ' to have storage in ' . $file_path
         );
     }
@@ -792,7 +797,7 @@ class Codebase
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
             if (!$declaring_method_id) {
-                throw new \UnexpectedValueException('Declaring method for ' . $method_id . ' cannot be found');
+                throw new UnexpectedValueException('Declaring method for ' . $method_id . ' cannot be found');
             }
 
             return $this->methods->getStorage($declaring_method_id);
@@ -934,7 +939,7 @@ class Codebase
 
         try {
             $file_storage = $this->file_storage_provider->get($file_path);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return;
         }
 
@@ -1024,7 +1029,7 @@ class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    \ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1074,7 +1079,7 @@ class Codebase
                     'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
                     'description' => $storage->description,
                 ];
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
             }
 
             if (strpos($symbol, '\\')) {
@@ -1084,7 +1089,7 @@ class Codebase
 
                 $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                     $namespace_name,
-                    \ReflectionProperty::IS_PUBLIC
+                    ReflectionProperty::IS_PUBLIC
                 );
                 if (isset($namespace_constants[$const_name])) {
                     $type = $namespace_constants[$const_name];
@@ -1102,7 +1107,7 @@ class Codebase
                 }
             }
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             error_log($e->getMessage());
 
             return null;
@@ -1155,7 +1160,7 @@ class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    \ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1182,11 +1187,11 @@ class Codebase
             }
 
             return $this->classlike_storage_provider->get($symbol)->location;
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             error_log($e->getMessage());
 
             return null;
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return null;
         }
     }
@@ -1336,7 +1341,7 @@ class Codebase
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
@@ -1561,7 +1566,7 @@ class Codebase
                             $const_name
                         );
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     error_log($e->getMessage());
                     continue;
                 }
@@ -1596,7 +1601,7 @@ class Codebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 continue;
             }
 
@@ -1671,7 +1676,7 @@ class Codebase
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
                 $description = $class_storage->description;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $description = null;
             }
 

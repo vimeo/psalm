@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Internal\Fork;
 
+use Closure;
+use Exception;
+use Throwable;
+
 use function array_fill_keys;
 use function array_keys;
 use function array_map;
@@ -101,10 +105,10 @@ class Pool
      */
     public function __construct(
         array $process_task_data_iterator,
-        \Closure $startup_closure,
-        \Closure $task_closure,
-        \Closure $shutdown_closure,
-        ?\Closure $task_done_closure = null
+        Closure $startup_closure,
+        Closure $task_closure,
+        Closure $shutdown_closure,
+        ?Closure $task_done_closure = null
     ) {
         $pool_size = count($process_task_data_iterator);
         $this->task_done_closure = $task_done_closure;
@@ -218,7 +222,7 @@ class Pool
 
             // Serialize this child's produced results and send them to the parent.
             $process_done_message = new ForkProcessDoneMessage($results ?: []);
-        } catch (\Throwable $t) {
+        } catch (Throwable $t) {
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
             $process_done_message = new ForkProcessErrorMessage(
@@ -369,7 +373,7 @@ class Pool
                                  */
                                 posix_kill($child_pid, SIGTERM);
                             }
-                            throw new \Exception($message->message);
+                            throw new Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));
                             $this->did_have_error = true;
@@ -404,7 +408,7 @@ class Pool
         try {
             // Read all the streams from child processes into an array.
             $content = $this->readResultsFromChildren();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // If children were killed because one of them threw an exception we don't care about return codes.
             $ignore_return_code = true;
             // PHP guarantees finally is run even after throwing

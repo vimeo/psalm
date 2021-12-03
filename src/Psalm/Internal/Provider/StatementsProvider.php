@@ -15,6 +15,7 @@ use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Throwable;
 
 use function abs;
 use function array_flip;
@@ -460,7 +461,7 @@ class StatementsProvider
                 try {
                     /** @var list<\PhpParser\Node\Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-                } catch (\Throwable $t) {
+                } catch (Throwable $t) {
                     $stmts = [];
 
                     // hope this got caught below
@@ -470,7 +471,7 @@ class StatementsProvider
             try {
                 /** @var list<\PhpParser\Node\Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-            } catch (\Throwable $t) {
+            } catch (Throwable $t) {
                 $stmts = [];
 
                 // hope this got caught below

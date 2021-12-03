@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use Exception;
 use PhpParser;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -393,7 +394,7 @@ class ClassLikeDocblockParser
                     if ($method_tree_child->children) {
                         try {
                             $param_type = TypeParser::getTypeFromTree($method_tree_child->children[0], $codebase);
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             throw new DocblockParseException(
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e
                             );
@@ -424,7 +425,7 @@ class ClassLikeDocblockParser
                         $codebase->php_major_version . '.' . $codebase->php_minor_version,
                         $has_errors
                     );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 

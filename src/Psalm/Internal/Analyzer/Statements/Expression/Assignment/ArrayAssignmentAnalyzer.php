@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -826,7 +827,7 @@ class ArrayAssignmentAnalyzer
             $child_stmt_type = $statements_analyzer->node_data->getType($child_stmt);
 
             if (!$child_stmt_type) {
-                throw new \InvalidArgumentException('Should never get here');
+                throw new InvalidArgumentException('Should never get here');
             }
 
             $key_values = [];

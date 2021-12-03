@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use InvalidArgumentException;
+use LogicException;
 use Psalm\Storage\ClassLikeStorage;
 
 use function array_merge;
@@ -40,7 +42,7 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
-            throw new \InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
+            throw new InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
         }
 
         return self::$storage[$fq_classlike_name_lc];
@@ -62,7 +64,7 @@ class ClassLikeStorageProvider
         }
 
         if (!$this->cache) {
-            throw new \LogicException('Cannot exhume when there’s no cache');
+            throw new LogicException('Cannot exhume when there’s no cache');
         }
 
         $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);

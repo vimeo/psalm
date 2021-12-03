@@ -67,6 +67,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -114,7 +115,7 @@ class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $context
                 );
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 // do nothing
             }
 

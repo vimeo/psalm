@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor;
 
+use LogicException;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -23,6 +24,7 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_pop;
 use function end;
@@ -267,7 +269,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             }
 
             if (!$this->classlike_node_scanners) {
-                throw new \LogicException('$this->classlike_node_scanners should not be empty');
+                throw new LogicException('$this->classlike_node_scanners should not be empty');
             }
 
             $classlike_node_scanner = end($this->classlike_node_scanners);
@@ -495,7 +497,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             if (!$this->file_storage->aliases) {
-                throw new \UnexpectedValueException('File storage liases should not be null');
+                throw new UnexpectedValueException('File storage liases should not be null');
             }
 
             $this->aliases = $this->file_storage->aliases;
@@ -524,7 +526,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             }
 
             if (!$this->classlike_node_scanners) {
-                throw new \UnexpectedValueException('$this->classlike_node_scanners cannot be empty');
+                throw new UnexpectedValueException('$this->classlike_node_scanners cannot be empty');
             }
 
             $classlike_node_scanner = array_pop($this->classlike_node_scanners);
@@ -558,7 +560,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     return null;
                 }
 
-                throw new \UnexpectedValueException(
+                throw new UnexpectedValueException(
                     'There should be function storages for line ' . $this->file_path . ':' . $node->getLine()
                 );
             }

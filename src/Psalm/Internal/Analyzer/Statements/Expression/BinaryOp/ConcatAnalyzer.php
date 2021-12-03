@@ -27,6 +27,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function array_merge;
 use function assert;
@@ -371,7 +372,7 @@ class ConcatAnalyzer
                     )) {
                         try {
                             $storage = $codebase->methods->getStorage($to_string_method_id);
-                        } catch (\UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException $e) {
                             continue;
                         }
 

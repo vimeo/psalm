@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -27,6 +28,8 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use ReflectionProperty;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -160,7 +163,7 @@ class Reconciler
                 );
 
             if ($result_type && empty($result_type->getAtomicTypes())) {
-                throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
+                throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
             $before_adjustment = $result_type ? clone $result_type : null;
@@ -235,7 +238,7 @@ class Reconciler
             }
 
             if (!$result_type) {
-                throw new \UnexpectedValueException('$result_type should not be null');
+                throw new UnexpectedValueException('$result_type should not be null');
             }
 
             if (!$did_type_exist && $result_type->isEmpty()) {
@@ -571,7 +574,7 @@ class Reconciler
                 $class_constant = $codebase->classlikes->getClassConstantType(
                     $fq_class_name,
                     $const_name,
-                    \ReflectionProperty::IS_PRIVATE,
+                    ReflectionProperty::IS_PRIVATE,
                     null
                 );
 
@@ -999,7 +1002,7 @@ class Reconciler
         array_pop($key_parts);
 
         if ($array_key === null) {
-            throw new \UnexpectedValueException('Not expecting null array key');
+            throw new UnexpectedValueException('Not expecting null array key');
         }
 
         if ($array_key[0] === '$') {

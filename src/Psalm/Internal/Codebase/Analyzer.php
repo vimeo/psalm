@@ -21,6 +21,7 @@ use Psalm\Progress\Progress;
 use Psalm\Type;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_intersect_key;
@@ -1275,7 +1276,7 @@ class Analyzer
         PhpParser\Node $parent_node = null
     ): void {
         if ($node_type === '') {
-            throw new \UnexpectedValueException('non-empty node_type expected');
+            throw new UnexpectedValueException('non-empty node_type expected');
         }
 
         $this->type_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
@@ -1292,7 +1293,7 @@ class Analyzer
         int $argument_number
     ): void {
         if ($reference === '') {
-            throw new \UnexpectedValueException('non-empty reference expected');
+            throw new UnexpectedValueException('non-empty reference expected');
         }
 
         $this->argument_map[$file_path][$start_position] = [
@@ -1309,7 +1310,7 @@ class Analyzer
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference): void
     {
         if (!$reference) {
-            throw new \UnexpectedValueException('non-empty node_type expected');
+            throw new UnexpectedValueException('non-empty node_type expected');
         }
 
         $this->reference_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
@@ -1321,7 +1322,7 @@ class Analyzer
     public function addOffsetReference(string $file_path, int $start, int $end, string $reference): void
     {
         if (!$reference) {
-            throw new \UnexpectedValueException('non-empty node_type expected');
+            throw new UnexpectedValueException('non-empty node_type expected');
         }
 
         $this->reference_map[$file_path][$start] = [

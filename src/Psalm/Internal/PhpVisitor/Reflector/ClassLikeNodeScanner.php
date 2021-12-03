@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use Exception;
+use InvalidArgumentException;
+use LogicException;
 use PhpParser;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Identifier;
@@ -47,6 +50,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
@@ -158,7 +162,7 @@ class ClassLikeNodeScanner
 
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
-                throw new \LogicException('Anonymous classes are always classes');
+                throw new LogicException('Anonymous classes are always classes');
             }
 
             $fq_classlike_name = ClassAnalyzer::getAnonymousClassName($node, $this->file_path);
@@ -214,7 +218,7 @@ class ClassLikeNodeScanner
                     foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
                         try {
                             $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
-                        } catch (\InvalidArgumentException $exception) {
+                        } catch (InvalidArgumentException $exception) {
                             continue;
                         }
                         $dependent_storage->populated = false;
@@ -334,7 +338,7 @@ class ClassLikeNodeScanner
 
             $this->codebase->classlikes->addFullyQualifiedEnumName($fq_classlike_name, $this->file_path);
         } else {
-            throw new \UnexpectedValueException('Unknown classlike type');
+            throw new UnexpectedValueException('Unknown classlike type');
         }
 
         if ($node instanceof PhpParser\Node\Stmt\Class_ || $node instanceof PhpParser\Node\Stmt\Enum_) {
@@ -742,7 +746,7 @@ class ClassLikeNodeScanner
     public function finish(PhpParser\Node\Stmt\ClassLike $node) : ClassLikeStorage
     {
         if (!$this->storage) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Storage should exist in ' . $this->file_path . ' at ' . $node->getLine()
             );
         }
@@ -787,7 +791,7 @@ class ClassLikeNodeScanner
                     return new TypeAlias\ClassTypeAlias(
                         array_values($union->getAtomicTypes())
                     );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return null;
                 }
             },
@@ -813,7 +817,7 @@ class ClassLikeNodeScanner
         $storage = $this->storage;
 
         if (!$storage) {
-            throw new \UnexpectedValueException('bad');
+            throw new UnexpectedValueException('bad');
         }
 
         $method_map = $storage->trait_alias_map ?: [];
@@ -1414,7 +1418,7 @@ class ClassLikeNodeScanner
         if ($stmt->type) {
             $parser_property_type = $stmt->type;
             if ($parser_property_type instanceof PhpParser\Node\IntersectionType) {
-                throw new \UnexpectedValueException('Intersection types not yet supported');
+                throw new UnexpectedValueException('Intersection types not yet supported');
             }
             /** @var Identifier|Name|NullableType|UnionType $parser_property_type */
 

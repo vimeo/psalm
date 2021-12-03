@@ -5,6 +5,7 @@ namespace Psalm\Internal\LanguageServer;
 use AdvancedJsonRpc;
 use Amp\Deferred;
 use Amp\Promise;
+use Generator;
 
 use function Amp\call;
 use function error_log;
@@ -52,7 +53,7 @@ class ClientHandler
             /**
              * @return \Generator<int, \Amp\Promise, mixed, \Amp\Promise<mixed>>
              */
-            function () use ($id, $method, $params): \Generator {
+            function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(
                     new Message(
                         new AdvancedJsonRpc\Request($id, $method, (object) $params)

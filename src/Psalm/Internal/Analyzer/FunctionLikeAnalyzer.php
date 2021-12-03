@@ -44,6 +44,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
@@ -827,7 +828,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $position = array_search(substr($var_name, 1), array_keys($storage->param_lookup), true);
 
             if ($position === false) {
-                throw new \UnexpectedValueException('$position should not be false here');
+                throw new UnexpectedValueException('$position should not be false here');
             }
 
             if ($storage->params[$position]->by_ref) {
@@ -1547,7 +1548,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$this instanceof ClosureAnalyzer) {
-            throw new \UnexpectedValueException('This is weird');
+            throw new UnexpectedValueException('This is weird');
         }
 
         return $this->getClosureId();
@@ -1563,11 +1564,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             try {
                 return $codebase_methods->getStorage($method_id);
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id === null) {
-                    throw new \UnexpectedValueException('Cannot get storage for function that doesn‘t exist');
+                    throw new UnexpectedValueException('Cannot get storage for function that doesn‘t exist');
                 }
 
                 // happens for fake constructors
@@ -1580,7 +1581,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         } elseif ($this instanceof ClosureAnalyzer) {
             $function_id = $this->getClosureId();
         } else {
-            throw new \UnexpectedValueException('This is weird');
+            throw new UnexpectedValueException('This is weird');
         }
 
         return $codebase->functions->getStorage($statements_analyzer, $function_id);
@@ -1601,7 +1602,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return $this->getClosureId();
         }
 
-        throw new \UnexpectedValueException('This is weird');
+        throw new UnexpectedValueException('This is weird');
     }
 
     /**
@@ -1753,7 +1754,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($this instanceof MethodAnalyzer) {
             if (!$storage instanceof MethodStorage) {
-                throw new \UnexpectedValueException('$storage must be MethodStorage');
+                throw new UnexpectedValueException('$storage must be MethodStorage');
             }
 
             $real_method_id = $this->getMethodId();
@@ -1943,7 +1944,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ])
             );
         } else {
-            throw new \UnexpectedValueException('Impossible');
+            throw new UnexpectedValueException('Impossible');
         }
 
         return [

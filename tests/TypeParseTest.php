@@ -10,6 +10,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use ReflectionFunction;
 
 use function function_exists;
 use function mb_substr;
@@ -980,7 +981,7 @@ class TypeParseTest extends TestCase
         }
 
         /** @psalm-suppress InvalidArgument Psalm couldn't detect the function exists */
-        $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');
+        $reflectionFunc = new ReflectionFunction('Psalm\Tests\someFunction');
         $reflectionParams = $reflectionFunc->getParameters();
 
         $this->assertSame(

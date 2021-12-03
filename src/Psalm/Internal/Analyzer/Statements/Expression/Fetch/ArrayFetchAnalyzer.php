@@ -66,6 +66,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use UnexpectedValueException;
 
 use function array_keys;
 use function array_map;
@@ -1938,7 +1939,7 @@ class ArrayFetchAnalyzer
                 }
 
                 if (!$valid_offsets) {
-                    throw new \UnexpectedValueException('This is weird');
+                    throw new UnexpectedValueException('This is weird');
                 }
 
                 $valid_offset_type = new Type\Union($valid_offsets);

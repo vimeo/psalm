@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use LogicException;
 use PhpParser;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -41,6 +42,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_keys;
@@ -977,7 +979,7 @@ class FunctionLikeNodeScanner
 
                 if (isset($this->config->getPredefinedFunctions()[$function_id])) {
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $reflection_function = new \ReflectionFunction($function_id);
+                    $reflection_function = new ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
                         IssueBuffer::maybeAdd(
@@ -991,7 +993,7 @@ class FunctionLikeNodeScanner
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             if (!$this->classlike_storage) {
-                throw new \LogicException('$this->classlike_storage should not be null');
+                throw new LogicException('$this->classlike_storage should not be null');
             }
 
             $fq_classlike_name = $this->classlike_storage->name;

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -25,6 +26,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use ReflectionProperty;
 
 use function array_values;
 use function explode;
@@ -217,14 +219,14 @@ class ClassConstFetchAnalyzer
                     $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
                 )
             ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                $class_visibility = ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
                 ($codebase->classlikes->classExtends($context->self, $fq_class_name)
                     || $codebase->classlikes->classExtends($fq_class_name, $context->self))
             ) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                $class_visibility = ReflectionProperty::IS_PROTECTED;
             } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = ReflectionProperty::IS_PUBLIC;
             }
 
             try {
@@ -234,7 +236,7 @@ class ClassConstFetchAnalyzer
                     $class_visibility,
                     $statements_analyzer
                 );
-            } catch (\InvalidArgumentException $_) {
+            } catch (InvalidArgumentException $_) {
                 return true;
             } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
@@ -253,7 +255,7 @@ class ClassConstFetchAnalyzer
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $fq_class_name,
                         $stmt->name->name,
-                        \ReflectionProperty::IS_PRIVATE,
+                        ReflectionProperty::IS_PRIVATE,
                         $statements_analyzer
                     );
                 }
@@ -504,14 +506,14 @@ class ClassConstFetchAnalyzer
                     $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
                 )
             ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                $class_visibility = ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
                 ($codebase->classlikes->classExtends($context->self, $fq_class_name)
                     || $codebase->classlikes->classExtends($fq_class_name, $context->self))
             ) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                $class_visibility = ReflectionProperty::IS_PROTECTED;
             } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = ReflectionProperty::IS_PUBLIC;
             }
 
             try {
@@ -521,7 +523,7 @@ class ClassConstFetchAnalyzer
                     $class_visibility,
                     $statements_analyzer
                 );
-            } catch (\InvalidArgumentException $_) {
+            } catch (InvalidArgumentException $_) {
                 return true;
             } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
@@ -540,7 +542,7 @@ class ClassConstFetchAnalyzer
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $fq_class_name,
                         $stmt->name->name,
-                        \ReflectionProperty::IS_PRIVATE,
+                        ReflectionProperty::IS_PRIVATE,
                         $statements_analyzer
                     );
                 }

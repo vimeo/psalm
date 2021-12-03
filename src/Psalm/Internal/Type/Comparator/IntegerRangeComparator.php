@@ -8,6 +8,7 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function count;
 use function get_class;
@@ -69,7 +70,7 @@ class IntegerRangeComparator
                 $reduced_range->max_bound = 0;
                 unset($container_atomic_types['int']);
             } else {
-                throw new \UnexpectedValueException('Should not happen: unknown int key');
+                throw new UnexpectedValueException('Should not happen: unknown int key');
             }
         }
 

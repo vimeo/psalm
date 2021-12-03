@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -51,13 +52,13 @@ class MethodParamsProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyMethodParamsProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getMethodParams']);
+            $callable = Closure::fromCallable([$class, 'getMethodParams']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerLegacyClosure($fq_classlike_name, $callable);
             }
         } elseif (is_subclass_of($class, MethodParamsProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getMethodParams']);
+            $callable = Closure::fromCallable([$class, 'getMethodParams']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
@@ -68,7 +69,7 @@ class MethodParamsProvider
     /**
      * @param  \Closure(MethodParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
@@ -83,7 +84,7 @@ class MethodParamsProvider
      *     ?CodeLocation=
      *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      */
-    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }

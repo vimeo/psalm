@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use DOMDocument;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
@@ -301,7 +302,7 @@ class ErrorBaselineTest extends TestCase
             false
         );
 
-        $baselineDocument = new \DOMDocument();
+        $baselineDocument = new DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
 
         /** @var \DOMElement[] $files */

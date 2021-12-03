@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use DateTime;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -288,7 +289,7 @@ class PropertyTypeTest extends TestCase
 
     public function testUniversalObjectCrates(): void
     {
-        Config::getInstance()->addUniversalObjectCrate(\DateTime::class);
+        Config::getInstance()->addUniversalObjectCrate(DateTime::class);
 
         $this->addFile(
             'somefile.php',

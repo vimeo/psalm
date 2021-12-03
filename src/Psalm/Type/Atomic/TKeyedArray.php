@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function addslashes;
 use function array_keys;
@@ -399,7 +400,7 @@ class TKeyedArray extends Atomic
     public function getList() : TNonEmptyList
     {
         if (!$this->is_list) {
-            throw new \UnexpectedValueException('Object-like array must be a list for conversion');
+            throw new UnexpectedValueException('Object-like array must be a list for conversion');
         }
 
         return new TNonEmptyList($this->getGenericValueType());

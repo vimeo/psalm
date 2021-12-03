@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use UnexpectedValueException;
+
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
@@ -33,11 +37,11 @@ class FileProvider
         }
 
         if (!file_exists($file_path)) {
-            throw new \UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
+            throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
         if (is_dir($file_path)) {
-            throw new \UnexpectedValueException('File ' . $file_path . ' is a directory');
+            throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
         return (string)file_get_contents($file_path);
@@ -68,7 +72,7 @@ class FileProvider
     public function getModifiedTime(string $file_path): int
     {
         if (!file_exists($file_path)) {
-            throw new \UnexpectedValueException('File should exist to get modified time');
+            throw new UnexpectedValueException('File should exist to get modified time');
         }
 
         return (int)filemtime($file_path);
@@ -116,7 +120,7 @@ class FileProvider
         $file_paths = [];
 
         /** @var \RecursiveDirectoryIterator */
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir_path));
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_path));
         $iterator->rewind();
 
         while ($iterator->valid()) {

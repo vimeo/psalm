@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
@@ -92,7 +93,7 @@ class DocumentationTest extends TestCase
         $issues_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
 
         if (!file_exists($issues_dir)) {
-            throw new \UnexpectedValueException('docs not found');
+            throw new UnexpectedValueException('docs not found');
         }
 
         $issue_code = [];

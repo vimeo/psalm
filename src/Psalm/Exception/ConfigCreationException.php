@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Exception;
 
-class ConfigCreationException extends \Exception
+use Exception;
+
+class ConfigCreationException extends Exception
 {
 }
