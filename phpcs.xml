@@ -83,12 +83,12 @@
             <property name="allowFullyQualifiedGlobalConstants" type="bool" value="false"/>
             <property name="allowFullyQualifiedGlobalClasses" type="bool" value="false"/>
 
-			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="true"/>
-			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="true"/>
-			<property name="allowFullyQualifiedNameForCollidingConstants" type="bool" value="true"/>
+			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="false"/>
+			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="false"/>
+			<property name="allowFullyQualifiedNameForCollidingConstants" type="bool" value="false"/>
 
-			<property name="allowFallbackGlobalFunctions" type="bool" value="true"/>
-			<property name="allowFallbackGlobalConstants" type="bool" value="true"/>
+			<property name="allowFallbackGlobalFunctions" type="bool" value="false"/>
+			<property name="allowFallbackGlobalConstants" type="bool" value="false"/>
 
             <property name="allowPartialUses" type="bool" value="true"/>
 
