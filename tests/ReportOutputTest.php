@@ -1077,7 +1077,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
 
         // we want to disable links in CI, however we still want to test links there
         // thus this gymnastics
-        $github_env_var_backup = isset($_SERVER['GITHUB_WORKFLOW']) ? $_SERVER['GITHUB_WORKFLOW'] : null;
+        $github_env_var_backup = isset($_SERVER['GITHUB_WORKFLOW']) ? (string) $_SERVER['GITHUB_WORKFLOW'] : null;
         unset($_SERVER['GITHUB_WORKFLOW']);
 
         try {
