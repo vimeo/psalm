@@ -99,6 +99,9 @@ use function version_compare;
 
 use const FILTER_VALIDATE_INT;
 use const PHP_EOL;
+use const PHP_OS;
+use const PHP_VERSION;
+use const PSALM_VERSION;
 use const STDERR;
 use const STDIN;
 use const STDOUT;
@@ -427,9 +430,9 @@ class ProjectAnalyzer
         $this->codebase->enterServerMode();
 
         if (ini_get('pcre.jit') === '1'
-            && \PHP_OS === 'Darwin'
-            && version_compare(\PHP_VERSION, '7.3.0') >= 0
-            && version_compare(\PHP_VERSION, '7.4.0') < 0
+            && PHP_OS === 'Darwin'
+            && version_compare(PHP_VERSION, '7.3.0') >= 0
+            && version_compare(PHP_VERSION, '7.4.0') < 0
         ) {
             // do nothing
         } else {
@@ -678,7 +681,7 @@ class ProjectAnalyzer
 
         if ($this->project_cache_provider && $this->parser_cache_provider) {
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->project_cache_provider->getLastRun(\PSALM_VERSION) : $start_checks
+                $is_diff ? $this->project_cache_provider->getLastRun(PSALM_VERSION) : $start_checks
             );
 
             if ($removed_parser_files) {
@@ -1105,7 +1108,7 @@ class ProjectAnalyzer
 
         $diff_files = [];
 
-        $last_run = $this->project_cache_provider->getLastRun(\PSALM_VERSION);
+        $last_run = $this->project_cache_provider->getLastRun(PSALM_VERSION);
 
         $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
@@ -1480,9 +1483,9 @@ class ProjectAnalyzer
         }
 
         if (ini_get('pcre.jit') === '1'
-            && \PHP_OS === 'Darwin'
-            && version_compare(\PHP_VERSION, '7.3.0') >= 0
-            && version_compare(\PHP_VERSION, '7.4.0') < 0
+            && PHP_OS === 'Darwin'
+            && version_compare(PHP_VERSION, '7.3.0') >= 0
+            && version_compare(PHP_VERSION, '7.4.0') < 0
         ) {
             return 1;
         }

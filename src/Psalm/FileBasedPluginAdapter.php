@@ -10,6 +10,8 @@ use function class_exists;
 use function reset;
 use function str_replace;
 
+use const DIRECTORY_SEPARATOR;
+
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {
     /** @var string */
@@ -51,7 +53,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     {
         $codebase = $this->codebase;
 
-        $path = str_replace(['/', '\\'], \DIRECTORY_SEPARATOR, $path);
+        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
 
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);

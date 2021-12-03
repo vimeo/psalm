@@ -18,6 +18,9 @@ use function substr_count;
 use function substr_replace;
 use function token_get_all;
 
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
+
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
@@ -190,7 +193,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             '/(->|::)(\n\s*(if|list)\s*\()/',
                             $fake_class,
                             $matches,
-                            \PREG_OFFSET_CAPTURE | \PREG_SET_ORDER
+                            PREG_OFFSET_CAPTURE | PREG_SET_ORDER
                         );
 
                         foreach ($matches as $match) {

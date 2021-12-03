@@ -98,6 +98,8 @@ use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
 use const PHP_EOL;
+use const PHP_VERSION_ID;
+use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -633,7 +635,7 @@ class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . \PSALM_VERSION);
+            $config->hash = sha1($file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()
@@ -1861,7 +1863,7 @@ class Config
 
         $core_generic_files = [];
 
-        if (\PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
+        if (PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -1871,7 +1873,7 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (\PHP_VERSION_ID < 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+        if (PHP_VERSION_ID < 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -1922,12 +1924,12 @@ class Config
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
 
-        if (\PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
+        if (PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (\PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+        if (PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }

@@ -10,6 +10,8 @@ use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use function count;
 use function strtolower;
 
+use const ENT_QUOTES;
+
 class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
@@ -50,7 +52,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 
             $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
 
-            if (($second_arg_value & \ENT_QUOTES) === \ENT_QUOTES) {
+            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
                 return ['html', 'has_quotes'];
             }
 
@@ -98,7 +100,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 
             $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
 
-            if (($second_arg_value & \ENT_QUOTES) === \ENT_QUOTES) {
+            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
                 return ['html', 'has_quotes'];
             }
 

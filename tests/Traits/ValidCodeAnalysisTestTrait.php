@@ -12,6 +12,7 @@ use function strtoupper;
 use function substr;
 use function version_compare;
 
+use const PHP_OS;
 use const PHP_VERSION;
 
 trait ValidCodeAnalysisTestTrait
@@ -68,7 +69,7 @@ trait ValidCodeAnalysisTestTrait
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
-        if (strtoupper(substr(\PHP_OS, 0, 3)) === 'WIN') {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $code = str_replace("\n", "\r\n", $code);
         }
 

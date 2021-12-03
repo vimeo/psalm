@@ -9,6 +9,17 @@ use Psalm\Type;
 
 use function in_array;
 
+use const FILTER_NULL_ON_FAILURE;
+use const FILTER_VALIDATE_BOOLEAN;
+use const FILTER_VALIDATE_DOMAIN;
+use const FILTER_VALIDATE_EMAIL;
+use const FILTER_VALIDATE_FLOAT;
+use const FILTER_VALIDATE_INT;
+use const FILTER_VALIDATE_IP;
+use const FILTER_VALIDATE_MAC;
+use const FILTER_VALIDATE_REGEXP;
+use const FILTER_VALIDATE_URL;
+
 class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -40,25 +51,25 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $filter_type = null;
 
             switch ($filter_type_type->value) {
-                case \FILTER_VALIDATE_INT:
+                case FILTER_VALIDATE_INT:
                     $filter_type = Type::getInt();
                     break;
 
-                case \FILTER_VALIDATE_FLOAT:
+                case FILTER_VALIDATE_FLOAT:
                     $filter_type = Type::getFloat();
                     break;
 
-                case \FILTER_VALIDATE_BOOLEAN:
+                case FILTER_VALIDATE_BOOLEAN:
                     $filter_type = Type::getBool();
 
                     break;
 
-                case \FILTER_VALIDATE_IP:
-                case \FILTER_VALIDATE_MAC:
-                case \FILTER_VALIDATE_REGEXP:
-                case \FILTER_VALIDATE_URL:
-                case \FILTER_VALIDATE_EMAIL:
-                case \FILTER_VALIDATE_DOMAIN:
+                case FILTER_VALIDATE_IP:
+                case FILTER_VALIDATE_MAC:
+                case FILTER_VALIDATE_REGEXP:
+                case FILTER_VALIDATE_URL:
+                case FILTER_VALIDATE_EMAIL:
+                case FILTER_VALIDATE_DOMAIN:
                     $filter_type = Type::getString();
                     break;
             }
@@ -95,13 +106,13 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                 $atomic_type->properties['flags']->getSingleIntLiteral();
 
                             if ($filter_type->hasBool()
-                                && $filter_flag_type->value === \FILTER_NULL_ON_FAILURE
+                                && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
                             ) {
                                 $filter_type->addType(new Type\Atomic\TNull);
                             }
                         }
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        if ($atomic_type->value === \FILTER_NULL_ON_FAILURE) {
+                        if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
                             $filter_null = true;
                             $filter_type->addType(new Type\Atomic\TNull);
                         }

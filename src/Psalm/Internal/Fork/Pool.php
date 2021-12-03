@@ -43,8 +43,10 @@ use function usleep;
 use function version_compare;
 
 use const PHP_EOL;
+use const PHP_OS;
 use const PHP_VERSION;
 use const SIGALRM;
+use const SIGTERM;
 use const STREAM_IPPROTO_IP;
 use const STREAM_PF_UNIX;
 use const STREAM_SOCK_STREAM;
@@ -127,7 +129,7 @@ class Pool
         }
 
         if (ini_get('pcre.jit') === '1'
-            && \PHP_OS === 'Darwin'
+            && PHP_OS === 'Darwin'
             && version_compare(PHP_VERSION, '7.3.0') >= 0
             && version_compare(PHP_VERSION, '7.4.0') < 0
         ) {
@@ -365,7 +367,7 @@ class Pool
                                  * @psalm-suppress UndefinedConstant - does not exist on windows
                                  * @psalm-suppress MixedArgument
                                  */
-                                posix_kill($child_pid, \SIGTERM);
+                                posix_kill($child_pid, SIGTERM);
                             }
                             throw new \Exception($message->message);
                         } else {

@@ -36,6 +36,8 @@ use function spl_object_id;
 use function strpos;
 use function strtolower;
 
+use const PHP_VERSION_ID;
+
 /**
  * @internal
  */
@@ -237,7 +239,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $classlike_storage->class_implements['stringable'] = 'Stringable';
                 }
 
-                if (\PHP_VERSION_ID >= 80000) {
+                if (PHP_VERSION_ID >= 80000) {
                     $this->codebase->scanner->queueClassLikeForScanning('Stringable');
                 }
             }

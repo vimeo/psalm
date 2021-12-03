@@ -14,6 +14,7 @@ use function strtoupper;
 use function substr;
 use function version_compare;
 
+use const PHP_OS;
 use const PHP_VERSION;
 
 trait InvalidCodeAnalysisTestTrait
@@ -52,7 +53,7 @@ trait InvalidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        if (strtoupper(substr(\PHP_OS, 0, 3)) === 'WIN') {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $code = str_replace("\n", "\r\n", $code);
         }
 

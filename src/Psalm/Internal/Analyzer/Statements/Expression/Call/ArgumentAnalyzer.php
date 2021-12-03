@@ -59,6 +59,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+use const PREG_SPLIT_NO_EMPTY;
+
 /**
  * @internal
  */
@@ -146,7 +148,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
             && !$arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
-            $values = preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
+            $values = preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, PREG_SPLIT_NO_EMPTY);
 
             if ($values !== false) {
                 $prev_ord = 0;

@@ -41,6 +41,7 @@ use function substr;
 use function usort;
 
 use const PATHINFO_EXTENSION;
+use const PHP_INT_MAX;
 
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
@@ -1469,7 +1470,7 @@ class Analyzer
             }
         );
 
-        $last_start = \PHP_INT_MAX;
+        $last_start = PHP_INT_MAX;
         $existing_contents = $this->file_provider->getContents($file_path);
 
         foreach ($file_manipulations as $manipulation) {

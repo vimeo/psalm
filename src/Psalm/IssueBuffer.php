@@ -69,6 +69,7 @@ use function trim;
 use function usort;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
+use const PSALM_VERSION;
 use const STDERR;
 
 class IssueBuffer
@@ -741,7 +742,7 @@ class IssueBuffer
             $codebase->file_reference_provider->removeDeletedFilesFromReferences();
 
             if ($project_analyzer->project_cache_provider) {
-                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, \PSALM_VERSION);
+                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, PSALM_VERSION);
             }
 
             if ($codebase->statements_provider->parser_cache_provider) {

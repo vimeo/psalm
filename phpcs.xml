@@ -80,7 +80,7 @@
         <properties>
             <property name="allowFullyQualifiedExceptions" type="bool" value="false"/>
             <property name="allowFullyQualifiedGlobalFunctions" type="bool" value="false"/>
-            <property name="allowFullyQualifiedGlobalConstants" type="bool" value="true"/>
+            <property name="allowFullyQualifiedGlobalConstants" type="bool" value="false"/>
             <property name="allowFullyQualifiedGlobalClasses" type="bool" value="true"/>
 
 			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="true"/>
