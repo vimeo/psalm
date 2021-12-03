@@ -66,10 +66,13 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 
+use function array_filter;
 use function array_merge;
 use function count;
+use function in_array;
 use function is_string;
 use function reset;
+use function spl_object_id;
 use function strpos;
 use function strtolower;
 
@@ -213,8 +216,8 @@ class AssignmentAnalyzer
 
             // if we don't know where this data is going, treat as a dead-end usage
             if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-                || (\is_string($root_expr->name)
-                    && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+                || (is_string($root_expr->name)
+                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
             ) {
                 $context->inside_general_use = true;
             }
@@ -569,7 +572,7 @@ class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
 
                     if ($data_flow_graph instanceof TaintFlowGraph
-                        && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                        && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
                         $context->vars_in_scope[$var_id]->parent_nodes = [];
                     } else {
@@ -578,7 +581,7 @@ class AssignmentAnalyzer
                         $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                        $removed_taints = \array_merge(
+                        $removed_taints = array_merge(
                             $removed_taints,
                             $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
                         );
@@ -725,14 +728,14 @@ class AssignmentAnalyzer
     ) : void {
         $parent_nodes = $type->parent_nodes;
 
-        $unspecialized_parent_nodes = \array_filter(
+        $unspecialized_parent_nodes = array_filter(
             $parent_nodes,
             function ($parent_node) {
                 return !$parent_node->specialization_key;
             }
         );
 
-        $specialized_parent_nodes = \array_filter(
+        $specialized_parent_nodes = array_filter(
             $parent_nodes,
             function ($parent_node) {
                 return (bool) $parent_node->specialization_key;
@@ -1444,14 +1447,14 @@ class AssignmentAnalyzer
                             ];
                         } else {
                             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                             ) {
                                 $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                             } else {
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 
                                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints = \array_merge(
+                                $removed_taints = array_merge(
                                     $removed_taints,
                                     $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
                                 );
@@ -1649,8 +1652,8 @@ class AssignmentAnalyzer
                         || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
                             && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp))
                 ) {
-                    $var_object_id = \spl_object_id($assign_var);
-                    $cond_object_id = \spl_object_id($assign_value);
+                    $var_object_id = spl_object_id($assign_var);
+                    $cond_object_id = spl_object_id($assign_value);
 
                     $right_clauses = FormulaGenerator::getFormula(
                         $cond_object_id,
@@ -1672,7 +1675,7 @@ class AssignmentAnalyzer
                         $cond_object_id
                     );
 
-                    $context->clauses = \array_merge($context->clauses, $assignment_clauses);
+                    $context->clauses = array_merge($context->clauses, $assignment_clauses);
                 }
             }
         } else {

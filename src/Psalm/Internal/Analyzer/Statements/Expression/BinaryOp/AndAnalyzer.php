@@ -19,6 +19,9 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
+use function in_array;
+use function spl_object_id;
 
 /**
  * @internal
@@ -67,7 +70,7 @@ class AndAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $left_cond_id = \spl_object_id($stmt->left);
+        $left_cond_id = spl_object_id($stmt->left);
 
         $left_clauses = FormulaGenerator::getFormula(
             $left_cond_id,
@@ -101,12 +104,12 @@ class AndAnalyzer
                 array_filter(
                     $context_clauses,
                     function ($c) use ($reconciled_expression_clauses): bool {
-                        return !\in_array($c->hash, $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
 
-            if (\count($context_clauses) === 1
+            if (count($context_clauses) === 1
                 && $context_clauses[0]->wedge
                 && !$context_clauses[0]->possibilities
             ) {

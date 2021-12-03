@@ -19,6 +19,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 
 use function assert;
+use function defined;
 use function dirname;
 use function explode;
 use function implode;
@@ -153,7 +154,7 @@ class ExpressionScanner
                     }
 
                     if (($codebase->register_stub_files || $codebase->register_autoload_files)
-                        && (!\defined($const_name) || $const_type->isMixed())
+                        && (!defined($const_name) || $const_type->isMixed())
                     ) {
                         $codebase->addGlobalConstantType($const_name, $const_type);
                     }

@@ -17,8 +17,10 @@ use Psalm\Type;
 use function count;
 use function explode;
 use function in_array;
+use function reset;
 use function strpos;
 use function strtolower;
+use function substr;
 
 class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -94,7 +96,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $initial_type = $reduce_return_type;
 
         if ($closure_types = $function_call_arg_type->getClosureTypes()) {
-            $closure_atomic_type = \reset($closure_types);
+            $closure_atomic_type = reset($closure_types);
 
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -209,7 +211,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     } elseif ($mapping_function_id_part) {
                         if (strpos($mapping_function_id_part, '::') !== false) {
                             if ($mapping_function_id_part[0] === '$') {
-                                $mapping_function_id_part = \substr($mapping_function_id_part, 1);
+                                $mapping_function_id_part = substr($mapping_function_id_part, 1);
                             }
 
                             [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);

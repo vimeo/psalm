@@ -24,10 +24,14 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
+use function array_merge;
 use function array_pop;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
+use function in_array;
+use function is_int;
 use function reset;
 use function strtolower;
 
@@ -132,7 +136,7 @@ class Methods
             }
 
             if ($class_storage->enum_type
-                && \in_array($method_name, ['from', 'tryFrom'], true)
+                && in_array($method_name, ['from', 'tryFrom'], true)
             ) {
                 return true;
             }
@@ -529,7 +533,7 @@ class Methods
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
-                        $types = \array_values($extended_param->getAtomicTypes());
+                        $types = array_values($extended_param->getAtomicTypes());
 
                         if (count($types) === 1 && $types[0] instanceof Type\Atomic\TNamedObject) {
                             $atomic_type->as_type = $types[0];
@@ -621,7 +625,7 @@ class Methods
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
                 if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                    $extra_added_types = \array_merge(
+                    $extra_added_types = array_merge(
                         $extra_added_types,
                         self::getExtendedTemplatedTypes(
                             $extended_atomic_type,
@@ -732,7 +736,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        \is_int($case_storage->value) ?
+                        is_int($case_storage->value) ?
                             Type::getInt(false, $case_storage->value) :
                             Type::getString($case_storage->value),
                         $first_arg_type

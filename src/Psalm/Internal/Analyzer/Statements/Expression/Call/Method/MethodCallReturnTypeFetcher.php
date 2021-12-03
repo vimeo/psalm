@@ -22,6 +22,9 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 
+use function array_filter;
+use function count;
+use function in_array;
 use function strtolower;
 
 class MethodCallReturnTypeFetcher
@@ -102,7 +105,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->getArgs()),
+                    count($stmt->getArgs()),
                     $codebase
                 );
             } else {
@@ -162,7 +165,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->getArgs()),
+                    count($stmt->getArgs()),
                     $codebase
                 );
 
@@ -250,7 +253,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -285,14 +288,14 @@ class MethodCallReturnTypeFetcher
 
             $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
-            $unspecialized_parent_nodes = \array_filter(
+            $unspecialized_parent_nodes = array_filter(
                 $parent_nodes,
                 function ($parent_node) {
                     return !$parent_node->specialization_key;
                 }
             );
 
-            $specialized_parent_nodes = \array_filter(
+            $specialized_parent_nodes = array_filter(
                 $parent_nodes,
                 function ($parent_node) {
                     return (bool) $parent_node->specialization_key;

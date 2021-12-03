@@ -25,6 +25,8 @@ use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
 
+use function array_combine;
+use function array_diff_key;
 use function array_keys;
 use function count;
 use function implode;
@@ -582,7 +584,7 @@ class FileAnalyzer extends SourceAnalyzer
     public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
         $this->suppressed_issues = $new_issues + $this->suppressed_issues;
@@ -594,10 +596,10 @@ class FileAnalyzer extends SourceAnalyzer
     public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
-        $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
+        $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
     public function getFQCLN(): ?string

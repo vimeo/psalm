@@ -32,6 +32,7 @@ use function array_map;
 use function count;
 use function explode;
 use function in_array;
+use function is_string;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -572,7 +573,7 @@ class ExistingAtomicStaticCallAnalyzer
                 $class_storage->parent_class,
                 true,
                 false,
-                \is_string($static_type)
+                is_string($static_type)
                 && ($static_type !== $context->self
                     || $class_storage->final
                     || $context_final)

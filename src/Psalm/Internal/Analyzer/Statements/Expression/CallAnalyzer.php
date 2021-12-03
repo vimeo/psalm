@@ -45,8 +45,10 @@ use function implode;
 use function in_array;
 use function is_int;
 use function is_numeric;
+use function mt_rand;
 use function preg_match;
 use function preg_replace;
+use function spl_object_id;
 use function str_replace;
 use function strpos;
 use function strtolower;
@@ -813,8 +815,8 @@ class CallAnalyzer
                     );
 
                     $assert_clauses = FormulaGenerator::getFormula(
-                        \mt_rand(0, 1000000),
-                        \mt_rand(0, 1000000),
+                        mt_rand(0, 1000000),
+                        mt_rand(0, 1000000),
                         $conditional,
                         $context->self,
                         $statements_analyzer,
@@ -822,8 +824,8 @@ class CallAnalyzer
                     );
                 } else {
                     $assert_clauses = FormulaGenerator::getFormula(
-                        \spl_object_id($arg_value),
-                        \spl_object_id($arg_value),
+                        spl_object_id($arg_value),
+                        spl_object_id($arg_value),
                         $arg_value,
                         $context->self,
                         $statements_analyzer,
@@ -843,8 +845,8 @@ class CallAnalyzer
             } elseif ($arg_value && $assertion->rule === [['falsy']]) {
                 $assert_clauses = Algebra::negateFormula(
                     FormulaGenerator::getFormula(
-                        \spl_object_id($arg_value),
-                        \spl_object_id($arg_value),
+                        spl_object_id($arg_value),
+                        spl_object_id($arg_value),
                         $arg_value,
                         $context->self,
                         $statements_analyzer,

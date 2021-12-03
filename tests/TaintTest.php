@@ -6,6 +6,9 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 
+use function array_map;
+use function preg_quote;
+use function strpos;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
@@ -18,7 +21,7 @@ class TaintTest extends TestCase
     public function testValidCode(string $code): void
     {
         $test_name = $this->getTestName();
-        if (\strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -41,12 +44,12 @@ class TaintTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message): void
     {
-        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . \preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -2292,7 +2295,7 @@ class TaintTest extends TestCase
      */
     public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
     {
-        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
@@ -2304,7 +2307,7 @@ class TaintTest extends TestCase
 
         $this->analyzeFile($filePath, new Context(), false);
 
-        $actualIssueTypes = \array_map(
+        $actualIssueTypes = array_map(
             function (IssueData $issue): string {
                 return $issue->type . '{ ' . trim($issue->snippet) . ' }';
             },

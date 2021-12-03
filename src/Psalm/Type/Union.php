@@ -400,7 +400,7 @@ class Union implements TypeNode
         }
         sort($types);
 
-        if (\count($types) > 1) {
+        if (count($types) > 1) {
             foreach ($types as $i => $type) {
                 if (strpos($type, ' as ') && strpos($type, '(') === false) {
                     $types[$i] = '(' . $type . ')';
@@ -477,7 +477,7 @@ class Union implements TypeNode
         }
 
         sort($other_types);
-        return implode('|', \array_unique($other_types));
+        return implode('|', array_unique($other_types));
     }
 
     /**

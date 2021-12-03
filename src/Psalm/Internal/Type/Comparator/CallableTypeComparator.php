@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TNamedObject;
 
 use function end;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -468,7 +469,7 @@ class CallableTypeComparator
         if ($lhs->isSingleStringLiteral()) {
             $class_name = $lhs->getSingleStringLiteral()->value;
             if ($class_name[0] === '\\') {
-                $class_name = \substr($class_name, 1);
+                $class_name = substr($class_name, 1);
             }
         } elseif ($lhs->isSingle()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {

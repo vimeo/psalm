@@ -25,7 +25,9 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_filter;
 use function array_intersect;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -352,7 +354,7 @@ class IfAnalyzer
         array $assigned_in_conditional_var_ids
     ) : void {
         // this filters out coercions to expected types in ArgumentAnalyzer
-        $assigned_in_conditional_var_ids = \array_filter($assigned_in_conditional_var_ids);
+        $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
 
         if (!$assigned_in_conditional_var_ids) {
             return;
@@ -487,7 +489,7 @@ class IfAnalyzer
         if ($if_scope->assigned_var_ids === null) {
             $if_scope->assigned_var_ids = $assigned_var_ids;
         } else {
-            $if_scope->assigned_var_ids = \array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
+            $if_scope->assigned_var_ids = array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;

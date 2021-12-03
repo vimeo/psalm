@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_diff_key;
 use function array_values;
+use function count;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -378,7 +379,7 @@ class ArithmeticOpAnalyzer
 
             $combined_atomic_types = array_values($combined_type->getAtomicTypes());
 
-            if (\count($combined_atomic_types) <= 2) {
+            if (count($combined_atomic_types) <= 2) {
                 $left_type_part = $combined_atomic_types[0];
                 $right_type_part = $combined_atomic_types[1] ?? $combined_atomic_types[0];
             }

@@ -18,6 +18,9 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 
+use function array_merge;
+use function array_pop;
+
 class CloneAnalyzer
 {
     public static function analyze(
@@ -45,7 +48,7 @@ class CloneAnalyzer
             $atomic_types = $clone_type->getAtomicTypes();
 
             while ($atomic_types) {
-                $clone_type_part = \array_pop($atomic_types);
+                $clone_type_part = array_pop($atomic_types);
 
                 if ($clone_type_part instanceof TMixed) {
                     $mixed_clone = true;
@@ -78,7 +81,7 @@ class CloneAnalyzer
                         }
                     }
                 } elseif ($clone_type_part instanceof TTemplateParam) {
-                    $atomic_types = \array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
+                    $atomic_types = array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
                 } else {
                     if ($clone_type_part instanceof Type\Atomic\TFalse
                         && $clone_type->ignore_falsable_issues

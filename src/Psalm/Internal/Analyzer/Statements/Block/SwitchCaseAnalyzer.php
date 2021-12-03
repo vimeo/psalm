@@ -42,6 +42,7 @@ use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
+use function spl_object_id;
 use function strpos;
 use function substr;
 
@@ -335,7 +336,7 @@ class SwitchCaseAnalyzer
         $case_clauses = [];
 
         if ($case_equality_expr) {
-            $case_equality_expr_id = \spl_object_id($case_equality_expr);
+            $case_equality_expr_id = spl_object_id($case_equality_expr);
             $case_clauses = FormulaGenerator::getFormula(
                 $case_equality_expr_id,
                 $case_equality_expr_id,
@@ -433,7 +434,7 @@ class SwitchCaseAnalyzer
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
             } catch (ComplicatedExpressionException $e) {
-                $case_equality_expr_id = \spl_object_id($case_equality_expr);
+                $case_equality_expr_id = spl_object_id($case_equality_expr);
 
                 try {
                     $negated_case_clauses = FormulaGenerator::getFormula(

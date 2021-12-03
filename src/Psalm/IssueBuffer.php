@@ -31,11 +31,14 @@ use Psalm\Report\SonarqubeReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
+use function array_sum;
 use function array_values;
+use function arsort;
 use function count;
 use function debug_print_backtrace;
 use function dirname;
@@ -43,8 +46,11 @@ use function explode;
 use function file_put_contents;
 use function fwrite;
 use function get_class;
+use function implode;
 use function in_array;
 use function is_dir;
+use function is_int;
+use function ksort;
 use function memory_get_peak_usage;
 use function microtime;
 use function mkdir;
@@ -52,10 +58,13 @@ use function number_format;
 use function ob_get_clean;
 use function ob_start;
 use function preg_match;
+use function round;
 use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
+use function strlen;
+use function strpos;
 use function trim;
 use function usort;
 
@@ -139,7 +148,7 @@ class IssueBuffer
      */
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
     {
-        if (\strpos($issue_type, 'Tainted') === 0) {
+        if (strpos($issue_type, 'Tainted') === 0) {
             return;
         }
 
@@ -151,7 +160,7 @@ class IssueBuffer
             self::$unused_suppressions[$file_path] = [];
         }
 
-        self::$unused_suppressions[$file_path][$offset] = $offset + \strlen($issue_type) - 1;
+        self::$unused_suppressions[$file_path][$offset] = $offset + strlen($issue_type) - 1;
     }
 
     /**
@@ -176,7 +185,7 @@ class IssueBuffer
         $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
 
         if ($suppressed_issue_position !== false) {
-            if (\is_int($suppressed_issue_position)) {
+            if (is_int($suppressed_issue_position)) {
                 self::$used_suppressions[$file_path][$suppressed_issue_position] = true;
             }
 
@@ -189,7 +198,7 @@ class IssueBuffer
             $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
 
             if ($suppressed_issue_position !== false) {
-                if (\is_int($suppressed_issue_position)) {
+                if (is_int($suppressed_issue_position)) {
                     self::$used_suppressions[$file_path][$suppressed_issue_position] = true;
                 }
 
@@ -200,7 +209,7 @@ class IssueBuffer
         $suppress_all_position = array_search('all', $suppressed_issues);
 
         if ($suppress_all_position !== false) {
-            if (\is_int($suppress_all_position)) {
+            if (is_int($suppress_all_position)) {
                 self::$used_suppressions[$file_path][$suppress_all_position] = true;
             }
 
@@ -243,7 +252,7 @@ class IssueBuffer
             return false;
         }
 
-        $is_tainted = \strpos($issue_type, 'Tainted') === 0;
+        $is_tainted = strpos($issue_type, 'Tainted') === 0;
 
         if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
             return false;
@@ -522,7 +531,7 @@ class IssueBuffer
                 echo "\n";
             }
 
-            \ksort(self::$issues_data);
+            ksort(self::$issues_data);
 
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
@@ -676,8 +685,8 @@ class IssueBuffer
             if (self::$fixable_issue_counts && $show_suggestions && !$codebase->taint_flow_graph) {
                 echo str_repeat('-', 30) . "\n";
 
-                $total_count = \array_sum(self::$fixable_issue_counts);
-                $command = '--alter --issues=' . \implode(',', \array_keys(self::$fixable_issue_counts));
+                $total_count = array_sum(self::$fixable_issue_counts);
+                $command = '--alter --issues=' . implode(',', array_keys(self::$fixable_issue_counts));
                 $command .= ' --dry-run';
 
                 echo 'Psalm can automatically fix ' . $total_count
@@ -711,7 +720,7 @@ class IssueBuffer
 
                     $function_timings = $codebase->analyzer->getFunctionTimings();
 
-                    \arsort($function_timings);
+                    arsort($function_timings);
 
                     $i = 0;
 
@@ -720,7 +729,7 @@ class IssueBuffer
                             break;
                         }
 
-                        echo $function_id . ': ' . \round(1000 * $time, 2) . 'ms per node' . "\n";
+                        echo $function_id . ': ' . round(1000 * $time, 2) . 'ms per node' . "\n";
                     }
 
                     echo "\n";

@@ -7,6 +7,8 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function in_array;
+
 class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -32,7 +34,7 @@ class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $type = Type::getString();
 
         if ($statements_source->data_flow_graph
-            && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
+            && !in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,

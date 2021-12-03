@@ -5,10 +5,12 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
+use function abs;
 use function array_keys;
 use function array_merge;
 use function array_reverse;
 use function array_sum;
+use function count;
 use function strlen;
 use function strpos;
 use function substr;
@@ -46,7 +48,7 @@ abstract class DataFlowGraph
         ) {
             $to_line = $to->code_location->raw_line_number;
             $from_line = $from->code_location->raw_line_number;
-            $length = \abs($to_line - $from_line);
+            $length = abs($to_line - $from_line);
         }
 
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length, $added_taints, $removed_taints);
@@ -138,7 +140,7 @@ abstract class DataFlowGraph
 
         $mean = $lengths / $count;
 
-        return [$count, \count($origin_counts), \count($destination_counts), $mean];
+        return [$count, count($origin_counts), count($destination_counts), $mean];
     }
 
     /**

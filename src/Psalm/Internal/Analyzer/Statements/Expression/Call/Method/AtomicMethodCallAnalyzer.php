@@ -27,7 +27,9 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function array_keys;
 use function array_merge;
+use function array_search;
 use function array_shift;
 use function array_values;
 use function count;
@@ -670,10 +672,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             && $lhs_type_part instanceof Type\Atomic\TGenericObject
             && $class_storage->template_types
         ) {
-            $template_type_keys = \array_keys($class_storage->template_types);
+            $template_type_keys = array_keys($class_storage->template_types);
 
             foreach ($class_storage->templatedMixins as $mixin) {
-                $param_position = \array_search(
+                $param_position = array_search(
                     $mixin->param_name,
                     $template_type_keys
                 );

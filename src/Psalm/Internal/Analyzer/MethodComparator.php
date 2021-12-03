@@ -703,7 +703,7 @@ class MethodComparator
 
         foreach ($implementer_method_storage_param_type->getAtomicTypes() as $k => $t) {
             if ($t instanceof Type\Atomic\TTemplateParam
-                && \strpos($t->defining_class, 'fn-') === 0
+                && strpos($t->defining_class, 'fn-') === 0
             ) {
                 $implementer_method_storage_param_type->removeType($k);
 
@@ -715,7 +715,7 @@ class MethodComparator
 
         foreach ($guide_method_storage_param_type->getAtomicTypes() as $k => $t) {
             if ($t instanceof Type\Atomic\TTemplateParam
-                && \strpos($t->defining_class, 'fn-') === 0
+                && strpos($t->defining_class, 'fn-') === 0
             ) {
                 $guide_method_storage_param_type->removeType($k);
 

@@ -8,7 +8,10 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_map;
+use function array_values;
 use function implode;
+use function is_string;
+use function str_replace;
 
 class Assertion
 {
@@ -42,8 +45,8 @@ class Assertion
         ?Codebase $codebase
     ) : self {
         return new Assertion(
-            \is_string($this->var_id) && $this_var_id
-                ? \str_replace('$this->', $this_var_id . '->', $this->var_id)
+            is_string($this->var_id) && $this_var_id
+                ? str_replace('$this->', $this_var_id . '->', $this->var_id)
                 : $this->var_id,
             array_map(
                 /**
@@ -69,7 +72,7 @@ class Assertion
                                         $codebase
                                     );
 
-                                    $first_type = \array_values($bound_type->getAtomicTypes())[0];
+                                    $first_type = array_values($bound_type->getAtomicTypes())[0];
 
                                     if ($first_type instanceof TTemplateParam) {
                                         $rule_token[0] = $first_type->param_name;

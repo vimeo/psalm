@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_fill;
+use function array_values;
 use function count;
 
 /**
@@ -54,7 +55,7 @@ class GenericTypeComparator
                 if (!empty($class_storage->template_extended_params[$container_class])) {
                     $input_type_part = new TGenericObject(
                         $input_type_part->value,
-                        \array_values($class_storage->template_extended_params[$container_class])
+                        array_values($class_storage->template_extended_params[$container_class])
                     );
                 }
             }

@@ -8,6 +8,7 @@ use PhpParser\NodeTraverser;
 use function array_pop;
 use function array_splice;
 use function gettype;
+use function is_array;
 
 /**
  * @internal
@@ -31,7 +32,7 @@ class CustomTraverser extends NodeTraverser
         foreach ($node->getSubNodeNames() as $name) {
             $subNode = &$node->$name;
 
-            if (\is_array($subNode)) {
+            if (is_array($subNode)) {
                 $subNode = $this->traverseArray($subNode);
                 if ($this->stopTraversal) {
                     break;
@@ -71,7 +72,7 @@ class CustomTraverser extends NodeTraverser
                         } elseif (self::STOP_TRAVERSAL === $return) {
                             $this->stopTraversal = true;
                             break 2;
-                        } elseif (\is_array($return)) {
+                        } elseif (is_array($return)) {
                             throw new \LogicException(
                                 'leaveNode() may only return an array ' .
                                 'if the parent structure is an array'
@@ -133,7 +134,7 @@ class CustomTraverser extends NodeTraverser
                     if (null !== $return) {
                         if ($return instanceof Node) {
                             $node = $return;
-                        } elseif (\is_array($return)) {
+                        } elseif (is_array($return)) {
                             $doNodes[] = [$i, $return];
                             break;
                         } elseif (self::REMOVE_NODE === $return) {
@@ -154,7 +155,7 @@ class CustomTraverser extends NodeTraverser
                         }
                     }
                 }
-            } elseif (\is_array($node)) {
+            } elseif (is_array($node)) {
                 throw new \LogicException('Invalid node structure: Contains nested arrays');
             }
         }

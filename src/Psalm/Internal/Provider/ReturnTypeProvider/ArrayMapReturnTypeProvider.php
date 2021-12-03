@@ -23,10 +23,14 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function array_map;
+use function array_shift;
+use function array_slice;
 use function count;
 use function explode;
 use function in_array;
+use function reset;
 use function strpos;
+use function substr;
 
 class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -54,7 +58,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             : null;
 
         if ($function_call_type && $function_call_type->isNull()) {
-            \array_shift($call_args);
+            array_shift($call_args);
 
             $array_arg_types = [];
 
@@ -106,7 +110,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
-                $closure_atomic_type = \reset($closure_types);
+                $closure_atomic_type = reset($closure_types);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -130,7 +134,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        \array_slice($call_args, 1)
+                        array_slice($call_args, 1)
                     );
                 }
 
@@ -365,7 +369,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $is_instance = false;
 
                     if ($mapping_function_id_part[0] === '$') {
-                        $mapping_function_id_part = \substr($mapping_function_id_part, 1);
+                        $mapping_function_id_part = substr($mapping_function_id_part, 1);
                         $is_instance = true;
                     }
 
@@ -393,7 +397,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         if ($callable_type) {
                             foreach ($callable_type->getAtomicTypes() as $atomic_type) {
                                 if ($atomic_type instanceof Type\Atomic\TKeyedArray
-                                    && \count($atomic_type->properties) === 2
+                                    && count($atomic_type->properties) === 2
                                     && isset($atomic_type->properties[0])
                                 ) {
                                     $lhs_instance_type = clone $atomic_type->properties[0];

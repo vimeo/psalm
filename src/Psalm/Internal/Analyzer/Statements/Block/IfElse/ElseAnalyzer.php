@@ -14,10 +14,13 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
+use function preg_match;
+use function preg_quote;
 
 class ElseAnalyzer
 {
@@ -87,8 +90,8 @@ class ElseAnalyzer
 
             foreach ($changed_var_ids as $changed_var_id => $_) {
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
-                    if (\preg_match('/' . \preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
-                        && !\array_key_exists($var_id, $changed_var_ids)
+                    if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                        && !array_key_exists($var_id, $changed_var_ids)
                     ) {
                         unset($else_context->vars_in_scope[$var_id]);
                     }

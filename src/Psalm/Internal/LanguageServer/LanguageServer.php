@@ -37,6 +37,7 @@ use function implode;
 use function max;
 use function parse_url;
 use function rawurlencode;
+use function realpath;
 use function str_replace;
 use function strpos;
 use function substr;
@@ -541,7 +542,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
-        $realpath = \realpath($filepath);
+        $realpath = realpath($filepath);
         if ($realpath !== false) {
             return $realpath;
         }

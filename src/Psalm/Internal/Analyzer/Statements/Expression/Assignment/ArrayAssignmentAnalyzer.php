@@ -26,11 +26,15 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use function array_pop;
 use function array_reverse;
 use function array_shift;
+use function array_slice;
 use function array_unshift;
+use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function is_string;
 use function preg_match;
+use function strlen;
 
 /**
  * @internal
@@ -317,7 +321,7 @@ class ArrayAssignmentAnalyzer
                     ) {
                         $new_char = $current_type->getSingleStringLiteral()->value;
 
-                        if (\strlen($new_char) === 1) {
+                        if (strlen($new_char) === 1) {
                             $type->value[0] = $new_char;
                         }
                     }
@@ -392,7 +396,7 @@ class ArrayAssignmentAnalyzer
     ) : void {
         if ($statements_analyzer->data_flow_graph
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+                || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
@@ -467,7 +471,7 @@ class ArrayAssignmentAnalyzer
                 }
 
                 if ($key_type->isSingle()) {
-                    $key_type_type = \array_values($key_type->getAtomicTypes())[0];
+                    $key_type_type = array_values($key_type->getAtomicTypes())[0];
 
                     if ($key_type_type instanceof Type\Atomic\TDependentListKey
                         && $key_type_type->getVarId() === $parent_var_id
@@ -480,9 +484,9 @@ class ArrayAssignmentAnalyzer
                         && $root_type->isSingle()
                         && $value_type->isSingle()
                     ) {
-                        $key_type_as_type = \array_values($key_type_type->as->getAtomicTypes())[0];
-                        $value_atomic_type = \array_values($value_type->getAtomicTypes())[0];
-                        $root_atomic_type = \array_values($root_type->getAtomicTypes())[0];
+                        $key_type_as_type = array_values($key_type_type->as->getAtomicTypes())[0];
+                        $value_atomic_type = array_values($value_type->getAtomicTypes())[0];
+                        $root_atomic_type = array_values($root_type->getAtomicTypes())[0];
 
                         if ($key_type_as_type instanceof Type\Atomic\TTemplateKeyOf
                             && $root_atomic_type instanceof Type\Atomic\TTemplateParam
@@ -527,7 +531,7 @@ class ArrayAssignmentAnalyzer
                     /**
                      * @var Type\Atomic\TTemplateParamClass
                      */
-                    $offset_type_part = \array_values($key_type->getAtomicTypes())[0];
+                    $offset_type_part = array_values($key_type->getAtomicTypes())[0];
 
                     $template_result = new TemplateResult(
                         [],
@@ -805,7 +809,7 @@ class ArrayAssignmentAnalyzer
             && !$child_stmt_var_type->hasObjectType()
         ) {
             $array_var_id = $root_var_id . implode('', $var_id_additions);
-            $parent_var_id = $root_var_id . implode('', \array_slice($var_id_additions, 0, -1));
+            $parent_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
 
             if (isset($context->vars_in_scope[$array_var_id])
                 && !$context->vars_in_scope[$array_var_id]->possibly_undefined
@@ -901,7 +905,7 @@ class ArrayAssignmentAnalyzer
 
             if ($root_var_id) {
                 $array_var_id = $root_var_id . implode('', $var_id_additions);
-                $parent_array_var_id = $root_var_id . implode('', \array_slice($var_id_additions, 0, -1));
+                $parent_array_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
                 $context->vars_in_scope[$array_var_id] = clone $child_stmt_type;
                 $context->possibly_assigned_var_ids[$array_var_id] = true;
             }

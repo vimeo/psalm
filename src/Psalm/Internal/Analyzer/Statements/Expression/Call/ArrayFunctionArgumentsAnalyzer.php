@@ -36,11 +36,14 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 
 use function array_filter;
+use function array_shift;
+use function array_unshift;
 use function assert;
 use function count;
 use function explode;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -283,7 +286,7 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        \array_unshift($objectlike_list->properties, $arg_value_type);
+                        array_unshift($objectlike_list->properties, $arg_value_type);
 
                         $by_ref_type = new Type\Union([$objectlike_list]);
                     } elseif ($array_type instanceof TList) {
@@ -510,7 +513,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                             $array_properties = $array_atomic_type->properties;
 
-                            \array_shift($array_properties);
+                            array_shift($array_properties);
 
                             if (!$array_properties) {
                                 $array_atomic_type = new Type\Atomic\TList(
@@ -612,7 +615,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                 if (strpos($function_id, '::') !== false) {
                     if ($function_id[0] === '$') {
-                        $function_id = \substr($function_id, 1);
+                        $function_id = substr($function_id, 1);
                     }
 
                     $function_id_parts = explode('&', $function_id);

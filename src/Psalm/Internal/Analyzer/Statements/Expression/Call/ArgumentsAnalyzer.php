@@ -44,6 +44,7 @@ use function array_reverse;
 use function count;
 use function in_array;
 use function is_string;
+use function max;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -553,7 +554,7 @@ class ArgumentsAnalyzer
         }
 
         if (!$has_packed_var) {
-            $packed_var_definite_args = \max(0, $packed_var_definite_args - 1);
+            $packed_var_definite_args = max(0, $packed_var_definite_args - 1);
         }
 
         $last_param = $function_params

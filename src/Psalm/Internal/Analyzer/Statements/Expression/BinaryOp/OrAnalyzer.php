@@ -27,6 +27,9 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
+use function in_array;
+use function spl_object_id;
 
 /**
  * @internal
@@ -128,7 +131,7 @@ class OrAnalyzer
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
-        $left_cond_id = \spl_object_id($stmt->left);
+        $left_cond_id = spl_object_id($stmt->left);
 
         $left_clauses = FormulaGenerator::getFormula(
             $left_cond_id,
@@ -164,12 +167,12 @@ class OrAnalyzer
                 array_filter(
                     $negated_left_clauses,
                     function ($c) use ($reconciled_expression_clauses): bool {
-                        return !\in_array($c->hash, $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );
 
-            if (\count($negated_left_clauses) === 1
+            if (count($negated_left_clauses) === 1
                 && $negated_left_clauses[0]->wedge
                 && !$negated_left_clauses[0]->possibilities
             ) {
@@ -276,7 +279,7 @@ class OrAnalyzer
         $right_assigned_var_ids = $right_context->assigned_var_ids;
         $right_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $right_assigned_var_ids);
 
-        $right_cond_id = \spl_object_id($stmt->right);
+        $right_cond_id = spl_object_id($stmt->right);
 
         $right_clauses = FormulaGenerator::getFormula(
             $right_cond_id,

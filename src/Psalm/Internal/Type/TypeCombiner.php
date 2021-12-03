@@ -54,6 +54,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_values;
@@ -61,8 +62,10 @@ use function count;
 use function get_class;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function is_string;
 use function strpos;
+use function strtolower;
 use function substr;
 
 class TypeCombiner
@@ -512,7 +515,7 @@ class TypeCombiner
         }
 
         if ($type instanceof TNamedObject) {
-            if (\array_key_exists($type->value, $combination->object_static)) {
+            if (array_key_exists($type->value, $combination->object_static)) {
                 if ($combination->object_static[$type->value] && !$type->was_static) {
                     $combination->object_static[$type->value] = false;
                 }
@@ -948,7 +951,7 @@ class TypeCombiner
 
                 if (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNumericString
-                    && \is_numeric($type->value)
+                    && is_numeric($type->value)
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['class-string'])
@@ -975,7 +978,7 @@ class TypeCombiner
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
-                    && \strtolower($type->value) === $type->value
+                    && strtolower($type->value) === $type->value
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
@@ -1001,7 +1004,7 @@ class TypeCombiner
                         $has_non_numeric_string = false;
 
                         foreach ($combination->strings as $string_type) {
-                            if (!\is_numeric($string_type->value)) {
+                            if (!is_numeric($string_type->value)) {
                                 $has_non_numeric_string = true;
                                 break;
                             }
@@ -1018,7 +1021,7 @@ class TypeCombiner
                         $has_non_lowercase_string = false;
 
                         foreach ($combination->strings as $string_type) {
-                            if (\strtolower($string_type->value) !== $string_type->value) {
+                            if (strtolower($string_type->value) !== $string_type->value) {
                                 $has_non_lowercase_string = true;
                                 break;
                             }

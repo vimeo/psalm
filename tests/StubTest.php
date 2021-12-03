@@ -20,6 +20,7 @@ use function dirname;
 use function explode;
 use function getcwd;
 use function implode;
+use function reset;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -149,7 +150,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
-        $this->assertStringContainsString($path, \reset($stub_files));
+        $this->assertStringContainsString($path, reset($stub_files));
     }
 
     public function testLoadStubFileWithAbsolutePath(): void
@@ -171,7 +172,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
-        $this->assertStringContainsString($path, \reset($stub_files));
+        $this->assertStringContainsString($path, reset($stub_files));
     }
 
     public function testStubFileConstant(): void

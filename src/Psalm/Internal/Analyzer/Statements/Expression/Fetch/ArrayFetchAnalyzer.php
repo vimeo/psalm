@@ -68,6 +68,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_keys;
+use function array_map;
 use function array_pop;
 use function array_values;
 use function count;
@@ -349,7 +350,7 @@ class ArrayFetchAnalyzer
             && $stmt_var_type->parent_nodes
         ) {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_var_type->parent_nodes = [];
                 return;
@@ -1552,7 +1553,7 @@ class ArrayFetchAnalyzer
                         if ($object_like_keys) {
                             $formatted_keys = implode(
                                 ', ',
-                                \array_map(
+                                array_map(
                                     function ($key) {
                                         return is_int($key) ? $key : '\'' . $key . '\'';
                                     },

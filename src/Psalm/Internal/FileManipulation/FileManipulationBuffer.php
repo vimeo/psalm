@@ -9,6 +9,7 @@ use Psalm\Internal\Provider\FileProvider;
 use function array_merge;
 use function preg_match;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function substr;
 use function substr_replace;
@@ -125,7 +126,7 @@ class FileManipulationBuffer
             return;
         }
 
-        $comment_end = \strpos($file_contents, '*/', $bounds[1]);
+        $comment_end = strpos($file_contents, '*/', $bounds[1]);
 
         if ($comment_end === false) {
             return;
@@ -139,7 +140,7 @@ class FileManipulationBuffer
         $var_type_comment_end = $bounds[1] - $comment_start;
 
         $var_start = strrpos($comment_text, '@var', $var_type_comment_start - strlen($comment_text));
-        $var_end = \strpos($comment_text, "\n", $var_type_comment_end);
+        $var_end = strpos($comment_text, "\n", $var_type_comment_end);
 
         if ($var_start && $var_end) {
             $var_start = strrpos($comment_text, "\n", $var_start - strlen($comment_text)) ?: $var_start;

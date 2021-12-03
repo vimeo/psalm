@@ -26,9 +26,13 @@ use Psalm\Type;
 
 use function array_pop;
 use function end;
+use function explode;
+use function get_class;
 use function implode;
 use function in_array;
 use function is_string;
+use function reset;
+use function spl_object_id;
 use function strpos;
 use function strtolower;
 
@@ -169,7 +173,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $this->classlike_node_scanners[] = $classlike_node_scanner;
 
             if ($classlike_node_scanner->start($node) === false) {
-                $this->bad_classes[\spl_object_id($node)] = true;
+                $this->bad_classes[spl_object_id($node)] = true;
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
 
@@ -513,7 +517,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 return null;
             }
 
-            if (isset($this->bad_classes[\spl_object_id($node)])) {
+            if (isset($this->bad_classes[spl_object_id($node)])) {
                 return null;
             }
 
@@ -565,10 +569,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         || strpos($docblock_issue->code_location->file_path, 'CoreGenericClasses.phpstub')
                         || strpos($this->file_path, 'CoreGenericIterators.phpstub')
                     ) {
-                        $e = \reset($functionlike_node_scanner->storage->docblock_issues);
+                        $e = reset($functionlike_node_scanner->storage->docblock_issues);
 
-                        $fqcn_parts = \explode('\\', \get_class($e));
-                        $issue_type = \array_pop($fqcn_parts);
+                        $fqcn_parts = explode('\\', get_class($e));
+                        $issue_type = array_pop($fqcn_parts);
 
                         $message = $e instanceof TaintedInput
                             ? $e->getJourneyMessage()

@@ -11,6 +11,8 @@ use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
+use function count;
+
 class FileMapTest extends TestCase
 {
     public function setUp() : void
@@ -155,7 +157,7 @@ class FileMapTest extends TestCase
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
         [$after] = $codebase->analyzer->getMapsForFile('somefile.php');
 
-        $this->assertCount(\count($before), $after);
+        $this->assertCount(count($before), $after);
     }
 
     public function testMapIsUpdatedAfterDeletingFirstMethod(): void

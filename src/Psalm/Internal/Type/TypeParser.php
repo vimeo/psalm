@@ -37,18 +37,24 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_pop;
 use function array_shift;
 use function array_unique;
 use function array_unshift;
 use function array_values;
+use function constant;
 use function count;
+use function defined;
+use function end;
 use function explode;
 use function get_class;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function stripslashes;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -76,7 +82,7 @@ class TypeParser
 
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!\is_numeric($only_token[0])
+                if (!is_numeric($only_token[0])
                     && strpos($only_token[0], '\'') !== false
                     && strpos($only_token[0], '"') !== false
                 ) {
@@ -399,7 +405,7 @@ class TypeParser
 
             if ($t instanceof Atomic\TTemplateParam) {
                 $t_atomic_types = $t->as->getAtomicTypes();
-                $t_atomic_type = \count($t_atomic_types) === 1 ? \reset($t_atomic_types) : null;
+                $t_atomic_type = count($t_atomic_types) === 1 ? reset($t_atomic_types) : null;
 
                 if (!$t_atomic_type instanceof TNamedObject) {
                     $t_atomic_type = null;
@@ -711,9 +717,9 @@ class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (\defined($atomic_type->value)) {
+                    if (defined($atomic_type->value)) {
                         /** @var mixed */
-                        $constant_value = \constant($atomic_type->value);
+                        $constant_value = constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -931,8 +937,8 @@ class TypeParser
             $parse_tree->children
         );
 
-        $first_type = \reset($intersection_types);
-        $last_type = \end($intersection_types);
+        $first_type = reset($intersection_types);
+        $last_type = end($intersection_types);
 
         $onlyTKeyedArray = $first_type instanceof TKeyedArray
             || $last_type instanceof TKeyedArray;
@@ -954,9 +960,9 @@ class TypeParser
             $properties = [];
 
             if ($first_type instanceof TArray) {
-                \array_shift($intersection_types);
+                array_shift($intersection_types);
             } elseif ($last_type instanceof TArray) {
-                \array_pop($intersection_types);
+                array_pop($intersection_types);
             }
 
             /** @var TKeyedArray $intersection_type */
@@ -1243,7 +1249,7 @@ class TypeParser
             }
 
             if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                $property_key = \stripslashes(substr($property_key, 1, -1));
+                $property_key = stripslashes(substr($property_key, 1, -1));
             }
 
             if (!$property_type instanceof Union) {

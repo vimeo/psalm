@@ -48,6 +48,8 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use RuntimeException;
 
+use function array_filter;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -62,6 +64,7 @@ use function preg_split;
 use function str_replace;
 use function strtolower;
 use function trim;
+use function usort;
 
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
@@ -406,7 +409,7 @@ class ClassLikeNodeScanner
             if ($docblock_info->templates) {
                 $storage->template_types = [];
 
-                \usort(
+                usort(
                     $docblock_info->templates,
                     function (array $l, array $r) : int {
                         return $l[4] > $r[4] ? 1 : -1;
@@ -651,7 +654,7 @@ class ClassLikeNodeScanner
                 $mixin_type->setFromDocblock();
 
                 if ($mixin_type->isSingle()) {
-                    $mixin_type = \array_values($mixin_type->getAtomicTypes())[0];
+                    $mixin_type = array_values($mixin_type->getAtomicTypes())[0];
 
                     if ($mixin_type instanceof Type\Atomic\TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
@@ -769,7 +772,7 @@ class ClassLikeNodeScanner
             }
         }
 
-        $converted_aliases = \array_map(
+        $converted_aliases = array_map(
             function (TypeAlias\InlineTypeAlias $t): ?TypeAlias\ClassTypeAlias {
                 try {
                     $union = TypeParser::parseTokens(
@@ -782,7 +785,7 @@ class ClassLikeNodeScanner
                     $union->setFromDocblock();
 
                     return new TypeAlias\ClassTypeAlias(
-                        \array_values($union->getAtomicTypes())
+                        array_values($union->getAtomicTypes())
                     );
                 } catch (\Exception $e) {
                     return null;
@@ -800,7 +803,7 @@ class ClassLikeNodeScanner
             }
         }
 
-        $classlike_storage->type_aliases = \array_filter($converted_aliases);
+        $classlike_storage->type_aliases = array_filter($converted_aliases);
 
         return $classlike_storage;
     }

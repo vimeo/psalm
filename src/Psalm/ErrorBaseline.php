@@ -17,6 +17,7 @@ use function ksort;
 use function min;
 use function phpversion;
 use function preg_replace_callback;
+use function sort;
 use function str_replace;
 use function strpos;
 use function trim;
@@ -273,7 +274,7 @@ class ErrorBaseline
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
 
-                \sort($existingIssueType['s']);
+                sort($existingIssueType['s']);
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');

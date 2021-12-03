@@ -14,9 +14,12 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
+use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function count;
+use function in_array;
 use function reset;
 use function strlen;
 use function strpos;
@@ -300,7 +303,7 @@ class Populator
                             = ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
                                 + [$declaring_method_id->fq_class_name => $declaring_method_id];
                     } else {
-                        $candidate_overridden_ids = \array_intersect_key(
+                        $candidate_overridden_ids = array_intersect_key(
                             $candidate_overridden_ids,
                             ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
                                 + [$declaring_method_id->fq_class_name => $declaring_method_id]
@@ -328,7 +331,7 @@ class Populator
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                             $method_storage->inherited_return_type = true;
                         } else {
-                            if (\in_array(
+                            if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces
                             )) {
@@ -338,7 +341,7 @@ class Populator
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
 
-                                if (!\in_array(
+                                if (!in_array(
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces
                                 ) && $documenting_class_storage->is_interface
@@ -562,7 +565,7 @@ class Populator
         }
 
         $storage->constants = array_merge(
-            \array_filter(
+            array_filter(
                 $parent_storage->constants,
                 function ($constant) {
                     return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
@@ -623,7 +626,7 @@ class Populator
 
             // copy over any constants
             $storage->constants = array_merge(
-                \array_filter(
+                array_filter(
                     $parent_interface_storage->constants,
                     function ($constant) {
                         return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
@@ -729,7 +732,7 @@ class Populator
 
             // copy over any constants
             $storage->constants = array_merge(
-                \array_filter(
+                array_filter(
                     $implemented_interface_storage->constants,
                     function ($constant) {
                         return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;

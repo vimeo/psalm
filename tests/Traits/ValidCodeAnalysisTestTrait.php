@@ -5,8 +5,10 @@ use Psalm\Config;
 use Psalm\Context;
 
 use function is_int;
+use function str_replace;
 use function strlen;
 use function strpos;
+use function strtoupper;
 use function substr;
 use function version_compare;
 
@@ -66,8 +68,8 @@ trait ValidCodeAnalysisTestTrait
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
-        if (\strtoupper(substr(\PHP_OS, 0, 3)) === 'WIN') {
-            $code = \str_replace("\n", "\r\n", $code);
+        if (strtoupper(substr(\PHP_OS, 0, 3)) === 'WIN') {
+            $code = str_replace("\n", "\r\n", $code);
         }
 
         $context = new Context();

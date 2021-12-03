@@ -2,6 +2,7 @@
 namespace Psalm\Internal\ExecutionEnvironment;
 
 use function exec;
+use function function_exists;
 use function sprintf;
 
 /**
@@ -22,7 +23,7 @@ final class SystemCommandExecutor
      */
     public function execute(string $command) : array
     {
-        if (!\function_exists('exec')) {
+        if (!function_exists('exec')) {
             throw new \RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));
         }
 

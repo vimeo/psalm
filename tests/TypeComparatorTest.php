@@ -10,6 +10,10 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 
+use function array_diff_key;
+use function array_keys;
+use function array_map;
+
 class TypeComparatorTest extends TestCase
 {
     public function setUp() : void
@@ -63,7 +67,7 @@ class TypeComparatorTest extends TestCase
             'pure-Closure' => true,
         ];
 
-        $basic_types = \array_diff_key(
+        $basic_types = array_diff_key(
             TypeTokenizer::PSALM_RESERVED_WORDS,
             $basic_generic_types,
             [
@@ -72,11 +76,11 @@ class TypeComparatorTest extends TestCase
                 'non-empty-countable' => true, // bit weird, maybe a bug?
             ]
         );
-        return \array_map(
+        return array_map(
             function ($type) {
                 return [$type];
             },
-            \array_keys($basic_types)
+            array_keys($basic_types)
         );
     }
 

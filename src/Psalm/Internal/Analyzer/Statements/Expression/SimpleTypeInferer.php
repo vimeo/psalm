@@ -19,6 +19,7 @@ use function array_merge;
 use function array_shift;
 use function array_values;
 use function count;
+use function is_string;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -675,7 +676,7 @@ class SimpleTypeInferer
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
-                    if (\is_string($key)) {
+                    if (is_string($key)) {
                         $new_offset = $key;
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
                     } else {

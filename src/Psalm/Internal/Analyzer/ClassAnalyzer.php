@@ -76,6 +76,7 @@ use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_search;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -85,6 +86,7 @@ use function is_int;
 use function is_string;
 use function preg_match;
 use function preg_replace;
+use function reset;
 use function str_replace;
 use function strtolower;
 use function substr;
@@ -867,7 +869,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
-                        $type_params[] = clone \array_values($type_map)[0];
+                        $type_params[] = clone array_values($type_map)[0];
                     }
 
                     $this_object_type = new Type\Atomic\TGenericObject($this_object_type->value, $type_params);
@@ -1551,7 +1553,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->alter_code
             && $source === $this
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-            && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && !in_array('MissingPropertyType', $this->getSuppressedIssues())
             && $suggested_type
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
@@ -1817,7 +1819,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $template_params[] = new Type\Union([
                     new Type\Atomic\TTemplateParam(
                         $param_name,
-                        \reset($template_map),
+                        reset($template_map),
                         $key
                     )
                 ]);

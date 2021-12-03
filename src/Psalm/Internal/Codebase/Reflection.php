@@ -13,7 +13,10 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
+use function array_map;
 use function array_merge;
+use function get_class;
+use function implode;
 use function strtolower;
 
 /**
@@ -415,9 +418,9 @@ class Reflection
             $type = $reflection_type->getName();
         } elseif ($reflection_type instanceof \ReflectionUnionType) {
             /** @psalm-suppress MixedArgument */
-            $type = \implode(
+            $type = implode(
                 '|',
-                \array_map(
+                array_map(
                     function (\ReflectionNamedType $reflection) {
                         return $reflection->getName();
                     },
@@ -425,7 +428,7 @@ class Reflection
                 )
             );
         } else {
-            throw new \LogicException('Unexpected reflection class ' . \get_class($reflection_type) . ' found.');
+            throw new \LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
         }
 
         if ($reflection_type->allowsNull()) {

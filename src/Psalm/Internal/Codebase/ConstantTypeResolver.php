@@ -9,7 +9,12 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use ReflectionProperty;
 
+use function array_values;
 use function ctype_digit;
+use function is_float;
+use function is_int;
+use function is_string;
+use function spl_object_id;
 
 /**
  * @internal
@@ -22,7 +27,7 @@ class ConstantTypeResolver
         StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
     ) : Type\Atomic {
-        $c_id = \spl_object_id($c);
+        $c_id = spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
             throw new CircularReferenceException('Found a circular reference');
@@ -248,7 +253,7 @@ class ConstantTypeResolver
             );
 
             if ($found_type) {
-                return \array_values($found_type->getAtomicTypes())[0];
+                return array_values($found_type->getAtomicTypes())[0];
             }
         }
 
@@ -274,7 +279,7 @@ class ConstantTypeResolver
                 $union = $var_type->properties[$offset_type->value] ?? null;
 
                 if ($union && $union->isSingle()) {
-                    return \array_values($union->getAtomicTypes())[0];
+                    return array_values($union->getAtomicTypes())[0];
                 }
             }
         }
@@ -289,7 +294,7 @@ class ConstantTypeResolver
                 );
 
                 if ($found_type) {
-                    return \array_values($found_type->getAtomicTypes())[0];
+                    return array_values($found_type->getAtomicTypes())[0];
                 }
             }
         }
@@ -302,15 +307,15 @@ class ConstantTypeResolver
      */
     private static function getLiteralTypeFromScalarValue($value) : Type\Atomic
     {
-        if (\is_string($value)) {
+        if (is_string($value)) {
             return new Type\Atomic\TLiteralString($value);
         }
 
-        if (\is_int($value)) {
+        if (is_int($value)) {
             return new Type\Atomic\TLiteralInt($value);
         }
 
-        if (\is_float($value)) {
+        if (is_float($value)) {
             return new Type\Atomic\TLiteralFloat($value);
         }
 

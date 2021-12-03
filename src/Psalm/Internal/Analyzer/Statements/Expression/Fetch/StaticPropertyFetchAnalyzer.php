@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use function count;
 use function explode;
 use function in_array;
+use function md5;
 use function strtolower;
 
 /**
@@ -80,7 +81,7 @@ class StaticPropertyFetchAnalyzer
             ) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                    'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
                     false
                 );
             }

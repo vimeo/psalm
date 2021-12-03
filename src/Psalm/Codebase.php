@@ -47,10 +47,12 @@ use function error_log;
 use function explode;
 use function implode;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
 use function preg_match;
+use function preg_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -981,8 +983,8 @@ class Codebase
      */
     public function getSymbolInformation(string $file_path, string $symbol): ?array
     {
-        if (\is_numeric($symbol[0])) {
-            return ['type' => \preg_replace('/^[^:]*:/', '', $symbol)];
+        if (is_numeric($symbol[0])) {
+            return ['type' => preg_replace('/^[^:]*:/', '', $symbol)];
         }
 
         try {
@@ -1109,8 +1111,8 @@ class Codebase
 
     public function getSymbolLocation(string $file_path, string $symbol): ?CodeLocation
     {
-        if (\is_numeric($symbol[0])) {
-            $symbol = \preg_replace('/:.*/', '', $symbol);
+        if (is_numeric($symbol[0])) {
+            $symbol = preg_replace('/:.*/', '', $symbol);
             $symbol_parts = explode('-', $symbol);
 
             $file_contents = $this->getFileContents($file_path);
@@ -1641,7 +1643,7 @@ class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = \preg_replace('/^.*\\\/', '', $fq_class_name);
+                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);

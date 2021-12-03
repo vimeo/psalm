@@ -48,6 +48,7 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
+use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
@@ -61,6 +62,7 @@ use function in_array;
 use function is_a;
 use function is_dir;
 use function is_file;
+use function is_string;
 use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
@@ -1886,7 +1888,7 @@ class Config
         }
 
         foreach ($stub_files as $file_path) {
-            $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 
@@ -1930,22 +1932,22 @@ class Config
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (\extension_loaded('PDO')) {
+        if (extension_loaded('PDO')) {
             $ext_pdo_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'pdo.phpstub';
             $this->internal_stubs[] = $ext_pdo_path;
         }
 
-        if (\extension_loaded('soap')) {
+        if (extension_loaded('soap')) {
             $ext_soap_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'soap.phpstub';
             $this->internal_stubs[] = $ext_soap_path;
         }
 
-        if (\extension_loaded('ds')) {
+        if (extension_loaded('ds')) {
             $ext_ds_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-ds.phpstub';
             $this->internal_stubs[] = $ext_ds_path;
         }
 
-        if (\extension_loaded('mongodb')) {
+        if (extension_loaded('mongodb')) {
             $ext_mongodb_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mongodb.phpstub';
             $this->internal_stubs[] = $ext_mongodb_path;
         }
@@ -1955,7 +1957,7 @@ class Config
             $this->internal_stubs[] = $xdebug_stub_path;
         }
 
-        if (\extension_loaded('mysqli')) {
+        if (extension_loaded('mysqli')) {
             $ext_mysqli_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mysqli.phpstub';
             $this->internal_stubs[] = $ext_mysqli_path;
         }
@@ -1985,7 +1987,7 @@ class Config
         }
 
         foreach ($stub_files as $file_path) {
-            $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 
@@ -2108,7 +2110,7 @@ class Config
 
             $progress->debug('Registering autoloaded files' . "\n");
             foreach ($autoload_included_files as $file_path) {
-                $file_path = \str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+                $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
                 $progress->debug('   ' . $file_path . "\n");
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
@@ -2254,7 +2256,7 @@ class Config
             }
             $php_version = $composer_json['require']['php'] ?? null;
 
-            if (\is_string($php_version)) {
+            if (is_string($php_version)) {
                 $version_parser = new VersionParser();
 
                 $constraint = $version_parser->parseConstraints($php_version);

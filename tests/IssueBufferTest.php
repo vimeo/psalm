@@ -11,6 +11,10 @@ use Psalm\Internal\EventDispatcher;
 use Psalm\IssueBuffer;
 use Psalm\Report\ReportOptions;
 
+use function microtime;
+use function ob_get_clean;
+use function ob_start;
+
 class IssueBufferTest extends TestCase
 {
 
@@ -100,9 +104,9 @@ class IssueBufferTest extends TestCase
         $projectAnalzyer->stdout_report_options = new ReportOptions();
         $projectAnalzyer->generated_report_options = [];
 
-        \ob_start();
-        IssueBuffer::finish($projectAnalzyer, false, \microtime(true), false, $baseline);
-        $output = \ob_get_clean();
+        ob_start();
+        IssueBuffer::finish($projectAnalzyer, false, microtime(true), false, $baseline);
+        $output = ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }

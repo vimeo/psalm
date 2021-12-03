@@ -12,6 +12,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
@@ -20,6 +21,7 @@ use function array_values;
 use function in_array;
 use function preg_match;
 use function preg_quote;
+use function spl_object_id;
 
 /**
  * @internal
@@ -54,7 +56,7 @@ class DoAnalyzer
             }
         }
 
-        $cond_id = \spl_object_id($stmt->cond);
+        $cond_id = spl_object_id($stmt->cond);
 
         $while_clauses = FormulaGenerator::getFormula(
             $cond_id,
@@ -71,7 +73,7 @@ class DoAnalyzer
                 function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                    $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {

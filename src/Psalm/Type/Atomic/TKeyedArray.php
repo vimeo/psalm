@@ -11,13 +11,17 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function addslashes;
 use function array_keys;
 use function array_map;
 use function count;
 use function get_class;
 use function implode;
 use function is_int;
+use function is_string;
+use function preg_match;
 use function sort;
+use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
@@ -80,8 +84,8 @@ class TKeyedArray extends Atomic
                     return (string) $type;
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                 }
 
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
@@ -106,8 +110,8 @@ class TKeyedArray extends Atomic
                     return $type->getId();
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                 }
 
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
@@ -165,8 +169,8 @@ class TKeyedArray extends Atomic
                             $this_class,
                             $use_phpdoc_format
                         ): string {
-                            if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                                $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                            if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                             }
 
                             return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(

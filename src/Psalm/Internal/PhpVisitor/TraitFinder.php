@@ -4,6 +4,9 @@ namespace Psalm\Internal\PhpVisitor;
 use PhpParser;
 
 use function count;
+use function end;
+use function explode;
+use function trait_exists;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
@@ -31,10 +34,10 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
                 // compare ends of names, a temporary hack because PHPParser caches
                 // may not have that attribute
 
-                $fq_trait_name_parts = \explode('\\', $this->fq_trait_name);
+                $fq_trait_name_parts = explode('\\', $this->fq_trait_name);
 
                 /** @psalm-suppress PossiblyNullPropertyFetch */
-                if ($node->name->name === \end($fq_trait_name_parts)) {
+                if ($node->name->name === end($fq_trait_name_parts)) {
                     $this->matching_trait_nodes[] = $node;
                 }
             } elseif ($resolved_name === $this->fq_trait_name) {
@@ -57,7 +60,7 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
             return null;
         }
 
-        if (count($this->matching_trait_nodes) === 1 || !\trait_exists($this->fq_trait_name)) {
+        if (count($this->matching_trait_nodes) === 1 || !trait_exists($this->fq_trait_name)) {
             return $this->matching_trait_nodes[0];
         }
 

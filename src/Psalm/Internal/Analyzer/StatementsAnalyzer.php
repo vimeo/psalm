@@ -54,9 +54,12 @@ use function array_column;
 use function array_combine;
 use function array_keys;
 use function array_merge;
+use function array_search;
 use function fwrite;
 use function get_class;
+use function is_string;
 use function preg_split;
+use function reset;
 use function round;
 use function strlen;
 use function strpos;
@@ -248,7 +251,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {
                             foreach ($function_stmt->vars as $var) {
                                 if (!$var instanceof PhpParser\Node\Expr\Variable
-                                    || !\is_string($var->name)
+                                    || !is_string($var->name)
                                 ) {
                                     continue;
                                 }
@@ -681,7 +684,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         $comments = $this->parsed_docblock;
 
         if (isset($comments->tags['psalm-scope-this'])) {
-            $trimmed = trim(\reset($comments->tags['psalm-scope-this']));
+            $trimmed = trim(reset($comments->tags['psalm-scope-this']));
 
             if (!$codebase->classExists($trimmed)) {
                 IssueBuffer::maybeAdd(
@@ -758,7 +761,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = \array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 

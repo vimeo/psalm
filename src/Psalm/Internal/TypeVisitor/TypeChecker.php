@@ -25,6 +25,12 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 
+use function array_keys;
+use function array_search;
+use function count;
+use function is_array;
+use function md5;
+use function strpos;
 use function strtolower;
 
 class TypeChecker extends NodeVisitor
@@ -114,7 +120,7 @@ class TypeChecker extends NodeVisitor
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
         } elseif ($type instanceof TArray) {
-            if (\count($type->type_params) > 2) {
+            if (count($type->type_params) > 2) {
                 IssueBuffer::maybeAdd(
                     new TooManyTemplateParams(
                         $type->getId(). ' has too many template params, expecting 2',
@@ -157,12 +163,12 @@ class TypeChecker extends NodeVisitor
         ) {
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $this->calling_method_id,
-                'use:' . $atomic->text . ':' . \md5($this->source->getFilePath()),
+                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
                 false
             );
         }
 
-        if (!isset($this->phantom_classes[\strtolower($atomic->value)]) &&
+        if (!isset($this->phantom_classes[strtolower($atomic->value)]) &&
             ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
@@ -215,8 +221,8 @@ class TypeChecker extends NodeVisitor
         $expected_type_params = $class_storage->template_types ?: [];
         $expected_param_covariants = $class_storage->template_covariants;
 
-        $template_type_count = \count($expected_type_params);
-        $template_param_count = \count($atomic->type_params);
+        $template_type_count = count($expected_type_params);
+        $template_param_count = count($atomic->type_params);
 
         if ($template_type_count > $template_param_count) {
             IssueBuffer::maybeAdd(
@@ -238,7 +244,7 @@ class TypeChecker extends NodeVisitor
             );
         }
 
-        $expected_type_param_keys = \array_keys($expected_type_params);
+        $expected_type_param_keys = array_keys($expected_type_params);
 
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
@@ -308,7 +314,7 @@ class TypeChecker extends NodeVisitor
         }
 
         $const_name = $atomic->const_name;
-        if (\strpos($const_name, '*') !== false) {
+        if (strpos($const_name, '*') !== false) {
             $expanded = TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
@@ -319,7 +325,7 @@ class TypeChecker extends NodeVisitor
                 true
             );
 
-            $is_defined = \is_array($expanded) && \count($expanded) > 0;
+            $is_defined = is_array($expanded) && count($expanded) > 0;
         } else {
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
@@ -345,14 +351,14 @@ class TypeChecker extends NodeVisitor
     public function checkTemplateParam(TTemplateParam $atomic) : void
     {
         if ($this->prevent_template_covariance
-            && \strpos($atomic->defining_class, 'fn-') !== 0
+            && strpos($atomic->defining_class, 'fn-') !== 0
         ) {
             $codebase = $this->source->getCodebase();
 
             $class_storage = $codebase->classlike_storage_provider->get($atomic->defining_class);
 
             $template_offset = $class_storage->template_types
-                ? \array_search($atomic->param_name, \array_keys($class_storage->template_types), true)
+                ? array_search($atomic->param_name, array_keys($class_storage->template_types), true)
                 : false;
 
             if ($template_offset !== false

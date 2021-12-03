@@ -29,6 +29,7 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function array_merge;
+use function array_values;
 use function count;
 use function explode;
 use function get_class;
@@ -338,7 +339,7 @@ class AssertionReconciler extends Reconciler
             if (strpos($assertion, '<') || strpos($assertion, '[') || strpos($assertion, '{')) {
                 $new_type_union = Type::parseString($assertion);
 
-                $new_type_part = \array_values($new_type_union->getAtomicTypes())[0];
+                $new_type_part = array_values($new_type_union->getAtomicTypes())[0];
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
@@ -359,7 +360,7 @@ class AssertionReconciler extends Reconciler
         if ($new_type_part instanceof Type\Atomic\TTemplateParam
             && $new_type_part->as->isSingle()
         ) {
-            $new_as_atomic = \array_values($new_type_part->as->getAtomicTypes())[0];
+            $new_as_atomic = array_values($new_type_part->as->getAtomicTypes())[0];
 
             $acceptable_atomic_types = [];
 

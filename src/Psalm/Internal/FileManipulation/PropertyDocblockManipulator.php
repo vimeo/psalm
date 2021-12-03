@@ -15,6 +15,7 @@ use function str_replace;
 use function strlen;
 use function strrpos;
 use function substr;
+use function substr_count;
 
 /**
  * @internal
@@ -133,7 +134,7 @@ class PropertyDocblockManipulator
                     $preceding_newline_pos - $preceding_semicolon_pos - 1
                 );
 
-                if (!\substr_count($preceding_space, "\n")) {
+                if (!substr_count($preceding_space, "\n")) {
                     $this->add_newline = true;
                 }
             }

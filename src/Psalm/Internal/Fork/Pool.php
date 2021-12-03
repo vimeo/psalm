@@ -6,6 +6,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_values;
+use function assert;
 use function base64_decode;
 use function base64_encode;
 use function count;
@@ -106,7 +107,7 @@ class Pool
         $pool_size = count($process_task_data_iterator);
         $this->task_done_closure = $task_done_closure;
 
-        \assert(
+        assert(
             $pool_size > 1,
             'The pool size must be >= 2 to use the fork pool.'
         );

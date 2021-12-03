@@ -7,6 +7,7 @@ use Psalm\Plugin\EventHandler\Event;
 use Psalm\Plugin\Hook;
 use Psalm\Type\Atomic\TLiteralString;
 
+use function array_merge;
 use function count;
 use function is_subclass_of;
 
@@ -556,7 +557,7 @@ class EventDispatcher
         $added_taints = [];
 
         foreach ($this->add_taints_checks as $handler) {
-            $added_taints = \array_merge($added_taints, $handler::addTaints($event));
+            $added_taints = array_merge($added_taints, $handler::addTaints($event));
         }
 
         return $added_taints;
@@ -570,7 +571,7 @@ class EventDispatcher
         $removed_taints = [];
 
         foreach ($this->remove_taints_checks as $handler) {
-            $removed_taints = \array_merge($removed_taints, $handler::removeTaints($event));
+            $removed_taints = array_merge($removed_taints, $handler::removeTaints($event));
         }
 
         return $removed_taints;

@@ -8,6 +8,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_readable;
+use function mkdir;
 use function serialize;
 use function unserialize;
 
@@ -830,7 +831,7 @@ class FileReferenceCacheProvider
 
         if ($cache_directory) {
             if (!file_exists($cache_directory)) {
-                \mkdir($cache_directory, 0777, true);
+                mkdir($cache_directory, 0777, true);
             }
 
             $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;

@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
 use function array_reverse;
+use function count;
 use function explode;
 use function min;
 use function strlen;
@@ -32,8 +33,8 @@ class FileDiffer
         array $a,
         array $b
     ) : array {
-        $n = \count($a);
-        $m = \count($b);
+        $n = count($a);
+        $m = count($b);
         $max = $n + $m;
         $v = [1 => 0];
         $trace = [];
@@ -74,7 +75,7 @@ class FileDiffer
     private static function extractDiff(array $trace, int $x, int $y, array $a, array $b) : array
     {
         $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; --$d) {
+        for ($d = count($trace) - 1; $d >= 0; --$d) {
             $v = $trace[$d];
             $k = $x - $y;
 
@@ -273,7 +274,7 @@ class FileDiffer
     private static function coalesceReplacements(array $diff): array
     {
         $newDiff = [];
-        $c = \count($diff);
+        $c = count($diff);
         for ($i = 0; $i < $c; ++$i) {
             $diffType = $diff[$i]->type;
             if ($diffType !== DiffElem::TYPE_REMOVE) {

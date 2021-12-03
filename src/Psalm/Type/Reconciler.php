@@ -31,9 +31,12 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_merge;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function is_numeric;
+use function json_decode;
 use function ksort;
 use function preg_match;
 use function preg_quote;
@@ -176,11 +179,11 @@ class Reconciler
                             $nested_negated = !$negated;
 
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = \json_decode(substr($new_type_part_part, 2), true);
+                            $data = json_decode(substr($new_type_part_part, 2), true);
                         } else {
                             $nested_negated = $negated;
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = \json_decode(substr($new_type_part_part, 1), true);
+                            $data = json_decode(substr($new_type_part_part, 1), true);
                         }
 
                         $existing_types = self::reconcileKeyedTypes(
@@ -398,7 +401,7 @@ class Reconciler
                     if (count($key_parts) === 4
                         && $key_parts[1] === '['
                         && $key_parts[2][0] !== '\''
-                        && !\is_numeric($key_parts[2])
+                        && !is_numeric($key_parts[2])
                     ) {
                         if (isset($new_types[$key_parts[2]])) {
                             $new_types[$key_parts[2]][] = ['=in-array-' . $key_parts[0]];
@@ -519,7 +522,7 @@ class Reconciler
             }
         }
 
-        $parts = \array_values($parts);
+        $parts = array_values($parts);
 
         self::$broken_paths[$path] = $parts;
 
@@ -663,7 +666,7 @@ class Reconciler
                             return null;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
+                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !is_numeric($array_key[0]))) {
                             if ($has_empty) {
                                 return null;
                             }

@@ -16,8 +16,11 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_shift;
+use function count;
+use function end;
 use function explode;
 use function implode;
+use function in_array;
 use function is_bool;
 use function rtrim;
 use function strpos;
@@ -330,7 +333,7 @@ class Functions
 
         foreach ($function_map as $function_name => $function) {
             foreach ($match_function_patterns as $pattern) {
-                $pattern_lc = \strtolower($pattern);
+                $pattern_lc = strtolower($pattern);
 
                 if (substr($pattern, -1, 1) === '*') {
                     if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
@@ -348,10 +351,10 @@ class Functions
                 }
 
                 if ($function->cased_name) {
-                    $cased_name_parts = \explode('\\', $function->cased_name);
-                    $pattern_parts = \explode('\\', $pattern);
+                    $cased_name_parts = explode('\\', $function->cased_name);
+                    $pattern_parts = explode('\\', $pattern);
 
-                    if (\end($cased_name_parts)[0] !== \end($pattern_parts)[0]) {
+                    if (end($cased_name_parts)[0] !== end($pattern_parts)[0]) {
                         continue;
                     }
                 }
@@ -500,7 +503,7 @@ class Functions
             'bindtextdomain',
         ];
 
-        if (\in_array(strtolower($function_id), $impure_functions, true)) {
+        if (in_array(strtolower($function_id), $impure_functions, true)) {
             return false;
         }
 
@@ -550,7 +553,7 @@ class Functions
         );
 
         if (!$function_callable->params
-            || ($args !== null && \count($args) === 0)
+            || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
             return false;

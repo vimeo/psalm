@@ -44,6 +44,7 @@ use function array_search;
 use function array_values;
 use function in_array;
 use function is_string;
+use function reset;
 use function strtolower;
 
 /**
@@ -652,7 +653,7 @@ class ForeachAnalyzer
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
                     new PossibleRawObjectIteration(
-                        'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
+                        'Possibly undesired iteration over regular object ' . reset($raw_object_types),
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -660,7 +661,7 @@ class ForeachAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new RawObjectIteration(
-                        'Possibly undesired iteration over regular object ' . \reset($raw_object_types),
+                        'Possibly undesired iteration over regular object ' . reset($raw_object_types),
                         new CodeLocation($statements_analyzer->getSource(), $expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()

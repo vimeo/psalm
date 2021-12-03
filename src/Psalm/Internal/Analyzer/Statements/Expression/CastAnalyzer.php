@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 
 use function array_merge;
+use function array_pop;
 use function array_values;
 use function count;
 use function current;
@@ -289,7 +290,7 @@ class CastAnalyzer
         }
 
         while ($atomic_types) {
-            $atomic_type = \array_pop($atomic_types);
+            $atomic_type = array_pop($atomic_types);
 
             if ($atomic_type instanceof TFloat
                 || $atomic_type instanceof TInt

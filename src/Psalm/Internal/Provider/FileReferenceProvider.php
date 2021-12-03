@@ -10,6 +10,7 @@ use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function explode;
 use function file_exists;
 
 /**
@@ -390,7 +391,7 @@ class FileReferenceProvider
                 $new_referencing_methods = array_keys(self::$method_references_to_classes[$file_class_lc]);
 
                 foreach ($new_referencing_methods as $new_referencing_method_id) {
-                    $fq_class_name_lc = \explode('::', $new_referencing_method_id)[0];
+                    $fq_class_name_lc = explode('::', $new_referencing_method_id)[0];
 
                     try {
                         $referenced_files[] = $codebase->scanner->getClassLikeFilePath($fq_class_name_lc);

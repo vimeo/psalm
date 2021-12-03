@@ -27,7 +27,9 @@ use Psalm\Type;
 use Psalm\Type\TaintKindGroup;
 
 use function array_filter;
+use function array_map;
 use function array_merge;
+use function array_values;
 use function count;
 use function explode;
 use function in_array;
@@ -154,11 +156,11 @@ class FunctionLikeDocblockScanner
             $throw_location = new CodeLocation\DocblockTypeLocation(
                 $file_scanner,
                 $offset,
-                $offset + \strlen($throw),
+                $offset + strlen($throw),
                 $line
             );
 
-            $class_names = \array_filter(\array_map('trim', explode('|', $throw)));
+            $class_names = array_filter(array_map('trim', explode('|', $throw)));
 
             foreach ($class_names as $throw_class) {
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
@@ -918,7 +920,7 @@ class FunctionLikeDocblockScanner
             );
 
             $storage->return_type = TypeParser::parseTokens(
-                \array_values($fixed_type_tokens),
+                array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
                 $type_aliases
@@ -1047,7 +1049,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
-                if (isset($flow_parts[0]) && \strpos(trim($flow_parts[0]), 'proxy') === 0) {
+                if (isset($flow_parts[0]) && strpos(trim($flow_parts[0]), 'proxy') === 0) {
                     $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
                     [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
 
@@ -1111,7 +1113,7 @@ class FunctionLikeDocblockScanner
             );
 
             $removed_taint = TypeParser::parseTokens(
-                \array_values($fixed_type_tokens),
+                array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
                 $type_aliases
@@ -1119,7 +1121,7 @@ class FunctionLikeDocblockScanner
 
             $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
 
-            $removed_taint_single = \array_values($removed_taint->getAtomicTypes())[0];
+            $removed_taint_single = array_values($removed_taint->getAtomicTypes())[0];
 
             if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
                 throw new TypeParseTreeException('Escaped taint must be a conditional');

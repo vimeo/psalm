@@ -8,6 +8,8 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_values;
+use function count;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -152,9 +154,9 @@ class TClassString extends TString
             $depth
         );
 
-        $as_type_types = \array_values($as_type->getAtomicTypes());
+        $as_type_types = array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = \count($as_type_types) === 1
+        $class_string->as_type = count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;

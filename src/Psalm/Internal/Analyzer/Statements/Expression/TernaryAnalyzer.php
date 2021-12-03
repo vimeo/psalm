@@ -17,6 +17,7 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -24,8 +25,10 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function in_array;
 use function preg_match;
 use function preg_quote;
+use function spl_object_id;
 
 /**
  * @internal
@@ -61,7 +64,7 @@ class TernaryAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $cond_id = \spl_object_id($stmt->cond);
+        $cond_id = spl_object_id($stmt->cond);
 
         $if_clauses = FormulaGenerator::getFormula(
             $cond_id,
@@ -93,7 +96,7 @@ class TernaryAnalyzer
             function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
-                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
@@ -126,7 +129,7 @@ class TernaryAnalyzer
                 array_filter(
                     $ternary_clauses,
                     function ($c) use ($reconciled_expression_clauses): bool {
-                        return !\in_array($c->hash, $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );

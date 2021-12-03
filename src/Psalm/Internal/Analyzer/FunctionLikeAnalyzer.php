@@ -45,12 +45,19 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function array_combine;
+use function array_diff_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function array_values;
+use function count;
 use function end;
+use function is_string;
 use function md5;
+use function microtime;
+use function reset;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -222,7 +229,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $byref_uses = [];
 
             foreach ($this->function->uses as $use) {
-                if (!\is_string($use->var->name)) {
+                if (!is_string($use->var->name)) {
                     continue;
                 }
 
@@ -425,7 +432,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $time = \microtime(true);
+        $time = microtime(true);
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -501,7 +508,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $traverser->traverse($function_stmts);
 
             if ($node_counter->count > 5) {
-                $time_taken = \microtime(true) - $time;
+                $time_taken = microtime(true) - $time;
                 $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
             }
         }
@@ -589,7 +596,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 /**
                  * @var Type\Atomic\TClosure
                  */
-                $closure_atomic = \array_values($function_type->getAtomicTypes())[0];
+                $closure_atomic = array_values($function_type->getAtomicTypes())[0];
 
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type
@@ -1666,7 +1673,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
         $this->suppressed_issues = $new_issues + $this->suppressed_issues;
@@ -1678,10 +1685,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
-        $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
+        $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
     /**
@@ -1775,7 +1782,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $template_params[] = new Type\Union([
                             new Type\Atomic\TTemplateParam(
                                 $param_name,
-                                \reset($template_map),
+                                reset($template_map),
                                 $key
                             )
                         ]);
@@ -1881,7 +1888,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     if (!isset($appearing_class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
                         MethodComparator::compare(
                             $codebase,
-                            \count($overridden_method_ids) === 1 ? $this->function : null,
+                            count($overridden_method_ids) === 1 ? $this->function : null,
                             $declaring_class_storage,
                             $parent_storage,
                             $storage,

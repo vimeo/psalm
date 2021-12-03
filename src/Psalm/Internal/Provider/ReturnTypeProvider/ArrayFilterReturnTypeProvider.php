@@ -17,9 +17,13 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_filter;
 use function array_map;
+use function array_slice;
 use function count;
 use function is_string;
+use function reset;
+use function spl_object_id;
 
 class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -74,7 +78,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                 $first_arg_array = clone $first_arg_array;
 
-                $new_properties = \array_filter(
+                $new_properties = array_filter(
                     array_map(
                         static function ($keyed_type) use ($statements_source, $context) {
                             $prev_keyed_type = $keyed_type;
@@ -179,7 +183,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        \array_slice($call_args, 0, 1),
+                        array_slice($call_args, 0, 1),
                         $assertions
                     );
 
@@ -216,7 +220,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && ($second_arg_type = $statements_source->node_data->getType($function_call_arg->value))
                 && ($closure_types = $second_arg_type->getClosureTypes())
             ) {
-                $closure_atomic_type = \reset($closure_types);
+                $closure_atomic_type = reset($closure_types);
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {
@@ -246,7 +250,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     ) {
                         $codebase = $statements_source->getCodebase();
 
-                        $cond_object_id = \spl_object_id($stmt->expr);
+                        $cond_object_id = spl_object_id($stmt->expr);
 
                         try {
                             $filter_clauses = FormulaGenerator::getFormula(

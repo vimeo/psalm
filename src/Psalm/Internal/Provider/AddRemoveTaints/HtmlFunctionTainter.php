@@ -7,6 +7,9 @@ use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
+use function count;
+use function strtolower;
+
 class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
@@ -22,13 +25,13 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || !$item->name instanceof PhpParser\Node\Name
-            || \count($item->name->parts) !== 1
-            || \count($item->getArgs()) === 0
+            || count($item->name->parts) !== 1
+            || count($item->getArgs()) === 0
         ) {
             return [];
         }
 
-        $function_id = \strtolower($item->name->parts[0]);
+        $function_id = strtolower($item->name->parts[0]);
 
         if ($function_id === 'html_entity_decode'
             || $function_id === 'htmlspecialchars_decode'
@@ -70,13 +73,13 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || !$item->name instanceof PhpParser\Node\Name
-            || \count($item->name->parts) !== 1
-            || \count($item->getArgs()) === 0
+            || count($item->name->parts) !== 1
+            || count($item->getArgs()) === 0
         ) {
             return [];
         }
 
-        $function_id = \strtolower($item->name->parts[0]);
+        $function_id = strtolower($item->name->parts[0]);
 
         if ($function_id === 'htmlentities'
             || $function_id === 'htmlspecialchars'

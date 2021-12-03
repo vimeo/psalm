@@ -5,6 +5,11 @@ use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 
 use function explode;
+use function file_get_contents;
+use function json_decode;
+use function str_replace;
+use function strpos;
+use function strtotime;
 
 /**
  * Environment variables collector for CI environment.
@@ -256,10 +261,10 @@ class BuildInfoCollector
             $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
 
             $githubRef = (string) $this->env['GITHUB_REF'];
-            if (\strpos($githubRef, 'refs/heads/') !== false) {
-                $githubRef = \str_replace('refs/heads/', '', $githubRef);
-            } elseif (\strpos($githubRef, 'refs/tags/') !== false) {
-                $githubRef = \str_replace('refs/tags/', '', $githubRef);
+            if (strpos($githubRef, 'refs/heads/') !== false) {
+                $githubRef = str_replace('refs/heads/', '', $githubRef);
+            } elseif (strpos($githubRef, 'refs/tags/') !== false) {
+                $githubRef = str_replace('refs/tags/', '', $githubRef);
             }
 
             $this->env['CI_BRANCH'] = $githubRef;
@@ -275,9 +280,9 @@ class BuildInfoCollector
             $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
 
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
-                $event_json = \file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
+                $event_json = file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
-                $event_data = \json_decode($event_json, true);
+                $event_data = json_decode($event_json, true);
 
                 if (isset($event_data['head_commit'])) {
                     /**
@@ -299,7 +304,7 @@ class BuildInfoCollector
                             ->setCommitterName($head_commit_data['committer']['name'])
                             ->setCommitterEmail($head_commit_data['committer']['email'])
                             ->setMessage($head_commit_data['message'])
-                            ->setDate(\strtotime($head_commit_data['timestamp'])),
+                            ->setDate(strtotime($head_commit_data['timestamp'])),
                         []
                     );
 

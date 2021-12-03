@@ -8,6 +8,7 @@ use Psalm\Report;
 
 use function file_exists;
 use function file_get_contents;
+use function strpos;
 
 /**
  * SARIF report format suitable for import into any SARIF compatible solution
@@ -46,7 +47,7 @@ class SarifReport extends Report
                 ],
                 'properties' => [
                     'tags' => [
-                        (\strpos($issue_data->type, 'Tainted') === 0) ? 'security' : 'maintainability',
+                        (strpos($issue_data->type, 'Tainted') === 0) ? 'security' : 'maintainability',
                     ],
                 ],
                 'helpUri' => $issue_data->link,

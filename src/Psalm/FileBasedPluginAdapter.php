@@ -5,8 +5,10 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
 
+use function assert;
 use function class_exists;
 use function reset;
+use function str_replace;
 
 class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {
@@ -40,7 +42,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
         /** @psalm-suppress UnresolvableInclude */
         require_once($this->path);
 
-        \assert(class_exists($fq_class_name));
+        assert(class_exists($fq_class_name));
 
         $registration->registerHooksFromClass($fq_class_name);
     }
@@ -49,7 +51,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     {
         $codebase = $this->codebase;
 
-        $path = \str_replace(['/', '\\'], \DIRECTORY_SEPARATOR, $path);
+        $path = str_replace(['/', '\\'], \DIRECTORY_SEPARATOR, $path);
 
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);

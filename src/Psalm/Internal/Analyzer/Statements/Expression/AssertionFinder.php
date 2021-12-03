@@ -47,6 +47,8 @@ use function in_array;
 use function is_callable;
 use function is_int;
 use function is_numeric;
+use function is_string;
+use function json_encode;
 use function sprintf;
 use function str_replace;
 use function strpos;
@@ -131,7 +133,7 @@ class AssertionFinder
 
             if ($var_name) {
                 if ($candidate_if_types) {
-                    $if_types[$var_name] = [['@' . \json_encode($candidate_if_types[0])]];
+                    $if_types[$var_name] = [['@' . json_encode($candidate_if_types[0])]];
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }
@@ -965,7 +967,7 @@ class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = [[$assertion->rule[0][0]]];
                     }
-                } elseif (\is_string($assertion->var_id)) {
+                } elseif (is_string($assertion->var_id)) {
                     $is_function = substr($assertion->var_id, -2) === '()';
                     $exploded_id = explode('->', $assertion->var_id);
                     $var_id   = $exploded_id[0] ?? null;
@@ -1099,7 +1101,7 @@ class AssertionFinder
                             $if_types[$var_id] = [['!' . $assertion->rule[0][0]]];
                         }
                     }
-                } elseif (\is_string($assertion->var_id)) {
+                } elseif (is_string($assertion->var_id)) {
                     $is_function = substr($assertion->var_id, -2) === '()';
                     $exploded_id = explode('->', $assertion->var_id);
                     $var_id   = $exploded_id[0] ?? null;

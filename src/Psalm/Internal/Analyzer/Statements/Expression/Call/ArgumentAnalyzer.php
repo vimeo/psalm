@@ -51,9 +51,13 @@ use Psalm\Type\Atomic;
 use function array_merge;
 use function count;
 use function explode;
+use function in_array;
+use function ord;
+use function preg_split;
 use function reset;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -142,7 +146,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
             && !$arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
-            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
+            $values = preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
 
             if ($values !== false) {
                 $prev_ord = 0;
@@ -150,7 +154,7 @@ class ArgumentAnalyzer
                 $gt_count = 0;
 
                 foreach ($values as $value) {
-                    $ord = \ord($value);
+                    $ord = ord($value);
 
                     if ($ord > $prev_ord) {
                         $gt_count++;
@@ -1220,7 +1224,7 @@ class ArgumentAnalyzer
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
                             if ($function_id[0] === '$') {
-                                $function_id = \substr($function_id, 1);
+                                $function_id = substr($function_id, 1);
                             }
 
                             $function_id_parts = explode('&', $function_id);
@@ -1457,7 +1461,7 @@ class ArgumentAnalyzer
 
         if (!$statements_analyzer->data_flow_graph
             || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             return $input_type;
         }

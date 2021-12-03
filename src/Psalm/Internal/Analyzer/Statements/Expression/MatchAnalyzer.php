@@ -24,11 +24,14 @@ use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_filter;
 use function array_map;
+use function array_merge;
 use function array_reverse;
 use function array_shift;
 use function count;
 use function in_array;
+use function spl_object_id;
 use function substr;
 
 class MatchAnalyzer
@@ -207,7 +210,7 @@ class MatchAnalyzer
                     throw new \UnexpectedValueException('bad');
                 }
 
-                $all_conds = \array_merge($arm->conds, $all_conds);
+                $all_conds = array_merge($arm->conds, $all_conds);
             }
 
             $all_match_condition = self::convertCondsToConditional(
@@ -219,8 +222,8 @@ class MatchAnalyzer
             ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
 
             $clauses = FormulaGenerator::getFormula(
-                \spl_object_id($all_match_condition),
-                \spl_object_id($all_match_condition),
+                spl_object_id($all_match_condition),
+                spl_object_id($all_match_condition),
                 $all_match_condition,
                 $context->self,
                 $statements_analyzer,
@@ -250,7 +253,7 @@ class MatchAnalyzer
                 );
 
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
-                    $array_literal_types = \array_filter(
+                    $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
                         function ($type) {
                             return $type instanceof Type\Atomic\TLiteralInt

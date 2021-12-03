@@ -15,6 +15,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 
 use function array_merge;
 use function count;
+use function is_string;
 use function ltrim;
 use function preg_match;
 use function reset;
@@ -134,7 +135,7 @@ class FunctionDocblockManipulator
 
         foreach ($stmt->params as $param) {
             if ($param->var instanceof PhpParser\Node\Expr\Variable
-                && \is_string($param->var->name)
+                && is_string($param->var->name)
             ) {
                 $this->param_offsets[$param->var->name] = (int) $param->getAttribute('startFilePos');
 

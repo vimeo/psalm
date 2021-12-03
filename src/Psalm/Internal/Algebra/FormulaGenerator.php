@@ -14,6 +14,7 @@ use Psalm\Node\Expr\VirtualBooleanNot;
 
 use function array_merge;
 use function count;
+use function spl_object_id;
 use function strlen;
 use function substr;
 
@@ -37,7 +38,7 @@ class FormulaGenerator
         ) {
             $left_assertions = self::getFormula(
                 $conditional_object_id,
-                \spl_object_id($conditional->left),
+                spl_object_id($conditional->left),
                 $conditional->left,
                 $this_class_name,
                 $source,
@@ -48,7 +49,7 @@ class FormulaGenerator
 
             $right_assertions = self::getFormula(
                 $conditional_object_id,
-                \spl_object_id($conditional->right),
+                spl_object_id($conditional->right),
                 $conditional->right,
                 $this_class_name,
                 $source,
@@ -68,7 +69,7 @@ class FormulaGenerator
         ) {
             $left_clauses = self::getFormula(
                 $conditional_object_id,
-                \spl_object_id($conditional->left),
+                spl_object_id($conditional->left),
                 $conditional->left,
                 $this_class_name,
                 $source,
@@ -79,7 +80,7 @@ class FormulaGenerator
 
             $right_clauses = self::getFormula(
                 $conditional_object_id,
-                \spl_object_id($conditional->right),
+                spl_object_id($conditional->right),
                 $conditional->right,
                 $this_class_name,
                 $source,
@@ -157,7 +158,7 @@ class FormulaGenerator
                             $clauses[] = new Clause(
                                 [$var => $orred_types],
                                 $conditional_object_id,
-                                \spl_object_id($conditional->expr),
+                                spl_object_id($conditional->expr),
                                 false,
                                 true,
                                 $orred_types[0][0] === '='
@@ -189,7 +190,7 @@ class FormulaGenerator
 
                 return self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->expr),
+                    spl_object_id($conditional->expr),
                     $and_expr,
                     $this_class_name,
                     $source,
@@ -202,7 +203,7 @@ class FormulaGenerator
             return Algebra::negateFormula(
                 self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->expr),
+                    spl_object_id($conditional->expr),
                     $conditional->expr,
                     $this_class_name,
                     $source,
@@ -227,7 +228,7 @@ class FormulaGenerator
                 return Algebra::negateFormula(
                     self::getFormula(
                         $conditional_object_id,
-                        \spl_object_id($conditional->left),
+                        spl_object_id($conditional->left),
                         $conditional->left,
                         $this_class_name,
                         $source,
@@ -247,7 +248,7 @@ class FormulaGenerator
                 return Algebra::negateFormula(
                     self::getFormula(
                         $conditional_object_id,
-                        \spl_object_id($conditional->right),
+                        spl_object_id($conditional->right),
                         $conditional->right,
                         $this_class_name,
                         $source,
@@ -266,7 +267,7 @@ class FormulaGenerator
             ) {
                 return self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->left),
+                    spl_object_id($conditional->left),
                     $conditional->left,
                     $this_class_name,
                     $source,
@@ -284,7 +285,7 @@ class FormulaGenerator
             ) {
                 return self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->right),
+                    spl_object_id($conditional->right),
                     $conditional->right,
                     $this_class_name,
                     $source,
@@ -310,7 +311,7 @@ class FormulaGenerator
                 return Algebra::negateFormula(
                     self::getFormula(
                         $conditional_object_id,
-                        \spl_object_id($conditional->left),
+                        spl_object_id($conditional->left),
                         $conditional->left,
                         $this_class_name,
                         $source,
@@ -330,7 +331,7 @@ class FormulaGenerator
                 return Algebra::negateFormula(
                     self::getFormula(
                         $conditional_object_id,
-                        \spl_object_id($conditional->right),
+                        spl_object_id($conditional->right),
                         $conditional->right,
                         $this_class_name,
                         $source,
@@ -349,7 +350,7 @@ class FormulaGenerator
             ) {
                 return self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->left),
+                    spl_object_id($conditional->left),
                     $conditional->left,
                     $this_class_name,
                     $source,
@@ -367,7 +368,7 @@ class FormulaGenerator
             ) {
                 return self::getFormula(
                     $conditional_object_id,
-                    \spl_object_id($conditional->right),
+                    spl_object_id($conditional->right),
                     $conditional->right,
                     $this_class_name,
                     $source,
@@ -381,7 +382,7 @@ class FormulaGenerator
         if ($conditional instanceof PhpParser\Node\Expr\Cast\Bool_) {
             return self::getFormula(
                 $conditional_object_id,
-                \spl_object_id($conditional->expr),
+                spl_object_id($conditional->expr),
                 $conditional->expr,
                 $this_class_name,
                 $source,

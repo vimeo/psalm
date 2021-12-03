@@ -69,9 +69,11 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 
 use function array_merge;
+use function array_pop;
 use function count;
 use function in_array;
 use function reset;
+use function strpos;
 use function strtolower;
 
 /**
@@ -376,10 +378,10 @@ class InstancePropertyAssignmentAnalyzer
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
                     || $codebase->classExtends($context->self, $appearing_property_class))
-                && (\strpos($context->calling_method_id, '::__construct')
-                    || \strpos($context->calling_method_id, '::unserialize')
-                    || \strpos($context->calling_method_id, '::__unserialize')
-                    || \strpos($context->calling_method_id, '::__clone')
+                && (strpos($context->calling_method_id, '::__construct')
+                    || strpos($context->calling_method_id, '::unserialize')
+                    || strpos($context->calling_method_id, '::__unserialize')
+                    || strpos($context->calling_method_id, '::__clone')
                     || $property_storage->allow_private_mutation
                     || $property_var_pure_compatible);
 
@@ -472,7 +474,7 @@ class InstancePropertyAssignmentAnalyzer
 
             if ($var_id) {
                 if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                    && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $context->vars_in_scope[$var_id]->parent_nodes = [];
                     return;
@@ -526,7 +528,7 @@ class InstancePropertyAssignmentAnalyzer
             }
         } else {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $assignment_value_type->parent_nodes = [];
                 return;
@@ -742,10 +744,10 @@ class InstancePropertyAssignmentAnalyzer
         $context_type = null;
 
         while ($lhs_atomic_types) {
-            $lhs_type_part = \array_pop($lhs_atomic_types);
+            $lhs_type_part = array_pop($lhs_atomic_types);
 
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
-                $lhs_atomic_types = \array_merge(
+                $lhs_atomic_types = array_merge(
                     $lhs_atomic_types,
                     $lhs_type_part->as->getAtomicTypes()
                 );

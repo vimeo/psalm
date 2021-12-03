@@ -10,6 +10,8 @@ use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function end;
+
 class ContinueAnalyzer
 {
     public static function analyze(
@@ -43,7 +45,7 @@ class ContinueAnalyzer
             }
         } else {
             if ($context->break_types
-                && \end($context->break_types) === 'switch'
+                && end($context->break_types) === 'switch'
                 && $count < 2
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;

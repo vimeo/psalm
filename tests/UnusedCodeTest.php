@@ -12,6 +12,8 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider;
 
 use function getcwd;
+use function preg_quote;
+use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -48,7 +50,7 @@ class UnusedCodeTest extends TestCase
     public function testValidCode($code, array $error_levels = []): void
     {
         $test_name = $this->getTestName();
-        if (\strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -82,12 +84,12 @@ class UnusedCodeTest extends TestCase
      */
     public function testInvalidCode($code, $error_message, $error_levels = []): void
     {
-        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . \preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

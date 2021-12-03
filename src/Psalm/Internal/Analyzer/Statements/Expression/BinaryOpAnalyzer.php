@@ -22,6 +22,9 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function in_array;
+use function strlen;
+
 /**
  * @internal
  */
@@ -136,7 +139,7 @@ class BinaryOpAnalyzer
 
             if ($statements_analyzer->data_flow_graph
                 && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                    || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+                    || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
                 $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
@@ -270,7 +273,7 @@ class BinaryOpAnalyzer
                 if ($string_length > 0) {
                     foreach ($stmt_right_type->getAtomicTypes() as $atomic_right_type) {
                         if ($atomic_right_type instanceof Type\Atomic\TLiteralString) {
-                            if (\strlen($atomic_right_type->value) !== $string_length) {
+                            if (strlen($atomic_right_type->value) !== $string_length) {
                                 if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
                                 ) {

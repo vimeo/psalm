@@ -6,6 +6,9 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function array_merge;
+use function array_shift;
+
 class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -40,9 +43,9 @@ class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $return_atomic_type = null;
 
-        while ($atomic_type = \array_shift($atomic_types)) {
+        while ($atomic_type = array_shift($atomic_types)) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
-                $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
                 continue;
             }
 

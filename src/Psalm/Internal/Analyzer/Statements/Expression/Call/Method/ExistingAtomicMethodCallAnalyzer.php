@@ -280,7 +280,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $self_out_candidate,
                     $template_result,
                     $method_id,
-                    \count($args),
+                    count($args),
                     $codebase
                 );
 

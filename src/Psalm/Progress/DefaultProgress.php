@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Progress;
 
+use function max;
+use function microtime;
 use function str_repeat;
 use function strlen;
 
@@ -22,7 +24,7 @@ class DefaultProgress extends LongProgress
 
             // Source for rate limiting:
             // https://github.com/phan/phan/blob/9a788581ee1a4e1c35bebf89c435fd8a238c1d17/src/Phan/CLI.php
-            $time = \microtime(true);
+            $time = microtime(true);
 
             // If not enough time has elapsed, then don't update the progress bar.
             // Making the update frequency based on time (instead of the number of files)
@@ -59,7 +61,7 @@ class DefaultProgress extends LongProgress
     {
         $current_float = $p * $length;
         $current = (int)$current_float;
-        $rest = \max($length - $current, 0);
+        $rest = max($length - $current, 0);
 
         if (!self::doesTerminalSupportUtf8()) {
             // Show a progress bar of "XXXX>------" in Windows when utf-8 is unsupported.

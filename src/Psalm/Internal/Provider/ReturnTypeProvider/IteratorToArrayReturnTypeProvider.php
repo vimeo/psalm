@@ -9,6 +9,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function array_merge;
 use function array_shift;
 use function assert;
 
@@ -46,7 +47,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
 
             while ($call_arg_atomic_type = array_shift($atomic_types)) {
                 if ($call_arg_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                    $atomic_types = \array_merge($atomic_types, $call_arg_atomic_type->as->getAtomicTypes());
+                    $atomic_types = array_merge($atomic_types, $call_arg_atomic_type->as->getAtomicTypes());
                     continue;
                 }
 

@@ -17,6 +17,7 @@ use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -289,7 +290,7 @@ class InternalCallMapHandler
 
                 $out_type = null;
 
-                if (\strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
+                if (strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
                     $out_type = $param_type;
                     $param_type = Type::getMixed();
                 }

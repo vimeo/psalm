@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
+use function abs;
 use function array_merge;
 use function count;
 
@@ -48,7 +49,7 @@ class VariableUseGraph extends DataFlowGraph
         ) {
             $to_line = $to->code_location->raw_line_number;
             $from_line = $from->code_location->raw_line_number;
-            $length = \abs($to_line - $from_line);
+            $length = abs($to_line - $from_line);
         }
 
         $this->backward_edges[$to_id][$from_id] = true;

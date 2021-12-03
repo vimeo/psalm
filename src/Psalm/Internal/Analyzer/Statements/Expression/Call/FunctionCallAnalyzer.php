@@ -52,11 +52,15 @@ use Psalm\Type\TaintKind;
 
 use function array_map;
 use function array_merge;
+use function array_shift;
+use function array_slice;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function preg_replace;
 use function reset;
+use function spl_object_id;
 use function strpos;
 use function strtolower;
 
@@ -86,7 +90,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $original_function_id = implode('\\', $function_name->parts);
 
             if ($original_function_id === 'call_user_func') {
-                $other_args = \array_slice($stmt->getArgs(), 1);
+                $other_args = array_slice($stmt->getArgs(), 1);
 
                 $function_name = $stmt->getArgs()[0]->value;
 
@@ -570,10 +574,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
             while ($var_atomic_types) {
-                $var_type_part = \array_shift($var_atomic_types);
+                $var_type_part = array_shift($var_atomic_types);
 
                 if ($var_type_part instanceof TTemplateParam) {
-                    $var_atomic_types = \array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
+                    $var_atomic_types = array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
                     continue;
                 }
 
@@ -659,7 +663,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
                             $fq_class_name = $parts[0];
-                            $fq_class_name = \preg_replace('/^\\\\/', '', $fq_class_name);
+                            $fq_class_name = preg_replace('/^\\\\/', '', $fq_class_name);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
@@ -732,7 +736,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && $stmt_name_type->parent_nodes
                 && $stmt_name_type->hasString()
-                && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
 
@@ -836,7 +840,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Arg $first_arg,
         Context $context
     ) : void {
-        $first_arg_value_id = \spl_object_id($first_arg->value);
+        $first_arg_value_id = spl_object_id($first_arg->value);
 
         $assert_clauses = FormulaGenerator::getFormula(
             $first_arg_value_id,
@@ -1024,7 +1028,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $parameters = $function_call_info->function_params;
 
         // If no arguments were passed
-        if (0 === \count($stmt->getArgs())) {
+        if (0 === count($stmt->getArgs())) {
             return false;
         }
 

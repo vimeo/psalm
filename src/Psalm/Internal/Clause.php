@@ -13,8 +13,10 @@ use function implode;
 use function json_encode;
 use function ksort;
 use function md5;
+use function reset;
 use function sort;
 use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -154,11 +156,11 @@ class Clause
 
                         if ($value[0] === '!') {
                             $negate = true;
-                            $value = \substr($value, 1);
+                            $value = substr($value, 1);
                         }
 
                         if ($value[0] === '=') {
-                            $value = \substr($value, 1);
+                            $value = substr($value, 1);
                         }
 
                         if ($negate) {
@@ -184,7 +186,7 @@ class Clause
             return '(' . implode(') || (', $clause_strings) . ')';
         }
 
-        return \reset($clause_strings);
+        return reset($clause_strings);
     }
 
     public function makeUnique() : self

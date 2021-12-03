@@ -11,6 +11,8 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 
+use function spl_object_id;
+
 class AlgebraTest extends TestCase
 {
     public function testNegateFormula(): void
@@ -91,8 +93,8 @@ class AlgebraTest extends TestCase
         $statements_analyzer = new StatementsAnalyzer($file_analyzer, new NodeDataProvider());
 
         $dnf_clauses = FormulaGenerator::getFormula(
-            \spl_object_id($dnf_stmt->expr),
-            \spl_object_id($dnf_stmt->expr),
+            spl_object_id($dnf_stmt->expr),
+            spl_object_id($dnf_stmt->expr),
             $dnf_stmt->expr,
             null,
             $statements_analyzer

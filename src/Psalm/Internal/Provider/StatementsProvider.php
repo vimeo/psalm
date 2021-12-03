@@ -124,7 +124,7 @@ class StatementsProvider
         $config = Config::getInstance();
 
         if (!$this->parser_cache_provider
-            || (!$config->isInProjectDirs($file_path) && \strpos($file_path, 'vendor'))
+            || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
             $progress->debug('Parsing ' . $file_path . "\n");
 
@@ -224,7 +224,7 @@ class StatementsProvider
                     array_flip($unchanged_signature_members)
                 );
 
-                $file_path_hash = \md5($file_path);
+                $file_path_hash = md5($file_path);
 
                 $changed_members = array_map(
                     function (string $key) use ($file_path_hash) : string {

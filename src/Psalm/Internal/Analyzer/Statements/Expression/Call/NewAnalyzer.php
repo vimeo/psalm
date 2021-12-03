@@ -35,9 +35,12 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_map;
+use function array_merge;
+use function array_shift;
 use function array_values;
 use function implode;
 use function in_array;
+use function md5;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -70,7 +73,7 @@ class NewAnalyzer extends CallAnalyzer
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                        'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
                         false
                     );
                 }
@@ -444,7 +447,7 @@ class NewAnalyzer extends CallAnalyzer
                 if ($method_storage->if_true_assertions) {
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
-                        \array_map(
+                        array_map(
                             function ($assertion) use ($generic_params, $codebase) {
                                 return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
@@ -456,7 +459,7 @@ class NewAnalyzer extends CallAnalyzer
                 if ($method_storage->if_false_assertions) {
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
-                        \array_map(
+                        array_map(
                             function ($assertion) use ($generic_params, $codebase) {
                                 return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
@@ -562,7 +565,7 @@ class NewAnalyzer extends CallAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -650,10 +653,10 @@ class NewAnalyzer extends CallAnalyzer
         $stmt_class_types = $stmt_class_type->getAtomicTypes();
 
         while ($stmt_class_types) {
-            $lhs_type_part = \array_shift($stmt_class_types);
+            $lhs_type_part = array_shift($stmt_class_types);
 
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
-                $stmt_class_types = \array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
+                $stmt_class_types = array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
             }
 

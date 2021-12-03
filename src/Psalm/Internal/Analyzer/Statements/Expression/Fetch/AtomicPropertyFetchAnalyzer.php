@@ -50,6 +50,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 
 use function array_keys;
+use function array_search;
 use function array_values;
 use function in_array;
 use function is_int;
@@ -737,7 +738,7 @@ class AtomicPropertyFetchAnalyzer
                         $position = false;
 
                         if (isset($property_class_storage->template_types[$param_name])) {
-                            $position = \array_search(
+                            $position = array_search(
                                 $param_name,
                                 array_keys($property_class_storage->template_types)
                             );
@@ -808,7 +809,7 @@ class AtomicPropertyFetchAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && $var_type
-                    && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                    && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $var_type->parent_nodes = [];
                     return;

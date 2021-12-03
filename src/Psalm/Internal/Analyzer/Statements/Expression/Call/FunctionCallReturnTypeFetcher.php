@@ -22,10 +22,15 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 
+use function array_merge;
+use function array_values;
 use function count;
 use function explode;
+use function in_array;
+use function strlen;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -301,7 +306,7 @@ class FunctionCallReturnTypeFetcher
                         if ($classlike_storage->parent_classes) {
                             return new Type\Union([
                                 new Type\Atomic\TClassString(
-                                    \array_values($classlike_storage->parent_classes)[0]
+                                    array_values($classlike_storage->parent_classes)[0]
                                 )
                             ]);
                         }
@@ -538,7 +543,7 @@ class FunctionCallReturnTypeFetcher
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return null;
         }
@@ -604,7 +609,7 @@ class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                \array_merge($removed_taints, $conditionally_removed_taints)
+                array_merge($removed_taints, $conditionally_removed_taints)
             );
 
             $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
@@ -628,13 +633,13 @@ class FunctionCallReturnTypeFetcher
                 ) {
                     $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
 
-                    $pattern = \substr($first_arg_value, 1, -1);
+                    $pattern = substr($first_arg_value, 1, -1);
 
                     if ($pattern[0] === '['
                         && $pattern[1] === '^'
-                        && \substr($pattern, -1) === ']'
+                        && substr($pattern, -1) === ']'
                     ) {
-                        $pattern = \substr($pattern, 2, -1);
+                        $pattern = substr($pattern, 2, -1);
 
                         if (self::simpleExclusion($pattern, $first_arg_value[0])) {
                             $removed_taints[] = 'html';
@@ -648,7 +653,7 @@ class FunctionCallReturnTypeFetcher
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints = \array_merge(
+            $removed_taints = array_merge(
                 $removed_taints,
                 $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
             );
@@ -732,7 +737,7 @@ class FunctionCallReturnTypeFetcher
                     $function_param_sink,
                     $function_call_node,
                     $path_type,
-                    \array_merge($added_taints, $function_storage->added_taints),
+                    array_merge($added_taints, $function_storage->added_taints),
                     $removed_taints
                 );
             }
@@ -744,7 +749,7 @@ class FunctionCallReturnTypeFetcher
      */
     private static function simpleExclusion(string $pattern, string $escape_char) : bool
     {
-        $str_length = \strlen($pattern);
+        $str_length = strlen($pattern);
 
         for ($i = 0; $i < $str_length; $i++) {
             $current = $pattern[$i];

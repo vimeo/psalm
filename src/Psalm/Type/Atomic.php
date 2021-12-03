@@ -328,7 +328,7 @@ abstract class Atomic implements TypeNode
             || $this instanceof TFloat
             || $this instanceof TNumericString
             || $this instanceof TNumeric
-            || ($this instanceof TLiteralString && \is_numeric($this->value));
+            || ($this instanceof TLiteralString && is_numeric($this->value));
     }
 
     public function isObjectType(): bool

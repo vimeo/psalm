@@ -29,10 +29,14 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function intdiv;
+use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 use function usort;
 
@@ -335,7 +339,7 @@ class Analyzer
     {
         $this->progress->start(count($this->files_to_analyze));
 
-        \ksort($this->files_to_analyze);
+        ksort($this->files_to_analyze);
 
         $codebase = $project_analyzer->getCodebase();
 
@@ -383,10 +387,10 @@ class Analyzer
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $shuffle_count = $pool_size + 1;
 
-            $file_paths = \array_values($this->files_to_analyze);
+            $file_paths = array_values($this->files_to_analyze);
 
             $count = count($file_paths);
-            $middle = \intdiv($count, $shuffle_count);
+            $middle = intdiv($count, $shuffle_count);
             $remainder = $count % $shuffle_count;
 
             $new_file_paths = [];
@@ -691,7 +695,7 @@ class Analyzer
                         continue;
                     }
 
-                    $member_bit = substr($member_id, \strlen($base_class) + 2);
+                    $member_bit = substr($member_id, strlen($base_class) + 2);
 
                     if (isset($all_referencing_methods[$trait . '::' . $member_bit])) {
                         $changed_members[$file_path][$member_id] = true;
@@ -1614,7 +1618,7 @@ class Analyzer
 
     public function addMutableClass(string $fqcln) : void
     {
-        $this->mutable_classes[\strtolower($fqcln)] = true;
+        $this->mutable_classes[strtolower($fqcln)] = true;
     }
 
     public function setAnalyzedMethod(string $file_path, string $method_id, bool $is_constructor = false): void

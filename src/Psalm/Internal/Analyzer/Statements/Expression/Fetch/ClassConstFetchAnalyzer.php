@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TNamedObject;
 
 use function array_values;
 use function explode;
+use function in_array;
 use function strtolower;
 
 /**
@@ -113,7 +114,7 @@ class ClassConstFetchAnalyzer
             $moved_class = false;
 
             if ($codebase->alter_code
-                && !\in_array($stmt->class->parts[0], ['parent', 'static'])
+                && !in_array($stmt->class->parts[0], ['parent', 'static'])
             ) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
@@ -432,7 +433,7 @@ class ClassConstFetchAnalyzer
             $fq_class_name = null;
             $lhs_type_definite_class = null;
             if ($lhs_type->isSingle()) {
-                $atomic_type = \array_values($lhs_type->getAtomicTypes())[0];
+                $atomic_type = array_values($lhs_type->getAtomicTypes())[0];
                 if ($atomic_type instanceof TNamedObject) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;

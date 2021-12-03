@@ -5,6 +5,7 @@ namespace Psalm\Internal\Diff;
 use PhpParser;
 
 use function array_reverse;
+use function count;
 
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php
@@ -32,8 +33,8 @@ class AstDiffer
         string $a_code,
         string $b_code
     ) : array {
-        $n = \count($a);
-        $m = \count($b);
+        $n = count($a);
+        $m = count($b);
         $max = $n + $m;
         $v = [1 => 0];
         $bc = [];
@@ -81,7 +82,7 @@ class AstDiffer
     protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc) : array
     {
         $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; --$d) {
+        for ($d = count($trace) - 1; $d >= 0; --$d) {
             $v = $trace[$d];
             $k = $x - $y;
 

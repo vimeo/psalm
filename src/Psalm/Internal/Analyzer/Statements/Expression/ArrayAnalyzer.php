@@ -22,6 +22,8 @@ use Psalm\Type;
 use function array_merge;
 use function array_values;
 use function count;
+use function in_array;
+use function is_string;
 use function preg_match;
 
 use const PHP_INT_MAX;
@@ -359,7 +361,7 @@ class ArrayAnalyzer
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof VariableUseGraph
-                || !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+                || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
                 if ($item_value_type->parent_nodes
@@ -487,7 +489,7 @@ class ArrayAnalyzer
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
-                    if (\is_string($key)) {
+                    if (is_string($key)) {
                         if ($codebase->php_major_version < 8 ||
                             ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
                         ) {
@@ -524,7 +526,7 @@ class ArrayAnalyzer
                     || (
                         $unpacked_atomic_type instanceof Type\Atomic\TGenericObject
                         && $unpacked_atomic_type->hasTraversableInterface($codebase)
-                        && \count($unpacked_atomic_type->type_params) === 2
+                        && count($unpacked_atomic_type->type_params) === 2
                 )) {
                     /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
                     if ($unpacked_atomic_type->type_params[1]->isEmpty()) {

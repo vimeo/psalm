@@ -11,6 +11,7 @@ use function array_merge;
 use function array_shift;
 use function array_sum;
 use function array_unique;
+use function array_values;
 use function count;
 use function explode;
 use function file_exists;
@@ -285,6 +286,6 @@ class Creator
             }
         }
 
-        return \array_values(\array_unique($nodes));
+        return array_values(array_unique($nodes));
     }
 }

@@ -6,6 +6,10 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 
+use function rtrim;
+use function str_replace;
+use function strlen;
+
 /**
  * @internal
  */
@@ -82,7 +86,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                         $parts = CommentAnalyzer::splitDocLine($tag);
 
                         if (($parts[1] ?? '') === '$' . $this->old_name) {
-                            $parsed_docblock->tags[$tag_name][$i] = \str_replace(
+                            $parsed_docblock->tags[$tag_name][$i] = str_replace(
                                 '$' . $this->old_name,
                                 '$' . $this->new_name,
                                 $tag
@@ -96,8 +100,8 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
             if ($replaced) {
                 $this->replacements[] = new FileManipulation(
                     $docblock->getStartFilePos(),
-                    $docblock->getStartFilePos() + \strlen($docblock->getText()),
-                    \rtrim($parsed_docblock->render($parsed_docblock->first_line_padding)),
+                    $docblock->getStartFilePos() + strlen($docblock->getText()),
+                    rtrim($parsed_docblock->render($parsed_docblock->first_line_padding)),
                     false,
                     false
                 );

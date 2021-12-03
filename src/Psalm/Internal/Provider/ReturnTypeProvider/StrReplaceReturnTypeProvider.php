@@ -6,6 +6,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function count;
 use function in_array;
 
 class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterface
@@ -30,7 +31,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
         if (!$statements_source instanceof StatementsAnalyzer
-            || \count($call_args) < 3
+            || count($call_args) < 3
         ) {
             return Type::getMixed();
         }

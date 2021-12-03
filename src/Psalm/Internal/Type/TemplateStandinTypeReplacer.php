@@ -12,7 +12,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_keys;
 use function array_merge;
+use function array_search;
+use function array_slice;
 use function array_values;
 use function count;
 use function in_array;
@@ -714,7 +717,7 @@ class TemplateStandinTypeReplacer
                 $generic_param = clone $input_type;
 
                 if ($matching_input_keys) {
-                    $generic_param_keys = \array_keys($generic_param->getAtomicTypes());
+                    $generic_param_keys = array_keys($generic_param->getAtomicTypes());
 
                     foreach ($generic_param_keys as $atomic_key) {
                         if (!isset($matching_input_keys[$atomic_key])) {
@@ -783,8 +786,8 @@ class TemplateStandinTypeReplacer
                 ) {
                     $atomic_type->extra_types = $extra_types;
                 } elseif ($atomic_type instanceof Atomic\TObject && $extra_types) {
-                    $atomic_type = \reset($extra_types);
-                    $atomic_type->extra_types = \array_slice($extra_types, 1);
+                    $atomic_type = reset($extra_types);
+                    $atomic_type->extra_types = array_slice($extra_types, 1);
                 }
             }
 
@@ -807,7 +810,7 @@ class TemplateStandinTypeReplacer
                 $generic_param = clone $input_type;
 
                 if ($matching_input_keys) {
-                    $generic_param_keys = \array_keys($generic_param->getAtomicTypes());
+                    $generic_param_keys = array_keys($generic_param->getAtomicTypes());
 
                     foreach ($generic_param_keys as $atomic_key) {
                         if (!isset($matching_input_keys[$atomic_key])) {
@@ -944,7 +947,7 @@ class TemplateStandinTypeReplacer
 
                 $as_type_union_types = $as_type_union->getAtomicTypes();
 
-                $first = \reset($as_type_union_types);
+                $first = reset($as_type_union_types);
 
                 if (count($as_type_union_types) === 1 && $first instanceof Atomic\TNamedObject) {
                     $atomic_type->as_type = $first;
@@ -1174,9 +1177,9 @@ class TemplateStandinTypeReplacer
                                     [$ets[0]->defining_class]
                             )
                         ) {
-                            $old_params_offset = (int) \array_search(
+                            $old_params_offset = (int) array_search(
                                 $ets[0]->param_name,
-                                \array_keys($input_class_storage->template_types)
+                                array_keys($input_class_storage->template_types)
                             );
 
                             $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();

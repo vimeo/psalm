@@ -35,7 +35,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     {
         $codebase = $source->getCodebase();
 
-        $function_id = \strtolower($source->getFilePath())
+        $function_id = strtolower($source->getFilePath())
             . ':' . $function->getLine()
             . ':' . (int)$function->getAttribute('startFilePos')
             . ':-:closure';

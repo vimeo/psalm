@@ -24,6 +24,8 @@ use function array_keys;
 use function array_merge;
 use function array_unique;
 use function in_array;
+use function spl_object_id;
+use function strpos;
 
 /**
  * @internal
@@ -72,7 +74,7 @@ class LoopAnalyzer
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
-                $pre_condition_id = \spl_object_id($pre_condition);
+                $pre_condition_id = spl_object_id($pre_condition);
 
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
                     $pre_condition_id,
@@ -332,8 +334,8 @@ class LoopAnalyzer
                 foreach ($pre_loop_context->vars_in_scope as $var_id => $_) {
                     if (!isset($pre_condition_vars_in_scope[$var_id])
                         && isset($inner_context->vars_in_scope[$var_id])
-                        && \strpos($var_id, '->') === false
-                        && \strpos($var_id, '[') === false
+                        && strpos($var_id, '->') === false
+                        && strpos($var_id, '[') === false
                     ) {
                         $inner_context->vars_in_scope[$var_id]->possibly_undefined = true;
                     }
@@ -652,7 +654,7 @@ class LoopAnalyzer
 
         $reconcilable_while_types = Algebra::getTruthsFromFormula(
             $loop_context->clauses,
-            \spl_object_id($pre_condition),
+            spl_object_id($pre_condition),
             $new_referenced_var_ids
         );
 

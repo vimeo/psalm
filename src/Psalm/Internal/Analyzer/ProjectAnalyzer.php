@@ -67,6 +67,7 @@ use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
 use function filter_var;
+use function function_exists;
 use function fwrite;
 use function implode;
 use function in_array;
@@ -78,6 +79,7 @@ use function is_readable;
 use function is_string;
 use function microtime;
 use function mkdir;
+use function number_format;
 use function pcntl_fork;
 use function preg_match;
 use function rename;
@@ -93,6 +95,7 @@ use function substr;
 use function substr_count;
 use function trim;
 use function usort;
+use function version_compare;
 
 use const FILTER_VALIDATE_INT;
 use const PHP_EOL;
@@ -412,7 +415,7 @@ class ProjectAnalyzer
         $now_time = microtime(true);
 
         $this->progress->debug(
-            'Visiting autoload files took ' . \number_format($now_time - $start_time, 3) . 's' . "\n"
+            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n"
         );
     }
 
@@ -423,10 +426,10 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        if (\ini_get('pcre.jit') === '1'
+        if (ini_get('pcre.jit') === '1'
             && \PHP_OS === 'Darwin'
-            && \version_compare(\PHP_VERSION, '7.3.0') >= 0
-            && \version_compare(\PHP_VERSION, '7.4.0') < 0
+            && version_compare(\PHP_VERSION, '7.3.0') >= 0
+            && version_compare(\PHP_VERSION, '7.4.0') < 0
         ) {
             // do nothing
         } else {
@@ -1476,15 +1479,15 @@ class ProjectAnalyzer
             return 1;
         }
 
-        if (\ini_get('pcre.jit') === '1'
+        if (ini_get('pcre.jit') === '1'
             && \PHP_OS === 'Darwin'
-            && \version_compare(\PHP_VERSION, '7.3.0') >= 0
-            && \version_compare(\PHP_VERSION, '7.4.0') < 0
+            && version_compare(\PHP_VERSION, '7.3.0') >= 0
+            && version_compare(\PHP_VERSION, '7.4.0') < 0
         ) {
             return 1;
         }
 
-        if (!extension_loaded('pcntl') || !\function_exists('shell_exec')) {
+        if (!extension_loaded('pcntl') || !function_exists('shell_exec')) {
             return 1;
         }
 

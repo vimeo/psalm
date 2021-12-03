@@ -43,12 +43,16 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use UnexpectedValueException;
 
+use function array_keys;
 use function array_pop;
+use function array_search;
 use function count;
+use function end;
 use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function spl_object_id;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -299,7 +303,7 @@ class FunctionLikeNodeScanner
                             break;
                         }
 
-                        $cond_id = \spl_object_id($function_stmt->cond);
+                        $cond_id = spl_object_id($function_stmt->cond);
 
                         $if_clauses = FormulaGenerator::getFormula(
                             $cond_id,
@@ -358,7 +362,7 @@ class FunctionLikeNodeScanner
                 && $stmt->stmts
                 && $storage instanceof MethodStorage
             ) {
-                $last_stmt = \end($stmt->stmts);
+                $last_stmt = end($stmt->stmts);
 
                 if ($last_stmt instanceof PhpParser\Node\Stmt\Return_
                     && $last_stmt->expr instanceof PhpParser\Node\Expr\Variable
@@ -758,7 +762,7 @@ class FunctionLikeNodeScanner
                     continue;
                 }
 
-                $param_index = \array_search($param_name, \array_keys($storage->param_lookup), true);
+                $param_index = array_search($param_name, array_keys($storage->param_lookup), true);
 
                 if ($param_index === false || !isset($storage->params[$param_index]->type)) {
                     continue;
@@ -1108,7 +1112,7 @@ class FunctionLikeNodeScanner
 
             if ($stmt instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($stmt->uses as $closure_use) {
-                    if ($closure_use->byRef && \is_string($closure_use->var->name)) {
+                    if ($closure_use->byRef && is_string($closure_use->var->name)) {
                         $storage->byref_uses[$closure_use->var->name] = true;
                     }
                 }

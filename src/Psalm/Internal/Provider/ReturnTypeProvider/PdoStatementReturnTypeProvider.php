@@ -5,6 +5,8 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function class_exists;
+
 class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
@@ -18,7 +20,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'fetch'
-            && \class_exists('PDO')
+            && class_exists('PDO')
             && isset($call_args[0])
             && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
             && $first_arg_type->isSingleIntLiteral()

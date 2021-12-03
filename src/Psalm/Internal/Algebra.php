@@ -3,6 +3,7 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -12,6 +13,7 @@ use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
+use function mt_rand;
 use function substr;
 
 class Algebra
@@ -402,7 +404,7 @@ class Algebra
 
                             if ($removed_indexes) {
                                 $new_possibilities = array_values(
-                                    \array_diff_key(
+                                    array_diff_key(
                                         $new_clause_possibilities[$var],
                                         $removed_indexes
                                     )
@@ -594,7 +596,7 @@ class Algebra
         );
 
         if (!$clauses) {
-            $cond_id = \mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100000000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 
@@ -609,14 +611,14 @@ class Algebra
         $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
         if (!$impossible_clauses) {
-            $cond_id = \mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100000000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 
         $negated = self::simplifyCNF($impossible_clauses);
 
         if (!$negated) {
-            $cond_id = \mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100000000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 

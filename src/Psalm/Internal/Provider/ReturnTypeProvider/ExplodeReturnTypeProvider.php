@@ -7,6 +7,8 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
+use function count;
+
 class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -25,7 +27,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getMixed();
         }
 
-        if (\count($call_args) >= 2) {
+        if (count($call_args) >= 2) {
             $second_arg_type = $statements_source->node_data->getType($call_args[1]->value);
 
             $inner_type = new Type\Union([

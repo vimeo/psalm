@@ -40,6 +40,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
 
+use function array_filter;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -898,7 +899,7 @@ class ClassLikes
                         if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                             foreach ($stmt->stmts as $namespace_stmt) {
                                 if ($namespace_stmt instanceof PhpParser\Node\Stmt\Class_
-                                    && \strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
+                                    && strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
                                         === $fq_class_name_lc
                                 ) {
                                     self::makeImmutable(
@@ -909,7 +910,7 @@ class ClassLikes
                                 }
                             }
                         } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_
-                            && \strtolower((string) $stmt->name) === $fq_class_name_lc
+                            && strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
                             self::makeImmutable(
                                 $stmt,
@@ -1592,7 +1593,7 @@ class ClassLikes
         $storage = $this->classlike_storage_provider->get($class_name);
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            return \array_filter(
+            return array_filter(
                 $storage->constants,
                 function ($constant) {
                     return $constant->type
@@ -1602,7 +1603,7 @@ class ClassLikes
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
-            return \array_filter(
+            return array_filter(
                 $storage->constants,
                 function ($constant) {
                     return $constant->type
@@ -1612,7 +1613,7 @@ class ClassLikes
             );
         }
 
-        return \array_filter(
+        return array_filter(
             $storage->constants,
             function ($constant) {
                 return $constant->type !== null;
@@ -2221,7 +2222,7 @@ class ClassLikes
 
     public function forgetMissingClassLikes() : void
     {
-        $this->existing_classlikes_lc = \array_filter($this->existing_classlikes_lc);
+        $this->existing_classlikes_lc = array_filter($this->existing_classlikes_lc);
     }
 
     public function removeClassLike(string $fq_class_name): void

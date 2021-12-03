@@ -479,7 +479,7 @@ class VariableFetchAnalyzer
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             if ($var_name === '$_GET'
                 || $var_name === '$_POST'

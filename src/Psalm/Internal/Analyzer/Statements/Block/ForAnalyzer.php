@@ -11,7 +11,9 @@ use Psalm\Type;
 
 use function array_intersect_key;
 use function array_merge;
+use function count;
 use function in_array;
+use function is_string;
 
 /**
  * @internal
@@ -38,7 +40,7 @@ class ForAnalyzer
 
             if ($init instanceof PhpParser\Node\Expr\Assign
                 && $init->var instanceof PhpParser\Node\Expr\Variable
-                && \is_string($init->var->name)
+                && is_string($init->var->name)
                 && ($init_var_type = $statements_analyzer->node_data->getType($init->expr))
             ) {
                 $init_var_types[$init->var->name] = $init_var_type;
@@ -100,12 +102,12 @@ class ForAnalyzer
                 $always_enters_loop = $cond_type->isAlwaysTruthy();
             }
 
-            if (\count($stmt->init) === 1
-                && \count($stmt->cond) === 1
+            if (count($stmt->init) === 1
+                && count($stmt->cond) === 1
                 && $cond instanceof PhpParser\Node\Expr\BinaryOp
                 && $cond->right instanceof PhpParser\Node\Scalar\LNumber
                 && $cond->left instanceof PhpParser\Node\Expr\Variable
-                && \is_string($cond->left->name)
+                && is_string($cond->left->name)
                 && isset($init_var_types[$cond->left->name])
                 && $init_var_types[$cond->left->name]->isSingleIntLiteral()
             ) {
