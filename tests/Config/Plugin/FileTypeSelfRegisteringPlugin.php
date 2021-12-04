@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests\Config\Plugin;
 
-use Psalm\Plugin;
 use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\RegistrationInterface;
 use SimpleXMLElement;
 use stdClass;
 
@@ -24,7 +24,7 @@ class FileTypeSelfRegisteringPlugin implements PluginEntryPointInterface
      */
     public static $flags = 0;
 
-    public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
+    public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
         if (self::$flags & self::FLAG_SCANNER_INVALID) {
             /** @psalm-suppress InvalidArgument */

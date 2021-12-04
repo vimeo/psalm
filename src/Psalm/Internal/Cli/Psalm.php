@@ -18,6 +18,7 @@ use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
@@ -623,7 +624,7 @@ final class Psalm
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new Provider\FileReferenceCacheProvider($config),
-                new Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
             );
         }
         return $providers;

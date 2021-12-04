@@ -6,7 +6,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
 use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
@@ -30,7 +30,7 @@ class CompletionTest extends TestCase
             new ParserInstanceCacheProvider(),
             null,
             null,
-            new Provider\FakeFileReferenceCacheProvider(),
+            new FakeFileReferenceCacheProvider(),
             new ProjectCacheProvider()
         );
 

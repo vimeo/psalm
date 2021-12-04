@@ -3,6 +3,8 @@ namespace Psalm\Tests;
 
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function class_exists;
 
@@ -10,8 +12,8 @@ use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function testExtendSoapClientWithDocblockTypes(): void
     {

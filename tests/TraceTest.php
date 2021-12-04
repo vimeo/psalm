@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+
 class TraceTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>

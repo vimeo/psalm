@@ -2,12 +2,13 @@
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class TraitTemplateTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -487,22 +488,22 @@ class TraitTemplateTest extends TestCase
                             return $callback($this->get());
                         }
                     }
-                    
+
                     /**
                      * @template B
                      */
                     class Bar {
-                
+
                         /**
                          * @use Foo<B>
                          */
                         use Foo;
-                
+
                         /**
                          * @param B $value
                          */
                         public function __construct(public mixed $value) { }
-                
+
                         /**
                          * @return B
                          */

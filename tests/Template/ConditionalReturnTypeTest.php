@@ -2,11 +2,11 @@
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class ConditionalReturnTypeTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

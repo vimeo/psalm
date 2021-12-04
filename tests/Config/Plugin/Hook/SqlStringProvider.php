@@ -4,6 +4,7 @@ namespace Psalm\Test\Config\Plugin\Hook;
 use PhpMyAdmin\SqlParser\Parser;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
+use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
 use Psalm\Type\Atomic\TLiteralString;
 use Throwable;
 
@@ -19,7 +20,7 @@ class SqlStringProvider implements StringInterpreterInterface
                 $parser = new Parser($value);
 
                 if (!$parser->errors) {
-                    return new StringProvider\TSqlSelectString($value);
+                    return new TSqlSelectString($value);
                 }
             } catch (Throwable $e) {
                 // fall through

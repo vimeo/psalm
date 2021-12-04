@@ -2,13 +2,14 @@
 namespace Psalm\Tests;
 
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
 use function array_values;
 
 class TypeCombinationTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @dataProvider providerTestValidTypeCombination

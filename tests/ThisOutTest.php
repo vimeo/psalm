@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
 class ThisOutTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -70,7 +72,7 @@ class ThisOutTest extends TestCase
                          */
                         public function getData(): array { return $this->data; }
                     }
-                    
+
                     $a = new container(1);
                     $data1 = $a->getData();
                     $a->setData(2);

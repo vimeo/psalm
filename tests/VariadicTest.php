@@ -8,14 +8,15 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function dirname;
 use function getcwd;
 
 class VariadicTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testVariadicArrayBadParam(): void
     {
@@ -137,7 +138,7 @@ class VariadicTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
         $project_analyzer->setPhpVersion('7.3', 'tests');

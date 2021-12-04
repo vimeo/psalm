@@ -2,14 +2,15 @@
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class ClassTemplateExtendsTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -4434,15 +4435,15 @@ class ClassTemplateExtendsTest extends TestCase
             'templateExtendsFewerTemplateParameters' => [
                 '<?php
                     class Real {}
-                    
+
                     class RealE extends Real {}
-                    
+
                     /**
                      * @template TKey as array-key
                      * @template TValue as object
                      */
                     class a {
-                        /** 
+                        /**
                          * @param TKey $key
                          * @param TValue $real
                          */
@@ -4462,7 +4463,7 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class b extends a {
                     }
-                    
+
                     /**
                      * @template TObject as Real
                      *
@@ -4476,7 +4477,7 @@ class ClassTemplateExtendsTest extends TestCase
                             parent::__construct("", $real);
                         }
                     }
-                    
+
                     /**
                      * @template TObject as Real
                      * @template TOther
@@ -4492,7 +4493,7 @@ class ClassTemplateExtendsTest extends TestCase
                             parent::__construct("", $real);
                         }
                     }
-                    
+
                     /**
                      * @template TOther as object
                      * @template TObject as Real
@@ -4508,22 +4509,22 @@ class ClassTemplateExtendsTest extends TestCase
                             parent::__construct("", $real);
                         }
                     }
-                    
+
                     $a = new a(123, new RealE);
                     $resultA = $a->ret();
-                    
+
                     $b = new b(123, new RealE);
                     $resultB = $b->ret();
-                    
+
                     $c1 = new c1(new RealE);
                     $resultC1 = $c1->ret();
-                    
+
                     $c2 = new c2(false, new RealE);
                     $resultC2 = $c2->ret();
-                    
-                    
+
+
                     class Secondary {}
-                    
+
                     $c3 = new c3(new Secondary, new RealE);
                     $resultC3 = $c3->ret();
                 ',

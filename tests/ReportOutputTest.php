@@ -14,7 +14,7 @@ use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
 use function file_get_contents;
@@ -43,9 +43,9 @@ class ReportOutputTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             ),
-            new Report\ReportOptions(),
+            new ReportOptions(),
             $json_report_options
         );
     }
@@ -992,7 +992,7 @@ somefile.php:17: [W0001] PossiblyUndefinedGlobalVariable: Possibly undefined glo
     {
         $this->analyzeFileForReport();
 
-        $console_report_options = new Report\ReportOptions();
+        $console_report_options = new ReportOptions();
         $console_report_options->use_color = false;
 
         $this->assertSame(
@@ -1020,7 +1020,7 @@ echo $a
     {
         $this->analyzeFileForReport();
 
-        $console_report_options = new Report\ReportOptions();
+        $console_report_options = new ReportOptions();
         $console_report_options->use_color = false;
         $console_report_options->show_info = false;
 
@@ -1046,7 +1046,7 @@ echo CHANGE_ME;
     {
         $this->analyzeFileForReport();
 
-        $console_report_options = new Report\ReportOptions();
+        $console_report_options = new ReportOptions();
         $console_report_options->show_snippet = false;
         $console_report_options->use_color = false;
 
@@ -1075,7 +1075,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
     {
         $this->analyzeFileForReport();
 
-        $console_report_options = new Report\ReportOptions();
+        $console_report_options = new ReportOptions();
         $console_report_options->show_snippet = false;
         $console_report_options->use_color = true;
 
@@ -1091,7 +1091,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
     {
         $this->analyzeFileForReport();
 
-        $compact_report_options = new Report\ReportOptions();
+        $compact_report_options = new ReportOptions();
         $compact_report_options->format = Report::TYPE_COMPACT;
         $compact_report_options->use_color = false;
 

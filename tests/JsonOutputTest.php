@@ -9,7 +9,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function substr;
 
@@ -32,7 +32,7 @@ class JsonOutputTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             ),
             $stdout_report_options
         );

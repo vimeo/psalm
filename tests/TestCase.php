@@ -12,7 +12,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type\Union;
 use RuntimeException;
 use Throwable;
@@ -76,7 +76,7 @@ class TestCase extends BaseTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new Provider\FakeParserCacheProvider()
+            new FakeParserCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(

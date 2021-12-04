@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use Psalm\Config\ProjectFileFilter;
 use Psalm\Internal\IncludeCollector;
 use SimpleXMLElement;
 
@@ -11,7 +12,7 @@ use const DIRECTORY_SEPARATOR;
 
 class TestConfig extends Config
 {
-    /** @var Config\ProjectFileFilter|null */
+    /** @var ProjectFileFilter|null */
     private static $cached_project_files = null;
 
     /**
@@ -29,7 +30,7 @@ class TestConfig extends Config
         $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
 
         if (!self::$cached_project_files) {
-            self::$cached_project_files = Config\ProjectFileFilter::loadFromXMLElement(
+            self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(
                 new SimpleXMLElement($this->getContents()),
                 $this->base_dir,
                 true

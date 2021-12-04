@@ -3,6 +3,7 @@ namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Plugin\RegistrationInterface;
 use SimpleXMLElement;
 use UnexpectedValueException;
 
@@ -38,7 +39,7 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
     /**
      * @psalm-suppress PossiblyUnusedParam
      */
-    public function __invoke(Plugin\RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
+    public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);
 

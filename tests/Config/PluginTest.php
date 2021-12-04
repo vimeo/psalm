@@ -28,7 +28,7 @@ use Psalm\Report\ReportOptions;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type\Union;
@@ -77,7 +77,7 @@ class PluginTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             ),
             new ReportOptions()
         );

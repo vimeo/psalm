@@ -12,7 +12,11 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\Progress\EchoProgress;
 
 use function define;
@@ -61,11 +65,11 @@ class ProjectCheckerTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new Provider\ParserInstanceCacheProvider(),
-                new Provider\FileStorageInstanceCacheProvider(),
-                new Provider\ClassLikeStorageInstanceCacheProvider(),
-                new Provider\FakeFileReferenceCacheProvider(),
-                new Provider\ProjectCacheProvider()
+                new ParserInstanceCacheProvider(),
+                new FileStorageInstanceCacheProvider(),
+                new ClassLikeStorageInstanceCacheProvider(),
+                new FakeFileReferenceCacheProvider(),
+                new ProjectCacheProvider()
             ),
             new ReportOptions()
         );

@@ -2,6 +2,8 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function class_exists;
 
@@ -9,8 +11,8 @@ use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testExtendDocblockParamType(): void
     {
