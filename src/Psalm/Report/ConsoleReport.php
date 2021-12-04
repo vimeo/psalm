@@ -4,7 +4,6 @@ namespace Psalm\Report;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\CliUtils;
 use Psalm\Report;
 
 use function basename;
@@ -130,7 +129,7 @@ class ConsoleReport extends Report
             . "\033[0m"
         ;
 
-        if (CliUtils::runningInCI()) {
+        if ($this->in_ci) {
             return $reference;
         }
 

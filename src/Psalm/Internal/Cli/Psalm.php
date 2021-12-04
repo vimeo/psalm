@@ -310,7 +310,7 @@ final class Psalm
         $progress = self::initProgress($options, $config);
         $providers = self::initProviders($options, $config, $current_dir);
 
-        $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format);
+        $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
 
         /** @var list<string>|string $report_file_paths type guaranteed by argument to getopt() */
         $report_file_paths = $options['report'] ?? [];
@@ -776,7 +776,8 @@ final class Psalm
     private static function initStdoutReportOptions(
         array $options,
         bool $show_info,
-        string $output_format
+        string $output_format,
+        bool $in_ci
     ): ReportOptions {
         $stdout_report_options = new \Psalm\Report\ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
@@ -788,6 +789,7 @@ final class Psalm
         $stdout_report_options->format = $output_format;
         $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
         $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
+        $stdout_report_options->in_ci = $in_ci;
 
         return $stdout_report_options;
     }

@@ -42,7 +42,7 @@ trait PsalmRunnerTrait
             $process->mustRun();
         } else {
             $process->run();
-            $this->assertEquals(2, $process->getExitCode());
+            $this->assertEquals(2, $process->getExitCode(), 'Expected Psalm to report errors');
         }
 
         return [
