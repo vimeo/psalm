@@ -1084,6 +1084,23 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
         );
     }
 
+    public function testConsoleReportLinksAreDisabledInCI(): void
+    {
+        $this->analyzeFileForReport();
+
+        $console_report_options = new Report\ReportOptions();
+        $console_report_options->show_snippet = false;
+        $console_report_options->use_color = true;
+        $console_report_options->in_ci = true;
+
+        $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
+
+        $this->assertStringNotContainsString(
+            "\033]8;;file://somefile.php#L3\033\\",
+            $output
+        );
+    }
+
     public function testCompactReport(): void
     {
         $this->analyzeFileForReport();
