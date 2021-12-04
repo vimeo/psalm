@@ -65,6 +65,9 @@ abstract class Report
     /** @var bool */
     protected $pretty;
 
+    /** @var bool */
+    protected $in_ci;
+
     /** @var int */
     protected $mixed_expression_count;
 
@@ -98,6 +101,7 @@ abstract class Report
         $this->show_snippet = $report_options->show_snippet;
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
+        $this->in_ci = $report_options->in_ci;
 
         $this->mixed_expression_count = $mixed_expression_count;
         $this->total_expression_count = $total_expression_count;

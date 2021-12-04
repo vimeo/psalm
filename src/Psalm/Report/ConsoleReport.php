@@ -129,6 +129,10 @@ class ConsoleReport extends Report
             . "\033[0m"
         ;
 
+        if ($this->in_ci) {
+            return $reference;
+        }
+
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
             $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')

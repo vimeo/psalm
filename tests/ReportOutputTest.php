@@ -1074,11 +1074,29 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
         $console_report_options = new Report\ReportOptions();
         $console_report_options->show_snippet = false;
         $console_report_options->use_color = true;
+        $console_report_options->in_ci = false; // we don't output links in CI
 
         $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
 
         $this->assertStringContainsString(
             "\033]8;;file://somefile.php#L3\033\\\033[1;31msomefile.php:3:10\033[0m\033]8;;\033\\",
+            $output
+        );
+    }
+
+    public function testConsoleReportLinksAreDisabledInCI(): void
+    {
+        $this->analyzeFileForReport();
+
+        $console_report_options = new Report\ReportOptions();
+        $console_report_options->show_snippet = false;
+        $console_report_options->use_color = true;
+        $console_report_options->in_ci = true;
+
+        $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
+
+        $this->assertStringNotContainsString(
+            "\033]8;;file://somefile.php#L3\033\\",
             $output
         );
     }

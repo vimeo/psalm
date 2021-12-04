@@ -342,9 +342,9 @@ Basic configuration:
 
     --no-diff
         Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
-        
+
     --php-version=PHP_VERSION
-        Explicitly set PHP version to analyse code against. 
+        Explicitly set PHP version to analyse code against.
 
 Surfacing issues:
     --show-info[=BOOLEAN]
@@ -646,5 +646,16 @@ HELP;
         if ($version !== null && $source !== null) {
             $project_analyzer->setPhpVersion($version, $source);
         }
+    }
+
+    public static function runningInCI(): bool
+    {
+        return isset($_SERVER['TRAVIS'])
+            || isset($_SERVER['CIRCLECI'])
+            || isset($_SERVER['APPVEYOR'])
+            || isset($_SERVER['JENKINS_URL'])
+            || isset($_SERVER['SCRUTINIZER'])
+            || isset($_SERVER['GITLAB_CI'])
+            || isset($_SERVER['GITHUB_WORKFLOW']);
     }
 }
