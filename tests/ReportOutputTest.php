@@ -1074,19 +1074,9 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
         $console_report_options = new Report\ReportOptions();
         $console_report_options->show_snippet = false;
         $console_report_options->use_color = true;
+        $console_report_options->in_ci = false; // we don't output links in CI
 
-        // we want to disable links in CI, however we still want to test links there
-        // thus this gymnastics
-        $github_env_var_backup = isset($_SERVER['GITHUB_WORKFLOW']) ? (string) $_SERVER['GITHUB_WORKFLOW'] : null;
-        unset($_SERVER['GITHUB_WORKFLOW']);
-
-        try {
-            $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
-        } finally {
-            if (null !== $github_env_var_backup) {
-                $_SERVER['GITHUB_WORKFLOW'] = $github_env_var_backup;
-            }
-        }
+        $output  = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
 
         $this->assertStringContainsString(
             "\033]8;;file://somefile.php#L3\033\\\033[1;31msomefile.php:3:10\033[0m\033]8;;\033\\",
