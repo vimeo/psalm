@@ -165,7 +165,6 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
@@ -179,7 +178,6 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                false, //should this be $inside_negation??
                 $cache,
                 $inside_conditional
             );
@@ -324,7 +322,6 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase = null,
-        bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
     ): array {
@@ -348,7 +345,6 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation,
                 $cache,
                 $true_position
             );
@@ -362,7 +358,6 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation,
                 $cache,
                 $inside_conditional,
                 $false_position
@@ -562,7 +557,6 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase = null,
-        bool $inside_negation = false,
         bool $cache = true,
         bool $inside_conditional = true
     ): array {
@@ -588,7 +582,6 @@ class AssertionFinder
                 $source,
                 $inside_conditional,
                 $codebase,
-                $inside_negation,
                 $false_position
             );
         }
@@ -602,7 +595,6 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation,
                 $cache,
                 $inside_conditional
             );
@@ -2074,7 +2066,6 @@ class AssertionFinder
         FileSource $source,
         bool $inside_conditional,
         ?Codebase $codebase,
-        bool $inside_negation,
         int $false_position
     ): array {
         $if_types = [];
@@ -2114,7 +2105,7 @@ class AssertionFinder
                     $this_class_name,
                     $source,
                     $codebase,
-                    $inside_negation,
+                    false,
                     $cache,
                     $inside_conditional
                 );
@@ -2192,7 +2183,6 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
-        bool $inside_negation,
         bool $cache,
         bool $inside_conditional
     ): array {
@@ -2212,7 +2202,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                !$inside_negation
+                true
             );
         } else {
             $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2242,7 +2232,7 @@ class AssertionFinder
                         $this_class_name,
                         $source,
                         $codebase,
-                        $inside_negation,
+                        false,
                         $cache,
                         $inside_conditional
                     );
@@ -2770,7 +2760,6 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
-        bool $inside_negation,
         bool $cache,
         int $true_position
     ): array {
@@ -2790,7 +2779,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                $inside_negation
+                false
             );
         } else {
             $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2820,7 +2809,7 @@ class AssertionFinder
                         $this_class_name,
                         $source,
                         $codebase,
-                        $inside_negation,
+                        false,
                         $cache
                     );
 
@@ -2895,7 +2884,6 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
-        bool $inside_negation,
         bool $cache,
         bool $inside_conditional,
         int $false_position
@@ -2916,7 +2904,7 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
-                !$inside_negation
+                true
             );
         } else {
             $var_name = ExpressionIdentifier::getArrayVarId(
@@ -2946,7 +2934,7 @@ class AssertionFinder
                         $this_class_name,
                         $source,
                         $codebase,
-                        $inside_negation,
+                        false,
                         $cache,
                         $inside_conditional
                     );
