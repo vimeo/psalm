@@ -207,7 +207,8 @@ final class Psalm
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
-            function () use ($current_dir, $options, $vendor_dir): ?ClassLoader {
+            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
+            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
                 return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
