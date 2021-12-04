@@ -19,7 +19,7 @@ class MethodReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(MethodReturnTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(MethodReturnTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -27,7 +27,7 @@ class MethodReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string,
      *     lowercase-string,
@@ -75,7 +75,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param \Closure(MethodReturnTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(MethodReturnTypeProviderEvent) : ?Type\Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -83,7 +83,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param  \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string,
      *     lowercase-string,

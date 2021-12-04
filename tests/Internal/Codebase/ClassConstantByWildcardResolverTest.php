@@ -10,7 +10,7 @@ use Psalm\Type\Atomic\TLiteralString;
 final class ClassConstantByWildcardResolverTest extends TestCase
 {
     /**
-     * @var \Psalm\Internal\Codebase\ClassConstantByWildcardResolver
+     * @var ClassConstantByWildcardResolver
      */
     private $resolver;
 

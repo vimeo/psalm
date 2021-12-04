@@ -51,7 +51,7 @@ class ClientHandler
 
         return call(
             /**
-             * @return \Generator<int, \Amp\Promise, mixed, \Amp\Promise<mixed>>
+             * @return Generator<int, Promise, mixed, Promise<mixed>>
              */
             function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(

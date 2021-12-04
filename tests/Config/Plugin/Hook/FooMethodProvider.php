@@ -36,7 +36,7 @@ class FooMethodProvider implements
     }
 
     /**
-     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, FunctionLikeParameter>
      */
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {

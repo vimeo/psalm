@@ -17,7 +17,7 @@ class PropertyVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(PropertyVisibilityProviderEvent) : ?bool>
+     *   array<Closure(PropertyVisibilityProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -25,7 +25,7 @@ class PropertyVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string,
      *     string,
@@ -65,7 +65,7 @@ class PropertyVisibilityProvider
     }
 
     /**
-     * @param \Closure(PropertyVisibilityProviderEvent) : ?bool $c
+     * @param Closure(PropertyVisibilityProviderEvent): ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -73,14 +73,14 @@ class PropertyVisibilityProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string,
      *     string,
      *     bool,
      *     Context,
      *     CodeLocation
-     *   ) : ?bool $c
+     *   ): ?bool $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {

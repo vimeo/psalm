@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -18,7 +19,7 @@ class TIterable extends Atomic
     use GenericTrait;
 
     /**
-     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     * @var array{Union, Union}
      */
     public $type_params;
 
@@ -33,7 +34,7 @@ class TIterable extends Atomic
     public $has_docblock_params = false;
 
     /**
-     * @param list<\Psalm\Type\Union>     $type_params
+     * @param list<Union> $type_params
      */
     public function __construct(array $type_params = [])
     {

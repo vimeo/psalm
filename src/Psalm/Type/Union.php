@@ -4,6 +4,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
@@ -197,7 +198,7 @@ class Union implements TypeNode
     private $id;
 
     /**
-     * @var array<string, \Psalm\Internal\DataFlow\DataFlowNode>
+     * @var array<string, DataFlowNode>
      */
     public $parent_nodes = [];
 
@@ -1383,7 +1384,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleStringLiteral is false
+     * @throws InvalidArgumentException if isSingleStringLiteral is false
      *
      * @return TLiteralString the only string literal represented by this union type
      */
@@ -1464,7 +1465,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleIntLiteral is false
+     * @throws InvalidArgumentException if isSingleIntLiteral is false
      *
      * @return TLiteralInt the only int literal represented by this union type
      */
@@ -1699,7 +1700,7 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleFloatLiteral is false
+     * @throws InvalidArgumentException if isSingleFloatLiteral is false
      *
      * @return TLiteralFloat the only float literal represented by this union type
      */

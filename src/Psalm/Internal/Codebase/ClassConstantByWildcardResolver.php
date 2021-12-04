@@ -19,7 +19,7 @@ use function str_replace;
 final class ClassConstantByWildcardResolver
 {
     /**
-     * @var \Psalm\Codebase
+     * @var Codebase
      */
     private $codebase;
 

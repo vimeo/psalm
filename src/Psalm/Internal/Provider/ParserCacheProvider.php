@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
+use PhpParser\Node\Stmt;
 use Psalm\Config;
 use RuntimeException;
 
@@ -101,10 +102,10 @@ class ParserCacheProvider
             && filemtime($cache_location) > $file_modified_time
         ) {
             if ($this->use_igbinary) {
-                /** @var list<\PhpParser\Node\Stmt> */
+                /** @var list<Stmt> */
                 $stmts = igbinary_unserialize((string)file_get_contents($cache_location));
             } else {
-                /** @var list<\PhpParser\Node\Stmt> */
+                /** @var list<Stmt> */
                 $stmts = unserialize((string)file_get_contents($cache_location));
             }
 
@@ -137,11 +138,11 @@ class ParserCacheProvider
 
         if (is_readable($cache_location)) {
             if ($this->use_igbinary) {
-                /** @var list<\PhpParser\Node\Stmt> */
+                /** @var list<Stmt> */
                 return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
             }
 
-            /** @var list<\PhpParser\Node\Stmt> */
+            /** @var list<Stmt> */
             return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
 

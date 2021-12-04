@@ -13,6 +13,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
@@ -110,7 +111,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
      */
     private $bad_classes = [];
     /**
-     * @var \Psalm\Internal\EventDispatcher
+     * @var EventDispatcher
      */
     private $eventDispatcher;
 

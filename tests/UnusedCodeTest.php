@@ -19,7 +19,7 @@ use const DIRECTORY_SEPARATOR;
 
 class UnusedCodeTest extends TestCase
 {
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public function setUp() : void

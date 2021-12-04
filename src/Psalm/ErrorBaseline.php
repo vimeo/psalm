@@ -99,7 +99,7 @@ class ErrorBaseline
 
         $files = [];
 
-        /** @var \DOMElement $filesElement */
+        /** @var DOMElement $filesElement */
         $filesElement = $filesElement[0];
 
         foreach ($filesElement->getElementsByTagName('file') as $file) {

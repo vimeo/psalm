@@ -8,6 +8,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -172,7 +173,7 @@ trait GenericTrait
     }
 
     /**
-     * @return array<\Psalm\Type\TypeNode>
+     * @return array<TypeNode>
      */
     public function getChildNodes() : array
     {

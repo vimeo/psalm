@@ -39,6 +39,7 @@ use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
@@ -946,7 +947,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, \Psalm\Storage\FunctionLikeParameter> $params
+     * @param array<int, FunctionLikeParameter> $params
      */
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
@@ -1254,7 +1255,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param \Psalm\Storage\FunctionLikeParameter[] $params
+     * @param FunctionLikeParameter[] $params
      */
     private function alterParams(
         Codebase $codebase,
@@ -1728,12 +1729,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @return array{
-     *        \Psalm\Internal\MethodIdentifier|null,
-     *        \Psalm\Internal\MethodIdentifier|null,
-     *        \Psalm\Storage\ClassLikeStorage|null,
+     *        MethodIdentifier|null,
+     *        MethodIdentifier|null,
+     *        ClassLikeStorage|null,
      *        ?string,
      *        ?string,
-     *        array<string, \Psalm\Internal\MethodIdentifier>
+     *        array<string, MethodIdentifier>
      * }|null
      */
     private function getFunctionInformation(

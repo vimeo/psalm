@@ -13,15 +13,26 @@ use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
 use PhpParser;
+use PhpParser\Node\Arg;
+use Psalm\CodeLocation;
 use Psalm\Exception\UnanalyzedFileException;
+use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\Populator;
+use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
+use Psalm\Internal\Codebase\Scanner;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
@@ -36,6 +47,7 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\TaintKindGroup;
 use ReflectionProperty;
@@ -79,7 +91,7 @@ class Codebase
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
      *
-     * @var array<lowercase-string, array<int, \Psalm\CodeLocation>>
+     * @var array<lowercase-string, array<int, CodeLocation>>
      */
     public $use_referencing_locations = [];
 
@@ -161,42 +173,42 @@ class Codebase
     public $find_unused_variables = false;
 
     /**
-     * @var Internal\Codebase\Scanner
+     * @var Scanner
      */
     public $scanner;
 
     /**
-     * @var Internal\Codebase\Analyzer
+     * @var Analyzer
      */
     public $analyzer;
 
     /**
-     * @var Internal\Codebase\Functions
+     * @var Functions
      */
     public $functions;
 
     /**
-     * @var Internal\Codebase\ClassLikes
+     * @var ClassLikes
      */
     public $classlikes;
 
     /**
-     * @var Internal\Codebase\Methods
+     * @var Methods
      */
     public $methods;
 
     /**
-     * @var Internal\Codebase\Properties
+     * @var Properties
      */
     public $properties;
 
     /**
-     * @var Internal\Codebase\Populator
+     * @var Populator
      */
     public $populator;
 
     /**
-     * @var ?Internal\Codebase\TaintFlowGraph
+     * @var ?TaintFlowGraph
      */
     public $taint_flow_graph;
 
@@ -326,7 +338,7 @@ class Codebase
 
         $reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
 
-        $this->scanner = new Internal\Codebase\Scanner(
+        $this->scanner = new Scanner(
             $this,
             $config,
             $providers->file_storage_provider,
@@ -338,9 +350,9 @@ class Codebase
 
         $this->loadAnalyzer();
 
-        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $reflection);
+        $this->functions = new Functions($providers->file_storage_provider, $reflection);
 
-        $this->classlikes = new Internal\Codebase\ClassLikes(
+        $this->classlikes = new ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
@@ -348,19 +360,19 @@ class Codebase
             $this->scanner
         );
 
-        $this->properties = new Internal\Codebase\Properties(
+        $this->properties = new Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $this->classlikes
         );
 
-        $this->methods = new Internal\Codebase\Methods(
+        $this->methods = new Methods(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $this->classlikes
         );
 
-        $this->populator = new Internal\Codebase\Populator(
+        $this->populator = new Populator(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
@@ -374,7 +386,7 @@ class Codebase
 
     private function loadAnalyzer(): void
     {
-        $this->analyzer = new Internal\Codebase\Analyzer(
+        $this->analyzer = new Analyzer(
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
@@ -712,8 +724,8 @@ class Codebase
     /**
      * Determine whether or not a class extends a parent
      *
-     * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
-     * @throws \InvalidArgumentException when class does not exist
+     * @throws UnpopulatedClasslikeException when called on unpopulated class
+     * @throws InvalidArgumentException when class does not exist
      */
     public function classExtends(string $fq_class_name, string $possible_parent): bool
     {
@@ -809,8 +821,8 @@ class Codebase
     /**
      * Whether or not a given method exists
      *
-     * @param  string|\Psalm\Internal\MethodIdentifier       $method_id
-     * @param  string|\Psalm\Internal\MethodIdentifier|null $calling_method_id
+     * @param  string|MethodIdentifier      $method_id
+     * @param  string|MethodIdentifier|null $calling_method_id
      *
      @return bool
      */
@@ -833,9 +845,9 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
-     * @return array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return array<int, FunctionLikeParameter>
      */
     public function getMethodParams($method_id): array
     {
@@ -843,7 +855,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function isVariadic($method_id): bool
@@ -852,8 +864,8 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
-     * @param  list<PhpParser\Node\Arg> $call_args
+     * @param  string|MethodIdentifier $method_id
+     * @param  list<Arg> $call_args
      *
      */
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
@@ -867,7 +879,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getMethodReturnsByRef($method_id): bool
@@ -876,8 +888,8 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier   $method_id
-     * @param  CodeLocation|null    $defined_location
+     * @param  string|MethodIdentifier $method_id
+     * @param  CodeLocation|null       $defined_location
      *
      */
     public function getMethodReturnTypeLocation(
@@ -891,7 +903,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getDeclaringMethodId($method_id): ?string
@@ -904,7 +916,7 @@ class Codebase
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
      *
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getAppearingMethodId($method_id): ?string
@@ -915,7 +927,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      * @return array<string, Internal\MethodIdentifier>
      */
@@ -925,7 +937,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getCasedMethodId($method_id): string
@@ -1499,7 +1511,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForClassishThing(string $type_string, string $gap) : array
     {
@@ -1577,7 +1589,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
@@ -1746,7 +1758,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForType(Type\Union $type): array
     {
@@ -1802,7 +1814,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForArrayKeys(
         string $type_string

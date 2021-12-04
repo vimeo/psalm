@@ -14,7 +14,7 @@ use function strpos;
 
 class PropertyMoveTest extends TestCase
 {
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public function setUp() : void

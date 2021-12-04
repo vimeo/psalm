@@ -79,7 +79,7 @@ class DocumentationTest extends TestCase
         '@psalm-yield',
     ];
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     /** @var string */

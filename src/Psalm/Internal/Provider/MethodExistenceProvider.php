@@ -16,7 +16,7 @@ class MethodExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(MethodExistenceProviderEvent) : ?bool>
+     *   array<Closure(MethodExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -24,7 +24,7 @@ class MethodExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     string,
      *     string,
      *     ?StatementsSource=,
@@ -61,7 +61,7 @@ class MethodExistenceProvider
     }
 
     /**
-     * @param \Closure(MethodExistenceProviderEvent) : ?bool $c
+     * @param Closure(MethodExistenceProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -69,7 +69,7 @@ class MethodExistenceProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     string,
      *     string,
      *     ?StatementsSource=,

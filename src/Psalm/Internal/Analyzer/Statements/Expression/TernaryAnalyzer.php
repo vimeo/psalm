@@ -90,9 +90,9 @@ class TernaryAnalyzer
         }
 
         $if_clauses = array_map(
-                /**
-                 * @return \Psalm\Internal\Clause
-                 */
+            /**
+             * @return Clause
+             */
             function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 

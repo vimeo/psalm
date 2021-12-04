@@ -92,7 +92,7 @@
 
             <property name="allowPartialUses" type="bool" value="true"/>
 
-			<property name="searchAnnotations" type="bool" value="false"/>
+			<property name="searchAnnotations" type="bool" value="true"/>
         </properties>
     </rule>
 

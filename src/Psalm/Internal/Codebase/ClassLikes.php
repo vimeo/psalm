@@ -37,6 +37,7 @@ use Psalm\Node\VirtualNode;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionClass;
@@ -610,7 +611,7 @@ class ClassLikes
      * Determine whether or not a class extends a parent
      *
      * @throws UnpopulatedClasslikeException when called on unpopulated class
-     * @throws \InvalidArgumentException when class does not exist
+     * @throws InvalidArgumentException when class does not exist
      */
     public function classExtends(string $fq_class_name, string $possible_parent, bool $from_api = false): bool
     {
@@ -1587,7 +1588,7 @@ class ClassLikes
      * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
      *  $visibility
      *
-     * @return array<string, \Psalm\Storage\ClassConstantStorage>
+     * @return array<string, ClassConstantStorage>
      */
     public function getConstantsForClass(string $class_name, int $visibility): array
     {

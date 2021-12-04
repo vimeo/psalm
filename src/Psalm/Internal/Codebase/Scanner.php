@@ -14,6 +14,8 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use ReflectionClass;
 use Throwable;
@@ -67,8 +69,8 @@ use const PHP_EOL;
  *     diff_map:array<string, array<int, array{int, int, int, int}>>,
  *     deletion_ranges:array<string, array<int, array{int, int}>>,
  *     errors:array<string, bool>,
- *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
- *     file_storage:array<lowercase-string, \Psalm\Storage\FileStorage>,
+ *     classlike_storage:array<string, ClassLikeStorage>,
+ *     file_storage:array<lowercase-string, FileStorage>,
  *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph
  * }

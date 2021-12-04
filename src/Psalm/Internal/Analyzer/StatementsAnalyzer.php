@@ -135,7 +135,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     private $fake_this_class;
 
-    /** @var \Psalm\Internal\Provider\NodeDataProvider */
+    /** @var NodeDataProvider */
     public $node_data;
 
     /** @var ?DataFlowGraph */
@@ -1029,7 +1029,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return \Psalm\Internal\Provider\NodeDataProvider
+     * @return NodeDataProvider
      */
     public function getNodeTypeProvider() : NodeTypeProvider
     {

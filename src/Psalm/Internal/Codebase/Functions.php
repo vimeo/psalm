@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Codebase;
 
 use Exception;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -387,7 +388,7 @@ class Functions
     }
 
     /**
-     * @param ?list<\PhpParser\Node\Arg> $args
+     * @param ?list<Arg> $args
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,

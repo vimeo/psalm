@@ -43,7 +43,7 @@ class ConfigTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public static function setUpBeforeClass() : void

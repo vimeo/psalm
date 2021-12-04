@@ -14,7 +14,7 @@ use function strlen;
 class Message
 {
     /**
-     * @var ?\AdvancedJsonRpc\Message
+     * @var ?MessageBody
      */
     public $body;
 

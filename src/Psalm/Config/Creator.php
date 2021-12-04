@@ -3,6 +3,7 @@ namespace Psalm\Config;
 
 use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Composer;
 
 use function array_filter;
@@ -96,7 +97,7 @@ class Creator
     }
 
     /**
-     * @param  array<\Psalm\Internal\Analyzer\IssueData>  $issues
+     * @param  array<IssueData>  $issues
      */
     public static function getLevel(array $issues, int $counted_types) : int
     {

@@ -410,7 +410,7 @@ class CallableTypeComparator
         return null;
     }
 
-    /** @return null|'not-callable'|\Psalm\Internal\MethodIdentifier */
+    /** @return null|'not-callable'|MethodIdentifier */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,

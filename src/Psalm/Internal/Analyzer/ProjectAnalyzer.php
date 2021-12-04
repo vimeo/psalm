@@ -52,6 +52,7 @@ use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Type;
 use ReflectionProperty;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -1469,8 +1470,8 @@ class ProjectAnalyzer
      * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
      * returns number of cpu cores
      * Copyleft 2018, license: WTFPL
-     * @throws \RuntimeException
-     * @throws \LogicException
+     * @throws RuntimeException
+     * @throws LogicException
      * @psalm-suppress ForbiddenCode
      */
     public static function getCpuCount(): int
@@ -1479,7 +1480,7 @@ class ProjectAnalyzer
             /*
             $str = trim((string) shell_exec('wmic cpu get NumberOfCores 2>&1'));
             if (!preg_match('/(\d+)/', $str, $matches)) {
-                throw new \RuntimeException('wmic failed to get number of cpu cores on windows!');
+                throw new RuntimeException('wmic failed to get number of cpu cores on windows!');
             }
             return ((int) $matches [1]);
             */

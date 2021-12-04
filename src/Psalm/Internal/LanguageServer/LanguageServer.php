@@ -117,7 +117,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             'message',
             asyncCoroutine(
                 /**
-                 * @return \Generator<int, \Amp\Promise, mixed, void>
+                 * @return Generator<int, Promise, mixed, void>
                  */
                 function (Message $msg): Generator {
                     if (!$msg->body) {
@@ -204,7 +204,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         ?int $processId = null
     ): Promise {
         return call(
-            /** @return \Generator<int, true, mixed, InitializeResult> */
+            /** @return Generator<int, true, mixed, InitializeResult> */
             function () {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');

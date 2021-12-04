@@ -29,7 +29,7 @@ class Value extends ParseTree
     public $text;
 
     /**
-     * @param \Psalm\Internal\Type\ParseTree|null $parent
+     * @param ParseTree|null $parent
      */
     public function __construct(
         string $value,

@@ -26,6 +26,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_keys;
 use function array_merge;
@@ -47,7 +48,7 @@ use function strtolower;
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
+     * @param  TNamedObject|TTemplateParam $static_type
      *
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
@@ -63,7 +64,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result
     ) : void {
-        if ($lhs_type_part instanceof Type\Atomic\TTemplateParam
+        if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
             $extra_types = $lhs_type_part->extra_types;
@@ -455,7 +456,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $lhs_type_part
+     * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Type\Atomic> $intersection_types
      *
      * @return  array{?Type\Union, array<string>}
@@ -556,7 +557,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 // handled above
                 return;
 
-            case Type\Atomic\TTemplateParam::class:
+            case TTemplateParam::class:
             case Type\Atomic\TEmptyMixed::class:
             case Type\Atomic\TEmpty::class:
             case Type\Atomic\TMixed::class:
@@ -652,11 +653,11 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
-     * @return array{Type\Atomic\TNamedObject, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
+     * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, string}
      */
     private static function handleTemplatedMixins(
         ClassLikeStorage $class_storage,
-        Type\Atomic\TNamedObject $lhs_type_part,
+        TNamedObject $lhs_type_part,
         string $method_name_lc,
         Codebase $codebase,
         Context $context,
@@ -689,7 +690,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $current_type_param->getAtomicTypes()
                         )[0];
 
-                        if ($lhs_type_part_new instanceof Type\Atomic\TNamedObject) {
+                        if ($lhs_type_part_new instanceof TNamedObject) {
                             $new_method_id = new MethodIdentifier(
                                 $lhs_type_part_new->value,
                                 $method_name_lc
@@ -740,11 +741,11 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
-     * @return array{Type\Atomic\TNamedObject, \Psalm\Storage\ClassLikeStorage, bool, MethodIdentifier, string}
+     * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, string}
      */
     private static function handleRegularMixins(
         ClassLikeStorage $class_storage,
-        Type\Atomic\TNamedObject $lhs_type_part,
+        TNamedObject $lhs_type_part,
         string $method_name_lc,
         Codebase $codebase,
         Context $context,
@@ -814,7 +815,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
 
-                if ($new_lhs_type_part instanceof Type\Atomic\TNamedObject) {
+                if ($new_lhs_type_part instanceof TNamedObject) {
                     $lhs_type_part = $new_lhs_type_part;
                 }
 

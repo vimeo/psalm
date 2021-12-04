@@ -2,13 +2,14 @@
 namespace Psalm\Internal\Provider;
 
 use Closure;
-use PhpParser;
+use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\Hook\FunctionParamsProviderInterface as LegacyFunctionParamsProviderInterface;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeParameter;
 
 use function is_subclass_of;
 use function strtolower;
@@ -18,7 +19,7 @@ class FunctionParamsProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(FunctionParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
+     *   array<Closure(FunctionParamsProviderEvent) : ?array<int, FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -26,13 +27,13 @@ class FunctionParamsProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
+     *   ) : ?array<int, FunctionLikeParameter>>
      * >
      */
     private static $legacy_handlers = [];
@@ -64,7 +65,7 @@ class FunctionParamsProvider
     }
 
     /**
-     * @param  \Closure(FunctionParamsProviderEvent) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
+     * @param Closure(FunctionParamsProviderEvent) : ?array<int, FunctionLikeParameter> $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -72,13 +73,13 @@ class FunctionParamsProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
+     *   ) : ?array<int, FunctionLikeParameter> $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -92,9 +93,9 @@ class FunctionParamsProvider
     }
 
     /**
-     * @param list<PhpParser\Node\Arg>  $call_args
+     * @param list<Arg> $call_args
      *
-     * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return  ?array<int, FunctionLikeParameter>
      */
     public function getFunctionParams(
         StatementsSource $statements_source,

@@ -23,7 +23,7 @@ class CloningVisitor extends NodeVisitorAbstract
                 'comments',
                 array_map(
                     /**
-                     * @return \PhpParser\Comment
+                     * @return Comment
                      */
                     function (Comment $c): Comment {
                         return clone $c;

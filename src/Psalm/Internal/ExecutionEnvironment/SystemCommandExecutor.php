@@ -19,7 +19,7 @@ final class SystemCommandExecutor
      * Execute command.
      *
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      *
      * @return string[]
      */

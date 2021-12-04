@@ -53,7 +53,7 @@ class GitInfoCollector
     /**
      * Collect branch name.
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     protected function collectBranch() : string
     {
@@ -73,7 +73,7 @@ class GitInfoCollector
     /**
      * Collect commit info.
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     protected function collectCommit() : CommitInfo
     {
@@ -98,7 +98,7 @@ class GitInfoCollector
     /**
      * Collect remotes info.
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      *
      * @return list<RemoteInfo>
      */

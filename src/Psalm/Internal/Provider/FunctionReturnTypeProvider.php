@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use PhpParser;
+use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -19,7 +20,7 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -27,10 +28,10 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union>
@@ -98,7 +99,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(FunctionReturnTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(FunctionReturnTypeProviderEvent): ?Type\Union $c
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
@@ -107,10 +108,10 @@ class FunctionReturnTypeProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union $c

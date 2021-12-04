@@ -17,7 +17,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(MethodVisibilityProviderEvent) : ?bool>
+     *   array<Closure(MethodVisibilityProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -25,7 +25,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string,
      *     string,
@@ -64,7 +64,7 @@ class MethodVisibilityProvider
     }
 
     /**
-     * @param \Closure(MethodVisibilityProviderEvent) : ?bool $c
+     * @param Closure(MethodVisibilityProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -72,7 +72,7 @@ class MethodVisibilityProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string,
      *     string,

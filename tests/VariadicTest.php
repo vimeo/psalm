@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\Providers;
@@ -36,7 +37,7 @@ class VariadicTest extends TestCase
     }
 
     /**
-     * @throws \Psalm\Exception\ConfigException
+     * @throws ConfigException
      * @runInSeparateProcess
      */
     public function testVariadicFunctionFromAutoloadFile(): void

@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Codebase\Analyzer;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -15,7 +16,7 @@ use function explode;
 use function file_exists;
 
 /**
- * @psalm-import-type FileMapType from \Psalm\Internal\Codebase\Analyzer
+ * @psalm-import-type FileMapType from Analyzer
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.

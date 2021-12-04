@@ -17,6 +17,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -25,6 +26,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_keys;
@@ -104,7 +106,7 @@ class TypeChecker extends NodeVisitor
     /**
      * @psalm-suppress MoreSpecificImplementedParamType
      *
-     * @param  \Psalm\Type\Atomic|\Psalm\Type\Union $type
+     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type) : ?int

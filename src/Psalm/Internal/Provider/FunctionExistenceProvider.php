@@ -15,7 +15,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(FunctionExistenceProviderEvent) : ?bool>
+     *   array<Closure(FunctionExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -23,7 +23,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string
      *   ) : ?bool>
@@ -59,7 +59,7 @@ class FunctionExistenceProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(FunctionExistenceProviderEvent) : ?bool $c
+     * @param Closure(FunctionExistenceProviderEvent) : ?bool $c
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
@@ -68,7 +68,7 @@ class FunctionExistenceProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string
      *   ) : ?bool $c

@@ -122,7 +122,7 @@ class FileAnalyzer extends SourceAnalyzer
      */
     private $first_statement_offset = -1;
 
-    /** @var ?\Psalm\Internal\Provider\NodeDataProvider */
+    /** @var ?NodeDataProvider */
     private $node_data;
 
     /** @var ?Type\Union */

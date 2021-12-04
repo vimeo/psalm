@@ -36,7 +36,7 @@ class ClassLikeStorageProvider
     }
 
     /**
-     * @throws \InvalidArgumentException when class does not exist
+     * @throws InvalidArgumentException when class does not exist
      */
     public function get(string $fq_classlike_name): ClassLikeStorage
     {

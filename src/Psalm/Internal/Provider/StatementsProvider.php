@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
+use PhpParser\Node\Stmt;
 use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
@@ -105,7 +106,7 @@ class StatementsProvider
     }
 
     /**
-     * @return list<\PhpParser\Node\Stmt>
+     * @return list<Stmt>
      */
     public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null): array
     {
@@ -409,10 +410,10 @@ class StatementsProvider
     }
 
     /**
-     * @param  list<\PhpParser\Node\Stmt> $existing_statements
+     * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
      *
-     * @return list<\PhpParser\Node\Stmt>
+     * @return list<Stmt>
      */
     public static function parseStatements(
         string $file_contents,
@@ -459,7 +460,7 @@ class StatementsProvider
                 $stmts = $existing_statements;
             } else {
                 try {
-                    /** @var list<\PhpParser\Node\Stmt> */
+                    /** @var list<Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
                 } catch (Throwable $t) {
                     $stmts = [];
@@ -469,7 +470,7 @@ class StatementsProvider
             }
         } else {
             try {
-                /** @var list<\PhpParser\Node\Stmt> */
+                /** @var list<Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
             } catch (Throwable $t) {
                 $stmts = [];

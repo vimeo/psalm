@@ -901,7 +901,7 @@ class FunctionLikeNodeScanner
      *     null|lowercase-string,
      *     ClassLikeStorage|null,
      *     bool,
-     *     \Psalm\Internal\MethodIdentifier|null,
+     *     MethodIdentifier|null,
      *     bool
      * }|false
      */

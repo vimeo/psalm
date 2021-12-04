@@ -1,16 +1,18 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\Union;
 
 class FromDocblockSetter extends NodeVisitor
 {
     /**
      * @psalm-suppress MoreSpecificImplementedParamType
      *
-     * @param  \Psalm\Type\Atomic|\Psalm\Type\Union $type
+     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type) : ?int

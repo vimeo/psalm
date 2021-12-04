@@ -3,6 +3,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\CodeIssue;
 use Psalm\Type;
 
 use function array_column;
@@ -145,7 +146,7 @@ abstract class FunctionLikeStorage
     public $has_visitor_issues = false;
 
     /**
-     * @var list<\Psalm\Issue\CodeIssue>
+     * @var list<CodeIssue>
      */
     public $docblock_issues = [];
 

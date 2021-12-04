@@ -40,7 +40,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @return non-empty-lowercase-string
-     * @throws \UnexpectedValueException if function is closure or arrow function.
+     * @throws UnexpectedValueException if function is closure or arrow function.
      */
     public function getFunctionId(): string
     {

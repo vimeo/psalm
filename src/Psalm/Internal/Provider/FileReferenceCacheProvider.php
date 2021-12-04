@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\Codebase\Analyzer;
 use UnexpectedValueException;
 
 use function file_exists;
@@ -16,7 +17,7 @@ use function unserialize;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * @psalm-import-type  FileMapType from \Psalm\Internal\Codebase\Analyzer
+ * @psalm-import-type  FileMapType from Analyzer
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.

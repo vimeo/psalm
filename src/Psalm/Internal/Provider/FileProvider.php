@@ -119,7 +119,7 @@ class FileProvider
     {
         $file_paths = [];
 
-        /** @var \RecursiveDirectoryIterator */
+        /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_path));
         $iterator->rewind();
 

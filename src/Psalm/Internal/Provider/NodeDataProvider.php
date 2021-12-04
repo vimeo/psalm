@@ -2,9 +2,17 @@
 
 namespace Psalm\Internal\Provider;
 
-use PhpParser;
 use PhpParser\Node;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Return_;
+use PhpParser\NodeAbstract;
 use Psalm\NodeTypeProvider;
+use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 use SplObjectStorage;
 
@@ -18,10 +26,10 @@ class NodeDataProvider implements NodeTypeProvider
      */
     private $node_assertions;
 
-    /** @var SplObjectStorage<Node, array<int, \Psalm\Storage\Assertion>> */
+    /** @var SplObjectStorage<Node, array<int, Assertion>> */
     private $node_if_true_assertions;
 
-    /** @var SplObjectStorage<Node, array<int, \Psalm\Storage\Assertion>> */
+    /** @var SplObjectStorage<Node, array<int, Assertion>> */
     private $node_if_false_assertions;
 
     /** @var bool */
@@ -36,17 +44,17 @@ class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param Node\Expr|Node\Name|Node\Stmt\Return_ $node
+     * @param Expr|Name|Return_ $node
      */
-    public function setType(PhpParser\NodeAbstract $node, Union $type) : void
+    public function setType(NodeAbstract $node, Union $type) : void
     {
         $this->node_types[$node] = $type;
     }
 
     /**
-     * @param Node\Expr|Node\Name|Node\Stmt\Return_ $node
+     * @param Expr|Name|Return_ $node
      */
-    public function getType(PhpParser\NodeAbstract $node) : ?Union
+    public function getType(NodeAbstract $node) : ?Union
     {
         return $this->node_types[$node] ?? null;
     }
@@ -54,7 +62,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @param list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null $assertions
      */
-    public function setAssertions(Node\Expr $node, ?array $assertions) : void
+    public function setAssertions(Expr $node, ?array $assertions) : void
     {
         if (!$this->cache_assertions) {
             return;
@@ -66,7 +74,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
      */
-    public function getAssertions(Node\Expr $node) : ?array
+    public function getAssertions(Expr $node) : ?array
     {
         if (!$this->cache_assertions) {
             return null;
@@ -76,49 +84,49 @@ class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param Node\Expr\FuncCall|Node\Expr\MethodCall|Node\Expr\StaticCall|Node\Expr\New_ $node
-     * @param array<int, \Psalm\Storage\Assertion>  $assertions
+     * @param FuncCall|MethodCall|StaticCall|New_ $node
+     * @param array<int, Assertion>  $assertions
      */
-    public function setIfTrueAssertions(Node\Expr $node, array $assertions) : void
+    public function setIfTrueAssertions(Expr $node, array $assertions) : void
     {
         $this->node_if_true_assertions[$node] = $assertions;
     }
 
     /**
-     * @param Node\Expr\FuncCall|Node\Expr\MethodCall|Node\Expr\StaticCall|Node\Expr\New_ $node
-     * @return array<int, \Psalm\Storage\Assertion>|null
+     * @param Expr\FuncCall|MethodCall|StaticCall|New_ $node
+     * @return array<int, Assertion>|null
      */
-    public function getIfTrueAssertions(Node\Expr $node) : ?array
+    public function getIfTrueAssertions(Expr $node) : ?array
     {
         return $this->node_if_true_assertions[$node] ?? null;
     }
 
     /**
-     * @param Node\Expr\FuncCall|Node\Expr\MethodCall|Node\Expr\StaticCall|Node\Expr\New_ $node
-     * @param array<int, \Psalm\Storage\Assertion>  $assertions
+     * @param FuncCall|MethodCall|StaticCall|New_ $node
+     * @param array<int, Assertion>  $assertions
      */
-    public function setIfFalseAssertions(Node\Expr $node, array $assertions) : void
+    public function setIfFalseAssertions(Expr $node, array $assertions) : void
     {
         $this->node_if_false_assertions[$node] = $assertions;
     }
 
     /**
-     * @param Node\Expr\FuncCall|Node\Expr\MethodCall|Node\Expr\StaticCall|Node\Expr\New_ $node
-     * @return array<int, \Psalm\Storage\Assertion>|null
+     * @param FuncCall|MethodCall|StaticCall|New_ $node
+     * @return array<int, Assertion>|null
      */
-    public function getIfFalseAssertions(Node\Expr $node) : ?array
+    public function getIfFalseAssertions(Expr $node) : ?array
     {
         return $this->node_if_false_assertions[$node] ?? null;
     }
 
-    public function isPureCompatible(Node\Expr $node) : bool
+    public function isPureCompatible(Expr $node) : bool
     {
         $node_type = $this->getType($node);
 
         return ($node_type && $node_type->reference_free) || $node->getAttribute('pure', false);
     }
 
-    public function clearNodeOfTypeAndAssertions(Node\Expr $node) : void
+    public function clearNodeOfTypeAndAssertions(Expr $node) : void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);
     }

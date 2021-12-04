@@ -3,6 +3,7 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer\Client;
 
 use Amp\Promise;
+use Generator;
 use JsonMapper;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\TextDocumentIdentifier;
@@ -57,7 +58,7 @@ class TextDocument
     {
         return call(
             /**
-             * @return \Generator<int, Promise<object>, object, TextDocumentItem>
+             * @return Generator<int, Promise<object>, object, TextDocumentItem>
              */
             function () use ($textDocument) {
                 /** @var Promise<object> */

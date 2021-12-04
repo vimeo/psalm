@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 
@@ -20,7 +21,7 @@ class ConditionCloningVisitor extends NodeVisitorAbstract
      */
     public function enterNode(Node $node): Node
     {
-        /** @var \PhpParser\Node\Expr $node */
+        /** @var Expr $node */
         $origNode = $node;
 
         $node = clone $node;

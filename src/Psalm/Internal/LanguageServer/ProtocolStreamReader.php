@@ -50,7 +50,7 @@ class ProtocolStreamReader implements ProtocolReader
         $input = new ResourceInputStream($input);
         asyncCall(
             /**
-             * @return \Generator<int, Promise<?string>, ?string, void>
+             * @return Generator<int, Promise<?string>, ?string, void>
              * @psalm-suppress MixedReturnTypeCoercion
              * @psalm-suppress MixedArgument in old Amp versions
              * @psalm-suppress MixedAssignment in old Amp versions

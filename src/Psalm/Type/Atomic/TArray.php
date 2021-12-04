@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 use function count;
 use function get_class;
@@ -14,7 +15,7 @@ class TArray extends Atomic
     use GenericTrait;
 
     /**
-     * @var array{\Psalm\Type\Union, \Psalm\Type\Union}
+     * @var array{Union, Union}
      */
     public $type_params;
 
@@ -26,7 +27,7 @@ class TArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array{\Psalm\Type\Union, \Psalm\Type\Union} $type_params
+     * @param array{Union, Union} $type_params
      */
     public function __construct(array $type_params)
     {

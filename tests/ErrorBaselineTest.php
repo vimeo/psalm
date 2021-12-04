@@ -305,7 +305,7 @@ class ErrorBaselineTest extends TestCase
         $baselineDocument = new DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
 
-        /** @var \DOMElement[] $files */
+        /** @var DOMElement[] $files */
         $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
 
         [$file1, $file2] = $files;
@@ -313,9 +313,9 @@ class ErrorBaselineTest extends TestCase
         $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
         $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 
-        /** @var \DOMElement[] $file1Issues */
+        /** @var DOMElement[] $file1Issues */
         $file1Issues = $file1->childNodes;
-        /** @var \DOMElement[] $file2Issues */
+        /** @var DOMElement[] $file2Issues */
         $file2Issues = $file2->childNodes;
 
         $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);

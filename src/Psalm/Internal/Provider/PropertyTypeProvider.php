@@ -18,7 +18,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(PropertyTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(PropertyTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -26,7 +26,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     string,
      *     string,
      *     bool,
@@ -66,7 +66,7 @@ class PropertyTypeProvider
     }
 
     /**
-     * @param \Closure(PropertyTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(PropertyTypeProviderEvent) : ?Type\Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -74,7 +74,7 @@ class PropertyTypeProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     string,
      *     string,
      *     bool,

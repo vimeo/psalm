@@ -78,7 +78,7 @@ class Pool
     /** @var bool */
     private $did_have_error = false;
 
-    /** @var ?\Closure(mixed): void */
+    /** @var ?Closure(mixed): void */
     private $task_done_closure;
 
     public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
@@ -91,14 +91,14 @@ class Pool
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
-     * @param \Closure $startup_closure
+     * @param Closure $startup_closure
      * A closure to execute upon starting a child
-     * @param \Closure(int, mixed):mixed $task_closure
+     * @param Closure(int, mixed):mixed $task_closure
      * A method to execute on each task data.
      * This closure must return an array (to be gathered).
-     * @param \Closure():mixed $shutdown_closure
+     * @param Closure():mixed $shutdown_closure
      * A closure to execute upon shutting down a child
-     * @param ?\Closure(mixed $data):void $task_done_closure
+     * @param Closure(mixed $data):void $task_done_closure
      * A closure to execute when a task is done
      *
      * @psalm-suppress MixedAssignment

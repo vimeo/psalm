@@ -2,7 +2,6 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Exception;
-use PhpParser;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -52,7 +51,7 @@ class ClassLikeDocblockParser
      */
     public static function parse(
         Node $node,
-        PhpParser\Comment\Doc $comment,
+        Doc $comment,
         Aliases $aliases
     ): ClassLikeDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
@@ -437,7 +436,7 @@ class ClassLikeDocblockParser
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-                /** @var \PhpParser\Comment\Doc */
+                /** @var Doc */
                 $node_doc_comment = $node->getDocComment();
 
                 $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine());
@@ -490,7 +489,7 @@ class ClassLikeDocblockParser
      *
      */
     protected static function addMagicPropertyToInfo(
-        PhpParser\Comment\Doc $comment,
+        Doc $comment,
         ClassLikeDocblockComment $info,
         array $specials,
         string $property_tag

@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\FileManipulation;
@@ -19,6 +20,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Type;
+use Psalm\Type\Union;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 use UnexpectedValueException;
@@ -74,10 +76,10 @@ use const PHP_INT_MAX;
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
  *      file_maps: array<string, FileMapType>,
- *      class_locations: array<string, array<int, \Psalm\CodeLocation>>,
- *      class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
- *      class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
- *      possible_method_param_types: array<string, array<int, \Psalm\Type\Union>>,
+ *      class_locations: array<string, array<int, CodeLocation>>,
+ *      class_method_locations: array<string, array<int, CodeLocation>>,
+ *      class_property_locations: array<string, array<int, CodeLocation>>,
+ *      possible_method_param_types: array<string, array<int, Union>>,
  *      taint_data: ?TaintFlowGraph,
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
@@ -187,7 +189,7 @@ class Analyzer
     private $argument_map = [];
 
     /**
-     * @var array<string, array<int, \Psalm\Type\Union>>
+     * @var array<string, array<int, Union>>
      */
     public $possible_method_param_types = [];
 
@@ -349,7 +351,7 @@ class Analyzer
 
         $analysis_worker =
             /**
-             * @return list<\Psalm\Internal\Analyzer\IssueData>
+             * @return list<IssueData>
              */
             function (int $_, string $file_path) use ($project_analyzer, $filetype_analyzers): array {
                 $file_analyzer = $this->getFileAnalyzer($project_analyzer, $file_path, $filetype_analyzers);
@@ -1611,7 +1613,7 @@ class Analyzer
     }
 
     /**
-     * @return array<string, array<int, \Psalm\Type\Union>>
+     * @return array<string, array<int, Union>>
      */
     public function getPossibleMethodParamTypes(): array
     {

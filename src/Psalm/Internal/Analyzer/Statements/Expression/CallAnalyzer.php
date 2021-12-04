@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -30,6 +32,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -492,8 +495,8 @@ class CallAnalyzer
     ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $callable_arg->left->class instanceof PhpParser\Node\Name
-                && $callable_arg->left->name instanceof PhpParser\Node\Identifier
+                && $callable_arg->left->class instanceof Name
+                && $callable_arg->left->name instanceof Identifier
                 && strtolower($callable_arg->left->name->name) === 'class'
                 && !in_array(strtolower($callable_arg->left->class->parts[0]), ['self', 'static', 'parent'])
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
@@ -542,9 +545,9 @@ class CallAnalyzer
         }
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $class_arg->name instanceof PhpParser\Node\Identifier
+            && $class_arg->name instanceof Identifier
             && strtolower($class_arg->name->name) === 'class'
-            && $class_arg->class instanceof PhpParser\Node\Name
+            && $class_arg->class instanceof Name
         ) {
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $class_arg->class,
@@ -628,8 +631,8 @@ class CallAnalyzer
     }
 
     /**
-     * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
-     * @param  \Psalm\Storage\Assertion[] $assertions
+     * @param Identifier|Name $expr
+     * @param  Assertion[] $assertions
      * @param  list<PhpParser\Node\Arg> $args
      * @param  array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds,
      *

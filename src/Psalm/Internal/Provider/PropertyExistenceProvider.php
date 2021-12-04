@@ -17,7 +17,7 @@ class PropertyExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(PropertyExistenceProviderEvent) : ?bool>
+     *   array<Closure(PropertyExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -25,7 +25,7 @@ class PropertyExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     string,
      *     string,
      *     bool,
@@ -65,7 +65,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param \Closure(PropertyExistenceProviderEvent) : ?bool $c
+     * @param Closure(PropertyExistenceProviderEvent) : ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -73,7 +73,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     string,
      *     string,
      *     bool,

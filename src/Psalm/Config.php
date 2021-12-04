@@ -6,6 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMDocument;
+use DomElement;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
@@ -709,7 +710,7 @@ class Config
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
 
-        /** @var \DomElement|null */
+        /** @var DomElement|null */
         $psalm_node = $psalm_nodes->item(0);
 
         if (!$psalm_node) {
@@ -1065,14 +1066,14 @@ class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
-            /** @var \SimpleXMLElement $mock_class */
+            /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
-            /** @var \SimpleXMLElement $universal_object_crate */
+            /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 /** @var string $classString */
                 $classString = $universal_object_crate['name'];
@@ -1082,7 +1083,7 @@ class Config
 
         if (isset($config_xml->ignoreExceptions)) {
             if (isset($config_xml->ignoreExceptions->class)) {
-                /** @var \SimpleXMLElement $exception_class */
+                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1093,7 +1094,7 @@ class Config
                 }
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
-                /** @var \SimpleXMLElement $exception_class */
+                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1106,21 +1107,21 @@ class Config
         }
 
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
-            /** @var \SimpleXMLElement $forbidden_function */
+            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->exitFunctions) && isset($config_xml->exitFunctions->function)) {
-            /** @var \SimpleXMLElement $exit_function */
+            /** @var SimpleXMLElement $exit_function */
             foreach ($config_xml->exitFunctions->function as $exit_function) {
                 $config->exit_functions[strtolower((string) $exit_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
-            /** @var \SimpleXMLElement $stub_file */
+            /** @var SimpleXMLElement $stub_file */
             foreach ($config_xml->stubs->file as $stub_file) {
                 $stub_file_name = (string)$stub_file['name'];
                 if (!Path::isAbsolute($stub_file_name)) {
@@ -1154,7 +1155,7 @@ class Config
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins)) {
             if (isset($config_xml->plugins->plugin)) {
-                /** @var \SimpleXMLElement $plugin */
+                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {
                     $plugin_file_name = (string) $plugin['filename'];
 
@@ -1166,7 +1167,7 @@ class Config
                 }
             }
             if (isset($config_xml->plugins->pluginClass)) {
-                /** @var \SimpleXMLElement $plugin */
+                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->pluginClass as $plugin) {
                     $plugin_class_name = $plugin['class'];
                     // any child elements are used as plugin configuration
@@ -1181,7 +1182,7 @@ class Config
         }
 
         if (isset($config_xml->issueHandlers)) {
-            /** @var \SimpleXMLElement $issue_handler */
+            /** @var SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
                 if ($key === 'PluginIssue') {
                     $custom_class_name = (string) $issue_handler['name'];
@@ -1201,7 +1202,7 @@ class Config
         }
 
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
-            /** @var \SimpleXMLElement $var */
+            /** @var SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
