@@ -22,8 +22,15 @@ use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Type;
 use UnexpectedValueException;
 
+use function addslashes;
+use function array_keys;
 use function count;
 use function error_log;
+use function implode;
+use function is_string;
+use function preg_match;
+use function reset;
+use function substr;
 use function substr_count;
 
 /**
