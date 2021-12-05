@@ -733,7 +733,7 @@ class ArithmeticOpAnalyzer
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true): Type::getInt(true),
+                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
                             $result_type
                         );
                     }
