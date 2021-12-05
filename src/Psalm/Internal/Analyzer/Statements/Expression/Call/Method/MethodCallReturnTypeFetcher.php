@@ -215,7 +215,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if (!$return_type_candidate) {
-            $return_type_candidate = $method_name === '__tostring' ? Type::getString(): Type::getMixed();
+            $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
         }
 
         self::taintMethodCallResult(

@@ -752,7 +752,7 @@ class Methods
                     }
                     return new Type\Union($types);
                 }
-                return $original_method_name === 'tryfrom' ? Type::getNull(): Type::getNever();
+                return $original_method_name === 'tryfrom' ? Type::getNull() : Type::getNever();
             }
         }
 

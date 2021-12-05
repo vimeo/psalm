@@ -1100,7 +1100,7 @@ class ArrayFetchAnalyzer
                 // ok, type becomes an TKeyedArray
                 $array_type->removeType($type_string);
                 $type = new TKeyedArray([
-                    $key_values[0] => $from_mixed_array ? Type::getMixed(): Type::getEmpty()
+                    $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getEmpty()
                 ]);
 
                 $type->sealed = $from_empty_array;

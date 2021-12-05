@@ -1897,7 +1897,7 @@ class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return $is_non_empty ? Type::getNonEmptyList(): Type::getList();
+            return $is_non_empty ? Type::getNonEmptyList() : Type::getList();
         }
 
         $array_types = [];

@@ -26,7 +26,7 @@ class ReturnTypeTest extends TestCase
                          * @return One|null
                          */
                         public function barBar() {
-                            $baz = rand(0,100) > 50 ? new One(): null;
+                            $baz = rand(0,100) > 50 ? new One() : null;
 
                             // should have no effect
                             if ($baz === null) {

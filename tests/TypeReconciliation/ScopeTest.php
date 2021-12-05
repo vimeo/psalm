@@ -64,7 +64,7 @@ class ScopeTest extends TestCase
                         }
                     }
 
-                    $a = rand(0, 10) === 5 ? new A(): null;
+                    $a = rand(0, 10) === 5 ? new A() : null;
 
                     if (rand(0, 1)) {
 

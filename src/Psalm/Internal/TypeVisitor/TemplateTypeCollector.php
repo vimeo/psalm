@@ -25,7 +25,7 @@ class TemplateTypeCollector extends NodeVisitor
 
             $this->template_types[] = new TTemplateParam(
                 $type->param_name,
-                $extends ? new Union([$extends]): Type::getMixed(),
+                $extends ? new Union([$extends]) : Type::getMixed(),
                 $type->defining_class
             );
         } elseif ($type instanceof TConditional) {
