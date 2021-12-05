@@ -11670,7 +11670,7 @@ return [
 'rewind' => ['bool', 'stream'=>'resource'],
 'rewinddir' => ['null|false', 'dir_handle='=>'resource'],
 'rmdir' => ['bool', 'directory'=>'string', 'context='=>'resource'],
-'round' => ['float', 'num'=>'float', 'precision='=>'int', 'mode='=>'int'],
+'round' => ['float', 'num'=>'float', 'precision='=>'int', 'mode='=>'0|positive-int'],
 'rpm_close' => ['bool', 'rpmr'=>'resource'],
 'rpm_get_tag' => ['mixed', 'rpmr'=>'resource', 'tagnum'=>'int'],
 'rpm_is_valid' => ['bool', 'filename'=>'string'],
