@@ -1301,4 +1301,60 @@ class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testOverriddenStubProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <stubs>
+                        <file name="tests/fixtures/stubs/SymfonyKernel.phpstub" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $vendor_file_path = getcwd() . '/vendor/Kernel.php';
+
+        $this->addFile(
+            $vendor_file_path,
+            '<?php
+                namespace Symfony\Component\HttpKernel;
+
+                class Kernel {
+                    protected $environment;
+                    public function __construct(string $environment)
+                    {
+                        if (!$this->environment = $environment) {
+                            throw new InvalidArgumentException;
+                        }
+                    }
+                }'
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Sonata\DoctrineORMAdminBundle\Tests\App;
+
+                use Symfony\Component\HttpKernel\Kernel;
+
+                final class AppKernel extends Kernel
+                {
+                    public function __construct()
+                    {
+                        parent::__construct("test");
+                    }
+                }
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
 }

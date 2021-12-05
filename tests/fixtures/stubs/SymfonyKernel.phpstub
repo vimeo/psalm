@@ -1,0 +1,11 @@
+<?php
+
+namespace Symfony\Component\HttpKernel;
+
+class Kernel
+{
+    /**
+     * @var string
+     */
+    protected $environment;
+}
