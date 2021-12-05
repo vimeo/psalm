@@ -38,6 +38,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\VersionCompareReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -95,6 +96,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(TriggerErrorReturnTypeProvider::class);
         $this->registerClass(RandReturnTypeProvider::class);
         $this->registerClass(InArrayReturnTypeProvider::class);
+        $this->registerClass(RoundReturnTypeProvider::class);
     }
 
     /**
