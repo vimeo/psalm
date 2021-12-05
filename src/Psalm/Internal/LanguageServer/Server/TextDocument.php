@@ -231,17 +231,17 @@ class TextDocument
         }
 
         // Pretty print arrays (only).
-        if ( substr( $symbol_information['type'], 0, 6 ) === 'array{' ) {
-            $union = \Psalm\Type::parseString( $symbol_information['type'] );
+        if (substr( $symbol_information['type'], 0, 6 ) === 'array{') {
+            $union = \Psalm\Type::parseString($symbol_information['type']);
             $types = $union->getAtomicTypes();
             if ( count( $types ) === 1 ) {
                 /** @var \Psalm\Type\Atomic\TKeyedArray */
-                $keyed_array = reset( $types );
+                $keyed_array = reset($types);
 
                 $property_strings = array_map(
                     function ($name, \Psalm\Type\Union $type): string {
-                        if ( is_string( $name ) ) {
-                            $name = "'" . $name . "'";
+                        if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                            $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                         }
                         return "\t" . $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
                     },
@@ -249,7 +249,7 @@ class TextDocument
                     $keyed_array->properties
                 );
 
-                $symbol_information['type'] = "array{\n" . implode(", \n", $property_strings) . "\n}";
+                $symbol_information['type'] = "<?php array{\n" . implode(", \n", $property_strings) . "\n}";
             }
         }
         $content = "```php\n" . $symbol_information['type'] . "\n```";
