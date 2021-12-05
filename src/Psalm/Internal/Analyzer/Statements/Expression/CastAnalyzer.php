@@ -64,7 +64,6 @@ class CastAnalyzer
                 return false;
             }
 
-            $as_int = true;
             $valid_int_type = null;
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
@@ -74,35 +73,31 @@ class CastAnalyzer
                     if (!$maybe_type->from_calculation) {
                         self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                     }
+
+                    if ($maybe_type->isSingleStringLiteral()) {
+                        $valid_int_type = new Union([
+                            new TLiteralInt((int)$maybe_type->getSingleStringLiteral()->value),
+                        ]);
+                    }
                 }
 
                 if (count($maybe_type->getAtomicTypes()) === 1
-                    && $maybe_type->getSingleAtomic() instanceof TBool) {
-                    $as_int = false;
-                    $type = new Union([
+                    && $maybe_type->getSingleAtomic() instanceof Type\Atomic\TBool) {
+                    $valid_int_type = new Union([
                         new TLiteralInt(0),
                         new TLiteralInt(1),
                     ]);
-
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                    ) {
-                        $type->parent_nodes = $maybe_type->parent_nodes;
-                    }
-
-                    $statements_analyzer->node_data->setType($stmt, $type);
                 }
             }
 
-            if ($as_int) {
-                $type = $valid_int_type ?? Type::getInt();
+            $type = $valid_int_type ?? Type::getInt();
 
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                ) {
-                    $type->parent_nodes = $maybe_type->parent_nodes ?? [];
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $type);
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            ) {
+                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
             }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
