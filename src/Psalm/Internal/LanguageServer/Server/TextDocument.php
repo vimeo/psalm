@@ -11,12 +11,15 @@ use LanguageServerProtocol\MarkupContent;
 use LanguageServerProtocol\MarkupKind;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use LanguageServerProtocol\SignatureHelp;
 use LanguageServerProtocol\TextDocumentContentChangeEvent;
 use LanguageServerProtocol\TextDocumentIdentifier;
 use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
+use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\LanguageServer\LanguageServer;
+use UnexpectedValueException;
 
 use function count;
 use function error_log;
@@ -118,7 +121,7 @@ class TextDocument
         if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
         } else {
-            throw new \UnexpectedValueException('Not expecting partial diff');
+            throw new UnexpectedValueException('Not expecting partial diff');
         }
 
         if ($this->onchange_line_limit !== null) {
@@ -164,7 +167,7 @@ class TextDocument
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -208,7 +211,7 @@ class TextDocument
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -264,7 +267,7 @@ class TextDocument
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
@@ -310,24 +313,24 @@ class TextDocument
 
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
-        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+        } catch (UnanalyzedFileException $e) {
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
-            return new Success(new \LanguageServerProtocol\SignatureHelp());
+            return new Success(new SignatureHelp());
         }
 
         if ($argument_location === null) {
-            return new Success(new \LanguageServerProtocol\SignatureHelp());
+            return new Success(new SignatureHelp());
         }
 
         $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
 
         if (!$signature_information) {
-            return new Success(new \LanguageServerProtocol\SignatureHelp());
+            return new Success(new SignatureHelp());
         }
 
-        return new Success(new \LanguageServerProtocol\SignatureHelp([
+        return new Success(new SignatureHelp([
             $signature_information,
         ], 0, $argument_location[1]));
     }

@@ -2,6 +2,14 @@
 
 namespace Psalm\Internal;
 
+use InvalidArgumentException;
+
+use function explode;
+use function is_string;
+use function preg_replace;
+use function strpos;
+use function strtolower;
+
 /**
  * @psalm-immutable
  */
@@ -29,7 +37,7 @@ class MethodIdentifier
      */
     public static function wrap($method_id): self
     {
-        return \is_string($method_id) ? static::fromMethodIdReference($method_id) : $method_id;
+        return is_string($method_id) ? static::fromMethodIdReference($method_id) : $method_id;
     }
 
     /**
@@ -37,7 +45,7 @@ class MethodIdentifier
      */
     public static function isValidMethodIdReference(string $method_id): bool
     {
-        return \strpos($method_id, '::') !== false;
+        return strpos($method_id, '::') !== false;
     }
 
     /**
@@ -46,12 +54,12 @@ class MethodIdentifier
     public static function fromMethodIdReference(string $method_id): self
     {
         if (!static::isValidMethodIdReference($method_id)) {
-            throw new \InvalidArgumentException('Invalid method id reference provided: ' . $method_id);
+            throw new InvalidArgumentException('Invalid method id reference provided: ' . $method_id);
         }
         // remove trailing backslash if it exists
-        $method_id = \preg_replace('/^\\\\/', '', $method_id);
-        $method_id_parts = \explode('::', $method_id);
-        return new self($method_id_parts[0], \strtolower($method_id_parts[1]));
+        $method_id = preg_replace('/^\\\\/', '', $method_id);
+        $method_id_parts = explode('::', $method_id);
+        return new self($method_id_parts[0], strtolower($method_id_parts[1]));
     }
 
     /** @return non-empty-string */

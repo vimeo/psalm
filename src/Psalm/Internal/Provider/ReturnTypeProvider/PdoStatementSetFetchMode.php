@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use PDO;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
+use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
-class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParamsProviderInterface
+class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
     public static function getClassLikeNames() : array
     {
@@ -12,7 +17,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
     }
 
     /**
-     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, FunctionLikeParameter>
      */
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
@@ -20,14 +25,14 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
         $method_name_lowercase = $event->getMethodNameLowercase();
         $context = $event->getContext();
         $call_args = $event->getCallArgs();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return null;
         }
 
         if ($method_name_lowercase === 'setfetchmode') {
             if (!$context
                 || !$call_args
-                || \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::analyze(
+                || ExpressionAnalyzer::analyze(
                     $statements_source,
                     $call_args[0]->value,
                     $context
@@ -40,7 +45,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
                 && $first_call_arg_type->isSingleIntLiteral()
             ) {
                 $params = [
-                    new \Psalm\Storage\FunctionLikeParameter(
+                    new FunctionLikeParameter(
                         'mode',
                         false,
                         Type::getInt(),
@@ -53,8 +58,8 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
                 $value = $first_call_arg_type->getSingleIntLiteral()->value;
 
                 switch ($value) {
-                    case \PDO::FETCH_COLUMN:
-                        $params[] = new \Psalm\Storage\FunctionLikeParameter(
+                    case PDO::FETCH_COLUMN:
+                        $params[] = new FunctionLikeParameter(
                             'colno',
                             false,
                             Type::getInt(),
@@ -64,8 +69,8 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
                         );
                         break;
 
-                    case \PDO::FETCH_CLASS:
-                        $params[] = new \Psalm\Storage\FunctionLikeParameter(
+                    case PDO::FETCH_CLASS:
+                        $params[] = new FunctionLikeParameter(
                             'classname',
                             false,
                             Type::getClassString(),
@@ -74,7 +79,7 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
                             false
                         );
 
-                        $params[] = new \Psalm\Storage\FunctionLikeParameter(
+                        $params[] = new FunctionLikeParameter(
                             'ctorargs',
                             false,
                             Type::getArray(),
@@ -84,8 +89,8 @@ class PdoStatementSetFetchMode implements \Psalm\Plugin\EventHandler\MethodParam
                         );
                         break;
 
-                    case \PDO::FETCH_INTO:
-                        $params[] = new \Psalm\Storage\FunctionLikeParameter(
+                    case PDO::FETCH_INTO:
+                        $params[] = new FunctionLikeParameter(
                             'object',
                             false,
                             Type::getObject(),

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Exception;
 
-class ScopeAnalysisException extends \Exception
+use Exception;
+
+class ScopeAnalysisException extends Exception
 {
 }

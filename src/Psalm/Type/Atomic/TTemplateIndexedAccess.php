@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TTemplateIndexedAccess extends \Psalm\Type\Atomic
+use Psalm\Type\Atomic;
+
+class TTemplateIndexedAccess extends Atomic
 {
     /**
      * @var string

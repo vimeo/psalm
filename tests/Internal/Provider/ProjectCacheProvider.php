@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-class ProjectCacheProvider extends \Psalm\Internal\Provider\ProjectCacheProvider
+use Psalm\Internal\Provider\ProjectCacheProvider as PsalmProjectCacheProvider;
+
+class ProjectCacheProvider extends PsalmProjectCacheProvider
 {
     /**
      * @var int

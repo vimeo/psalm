@@ -8,7 +8,9 @@ use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -16,9 +18,14 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -66,7 +73,7 @@ class ReturnTypeAnalyzer
         FunctionLike $function,
         array $function_stmts,
         SourceAnalyzer $source,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
         ?Type\Union $return_type = null,
         ?string $fq_class_name = null,
@@ -83,8 +90,8 @@ class ReturnTypeAnalyzer
 
         if ($source instanceof StatementsAnalyzer) {
             $function_like_storage = $function_like_analyzer->getFunctionLikeStorage($source);
-        } elseif ($source instanceof \Psalm\Internal\Analyzer\ClassAnalyzer
-            || $source instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+        } elseif ($source instanceof ClassAnalyzer
+            || $source instanceof TraitAnalyzer
         ) {
             $function_like_storage = $function_like_analyzer->getFunctionLikeStorage();
         }
@@ -240,7 +247,7 @@ class ReturnTypeAnalyzer
         $inferred_return_type_parts = array_values($inferred_return_type_parts);
 
         $inferred_return_type = $inferred_return_type_parts
-            ? \Psalm\Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
+            ? Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
 
         if ($function_always_exits) {
@@ -248,7 +255,7 @@ class ReturnTypeAnalyzer
         }
 
         $inferred_yield_type = $inferred_yield_types
-            ? \Psalm\Type::combineUnionTypeArray($inferred_yield_types, $codebase)
+            ? Type::combineUnionTypeArray($inferred_yield_types, $codebase)
             : null;
 
         if ($inferred_yield_type) {
@@ -270,7 +277,7 @@ class ReturnTypeAnalyzer
             }
         }
 
-        $inferred_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $inferred_return_type = TypeExpander::expandUnion(
             $codebase,
             $inferred_return_type,
             $source->getFQCLN(),
@@ -411,7 +418,7 @@ class ReturnTypeAnalyzer
         }
 
         // passing it through fleshOutTypes eradicates errant $ vars
-        $declared_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $declared_return_type = TypeExpander::expandUnion(
             $codebase,
             $return_type,
             $self_fq_class_name,
@@ -612,7 +619,7 @@ class ReturnTypeAnalyzer
                     }
 
                     if ($check_for_less_specific_type
-                        && (\Psalm\Config::getInstance()->restrict_return_types
+                        && (Config::getInstance()->restrict_return_types
                             || (!$inferred_return_type->isNullable() && $declared_return_type->isNullable())
                             || (!$inferred_return_type->isFalsable() && $declared_return_type->isFalsable()))
                     ) {
@@ -770,7 +777,7 @@ class ReturnTypeAnalyzer
                 }
             }
 
-            $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $fleshed_out_return_type = TypeExpander::expandUnion(
                 $codebase,
                 $storage->return_type,
                 $classlike_storage->name ?? null,
@@ -792,7 +799,7 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $fleshed_out_signature_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $fleshed_out_signature_type = TypeExpander::expandUnion(
             $codebase,
             $storage->signature_return_type,
             $classlike_storage->name ?? null,
@@ -814,7 +821,7 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $fleshed_out_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $fleshed_out_return_type = TypeExpander::expandUnion(
             $codebase,
             $storage->return_type,
             $classlike_storage->name ?? null,
@@ -848,12 +855,12 @@ class ReturnTypeAnalyzer
             $class_template_params = $class_template_params ?: [];
 
             if ($class_template_params) {
-                $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $template_result = new TemplateResult(
                     $class_template_params,
                     []
                 );
 
-                $fleshed_out_return_type = \Psalm\Internal\Type\TemplateStandinTypeReplacer::replace(
+                $fleshed_out_return_type = TemplateStandinTypeReplacer::replace(
                     $fleshed_out_return_type,
                     $template_result,
                     $codebase,

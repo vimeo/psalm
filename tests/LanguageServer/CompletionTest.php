@@ -6,13 +6,16 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
 
 use function count;
 
-class CompletionTest extends \Psalm\Tests\TestCase
+class CompletionTest extends TestCase
 {
     public function setUp() : void
     {
@@ -24,11 +27,11 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
+            new ParserInstanceCacheProvider(),
             null,
             null,
-            new Provider\FakeFileReferenceCacheProvider(),
-            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
+            new FakeFileReferenceCacheProvider(),
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(

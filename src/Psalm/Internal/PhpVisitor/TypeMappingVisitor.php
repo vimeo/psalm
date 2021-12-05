@@ -4,6 +4,7 @@ namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
+use Psalm\Internal\Provider\NodeDataProvider;
 
 class TypeMappingVisitor extends NodeVisitorAbstract
 {
@@ -11,8 +12,8 @@ class TypeMappingVisitor extends NodeVisitorAbstract
     private $real_type_provider;
 
     public function __construct(
-        \Psalm\Internal\Provider\NodeDataProvider $fake_type_provider,
-        \Psalm\Internal\Provider\NodeDataProvider $real_type_provider
+        NodeDataProvider $fake_type_provider,
+        NodeDataProvider $real_type_provider
     ) {
         $this->fake_type_provider = $fake_type_provider;
         $this->real_type_provider = $real_type_provider;

@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Composer;
 
 use function array_filter;
@@ -10,6 +12,7 @@ use function array_merge;
 use function array_shift;
 use function array_sum;
 use function array_unique;
+use function array_values;
 use function count;
 use function explode;
 use function file_exists;
@@ -87,14 +90,14 @@ class Creator
         string $current_dir,
         ?string $suggested_dir,
         string $vendor_dir
-    ) : \Psalm\Config {
+    ) : Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 
-        return \Psalm\Config::loadFromXML($current_dir, $config_contents);
+        return Config::loadFromXML($current_dir, $config_contents);
     }
 
     /**
-     * @param  array<\Psalm\Internal\Analyzer\IssueData>  $issues
+     * @param  array<IssueData>  $issues
      */
     public static function getLevel(array $issues, int $counted_types) : int
     {
@@ -284,6 +287,6 @@ class Creator
             }
         }
 
-        return \array_values(\array_unique($nodes));
+        return array_values(array_unique($nodes));
     }
 }

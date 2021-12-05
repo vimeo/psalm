@@ -3,20 +3,25 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Internal\Provider\Providers;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function dirname;
 use function getcwd;
 
 class VariadicTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testVariadicArrayBadParam(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -33,7 +38,7 @@ class VariadicTest extends TestCase
     }
 
     /**
-     * @throws \Psalm\Exception\ConfigException
+     * @throws ConfigException
      * @runInSeparateProcess
      */
     public function testVariadicFunctionFromAutoloadFile(): void
@@ -127,13 +132,13 @@ class VariadicTest extends TestCase
         ];
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
-        $project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
         $project_analyzer->setPhpVersion('7.3', 'tests');

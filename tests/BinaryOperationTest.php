@@ -1,14 +1,20 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
 use function class_exists;
 
 use const DIRECTORY_SEPARATOR;
 
 class BinaryOperationTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testGMPOperations(): void
     {
@@ -65,7 +71,7 @@ class BinaryOperationTest extends TestCase
             '$t' => 'GMP',
         ];
 
-        $context = new \Psalm\Context();
+        $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
 
@@ -81,7 +87,7 @@ class BinaryOperationTest extends TestCase
 
     public function testStrictTrueEquivalence(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->strict_binary_operands = true;
 
         $this->addFile(
@@ -96,15 +102,15 @@ class BinaryOperationTest extends TestCase
                 }'
         );
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testStringFalseInequivalence(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->strict_binary_operands = true;
 
         $this->addFile(
@@ -119,10 +125,10 @@ class BinaryOperationTest extends TestCase
                 }'
         );
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('RedundantIdentityWithTrue');
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

@@ -2,11 +2,13 @@
 
 namespace Psalm\Tests\EndToEnd;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
 use function closedir;
 use function copy;
+use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
@@ -17,6 +19,7 @@ use function opendir;
 use function preg_replace;
 use function readdir;
 use function rmdir;
+use function str_replace;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -44,7 +47,7 @@ class PsalmEndToEndTest extends TestCase
 
         $getcwd = getcwd();
         if (!is_string($getcwd)) {
-            throw new \Exception('Couldn\'t get working directory');
+            throw new Exception('Couldn\'t get working directory');
         }
 
         mkdir(self::$tmpDir . '/src');
@@ -72,7 +75,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function tearDown(): void
     {
-        if (\file_exists(self::$tmpDir . '/cache')) {
+        if (file_exists(self::$tmpDir . '/cache')) {
             self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
         }
         parent::tearDown();
@@ -248,7 +251,7 @@ class PsalmEndToEndTest extends TestCase
         $ret = $this->runPsalm($args, self::$tmpDir, false, false);
 
         $psalm_config_contents = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalm_config_contents = \str_replace(
+        $psalm_config_contents = str_replace(
             'errorLevel="1"',
             'errorLevel="1" '
             . 'cacheDirectory="' . self::$tmpDir . '/cache" '

@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `mixed` type, used when you don’t know the type of an expression.
  */
-class TMixed extends \Psalm\Type\Atomic
+class TMixed extends Atomic
 {
     /** @var bool */
     public $from_loop_isset = false;

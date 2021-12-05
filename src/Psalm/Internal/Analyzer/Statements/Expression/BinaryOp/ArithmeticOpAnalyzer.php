@@ -3,10 +3,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
@@ -37,6 +41,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_diff_key;
 use function array_values;
+use function count;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -51,7 +56,7 @@ class ArithmeticOpAnalyzer
 {
     public static function analyze(
         ?StatementsSource $statements_source,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        NodeDataProvider $nodes,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
@@ -284,7 +289,7 @@ class ArithmeticOpAnalyzer
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,
-        ?\Psalm\Codebase $codebase,
+        ?Codebase $codebase,
         Config $config,
         ?Context $context,
         PhpParser\Node\Expr $left,
@@ -374,7 +379,7 @@ class ArithmeticOpAnalyzer
 
             $combined_atomic_types = array_values($combined_type->getAtomicTypes());
 
-            if (\count($combined_atomic_types) <= 2) {
+            if (count($combined_atomic_types) <= 2) {
                 $left_type_part = $combined_atomic_types[0];
                 $right_type_part = $combined_atomic_types[1] ?? $combined_atomic_types[0];
             }
@@ -386,8 +391,8 @@ class ArithmeticOpAnalyzer
                     && !$context->collect_mutations
                     && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                     && (!(($source = $statements_source->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
                 }
@@ -464,8 +469,8 @@ class ArithmeticOpAnalyzer
                 && !$context->collect_mutations
                 && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                 && (!(($parent_source = $statements_source->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
             }

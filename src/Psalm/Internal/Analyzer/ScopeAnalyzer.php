@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\NodeTypeProvider;
 
 use function array_diff;
 use function array_filter;
@@ -75,7 +77,7 @@ class ScopeAnalyzer
      */
     public static function getControlActions(
         array $stmts,
-        ?\Psalm\Internal\Provider\NodeDataProvider $nodes,
+        ?NodeDataProvider $nodes,
         array $exit_functions,
         array $break_types,
         bool $return_is_exit = true
@@ -501,7 +503,7 @@ class ScopeAnalyzer
      * @param   array<PhpParser\Node> $stmts
      *
      */
-    public static function onlyThrowsOrExits(\Psalm\NodeTypeProvider $type_provider, array $stmts): bool
+    public static function onlyThrowsOrExits(NodeTypeProvider $type_provider, array $stmts): bool
     {
         if (empty($stmts)) {
             return false;

@@ -7,6 +7,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
 class MagicFunctionProvider implements
@@ -29,11 +30,11 @@ class MagicFunctionProvider implements
     }
 
     /**
-     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, FunctionLikeParameter>
      */
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
-        return [new \Psalm\Storage\FunctionLikeParameter('first', false, Type::getString())];
+        return [new FunctionLikeParameter('first', false, Type::getString())];
     }
 
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union

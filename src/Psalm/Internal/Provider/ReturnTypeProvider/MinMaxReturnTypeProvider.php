@@ -125,7 +125,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     }
                 }
 
-                $return_type = \Psalm\Type::combineUnionTypes(
+                $return_type = Type::combineUnionTypes(
                     $return_type,
                     $array_arg_type
                 );

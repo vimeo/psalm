@@ -8,6 +8,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -272,7 +273,7 @@ trait CallableTrait
     }
 
     /**
-     * @return list<\Psalm\Type\TypeNode>
+     * @return list<TypeNode>
      */
     public function getChildNodes() : array
     {

@@ -1,15 +1,18 @@
 <?php
 
+use Psalm\Config\IssueHandler;
+use Psalm\Issue\CodeIssue;
+
 require_once(dirname(__DIR__) . '/vendor/autoload.php');
 
-$issue_types = \Psalm\Config\IssueHandler::getAllIssueTypes();
+$issue_types = IssueHandler::getAllIssueTypes();
 
 $grouped_issues = [];
 
 foreach ($issue_types as $issue_type) {
     $issue_class = 'Psalm\\Issue\\' . $issue_type;
 
-    if (!class_exists($issue_class) || !is_a($issue_class, \Psalm\Issue\CodeIssue::class, true)) {
+    if (!class_exists($issue_class) || !is_a($issue_class, CodeIssue::class, true)) {
         throw new Exception($issue_class . ' is not a Codeissue');
     }
 

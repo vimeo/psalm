@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Internal\Scanner;
 
+use PhpParser\Node\Stmt\ClassMethod;
+
 /**
  * @internal
  */
@@ -65,7 +67,7 @@ class ClassLikeDocblockComment
     public $properties = [];
 
     /**
-     * @var array<int, \PhpParser\Node\Stmt\ClassMethod>
+     * @var array<int, ClassMethod>
      */
     public $methods = [];
 

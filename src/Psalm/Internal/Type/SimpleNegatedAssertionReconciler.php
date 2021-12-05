@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -268,7 +269,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     ) : Type\Union {
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof Type\Atomic\TLiteralString
-                && \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($type->value)
+                && InternalCallMapHandler::inCallMap($type->value)
             ) {
                 $existing_var_type->removeType($atomic_key);
             }

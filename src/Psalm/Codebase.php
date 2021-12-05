@@ -1,17 +1,41 @@
 <?php
 namespace Psalm;
 
+use Exception;
+use InvalidArgumentException;
 use LanguageServerProtocol\Command;
+use LanguageServerProtocol\CompletionItem;
+use LanguageServerProtocol\CompletionItemKind;
+use LanguageServerProtocol\InsertTextFormat;
+use LanguageServerProtocol\ParameterInformation;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use LanguageServerProtocol\SignatureInformation;
+use LanguageServerProtocol\TextEdit;
 use PhpParser;
+use PhpParser\Node\Arg;
+use Psalm\CodeLocation;
+use Psalm\Exception\UnanalyzedFileException;
+use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\Populator;
+use Psalm\Internal\Codebase\Properties;
+use Psalm\Internal\Codebase\Reflection;
+use Psalm\Internal\Codebase\Scanner;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -23,7 +47,12 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\TaintKindGroup;
+use ReflectionProperty;
+use ReflectionType;
+use UnexpectedValueException;
 
 use function array_combine;
 use function array_merge;
@@ -35,10 +64,12 @@ use function error_log;
 use function explode;
 use function implode;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
 use function preg_match;
+use function preg_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -60,7 +91,7 @@ class Codebase
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
      *
-     * @var array<lowercase-string, array<int, \Psalm\CodeLocation>>
+     * @var array<lowercase-string, array<int, CodeLocation>>
      */
     public $use_referencing_locations = [];
 
@@ -142,42 +173,42 @@ class Codebase
     public $find_unused_variables = false;
 
     /**
-     * @var Internal\Codebase\Scanner
+     * @var Scanner
      */
     public $scanner;
 
     /**
-     * @var Internal\Codebase\Analyzer
+     * @var Analyzer
      */
     public $analyzer;
 
     /**
-     * @var Internal\Codebase\Functions
+     * @var Functions
      */
     public $functions;
 
     /**
-     * @var Internal\Codebase\ClassLikes
+     * @var ClassLikes
      */
     public $classlikes;
 
     /**
-     * @var Internal\Codebase\Methods
+     * @var Methods
      */
     public $methods;
 
     /**
-     * @var Internal\Codebase\Properties
+     * @var Properties
      */
     public $properties;
 
     /**
-     * @var Internal\Codebase\Populator
+     * @var Populator
      */
     public $populator;
 
     /**
-     * @var ?Internal\Codebase\TaintFlowGraph
+     * @var ?TaintFlowGraph
      */
     public $taint_flow_graph;
 
@@ -307,7 +338,7 @@ class Codebase
 
         $reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
 
-        $this->scanner = new Internal\Codebase\Scanner(
+        $this->scanner = new Scanner(
             $this,
             $config,
             $providers->file_storage_provider,
@@ -319,9 +350,9 @@ class Codebase
 
         $this->loadAnalyzer();
 
-        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $reflection);
+        $this->functions = new Functions($providers->file_storage_provider, $reflection);
 
-        $this->classlikes = new Internal\Codebase\ClassLikes(
+        $this->classlikes = new ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
@@ -329,19 +360,19 @@ class Codebase
             $this->scanner
         );
 
-        $this->properties = new Internal\Codebase\Properties(
+        $this->properties = new Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $this->classlikes
         );
 
-        $this->methods = new Internal\Codebase\Methods(
+        $this->methods = new Methods(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $this->classlikes
         );
 
-        $this->populator = new Internal\Codebase\Populator(
+        $this->populator = new Populator(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
@@ -355,7 +386,7 @@ class Codebase
 
     private function loadAnalyzer(): void
     {
-        $this->analyzer = new Internal\Codebase\Analyzer(
+        $this->analyzer = new Analyzer(
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
@@ -529,9 +560,9 @@ class Codebase
         }
     }
 
-    public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
+    public static function getPsalmTypeFromReflection(?ReflectionType $type) : Type\Union
     {
-        return \Psalm\Internal\Codebase\Reflection::getPsalmTypeFromReflectionType($type);
+        return Reflection::getPsalmTypeFromReflectionType($type);
     }
 
     public function createFileStorageForPath(string $file_path): FileStorage
@@ -545,7 +576,7 @@ class Codebase
     public function findReferencesToSymbol(string $symbol): array
     {
         if (!$this->collect_locations) {
-            throw new \UnexpectedValueException('Should not be checking references');
+            throw new UnexpectedValueException('Should not be checking references');
         }
 
         if (strpos($symbol, '::$') !== false) {
@@ -605,7 +636,7 @@ class Codebase
             return $file_storage->functions[$closure_id];
         }
 
-        throw new \UnexpectedValueException(
+        throw new UnexpectedValueException(
             'Expecting ' . $closure_id . ' to have storage in ' . $file_path
         );
     }
@@ -693,8 +724,8 @@ class Codebase
     /**
      * Determine whether or not a class extends a parent
      *
-     * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
-     * @throws \InvalidArgumentException when class does not exist
+     * @throws UnpopulatedClasslikeException when called on unpopulated class
+     * @throws InvalidArgumentException when class does not exist
      */
     public function classExtends(string $fq_class_name, string $possible_parent): bool
     {
@@ -769,16 +800,16 @@ class Codebase
         string $function_id
     ): FunctionLikeStorage {
         $doesMethodExist =
-            \Psalm\Internal\MethodIdentifier::isValidMethodIdReference($function_id)
+            MethodIdentifier::isValidMethodIdReference($function_id)
             && $this->methodExists($function_id);
 
         if ($doesMethodExist) {
-            $method_id = \Psalm\Internal\MethodIdentifier::wrap($function_id);
+            $method_id = MethodIdentifier::wrap($function_id);
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
             if (!$declaring_method_id) {
-                throw new \UnexpectedValueException('Declaring method for ' . $method_id . ' cannot be found');
+                throw new UnexpectedValueException('Declaring method for ' . $method_id . ' cannot be found');
             }
 
             return $this->methods->getStorage($declaring_method_id);
@@ -790,8 +821,8 @@ class Codebase
     /**
      * Whether or not a given method exists
      *
-     * @param  string|\Psalm\Internal\MethodIdentifier       $method_id
-     * @param  string|\Psalm\Internal\MethodIdentifier|null $calling_method_id
+     * @param  string|MethodIdentifier      $method_id
+     * @param  string|MethodIdentifier|null $calling_method_id
      *
      @return bool
      */
@@ -814,9 +845,9 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
-     * @return array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return array<int, FunctionLikeParameter>
      */
     public function getMethodParams($method_id): array
     {
@@ -824,7 +855,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function isVariadic($method_id): bool
@@ -833,8 +864,8 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
-     * @param  list<PhpParser\Node\Arg> $call_args
+     * @param  string|MethodIdentifier $method_id
+     * @param  list<Arg> $call_args
      *
      */
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
@@ -848,7 +879,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getMethodReturnsByRef($method_id): bool
@@ -857,8 +888,8 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier   $method_id
-     * @param  CodeLocation|null    $defined_location
+     * @param  string|MethodIdentifier $method_id
+     * @param  CodeLocation|null       $defined_location
      *
      */
     public function getMethodReturnTypeLocation(
@@ -872,7 +903,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getDeclaringMethodId($method_id): ?string
@@ -885,7 +916,7 @@ class Codebase
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
      *
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getAppearingMethodId($method_id): ?string
@@ -896,7 +927,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      * @return array<string, Internal\MethodIdentifier>
      */
@@ -906,7 +937,7 @@ class Codebase
     }
 
     /**
-     * @param  string|\Psalm\Internal\MethodIdentifier $method_id
+     * @param  string|MethodIdentifier $method_id
      *
      */
     public function getCasedMethodId($method_id): string
@@ -920,7 +951,7 @@ class Codebase
 
         try {
             $file_storage = $this->file_storage_provider->get($file_path);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return;
         }
 
@@ -937,7 +968,7 @@ class Codebase
         if (strpos($symbol, '::')) {
             $symbol = substr($symbol, 0, -2);
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+            $method_id = new MethodIdentifier(...explode('::', $symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -969,8 +1000,8 @@ class Codebase
      */
     public function getSymbolInformation(string $file_path, string $symbol): ?array
     {
-        if (\is_numeric($symbol[0])) {
-            return ['type' => \preg_replace('/^[^:]*:/', '', $symbol)];
+        if (is_numeric($symbol[0])) {
+            return ['type' => preg_replace('/^[^:]*:/', '', $symbol)];
         }
 
         try {
@@ -979,7 +1010,7 @@ class Codebase
                     $symbol = substr($symbol, 0, -2);
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+                    $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1010,7 +1041,7 @@ class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    \ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1060,7 +1091,7 @@ class Codebase
                     'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
                     'description' => $storage->description,
                 ];
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
             }
 
             if (strpos($symbol, '\\')) {
@@ -1070,7 +1101,7 @@ class Codebase
 
                 $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                     $namespace_name,
-                    \ReflectionProperty::IS_PUBLIC
+                    ReflectionProperty::IS_PUBLIC
                 );
                 if (isset($namespace_constants[$const_name])) {
                     $type = $namespace_constants[$const_name];
@@ -1088,7 +1119,7 @@ class Codebase
                 }
             }
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             error_log($e->getMessage());
 
             return null;
@@ -1097,8 +1128,8 @@ class Codebase
 
     public function getSymbolLocation(string $file_path, string $symbol): ?CodeLocation
     {
-        if (\is_numeric($symbol[0])) {
-            $symbol = \preg_replace('/:.*/', '', $symbol);
+        if (is_numeric($symbol[0])) {
+            $symbol = preg_replace('/:.*/', '', $symbol);
             $symbol_parts = explode('-', $symbol);
 
             $file_contents = $this->getFileContents($file_path);
@@ -1118,7 +1149,7 @@ class Codebase
                     $symbol = substr($symbol, 0, -2);
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $symbol));
+                    $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1141,7 +1172,7 @@ class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    \ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1168,11 +1199,11 @@ class Codebase
             }
 
             return $this->classlike_storage_provider->get($symbol)->location;
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             error_log($e->getMessage());
 
             return null;
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return null;
         }
     }
@@ -1185,7 +1216,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);
@@ -1238,7 +1269,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);
@@ -1290,12 +1321,12 @@ class Codebase
     public function getSignatureInformation(
         string $function_symbol,
         string $file_path = null
-    ): ?\LanguageServerProtocol\SignatureInformation {
+    ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
         if (strpos($function_symbol, '::') !== false) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $function_symbol));
+            $method_id = new MethodIdentifier(...explode('::', $function_symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
@@ -1322,7 +1353,7 @@ class Codebase
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
@@ -1342,7 +1373,7 @@ class Codebase
 
         foreach ($params as $i => $param) {
             $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
-            $parameters[] = new \LanguageServerProtocol\ParameterInformation(
+            $parameters[] = new ParameterInformation(
                 [
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
@@ -1359,7 +1390,7 @@ class Codebase
 
         $signature_label .= ')';
 
-        return new \LanguageServerProtocol\SignatureInformation(
+        return new SignatureInformation(
             $signature_label,
             $parameters,
             $signature_documentation
@@ -1374,7 +1405,7 @@ class Codebase
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
-            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+            throw new UnanalyzedFileException($file_path . ' is not open');
         }
 
         $file_contents = $this->getFileContents($file_path);
@@ -1480,7 +1511,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForClassishThing(string $type_string, string $gap) : array
     {
@@ -1497,9 +1528,9 @@ class Codebase
                         $method_storage = $this->methods->getStorage($declaring_method_id);
 
                         if ($method_storage->is_static || $gap === '->') {
-                            $completion_item = new \LanguageServerProtocol\CompletionItem(
+                            $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
-                                \LanguageServerProtocol\CompletionItemKind::METHOD,
+                                CompletionItemKind::METHOD,
                                 (string)$method_storage,
                                 $method_storage->description,
                                 (string)$method_storage->visibility,
@@ -1512,7 +1543,7 @@ class Codebase
                                 2
                             );
 
-                            $completion_item->insertTextFormat = \LanguageServerProtocol\InsertTextFormat::SNIPPET;
+                            $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
 
                             $completion_items[] = $completion_item;
                         }
@@ -1524,9 +1555,9 @@ class Codebase
                         );
 
                         if ($property_storage->is_static || $gap === '->') {
-                            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                            $completion_items[] = new CompletionItem(
                                 '$' . $property_name,
-                                \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                                CompletionItemKind::PROPERTY,
                                 $property_storage->getInfo(),
                                 $property_storage->description,
                                 (string)$property_storage->visibility,
@@ -1537,9 +1568,9 @@ class Codebase
                     }
 
                     foreach ($class_storage->constants as $const_name => $const) {
-                        $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                        $completion_items[] = new CompletionItem(
                             $const_name,
-                            \LanguageServerProtocol\CompletionItemKind::VARIABLE,
+                            CompletionItemKind::VARIABLE,
                             'const ' . $const_name,
                             $const->description,
                             null,
@@ -1547,7 +1578,7 @@ class Codebase
                             $const_name
                         );
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     error_log($e->getMessage());
                     continue;
                 }
@@ -1558,7 +1589,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
@@ -1582,7 +1613,7 @@ class Codebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 continue;
             }
 
@@ -1629,11 +1660,11 @@ class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = \preg_replace('/^.*\\\/', '', $fq_class_name);
+                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
-                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                    $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
                             $position
@@ -1642,7 +1673,7 @@ class Codebase
                     );
                 } else {
                     $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
-                    $extra_edits[] = new \LanguageServerProtocol\TextEdit(
+                    $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
                             $position
@@ -1657,13 +1688,13 @@ class Codebase
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
                 $description = $class_storage->description;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $description = null;
             }
 
-            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+            $completion_items[] = new CompletionItem(
                 $fq_class_name,
-                \LanguageServerProtocol\CompletionItemKind::CLASS_,
+                CompletionItemKind::CLASS_,
                 null,
                 $description,
                 null,
@@ -1707,9 +1738,9 @@ class Codebase
             if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
                 $function_name = '\\' . $function_name;
             }
-            $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+            $completion_items[] = new CompletionItem(
                 $function_name,
-                \LanguageServerProtocol\CompletionItemKind::FUNCTION,
+                CompletionItemKind::FUNCTION,
                 $function->getSignature(false),
                 $function->description,
                 null,
@@ -1727,7 +1758,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForType(Type\Union $type): array
     {
@@ -1736,9 +1767,9 @@ class Codebase
             if ($atomic_type instanceof Type\Atomic\TBool) {
                 $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
                 foreach ($bools as $property_name) {
-                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $completion_items[] = new CompletionItem(
                         $property_name,
-                        \LanguageServerProtocol\CompletionItemKind::VALUE,
+                        CompletionItemKind::VALUE,
                         'bool',
                         null,
                         null,
@@ -1747,9 +1778,9 @@ class Codebase
                     );
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     $atomic_type->value,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1757,9 +1788,9 @@ class Codebase
                     "'$atomic_type->value'"
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     (string) $atomic_type->value,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1768,9 +1799,9 @@ class Codebase
                 );
             } elseif ($atomic_type instanceof Type\Atomic\TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
-                $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                $completion_items[] = new CompletionItem(
                     $const,
-                    \LanguageServerProtocol\CompletionItemKind::VALUE,
+                    CompletionItemKind::VALUE,
                     $atomic_type->getId(),
                     null,
                     null,
@@ -1783,7 +1814,7 @@ class Codebase
     }
 
     /**
-     * @return list<\LanguageServerProtocol\CompletionItem>
+     * @return list<CompletionItem>
      */
     public function getCompletionItemsForArrayKeys(
         string $type_string
@@ -1793,9 +1824,9 @@ class Codebase
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($atomic_type->properties as $property_name => $property) {
-                    $completion_items[] = new \LanguageServerProtocol\CompletionItem(
+                    $completion_items[] = new CompletionItem(
                         (string) $property_name,
-                        \LanguageServerProtocol\CompletionItemKind::PROPERTY,
+                        CompletionItemKind::PROPERTY,
                         (string) $property,
                         null,
                         null,
@@ -1924,14 +1955,14 @@ class Codebase
     public function addTaintSource(
         Type\Union $expr_type,
         string $taint_id,
-        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $source = new \Psalm\Internal\DataFlow\TaintSource(
+        $source = new TaintSource(
             $taint_id,
             $taint_id,
             $code_location,
@@ -1953,14 +1984,14 @@ class Codebase
      */
     public function addTaintSink(
         string $taint_id,
-        array $taints = \Psalm\Type\TaintKindGroup::ALL_INPUT,
+        array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
     ) : void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = new \Psalm\Internal\DataFlow\TaintSink(
+        $sink = new TaintSink(
             $taint_id,
             $taint_id,
             $code_location,

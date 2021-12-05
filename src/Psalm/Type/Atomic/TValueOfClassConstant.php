@@ -1,10 +1,13 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
+use Psalm\Type\Atomic;
+
 /**
  * Represents a value of a class constant array.
  */
-class TValueOfClassConstant extends \Psalm\Type\Atomic
+class TValueOfClassConstant extends Atomic
 {
     /** @var string */
     public $fq_classlike_name;
@@ -65,7 +68,7 @@ class TValueOfClassConstant extends \Psalm\Type\Atomic
         }
 
         return 'value-of<'
-            . \Psalm\Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
+            . Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
             . '>::' . $this->const_name . '>';
     }
 

@@ -1,11 +1,27 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
-class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+use function in_array;
+
+use const FILTER_NULL_ON_FAILURE;
+use const FILTER_VALIDATE_BOOLEAN;
+use const FILTER_VALIDATE_DOMAIN;
+use const FILTER_VALIDATE_EMAIL;
+use const FILTER_VALIDATE_FLOAT;
+use const FILTER_VALIDATE_INT;
+use const FILTER_VALIDATE_IP;
+use const FILTER_VALIDATE_MAC;
+use const FILTER_VALIDATE_REGEXP;
+use const FILTER_VALIDATE_URL;
+
+class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -21,8 +37,8 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            throw new \UnexpectedValueException();
+        if (!$statements_source instanceof StatementsAnalyzer) {
+            throw new UnexpectedValueException();
         }
 
         $filter_type = null;
@@ -36,25 +52,25 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
             $filter_type = null;
 
             switch ($filter_type_type->value) {
-                case \FILTER_VALIDATE_INT:
+                case FILTER_VALIDATE_INT:
                     $filter_type = Type::getInt();
                     break;
 
-                case \FILTER_VALIDATE_FLOAT:
+                case FILTER_VALIDATE_FLOAT:
                     $filter_type = Type::getFloat();
                     break;
 
-                case \FILTER_VALIDATE_BOOLEAN:
+                case FILTER_VALIDATE_BOOLEAN:
                     $filter_type = Type::getBool();
 
                     break;
 
-                case \FILTER_VALIDATE_IP:
-                case \FILTER_VALIDATE_MAC:
-                case \FILTER_VALIDATE_REGEXP:
-                case \FILTER_VALIDATE_URL:
-                case \FILTER_VALIDATE_EMAIL:
-                case \FILTER_VALIDATE_DOMAIN:
+                case FILTER_VALIDATE_IP:
+                case FILTER_VALIDATE_MAC:
+                case FILTER_VALIDATE_REGEXP:
+                case FILTER_VALIDATE_URL:
+                case FILTER_VALIDATE_EMAIL:
+                case FILTER_VALIDATE_DOMAIN:
                     $filter_type = Type::getString();
                     break;
             }
@@ -91,13 +107,13 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
                                 $atomic_type->properties['flags']->getSingleIntLiteral();
 
                             if ($filter_type->hasBool()
-                                && $filter_flag_type->value === \FILTER_NULL_ON_FAILURE
+                                && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
                             ) {
                                 $filter_type->addType(new Type\Atomic\TNull);
                             }
                         }
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                        if ($atomic_type->value === \FILTER_NULL_ON_FAILURE) {
+                        if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
                             $filter_null = true;
                             $filter_type->addType(new Type\Atomic\TNull);
                         }
@@ -115,7 +131,7 @@ class FilterVarReturnTypeProvider implements \Psalm\Plugin\EventHandler\Function
         }
 
         if ($statements_source->data_flow_graph
-            && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())
+            && !in_array('TaintedInput', $statements_source->getSuppressedIssues())
         ) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,

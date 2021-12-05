@@ -4,21 +4,29 @@ namespace Psalm\Internal\Cli;
 
 use Composer\Autoload\ClassLoader;
 use Psalm\Config;
+use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
+use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
+use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
 use Psalm\Progress\LongProgress;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use RuntimeException;
 use Webmozart\PathUtil\Path;
@@ -199,6 +207,7 @@ final class Psalm
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
+            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
                 return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
@@ -392,7 +401,7 @@ final class Psalm
     {
         return isset($options['output-format']) && is_string($options['output-format'])
             ? $options['output-format']
-            : \Psalm\Report::TYPE_CONSOLE;
+            : Report::TYPE_CONSOLE;
     }
 
     private static function initShowInfo(array $options): bool
@@ -519,13 +528,13 @@ final class Psalm
 
         if (null !== $init_level) {
             try {
-                $template_contents = \Psalm\Config\Creator::getContents(
+                $template_contents = Creator::getContents(
                     $current_dir,
                     $init_source_dir,
                     $init_level,
                     $vendor_dir
                 );
-            } catch (\Psalm\Exception\ConfigCreationException $e) {
+            } catch (ConfigCreationException $e) {
                 die($e->getMessage() . PHP_EOL);
             }
 
@@ -559,7 +568,7 @@ final class Psalm
             $config_level = (int) $options['error-level'];
 
             if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new \Psalm\Exception\ConfigException(
+                throw new ConfigException(
                     'Invalid error level ' . $config_level
                 );
             }
@@ -616,7 +625,7 @@ final class Psalm
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new Provider\FileReferenceCacheProvider($config),
-                new Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
             );
         }
         return $providers;
@@ -636,15 +645,15 @@ final class Psalm
 
         try {
             $issue_baseline = ErrorBaseline::read(
-                new \Psalm\Internal\Provider\FileProvider,
+                new FileProvider,
                 $options['set-baseline']
             );
-        } catch (\Psalm\Exception\ConfigException $e) {
+        } catch (ConfigException $e) {
             $issue_baseline = [];
         }
 
         ErrorBaseline::create(
-            new \Psalm\Internal\Provider\FileProvider,
+            new FileProvider,
             $options['set-baseline'],
             IssueBuffer::getIssuesData(),
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
@@ -676,13 +685,13 @@ final class Psalm
 
         try {
             $issue_current_baseline = ErrorBaseline::read(
-                new \Psalm\Internal\Provider\FileProvider,
+                new FileProvider,
                 $baselineFile
             );
             $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
 
             $issue_baseline = ErrorBaseline::update(
-                new \Psalm\Internal\Provider\FileProvider,
+                new FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
                 $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
@@ -695,7 +704,7 @@ final class Psalm
                 echo str_repeat('-', 30) . "\n";
                 echo $total_fixed_issues . ' errors fixed' . "\n";
             }
-        } catch (\Psalm\Exception\ConfigException $exception) {
+        } catch (ConfigException $exception) {
             fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
             exit(1);
         }
@@ -720,7 +729,7 @@ final class Psalm
             $name_file_map[$file_name] = $map;
         }
 
-        $reference_dictionary = \Psalm\Internal\Codebase\ReferenceMapGenerator::getReferenceMap(
+        $reference_dictionary = ReferenceMapGenerator::getReferenceMap(
             $providers->classlike_storage_provider,
             $expected_references
         );
@@ -747,7 +756,7 @@ final class Psalm
             $codebase = $project_analyzer->getCodebase();
             $mixed_counts = $codebase->analyzer->getTotalTypeCoverage($codebase);
 
-            $init_level = \Psalm\Config\Creator::getLevel(
+            $init_level = Creator::getLevel(
                 array_merge(...array_values($issues_by_file)),
                 array_sum($mixed_counts)
             );
@@ -756,13 +765,13 @@ final class Psalm
         echo "\n" . 'Detected level ' . $init_level . ' as a suitable initial default' . "\n";
 
         try {
-            $template_contents = \Psalm\Config\Creator::getContents(
+            $template_contents = Creator::getContents(
                 $current_dir,
                 $init_source_dir,
                 $init_level,
                 $vendor_dir
             );
-        } catch (\Psalm\Exception\ConfigCreationException $e) {
+        } catch (ConfigCreationException $e) {
             die($e->getMessage() . PHP_EOL);
         }
 
@@ -779,7 +788,7 @@ final class Psalm
         string $output_format,
         bool $in_ci
     ): ReportOptions {
-        $stdout_report_options = new \Psalm\Report\ReportOptions();
+        $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
@@ -859,14 +868,14 @@ final class Psalm
             echo(
                 'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
                     . 'multiple processes (--threads=4), beware:' . PHP_EOL
-                    . \Psalm\Internal\Fork\Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
+                    . Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
             );
         }
     }
 
     private static function restart(array $options, Config $config, int $threads): void
     {
-        $ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
+        $ini_handler = new PsalmRestarter('PSALM');
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
@@ -982,8 +991,8 @@ final class Psalm
             $init_source_dir = $args[0] ?? null;
 
             echo "Calculating best config level based on project files\n";
-            \Psalm\Config\Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
-            $config = \Psalm\Config::getInstance();
+            Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            $config = Config::getInstance();
             $config->setComposerClassLoader($first_autoloader);
         } else {
             $config = self::loadConfig(
@@ -1031,10 +1040,10 @@ final class Psalm
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
             try {
                 $issue_baseline = ErrorBaseline::read(
-                    new \Psalm\Internal\Provider\FileProvider,
+                    new FileProvider,
                     $baseline_file_path
                 );
-            } catch (\Psalm\Exception\ConfigException $exception) {
+            } catch (ConfigException $exception) {
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
@@ -1148,7 +1157,7 @@ final class Psalm
 
             $providers->file_provider->setContents(
                 $stubs_location,
-                \Psalm\Internal\Stubs\Generator\StubsGenerator::getAll(
+                StubsGenerator::getAll(
                     $project_analyzer->getCodebase(),
                     $providers->classlike_storage_provider,
                     $providers->file_storage_provider

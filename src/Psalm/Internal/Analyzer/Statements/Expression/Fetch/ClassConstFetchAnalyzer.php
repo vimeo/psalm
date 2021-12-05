@@ -1,9 +1,12 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\CircularReferenceException;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -23,9 +26,11 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use ReflectionProperty;
 
 use function array_values;
 use function explode;
+use function in_array;
 use function strtolower;
 
 /**
@@ -111,7 +116,7 @@ class ClassConstFetchAnalyzer
             $moved_class = false;
 
             if ($codebase->alter_code
-                && !\in_array($stmt->class->parts[0], ['parent', 'static'])
+                && !in_array($stmt->class->parts[0], ['parent', 'static'])
             ) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
@@ -214,14 +219,14 @@ class ClassConstFetchAnalyzer
                     $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
                 )
             ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                $class_visibility = ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
                 ($codebase->classlikes->classExtends($context->self, $fq_class_name)
                     || $codebase->classlikes->classExtends($fq_class_name, $context->self))
             ) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                $class_visibility = ReflectionProperty::IS_PROTECTED;
             } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = ReflectionProperty::IS_PUBLIC;
             }
 
             try {
@@ -231,9 +236,9 @@ class ClassConstFetchAnalyzer
                     $class_visibility,
                     $statements_analyzer
                 );
-            } catch (\InvalidArgumentException $_) {
+            } catch (InvalidArgumentException $_) {
                 return true;
-            } catch (\Psalm\Exception\CircularReferenceException $e) {
+            } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -250,7 +255,7 @@ class ClassConstFetchAnalyzer
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $fq_class_name,
                         $stmt->name->name,
-                        \ReflectionProperty::IS_PRIVATE,
+                        ReflectionProperty::IS_PRIVATE,
                         $statements_analyzer
                     );
                 }
@@ -294,7 +299,7 @@ class ClassConstFetchAnalyzer
                         $file_manipulations = [];
 
                         if (strtolower($new_fq_class_name) !== $fq_class_name_lc) {
-                            $file_manipulations[] = new \Psalm\FileManipulation(
+                            $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
                                 Type::getStringFromFQCLN(
@@ -306,7 +311,7 @@ class ClassConstFetchAnalyzer
                             );
                         }
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
+                        $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             $new_const_name
@@ -430,7 +435,7 @@ class ClassConstFetchAnalyzer
             $fq_class_name = null;
             $lhs_type_definite_class = null;
             if ($lhs_type->isSingle()) {
-                $atomic_type = \array_values($lhs_type->getAtomicTypes())[0];
+                $atomic_type = array_values($lhs_type->getAtomicTypes())[0];
                 if ($atomic_type instanceof TNamedObject) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;
@@ -501,14 +506,14 @@ class ClassConstFetchAnalyzer
                     $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
                 )
             ) {
-                $class_visibility = \ReflectionProperty::IS_PRIVATE;
+                $class_visibility = ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
                 ($codebase->classlikes->classExtends($context->self, $fq_class_name)
                     || $codebase->classlikes->classExtends($fq_class_name, $context->self))
             ) {
-                $class_visibility = \ReflectionProperty::IS_PROTECTED;
+                $class_visibility = ReflectionProperty::IS_PROTECTED;
             } else {
-                $class_visibility = \ReflectionProperty::IS_PUBLIC;
+                $class_visibility = ReflectionProperty::IS_PUBLIC;
             }
 
             try {
@@ -518,9 +523,9 @@ class ClassConstFetchAnalyzer
                     $class_visibility,
                     $statements_analyzer
                 );
-            } catch (\InvalidArgumentException $_) {
+            } catch (InvalidArgumentException $_) {
                 return true;
-            } catch (\Psalm\Exception\CircularReferenceException $e) {
+            } catch (CircularReferenceException $e) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -537,7 +542,7 @@ class ClassConstFetchAnalyzer
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $fq_class_name,
                         $stmt->name->name,
-                        \ReflectionProperty::IS_PRIVATE,
+                        ReflectionProperty::IS_PRIVATE,
                         $statements_analyzer
                     );
                 }
@@ -580,7 +585,7 @@ class ClassConstFetchAnalyzer
 
                         $file_manipulations = [];
 
-                        $file_manipulations[] = new \Psalm\FileManipulation(
+                        $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
                             $new_const_name

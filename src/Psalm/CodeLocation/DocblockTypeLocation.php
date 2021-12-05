@@ -1,10 +1,13 @@
 <?php
 namespace Psalm\CodeLocation;
 
-class DocblockTypeLocation extends \Psalm\CodeLocation
+use Psalm\CodeLocation;
+use Psalm\FileSource;
+
+class DocblockTypeLocation extends CodeLocation
 {
     public function __construct(
-        \Psalm\FileSource $file_source,
+        FileSource $file_source,
         int $file_start,
         int $file_end,
         int $line_number

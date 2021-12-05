@@ -2,22 +2,31 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Type\SimpleAssertionReconciler;
+use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TTemplateParam;
+use ReflectionProperty;
 
 use function array_filter;
+use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
+use function get_class;
 use function is_array;
 use function is_string;
 use function reset;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -215,19 +224,19 @@ class TypeExpander
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
                 if (strpos($return_type->const_name, '*') !== false) {
-                    $matching_constants = \array_merge(
-                        \array_keys($class_storage->constants),
-                        \array_keys($class_storage->enum_cases)
+                    $matching_constants = array_merge(
+                        array_keys($class_storage->constants),
+                        array_keys($class_storage->enum_cases)
                     );
 
-                    $const_name_part = \substr($return_type->const_name, 0, -1);
+                    $const_name_part = substr($return_type->const_name, 0, -1);
 
                     if ($const_name_part) {
-                        $matching_constants = \array_filter(
+                        $matching_constants = array_filter(
                             $matching_constants,
                             function ($constant_name) use ($const_name_part): bool {
                                 return $constant_name !== $const_name_part
-                                    && \strpos($constant_name, $const_name_part) === 0;
+                                    && strpos($constant_name, $const_name_part) === 0;
                             }
                         );
                     }
@@ -242,9 +251,9 @@ class TypeExpander
                         $class_constant = $codebase->classlikes->getClassConstantType(
                             $return_type->fq_classlike_name,
                             $matching_constant,
-                            \ReflectionProperty::IS_PRIVATE
+                            ReflectionProperty::IS_PRIVATE
                         );
-                    } catch (\Psalm\Exception\CircularReferenceException $e) {
+                    } catch (CircularReferenceException $e) {
                         $class_constant = null;
                     }
 
@@ -252,8 +261,8 @@ class TypeExpander
                         if ($class_constant->isSingle()) {
                             $class_constant = clone $class_constant;
 
-                            $matching_constant_types = \array_merge(
-                                \array_values($class_constant->getAtomicTypes()),
+                            $matching_constant_types = array_merge(
+                                array_values($class_constant->getAtomicTypes()),
                                 $matching_constant_types
                             );
                         }
@@ -332,9 +341,9 @@ class TypeExpander
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $return_type->fq_classlike_name,
                         $return_type->const_name,
-                        \ReflectionProperty::IS_PRIVATE
+                        ReflectionProperty::IS_PRIVATE
                     );
-                } catch (\Psalm\Exception\CircularReferenceException $e) {
+                } catch (CircularReferenceException $e) {
                     $class_constant_type = null;
                 }
 
@@ -381,7 +390,7 @@ class TypeExpander
                     $expand_templates
                 );
 
-                if (\is_array($new_value_type)) {
+                if (is_array($new_value_type)) {
                     $new_value_type = reset($new_value_type);
                 }
 
@@ -392,7 +401,7 @@ class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+            return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
         if ($return_type instanceof Type\Atomic\TIntMaskOf) {
@@ -429,7 +438,7 @@ class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return \Psalm\Internal\Type\TypeParser::getComputedIntsFromMask($potential_ints);
+            return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
         if ($return_type instanceof Type\Atomic\TArray
@@ -567,7 +576,7 @@ class TypeExpander
         bool &$expand_generic = false
     ) {
         if ($expand_generic
-            && \get_class($return_type) === TNamedObject::class
+            && get_class($return_type) === TNamedObject::class
             && !$return_type->extra_types
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
@@ -577,7 +586,7 @@ class TypeExpander
             );
 
             if ($container_class_storage->template_types
-                && \array_filter(
+                && array_filter(
                     $container_class_storage->template_types,
                     function ($type_map) {
                         return !reset($type_map)->hasMixed();
@@ -586,8 +595,8 @@ class TypeExpander
             ) {
                 $return_type = new Type\Atomic\TGenericObject(
                     $return_type->value,
-                    \array_values(
-                        \array_map(
+                    array_values(
+                        array_map(
                             function ($type_map) {
                                 return clone reset($type_map);
                             },
@@ -761,7 +770,7 @@ class TypeExpander
                     $codebase
                 );
 
-                $if_conditional_return_type = \Psalm\Internal\Type\SimpleAssertionReconciler::reconcile(
+                $if_conditional_return_type = SimpleAssertionReconciler::reconcile(
                     $assertion,
                     $codebase,
                     $if_conditional_return_type
@@ -779,7 +788,7 @@ class TypeExpander
                     $codebase
                 );
 
-                $else_conditional_return_type = \Psalm\Internal\Type\SimpleNegatedAssertionReconciler::reconcile(
+                $else_conditional_return_type = SimpleNegatedAssertionReconciler::reconcile(
                     $assertion,
                     $else_conditional_return_type
                 );

@@ -4,13 +4,18 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 class MethodCallPurityAnalyzer
@@ -22,10 +27,10 @@ class MethodCallPurityAnalyzer
         ?string $lhs_var_id,
         string $cased_method_id,
         MethodIdentifier $method_id,
-        \Psalm\Storage\MethodStorage $method_storage,
-        \Psalm\Storage\ClassLikeStorage $class_storage,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
         Context $context,
-        \Psalm\Config $config,
+        Config $config,
         AtomicMethodCallAnalysisResult $result
     ) : void {
         $method_pure_compatible = $method_storage->external_mutation_free
@@ -109,7 +114,7 @@ class MethodCallPurityAnalyzer
                     && !$method_storage->throws
                 ) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\UnusedMethodCall(
+                        new UnusedMethodCall(
                             'The call to ' . $cased_method_id . ' is not used',
                             new CodeLocation($statements_analyzer, $stmt->name),
                             (string) $method_id
@@ -122,7 +127,7 @@ class MethodCallPurityAnalyzer
             }
         }
 
-        if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+        if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
             && $statements_analyzer->getSource()->track_mutations
             && !$method_storage->mutation_free
             && !$method_pure_compatible

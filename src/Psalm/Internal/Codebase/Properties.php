@@ -9,7 +9,9 @@ use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function explode;
 use function preg_replace;
@@ -243,7 +245,7 @@ class Properties
         return null;
     }
 
-    public function getStorage(string $property_id): \Psalm\Storage\PropertyStorage
+    public function getStorage(string $property_id): PropertyStorage
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
@@ -261,7 +263,7 @@ class Properties
             }
         }
 
-        throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+        throw new UnexpectedValueException('Property ' . $property_id . ' should exist');
     }
 
     public function hasStorage(string $property_id): bool
@@ -316,10 +318,10 @@ class Properties
             if (isset($declaring_class_storage->properties[$property_name])) {
                 $storage = $declaring_class_storage->properties[$property_name];
             } else {
-                throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+                throw new UnexpectedValueException('Property ' . $property_id . ' should exist');
             }
         } else {
-            throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+            throw new UnexpectedValueException('Property ' . $property_id . ' should exist');
         }
 
         if ($storage->type) {

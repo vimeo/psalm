@@ -3,13 +3,15 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MagicPropertyTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testPhpDocPropertyWithoutGet(): void
     {
@@ -1148,9 +1150,9 @@ class MagicPropertyTest extends TestCase
             ],
             'propertyDocblockOnProperty' => [
                 '<?php
-                    class A { 
-                       /** @property string[] */ 
-                      public array $arr; 
+                    class A {
+                       /** @property string[] */
+                      public array $arr;
                     }',
                 'error_message' => 'InvalidDocblock'
             ],

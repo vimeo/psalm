@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
+use PhpParser\Comment\Doc;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
 use Psalm\Internal\RuntimeCaches;
@@ -26,7 +27,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  * @return bool
  */
 ';
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
 
         $this->assertSame('Some Description', $function_docblock->description);
@@ -46,7 +47,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  * @return bool
  */
 ';
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
 
         $this->assertTrue(isset($function_docblock->params[0]['description']));
@@ -62,7 +63,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  * @param
  *          $p
  */';
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $this->expectException(IncorrectDocblockException::class);
         $this->expectExceptionMessage('Misplaced variable');
         FunctionLikeDocblockParser::parse($php_parser_doc);
@@ -75,7 +76,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  * @phpstan-template T of int
  */
 ';
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc);
+        $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
     }
@@ -87,7 +88,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  * @var int $p
  */
 ';
-        $php_parser_doc = new \PhpParser\Comment\Doc($doc, 0);
+        $php_parser_doc = new Doc($doc, 0);
         $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
         $this->assertEquals(
             [

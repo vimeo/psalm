@@ -5,6 +5,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InternalMethod;
 use Psalm\IssueBuffer;
@@ -19,7 +20,7 @@ class MethodCallProhibitionAnalyzer
     public static function analyze(
         Codebase $codebase,
         Context $context,
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         ?string $namespace,
         CodeLocation $code_location,
         array $suppressed_issues

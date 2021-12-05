@@ -3,13 +3,16 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class AnnotationTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function setUp(): void
     {
@@ -141,7 +144,7 @@ class AnnotationTest extends TestCase
 
     public function testPhpStormGenericsInvalidArgument(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidScalarArgument');
 
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -163,7 +166,7 @@ class AnnotationTest extends TestCase
 
     public function testPhpStormGenericsNoTypehint(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyInvalidMethodCall');
 
         Config::getInstance()->allow_phpstorm_generics = true;
@@ -182,7 +185,7 @@ class AnnotationTest extends TestCase
 
     public function testInvalidParamDefault(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
 
         $this->addFile(
@@ -219,7 +222,7 @@ class AnnotationTest extends TestCase
 
     public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidParamDefault');
 
         Config::getInstance()->add_param_default_to_docblock_type = true;
@@ -839,8 +842,8 @@ class AnnotationTest extends TestCase
                     }',
                 [],
                 [
-                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
-                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                    'InvalidDocblock' => Config::REPORT_INFO,
+                    'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
             'objectWithPropertiesAnnotation' => [
@@ -1456,7 +1459,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingReturnType',
                 [
-                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                    'InvalidDocblock' => Config::REPORT_INFO,
                 ],
             ],
             'invalidDocblockReturn' => [

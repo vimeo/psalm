@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Represents the type that is the result of a bitmask combination of its parameters.
  * This is the same concept as TIntMask but TIntMaskOf is used with with a reference to constants in code
@@ -14,7 +16,7 @@ class TIntMaskOf extends TInt
     /**
      * @param TClassConstant|TKeyOfClassConstant|TValueOfClassConstant $value
      */
-    public function __construct(\Psalm\Type\Atomic $value)
+    public function __construct(Atomic $value)
     {
         $this->value = $value;
     }

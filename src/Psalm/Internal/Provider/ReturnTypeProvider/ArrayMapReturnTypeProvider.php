@@ -4,7 +4,11 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
@@ -15,15 +19,21 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_map;
+use function array_shift;
+use function array_slice;
 use function count;
 use function explode;
 use function in_array;
+use function reset;
 use function strpos;
+use function substr;
 
-class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -38,7 +48,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
@@ -49,7 +59,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
             : null;
 
         if ($function_call_type && $function_call_type->isNull()) {
-            \array_shift($call_args);
+            array_shift($call_args);
 
             $array_arg_types = [];
 
@@ -101,7 +111,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
 
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
-                $closure_atomic_type = \reset($closure_types);
+                $closure_atomic_type = reset($closure_types);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -125,7 +135,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        \array_slice($call_args, 1)
+                        array_slice($call_args, 1)
                     );
                 }
 
@@ -242,7 +252,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     private static function executeFakeCall(
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_analyzer,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
         ?array &$assertions = null
@@ -266,25 +276,25 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
         $context->inside_call = true;
 
         if ($fake_call instanceof PhpParser\Node\Expr\StaticCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::analyze(
+            StaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\MethodCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+            MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\FuncCall) {
-            \Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer::analyze(
+            FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
                 $context
             );
         } else {
-            throw new \UnexpectedValueException('UnrecognizedCall');
+            throw new UnexpectedValueException('UnrecognizedCall');
         }
 
         $codebase = $statements_analyzer->getCodebase();
@@ -323,7 +333,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
-        \Psalm\Internal\Analyzer\StatementsAnalyzer $statements_source,
+        StatementsAnalyzer $statements_source,
         array $mapping_function_ids,
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
@@ -360,7 +370,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                     $is_instance = false;
 
                     if ($mapping_function_id_part[0] === '$') {
-                        $mapping_function_id_part = \substr($mapping_function_id_part, 1);
+                        $mapping_function_id_part = substr($mapping_function_id_part, 1);
                         $is_instance = true;
                     }
 
@@ -388,7 +398,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionR
                         if ($callable_type) {
                             foreach ($callable_type->getAtomicTypes() as $atomic_type) {
                                 if ($atomic_type instanceof Type\Atomic\TKeyedArray
-                                    && \count($atomic_type->properties) === 2
+                                    && count($atomic_type->properties) === 2
                                     && isset($atomic_type->properties[0])
                                 ) {
                                     $lhs_instance_type = clone $atomic_type->properties[0];

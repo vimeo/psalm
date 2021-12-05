@@ -5,9 +5,12 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use UnexpectedValueException;
 
 use function array_pop;
 use function end;
@@ -21,7 +24,7 @@ class MethodVisibilityAnalyzer
      * @return false|null
      */
     public static function analyze(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         Context $context,
         StatementsSource $source,
         CodeLocation $code_location,
@@ -70,11 +73,11 @@ class MethodVisibilityAnalyzer
                 return null;
             }
 
-            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $method_id)) {
+            if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 return null;
             }
 
-            throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
+            throw new UnexpectedValueException('$declaring_method_id not expected to be null here');
         }
 
         $appearing_method_id = $codebase_methods->getAppearingMethodId($method_id);

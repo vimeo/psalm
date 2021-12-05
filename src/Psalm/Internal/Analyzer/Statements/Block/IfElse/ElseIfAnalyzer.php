@@ -5,6 +5,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -19,8 +21,10 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
 use function array_combine;
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
+use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -31,6 +35,7 @@ use function count;
 use function in_array;
 use function preg_match;
 use function preg_quote;
+use function spl_object_id;
 
 class ElseIfAnalyzer
 {
@@ -62,7 +67,7 @@ class ElseIfAnalyzer
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
             $entry_clauses = $if_conditional_scope->entry_clauses;
-        } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $e) {
             return false;
         }
 
@@ -74,7 +79,7 @@ class ElseIfAnalyzer
             }
         }
 
-        $elseif_cond_id = \spl_object_id($elseif->cond);
+        $elseif_cond_id = spl_object_id($elseif->cond);
 
         $elseif_clauses = FormulaGenerator::getFormula(
             $elseif_cond_id,
@@ -92,7 +97,7 @@ class ElseIfAnalyzer
             function (Clause $c) use ($mixed_var_ids, $elseif_cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
-                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
@@ -184,14 +189,14 @@ class ElseIfAnalyzer
             }
             $reconcilable_elseif_types = Algebra::getTruthsFromFormula(
                 $elseif_context->clauses,
-                \spl_object_id($elseif->cond),
+                spl_object_id($elseif->cond),
                 $cond_referenced_var_ids,
                 $active_elseif_types
             );
             $negated_elseif_types = Algebra::getTruthsFromFormula(
                 Algebra::negateFormula($elseif_clauses)
             );
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
         }
@@ -249,8 +254,8 @@ class ElseIfAnalyzer
                 foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
                     foreach ($elseif_context->vars_in_scope as $var_id => $_) {
                         if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
-                            && !\array_key_exists($var_id, $newly_reconciled_var_ids)
-                            && !\array_key_exists($var_id, $cond_referenced_var_ids)
+                            && !array_key_exists($var_id, $newly_reconciled_var_ids)
+                            && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
                             unset($elseif_context->vars_in_scope[$var_id]);
                         }
@@ -424,7 +429,7 @@ class ElseIfAnalyzer
                     Algebra::negateFormula($elseif_clauses)
                 )
             );
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
         }
 

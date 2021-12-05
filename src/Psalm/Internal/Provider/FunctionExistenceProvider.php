@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\Plugin\Hook\FunctionExistenceProviderInterface as LegacyFunctionExistenceProviderInterface;
@@ -14,7 +15,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(FunctionExistenceProviderEvent) : ?bool>
+     *   array<Closure(FunctionExistenceProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -22,7 +23,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string
      *   ) : ?bool>
@@ -42,13 +43,13 @@ class FunctionExistenceProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyFunctionExistenceProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = Closure::fromCallable([$class, 'doesFunctionExist']);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerLegacyClosure($function_id, $callable);
             }
         } elseif (is_subclass_of($class, FunctionExistenceProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = Closure::fromCallable([$class, 'doesFunctionExist']);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);
@@ -58,21 +59,21 @@ class FunctionExistenceProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(FunctionExistenceProviderEvent) : ?bool $c
+     * @param Closure(FunctionExistenceProviderEvent) : ?bool $c
      */
-    public function registerClosure(string $function_id, \Closure $c): void
+    public function registerClosure(string $function_id, Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string
      *   ) : ?bool $c
      */
-    public function registerLegacyClosure(string $function_id, \Closure $c): void
+    public function registerLegacyClosure(string $function_id, Closure $c): void
     {
         self::$legacy_handlers[$function_id][] = $c;
     }

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Type;
 
 class AtomicMethodCallAnalysisResult
@@ -66,7 +67,7 @@ class AtomicMethodCallAnalysisResult
     public $too_many_arguments = true;
 
     /**
-     * @var list<\Psalm\Internal\MethodIdentifier>
+     * @var list<MethodIdentifier>
      */
     public $too_many_arguments_method_ids = [];
 
@@ -76,7 +77,7 @@ class AtomicMethodCallAnalysisResult
     public $too_few_arguments = false;
 
     /**
-     * @var list<\Psalm\Internal\MethodIdentifier>
+     * @var list<MethodIdentifier>
      */
     public $too_few_arguments_method_ids = [];
 

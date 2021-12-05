@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -17,7 +18,7 @@ class TGenericObject extends TNamedObject
     use GenericTrait;
 
     /**
-     * @var non-empty-list<\Psalm\Type\Union>
+     * @var non-empty-list<Union>
      */
     public $type_params;
 
@@ -25,8 +26,8 @@ class TGenericObject extends TNamedObject
     public $remapped_params = false;
 
     /**
-     * @param string                            $value the name of the object
-     * @param non-empty-list<\Psalm\Type\Union>     $type_params
+     * @param string                $value the name of the object
+     * @param non-empty-list<Union> $type_params
      */
     public function __construct(string $value, array $type_params)
     {

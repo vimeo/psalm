@@ -3,6 +3,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 
 class ClassConstantStorage
@@ -28,7 +29,7 @@ class ClassConstantStorage
     public $stmt_location;
 
     /**
-     * @var ?\Psalm\Internal\Scanner\UnresolvedConstantComponent
+     * @var ?UnresolvedConstantComponent
      */
     public $unresolved_node;
 

@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Progress;
 
+use LogicException;
+
 use function floor;
 use function sprintf;
 use function str_repeat;
@@ -84,7 +86,7 @@ class LongProgress extends Progress
     protected function getOverview() : string
     {
         if ($this->number_of_tasks === null) {
-            throw new \LogicException('Progress::start() should be called before Progress::startDone()');
+            throw new LogicException('Progress::start() should be called before Progress::startDone()');
         }
 
         $leadingSpaces = 1 + strlen((string) $this->number_of_tasks) - strlen((string) $this->progress);

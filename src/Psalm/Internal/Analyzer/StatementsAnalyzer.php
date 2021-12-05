@@ -1,12 +1,14 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Block\DoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForAnalyzer;
@@ -29,29 +31,37 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\Trace;
+use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\Issue\UndefinedTrace;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnusedForeachValue;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
+use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_change_key_case;
 use function array_column;
 use function array_combine;
 use function array_keys;
 use function array_merge;
+use function array_search;
 use function fwrite;
 use function get_class;
+use function is_string;
 use function preg_split;
+use function reset;
 use function round;
 use function strlen;
 use function strpos;
@@ -125,7 +135,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     private $fake_this_class;
 
-    /** @var \Psalm\Internal\Provider\NodeDataProvider */
+    /** @var NodeDataProvider */
     public $node_data;
 
     /** @var ?DataFlowGraph */
@@ -141,7 +151,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      */
     public $foreach_var_locations = [];
 
-    public function __construct(SourceAnalyzer $source, \Psalm\Internal\Provider\NodeDataProvider $node_data)
+    public function __construct(SourceAnalyzer $source, NodeDataProvider $node_data)
     {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
@@ -243,7 +253,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {
                             foreach ($function_stmt->vars as $var) {
                                 if (!$var instanceof PhpParser\Node\Expr\Variable
-                                    || !\is_string($var->name)
+                                    || !is_string($var->name)
                                 ) {
                                     continue;
                                 }
@@ -251,7 +261,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 $var_id = '$' . $var->name;
 
                                 if ($var_id !== '$argv' && $var_id !== '$argc') {
-                                    $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint();
+                                    $context->byref_constraints[$var_id] = new ReferenceConstraint();
                                 }
                             }
                         }
@@ -261,7 +271,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 try {
                     $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
                     $this->function_analyzers[$fq_function_name] = $function_analyzer;
-                } catch (\UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $e) {
                     // do nothing
                 }
             }
@@ -454,14 +464,14 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $template_type_map,
                         $file_storage->type_aliases
                     );
-                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         )
                     );
-                } catch (\Psalm\Exception\DocblockParseException $e) {
+                } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),
@@ -566,7 +576,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 );
 
                 $class_analyzer->analyze(null, $global_context);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 // disregard this exception, we'll likely see it elsewhere in the form
                 // of an issue
             }
@@ -676,11 +686,11 @@ class StatementsAnalyzer extends SourceAnalyzer
         $comments = $this->parsed_docblock;
 
         if (isset($comments->tags['psalm-scope-this'])) {
-            $trimmed = trim(\reset($comments->tags['psalm-scope-this']));
+            $trimmed = trim(reset($comments->tags['psalm-scope-this']));
 
             if (!$codebase->classExists($trimmed)) {
                 IssueBuffer::maybeAdd(
-                    new \Psalm\Issue\UndefinedDocblockClass(
+                    new UndefinedDocblockClass(
                         'Scope class ' . $trimmed . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
                         $trimmed
@@ -753,7 +763,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = \array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 
@@ -978,7 +988,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 $is_expected = true;
                                 break;
                             }
-                        } catch (\InvalidArgumentException $e) {
+                        } catch (InvalidArgumentException $e) {
                             $is_expected = true;
                             break;
                         }
@@ -1019,9 +1029,9 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return \Psalm\Internal\Provider\NodeDataProvider
+     * @return NodeDataProvider
      */
-    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    public function getNodeTypeProvider() : NodeTypeProvider
     {
         return $this->node_data;
     }

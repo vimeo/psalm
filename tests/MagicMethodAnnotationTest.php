@@ -3,13 +3,16 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MagicMethodAnnotationTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testPhpDocMethodWhenUndefined(): void
     {
@@ -71,7 +74,7 @@ class MagicMethodAnnotationTest extends TestCase
     public function testAnnotationWithoutCallConfig(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
 
         $this->addFile(
@@ -948,7 +951,7 @@ class MagicMethodAnnotationTest extends TestCase
         );
 
         $error_message = 'UndefinedMagicMethod';
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage($error_message);
         $this->analyzeFile('somefile.php', new Context());
     }
@@ -1085,7 +1088,7 @@ class MagicMethodAnnotationTest extends TestCase
         );
 
         $error_message = 'UndefinedMagicMethod';
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage($error_message);
         $this->analyzeFile('somefile.php', new Context());
     }

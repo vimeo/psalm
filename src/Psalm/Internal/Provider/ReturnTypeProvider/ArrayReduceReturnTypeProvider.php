@@ -4,20 +4,25 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function count;
 use function explode;
 use function in_array;
+use function reset;
 use function strpos;
 use function strtolower;
+use function substr;
 
-class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -32,7 +37,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
@@ -91,7 +96,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
         $initial_type = $reduce_return_type;
 
         if ($closure_types = $function_call_arg_type->getClosureTypes()) {
-            $closure_atomic_type = \reset($closure_types);
+            $closure_atomic_type = reset($closure_types);
 
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -206,7 +211,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                     } elseif ($mapping_function_id_part) {
                         if (strpos($mapping_function_id_part, '::') !== false) {
                             if ($mapping_function_id_part[0] === '$') {
-                                $mapping_function_id_part = \substr($mapping_function_id_part, 1);
+                                $mapping_function_id_part = substr($mapping_function_id_part, 1);
                             }
 
                             [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
@@ -222,7 +227,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functi
                                 continue;
                             }
 
-                            $method_id = new \Psalm\Internal\MethodIdentifier(
+                            $method_id = new MethodIdentifier(
                                 $callable_fq_class_name,
                                 strtolower($method_name)
                             );

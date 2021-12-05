@@ -7,21 +7,27 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -36,6 +42,7 @@ use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\IssueBuffer;
+use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -44,9 +51,15 @@ use Psalm\Type\Atomic;
 use function array_merge;
 use function count;
 use function explode;
+use function in_array;
+use function ord;
+use function preg_split;
 use function reset;
 use function strpos;
 use function strtolower;
+use function substr;
+
+use const PREG_SPLIT_NO_EMPTY;
 
 /**
  * @internal
@@ -84,8 +97,8 @@ class ArgumentAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
@@ -135,7 +148,7 @@ class ArgumentAnalyzer
             && !$arg->value instanceof PhpParser\Node\Expr\ConstFetch
             && !$arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
-            $values = \preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, \PREG_SPLIT_NO_EMPTY);
+            $values = preg_split('//u', $arg_value_type->getSingleStringLiteral()->value, -1, PREG_SPLIT_NO_EMPTY);
 
             if ($values !== false) {
                 $prev_ord = 0;
@@ -143,7 +156,7 @@ class ArgumentAnalyzer
                 $gt_count = 0;
 
                 foreach ($values as $value) {
-                    $ord = \ord($value);
+                    $ord = ord($value);
 
                     if ($ord > $prev_ord) {
                         $gt_count++;
@@ -247,7 +260,7 @@ class ArgumentAnalyzer
             }
         }
 
-        $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+        $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
@@ -378,7 +391,7 @@ class ArgumentAnalyzer
                 }
             }
 
-            $param_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $param_type = TypeExpander::expandUnion(
                 $codebase,
                 $param_type,
                 $classlike_storage->name ?? null,
@@ -392,7 +405,7 @@ class ArgumentAnalyzer
         }
 
         $fleshed_out_signature_type = $function_param->signature_type
-            ? \Psalm\Internal\Type\TypeExpander::expandUnion(
+            ? TypeExpander::expandUnion(
                 $codebase,
                 $function_param->signature_type,
                 $classlike_storage->name ?? null,
@@ -409,8 +422,8 @@ class ArgumentAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
@@ -474,7 +487,7 @@ class ArgumentAnalyzer
                         if ($function_param->default_type instanceof Type\Union) {
                             $arg_type = $function_param->default_type;
                         } else {
-                            $arg_type_atomic = \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                            $arg_type_atomic = ConstantTypeResolver::resolve(
                                 $codebase->classlikes,
                                 $function_param->default_type,
                                 $statements_analyzer
@@ -602,7 +615,7 @@ class ArgumentAnalyzer
         // bypass verifying argument types when collecting initialisations,
         // because the argument locations are not reliable (file names normally differ)
         // See https://github.com/vimeo/psalm/issues/5662
-        if ($arg instanceof \Psalm\Node\VirtualArg
+        if ($arg instanceof VirtualArg
             && $context->collect_initializations
         ) {
             return null;
@@ -704,8 +717,8 @@ class ArgumentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -797,8 +810,8 @@ class ArgumentAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
@@ -813,7 +826,7 @@ class ArgumentAnalyzer
             // $statements_analyzer, which is necessary to understand string function names
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
                 if (!$atomic_type instanceof Atomic\TLiteralString
-                    || \Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap($atomic_type->value)
+                    || InternalCallMapHandler::inCallMap($atomic_type->value)
                 ) {
                     continue;
                 }
@@ -833,7 +846,7 @@ class ArgumentAnalyzer
             }
         }
 
-        $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+        $union_comparison_results = new TypeComparisonResult();
 
         $type_match_found = UnionTypeComparator::isContainedBy(
             $codebase,
@@ -894,7 +907,7 @@ class ArgumentAnalyzer
                     && strpos($input_type_part->value, '::')
                 ) {
                     $parts = explode('::', $input_type_part->value);
-                    $potential_method_ids[] = new \Psalm\Internal\MethodIdentifier(
+                    $potential_method_ids[] = new MethodIdentifier(
                         $parts[0],
                         strtolower($parts[1])
                     );
@@ -1213,7 +1226,7 @@ class ArgumentAnalyzer
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
                             if ($function_id[0] === '$') {
-                                $function_id = \substr($function_id, 1);
+                                $function_id = substr($function_id, 1);
                             }
 
                             $function_id_parts = explode('&', $function_id);
@@ -1254,12 +1267,12 @@ class ArgumentAnalyzer
                                     return;
                                 }
 
-                                $function_id_part = new \Psalm\Internal\MethodIdentifier(
+                                $function_id_part = new MethodIdentifier(
                                     $callable_fq_class_name,
                                     strtolower($method_name)
                                 );
 
-                                $call_method_id = new \Psalm\Internal\MethodIdentifier(
+                                $call_method_id = new MethodIdentifier(
                                     $callable_fq_class_name,
                                     '__call'
                                 );
@@ -1450,7 +1463,7 @@ class ArgumentAnalyzer
 
         if (!$statements_analyzer->data_flow_graph
             || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
+                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             return $input_type;
         }

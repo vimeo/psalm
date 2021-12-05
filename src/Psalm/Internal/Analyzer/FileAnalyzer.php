@@ -6,15 +6,28 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
+use Psalm\Internal\Codebase\Functions;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
+use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
+use UnexpectedValueException;
 
+use function array_combine;
+use function array_diff_key;
 use function array_keys;
 use function count;
 use function implode;
@@ -109,7 +122,7 @@ class FileAnalyzer extends SourceAnalyzer
      */
     private $first_statement_offset = -1;
 
-    /** @var ?\Psalm\Internal\Provider\NodeDataProvider */
+    /** @var ?NodeDataProvider */
     private $node_data;
 
     /** @var ?Type\Union */
@@ -177,7 +190,7 @@ class FileAnalyzer extends SourceAnalyzer
 
         $leftover_stmts = $this->populateCheckers($stmts);
 
-        $this->node_data = new \Psalm\Internal\Provider\NodeDataProvider();
+        $this->node_data = new NodeDataProvider();
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
@@ -372,7 +385,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     public function getMethodMutations(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         Context $this_context,
         bool $from_project_analyzer = false
     ): void {
@@ -416,7 +429,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         if (!isset($this_context->vars_in_scope['$this'])) {
-            throw new \UnexpectedValueException('Should exist');
+            throw new UnexpectedValueException('Should exist');
         }
 
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
@@ -432,7 +445,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getFunctionLikeAnalyzer(\Psalm\Internal\MethodIdentifier $method_id) : ?MethodAnalyzer
+    public function getFunctionLikeAnalyzer(MethodIdentifier $method_id) : ?MethodAnalyzer
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -479,16 +492,16 @@ class FileAnalyzer extends SourceAnalyzer
 
     public static function clearCache(): void
     {
-        \Psalm\Internal\Type\TypeTokenizer::clearCache();
-        \Psalm\Internal\Codebase\Reflection::clearCache();
-        \Psalm\Internal\Codebase\Functions::clearCache();
+        TypeTokenizer::clearCache();
+        Reflection::clearCache();
+        Functions::clearCache();
         IssueBuffer::clearCache();
         FileManipulationBuffer::clearCache();
         FunctionLikeAnalyzer::clearCache();
-        \Psalm\Internal\Provider\ClassLikeStorageProvider::deleteAll();
-        \Psalm\Internal\Provider\FileStorageProvider::deleteAll();
-        \Psalm\Internal\Provider\FileReferenceProvider::clearCache();
-        \Psalm\Internal\Codebase\InternalCallMapHandler::clearCache();
+        ClassLikeStorageProvider::deleteAll();
+        FileStorageProvider::deleteAll();
+        FileReferenceProvider::clearCache();
+        InternalCallMapHandler::clearCache();
     }
 
     public function getFileName(): string
@@ -572,7 +585,7 @@ class FileAnalyzer extends SourceAnalyzer
     public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
         $this->suppressed_issues = $new_issues + $this->suppressed_issues;
@@ -584,10 +597,10 @@ class FileAnalyzer extends SourceAnalyzer
     public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
-            $new_issues = \array_combine($new_issues, $new_issues);
+            $new_issues = array_combine($new_issues, $new_issues);
         }
 
-        $this->suppressed_issues = \array_diff_key($this->suppressed_issues, $new_issues);
+        $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
     public function getFQCLN(): ?string
@@ -644,10 +657,10 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->first_statement_offset;
     }
 
-    public function getNodeTypeProvider() : \Psalm\NodeTypeProvider
+    public function getNodeTypeProvider() : NodeTypeProvider
     {
         if (!$this->node_data) {
-            throw new \UnexpectedValueException('There should be a node type provider');
+            throw new UnexpectedValueException('There should be a node type provider');
         }
 
         return $this->node_data;

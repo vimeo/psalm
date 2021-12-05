@@ -2,6 +2,7 @@
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function htmlspecialchars;
@@ -81,7 +82,7 @@ abstract class Report
     public function __construct(
         array $issues_data,
         array $fixable_issue_counts,
-        Report\ReportOptions $report_options,
+        ReportOptions $report_options,
         int $mixed_expression_count = 1,
         int $total_expression_count = 1
     ) {

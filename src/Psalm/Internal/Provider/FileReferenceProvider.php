@@ -5,15 +5,18 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Codebase\Analyzer;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function explode;
 use function file_exists;
 
 /**
- * @psalm-import-type FileMapType from \Psalm\Internal\Codebase\Analyzer
+ * @psalm-import-type FileMapType from Analyzer
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
@@ -390,11 +393,11 @@ class FileReferenceProvider
                 $new_referencing_methods = array_keys(self::$method_references_to_classes[$file_class_lc]);
 
                 foreach ($new_referencing_methods as $new_referencing_method_id) {
-                    $fq_class_name_lc = \explode('::', $new_referencing_method_id)[0];
+                    $fq_class_name_lc = explode('::', $new_referencing_method_id)[0];
 
                     try {
                         $referenced_files[] = $codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         if (isset(self::$classlike_files[$fq_class_name_lc])) {
                             $referenced_files[] = self::$classlike_files[$fq_class_name_lc];
                         }

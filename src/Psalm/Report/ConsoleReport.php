@@ -28,7 +28,7 @@ class ConsoleReport extends Report
         return $output;
     }
 
-    private function format(\Psalm\Internal\Analyzer\IssueData $issue_data): string
+    private function format(IssueData $issue_data): string
     {
         $issue_string = '';
 

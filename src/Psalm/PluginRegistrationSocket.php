@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use InvalidArgumentException;
+use LogicException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\EventHandler;
@@ -53,7 +55,7 @@ class PluginRegistrationSocket implements RegistrationInterface
     public function registerHooksFromClass(string $handler): void
     {
         if (!class_exists($handler, false)) {
-            throw new \InvalidArgumentException('Plugins must be loaded before registration');
+            throw new InvalidArgumentException('Plugins must be loaded before registration');
         }
 
         $this->config->eventDispatcher->registerClass($handler);
@@ -126,7 +128,7 @@ class PluginRegistrationSocket implements RegistrationInterface
     public function addFileTypeScanner(string $fileExtension, string $className): void
     {
         if (!class_exists($className) || !is_a($className, FileScanner::class, true)) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'Class %s must be of type %s',
                     $className,
@@ -138,7 +140,7 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (!empty($this->config->getFiletypeScanners()[$fileExtension])
             || !empty($this->additionalFileTypeScanners[$fileExtension])
         ) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf('Cannot redeclare scanner for file-type %s', $fileExtension),
                 1622727272
             );
@@ -162,7 +164,7 @@ class PluginRegistrationSocket implements RegistrationInterface
     public function addFileTypeAnalyzer(string $fileExtension, string $className): void
     {
         if (!class_exists($className) || !is_a($className, FileAnalyzer::class, true)) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'Class %s must be of type %s',
                     $className,
@@ -174,7 +176,7 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])
             || !empty($this->additionalFileTypeAnalyzers[$fileExtension])
         ) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf('Cannot redeclare analyzer for file-type %s', $fileExtension),
                 1622727282
             );

@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 use function array_map;
 use function implode;
 
-class TTypeAlias extends \Psalm\Type\Atomic
+class TTypeAlias extends Atomic
 {
     /**
      * @var array<string, TTypeAlias>|null

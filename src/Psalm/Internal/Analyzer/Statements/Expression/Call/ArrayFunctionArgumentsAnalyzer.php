@@ -11,7 +11,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
@@ -31,13 +34,17 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use UnexpectedValueException;
 
 use function array_filter;
+use function array_shift;
+use function array_unshift;
 use function assert;
 use function count;
 use function explode;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -280,7 +287,7 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        \array_unshift($objectlike_list->properties, $arg_value_type);
+                        array_unshift($objectlike_list->properties, $arg_value_type);
 
                         $by_ref_type = new Type\Union([$objectlike_list]);
                     } elseif ($array_type instanceof TList) {
@@ -507,7 +514,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                             $array_properties = $array_atomic_type->properties;
 
-                            \array_shift($array_properties);
+                            array_shift($array_properties);
 
                             if (!$array_properties) {
                                 $array_atomic_type = new Type\Atomic\TList(
@@ -609,7 +616,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                 if (strpos($function_id, '::') !== false) {
                     if ($function_id[0] === '$') {
-                        $function_id = \substr($function_id, 1);
+                        $function_id = substr($function_id, 1);
                     }
 
                     $function_id_parts = explode('&', $function_id);
@@ -638,14 +645,14 @@ class ArrayFunctionArgumentsAnalyzer
                             return;
                         }
 
-                        $function_id_part = new \Psalm\Internal\MethodIdentifier(
+                        $function_id_part = new MethodIdentifier(
                             $callable_fq_class_name,
                             strtolower($method_name)
                         );
 
                         try {
                             $method_storage = $codebase->methods->getStorage($function_id_part);
-                        } catch (\UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException $e) {
                             // the method may not exist, but we're suppressing that issue
                             continue;
                         }
@@ -674,7 +681,7 @@ class ArrayFunctionArgumentsAnalyzer
                         $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
                         if ($callmap_callables === null) {
-                            throw new \UnexpectedValueException('This should not happen');
+                            throw new UnexpectedValueException('This should not happen');
                         }
 
                         $passing_callmap_callables = [];
@@ -752,7 +759,7 @@ class ArrayFunctionArgumentsAnalyzer
         $closure_params = $closure_type->params;
 
         if ($closure_params === null) {
-            throw new \UnexpectedValueException('Closure params should not be null here');
+            throw new UnexpectedValueException('Closure params should not be null here');
         }
 
         $required_param_count = 0;
@@ -827,7 +834,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $closure_param_type = clone $closure_param_type;
                 $closure_type->return_type = clone $closure_type->return_type;
 
-                $template_result = new \Psalm\Internal\Type\TemplateResult(
+                $template_result = new TemplateResult(
                     [],
                     []
                 );
@@ -863,7 +870,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,

@@ -2,6 +2,10 @@
 namespace Psalm\Tests;
 
 use PhpParser;
+use Psalm\Internal\Diff\FileDiffer;
+use Psalm\Internal\Diff\FileStatementsDiffer;
+use Psalm\Internal\PhpVisitor\CloningVisitor;
+use Psalm\Internal\Provider\StatementsProvider;
 
 use function array_map;
 use function count;
@@ -32,10 +36,10 @@ class FileDiffTest extends TestCase
 
         $has_errors = false;
 
-        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4', $has_errors);
-        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, '7.4', $has_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors);
 
-        $diff = \Psalm\Internal\Diff\FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
+        $diff = FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
 
         $this->assertSame(
             $same_methods,
@@ -92,26 +96,26 @@ class FileDiffTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $file_changes = \Psalm\Internal\Diff\FileDiffer::getDiff($a, $b);
+        $file_changes = FileDiffer::getDiff($a, $b);
 
         $has_errors = false;
 
-        $a_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($a, '7.4', $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, '7.4', $has_errors);
 
         $traverser = new PhpParser\NodeTraverser;
-        $traverser->addVisitor(new \Psalm\Internal\PhpVisitor\CloningVisitor);
+        $traverser->addVisitor(new CloningVisitor);
         // performs a deep clone
         /** @var list<PhpParser\Node\Stmt> */
         $a_stmts_copy = $traverser->traverse($a_stmts);
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);
 
-        $b_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors, null, $a, $a_stmts_copy, $file_changes);
-        $b_clean_stmts = \Psalm\Internal\Provider\StatementsProvider::parseStatements($b, '7.4', $has_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors, null, $a, $a_stmts_copy, $file_changes);
+        $b_clean_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors);
 
         $this->assertTreesEqual($b_clean_stmts, $b_stmts);
 
-        $diff = \Psalm\Internal\Diff\FileStatementsDiffer::diff($a_stmts, $b_clean_stmts, $a, $b);
+        $diff = FileStatementsDiffer::diff($a_stmts, $b_clean_stmts, $a, $b);
 
         $this->assertSame(
             $same_methods,

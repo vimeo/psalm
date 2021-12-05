@@ -1,11 +1,16 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use UnexpectedValueException;
 
 use function array_keys;
 use function array_pop;
@@ -14,7 +19,7 @@ use function preg_quote;
 
 use const DIRECTORY_SEPARATOR;
 
-class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
+class ErrorAfterUpdateTest extends TestCase
 {
     public function setUp() : void
     {
@@ -26,11 +31,11 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
+            new ParserInstanceCacheProvider(),
             null,
             null,
-            new Provider\FakeFileReferenceCacheProvider(),
-            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
+            new FakeFileReferenceCacheProvider(),
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
@@ -64,7 +69,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         }
 
         if (!$file_stages) {
-            throw new \UnexpectedValueException('$file_stages should not be empty');
+            throw new UnexpectedValueException('$file_stages should not be empty');
         }
 
         $end_files = array_pop($file_stages);
@@ -83,7 +88,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));

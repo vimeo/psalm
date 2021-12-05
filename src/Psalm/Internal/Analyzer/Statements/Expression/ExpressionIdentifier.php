@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Config;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -199,7 +200,7 @@ class ExpressionIdentifier
             && $stmt->name instanceof PhpParser\Node\Identifier
             && !$stmt->getArgs()
         ) {
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
 
             if ($config->memoize_method_calls || $stmt->getAttribute('memoizable', false)) {
                 $lhs_var_name = self::getArrayVarId(

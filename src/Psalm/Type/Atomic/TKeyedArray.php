@@ -10,19 +10,24 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
+use function addslashes;
 use function array_keys;
 use function array_map;
 use function count;
 use function get_class;
 use function implode;
 use function is_int;
+use function is_string;
+use function preg_match;
 use function sort;
+use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
  */
-class TKeyedArray extends \Psalm\Type\Atomic
+class TKeyedArray extends Atomic
 {
     /**
      * @var non-empty-array<string|int, Union>
@@ -80,8 +85,8 @@ class TKeyedArray extends \Psalm\Type\Atomic
                     return (string) $type;
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                 }
 
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
@@ -106,8 +111,8 @@ class TKeyedArray extends \Psalm\Type\Atomic
                     return $type->getId();
                 }
 
-                if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                 }
 
                 return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
@@ -165,8 +170,8 @@ class TKeyedArray extends \Psalm\Type\Atomic
                             $this_class,
                             $use_phpdoc_format
                         ): string {
-                            if (\is_string($name) && \preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                                $name = '\'' . \str_replace("\n", '\n', \addslashes($name)) . '\'';
+                            if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+                                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                             }
 
                             return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(
@@ -395,7 +400,7 @@ class TKeyedArray extends \Psalm\Type\Atomic
     public function getList() : TNonEmptyList
     {
         if (!$this->is_list) {
-            throw new \UnexpectedValueException('Object-like array must be a list for conversion');
+            throw new UnexpectedValueException('Object-like array must be a list for conversion');
         }
 
         return new TNonEmptyList($this->getGenericValueType());

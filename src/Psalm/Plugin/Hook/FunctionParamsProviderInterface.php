@@ -1,10 +1,11 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use PhpParser;
+use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeParameter;
 
 /** @deprecated going to be removed in Psalm 5 */
 interface FunctionParamsProviderInterface
@@ -15,9 +16,9 @@ interface FunctionParamsProviderInterface
     public static function getFunctionIds() : array;
 
     /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
+     * @param  list<Arg>    $call_args
      *
-     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return ?array<int, FunctionLikeParameter>
      */
     public static function getFunctionParams(
         StatementsSource $statements_source,

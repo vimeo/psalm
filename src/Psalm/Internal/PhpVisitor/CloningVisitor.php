@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor;
 
+use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 
@@ -22,9 +23,9 @@ class CloningVisitor extends NodeVisitorAbstract
                 'comments',
                 array_map(
                     /**
-                     * @return \PhpParser\Comment
+                     * @return Comment
                      */
-                    function (\PhpParser\Comment $c): \PhpParser\Comment {
+                    function (Comment $c): Comment {
                         return clone $c;
                     },
                     $cs

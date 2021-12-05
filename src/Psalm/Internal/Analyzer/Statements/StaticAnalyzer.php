@@ -5,12 +5,19 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureStaticVariable;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\MissingDocblockType;
+use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function is_string;
 
@@ -25,7 +32,7 @@ class StaticAnalyzer
 
         if ($context->mutation_free) {
             IssueBuffer::maybeAdd(
-                new \Psalm\Issue\ImpureStaticVariable(
+                new ImpureStaticVariable(
                     'Cannot use a static variable in a mutation-free context',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
@@ -55,9 +62,9 @@ class StaticAnalyzer
                         $statements_analyzer->getSource()->getAliases(),
                         $statements_analyzer->getSource()->getTemplateTypeMap()
                     );
-                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\MissingDocblockType(
+                        new MissingDocblockType(
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer, $var)
                         )
@@ -77,7 +84,7 @@ class StaticAnalyzer
                     }
 
                     try {
-                        $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $var_comment_type = TypeExpander::expandUnion(
                             $codebase,
                             $var_comment->type,
                             $context->self,
@@ -120,7 +127,7 @@ class StaticAnalyzer
                         }
 
                         $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),
@@ -131,7 +138,7 @@ class StaticAnalyzer
                 }
 
                 if ($comment_type) {
-                    $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($comment_type);
+                    $context->byref_constraints[$var_id] = new ReferenceConstraint($comment_type);
                 }
             }
 
@@ -149,7 +156,7 @@ class StaticAnalyzer
                     )
                 ) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\ReferenceConstraintViolation(
+                        new ReferenceConstraintViolation(
                             $var_id . ' of type ' . $comment_type->getId() . ' cannot be assigned type '
                                 . $var_default_type->getId(),
                             new CodeLocation($statements_analyzer, $var)

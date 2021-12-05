@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `resource` type that has been closed (e.g. a file handle through `fclose()`).
  */
-class TClosedResource extends \Psalm\Type\Atomic
+class TClosedResource extends Atomic
 {
     public function __toString(): string
     {

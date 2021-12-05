@@ -2,9 +2,11 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
 class CoreStubsTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

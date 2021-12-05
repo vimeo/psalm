@@ -1,12 +1,17 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
 use const DIRECTORY_SEPARATOR;
 
 class FunctionCallTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -2284,7 +2289,7 @@ class FunctionCallTest extends TestCase
 
     public function testTriggerErrorDefault(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->trigger_error_exits = 'default';
 
         $this->addFile(
@@ -2310,12 +2315,12 @@ class FunctionCallTest extends TestCase
         //will only pass if no exception is thrown
         $this->assertTrue(true);
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testTriggerErrorAlways(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->trigger_error_exits = 'always';
 
         $this->addFile(
@@ -2334,12 +2339,12 @@ class FunctionCallTest extends TestCase
         //will only pass if no exception is thrown
         $this->assertTrue(true);
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testTriggerErrorNever(): void
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
         $config->trigger_error_exits = 'never';
 
         $this->addFile(
@@ -2358,6 +2363,6 @@ class FunctionCallTest extends TestCase
         //will only pass if no exception is thrown
         $this->assertTrue(true);
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 }

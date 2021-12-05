@@ -1,10 +1,16 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
-class ArraySliceReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+use function array_merge;
+use function array_shift;
+
+class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -19,7 +25,7 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
 
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
@@ -39,9 +45,9 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
 
         $return_atomic_type = null;
 
-        while ($atomic_type = \array_shift($atomic_types)) {
+        while ($atomic_type = array_shift($atomic_types)) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
-                $atomic_types = \array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
                 continue;
             }
 
@@ -70,7 +76,7 @@ class ArraySliceReturnTypeProvider implements \Psalm\Plugin\EventHandler\Functio
         }
 
         if (!$return_atomic_type) {
-            throw new \UnexpectedValueException('This should never happen');
+            throw new UnexpectedValueException('This should never happen');
         }
 
         $dont_preserve_int_keys = !isset($call_args[3]->value)

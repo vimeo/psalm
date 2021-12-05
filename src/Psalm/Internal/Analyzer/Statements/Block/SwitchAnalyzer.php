@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -11,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use SplFixedArray;
 
 use function array_merge;
 use function count;
@@ -59,13 +61,13 @@ class SwitchAnalyzer
         // the last statement always breaks, by default
         $last_case_exit_type = 'break';
 
-        $case_exit_types = new \SplFixedArray(count($stmt->cases));
+        $case_exit_types = new SplFixedArray(count($stmt->cases));
 
         $has_default = false;
 
         $case_action_map = [];
 
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
 
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {

@@ -11,9 +11,11 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use ReflectionProperty;
 
 use function array_key_exists;
 use function array_pop;
@@ -208,7 +210,7 @@ class ConstFetchAnalyzer
             $namespace_name = implode('\\', $const_name_parts);
             $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                 $namespace_name,
-                \ReflectionProperty::IS_PUBLIC
+                ReflectionProperty::IS_PUBLIC
             );
 
             if (isset($namespace_constants[$const_name])) {
@@ -261,7 +263,7 @@ class ConstFetchAnalyzer
 
     public static function getConstName(
         PhpParser\Node\Expr $first_arg_value,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        NodeDataProvider $type_provider,
         Codebase $codebase,
         Aliases $aliases
     ) : ?string {

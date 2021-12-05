@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Exception;
 
-class CodeException extends \Exception
+use Exception;
+
+class CodeException extends Exception
 {
 }

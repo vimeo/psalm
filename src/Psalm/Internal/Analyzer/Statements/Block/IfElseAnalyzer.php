@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -16,9 +18,11 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_combine;
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -29,6 +33,7 @@ use function count;
 use function in_array;
 use function preg_match;
 use function preg_quote;
+use function spl_object_id;
 
 /**
  * @internal
@@ -103,7 +108,7 @@ class IfElseAnalyzer
             $post_if_context = $if_conditional_scope->post_if_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $e) {
             return false;
         }
 
@@ -115,7 +120,7 @@ class IfElseAnalyzer
             }
         }
 
-        $cond_object_id = \spl_object_id($stmt->cond);
+        $cond_object_id = spl_object_id($stmt->cond);
 
         $if_clauses = FormulaGenerator::getFormula(
             $cond_object_id,
@@ -137,7 +142,7 @@ class IfElseAnalyzer
             function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
                 $keys = array_keys($c->possibilities);
 
-                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
@@ -198,7 +203,7 @@ class IfElseAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
@@ -209,7 +214,7 @@ class IfElseAnalyzer
                     $codebase,
                     false
                 );
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $e) {
                 $if_scope->negated_clauses = [];
             }
         }
@@ -224,7 +229,7 @@ class IfElseAnalyzer
 
         $reconcilable_if_types = Algebra::getTruthsFromFormula(
             $if_context->clauses,
-            \spl_object_id($stmt->cond),
+            spl_object_id($stmt->cond),
             $cond_referenced_var_ids,
             $active_if_types
         );
@@ -292,8 +297,8 @@ class IfElseAnalyzer
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {
                         if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
-                            && !\array_key_exists($var_id, $changed_var_ids)
-                            && !\array_key_exists($var_id, $cond_referenced_var_ids)
+                            && !array_key_exists($var_id, $changed_var_ids)
+                            && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
                             unset($if_context->vars_in_scope[$var_id]);
                         }

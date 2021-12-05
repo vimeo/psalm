@@ -2,6 +2,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 
 /**
@@ -40,12 +42,12 @@ class FunctionCallInfo
     public $global_variables = [];
 
     /**
-     * @var ?array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @var ?array<int, FunctionLikeParameter>
      */
     public $function_params;
 
     /**
-     * @var ?\Psalm\Storage\FunctionLikeStorage
+     * @var ?FunctionLikeStorage
      */
     public $function_storage;
 

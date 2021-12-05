@@ -1,9 +1,12 @@
 <?php
 namespace Psalm\Test\Config\Plugin\Hook;
 
+use PhpMyAdmin\SqlParser\Parser;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
+use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
 use Psalm\Type\Atomic\TLiteralString;
+use Throwable;
 
 use function stripos;
 
@@ -14,12 +17,12 @@ class SqlStringProvider implements StringInterpreterInterface
         $value = $event->getValue();
         if (stripos($value, 'select ') !== false) {
             try {
-                $parser = new \PhpMyAdmin\SqlParser\Parser($value);
+                $parser = new Parser($value);
 
                 if (!$parser->errors) {
-                    return new StringProvider\TSqlSelectString($value);
+                    return new TSqlSelectString($value);
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // fall through
             }
         }

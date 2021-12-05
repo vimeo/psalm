@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -84,7 +85,7 @@ class MagicConstAnalyzer
         ) {
             $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TNonEmptyString()]));
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_) {
-            if ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer) {
+            if ($statements_analyzer->getSource() instanceof TraitAnalyzer) {
                 $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TNonEmptyString()]));
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getString());

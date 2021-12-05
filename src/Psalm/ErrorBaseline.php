@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use DOMDocument;
+use DOMElement;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
@@ -17,6 +19,7 @@ use function ksort;
 use function min;
 use function phpversion;
 use function preg_replace_callback;
+use function sort;
 use function str_replace;
 use function strpos;
 use function trim;
@@ -85,7 +88,7 @@ class ErrorBaseline
             throw new Exception\ConfigException('Baseline file is empty');
         }
 
-        $baselineDoc = new \DOMDocument();
+        $baselineDoc = new DOMDocument();
         $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
 
         $filesElement = $baselineDoc->getElementsByTagName('files');
@@ -96,7 +99,7 @@ class ErrorBaseline
 
         $files = [];
 
-        /** @var \DOMElement $filesElement */
+        /** @var DOMElement $filesElement */
         $filesElement = $filesElement[0];
 
         foreach ($filesElement->getElementsByTagName('file') as $file) {
@@ -107,7 +110,7 @@ class ErrorBaseline
             $files[$fileName] = [];
 
             foreach ($file->childNodes as $issue) {
-                if (!$issue instanceof \DOMElement) {
+                if (!$issue instanceof DOMElement) {
                     continue;
                 }
 
@@ -241,7 +244,7 @@ class ErrorBaseline
         array $groupedIssues,
         bool $include_php_versions
     ): void {
-        $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
+        $baselineDoc = new DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 
@@ -273,7 +276,7 @@ class ErrorBaseline
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
 
-                \sort($existingIssueType['s']);
+                sort($existingIssueType['s']);
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');

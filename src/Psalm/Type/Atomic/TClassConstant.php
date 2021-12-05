@@ -1,10 +1,13 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
+use Psalm\Type\Atomic;
+
 /**
  * Denotes a class constant whose value might not yet be known.
  */
-class TClassConstant extends \Psalm\Type\Atomic
+class TClassConstant extends Atomic
 {
     /** @var string */
     public $fq_classlike_name;
@@ -70,7 +73,7 @@ class TClassConstant extends \Psalm\Type\Atomic
             return 'static::' . $this->const_name;
         }
 
-        return \Psalm\Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
+        return Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
             . '::'
             . $this->const_name;
     }

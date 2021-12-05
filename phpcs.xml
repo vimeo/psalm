@@ -78,14 +78,22 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
-            <property name="allowFallbackGlobalConstants" value="false"/>
-            <property name="allowFallbackGlobalFunctions" value="false"/>
-            <property name="allowFullyQualifiedGlobalConstants" value="true"/>
-            <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
-            <property name="allowFullyQualifiedGlobalClasses" value="true"/>
-        </properties>
+            <property name="allowFullyQualifiedExceptions" type="bool" value="false"/>
+            <property name="allowFullyQualifiedGlobalFunctions" type="bool" value="false"/>
+            <property name="allowFullyQualifiedGlobalConstants" type="bool" value="false"/>
+            <property name="allowFullyQualifiedGlobalClasses" type="bool" value="false"/>
 
-        <exclude name="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName"/>
+			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="false"/>
+			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="false"/>
+			<property name="allowFullyQualifiedNameForCollidingConstants" type="bool" value="false"/>
+
+			<property name="allowFallbackGlobalFunctions" type="bool" value="false"/>
+			<property name="allowFallbackGlobalConstants" type="bool" value="false"/>
+
+            <property name="allowPartialUses" type="bool" value="true"/>
+
+			<property name="searchAnnotations" type="bool" value="true"/>
+        </properties>
     </rule>
 
     <!--

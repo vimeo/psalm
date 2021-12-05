@@ -2,7 +2,9 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use Psalm\Config;
 use Psalm\Context;
+use UnexpectedValueException;
 
 use function is_string;
 use function strtolower;
@@ -26,7 +28,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         $function_id = ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($function->name->name);
 
         if (!isset($file_storage->functions[$function_id])) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Function ' . $function_id . ' should be defined in ' . $source->getFilePath()
             );
         }
@@ -38,7 +40,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @return non-empty-lowercase-string
-     * @throws \UnexpectedValueException if function is closure or arrow function.
+     * @throws UnexpectedValueException if function is closure or arrow function.
      */
     public function getFunctionId(): string
     {
@@ -85,7 +87,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
             $function_context = new Context($context->self);
             $function_context->strict_types = $context->strict_types;
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
             $function_context->collect_exceptions = $config->check_for_throws_docblock;
 
             if ($function_analyzer = $statements_analyzer->getFunctionAnalyzer($fq_function_name)) {

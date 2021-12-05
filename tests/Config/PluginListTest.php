@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use InvalidArgumentException;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Config;
@@ -8,9 +9,10 @@ use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\TestCase;
 
 /** @group PluginManager */
-class PluginListTest extends \Psalm\Tests\TestCase
+class PluginListTest extends TestCase
 {
     use ProphecyTrait;
 
@@ -155,7 +157,7 @@ class PluginListTest extends \Psalm\Tests\TestCase
     public function errorsOutWhenTryingToResolveUnknownPlugin(): void
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessageRegExp('/unknown plugin/i');
         $plugin_list->resolvePluginClass('vendor/package');
     }

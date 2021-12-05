@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
@@ -12,6 +13,7 @@ use Psalm\IssueBuffer;
 use function array_intersect_key;
 use function array_unique;
 use function count;
+use function implode;
 use function preg_match;
 
 /**
@@ -40,7 +42,7 @@ class AlgebraAnalyzer
     ): void {
         try {
             $negated_formula2 = Algebra::negateFormula($formula_2);
-        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $e) {
             return;
         }
 
@@ -144,7 +146,7 @@ class AlgebraAnalyzer
 
                     if (!$mini_formula_2[0]->wedge) {
                         if (count($mini_formula_2) > 1) {
-                            $paradox_message = 'Condition ((' . \implode(') && (', $mini_formula_2) . '))'
+                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
                                 . ' contradicts a previously-established condition (' . $clause_1 . ')';
                         } else {
                             $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'

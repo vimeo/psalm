@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 
-class DomNodeAppendChild implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
+class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {
@@ -21,7 +23,7 @@ class DomNodeAppendChild implements \Psalm\Plugin\EventHandler\MethodReturnTypeP
             return null;
         }
 
-        if (!$source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+        if (!$source instanceof StatementsAnalyzer
             || !$call_args
         ) {
             return Type::getMixed();

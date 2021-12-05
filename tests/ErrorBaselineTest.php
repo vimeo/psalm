@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
+use DOMDocument;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
 
@@ -157,7 +159,7 @@ class ErrorBaselineTest extends TestCase
             $baselineFile,
             [
                 'sample/sample-file.php' => [
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -174,7 +176,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -191,7 +193,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -208,7 +210,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -225,7 +227,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'info',
                         0,
                         0,
@@ -244,7 +246,7 @@ class ErrorBaselineTest extends TestCase
                     ),
                 ],
                 'sample/sample-file2.php' => [
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -261,7 +263,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -278,7 +280,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0
                     ),
-                    new \Psalm\Internal\Analyzer\IssueData(
+                    new IssueData(
                         'error',
                         0,
                         0,
@@ -300,10 +302,10 @@ class ErrorBaselineTest extends TestCase
             false
         );
 
-        $baselineDocument = new \DOMDocument();
+        $baselineDocument = new DOMDocument();
         $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
 
-        /** @var \DOMElement[] $files */
+        /** @var DOMElement[] $files */
         $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
 
         [$file1, $file2] = $files;
@@ -311,9 +313,9 @@ class ErrorBaselineTest extends TestCase
         $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
         $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 
-        /** @var \DOMElement[] $file1Issues */
+        /** @var DOMElement[] $file1Issues */
         $file1Issues = $file1->childNodes;
-        /** @var \DOMElement[] $file2Issues */
+        /** @var DOMElement[] $file2Issues */
         $file2Issues = $file2->childNodes;
 
         $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
@@ -355,7 +357,7 @@ class ErrorBaselineTest extends TestCase
 
         $newIssues = [
             'sample/sample-file.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -372,7 +374,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -389,7 +391,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -406,7 +408,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0
                 ),
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,
@@ -425,7 +427,7 @@ class ErrorBaselineTest extends TestCase
                 ),
             ],
             'sample/sample-file2.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     'error',
                     0,
                     0,

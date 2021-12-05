@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Config;
 
+use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
 use function in_array;
@@ -25,11 +27,11 @@ class ErrorLevelFileFilter extends FileFilter
         if (isset($config['type'])) {
             $filter->error_level = (string) $config['type'];
 
-            if (!in_array($filter->error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
-                throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $filter->error_level);
+            if (!in_array($filter->error_level, Config::$ERROR_LEVELS, true)) {
+                throw new ConfigException('Unexpected error level ' . $filter->error_level);
             }
         } else {
-            throw new \Psalm\Exception\ConfigException('<type> element expects a level');
+            throw new ConfigException('<type> element expects a level');
         }
 
         return $filter;
@@ -48,11 +50,11 @@ class ErrorLevelFileFilter extends FileFilter
         if (isset($e['type'])) {
             $filter->error_level = (string) $e['type'];
 
-            if (!in_array($filter->error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
-                throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $filter->error_level);
+            if (!in_array($filter->error_level, Config::$ERROR_LEVELS, true)) {
+                throw new ConfigException('Unexpected error level ' . $filter->error_level);
             }
         } else {
-            throw new \Psalm\Exception\ConfigException('<type> element expects a level');
+            throw new ConfigException('<type> element expects a level');
         }
 
         return $filter;

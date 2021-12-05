@@ -2,13 +2,14 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 
 class BadFormatTest extends TestCase
 {
     public function testMissingSemicolon(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:9');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -29,7 +30,7 @@ class BadFormatTest extends TestCase
     public function testClassMethodWithNoStmts(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:3');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -44,7 +45,7 @@ class BadFormatTest extends TestCase
     public function testInterfaceWithProperties(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:3');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -59,7 +60,7 @@ class BadFormatTest extends TestCase
     public function testTypingReturnType(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:5');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -78,7 +79,7 @@ class BadFormatTest extends TestCase
     public function testOverriddenUse(): void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:6');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php
@@ -95,7 +96,7 @@ class BadFormatTest extends TestCase
     public function testBadArray() : void
     {
         $this->expectExceptionMessage('ParseError - somefile.php:2');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',
             '<?php

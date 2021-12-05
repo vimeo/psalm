@@ -2,10 +2,14 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
-class ExplodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+use function count;
+
+class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -19,11 +23,11 @@ class ExplodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionRe
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
-        if (\count($call_args) >= 2) {
+        if (count($call_args) >= 2) {
             $second_arg_type = $statements_source->node_data->getType($call_args[1]->value);
 
             $inner_type = new Type\Union([

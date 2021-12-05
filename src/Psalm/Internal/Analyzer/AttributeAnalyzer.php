@@ -1,8 +1,14 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use Psalm\Context;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Issue\InvalidAttribute;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualNew;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualExpression;
@@ -54,7 +60,7 @@ class AttributeAnalyzer
 
         if ($attribute->fq_class_name === 'Attribute' && $classlike_storage) {
             if ($classlike_storage->is_trait) {
-                \Psalm\IssueBuffer::maybeAdd(
+                IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Traits cannot act as attribute classes',
                         $attribute->name_location
@@ -62,7 +68,7 @@ class AttributeAnalyzer
                     $source->getSuppressedIssues()
                 );
             } elseif ($classlike_storage->is_interface) {
-                \Psalm\IssueBuffer::maybeAdd(
+                IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Interfaces cannot act as attribute classes',
                         $attribute->name_location
@@ -70,7 +76,7 @@ class AttributeAnalyzer
                     $source->getSuppressedIssues()
                 );
             } elseif ($classlike_storage->abstract) {
-                \Psalm\IssueBuffer::maybeAdd(
+                IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Abstract classes cannot act as attribute classes',
                         $attribute->name_location
@@ -80,7 +86,7 @@ class AttributeAnalyzer
             } elseif (isset($classlike_storage->methods['__construct'])
                 && $classlike_storage->methods['__construct']->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ) {
-                \Psalm\IssueBuffer::maybeAdd(
+                IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Classes with protected/private constructors cannot act as attribute classes',
                         $attribute->name_location
@@ -88,7 +94,7 @@ class AttributeAnalyzer
                     $source->getSuppressedIssues()
                 );
             } elseif ($classlike_storage->is_enum) {
-                \Psalm\IssueBuffer::maybeAdd(
+                IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Enums cannot act as attribute classes',
                         $attribute->name_location
@@ -107,10 +113,10 @@ class AttributeAnalyzer
 
             if ($type instanceof UnresolvedConstantComponent) {
                 $type = new Union([
-                    \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                    ConstantTypeResolver::resolve(
                         $codebase->classlikes,
                         $type,
-                        $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer ? $source : null
+                        $source instanceof StatementsAnalyzer ? $source : null
                     )
                 ]);
             }
@@ -119,7 +125,7 @@ class AttributeAnalyzer
                 return;
             }
 
-            $type_expr = \Psalm\Internal\Stubs\Generator\StubsGenerator::getExpressionFromType(
+            $type_expr = StubsGenerator::getExpressionFromType(
                 $type
             );
 
@@ -164,12 +170,12 @@ class AttributeAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer(
             $source,
-            new \Psalm\Internal\Provider\NodeDataProvider()
+            new NodeDataProvider()
         );
 
         $statements_analyzer->analyze(
             [new VirtualExpression($new_stmt)],
-            new \Psalm\Context()
+            new Context()
         );
     }
 
@@ -201,10 +207,10 @@ class AttributeAnalyzer
 
                 if ($first_arg_type instanceof UnresolvedConstantComponent) {
                     $first_arg_type = new Union([
-                        \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
+                        ConstantTypeResolver::resolve(
                             $codebase->classlikes,
                             $first_arg_type,
-                            $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer ? $source : null
+                            $source instanceof StatementsAnalyzer ? $source : null
                         )
                     ]);
                 }
@@ -225,7 +231,7 @@ class AttributeAnalyzer
                         32 => 'function/method parameter'
                     ];
 
-                    \Psalm\IssueBuffer::maybeAdd(
+                    IssueBuffer::maybeAdd(
                         new InvalidAttribute(
                             'This attribute can not be used on a ' . $target_map[$target],
                             $attribute->name_location
@@ -237,7 +243,7 @@ class AttributeAnalyzer
         }
 
         if (!$has_attribute_attribute) {
-            \Psalm\IssueBuffer::maybeAdd(
+            IssueBuffer::maybeAdd(
                 new InvalidAttribute(
                     'The class ' . $attribute->fq_class_name . ' doesn’t have the Attribute attribute',
                     $attribute->name_location

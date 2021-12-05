@@ -14,15 +14,20 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function array_merge;
 use function count;
 use function in_array;
+use function md5;
 use function strtolower;
 
 /**
@@ -110,7 +115,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                        'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
                         false
                     );
                 }
@@ -243,8 +248,8 @@ class StaticCallAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         string $cased_method_id,
         Type\Union $return_type_candidate,
-        ?\Psalm\Storage\MethodStorage $method_storage,
-        ?\Psalm\Internal\Type\TemplateResult $template_result,
+        ?MethodStorage $method_storage,
+        ?TemplateResult $template_result,
         ?Context $context = null
     ) : void {
         if (!$statements_analyzer->data_flow_graph) {
@@ -252,7 +257,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -296,7 +301,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                     $codebase
                 );
 
-                $expanded_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $expanded_type = TypeExpander::expandUnion(
                     $statements_analyzer->getCodebase(),
                     $conditionally_removed_taint,
                     null,
@@ -334,7 +339,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                \array_merge($conditionally_removed_taints, $removed_taints)
+                array_merge($conditionally_removed_taints, $removed_taints)
             );
 
             $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
@@ -366,7 +371,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $node_location,
                 $method_source,
-                \array_merge($method_storage->removed_taints, $removed_taints),
+                array_merge($method_storage->removed_taints, $removed_taints),
                 $added_taints
             );
         }

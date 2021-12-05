@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Storage\ClassLikeStorage;
+use UnexpectedValueException;
 
 use function array_merge;
 use function dirname;
@@ -59,7 +60,7 @@ class ClassLikeStorageCacheProvider
 
         foreach ($dependent_files as $dependent_file_path) {
             if (!file_exists($dependent_file_path)) {
-                throw new \UnexpectedValueException($dependent_file_path . ' must exist');
+                throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
@@ -90,7 +91,7 @@ class ClassLikeStorageCacheProvider
         $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
         if (!$cached_value) {
-            throw new \UnexpectedValueException($fq_classlike_name_lc . ' should be in cache');
+            throw new UnexpectedValueException($fq_classlike_name_lc . ' should be in cache');
         }
 
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
@@ -101,7 +102,7 @@ class ClassLikeStorageCacheProvider
         ) {
             unlink($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
 
-            throw new \UnexpectedValueException($fq_classlike_name_lc . ' should not be outdated');
+            throw new UnexpectedValueException($fq_classlike_name_lc . ' should not be outdated');
         }
 
         return $cached_value;
@@ -150,7 +151,7 @@ class ClassLikeStorageCacheProvider
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
-            throw new \UnexpectedValueException('No cache directory defined');
+            throw new UnexpectedValueException('No cache directory defined');
         }
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::CLASS_CACHE_DIRECTORY;

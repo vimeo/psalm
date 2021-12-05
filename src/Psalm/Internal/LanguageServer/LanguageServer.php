@@ -5,6 +5,8 @@ namespace Psalm\Internal\LanguageServer;
 use AdvancedJsonRpc;
 use Amp\Promise;
 use Amp\Success;
+use Generator;
+use InvalidArgumentException;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
@@ -17,10 +19,12 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace;
+use Psalm\IssueBuffer;
 use Throwable;
 
 use function Amp\asyncCoroutine;
@@ -35,6 +39,7 @@ use function implode;
 use function max;
 use function parse_url;
 use function rawurlencode;
+use function realpath;
 use function str_replace;
 use function strpos;
 use function substr;
@@ -112,9 +117,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             'message',
             asyncCoroutine(
                 /**
-                 * @return \Generator<int, \Amp\Promise, mixed, void>
+                 * @return Generator<int, Promise, mixed, void>
                  */
-                function (Message $msg): \Generator {
+                function (Message $msg): Generator {
                     if (!$msg->body) {
                         return;
                     }
@@ -199,7 +204,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         ?int $processId = null
     ): Promise {
         return call(
-            /** @return \Generator<int, true, mixed, InitializeResult> */
+            /** @return Generator<int, true, mixed, InitializeResult> */
             function () {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');
@@ -350,7 +355,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function emitIssues(array $uris): void
     {
-        $data = \Psalm\IssueBuffer::clear();
+        $data = IssueBuffer::clear();
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
@@ -369,10 +374,10 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         new Position($end_line - 1, $end_column - 1)
                     );
                     switch ($severity) {
-                        case \Psalm\Config::REPORT_INFO:
+                        case Config::REPORT_INFO:
                             $diagnostic_severity = DiagnosticSeverity::WARNING;
                             break;
-                        case \Psalm\Config::REPORT_ERROR:
+                        case Config::REPORT_ERROR:
                         default:
                             $diagnostic_severity = DiagnosticSeverity::ERROR;
                             break;
@@ -463,7 +468,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
-            } catch (\Throwable $err) {
+            } catch (Throwable $err) {
                 // do nothing
             }
         }
@@ -487,7 +492,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 3,
                 'telemetry/event'
             );
-        } catch (\Throwable $err) {
+        } catch (Throwable $err) {
             // do nothing
         }
         new Success(null);
@@ -527,7 +532,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             || $fragments['scheme'] !== 'file'
             || !isset($fragments['path'])
         ) {
-            throw new \InvalidArgumentException("Not a valid file URI: $uri");
+            throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
 
         $filepath = urldecode($fragments['path']);
@@ -539,7 +544,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
-        $realpath = \realpath($filepath);
+        $realpath = realpath($filepath);
         if ($realpath !== false) {
             return $realpath;
         }

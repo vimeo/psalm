@@ -22,6 +22,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\TaintKind;
 
 use function get_class;
 use function in_array;
@@ -353,7 +354,7 @@ class ExpressionAnalyzer
                         $call_location
                     );
 
-                    $sink->taints = [\Psalm\Type\TaintKind::INPUT_SHELL];
+                    $sink->taints = [TaintKind::INPUT_SHELL];
 
                     $statements_analyzer->data_flow_graph->addSink($sink);
                 }

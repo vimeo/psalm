@@ -4,7 +4,12 @@ namespace Psalm\Tests\FileUpdates;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_keys;
@@ -13,7 +18,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class CachedStorageTest extends \Psalm\Tests\TestCase
+class CachedStorageTest extends TestCase
 {
     public function setUp() : void
     {
@@ -25,11 +30,11 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new Provider\ParserInstanceCacheProvider(),
-            new Provider\FileStorageInstanceCacheProvider(),
-            new Provider\ClassLikeStorageInstanceCacheProvider(),
-            new Provider\FakeFileReferenceCacheProvider(),
-            new Provider\ProjectCacheProvider()
+            new ParserInstanceCacheProvider(),
+            new FileStorageInstanceCacheProvider(),
+            new ClassLikeStorageInstanceCacheProvider(),
+            new FakeFileReferenceCacheProvider(),
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(

@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use PhpParser;
+use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -18,7 +20,7 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -26,10 +28,10 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union>
@@ -81,13 +83,13 @@ class FunctionReturnTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyFunctionReturnTypeProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
+            $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerLegacyClosure($function_id, $callable);
             }
         } elseif (is_subclass_of($class, FunctionReturnTypeProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
+            $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);
@@ -97,24 +99,24 @@ class FunctionReturnTypeProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(FunctionReturnTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(FunctionReturnTypeProviderEvent): ?Type\Union $c
      */
-    public function registerClosure(string $function_id, \Closure $c): void
+    public function registerClosure(string $function_id, Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }
 
     /**
      * @param lowercase-string $function_id
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     non-empty-string,
-     *     list<PhpParser\Node\Arg>,
+     *     list<Arg>,
      *     Context,
      *     CodeLocation
      *   ) : ?Type\Union $c
      */
-    public function registerLegacyClosure(string $function_id, \Closure $c): void
+    public function registerLegacyClosure(string $function_id, Closure $c): void
     {
         self::$legacy_handlers[$function_id][] = $c;
     }

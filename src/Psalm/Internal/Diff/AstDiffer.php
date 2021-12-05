@@ -2,9 +2,12 @@
 declare(strict_types=1);
 namespace Psalm\Internal\Diff;
 
-use PhpParser;
+use Closure;
+use Exception;
+use PhpParser\Node\Stmt;
 
 use function array_reverse;
+use function count;
 
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php
@@ -19,21 +22,21 @@ use function array_reverse;
 class AstDiffer
 {
     /**
-     * @param \Closure(PhpParser\Node\Stmt, PhpParser\Node\Stmt, string, string, bool=) : bool $is_equal
-     * @param array<int, PhpParser\Node\Stmt> $a
-     * @param array<int, PhpParser\Node\Stmt> $b
+     * @param Closure(Stmt, Stmt, string, string, bool=) : bool $is_equal
+     * @param array<int, Stmt> $a
+     * @param array<int, Stmt> $b
      *
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
-        \Closure $is_equal,
+        Closure $is_equal,
         array $a,
         array $b,
         string $a_code,
         string $b_code
     ) : array {
-        $n = \count($a);
-        $m = \count($b);
+        $n = count($a);
+        $m = count($b);
         $max = $n + $m;
         $v = [1 => 0];
         $bc = [];
@@ -65,13 +68,13 @@ class AstDiffer
                 }
             }
         }
-        throw new \Exception('Should not happen');
+        throw new Exception('Should not happen');
     }
 
     /**
      * @param array<int, array<int, int>> $trace
-     * @param array<int, PhpParser\Node\Stmt> $a
-     * @param array<int, PhpParser\Node\Stmt> $b
+     * @param array<int, Stmt> $a
+     * @param array<int, Stmt> $b
      * @param array<int, bool> $bc
      *
      * @return list<DiffElem>
@@ -81,7 +84,7 @@ class AstDiffer
     protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc) : array
     {
         $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; --$d) {
+        for ($d = count($trace) - 1; $d >= 0; --$d) {
             $v = $trace[$d];
             $k = $x - $y;
 

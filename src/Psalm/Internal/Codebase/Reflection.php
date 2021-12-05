@@ -1,16 +1,33 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use Exception;
+use LogicException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionParameter;
+use ReflectionType;
+use ReflectionUnionType;
+use UnexpectedValueException;
 
+use function array_map;
 use function array_merge;
+use function get_class;
+use function implode;
 use function strtolower;
 
 /**
@@ -42,7 +59,7 @@ class Reflection
         self::$builtin_functions = [];
     }
 
-    public function registerClass(\ReflectionClass $reflected_class): void
+    public function registerClass(ReflectionClass $reflected_class): void
     {
         $class_name = $reflected_class->name;
 
@@ -56,7 +73,7 @@ class Reflection
             $this->storage_provider->get($class_name_lower);
 
             return;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // this is fine
         }
 
@@ -150,7 +167,7 @@ class Reflection
         $class_constants = $reflected_class->getConstants();
 
         foreach ($class_constants as $name => $value) {
-            $storage->constants[$name] = new \Psalm\Storage\ClassConstantStorage(
+            $storage->constants[$name] = new ClassConstantStorage(
                 ClassLikeAnalyzer::getTypeFromValue($value),
                 ClassLikeAnalyzer::VISIBILITY_PUBLIC,
                 null
@@ -166,7 +183,7 @@ class Reflection
         }
 
         $reflection_methods = $reflected_class->getMethods(
-            (\ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED)
+            (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED)
         );
 
         if ($class_name_lower === 'generator') {
@@ -219,7 +236,7 @@ class Reflection
         }
     }
 
-    public function extractReflectionMethodInfo(\ReflectionMethod $method): void
+    public function extractReflectionMethodInfo(ReflectionMethod $method): void
     {
         $method_name_lc = strtolower($method->getName());
 
@@ -262,7 +279,7 @@ class Reflection
         $storage->mutation_free = $storage->external_mutation_free
             = ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone');
 
-        $class_storage->declaring_method_ids[$method_name_lc] = new \Psalm\Internal\MethodIdentifier(
+        $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_class->name,
             $method_name_lc
         );
@@ -312,7 +329,7 @@ class Reflection
         }
     }
 
-    private function getReflectionParamData(\ReflectionParameter $param): FunctionLikeParameter
+    private function getReflectionParamData(ReflectionParameter $param): FunctionLikeParameter
     {
         $param_type = self::getPsalmTypeFromReflectionType($param->getType());
         $param_name = $param->getName();
@@ -343,7 +360,7 @@ class Reflection
     public function registerFunction(string $function_id): ?bool
     {
         try {
-            $reflection_function = new \ReflectionFunction($function_id);
+            $reflection_function = new ReflectionFunction($function_id);
 
             $callmap_callable = null;
 
@@ -354,7 +371,7 @@ class Reflection
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $this->codebase,
                     $function_id,
                     [],
@@ -392,14 +409,14 @@ class Reflection
             }
 
             $storage->cased_name = $reflection_function->getName();
-        } catch (\ReflectionException $e) {
+        } catch (ReflectionException $e) {
             return false;
         }
 
         return null;
     }
 
-    public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type = null) : Type\Union
+    public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null) : Type\Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
@@ -408,21 +425,21 @@ class Reflection
         /**
          * @psalm-suppress UndefinedClass,TypeDoesNotContainType
          */
-        if ($reflection_type instanceof \ReflectionNamedType) {
+        if ($reflection_type instanceof ReflectionNamedType) {
             $type = $reflection_type->getName();
-        } elseif ($reflection_type instanceof \ReflectionUnionType) {
+        } elseif ($reflection_type instanceof ReflectionUnionType) {
             /** @psalm-suppress MixedArgument */
-            $type = \implode(
+            $type = implode(
                 '|',
-                \array_map(
-                    function (\ReflectionNamedType $reflection) {
+                array_map(
+                    function (ReflectionNamedType $reflection) {
                         return $reflection->getName();
                     },
                     $reflection_type->getTypes()
                 )
             );
         } else {
-            throw new \LogicException('Unexpected reflection class ' . \get_class($reflection_type) . ' found.');
+            throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
         }
 
         if ($reflection_type->allowsNull()) {
@@ -514,7 +531,7 @@ class Reflection
             return self::$builtin_functions[$function_id];
         }
 
-        throw new \UnexpectedValueException('Expecting to have a function for ' . $function_id);
+        throw new UnexpectedValueException('Expecting to have a function for ' . $function_id);
     }
 
     /**

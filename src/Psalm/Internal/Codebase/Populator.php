@@ -1,8 +1,10 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -13,9 +15,12 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
+use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function count;
+use function in_array;
 use function reset;
 use function strlen;
 use function strpos;
@@ -121,7 +126,7 @@ class Populator
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
-                } catch (\InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException $exception) {
                     continue;
                 }
 
@@ -299,7 +304,7 @@ class Populator
                             = ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
                                 + [$declaring_method_id->fq_class_name => $declaring_method_id];
                     } else {
-                        $candidate_overridden_ids = \array_intersect_key(
+                        $candidate_overridden_ids = array_intersect_key(
                             $candidate_overridden_ids,
                             ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
                                 + [$declaring_method_id->fq_class_name => $declaring_method_id]
@@ -327,7 +332,7 @@ class Populator
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                             $method_storage->inherited_return_type = true;
                         } else {
-                            if (\in_array(
+                            if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces
                             )) {
@@ -337,7 +342,7 @@ class Populator
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
 
-                                if (!\in_array(
+                                if (!in_array(
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces
                                 ) && $documenting_class_storage->is_interface
@@ -382,7 +387,7 @@ class Populator
                     )
                 );
                 $trait_storage = $storage_provider->get($used_trait_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -485,7 +490,7 @@ class Populator
 
         try {
             $parent_storage = $storage_provider->get($parent_storage_class);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[] = $parent_storage_class;
@@ -561,7 +566,7 @@ class Populator
         }
 
         $storage->constants = array_merge(
-            \array_filter(
+            array_filter(
                 $parent_storage->constants,
                 function ($constant) {
                     return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
@@ -611,7 +616,7 @@ class Populator
                     )
                 );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
                 $storage->invalid_dependencies[] = $parent_interface_lc;
@@ -622,7 +627,7 @@ class Populator
 
             // copy over any constants
             $storage->constants = array_merge(
-                \array_filter(
+                array_filter(
                     $parent_interface_storage->constants,
                     function ($constant) {
                         return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
@@ -694,7 +699,7 @@ class Populator
                     )
                 );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -717,7 +722,7 @@ class Populator
                     )
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
                 $storage->invalid_dependencies[] = $implemented_interface_lc;
@@ -728,7 +733,7 @@ class Populator
 
             // copy over any constants
             $storage->constants = array_merge(
-                \array_filter(
+                array_filter(
                     $implemented_interface_storage->constants,
                     function ($constant) {
                         return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
@@ -799,7 +804,7 @@ class Populator
                     )
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -807,7 +812,7 @@ class Populator
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    $interface_method_implementers[$method_name][] = new \Psalm\Internal\MethodIdentifier(
+                    $interface_method_implementers[$method_name][] = new MethodIdentifier(
                         $implemented_interface_storage->name,
                         $method_name
                     );
@@ -869,7 +874,7 @@ class Populator
         foreach ($storage->required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -881,7 +886,7 @@ class Populator
         foreach ($all_required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -899,7 +904,7 @@ class Populator
         foreach ($storage->referenced_classlikes as $fq_class_name) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -909,14 +914,14 @@ class Populator
 
             try {
                 $included_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
             foreach ($classlike_storage->used_traits as $used_trait) {
                 try {
                     $trait_storage = $this->classlike_storage_provider->get($used_trait);
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     continue;
                 }
 
@@ -928,7 +933,7 @@ class Populator
                     $included_trait_file_storage = $this->file_storage_provider->get(
                         $trait_storage->location->file_path
                     );
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     continue;
                 }
 
@@ -949,7 +954,7 @@ class Populator
         foreach ($all_required_file_paths as $required_file_path) {
             try {
                 $required_file_storage = $this->file_storage_provider->get($required_file_path);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -959,7 +964,7 @@ class Populator
         foreach ($storage->required_classes as $required_classlike) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($required_classlike);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -969,7 +974,7 @@ class Populator
 
             try {
                 $required_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 continue;
             }
 
@@ -1016,7 +1021,7 @@ class Populator
                         $generic_params = $type->type_params;
                     }
                 }
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 // ignore class-not-found issues
             }
 
@@ -1067,7 +1072,7 @@ class Populator
                     continue;
                 }
 
-                $implemented_method_id = new \Psalm\Internal\MethodIdentifier(
+                $implemented_method_id = new MethodIdentifier(
                     $fq_class_name,
                     $aliased_method_name
                 );

@@ -5,10 +5,15 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-class FileMapTest extends \Psalm\Tests\TestCase
+use function count;
+
+class FileMapTest extends TestCase
 {
     public function setUp() : void
     {
@@ -20,11 +25,11 @@ class FileMapTest extends \Psalm\Tests\TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
+            new ParserInstanceCacheProvider(),
             null,
             null,
-            new Provider\FakeFileReferenceCacheProvider(),
-            new \Psalm\Tests\Internal\Provider\ProjectCacheProvider()
+            new FakeFileReferenceCacheProvider(),
+            new ProjectCacheProvider()
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
@@ -152,7 +157,7 @@ class FileMapTest extends \Psalm\Tests\TestCase
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
         [$after] = $codebase->analyzer->getMapsForFile('somefile.php');
 
-        $this->assertCount(\count($before), $after);
+        $this->assertCount(count($before), $after);
     }
 
     public function testMapIsUpdatedAfterDeletingFirstMethod(): void

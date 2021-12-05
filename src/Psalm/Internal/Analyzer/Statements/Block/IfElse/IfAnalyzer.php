@@ -6,9 +6,11 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -23,7 +25,9 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_filter;
 use function array_intersect;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -313,12 +317,12 @@ class IfAnalyzer
                 ) {
                     $parent_source = $statements_analyzer->getSource();
 
-                    $functionlike_storage = $parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
                         ? $parent_source->getFunctionLikeStorage($statements_analyzer)
                         : null;
 
                     if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                            || (!$parent_source->getSource() instanceof TraitAnalyzer
                                 && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
                     ) {
                         $codebase = $statements_analyzer->getCodebase();
@@ -350,7 +354,7 @@ class IfAnalyzer
         array $assigned_in_conditional_var_ids
     ) : void {
         // this filters out coercions to expected types in ArgumentAnalyzer
-        $assigned_in_conditional_var_ids = \array_filter($assigned_in_conditional_var_ids);
+        $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
 
         if (!$assigned_in_conditional_var_ids) {
             return;
@@ -485,7 +489,7 @@ class IfAnalyzer
         if ($if_scope->assigned_var_ids === null) {
             $if_scope->assigned_var_ids = $assigned_var_ids;
         } else {
-            $if_scope->assigned_var_ids = \array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
+            $if_scope->assigned_var_ids = array_intersect_key($assigned_var_ids, $if_scope->assigned_var_ids);
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;

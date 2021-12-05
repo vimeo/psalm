@@ -6,7 +6,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
+use function array_values;
+use function count;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -137,11 +140,11 @@ class TClassString extends TString
         }
 
         $as_type = TemplateStandinTypeReplacer::replace(
-            new \Psalm\Type\Union([$class_string->as_type]),
+            new Union([$class_string->as_type]),
             $template_result,
             $codebase,
             $statements_analyzer,
-            new \Psalm\Type\Union([$input_object_type]),
+            new Union([$input_object_type]),
             $input_arg_offset,
             $calling_class,
             $calling_function,
@@ -151,9 +154,9 @@ class TClassString extends TString
             $depth
         );
 
-        $as_type_types = \array_values($as_type->getAtomicTypes());
+        $as_type_types = array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = \count($as_type_types) === 1
+        $class_string->as_type = count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;

@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -23,13 +28,18 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use ReflectionProperty;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function is_numeric;
+use function json_decode;
 use function ksort;
 use function preg_match;
 use function preg_quote;
@@ -153,7 +163,7 @@ class Reconciler
                 );
 
             if ($result_type && empty($result_type->getAtomicTypes())) {
-                throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
+                throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
             $before_adjustment = $result_type ? clone $result_type : null;
@@ -172,11 +182,11 @@ class Reconciler
                             $nested_negated = !$negated;
 
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = \json_decode(substr($new_type_part_part, 2), true);
+                            $data = json_decode(substr($new_type_part_part, 2), true);
                         } else {
                             $nested_negated = $negated;
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = \json_decode(substr($new_type_part_part, 1), true);
+                            $data = json_decode(substr($new_type_part_part, 1), true);
                         }
 
                         $existing_types = self::reconcileKeyedTypes(
@@ -228,17 +238,17 @@ class Reconciler
             }
 
             if (!$result_type) {
-                throw new \UnexpectedValueException('$result_type should not be null');
+                throw new UnexpectedValueException('$result_type should not be null');
             }
 
             if (!$did_type_exist && $result_type->isEmpty()) {
                 continue;
             }
 
-            if (($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\TaintFlowGraph
+            if (($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && (!$result_type->hasScalarType()
                         || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+                || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type->parent_nodes = $before_adjustment->parent_nodes;
@@ -394,7 +404,7 @@ class Reconciler
                     if (count($key_parts) === 4
                         && $key_parts[1] === '['
                         && $key_parts[2][0] !== '\''
-                        && !\is_numeric($key_parts[2])
+                        && !is_numeric($key_parts[2])
                     ) {
                         if (isset($new_types[$key_parts[2]])) {
                             $new_types[$key_parts[2]][] = ['=in-array-' . $key_parts[0]];
@@ -515,7 +525,7 @@ class Reconciler
             }
         }
 
-        $parts = \array_values($parts);
+        $parts = array_values($parts);
 
         self::$broken_paths[$path] = $parts;
 
@@ -564,7 +574,7 @@ class Reconciler
                 $class_constant = $codebase->classlikes->getClassConstantType(
                     $fq_class_name,
                     $const_name,
-                    \ReflectionProperty::IS_PRIVATE,
+                    ReflectionProperty::IS_PRIVATE,
                     null
                 );
 
@@ -659,7 +669,7 @@ class Reconciler
                             return null;
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !\is_numeric($array_key[0]))) {
+                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !is_numeric($array_key[0]))) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -724,7 +734,7 @@ class Reconciler
                                 $class_property_type = Type::getMixed();
                             } else {
                                 if (substr($property_name, -2) === '()') {
-                                    $method_id = new \Psalm\Internal\MethodIdentifier(
+                                    $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
                                         strtolower(substr($property_name, 0, -2))
                                     );
@@ -751,7 +761,7 @@ class Reconciler
                                     );
 
                                     if ($method_return_type) {
-                                        $class_property_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                                        $class_property_type = TypeExpander::expandUnion(
                                             $codebase,
                                             clone $method_return_type,
                                             $declaring_class,
@@ -849,7 +859,7 @@ class Reconciler
         );
 
         if ($class_property_type) {
-            return \Psalm\Internal\Type\TypeExpander::expandUnion(
+            return TypeExpander::expandUnion(
                 $codebase,
                 clone $class_property_type,
                 $declaring_class_storage->name,
@@ -992,7 +1002,7 @@ class Reconciler
         array_pop($key_parts);
 
         if ($array_key === null) {
-            throw new \UnexpectedValueException('Not expecting null array key');
+            throw new UnexpectedValueException('Not expecting null array key');
         }
 
         if ($array_key[0] === '$') {

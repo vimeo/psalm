@@ -16,6 +16,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 
 use function array_merge;
+use function array_pop;
+use function array_push;
+use function array_reverse;
 
 /**
  * @internal
@@ -60,9 +63,9 @@ class UnionTypeComparator
 
         $container_has_template = $container_type->hasTemplateOrStatic();
 
-        $input_atomic_types = \array_reverse(self::getTypeParts($codebase, $input_type));
+        $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
-        while ($input_type_part = \array_pop($input_atomic_types)) {
+        while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -481,7 +484,7 @@ class UnionTypeComparator
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof TTypeAlias) {
-                \array_push($atomic_types, $atomic_type);
+                array_push($atomic_types, $atomic_type);
                 continue;
             }
             $expanded = TypeExpander::expandAtomic(
@@ -494,11 +497,11 @@ class UnionTypeComparator
                 true
             );
             if ($expanded instanceof Type\Atomic) {
-                \array_push($atomic_types, $expanded);
+                array_push($atomic_types, $expanded);
                 continue;
             }
 
-            \array_push($atomic_types, ...$expanded);
+            array_push($atomic_types, ...$expanded);
         }
 
         return $atomic_types;

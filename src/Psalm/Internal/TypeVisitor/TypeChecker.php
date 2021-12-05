@@ -1,19 +1,23 @@
 <?php
 namespace Psalm\Internal\TypeVisitor;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -22,7 +26,15 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\Union;
+use ReflectionProperty;
 
+use function array_keys;
+use function array_search;
+use function count;
+use function is_array;
+use function md5;
+use function strpos;
 use function strtolower;
 
 class TypeChecker extends NodeVisitor
@@ -94,7 +106,7 @@ class TypeChecker extends NodeVisitor
     /**
      * @psalm-suppress MoreSpecificImplementedParamType
      *
-     * @param  \Psalm\Type\Atomic|\Psalm\Type\Union $type
+     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type) : ?int
@@ -112,7 +124,7 @@ class TypeChecker extends NodeVisitor
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
         } elseif ($type instanceof TArray) {
-            if (\count($type->type_params) > 2) {
+            if (count($type->type_params) > 2) {
                 IssueBuffer::maybeAdd(
                     new TooManyTemplateParams(
                         $type->getId(). ' has too many template params, expecting 2',
@@ -155,12 +167,12 @@ class TypeChecker extends NodeVisitor
         ) {
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $this->calling_method_id,
-                'use:' . $atomic->text . ':' . \md5($this->source->getFilePath()),
+                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
                 false
             );
         }
 
-        if (!isset($this->phantom_classes[\strtolower($atomic->value)]) &&
+        if (!isset($this->phantom_classes[strtolower($atomic->value)]) &&
             ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
@@ -206,15 +218,15 @@ class TypeChecker extends NodeVisitor
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return;
         }
 
         $expected_type_params = $class_storage->template_types ?: [];
         $expected_param_covariants = $class_storage->template_covariants;
 
-        $template_type_count = \count($expected_type_params);
-        $template_param_count = \count($atomic->type_params);
+        $template_type_count = count($expected_type_params);
+        $template_param_count = count($atomic->type_params);
 
         if ($template_type_count > $template_param_count) {
             IssueBuffer::maybeAdd(
@@ -236,10 +248,10 @@ class TypeChecker extends NodeVisitor
             );
         }
 
-        $expected_type_param_keys = \array_keys($expected_type_params);
+        $expected_type_param_keys = array_keys($expected_type_params);
 
         foreach ($atomic->type_params as $i => $type_param) {
-            $this->prevent_template_covariance = $this->source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+            $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
                 && $this->source->getMethodName() !== '__construct'
                 && empty($expected_param_covariants[$i]);
 
@@ -247,7 +259,7 @@ class TypeChecker extends NodeVisitor
                 $expected_template_name = $expected_type_param_keys[$i];
 
                 foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
-                    $expected_type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $expected_type_param = TypeExpander::expandUnion(
                         $codebase,
                         $expected_type_param,
                         $defining_class,
@@ -255,7 +267,7 @@ class TypeChecker extends NodeVisitor
                         null
                     );
 
-                    $type_param = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $type_param = TypeExpander::expandUnion(
                         $codebase,
                         $type_param,
                         $defining_class,
@@ -306,7 +318,7 @@ class TypeChecker extends NodeVisitor
         }
 
         $const_name = $atomic->const_name;
-        if (\strpos($const_name, '*') !== false) {
+        if (strpos($const_name, '*') !== false) {
             $expanded = TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
@@ -317,12 +329,12 @@ class TypeChecker extends NodeVisitor
                 true
             );
 
-            $is_defined = \is_array($expanded) && \count($expanded) > 0;
+            $is_defined = is_array($expanded) && count($expanded) > 0;
         } else {
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $atomic->const_name,
-                \ReflectionProperty::IS_PRIVATE,
+                ReflectionProperty::IS_PRIVATE,
                 null
             );
 
@@ -330,7 +342,7 @@ class TypeChecker extends NodeVisitor
         }
 
         if (!$is_defined) {
-            \Psalm\IssueBuffer::maybeAdd(
+            IssueBuffer::maybeAdd(
                 new UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
                     $this->code_location
@@ -340,24 +352,24 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    public function checkTemplateParam(\Psalm\Type\Atomic\TTemplateParam $atomic) : void
+    public function checkTemplateParam(TTemplateParam $atomic) : void
     {
         if ($this->prevent_template_covariance
-            && \strpos($atomic->defining_class, 'fn-') !== 0
+            && strpos($atomic->defining_class, 'fn-') !== 0
         ) {
             $codebase = $this->source->getCodebase();
 
             $class_storage = $codebase->classlike_storage_provider->get($atomic->defining_class);
 
             $template_offset = $class_storage->template_types
-                ? \array_search($atomic->param_name, \array_keys($class_storage->template_types), true)
+                ? array_search($atomic->param_name, array_keys($class_storage->template_types), true)
                 : false;
 
             if ($template_offset !== false
                 && isset($class_storage->template_covariants[$template_offset])
                 && $class_storage->template_covariants[$template_offset]
             ) {
-                $method_storage = $this->source instanceof \Psalm\Internal\Analyzer\MethodAnalyzer
+                $method_storage = $this->source instanceof MethodAnalyzer
                     ? $this->source->getFunctionLikeStorage()
                     : null;
 
@@ -367,8 +379,8 @@ class TypeChecker extends NodeVisitor
                 ) {
                     // do nothing
                 } else {
-                    \Psalm\IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\InvalidTemplateParam(
+                    IssueBuffer::maybeAdd(
+                        new InvalidTemplateParam(
                             'Template param ' . $atomic->param_name . ' of '
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
                             $this->code_location
@@ -383,8 +395,8 @@ class TypeChecker extends NodeVisitor
     public function checkResource(TResource $atomic) : void
     {
         if (!$atomic->from_docblock) {
-            \Psalm\IssueBuffer::maybeAdd(
-                new \Psalm\Issue\ReservedWord(
+            IssueBuffer::maybeAdd(
+                new ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
                     'resource'

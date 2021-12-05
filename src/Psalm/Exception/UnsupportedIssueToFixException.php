@@ -2,7 +2,9 @@
 
 namespace Psalm\Exception;
 
-class UnsupportedIssueToFixException extends \Exception
+use Exception;
+
+class UnsupportedIssueToFixException extends Exception
 {
 
 }

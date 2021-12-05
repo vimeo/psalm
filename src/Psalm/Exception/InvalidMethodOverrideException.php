@@ -2,6 +2,8 @@
 
 namespace Psalm\Exception;
 
-class InvalidMethodOverrideException extends \Exception
+use Exception;
+
+class InvalidMethodOverrideException extends Exception
 {
 }

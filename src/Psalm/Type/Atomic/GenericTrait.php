@@ -8,7 +8,9 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_map;
 use function array_values;
@@ -171,7 +173,7 @@ trait GenericTrait
     }
 
     /**
-     * @return array<\Psalm\Type\TypeNode>
+     * @return array<TypeNode>
      */
     public function getChildNodes() : array
     {
@@ -227,7 +229,7 @@ trait GenericTrait
                 } elseif ($offset === 1) {
                     $input_type_param = $input_type->getGenericValueType();
                 } else {
-                    throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
+                    throw new UnexpectedValueException('Not expecting offset of ' . $offset);
                 }
             } elseif ($input_type instanceof Atomic\TNamedObject
                 && isset($input_object_type_params[$offset])
@@ -270,7 +272,7 @@ trait GenericTrait
             );
 
             if ($this instanceof Atomic\TArray && $offset === 0 && $type_param->isMixed()) {
-                $this->type_params[0] = \Psalm\Type::getArrayKey();
+                $this->type_params[0] = Type::getArrayKey();
             }
         }
 

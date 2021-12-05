@@ -6,6 +6,7 @@ use AdvancedJsonRpc\Message as MessageBody;
 use Amp\ByteStream\ResourceInputStream;
 use Amp\Promise;
 use Exception;
+use Generator;
 
 use function Amp\asyncCall;
 use function explode;
@@ -49,12 +50,12 @@ class ProtocolStreamReader implements ProtocolReader
         $input = new ResourceInputStream($input);
         asyncCall(
             /**
-             * @return \Generator<int, Promise<?string>, ?string, void>
+             * @return Generator<int, Promise<?string>, ?string, void>
              * @psalm-suppress MixedReturnTypeCoercion
              * @psalm-suppress MixedArgument in old Amp versions
              * @psalm-suppress MixedAssignment in old Amp versions
              */
-            function () use ($input) : \Generator {
+            function () use ($input) : Generator {
                 while ($this->is_accepting_new_requests) {
                     $read_promise = $input->read();
 

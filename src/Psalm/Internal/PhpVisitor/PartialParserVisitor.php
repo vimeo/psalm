@@ -2,15 +2,24 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+use PhpParser\ErrorHandler\Collecting;
+use Psalm\Internal\PhpVisitor\OffsetShifterVisitor;
 
 use function count;
+use function preg_match_all;
 use function preg_replace;
 use function reset;
+use function str_repeat;
 use function strlen;
 use function strpos;
 use function strrpos;
 use function substr;
 use function substr_count;
+use function substr_replace;
+use function token_get_all;
+
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
@@ -153,7 +162,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                         }
 
-                        $error_handler = new \PhpParser\ErrorHandler\Collecting();
+                        $error_handler = new Collecting();
 
                         $fake_class = '<?php class _ {' . $method_contents . '}';
 
@@ -180,19 +189,19 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         // if(...);
                         //
                         // This transformation will break that.
-                        \preg_match_all(
+                        preg_match_all(
                             '/(->|::)(\n\s*(if|list)\s*\()/',
                             $fake_class,
                             $matches,
-                            \PREG_OFFSET_CAPTURE | \PREG_SET_ORDER
+                            PREG_OFFSET_CAPTURE | PREG_SET_ORDER
                         );
 
                         foreach ($matches as $match) {
-                            $fake_class = \substr_replace(
+                            $fake_class = substr_replace(
                                 $fake_class,
                                 $match[1][0] . ';' . $match[2][0],
                                 $match[0][1],
-                                \strlen($match[0][0])
+                                strlen($match[0][0])
                             );
 
                             $extra_characters[] = $match[2][1];
@@ -255,7 +264,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         }
 
                         $renumbering_traverser = new PhpParser\NodeTraverser;
-                        $position_shifter = new \Psalm\Internal\PhpVisitor\OffsetShifterVisitor(
+                        $position_shifter = new OffsetShifterVisitor(
                             $stmt_start_pos - 15,
                             $current_line,
                             $extra_offsets
@@ -378,7 +387,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
      */
     private static function balanceBrackets(string $fake_class) : string
     {
-        $tokens = \token_get_all($fake_class);
+        $tokens = token_get_all($fake_class);
 
         $brace_count = 0;
 
@@ -391,7 +400,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         }
 
         if ($brace_count > 0) {
-            $fake_class .= \str_repeat('}', $brace_count);
+            $fake_class .= str_repeat('}', $brace_count);
         }
 
         return $fake_class;

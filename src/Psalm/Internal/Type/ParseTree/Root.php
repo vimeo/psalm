@@ -1,9 +1,11 @@
 <?php
 namespace Psalm\Internal\Type\ParseTree;
 
+use Psalm\Internal\Type\ParseTree;
+
 /**
  * @internal
  */
-class Root extends \Psalm\Internal\Type\ParseTree
+class Root extends ParseTree
 {
 }

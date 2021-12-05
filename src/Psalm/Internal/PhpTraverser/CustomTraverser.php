@@ -2,16 +2,19 @@
 declare(strict_types=1);
 namespace Psalm\Internal\PhpTraverser;
 
+use LogicException;
 use PhpParser\Node;
+use PhpParser\NodeTraverser;
 
 use function array_pop;
 use function array_splice;
 use function gettype;
+use function is_array;
 
 /**
  * @internal
  */
-class CustomTraverser extends \PhpParser\NodeTraverser
+class CustomTraverser extends NodeTraverser
 {
     public function __construct()
     {
@@ -30,7 +33,7 @@ class CustomTraverser extends \PhpParser\NodeTraverser
         foreach ($node->getSubNodeNames() as $name) {
             $subNode = &$node->$name;
 
-            if (\is_array($subNode)) {
+            if (is_array($subNode)) {
                 $subNode = $this->traverseArray($subNode);
                 if ($this->stopTraversal) {
                     break;
@@ -48,7 +51,7 @@ class CustomTraverser extends \PhpParser\NodeTraverser
                             $this->stopTraversal = true;
                             break 2;
                         } else {
-                            throw new \LogicException(
+                            throw new LogicException(
                                 'enterNode() returned invalid value of type ' . gettype($return)
                             );
                         }
@@ -70,13 +73,13 @@ class CustomTraverser extends \PhpParser\NodeTraverser
                         } elseif (self::STOP_TRAVERSAL === $return) {
                             $this->stopTraversal = true;
                             break 2;
-                        } elseif (\is_array($return)) {
-                            throw new \LogicException(
+                        } elseif (is_array($return)) {
+                            throw new LogicException(
                                 'leaveNode() may only return an array ' .
                                 'if the parent structure is an array'
                             );
                         } else {
-                            throw new \LogicException(
+                            throw new LogicException(
                                 'leaveNode() returned invalid value of type ' . gettype($return)
                             );
                         }
@@ -113,7 +116,7 @@ class CustomTraverser extends \PhpParser\NodeTraverser
                             $this->stopTraversal = true;
                             break 2;
                         } else {
-                            throw new \LogicException(
+                            throw new LogicException(
                                 'enterNode() returned invalid value of type ' . gettype($return)
                             );
                         }
@@ -132,7 +135,7 @@ class CustomTraverser extends \PhpParser\NodeTraverser
                     if (null !== $return) {
                         if ($return instanceof Node) {
                             $node = $return;
-                        } elseif (\is_array($return)) {
+                        } elseif (is_array($return)) {
                             $doNodes[] = [$i, $return];
                             break;
                         } elseif (self::REMOVE_NODE === $return) {
@@ -142,19 +145,19 @@ class CustomTraverser extends \PhpParser\NodeTraverser
                             $this->stopTraversal = true;
                             break 2;
                         } elseif (false === $return) {
-                            throw new \LogicException(
+                            throw new LogicException(
                                 'bool(false) return from leaveNode() no longer supported. ' .
                                 'Return NodeTraverser::REMOVE_NODE instead'
                             );
                         } else {
-                            throw new \LogicException(
+                            throw new LogicException(
                                 'leaveNode() returned invalid value of type ' . gettype($return)
                             );
                         }
                     }
                 }
-            } elseif (\is_array($node)) {
-                throw new \LogicException('Invalid node structure: Contains nested arrays');
+            } elseif (is_array($node)) {
+                throw new LogicException('Invalid node structure: Contains nested arrays');
             }
         }
 

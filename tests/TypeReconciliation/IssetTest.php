@@ -1,10 +1,14 @@
 <?php
 namespace Psalm\Tests\TypeReconciliation;
 
-class IssetTest extends \Psalm\Tests\TestCase
+use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+class IssetTest extends TestCase
 {
-    use \Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-    use \Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>

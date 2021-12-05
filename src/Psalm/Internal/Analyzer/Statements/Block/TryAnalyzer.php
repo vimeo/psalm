@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Issue\InvalidCatch;
@@ -15,6 +16,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_intersect_key;
 use function array_map;
@@ -192,7 +194,7 @@ class TryAnalyzer
             $fq_catch_classes = [];
 
             if (!$catch->types) {
-                throw new \UnexpectedValueException('Very bad');
+                throw new UnexpectedValueException('Very bad');
             }
 
             foreach ($catch->types as $catch_type) {
@@ -279,7 +281,7 @@ class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        function (string $fq_catch_class) use ($codebase): \Psalm\Type\Atomic\TNamedObject {
+                        function (string $fq_catch_class) use ($codebase): TNamedObject {
                             $catch_class_type = new TNamedObject($fq_catch_class);
 
                             if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
@@ -328,7 +330,7 @@ class TryAnalyzer
                         $catch_var_node->id => $catch_var_node
                     ];
 
-                    if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $catch_var_node,
                             new DataFlowNode('variable-use', 'variable use', null),

@@ -12,12 +12,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 
 use function assert;
+use function defined;
 use function dirname;
 use function explode;
 use function implode;
@@ -126,7 +128,7 @@ class ExpressionScanner
             $first_arg_value = isset($node->getArgs()[0]) ? $node->getArgs()[0]->value : null;
             $second_arg_value = isset($node->getArgs()[1]) ? $node->getArgs()[1]->value : null;
             if ($first_arg_value && $second_arg_value) {
-                $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+                $type_provider = new NodeDataProvider();
                 $const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg_value,
                     $type_provider,
@@ -152,7 +154,7 @@ class ExpressionScanner
                     }
 
                     if (($codebase->register_stub_files || $codebase->register_autoload_files)
-                        && (!\defined($const_name) || $const_type->isMixed())
+                        && (!defined($const_name) || $const_type->isMixed())
                     ) {
                         $codebase->addGlobalConstantType($const_name, $const_type);
                     }

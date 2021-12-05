@@ -5,12 +5,15 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
+use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -21,6 +24,8 @@ use function array_keys;
 use function array_merge;
 use function array_unique;
 use function in_array;
+use function spl_object_id;
+use function strpos;
 
 /**
  * @internal
@@ -48,7 +53,7 @@ class LoopAnalyzer
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
-        $assignment_mapper = new \Psalm\Internal\PhpVisitor\AssignmentMapVisitor($loop_scope->loop_context->self);
+        $assignment_mapper = new AssignmentMapVisitor($loop_scope->loop_context->self);
         $traverser->addVisitor($assignment_mapper);
 
         $traverser->traverse(array_merge($pre_conditions, $stmts, $post_expressions));
@@ -69,7 +74,7 @@ class LoopAnalyzer
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
-                $pre_condition_id = \spl_object_id($pre_condition);
+                $pre_condition_id = spl_object_id($pre_condition);
 
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
                     $pre_condition_id,
@@ -329,8 +334,8 @@ class LoopAnalyzer
                 foreach ($pre_loop_context->vars_in_scope as $var_id => $_) {
                     if (!isset($pre_condition_vars_in_scope[$var_id])
                         && isset($inner_context->vars_in_scope[$var_id])
-                        && \strpos($var_id, '->') === false
-                        && \strpos($var_id, '[') === false
+                        && strpos($var_id, '->') === false
+                        && strpos($var_id, '[') === false
                     ) {
                         $inner_context->vars_in_scope[$var_id]->possibly_undefined = true;
                     }
@@ -372,7 +377,7 @@ class LoopAnalyzer
                 $traverser = new PhpParser\NodeTraverser;
 
                 $traverser->addVisitor(
-                    new \Psalm\Internal\PhpVisitor\NodeCleanerVisitor(
+                    new NodeCleanerVisitor(
                         $statements_analyzer->node_data
                     )
                 );
@@ -492,7 +497,7 @@ class LoopAnalyzer
 
             try {
                 $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $e) {
                 $negated_pre_condition_clauses = [];
             }
 
@@ -649,7 +654,7 @@ class LoopAnalyzer
 
         $reconcilable_while_types = Algebra::getTruthsFromFormula(
             $loop_context->clauses,
-            \spl_object_id($pre_condition),
+            spl_object_id($pre_condition),
             $new_referenced_var_ids
         );
 

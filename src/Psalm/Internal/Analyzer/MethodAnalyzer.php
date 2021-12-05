@@ -1,10 +1,13 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use LogicException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
 use Psalm\Issue\NonStaticSelfCall;
@@ -12,6 +15,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use UnexpectedValueException;
 
 use function in_array;
 use function strtolower;
@@ -35,12 +39,12 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         $source_fqcln_lc = strtolower($source_fqcln);
 
-        $method_id = new \Psalm\Internal\MethodIdentifier($source_fqcln, $method_name_lc);
+        $method_id = new MethodIdentifier($source_fqcln, $method_name_lc);
 
         if (!$storage) {
             try {
                 $storage = $codebase->methods->getStorage($method_id);
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 $class_storage = $codebase->classlike_storage_provider->get($source_fqcln_lc);
 
                 if (!$class_storage->parent_classes) {
@@ -66,7 +70,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  array<string>   $suppressed_issues
      */
     public static function checkStatic(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         bool $self_call,
         bool $is_context_dynamic,
         Codebase $codebase,
@@ -87,11 +91,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if (!$method_id) {
-            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $original_method_id)) {
+            if (InternalCallMapHandler::inCallMap((string) $original_method_id)) {
                 return true;
             }
 
-            throw new \LogicException('Declaring method for ' . $original_method_id . ' should not be null');
+            throw new LogicException('Declaring method for ' . $original_method_id . ' should not be null');
         }
 
         $storage = $codebase_methods->getStorage($method_id);
@@ -138,7 +142,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public static function checkMethodExists(
         Codebase $codebase,
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
         ?string $calling_method_id = null
@@ -167,7 +171,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     public static function isMethodVisible(
-        \Psalm\Internal\MethodIdentifier $method_id,
+        MethodIdentifier $method_id,
         Context $context,
         StatementsSource $source
     ): bool {
@@ -273,11 +277,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         }
     }
 
-    public function getMethodId(?string $context_self = null): \Psalm\Internal\MethodIdentifier
+    public function getMethodId(?string $context_self = null): MethodIdentifier
     {
         $function_name = (string)$this->function->name;
 
-        return new \Psalm\Internal\MethodIdentifier(
+        return new MethodIdentifier(
             $context_self ?: (string) $this->source->getFQCLN(),
             strtolower($function_name)
         );

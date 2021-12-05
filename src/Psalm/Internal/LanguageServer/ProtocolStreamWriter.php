@@ -11,7 +11,7 @@ use Amp\Promise;
 class ProtocolStreamWriter implements ProtocolWriter
 {
     /**
-     * @var \Amp\ByteStream\ResourceOutputStream
+     * @var ResourceOutputStream
      */
     private $output;
 

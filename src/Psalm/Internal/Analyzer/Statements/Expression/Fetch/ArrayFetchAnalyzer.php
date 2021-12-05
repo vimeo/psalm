@@ -3,13 +3,18 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -61,8 +66,10 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use UnexpectedValueException;
 
 use function array_keys;
+use function array_map;
 use function array_pop;
 use function array_values;
 use function count;
@@ -344,7 +351,7 @@ class ArrayFetchAnalyzer
             && $stmt_var_type->parent_nodes
         ) {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $stmt_var_type->parent_nodes = [];
                 return;
@@ -637,8 +644,8 @@ class ArrayFetchAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
@@ -720,8 +727,8 @@ class ArrayFetchAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -738,8 +745,8 @@ class ArrayFetchAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
@@ -982,7 +989,7 @@ class ArrayFetchAnalyzer
     public static function handleMixedArrayAccess(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         bool $in_assignment,
         ?string $array_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -993,8 +1000,8 @@ class ArrayFetchAnalyzer
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer)
         ) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
         }
@@ -1020,7 +1027,7 @@ class ArrayFetchAnalyzer
         }
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-            && $data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph
+            && $data_flow_graph instanceof VariableUseGraph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
         ) {
             if ($stmt_var_type->parent_nodes) {
@@ -1067,7 +1074,7 @@ class ArrayFetchAnalyzer
         ?Type\Union $replacement_type,
         Type\Union &$offset_type,
         Type\Atomic $original_type,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         ?string $array_var_id,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
@@ -1199,7 +1206,7 @@ class ArrayFetchAnalyzer
      */
     private static function handleArrayAccessOnTArray(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Type\Union $array_type,
@@ -1233,7 +1240,7 @@ class ArrayFetchAnalyzer
                 }
             }
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             if ($original_type instanceof TTemplateParam && $templated_offset_type) {
                 foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
@@ -1361,7 +1368,7 @@ class ArrayFetchAnalyzer
     }
 
     private static function handleArrayAccessOnClassStringMap(
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Type\Atomic\TClassStringMap $type,
         Type\Union $offset_type,
         ?Type\Union $replacement_type,
@@ -1462,7 +1469,7 @@ class ArrayFetchAnalyzer
      */
     private static function handleArrayAccessOnKeyedArray(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         array &$key_values,
         ?Type\Union $replacement_type,
         ?Type\Union &$array_access_type,
@@ -1547,7 +1554,7 @@ class ArrayFetchAnalyzer
                         if ($object_like_keys) {
                             $formatted_keys = implode(
                                 ', ',
-                                \array_map(
+                                array_map(
                                     function ($key) {
                                         return is_int($key) ? $key : '\'' . $key . '\'';
                                     },
@@ -1571,7 +1578,7 @@ class ArrayFetchAnalyzer
                 ? Type::getArrayKey()
                 : $generic_key_type;
 
-            $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+            $union_comparison_results = new TypeComparisonResult();
 
             $is_contained = UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -1665,7 +1672,7 @@ class ArrayFetchAnalyzer
      */
     private static function handleArrayAccessOnList(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         TList $type,
         Type\Union $offset_type,
@@ -1876,7 +1883,7 @@ class ArrayFetchAnalyzer
      */
     private static function handleArrayAccessOnString(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         bool $in_assignment,
         Context $context,
@@ -1893,8 +1900,8 @@ class ArrayFetchAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
@@ -1911,8 +1918,8 @@ class ArrayFetchAnalyzer
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
                 ) {
                     $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
                 }
@@ -1932,7 +1939,7 @@ class ArrayFetchAnalyzer
                 }
 
                 if (!$valid_offsets) {
-                    throw new \UnexpectedValueException('This is weird');
+                    throw new UnexpectedValueException('This is weird');
                 }
 
                 $valid_offset_type = new Type\Union($valid_offsets);
@@ -1968,7 +1975,7 @@ class ArrayFetchAnalyzer
     private static function checkArrayOffsetType(
         Type\Union $offset_type,
         array $offset_types,
-        \Psalm\Codebase $codebase
+        Codebase $codebase
     ): bool {
         $has_valid_absolute_offset = false;
         foreach ($offset_types as $atomic_offset_type) {

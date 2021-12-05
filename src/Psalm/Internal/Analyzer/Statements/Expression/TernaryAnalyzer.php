@@ -4,16 +4,20 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
+use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -21,8 +25,10 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function in_array;
 use function preg_match;
 use function preg_quote;
+use function spl_object_id;
 
 /**
  * @internal
@@ -36,7 +42,7 @@ class TernaryAnalyzer
     ) : bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $if_scope = new \Psalm\Internal\Scope\IfScope();
+        $if_scope = new IfScope();
 
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
@@ -52,13 +58,13 @@ class TernaryAnalyzer
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (\Psalm\Exception\ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $e) {
             return false;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $cond_id = \spl_object_id($stmt->cond);
+        $cond_id = spl_object_id($stmt->cond);
 
         $if_clauses = FormulaGenerator::getFormula(
             $cond_id,
@@ -84,18 +90,18 @@ class TernaryAnalyzer
         }
 
         $if_clauses = array_map(
-                /**
-                 * @return \Psalm\Internal\Clause
-                 */
-            function (\Psalm\Internal\Clause $c) use ($mixed_var_ids, $cond_id): \Psalm\Internal\Clause {
+            /**
+             * @return Clause
+             */
+            function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
                 $keys = array_keys($c->possibilities);
 
-                $mixed_var_ids = \array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
                         if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new \Psalm\Internal\Clause([], $cond_id, $cond_id, true);
+                            return new Clause([], $cond_id, $cond_id, true);
                         }
                     }
                 }
@@ -123,7 +129,7 @@ class TernaryAnalyzer
                 array_filter(
                     $ternary_clauses,
                     function ($c) use ($reconciled_expression_clauses): bool {
-                        return !\in_array($c->hash, $reconciled_expression_clauses);
+                        return !in_array($c->hash, $reconciled_expression_clauses);
                     }
                 )
             );

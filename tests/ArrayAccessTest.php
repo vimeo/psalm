@@ -1,19 +1,25 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
 use const DIRECTORY_SEPARATOR;
 
 class ArrayAccessTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     public function testEnsureArrayOffsetsExist(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -26,12 +32,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureArrayOffsetsExistWithIssetCheck(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -46,12 +52,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testDontEnsureArrayOffsetsExist(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = false;
+        Config::getInstance()->ensure_array_string_offsets_exist = false;
 
         $this->addFile(
             'somefile.php',
@@ -64,12 +70,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureArrayOffsetsExistWithIssetCheckFollowedByIsArray(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -80,15 +86,15 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testComplainAfterFirstIsset(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
 
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -98,15 +104,15 @@ class ArrayAccessTest extends TestCase
                     }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureArrayIntOffsetsExist(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -119,12 +125,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testNoIssueWhenUsingArrayValuesOnNonEmptyArray(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -135,12 +141,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testNoIssueAfterManyIssets() : void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -158,12 +164,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureListOffsetExistsNotEmpty(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -176,14 +182,14 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureListOffsetExistsAfterArrayPop(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
@@ -199,12 +205,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureOffsetExistsAfterArrayPush() : void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -213,12 +219,12 @@ class ArrayAccessTest extends TestCase
                 array_push($a, 4);
                 echo $a[3];'
         );
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureOffsetExistsAfterNestedIsset(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -236,12 +242,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureListOffsetExistsAfterCountValueInRange(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -286,14 +292,14 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureListOffsetExistsAfterCountValueOutOfRange(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
@@ -309,14 +315,14 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testEnsureListOffsetExistsAfterCountValueOutOfRangeSmallerThan(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
 
         $this->addFile(
@@ -332,12 +338,12 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     public function testDontWorryWhenUnionedWithPositiveInt(): void
     {
-        \Psalm\Config::getInstance()->ensure_array_int_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
 
         $this->addFile(
             'somefile.php',
@@ -351,7 +357,7 @@ class ArrayAccessTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile('somefile.php', new \Psalm\Context());
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

@@ -3,18 +3,23 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function getcwd;
+use function preg_quote;
+use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
 class UnusedCodeTest extends TestCase
 {
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public function setUp() : void
@@ -23,11 +28,11 @@ class UnusedCodeTest extends TestCase
 
         $this->file_provider = new FakeFileProvider();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
 
@@ -45,7 +50,7 @@ class UnusedCodeTest extends TestCase
     public function testValidCode($code, array $error_levels = []): void
     {
         $test_name = $this->getTestName();
-        if (\strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -66,7 +71,7 @@ class UnusedCodeTest extends TestCase
 
         $this->project_analyzer->consolidateAnalyzedData();
 
-        \Psalm\IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+        IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
     /**
@@ -79,12 +84,12 @@ class UnusedCodeTest extends TestCase
      */
     public function testInvalidCode($code, $error_message, $error_levels = []): void
     {
-        if (\strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . \preg_quote($error_message, '/') . '\b/');
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -101,7 +106,7 @@ class UnusedCodeTest extends TestCase
 
         $this->project_analyzer->consolidateAnalyzedData();
 
-        \Psalm\IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+        IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
@@ -1222,7 +1227,7 @@ class UnusedCodeTest extends TestCase
                     }
 
                     (new A)->foo(4);',
-                'error_message' => 'PossiblyUnusedParam - src' . \DIRECTORY_SEPARATOR
+                'error_message' => 'PossiblyUnusedParam - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:4:49 - Param #1 is never referenced in this method',
             ],
             'unusedParam' => [

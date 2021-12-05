@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Issue;
 
+use Psalm\CodeLocation;
+
 abstract class ClassIssue extends CodeIssue
 {
     /**
@@ -10,7 +12,7 @@ abstract class ClassIssue extends CodeIssue
 
     public function __construct(
         string $message,
-        \Psalm\CodeLocation $code_location,
+        CodeLocation $code_location,
         string $fq_classlike_name
     ) {
         parent::__construct($message, $code_location);

@@ -1,19 +1,27 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use InvalidArgumentException;
 use PhpParser;
+use Psalm\Aliases;
+use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
+use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
+use ReflectionProperty;
 
 use function array_merge;
 use function array_shift;
 use function array_values;
 use function count;
+use function is_string;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -29,11 +37,11 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     public static function infer(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         PhpParser\Node\Expr $stmt,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Type\Union {
@@ -273,7 +281,7 @@ class SimpleTypeInferer
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
-                            \ReflectionProperty::IS_PRIVATE,
+                            ReflectionProperty::IS_PRIVATE,
                             $file_source
                         );
 
@@ -282,7 +290,7 @@ class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (\InvalidArgumentException | \Psalm\Exception\CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException $e) {
                         return null;
                     }
                 }
@@ -426,11 +434,11 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     private static function inferArrayType(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         PhpParser\Node\Expr\Array_ $stmt,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Type\Union {
@@ -513,12 +521,12 @@ class SimpleTypeInferer
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
      */
     private static function handleArrayItem(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\NodeDataProvider $nodes,
+        Codebase $codebase,
+        NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
-        \Psalm\Aliases $aliases,
-        \Psalm\FileSource $file_source = null,
+        Aliases $aliases,
+        FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): bool {
@@ -670,7 +678,7 @@ class SimpleTypeInferer
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
-                    if (\is_string($key)) {
+                    if (is_string($key)) {
                         $new_offset = $key;
                         $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
                     } else {

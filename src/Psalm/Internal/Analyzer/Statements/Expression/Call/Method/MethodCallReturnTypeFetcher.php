@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -16,10 +17,15 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use UnexpectedValueException;
 
+use function array_filter;
+use function count;
+use function in_array;
 use function strtolower;
 
 class MethodCallReturnTypeFetcher
@@ -100,14 +106,14 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->getArgs()),
+                    count($stmt->getArgs()),
                     $codebase
                 );
             } else {
                 $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
 
                 if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                    throw new \UnexpectedValueException('Shouldn’t get here');
+                    throw new UnexpectedValueException('Shouldn’t get here');
                 }
 
                 $return_type_candidate = $callmap_callables[0]->return_type;
@@ -117,7 +123,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate->ignore_falsable_issues = true;
             }
 
-            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,
                 $fq_class_name,
@@ -142,7 +148,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate = clone $return_type_candidate;
 
                 if ($template_result->lower_bounds) {
-                    $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
@@ -160,11 +166,11 @@ class MethodCallReturnTypeFetcher
                     $return_type_candidate,
                     $template_result,
                     $method_id,
-                    \count($stmt->getArgs()),
+                    count($stmt->getArgs()),
                     $codebase
                 );
 
-                $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
@@ -186,7 +192,7 @@ class MethodCallReturnTypeFetcher
                     $return_type_location = $secondary_return_type_location;
                 }
 
-                $config = \Psalm\Config::getInstance();
+                $config = Config::getInstance();
 
                 // only check the type locally if it's defined externally
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
@@ -248,7 +254,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
         }
@@ -283,14 +289,14 @@ class MethodCallReturnTypeFetcher
 
             $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
-            $unspecialized_parent_nodes = \array_filter(
+            $unspecialized_parent_nodes = array_filter(
                 $parent_nodes,
                 function ($parent_node) {
                     return !$parent_node->specialization_key;
                 }
             );
 
-            $specialized_parent_nodes = \array_filter(
+            $specialized_parent_nodes = array_filter(
                 $parent_nodes,
                 function ($parent_node) {
                     return (bool) $parent_node->specialization_key;
@@ -572,7 +578,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if ($template_result->lower_bounds) {
-            $return_type_candidate = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,
                 null,

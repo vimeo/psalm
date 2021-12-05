@@ -17,9 +17,12 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -29,10 +32,13 @@ use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
 use function array_merge;
 use function count;
+use function current;
 use function explode;
 use function reset;
 use function strtolower;
@@ -84,7 +90,7 @@ class ReturnAnalyzer
                     continue;
                 }
 
-                $comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $comment_type = TypeExpander::expandUnion(
                     $codebase,
                     $var_comment->type,
                     $context->self,
@@ -211,7 +217,7 @@ class ReturnAnalyzer
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
             if ($stmt->expr && $storage->location) {
-                $inferred_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $inferred_type = TypeExpander::expandUnion(
                     $codebase,
                     $stmt_type,
                     $source->getFQCLN(),
@@ -229,11 +235,11 @@ class ReturnAnalyzer
                     );
                 }
 
-                if ($storage instanceof \Psalm\Storage\MethodStorage && $context->self) {
+                if ($storage instanceof MethodStorage && $context->self) {
                     $self_class = $context->self;
 
                     $declared_return_type = $codebase->methods->getMethodReturnType(
-                        \Psalm\Internal\MethodIdentifier::wrap($cased_method_id),
+                        MethodIdentifier::wrap($cased_method_id),
                         $self_class,
                         $statements_analyzer,
                         null
@@ -245,10 +251,10 @@ class ReturnAnalyzer
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
                     $local_return_type = $source->getLocalReturnType(
                         $declared_return_type,
-                        $storage instanceof \Psalm\Storage\MethodStorage && $storage->final
+                        $storage instanceof MethodStorage && $storage->final
                     );
 
-                    if ($storage instanceof \Psalm\Storage\MethodStorage) {
+                    if ($storage instanceof MethodStorage) {
                         [$fq_class_name, $method_name] = explode('::', $cased_method_id);
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -369,7 +375,7 @@ class ReturnAnalyzer
                         return;
                     }
 
-                    $union_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                    $union_comparison_results = new TypeComparisonResult();
 
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
@@ -527,7 +533,7 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Type\Union $inferred_type,
-        \Psalm\Storage\FunctionLikeStorage $storage
+        FunctionLikeStorage $storage
     ) : void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || !$stmt->expr
@@ -600,7 +606,7 @@ class ReturnAnalyzer
         }
 
         /** @var Type\Atomic\TClosure|Type\Atomic\TCallable $parent_callable_return_type */
-        $parent_callable_return_type = \current($parent_fn_storage->return_type->getAtomicTypes());
+        $parent_callable_return_type = current($parent_fn_storage->return_type->getAtomicTypes());
 
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {
             return;

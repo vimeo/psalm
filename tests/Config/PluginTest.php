@@ -1,16 +1,21 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\FileSource;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
@@ -18,11 +23,16 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
 use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
 use Psalm\PluginRegistrationSocket;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type\Union;
+use stdClass;
 
 use function define;
 use function defined;
@@ -36,7 +46,7 @@ use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
 
-class PluginTest extends \Psalm\Tests\TestCase
+class PluginTest extends TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -60,23 +70,23 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        return new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             ),
-            new \Psalm\Report\ReportOptions()
+            new ReportOptions()
         );
     }
 
     public function testStringAnalyzerPlugin(): void
     {
         $this->expectExceptionMessage('InvalidClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -110,7 +120,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testStringAnalyzerPluginWithClassConstant(): void
     {
         $this->expectExceptionMessage('InvalidClass');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -148,7 +158,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testStringAnalyzerPluginWithClassConstantConcat(): void
     {
         $this->expectExceptionMessage('UndefinedMethod');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -219,7 +229,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -257,7 +267,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testEchoAnalyzerPluginWithUnescapedString(): void
     {
         $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -391,7 +401,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testFloatCheckerPlugin(): void
     {
         $this->expectExceptionMessage('NoFloatAssignment');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
@@ -805,14 +815,14 @@ class PluginTest extends \Psalm\Tests\TestCase
         $this->assertTrue(isset($context->vars_in_scope['$a']));
 
         foreach ($context->vars_in_scope['$a']->getAtomicTypes() as $type) {
-            $this->assertInstanceOf(\Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString::class, $type);
+            $this->assertInstanceOf(TSqlSelectString::class, $type);
         }
     }
 
     public function testPropertyProviderHooksInvalidAssignment(): void
     {
         $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -853,7 +863,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testMethodProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -896,7 +906,7 @@ class PluginTest extends \Psalm\Tests\TestCase
     public function testFunctionProviderHooksInvalidArg(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -954,11 +964,11 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
 
-        $this->project_analyzer->stdout_report_options->format = \Psalm\Report::TYPE_JSON;
+        $this->project_analyzer->stdout_report_options->format = Report::TYPE_JSON;
 
         $this->project_analyzer->check('tests/fixtures/DummyProject', true);
         ob_start();
-        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        IssueBuffer::finish($this->project_analyzer, true, microtime(true));
         ob_end_clean();
     }
 
@@ -989,7 +999,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
     public function testPluginInvalidAbsoluteFilenameThrowsException() : void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1027,7 +1037,7 @@ class PluginTest extends \Psalm\Tests\TestCase
             )
         );
 
-        $mock = $this->getMockBuilder(\stdClass::class)->setMethods(['check'])->getMock();
+        $mock = $this->getMockBuilder(stdClass::class)->setMethods(['check'])->getMock();
         $mock->expects($this->exactly(4))
             ->method('check')
             ->withConsecutive(
@@ -1139,7 +1149,7 @@ class PluginTest extends \Psalm\Tests\TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());

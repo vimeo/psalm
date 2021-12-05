@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
+use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Storage\FileStorage;
 
 use function strtolower;
 
-class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStorageCacheProvider
+class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
 {
     /** @var array<lowercase-string, FileStorage> */
     private $cache = [];

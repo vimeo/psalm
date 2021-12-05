@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `resource` type (e.g. a file handle).
  */
-class TResource extends \Psalm\Type\Atomic
+class TResource extends Atomic
 {
     public function __toString(): string
     {

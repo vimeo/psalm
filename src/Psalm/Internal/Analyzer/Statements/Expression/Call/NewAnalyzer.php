@@ -3,14 +3,20 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
@@ -29,9 +35,12 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_map;
+use function array_merge;
+use function array_shift;
 use function array_values;
 use function implode;
 use function in_array;
+use function md5;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -39,7 +48,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
+class NewAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -64,7 +73,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath()),
+                        'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
                         false
                     );
                 }
@@ -252,7 +261,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
         string $fq_class_name,
@@ -276,7 +285,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             ) {
                 $source = $statements_analyzer->getSource();
 
-                if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
+                if ($source instanceof FunctionLikeAnalyzer) {
                     $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
 
                     if ($function_storage->return_type
@@ -337,7 +346,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
             );
         }
 
-        $method_id = new \Psalm\Internal\MethodIdentifier($fq_class_name, '__construct');
+        $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
         if ($codebase->methods->methodExists(
             $method_id,
@@ -358,7 +367,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 );
             }
 
-            $template_result = new \Psalm\Internal\Type\TemplateResult([], []);
+            $template_result = new TemplateResult([], []);
 
             if (self::checkMethodArgs(
                 $method_id,
@@ -413,7 +422,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             $statements_analyzer->getSuppressedIssues()
                         );
                     } elseif ($statements_analyzer->getSource()
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                        instanceof FunctionLikeAnalyzer
                         && $statements_analyzer->getSource()->track_mutations
                     ) {
                         $statements_analyzer->getSource()->inferred_has_mutation = true;
@@ -438,7 +447,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($method_storage->if_true_assertions) {
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
-                        \array_map(
+                        array_map(
                             function ($assertion) use ($generic_params, $codebase) {
                                 return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
@@ -450,7 +459,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($method_storage->if_false_assertions) {
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
-                        \array_map(
+                        array_map(
                             function ($assertion) use ($generic_params, $codebase) {
                                 return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
                             },
@@ -556,7 +565,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
             $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -594,11 +603,11 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
     private static function analyzeConstructorExpression(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr\New_ $stmt,
         PhpParser\Node\Expr $stmt_class,
-        \Psalm\Config $config,
+        Config $config,
         ?string &$fq_class_name,
         bool &$can_extend
     ): void {
@@ -644,10 +653,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         $stmt_class_types = $stmt_class_type->getAtomicTypes();
 
         while ($stmt_class_types) {
-            $lhs_type_part = \array_shift($stmt_class_types);
+            $lhs_type_part = array_shift($stmt_class_types);
 
             if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
-                $stmt_class_types = \array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
+                $stmt_class_types = array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
             }
 
@@ -696,7 +705,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                 if ($lhs_type_part->as_type) {
                     $codebase->methods->methodExists(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $lhs_type_part->as_type->value,
                             '__construct'
                         ),

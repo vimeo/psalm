@@ -3,8 +3,9 @@
 namespace Psalm\Tests\CommandFunctions;
 
 use Psalm\Internal\CliUtils;
+use Psalm\Tests\TestCase;
 
-class GetMemoryLimitInBytesTest extends \Psalm\Tests\TestCase
+class GetMemoryLimitInBytesTest extends TestCase
 {
     /**
      * @return array<int,array<string|int>>

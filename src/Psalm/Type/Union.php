@@ -1,9 +1,17 @@
 <?php
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
+use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -15,6 +23,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -189,7 +198,7 @@ class Union implements TypeNode
     private $id;
 
     /**
-     * @var array<string, \Psalm\Internal\DataFlow\DataFlowNode>
+     * @var array<string, DataFlowNode>
      */
     public $parent_nodes = [];
 
@@ -394,7 +403,7 @@ class Union implements TypeNode
         }
         sort($types);
 
-        if (\count($types) > 1) {
+        if (count($types) > 1) {
             foreach ($types as $i => $type) {
                 if (strpos($type, ' as ') && strpos($type, '(') === false) {
                     $types[$i] = '(' . $type . ')';
@@ -418,7 +427,7 @@ class Union implements TypeNode
 
         $assertions = array_unique($assertions);
         if (count($assertions) !== 1) {
-            throw new \UnexpectedValueException('Should only be one type per assertion');
+            throw new UnexpectedValueException('Should only be one type per assertion');
         }
 
         return reset($assertions);
@@ -471,7 +480,7 @@ class Union implements TypeNode
         }
 
         sort($other_types);
-        return implode('|', \array_unique($other_types));
+        return implode('|', array_unique($other_types));
     }
 
     /**
@@ -1375,14 +1384,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleStringLiteral is false
+     * @throws InvalidArgumentException if isSingleStringLiteral is false
      *
      * @return TLiteralString the only string literal represented by this union type
      */
     public function getSingleStringLiteral(): TLiteralString
     {
         if (count($this->types) !== 1 || count($this->literal_string_types) !== 1) {
-            throw new \InvalidArgumentException('Not a string literal');
+            throw new InvalidArgumentException('Not a string literal');
         }
 
         return reset($this->literal_string_types);
@@ -1456,14 +1465,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleIntLiteral is false
+     * @throws InvalidArgumentException if isSingleIntLiteral is false
      *
      * @return TLiteralInt the only int literal represented by this union type
      */
     public function getSingleIntLiteral(): TLiteralInt
     {
         if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
-            throw new \InvalidArgumentException('Not an int literal');
+            throw new InvalidArgumentException('Not an int literal');
         }
 
         return reset($this->literal_int_types);
@@ -1488,7 +1497,7 @@ class Union implements TypeNode
             return true;
         }
 
-        $checker = new \Psalm\Internal\TypeVisitor\TypeChecker(
+        $checker = new TypeChecker(
             $source,
             $code_location,
             $suppressed_issues,
@@ -1515,7 +1524,7 @@ class Union implements TypeNode
         ?FileStorage $file_storage = null,
         array $phantom_classes = []
     ): void {
-        $scanner_visitor = new \Psalm\Internal\TypeVisitor\TypeScanner(
+        $scanner_visitor = new TypeScanner(
             $codebase->scanner,
             $file_storage,
             $phantom_classes
@@ -1529,7 +1538,7 @@ class Union implements TypeNode
      */
     public function containsClassLike(string $fq_class_like_name) : bool
     {
-        $classlike_visitor = new \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor($fq_class_like_name);
+        $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
         $classlike_visitor->traverseArray($this->types);
 
@@ -1538,7 +1547,7 @@ class Union implements TypeNode
 
     public function containsAnyLiteral() : bool
     {
-        $literal_visitor = new \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor();
+        $literal_visitor = new ContainsLiteralVisitor();
 
         $literal_visitor->traverseArray($this->types);
 
@@ -1550,7 +1559,7 @@ class Union implements TypeNode
      */
     public function getTemplateTypes(): array
     {
-        $template_type_collector = new \Psalm\Internal\TypeVisitor\TemplateTypeCollector();
+        $template_type_collector = new TemplateTypeCollector();
 
         $template_type_collector->traverseArray($this->types);
 
@@ -1561,7 +1570,7 @@ class Union implements TypeNode
     {
         $this->from_docblock = true;
 
-        (new \Psalm\Internal\TypeVisitor\FromDocblockSetter())->traverseArray($this->types);
+        (new FromDocblockSetter())->traverseArray($this->types);
     }
 
     public function replaceClassLike(string $old, string $new) : void
@@ -1691,14 +1700,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @throws \InvalidArgumentException if isSingleFloatLiteral is false
+     * @throws InvalidArgumentException if isSingleFloatLiteral is false
      *
      * @return TLiteralFloat the only float literal represented by this union type
      */
     public function getSingleFloatLiteral(): TLiteralFloat
     {
         if (count($this->types) !== 1 || count($this->literal_float_types) !== 1) {
-            throw new \InvalidArgumentException('Not a float literal');
+            throw new InvalidArgumentException('Not a float literal');
         }
 
         return reset($this->literal_float_types);

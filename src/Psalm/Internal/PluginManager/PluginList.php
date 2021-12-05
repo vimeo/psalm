@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
+use InvalidArgumentException;
 use RuntimeException;
 
 use function array_diff_key;
@@ -79,7 +80,7 @@ class PluginList
         $class = array_search($class_or_package, $plugin_classes, true);
 
         if (false === $class) {
-            throw new \InvalidArgumentException('Unknown plugin: ' . $class_or_package);
+            throw new InvalidArgumentException('Unknown plugin: ' . $class_or_package);
         }
 
         return $class;

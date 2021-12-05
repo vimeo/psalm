@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
@@ -36,7 +37,7 @@ class EmptyAnalyzer
             && !$stmt_expr_type->from_docblock
         ) {
             IssueBuffer::maybeAdd(
-                new \Psalm\Issue\InvalidArgument(
+                new InvalidArgument(
                     'Calling empty on a boolean value is almost certainly unintended',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     'empty'

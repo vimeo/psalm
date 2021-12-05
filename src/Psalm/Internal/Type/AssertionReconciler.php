@@ -1,12 +1,15 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use Exception;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\InvalidDocblock;
@@ -27,6 +30,7 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function array_merge;
+use function array_values;
 use function count;
 use function explode;
 use function get_class;
@@ -191,7 +195,7 @@ class AssertionReconciler extends Reconciler
 
             try {
                 $new_type = Type::parseString($assertion, null, $template_type_map);
-            } catch (\Psalm\Exception\TypeParseTreeException $e) {
+            } catch (TypeParseTreeException $e) {
                 $new_type = Type::getMixed();
             }
         }
@@ -270,7 +274,7 @@ class AssertionReconciler extends Reconciler
 
             try {
                 return Type::parseString($assertion, null, $template_type_map);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return Type::getMixed();
             }
         }
@@ -336,11 +340,11 @@ class AssertionReconciler extends Reconciler
             if (strpos($assertion, '<') || strpos($assertion, '[') || strpos($assertion, '{')) {
                 $new_type_union = Type::parseString($assertion);
 
-                $new_type_part = \array_values($new_type_union->getAtomicTypes())[0];
+                $new_type_part = array_values($new_type_union->getAtomicTypes())[0];
             } else {
                 $new_type_part = Atomic::create($assertion, null, $template_type_map);
             }
-        } catch (\Psalm\Exception\TypeParseTreeException $e) {
+        } catch (TypeParseTreeException $e) {
             $new_type_part = new TMixed();
 
             if ($code_location) {
@@ -357,7 +361,7 @@ class AssertionReconciler extends Reconciler
         if ($new_type_part instanceof Type\Atomic\TTemplateParam
             && $new_type_part->as->isSingle()
         ) {
-            $new_as_atomic = \array_values($new_type_part->as->getAtomicTypes())[0];
+            $new_as_atomic = array_values($new_type_part->as->getAtomicTypes())[0];
 
             $acceptable_atomic_types = [];
 
@@ -613,7 +617,7 @@ class AssertionReconciler extends Reconciler
                     continue;
                 }
 
-                $atomic_comparison_results = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                $atomic_comparison_results = new TypeComparisonResult();
 
                 if ($existing_type_part instanceof TNamedObject) {
                     $existing_type_part->was_static = false;

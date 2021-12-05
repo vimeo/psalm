@@ -1,10 +1,13 @@
 <?php
 namespace Psalm\Internal\Type;
 
+use InvalidArgumentException;
+use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -36,18 +39,24 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_pop;
 use function array_shift;
 use function array_unique;
 use function array_unshift;
 use function array_values;
+use function constant;
 use function count;
+use function defined;
+use function end;
 use function explode;
 use function get_class;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function stripslashes;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -75,7 +84,7 @@ class TypeParser
 
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!\is_numeric($only_token[0])
+                if (!is_numeric($only_token[0])
                     && strpos($only_token[0], '\'') !== false
                     && strpos($only_token[0], '"') !== false
                 ) {
@@ -155,7 +164,7 @@ class TypeParser
             );
 
             if (!$callable_type instanceof TCallable && !$callable_type instanceof TClosure) {
-                throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
+                throw new InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
             if (!isset($parse_tree->children[1])) {
@@ -300,7 +309,7 @@ class TypeParser
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
-            throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
+            throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
@@ -398,7 +407,7 @@ class TypeParser
 
             if ($t instanceof Atomic\TTemplateParam) {
                 $t_atomic_types = $t->as->getAtomicTypes();
-                $t_atomic_type = \count($t_atomic_types) === 1 ? \reset($t_atomic_types) : null;
+                $t_atomic_type = count($t_atomic_types) === 1 ? reset($t_atomic_types) : null;
 
                 if (!$t_atomic_type instanceof TNamedObject) {
                     $t_atomic_type = null;
@@ -426,7 +435,7 @@ class TypeParser
             );
         }
 
-        throw new \LogicException('Should never get here');
+        throw new LogicException('Should never get here');
     }
 
     /**
@@ -495,7 +504,7 @@ class TypeParser
                 if ($tree_type instanceof TTemplateParam) {
                     $template_type_map[$tree_type->param_name] = ['class-string-map' => $tree_type->as];
                 } elseif ($tree_type instanceof TNamedObject) {
-                    $template_type_map[$tree_type->value] = ['class-string-map' => \Psalm\Type::getObject()];
+                    $template_type_map[$tree_type->value] = ['class-string-map' => Type::getObject()];
                 }
             }
 
@@ -534,7 +543,7 @@ class TypeParser
 
         if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
             if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = \Psalm\Type::getArrayKey();
+                $generic_params[0] = Type::getArrayKey();
             }
 
             if (count($generic_params) !== 2) {
@@ -557,7 +566,7 @@ class TypeParser
 
         if ($generic_type_value === 'non-empty-array') {
             if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = \Psalm\Type::getArrayKey();
+                $generic_params[0] = Type::getArrayKey();
             }
 
             if (count($generic_params) !== 2) {
@@ -710,9 +719,9 @@ class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (\defined($atomic_type->value)) {
+                    if (defined($atomic_type->value)) {
                         /** @var mixed */
-                        $constant_value = \constant($atomic_type->value);
+                        $constant_value = constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -930,8 +939,8 @@ class TypeParser
             $parse_tree->children
         );
 
-        $first_type = \reset($intersection_types);
-        $last_type = \end($intersection_types);
+        $first_type = reset($intersection_types);
+        $last_type = end($intersection_types);
 
         $onlyTKeyedArray = $first_type instanceof TKeyedArray
             || $last_type instanceof TKeyedArray;
@@ -953,9 +962,9 @@ class TypeParser
             $properties = [];
 
             if ($first_type instanceof TArray) {
-                \array_shift($intersection_types);
+                array_shift($intersection_types);
             } elseif ($last_type instanceof TArray) {
-                \array_pop($intersection_types);
+                array_pop($intersection_types);
             }
 
             /** @var TKeyedArray $intersection_type */
@@ -966,7 +975,7 @@ class TypeParser
                         continue;
                     }
 
-                    $intersection_type = \Psalm\Type::intersectUnionTypes(
+                    $intersection_type = Type::intersectUnionTypes(
                         $properties[$property],
                         $property_type,
                         $codebase
@@ -1242,7 +1251,7 @@ class TypeParser
             }
 
             if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                $property_key = \stripslashes(substr($property_key, 1, -1));
+                $property_key = stripslashes(substr($property_key, 1, -1));
             }
 
             if (!$property_type instanceof Union) {

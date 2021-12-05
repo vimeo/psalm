@@ -2,14 +2,23 @@
 
 namespace Psalm\Internal\Cli;
 
+use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Report;
+use Psalm\Report\ReportOptions;
 
 use function array_key_exists;
 use function array_map;
@@ -168,13 +177,14 @@ HELP;
 
         $include_collector = new IncludeCollector();
         $first_autoloader = $include_collector->runAndCollect(
+            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
                 return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
             }
         );
 
         // If Xdebug is enabled, restart without it
-        (new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
+        (new XdebugHandler('PSALTER'))->check();
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
@@ -263,7 +273,7 @@ HELP;
         $config = CliUtils::initializeConfig(
             $path_to_config,
             $current_dir,
-            \Psalm\Report::TYPE_CONSOLE,
+            Report::TYPE_CONSOLE,
             $first_autoloader
         );
         $config->setIncludeCollector($include_collector);
@@ -277,13 +287,13 @@ HELP;
             ? (int)$options['threads']
             : max(1, ProjectAnalyzer::getCpuCount() - 2);
 
-        $providers = new \Psalm\Internal\Provider\Providers(
-            new \Psalm\Internal\Provider\FileProvider(),
-            new \Psalm\Internal\Provider\ParserCacheProvider($config, false),
-            new \Psalm\Internal\Provider\FileStorageCacheProvider($config),
-            new \Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+        $providers = new Providers(
+            new FileProvider(),
+            new ParserCacheProvider($config, false),
+            new FileStorageCacheProvider($config),
+            new ClassLikeStorageCacheProvider($config),
             null,
-            new \Psalm\Internal\Provider\ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
@@ -298,7 +308,7 @@ HELP;
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
-            new \Psalm\Report\ReportOptions(),
+            new ReportOptions(),
             [],
             $threads,
             $progress

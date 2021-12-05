@@ -7,11 +7,16 @@ use DOMDocument;
 use DOMXPath;
 use PHPUnit\Framework\Constraint\Constraint;
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
@@ -74,7 +79,7 @@ class DocumentationTest extends TestCase
         '@psalm-yield',
     ];
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     /** @var string */
@@ -88,7 +93,7 @@ class DocumentationTest extends TestCase
         $issues_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
 
         if (!file_exists($issues_dir)) {
-            throw new \UnexpectedValueException('docs not found');
+            throw new UnexpectedValueException('docs not found');
         }
 
         $issue_code = [];
@@ -128,11 +133,11 @@ class DocumentationTest extends TestCase
 
         $this->file_provider = new FakeFileProvider();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
 
@@ -141,7 +146,7 @@ class DocumentationTest extends TestCase
 
     public function testAllIssuesCoveredInConfigSchema(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_issues[] = 'PluginIssue'; // not an ordinary issue
         sort($all_issues);
 
@@ -164,7 +169,7 @@ class DocumentationTest extends TestCase
 
     public function testAllIssuesCovered(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
 
@@ -222,7 +227,7 @@ class DocumentationTest extends TestCase
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -329,7 +334,7 @@ class DocumentationTest extends TestCase
 
     public function testShortcodesAreUnique(): void
     {
-        $all_issues = \Psalm\Config\IssueHandler::getAllIssueTypes();
+        $all_issues = IssueHandler::getAllIssueTypes();
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {

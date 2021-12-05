@@ -1,7 +1,9 @@
 <?php
 namespace Psalm;
 
+use InvalidArgumentException;
 use LogicException;
+use Psalm\Config;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -42,6 +44,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -85,7 +88,7 @@ abstract class Type
         Aliases $aliases
     ) : string {
         if ($class === '') {
-            throw new \InvalidArgumentException('$class cannot be empty');
+            throw new InvalidArgumentException('$class cannot be empty');
         }
 
         if ($class[0] === '\\') {
@@ -230,7 +233,7 @@ abstract class Type
         $type = null;
 
         if ($value !== null) {
-            $config = \Psalm\Config::getInstance();
+            $config = Config::getInstance();
 
             $event = new StringInterpreterEvent($value);
 
@@ -451,7 +454,7 @@ abstract class Type
         int $literal_limit = 500
     ): Union {
         if ($type_2 === null && $type_1 === null) {
-            throw new \UnexpectedValueException('At least one type must be provided to combine');
+            throw new UnexpectedValueException('At least one type must be provided to combine');
         }
 
         if ($type_1 === null) {

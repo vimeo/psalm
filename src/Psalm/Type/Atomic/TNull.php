@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `null` type
  */
-class TNull extends \Psalm\Type\Atomic
+class TNull extends Atomic
 {
     public function __toString(): string
     {

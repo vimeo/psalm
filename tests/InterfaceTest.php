@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
+
 class InterfaceTest extends TestCase
 {
-    use Traits\InvalidCodeAnalysisTestTrait;
-    use Traits\ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -970,7 +975,7 @@ class InterfaceTest extends TestCase
 
                         $foo->bar();
                     }',
-                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
+                'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31',
             ],
             'reconcileAfterInterfaceInstanceof' => [
                 '<?php
@@ -987,7 +992,7 @@ class InterfaceTest extends TestCase
 
                         $foo->bar();
                     }',
-                'error_message' => 'UndefinedInterfaceMethod - src' . \DIRECTORY_SEPARATOR . 'somefile.php:13:31',
+                'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31',
             ],
         ];
     }

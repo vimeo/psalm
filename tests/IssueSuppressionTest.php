@@ -3,6 +3,9 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function getcwd;
 
@@ -10,12 +13,12 @@ use const DIRECTORY_SEPARATOR;
 
 class IssueSuppressionTest extends TestCase
 {
-    use Traits\ValidCodeAnalysisTestTrait;
-    use Traits\InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function testIssueSuppressedOnFunction(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -34,12 +37,12 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testIssueSuppressedOnStatement(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -49,12 +52,12 @@ class IssueSuppressionTest extends TestCase
                 echo strlen("hello");'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testUnusedSuppressAllOnFunction(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
 
@@ -67,12 +70,12 @@ class IssueSuppressionTest extends TestCase
                 }'
         );
 
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testUnusedSuppressAllOnStatement(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
 
         $this->addFile(
@@ -81,7 +84,7 @@ class IssueSuppressionTest extends TestCase
                 /** @psalm-suppress all */
                 print("foo");'
         );
-        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new \Psalm\Context());
+        $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
     public function testMissingThrowsDocblockSuppressed(): void
@@ -111,7 +114,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testMissingThrowsDocblockSuppressedWithoutThrow(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -131,7 +134,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testMissingThrowsDocblockSuppressedDuplicate(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_docblock = true;
 
@@ -178,7 +181,7 @@ class IssueSuppressionTest extends TestCase
 
     public function testUncaughtThrowInGlobalScopeSuppressedWithoutThrow(): void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnusedPsalmSuppress');
         Config::getInstance()->check_for_throws_in_global_scope = true;
 

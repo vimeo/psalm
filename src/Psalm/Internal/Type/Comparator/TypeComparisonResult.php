@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
 class TypeComparisonResult
 {
     /** @var ?bool */
@@ -22,9 +25,9 @@ class TypeComparisonResult
     /** @var ?bool */
     public $type_coerced_from_scalar;
 
-    /** @var ?\Psalm\Type\Union */
+    /** @var ?Union */
     public $replacement_union_type;
 
-    /** @var ?\Psalm\Type\Atomic */
+    /** @var ?Atomic */
     public $replacement_atomic_type;
 }

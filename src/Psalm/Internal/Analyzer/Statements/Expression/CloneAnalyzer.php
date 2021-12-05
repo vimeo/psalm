@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
@@ -16,6 +17,9 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+
+use function array_merge;
+use function array_pop;
 
 class CloneAnalyzer
 {
@@ -44,7 +48,7 @@ class CloneAnalyzer
             $atomic_types = $clone_type->getAtomicTypes();
 
             while ($atomic_types) {
-                $clone_type_part = \array_pop($atomic_types);
+                $clone_type_part = array_pop($atomic_types);
 
                 if ($clone_type_part instanceof TMixed) {
                     $mixed_clone = true;
@@ -54,7 +58,7 @@ class CloneAnalyzer
                     if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value)) {
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
-                        $clone_method_id = new \Psalm\Internal\MethodIdentifier(
+                        $clone_method_id = new MethodIdentifier(
                             $clone_type_part->value,
                             '__clone'
                         );
@@ -77,7 +81,7 @@ class CloneAnalyzer
                         }
                     }
                 } elseif ($clone_type_part instanceof TTemplateParam) {
-                    $atomic_types = \array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
+                    $atomic_types = array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
                 } else {
                     if ($clone_type_part instanceof Type\Atomic\TFalse
                         && $clone_type->ignore_falsable_issues

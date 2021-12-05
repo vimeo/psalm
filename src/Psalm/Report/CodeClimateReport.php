@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
+use function array_map;
 use function array_values;
 use function md5;
 
@@ -25,7 +26,7 @@ class CodeClimateReport extends Report
     {
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
-        $issues_data = \array_map(
+        $issues_data = array_map(
             function (IssueData $issue): array {
                 /**
                  * map fields to new structure.

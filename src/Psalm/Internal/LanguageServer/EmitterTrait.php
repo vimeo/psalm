@@ -2,6 +2,10 @@
 declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
+use function array_multisort;
+use function call_user_func_array;
+use function count;
+
 use const SORT_NUMERIC;
 
 /**
@@ -75,19 +79,19 @@ trait EmitterTrait
         if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
                 /** @psalm-suppress MixedAssignment */
-                $result = \call_user_func_array($listener, $arguments);
+                $result = call_user_func_array($listener, $arguments);
                 if ($result === false) {
                     return;
                 }
             }
         } else {
             $listeners = $this->listeners($eventName);
-            $counter = \count($listeners);
+            $counter = count($listeners);
 
             foreach ($listeners as $listener) {
                 --$counter;
                 /** @psalm-suppress MixedAssignment */
-                $result = \call_user_func_array($listener, $arguments);
+                $result = call_user_func_array($listener, $arguments);
                 if ($result === false) {
                     return;
                 }
@@ -118,7 +122,7 @@ trait EmitterTrait
         // The list is not sorted
         if (!$this->listeners[$eventName][0]) {
             // Sorting
-            \array_multisort($this->listeners[$eventName][1], SORT_NUMERIC, $this->listeners[$eventName][2]);
+            array_multisort($this->listeners[$eventName][1], SORT_NUMERIC, $this->listeners[$eventName][2]);
 
             // Marking the listeners as sorted
             $this->listeners[$eventName][0] = true;

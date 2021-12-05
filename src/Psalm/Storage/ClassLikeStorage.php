@@ -1,8 +1,11 @@
 <?php
 namespace Psalm\Storage;
 
+use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Issue\CodeIssue;
 use Psalm\Type;
 
 class ClassLikeStorage
@@ -17,7 +20,7 @@ class ClassLikeStorage
     /**
      * Aliases to help Psalm understand constant refs
      *
-     * @var ?\Psalm\Aliases
+     * @var ?Aliases
      */
     public $aliases;
 
@@ -392,12 +395,12 @@ class ClassLikeStorage
     public $has_visitor_issues = false;
 
     /**
-     * @var list<\Psalm\Issue\CodeIssue>
+     * @var list<CodeIssue>
      */
     public $docblock_issues = [];
 
     /**
-     * @var array<string, \Psalm\Internal\Type\TypeAlias\ClassTypeAlias>
+     * @var array<string, ClassTypeAlias>
      */
     public $type_aliases = [];
 

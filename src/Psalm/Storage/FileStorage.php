@@ -2,6 +2,9 @@
 namespace Psalm\Storage;
 
 use Psalm\Aliases;
+use Psalm\Internal\Type\TypeAlias;
+use Psalm\Issue\CodeIssue;
+use Psalm\Type\Union;
 
 class FileStorage
 {
@@ -39,7 +42,7 @@ class FileStorage
     public $declaring_function_ids = [];
 
     /**
-     * @var array<string, \Psalm\Type\Union>
+     * @var array<string, Union>
      */
     public $constants = [];
 
@@ -72,12 +75,12 @@ class FileStorage
     public $has_visitor_issues = false;
 
     /**
-     * @var list<\Psalm\Issue\CodeIssue>
+     * @var list<CodeIssue>
      */
     public $docblock_issues = [];
 
     /**
-     * @var array<string, \Psalm\Internal\Type\TypeAlias>
+     * @var array<string, TypeAlias>
      */
     public $type_aliases = [];
 

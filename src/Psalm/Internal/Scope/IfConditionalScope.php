@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
+use Psalm\Internal\Clause;
 
 /**
  * @internal
@@ -24,13 +25,13 @@ class IfConditionalScope
      */
     public $assigned_in_conditional_var_ids;
 
-    /** @var list<\Psalm\Internal\Clause> */
+    /** @var list<Clause> */
     public $entry_clauses;
 
     /**
      * @param array<string, bool>   $cond_referenced_var_ids
      * @param array<string, int>   $assigned_in_conditional_var_ids
-     * @param list<\Psalm\Internal\Clause> $entry_clauses
+     * @param list<Clause> $entry_clauses
      */
     public function __construct(
         Context $if_context,

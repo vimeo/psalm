@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use Exception;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\Closure as ClosureNode;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -9,13 +12,18 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function array_shift;
+use function count;
+use function end;
 use function explode;
 use function implode;
+use function in_array;
 use function is_bool;
 use function rtrim;
 use function strpos;
@@ -108,7 +116,7 @@ class Functions
                 return $this->reflection->getFunctionStorage($function_id);
             }
 
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Expecting non-empty $root_file_path and $checked_file_path'
             );
         }
@@ -126,7 +134,7 @@ class Functions
                 }
             }
 
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path
             );
         }
@@ -136,7 +144,7 @@ class Functions
         $declaring_file_storage = $this->file_storage_provider->get($declaring_file_path);
 
         if (!isset($declaring_file_storage->functions[$function_id])) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
             );
         }
@@ -220,7 +228,7 @@ class Functions
             $function_name = substr($function_name, 1);
 
             if ($function_name === '') {
-                throw new \UnexpectedValueException('Malformed function name');
+                throw new UnexpectedValueException('Malformed function name');
             }
 
             return $function_name;
@@ -309,7 +317,7 @@ class Functions
                 if (strpos($alias_name, $stub) === 0) {
                     try {
                         $match_function_patterns[] = $function_name;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                     }
                 }
             }
@@ -328,7 +336,7 @@ class Functions
 
         foreach ($function_map as $function_name => $function) {
             foreach ($match_function_patterns as $pattern) {
-                $pattern_lc = \strtolower($pattern);
+                $pattern_lc = strtolower($pattern);
 
                 if (substr($pattern, -1, 1) === '*') {
                     if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
@@ -346,10 +354,10 @@ class Functions
                 }
 
                 if ($function->cased_name) {
-                    $cased_name_parts = \explode('\\', $function->cased_name);
-                    $pattern_parts = \explode('\\', $pattern);
+                    $cased_name_parts = explode('\\', $function->cased_name);
+                    $pattern_parts = explode('\\', $pattern);
 
-                    if (\end($cased_name_parts)[0] !== \end($pattern_parts)[0]) {
+                    if (end($cased_name_parts)[0] !== end($pattern_parts)[0]) {
                         continue;
                     }
                 }
@@ -380,11 +388,11 @@ class Functions
     }
 
     /**
-     * @param ?list<\PhpParser\Node\Arg> $args
+     * @param ?list<Arg> $args
      */
     public function isCallMapFunctionPure(
         Codebase $codebase,
-        ?\Psalm\NodeTypeProvider $type_provider,
+        ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true
@@ -498,7 +506,7 @@ class Functions
             'bindtextdomain',
         ];
 
-        if (\in_array(strtolower($function_id), $impure_functions, true)) {
+        if (in_array(strtolower($function_id), $impure_functions, true)) {
             return false;
         }
 
@@ -532,7 +540,7 @@ class Functions
 
                         try {
                             return $codebase->methods->getStorage($count_method_id)->mutation_free;
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             // do nothing
                         }
                     }
@@ -548,14 +556,14 @@ class Functions
         );
 
         if (!$function_callable->params
-            || ($args !== null && \count($args) === 0)
+            || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
             return false;
         }
 
         $must_use = $function_id !== 'array_map'
-            || (isset($args[0]) && !$args[0]->value instanceof \PhpParser\Node\Expr\Closure);
+            || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {

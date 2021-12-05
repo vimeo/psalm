@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Internal\Type\ParseTree;
 
+use Psalm\Internal\Type\ParseTree;
+
 /**
  * @internal
  */
-class CallableTree extends \Psalm\Internal\Type\ParseTree
+class CallableTree extends ParseTree
 {
     /**
      * @var string
@@ -16,7 +18,7 @@ class CallableTree extends \Psalm\Internal\Type\ParseTree
      */
     public $terminated = false;
 
-    public function __construct(string $value, ?\Psalm\Internal\Type\ParseTree $parent = null)
+    public function __construct(string $value, ?ParseTree $parent = null)
     {
         $this->value = $value;
         $this->parent = $parent;

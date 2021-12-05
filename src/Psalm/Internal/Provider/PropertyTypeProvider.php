@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use Psalm\Context;
 use Psalm\Internal\Provider\PropertyTypeProvider\DomDocumentPropertyTypeProvider;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
@@ -17,7 +18,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(PropertyTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(PropertyTypeProviderEvent) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -25,7 +26,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     string,
      *     string,
      *     bool,
@@ -50,13 +51,13 @@ class PropertyTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyPropertyTypeProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
+            $callable = Closure::fromCallable([$class, 'getPropertyType']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerLegacyClosure($fq_classlike_name, $callable);
             }
         } elseif (is_subclass_of($class, PropertyTypeProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
+            $callable = Closure::fromCallable([$class, 'getPropertyType']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
@@ -65,15 +66,15 @@ class PropertyTypeProvider
     }
 
     /**
-     * @param \Closure(PropertyTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(PropertyTypeProviderEvent) : ?Type\Union $c
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     string,
      *     string,
      *     bool,
@@ -81,7 +82,7 @@ class PropertyTypeProvider
      *     ?Context=
      *   ) : ?Type\Union $c
      */
-    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }

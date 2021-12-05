@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -111,7 +112,7 @@ class VariableFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
@@ -182,7 +183,7 @@ class VariableFetchAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
                 $statements_analyzer->getSource()->inferred_impure = true;
@@ -478,7 +479,7 @@ class VariableFetchAnalyzer
         PhpParser\Node\Expr\Variable $stmt
     ) : void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !\in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             if ($var_name === '$_GET'
                 || $var_name === '$_POST'
@@ -518,7 +519,7 @@ class VariableFetchAnalyzer
 
     public static function getGlobalType(string $var_id) : Type\Union
     {
-        $config = \Psalm\Config::getInstance();
+        $config = Config::getInstance();
 
         if (isset($config->globals[$var_id])) {
             return Type::parseString($config->globals[$var_id]);

@@ -3,15 +3,22 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\PossibleRawObjectIteration;
+use Psalm\Issue\RawObjectIteration;
+use Psalm\Issue\RedundantCast;
+use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
@@ -22,8 +29,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
 
 use function array_map;
+use function array_values;
 use function extension_loaded;
 use function implode;
+use function in_array;
 use function is_string;
 use function strpos;
 use function strtolower;
@@ -38,7 +47,7 @@ class NamedFunctionCallHandler
      */
     public static function handle(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
@@ -120,7 +129,7 @@ class NamedFunctionCallHandler
             return;
         }
 
-        if (\in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
+        if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
             $var_id = ExpressionIdentifier::getArrayVarId($first_arg->value, null);
 
             if ($var_id) {
@@ -223,8 +232,8 @@ class NamedFunctionCallHandler
         if ($function_id === 'func_get_args') {
             $source = $statements_analyzer->getSource();
 
-            if ($source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
-                if ($statements_analyzer->data_flow_graph instanceof \Psalm\Internal\Codebase\VariableUseGraph) {
+            if ($source instanceof FunctionLikeAnalyzer) {
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($source->param_nodes as $param_node) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $param_node,
@@ -372,7 +381,7 @@ class NamedFunctionCallHandler
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\RedundantCastGivenDocblockType(
+                        new RedundantCastGivenDocblockType(
                             'The call to array_values is unnecessary given the list docblock type '.$first_arg_type,
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
@@ -380,7 +389,7 @@ class NamedFunctionCallHandler
                     );
                 } else {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\RedundantCast(
+                        new RedundantCast(
                             'The call to array_values is unnecessary, '.$first_arg_type.' is already a list',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
@@ -401,7 +410,7 @@ class NamedFunctionCallHandler
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\RedundantCastGivenDocblockType(
+                        new RedundantCastGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
@@ -409,7 +418,7 @@ class NamedFunctionCallHandler
                     );
                 } else {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\RedundantCast(
+                        new RedundantCast(
                             'The call to strtolower is unnecessary',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
@@ -429,14 +438,14 @@ class NamedFunctionCallHandler
             if ($first_arg_type && $first_arg_type->hasObjectType()) {
                 if ($first_arg_type->isSingle()) {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\RawObjectIteration(
+                        new RawObjectIteration(
                             'Possibly undesired iteration over object properties',
                             new CodeLocation($statements_analyzer, $function_name)
                         )
                     );
                 } else {
                     IssueBuffer::maybeAdd(
-                        new \Psalm\Issue\PossibleRawObjectIteration(
+                        new PossibleRawObjectIteration(
                             'Possibly undesired iteration over object properties',
                             new CodeLocation($statements_analyzer, $function_name)
                         )
@@ -498,7 +507,7 @@ class NamedFunctionCallHandler
                     } elseif ($class_type instanceof Type\Atomic\TTemplateParam
                         && $class_type->as->isSingle()
                     ) {
-                        $as_atomic_type = \array_values($class_type->as->getAtomicTypes())[0];
+                        $as_atomic_type = array_values($class_type->as->getAtomicTypes())[0];
 
                         if ($as_atomic_type instanceof Type\Atomic\TObject) {
                             $class_string_types[] = new Type\Atomic\TTemplateParamClass(

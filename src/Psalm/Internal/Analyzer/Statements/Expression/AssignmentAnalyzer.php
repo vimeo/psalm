@@ -3,10 +3,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
@@ -15,12 +19,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -33,6 +42,7 @@ use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\NoValue;
+use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
@@ -55,11 +65,15 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use UnexpectedValueException;
 
+use function array_filter;
 use function array_merge;
 use function count;
+use function in_array;
 use function is_string;
 use function reset;
+use function spl_object_id;
 use function strpos;
 use function strtolower;
 
@@ -203,8 +217,8 @@ class AssignmentAnalyzer
 
             // if we don't know where this data is going, treat as a dead-end usage
             if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-                || (\is_string($root_expr->name)
-                    && \in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+                || (is_string($root_expr->name)
+                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
             ) {
                 $context->inside_general_use = true;
             }
@@ -298,7 +312,7 @@ class AssignmentAnalyzer
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         )
                     );
-                } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                 ) {
                     $statements_analyzer->getSource()->inferred_impure = true;
@@ -344,8 +358,8 @@ class AssignmentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                            instanceof FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
@@ -392,8 +406,8 @@ class AssignmentAnalyzer
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                        instanceof FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof TraitAnalyzer)
             ) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
@@ -559,7 +573,7 @@ class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
 
                     if ($data_flow_graph instanceof TaintFlowGraph
-                        && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                        && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
                         $context->vars_in_scope[$var_id]->parent_nodes = [];
                     } else {
@@ -568,7 +582,7 @@ class AssignmentAnalyzer
                         $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                        $removed_taints = \array_merge(
+                        $removed_taints = array_merge(
                             $removed_taints,
                             $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
                         );
@@ -610,7 +624,7 @@ class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $var_comment_type = TypeExpander::expandUnion(
                 $codebase,
                 $var_comment->type,
                 $context->self,
@@ -691,7 +705,7 @@ class AssignmentAnalyzer
             $var_comment_type->parent_nodes = $parent_nodes;
 
             $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-        } catch (\UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             IssueBuffer::maybeAdd(
                 new InvalidDocblock(
                     $e->getMessage(),
@@ -707,7 +721,7 @@ class AssignmentAnalyzer
      */
     private static function taintAssignment(
         Type\Union $type,
-        \Psalm\Internal\Codebase\DataFlowGraph $data_flow_graph,
+        DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
         array $removed_taints,
@@ -715,14 +729,14 @@ class AssignmentAnalyzer
     ) : void {
         $parent_nodes = $type->parent_nodes;
 
-        $unspecialized_parent_nodes = \array_filter(
+        $unspecialized_parent_nodes = array_filter(
             $parent_nodes,
             function ($parent_node) {
                 return !$parent_node->specialization_key;
             }
         );
 
-        $specialized_parent_nodes = \array_filter(
+        $specialized_parent_nodes = array_filter(
             $parent_nodes,
             function ($parent_node) {
                 return (bool) $parent_node->specialization_key;
@@ -797,7 +811,7 @@ class AssignmentAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight) {
             $operation = new VirtualShiftRight($stmt->var, $stmt->expr, $stmt->getAttributes());
         } else {
-            throw new \UnexpectedValueException('Unknown assign op');
+            throw new UnexpectedValueException('Unknown assign op');
         }
 
         $fake_assignment = new VirtualAssign(
@@ -859,7 +873,7 @@ class AssignmentAnalyzer
         if ($lhs_var_id) {
             $context->vars_in_scope[$lhs_var_id] = $assignment_type;
             $context->hasVariable($lhs_var_id);
-            $context->byref_constraints[$lhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+            $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint();
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                 foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
@@ -877,7 +891,7 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
             }
 
-            $context->byref_constraints[$rhs_var_id] = new \Psalm\Internal\ReferenceConstraint();
+            $context->byref_constraints[$rhs_var_id] = new ReferenceConstraint();
         }
 
         if ($statements_analyzer->data_flow_graph
@@ -935,7 +949,7 @@ class AssignmentAnalyzer
             $var_not_in_scope = false;
 
             if (!$by_ref_type->hasMixed() && $constrain_type) {
-                $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
+                $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
             }
 
             if (!$context->hasVariable($var_id)) {
@@ -952,7 +966,7 @@ class AssignmentAnalyzer
                         && !strpos($var_id, '::')
                     ) {
                         IssueBuffer::maybeAdd(
-                            new \Psalm\Issue\NullReference(
+                            new NullReference(
                                 'Not expecting null argument passed by reference',
                                 $location
                             ),
@@ -1038,7 +1052,7 @@ class AssignmentAnalyzer
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assign_value_type,
@@ -1386,7 +1400,7 @@ class AssignmentAnalyzer
 
                     try {
                         if ($var_comment->var_id === $list_var_id) {
-                            $var_comment_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $var_comment_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $var_comment->type,
                                 $context->self,
@@ -1399,7 +1413,7 @@ class AssignmentAnalyzer
                             $new_assign_type = $var_comment_type;
                             break;
                         }
-                    } catch (\UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $e) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),
@@ -1434,14 +1448,14 @@ class AssignmentAnalyzer
                             ];
                         } else {
                             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                                && \in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                             ) {
                                 $context->vars_in_scope[$list_var_id]->parent_nodes = [];
                             } else {
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 
                                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints = \array_merge(
+                                $removed_taints = array_merge(
                                     $removed_taints,
                                     $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
                                 );
@@ -1464,7 +1478,7 @@ class AssignmentAnalyzer
 
     private static function analyzePropertyAssignment(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $assign_var,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
@@ -1549,7 +1563,7 @@ class AssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } elseif ($statements_analyzer->getSource() instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
             ) {
                 if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
@@ -1565,7 +1579,7 @@ class AssignmentAnalyzer
 
     private static function analyzeAssignmentToVariable(
         StatementsAnalyzer $statements_analyzer,
-        \Psalm\Codebase $codebase,
+        Codebase $codebase,
         PhpParser\Node\Expr\Variable $assign_var,
         ?PhpParser\Node\Expr $assign_value,
         Type\Union $assign_value_type,
@@ -1639,10 +1653,10 @@ class AssignmentAnalyzer
                         || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
                             && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp))
                 ) {
-                    $var_object_id = \spl_object_id($assign_var);
-                    $cond_object_id = \spl_object_id($assign_value);
+                    $var_object_id = spl_object_id($assign_var);
+                    $cond_object_id = spl_object_id($assign_value);
 
-                    $right_clauses = \Psalm\Internal\Algebra\FormulaGenerator::getFormula(
+                    $right_clauses = FormulaGenerator::getFormula(
                         $cond_object_id,
                         $cond_object_id,
                         $assign_value,
@@ -1656,13 +1670,13 @@ class AssignmentAnalyzer
                         $right_clauses
                     );
 
-                    $assignment_clauses = \Psalm\Internal\Algebra::combineOredClauses(
-                        [new \Psalm\Internal\Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
+                    $assignment_clauses = Algebra::combineOredClauses(
+                        [new Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
                         $right_clauses,
                         $cond_object_id
                     );
 
-                    $context->clauses = \array_merge($context->clauses, $assignment_clauses);
+                    $context->clauses = array_merge($context->clauses, $assignment_clauses);
                 }
             }
         } else {

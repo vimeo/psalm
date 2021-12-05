@@ -1,11 +1,16 @@
 <?php
 namespace Psalm\Internal\Fork;
 
+use Closure;
+use Exception;
+use Throwable;
+
 use function array_fill_keys;
 use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_values;
+use function assert;
 use function base64_decode;
 use function base64_encode;
 use function count;
@@ -42,8 +47,10 @@ use function usleep;
 use function version_compare;
 
 use const PHP_EOL;
+use const PHP_OS;
 use const PHP_VERSION;
 use const SIGALRM;
+use const SIGTERM;
 use const STREAM_IPPROTO_IP;
 use const STREAM_PF_UNIX;
 use const STREAM_SOCK_STREAM;
@@ -71,7 +78,7 @@ class Pool
     /** @var bool */
     private $did_have_error = false;
 
-    /** @var ?\Closure(mixed): void */
+    /** @var ?Closure(mixed): void */
     private $task_done_closure;
 
     public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
@@ -84,29 +91,29 @@ class Pool
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
-     * @param \Closure $startup_closure
+     * @param Closure $startup_closure
      * A closure to execute upon starting a child
-     * @param \Closure(int, mixed):mixed $task_closure
+     * @param Closure(int, mixed):mixed $task_closure
      * A method to execute on each task data.
      * This closure must return an array (to be gathered).
-     * @param \Closure():mixed $shutdown_closure
+     * @param Closure():mixed $shutdown_closure
      * A closure to execute upon shutting down a child
-     * @param ?\Closure(mixed $data):void $task_done_closure
+     * @param Closure(mixed $data):void $task_done_closure
      * A closure to execute when a task is done
      *
      * @psalm-suppress MixedAssignment
      */
     public function __construct(
         array $process_task_data_iterator,
-        \Closure $startup_closure,
-        \Closure $task_closure,
-        \Closure $shutdown_closure,
-        ?\Closure $task_done_closure = null
+        Closure $startup_closure,
+        Closure $task_closure,
+        Closure $shutdown_closure,
+        ?Closure $task_done_closure = null
     ) {
         $pool_size = count($process_task_data_iterator);
         $this->task_done_closure = $task_done_closure;
 
-        \assert(
+        assert(
             $pool_size > 1,
             'The pool size must be >= 2 to use the fork pool.'
         );
@@ -126,7 +133,7 @@ class Pool
         }
 
         if (ini_get('pcre.jit') === '1'
-            && \PHP_OS === 'Darwin'
+            && PHP_OS === 'Darwin'
             && version_compare(PHP_VERSION, '7.3.0') >= 0
             && version_compare(PHP_VERSION, '7.4.0') < 0
         ) {
@@ -215,7 +222,7 @@ class Pool
 
             // Serialize this child's produced results and send them to the parent.
             $process_done_message = new ForkProcessDoneMessage($results ?: []);
-        } catch (\Throwable $t) {
+        } catch (Throwable $t) {
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
             $process_done_message = new ForkProcessErrorMessage(
@@ -364,9 +371,9 @@ class Pool
                                  * @psalm-suppress UndefinedConstant - does not exist on windows
                                  * @psalm-suppress MixedArgument
                                  */
-                                posix_kill($child_pid, \SIGTERM);
+                                posix_kill($child_pid, SIGTERM);
                             }
-                            throw new \Exception($message->message);
+                            throw new Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));
                             $this->did_have_error = true;
@@ -401,7 +408,7 @@ class Pool
         try {
             // Read all the streams from child processes into an array.
             $content = $this->readResultsFromChildren();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // If children were killed because one of them threw an exception we don't care about return codes.
             $ignore_return_code = true;
             // PHP guarantees finally is run even after throwing

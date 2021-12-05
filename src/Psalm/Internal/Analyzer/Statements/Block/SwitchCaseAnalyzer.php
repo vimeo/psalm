@@ -5,12 +5,15 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
+use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Issue\ContinueOutsideLoop;
@@ -39,6 +42,7 @@ use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
+use function spl_object_id;
 use function strpos;
 use function substr;
 
@@ -114,7 +118,7 @@ class SwitchCaseAnalyzer
 
             $traverser = new PhpParser\NodeTraverser;
             $traverser->addVisitor(
-                new \Psalm\Internal\PhpVisitor\ConditionCloningVisitor(
+                new ConditionCloningVisitor(
                     $statements_analyzer->node_data
                 )
             );
@@ -332,7 +336,7 @@ class SwitchCaseAnalyzer
         $case_clauses = [];
 
         if ($case_equality_expr) {
-            $case_equality_expr_id = \spl_object_id($case_equality_expr);
+            $case_equality_expr_id = spl_object_id($case_equality_expr);
             $case_clauses = FormulaGenerator::getFormula(
                 $case_equality_expr_id,
                 $case_equality_expr_id,
@@ -429,8 +433,8 @@ class SwitchCaseAnalyzer
         if ($case_clauses && $case_equality_expr) {
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
-            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
-                $case_equality_expr_id = \spl_object_id($case_equality_expr);
+            } catch (ComplicatedExpressionException $e) {
+                $case_equality_expr_id = spl_object_id($case_equality_expr);
 
                 try {
                     $negated_case_clauses = FormulaGenerator::getFormula(
@@ -443,7 +447,7 @@ class SwitchCaseAnalyzer
                         false,
                         false
                     );
-                } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                } catch (ComplicatedExpressionException $e) {
                     $negated_case_clauses = [];
                 }
             }
@@ -464,7 +468,7 @@ class SwitchCaseAnalyzer
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(
-            new \Psalm\Internal\PhpVisitor\TypeMappingVisitor(
+            new TypeMappingVisitor(
                 $statements_analyzer->node_data,
                 $old_node_data
             )

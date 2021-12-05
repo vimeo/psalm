@@ -1,7 +1,9 @@
 <?php
 namespace Psalm\Plugin;
 
+use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
 use function array_filter;
@@ -14,8 +16,10 @@ use function curl_init;
 use function curl_setopt;
 use function function_exists;
 use function fwrite;
+use function is_array;
 use function json_encode;
 use function parse_url;
+use function str_replace;
 use function strlen;
 use function var_export;
 
@@ -28,7 +32,7 @@ use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const STDERR;
 
-class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
+class Shepherd implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
@@ -49,7 +53,7 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
 
         $source_control_data = $source_control_info ? $source_control_info->toArray() : [];
 
-        if (!$source_control_data && isset($build_info['git']) && \is_array($build_info['git'])) {
+        if (!$source_control_data && isset($build_info['git']) && is_array($build_info['git'])) {
             $source_control_data = $build_info['git'];
         }
 
@@ -68,7 +72,7 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
-                'level' => \Psalm\Config::getInstance()->level
+                'level' => Config::getInstance()->level
             ];
 
             $payload = json_encode($data);
@@ -114,7 +118,7 @@ class Shepherd implements \Psalm\Plugin\EventHandler\AfterAnalysisInterface
                         . PHP_EOL;
                 }
             } else {
-                $short_address = \str_replace('https://', '', $base_address);
+                $short_address = str_replace('https://', '', $base_address);
 
                 fwrite(STDERR, "🐑 results sent to $short_address 🐑" . PHP_EOL);
             }

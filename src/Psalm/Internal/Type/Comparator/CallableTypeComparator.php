@@ -2,9 +2,15 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
+use Exception;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -15,9 +21,11 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use UnexpectedValueException;
 
 use function end;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -197,7 +205,7 @@ class CallableTypeComparator
                 }
 
                 $codebase->methods->getStorage($method_id);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return false;
             }
         }
@@ -247,7 +255,7 @@ class CallableTypeComparator
                         $param = clone $param;
 
                         if ($param->type) {
-                            $param->type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $param->type = TypeExpander::expandUnion(
                                 $codebase,
                                 $param->type,
                                 null,
@@ -267,7 +275,7 @@ class CallableTypeComparator
                     $return_type = null;
 
                     if ($function_storage->return_type) {
-                        $return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $return_type = TypeExpander::expandUnion(
                             $codebase,
                             $function_storage->return_type,
                             null,
@@ -291,16 +299,16 @@ class CallableTypeComparator
                     $return_type,
                     $function_storage->pure
                 );
-            } catch (\UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $e) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
-                    $nodes = new \Psalm\Internal\Provider\NodeDataProvider();
+                    $nodes = new NodeDataProvider();
 
                     if ($container_type_part && $container_type_part->params) {
                         foreach ($container_type_part->params as $i => $param) {
-                            $arg = new \PhpParser\Node\Arg(
-                                new \PhpParser\Node\Expr\Variable('_' . $i)
+                            $arg = new Arg(
+                                new Variable('_' . $i)
                             );
 
                             if ($param->type) {
@@ -311,7 +319,7 @@ class CallableTypeComparator
                         }
                     }
 
-                    $matching_callable = \Psalm\Internal\Codebase\InternalCallMapHandler::getCallableFromCallMapById(
+                    $matching_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args,
@@ -341,7 +349,7 @@ class CallableTypeComparator
                     $converted_return_type = null;
 
                     if ($method_storage->return_type) {
-                        $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $converted_return_type = TypeExpander::expandUnion(
                             $codebase,
                             $method_storage->return_type,
                             $method_fqcln,
@@ -356,7 +364,7 @@ class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure
                     );
-                } catch (\UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $e) {
                     // do nothing
                 }
             }
@@ -367,7 +375,7 @@ class CallableTypeComparator
         } elseif ($input_type_part instanceof TNamedObject
             && $codebase->classExists($input_type_part->value)
         ) {
-            $invoke_id = new \Psalm\Internal\MethodIdentifier(
+            $invoke_id = new MethodIdentifier(
                 $input_type_part->value,
                 '__invoke'
             );
@@ -380,7 +388,7 @@ class CallableTypeComparator
                     $method_fqcln = $invoke_id->fq_class_name;
                     $converted_return_type = null;
                     if ($method_storage->return_type) {
-                        $converted_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                        $converted_return_type = TypeExpander::expandUnion(
                             $codebase,
                             $method_storage->return_type,
                             $method_fqcln,
@@ -402,7 +410,7 @@ class CallableTypeComparator
         return null;
     }
 
-    /** @return null|'not-callable'|\Psalm\Internal\MethodIdentifier */
+    /** @return null|'not-callable'|MethodIdentifier */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
@@ -463,7 +471,7 @@ class CallableTypeComparator
         if ($lhs->isSingleStringLiteral()) {
             $class_name = $lhs->getSingleStringLiteral()->value;
             if ($class_name[0] === '\\') {
-                $class_name = \substr($class_name, 1);
+                $class_name = substr($class_name, 1);
             }
         } elseif ($lhs->isSingle()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
@@ -505,7 +513,7 @@ class CallableTypeComparator
             return null;
         }
 
-        return new \Psalm\Internal\MethodIdentifier(
+        return new MethodIdentifier(
             $class_name,
             strtolower($method_name)
         );

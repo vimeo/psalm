@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent;
@@ -16,7 +17,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(MethodVisibilityProviderEvent) : ?bool>
+     *   array<Closure(MethodVisibilityProviderEvent) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -24,7 +25,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<\Closure(
+     *   array<Closure(
      *     StatementsSource,
      *     string,
      *     string,
@@ -48,13 +49,13 @@ class MethodVisibilityProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, LegacyMethodVisibilityProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
+            $callable = Closure::fromCallable([$class, 'isMethodVisible']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerLegacyClosure($fq_classlike_name, $callable);
             }
         } elseif (is_subclass_of($class, MethodVisibilityProviderInterface::class, true)) {
-            $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
+            $callable = Closure::fromCallable([$class, 'isMethodVisible']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
@@ -63,15 +64,15 @@ class MethodVisibilityProvider
     }
 
     /**
-     * @param \Closure(MethodVisibilityProviderEvent) : ?bool $c
+     * @param Closure(MethodVisibilityProviderEvent) : ?bool $c
      */
-    public function registerClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
     /**
-     * @param \Closure(
+     * @param Closure(
      *     StatementsSource,
      *     string,
      *     string,
@@ -79,7 +80,7 @@ class MethodVisibilityProvider
      *     ?CodeLocation
      *   ) : ?bool $c
      */
-    public function registerLegacyClosure(string $fq_classlike_name, \Closure $c): void
+    public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }

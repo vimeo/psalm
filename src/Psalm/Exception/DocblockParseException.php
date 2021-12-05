@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Exception;
 
-class DocblockParseException extends \Exception
+use Exception;
+
+class DocblockParseException extends Exception
 {
 }

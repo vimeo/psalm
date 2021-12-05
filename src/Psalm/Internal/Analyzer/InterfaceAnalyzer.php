@@ -1,9 +1,16 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use InvalidArgumentException;
+use LogicException;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedInterface;
+use Psalm\IssueBuffer;
+use UnexpectedValueException;
 
 /**
  * @internal
@@ -21,7 +28,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
     public function analyze(): void
     {
         if (!$this->class instanceof PhpParser\Node\Stmt\Interface_) {
-            throw new \LogicException('Something went badly wrong');
+            throw new LogicException('Something went badly wrong');
         }
 
         $project_analyzer = $this->file_analyzer->project_analyzer;
@@ -47,7 +54,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 try {
                     $extended_interface_storage = $codebase->classlike_storage_provider->get($extended_interface_name);
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     continue;
                 }
 
@@ -57,7 +64,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $extended_interface
                     );
 
-                    \Psalm\IssueBuffer::maybeAdd(
+                    IssueBuffer::maybeAdd(
                         new UndefinedInterface(
                             $extended_interface_name . ' is not an interface',
                             $code_location,
@@ -83,7 +90,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         $fq_interface_name = $this->getFQCLN();
 
         if (!$fq_interface_name) {
-            throw new \UnexpectedValueException('bad');
+            throw new UnexpectedValueException('bad');
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
@@ -102,9 +109,9 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
-                $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+                $type_provider = new NodeDataProvider();
 
-                $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()), $type_provider);
+                $method_analyzer->analyze(new Context($this->getFQCLN()), $type_provider);
 
                 $actual_method_id = $method_analyzer->getMethodId();
 
@@ -125,8 +132,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                \Psalm\IssueBuffer::add(
-                    new \Psalm\Issue\ParseError(
+                IssueBuffer::add(
+                    new ParseError(
                         'Interfaces cannot have properties',
                         new CodeLocation($this, $stmt)
                     )

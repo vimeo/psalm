@@ -1,10 +1,14 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use InvalidArgumentException;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
+use ReflectionProperty;
+use UnexpectedValueException;
 
 use function implode;
 use function preg_replace;
@@ -78,7 +82,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this, new \Psalm\Internal\Provider\NodeDataProvider());
+            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
             $context = new Context();
             $context->is_global = true;
             $context->defineGlobals();
@@ -95,7 +99,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
     public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt): void
     {
         if (!$stmt->name) {
-            throw new \UnexpectedValueException('Did not expect anonymous class here');
+            throw new UnexpectedValueException('Did not expect anonymous class here');
         }
 
         $fq_class_name = Type::getFQCLNFromString($stmt->name->name, $this->getAliases());
@@ -133,11 +137,11 @@ class NamespaceAnalyzer extends SourceAnalyzer
             self::$public_namespace_constants[$namespace_name] = [];
         }
 
-        if ($visibility === \ReflectionProperty::IS_PUBLIC) {
+        if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return self::$public_namespace_constants[$namespace_name];
         }
 
-        throw new \InvalidArgumentException('Given $visibility not supported');
+        throw new InvalidArgumentException('Given $visibility not supported');
     }
 
     public function getFileAnalyzer() : FileAnalyzer

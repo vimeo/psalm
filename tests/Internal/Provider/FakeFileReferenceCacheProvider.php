@@ -1,11 +1,14 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
+use Psalm\Config;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  */
-class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileReferenceCacheProvider
+class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
 {
     /** @var ?array */
     private $cached_file_references;
@@ -72,7 +75,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     public function __construct()
     {
-        $this->config = \Psalm\Config::getInstance();
+        $this->config = Config::getInstance();
     }
 
     public function getCachedFileReferences(): ?array

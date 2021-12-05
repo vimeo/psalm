@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type;
 
 class ArrayCreationInfo
@@ -46,7 +47,7 @@ class ArrayCreationInfo
     public $all_list = true;
 
     /**
-     * @var array<string, \Psalm\Internal\DataFlow\DataFlowNode>
+     * @var array<string, DataFlowNode>
      */
     public $parent_taint_nodes = [];
 }

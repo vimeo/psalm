@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
+use Exception;
+use InvalidArgumentException;
+use LogicException;
 use PhpParser;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
@@ -10,12 +13,19 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -39,6 +49,7 @@ use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
 use Psalm\Issue\OverriddenPropertyAccess;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\TooManyTemplateParams;
@@ -59,7 +70,9 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
@@ -67,6 +80,7 @@ use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_search;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -76,6 +90,7 @@ use function is_int;
 use function is_string;
 use function preg_match;
 use function preg_replace;
+use function reset;
 use function str_replace;
 use function strtolower;
 use function substr;
@@ -97,7 +112,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     {
         if (!$fq_class_name) {
             if (!$class instanceof PhpParser\Node\Stmt\Class_) {
-                throw new \UnexpectedValueException('Anonymous enums are not allowed');
+                throw new UnexpectedValueException('Anonymous enums are not allowed');
             }
 
             $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
@@ -126,7 +141,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $class = $this->class;
 
         if (!$class instanceof PhpParser\Node\Stmt\Class_ && !$class instanceof PhpParser\Node\Stmt\Enum_) {
-            throw new \LogicException('Something went badly wrong');
+            throw new LogicException('Something went badly wrong');
         }
 
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
@@ -184,14 +199,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $bounds = $storage->namespace_name_location->getSelectionBounds();
 
                         $file_manipulations = [
-                            new \Psalm\FileManipulation(
+                            new FileManipulation(
                                 $bounds[0],
                                 $bounds[1],
                                 $destination_ns
                             )
                         ];
 
-                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                        FileManipulationBuffer::add(
                             $this->getFilePath(),
                             $file_manipulations
                         );
@@ -203,7 +218,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         }
 
                         $file_manipulations = [
-                            new \Psalm\FileManipulation(
+                            new FileManipulation(
                                 $first_statement_pos,
                                 $first_statement_pos,
                                 'namespace ' . $destination_ns . ';' . "\n\n",
@@ -211,7 +226,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             )
                         ];
 
-                        \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                        FileManipulationBuffer::add(
                             $this->getFilePath(),
                             $file_manipulations
                         );
@@ -278,7 +293,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $static_self = new Type\Atomic\TNamedObject($storage->name);
             $static_self->was_static = true;
 
-            $union = \Psalm\Internal\Type\TypeExpander::expandUnion(
+            $union = TypeExpander::expandUnion(
                 $codebase,
                 $union,
                 $storage->name,
@@ -341,7 +356,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($this->leftover_stmts) {
             (new StatementsAnalyzer(
                 $this,
-                new \Psalm\Internal\Provider\NodeDataProvider()
+                new NodeDataProvider()
             ))->analyze(
                 $this->leftover_stmts,
                 $class_context
@@ -447,7 +462,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             && $property_storage->type_location
                             && $property_storage->type_location !== $property_storage->signature_type_location
                         ) {
-                            $replace_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                            $replace_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $property_storage->type,
                                 $this->getFQCLN(),
@@ -467,14 +482,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
                             if ($property_id === $original_property_id) {
                                 $file_manipulations = [
-                                    new \Psalm\FileManipulation(
+                                    new FileManipulation(
                                         (int) $prop->name->getAttribute('startFilePos'),
                                         (int) $prop->name->getAttribute('endFilePos') + 1,
                                         '$' . $new_property_name
                                     )
                                 ];
 
-                                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                                FileManipulationBuffer::add(
                                     $this->getFilePath(),
                                     $file_manipulations
                                 );
@@ -491,14 +506,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
                         if ($const_id === $original_const_id) {
                             $file_manipulations = [
-                                new \Psalm\FileManipulation(
+                                new FileManipulation(
                                     (int) $const->name->getAttribute('startFilePos'),
                                     (int) $const->name->getAttribute('endFilePos') + 1,
                                     $new_const_name
                                 )
                             ];
 
-                            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                            FileManipulationBuffer::add(
                                 $this->getFilePath(),
                                 $file_manipulations
                             );
@@ -508,7 +523,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $statements_analyzer = new StatementsAnalyzer($this, new \Psalm\Internal\Provider\NodeDataProvider());
+        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context, true);
 
         $config = Config::getInstance();
@@ -540,7 +555,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     try {
                         $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         continue;
                     }
 
@@ -588,7 +603,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
 
         foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new \Psalm\Internal\MethodIdentifier(
+            $pseudo_method_id = new MethodIdentifier(
                 $this->fq_class_name,
                 $pseudo_method_name
             );
@@ -637,7 +652,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
         $file_manipulations = $event->getFileReplacements();
         if ($file_manipulations) {
-            \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+            FileManipulationBuffer::add(
                 $this->getFilePath(),
                 $file_manipulations
             );
@@ -738,7 +753,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     // Get actual types used for templates (to support @template-covariant)
-                    $template_standins = new \Psalm\Internal\Type\TemplateResult($lower_bounds, []);
+                    $template_standins = new TemplateResult($lower_bounds, []);
                     TemplateStandinTypeReplacer::replace(
                         $guide_property_type,
                         $template_standins,
@@ -770,7 +785,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_class = $parent_storage->parent_class;
                     }
 
-                    $template_result = new \Psalm\Internal\Type\TemplateResult([], $lower_bounds);
+                    $template_result = new TemplateResult([], $lower_bounds);
 
                     TemplateInferredTypeReplacer::replace(
                         $guide_property_type,
@@ -827,7 +842,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $property_type_location = $property_storage->type_location;
 
             $fleshed_out_type = !$property_type->isMixed()
-                ? \Psalm\Internal\Type\TypeExpander::expandUnion(
+                ? TypeExpander::expandUnion(
                     $codebase,
                     $property_type,
                     $fq_class_name,
@@ -858,7 +873,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
-                        $type_params[] = clone \array_values($type_map)[0];
+                        $type_params[] = clone array_values($type_map)[0];
                     }
 
                     $this_object_type = new Type\Atomic\TGenericObject($this_object_type->value, $type_params);
@@ -907,7 +922,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 if ($property_storage->signature_type) {
-                    $union_comparison_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                    $union_comparison_result = new TypeComparisonResult();
 
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
@@ -945,7 +960,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (isset($class_context->vars_in_scope['$this->' . $property_name])) {
                 $fleshed_out_type = !$property_type->isMixed()
-                    ? \Psalm\Internal\Type\TypeExpander::expandUnion(
+                    ? TypeExpander::expandUnion(
                         $codebase,
                         $property_type,
                         $fq_class_name,
@@ -1215,7 +1230,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $constructor_analyzer->analyze(
                 $method_context,
-                new \Psalm\Internal\Provider\NodeDataProvider(),
+                new NodeDataProvider(),
                 $global_context,
                 true
             );
@@ -1542,7 +1557,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->alter_code
             && $source === $this
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-            && !\in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && !in_array('MissingPropertyType', $this->getSuppressedIssues())
             && $suggested_type
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
@@ -1626,8 +1641,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $config = Config::getInstance();
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
-            \Psalm\IssueBuffer::add(
-                new \Psalm\Issue\ParseError(
+            IssueBuffer::add(
+                new ParseError(
                     'Non-abstract class method must have statements',
                     new CodeLocation($this, $stmt)
                 )
@@ -1638,9 +1653,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         try {
             $method_analyzer = new MethodAnalyzer($stmt, $source);
-        } catch (\UnexpectedValueException $e) {
-            \Psalm\IssueBuffer::add(
-                new \Psalm\Issue\ParseError(
+        } catch (UnexpectedValueException $e) {
+            IssueBuffer::add(
+                new ParseError(
                     'Problem loading method: ' . $e->getMessage(),
                     new CodeLocation($this, $stmt)
                 )
@@ -1668,8 +1683,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $declaring_method_storage = $method_analyzer->getFunctionLikeStorage();
 
-                if (!$declaring_method_storage instanceof \Psalm\Storage\MethodStorage) {
-                    throw new \LogicException('This should never happen');
+                if (!$declaring_method_storage instanceof MethodStorage) {
+                    throw new LogicException('This should never happen');
                 }
 
                 if ($declaring_method_id && $declaring_method_storage->abstract) {
@@ -1758,7 +1773,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
 
-        $type_provider = new \Psalm\Internal\Provider\NodeDataProvider();
+        $type_provider = new NodeDataProvider();
 
         $method_analyzer->analyze(
             $method_context,
@@ -1808,7 +1823,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $template_params[] = new Type\Union([
                     new Type\Atomic\TTemplateParam(
                         $param_name,
-                        \reset($template_map),
+                        reset($template_map),
                         $key
                     )
                 ]);
@@ -1827,12 +1842,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodAnalyzer $method_analyzer,
         SourceAnalyzer $source,
-        \Psalm\Internal\Provider\NodeDataProvider $type_provider,
+        NodeDataProvider $type_provider,
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         string $fq_classlike_name,
-        \Psalm\Internal\MethodIdentifier $analyzed_method_id,
-        \Psalm\Internal\MethodIdentifier $actual_method_id,
+        MethodIdentifier $analyzed_method_id,
+        MethodIdentifier $actual_method_id,
         bool $did_explicitly_return
     ) : void {
         $secondary_return_type_location = null;
@@ -1874,7 +1889,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $this_object_type
             ) ?: [];
 
-            $template_result = new \Psalm\Internal\Type\TemplateResult(
+            $template_result = new TemplateResult(
                 $class_template_params ?: [],
                 []
             );
@@ -2083,7 +2098,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (!$template_type->isMixed()) {
                         $template_type_copy = clone $template_type;
 
-                        $template_result = new \Psalm\Internal\Type\TemplateResult(
+                        $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             []
                         );
@@ -2191,7 +2206,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 return false;
             }
 
@@ -2227,7 +2242,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 return false;
             }
 
@@ -2283,7 +2298,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
                     $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $this->fq_class_name,
                             $interface_method_name_lc
                         )
@@ -2327,7 +2342,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId(
-                        new \Psalm\Internal\MethodIdentifier(
+                        new MethodIdentifier(
                             $this->fq_class_name,
                             $interface_method_name_lc
                         )
@@ -2414,7 +2429,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         if (!$parent_fq_class_name) {
-            throw new \UnexpectedValueException('Parent class should be filled in for ' . $fq_class_name);
+            throw new UnexpectedValueException('Parent class should be filled in for ' . $fq_class_name);
         }
 
         $parent_reference_location = new CodeLocation($this, $extended_class);
@@ -2550,7 +2565,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->template_extended_count ?? 0
                 );
             }
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             // do nothing
         }
     }

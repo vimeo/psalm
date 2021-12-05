@@ -1,11 +1,16 @@
 <?php
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use UnexpectedValueException;
 
-class StrTrReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface
+use function in_array;
+
+class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -23,14 +28,14 @@ class StrTrReturnTypeProvider implements \Psalm\Plugin\EventHandler\FunctionRetu
         $call_args = $event->getCallArgs();
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
-        if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
-            throw new \UnexpectedValueException();
+        if (!$statements_source instanceof StatementsAnalyzer) {
+            throw new UnexpectedValueException();
         }
 
         $type = Type::getString();
 
         if ($statements_source->data_flow_graph
-            && !\in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
+            && !in_array('TaintedInput', $statements_source->getSuppressedIssues())) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,

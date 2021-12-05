@@ -1,7 +1,10 @@
 <?php
 namespace Psalm\Internal\ExecutionEnvironment;
 
+use RuntimeException;
+
 use function exec;
+use function function_exists;
 use function sprintf;
 
 /**
@@ -16,14 +19,14 @@ final class SystemCommandExecutor
      * Execute command.
      *
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      *
      * @return string[]
      */
     public function execute(string $command) : array
     {
-        if (!\function_exists('exec')) {
-            throw new \RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));
+        if (!function_exists('exec')) {
+            throw new RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));
         }
 
         exec($command, $result, $returnValue);
@@ -33,6 +36,6 @@ final class SystemCommandExecutor
             return $result;
         }
 
-        throw new \RuntimeException(sprintf('Failed to execute command: %s', $command), $returnValue);
+        throw new RuntimeException(sprintf('Failed to execute command: %s', $command), $returnValue);
     }
 }

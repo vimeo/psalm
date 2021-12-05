@@ -17,15 +17,19 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\TaintKindGroup;
 
 use function array_filter;
+use function array_map;
 use function array_merge;
+use function array_values;
 use function count;
 use function explode;
 use function in_array;
@@ -152,11 +156,11 @@ class FunctionLikeDocblockScanner
             $throw_location = new CodeLocation\DocblockTypeLocation(
                 $file_scanner,
                 $offset,
-                $offset + \strlen($throw),
+                $offset + strlen($throw),
                 $line
             );
 
-            $class_names = \array_filter(\array_map('trim', explode('|', $throw)));
+            $class_names = array_filter(array_map('trim', explode('|', $throw)));
 
             foreach ($class_names as $throw_class) {
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
@@ -327,7 +331,7 @@ class FunctionLikeDocblockScanner
             if ($taint_source_type === 'input') {
                 $storage->taint_source_types = array_merge(
                     $storage->taint_source_types,
-                    \Psalm\Type\TaintKindGroup::ALL_INPUT
+                    TaintKindGroup::ALL_INPUT
                 );
             } else {
                 $storage->taint_source_types[] = $taint_source_type;
@@ -865,7 +869,7 @@ class FunctionLikeDocblockScanner
      */
     private static function handleReturn(
         Codebase $codebase,
-        \Psalm\Internal\Scanner\FunctionDocblockComment $docblock_info,
+        FunctionDocblockComment $docblock_info,
         string $docblock_return_type,
         bool $fake_method,
         FileScanner $file_scanner,
@@ -916,7 +920,7 @@ class FunctionLikeDocblockScanner
             );
 
             $storage->return_type = TypeParser::parseTokens(
-                \array_values($fixed_type_tokens),
+                array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
                 $type_aliases
@@ -1008,7 +1012,7 @@ class FunctionLikeDocblockScanner
     }
 
     private static function handleTaintFlow(
-        \Psalm\Internal\Scanner\FunctionDocblockComment $docblock_info,
+        FunctionDocblockComment $docblock_info,
         FunctionLikeStorage $storage
     ): void {
         if ($docblock_info->flows) {
@@ -1045,7 +1049,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
-                if (isset($flow_parts[0]) && \strpos(trim($flow_parts[0]), 'proxy') === 0) {
+                if (isset($flow_parts[0]) && strpos(trim($flow_parts[0]), 'proxy') === 0) {
                     $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
                     [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
 
@@ -1109,7 +1113,7 @@ class FunctionLikeDocblockScanner
             );
 
             $removed_taint = TypeParser::parseTokens(
-                \array_values($fixed_type_tokens),
+                array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
                 $type_aliases
@@ -1117,7 +1121,7 @@ class FunctionLikeDocblockScanner
 
             $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
 
-            $removed_taint_single = \array_values($removed_taint->getAtomicTypes())[0];
+            $removed_taint_single = array_values($removed_taint->getAtomicTypes())[0];
 
             if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
                 throw new TypeParseTreeException('Escaped taint must be a conditional');
@@ -1138,7 +1142,7 @@ class FunctionLikeDocblockScanner
      * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
      */
     private static function handleAssertions(
-        \Psalm\Internal\Scanner\FunctionDocblockComment $docblock_info,
+        FunctionDocblockComment $docblock_info,
         FunctionLikeStorage $storage,
         Codebase $codebase,
         FileScanner $file_scanner,
@@ -1174,7 +1178,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->assertions[] = new Assertion(
                             $i,
                             [$assertion_type_parts]
                         );
@@ -1182,7 +1186,7 @@ class FunctionLikeDocblockScanner
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->assertions[] = new Assertion(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
                             [$assertion_type_parts]
                         );
@@ -1190,7 +1194,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
-                $storage->assertions[] = new \Psalm\Storage\Assertion(
+                $storage->assertions[] = new Assertion(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
@@ -1221,7 +1225,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->if_true_assertions[] = new Assertion(
                             $i,
                             [$assertion_type_parts]
                         );
@@ -1229,7 +1233,7 @@ class FunctionLikeDocblockScanner
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->if_true_assertions[] = new Assertion(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
                             [$assertion_type_parts]
                         );
@@ -1237,7 +1241,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
-                $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                $storage->if_true_assertions[] = new Assertion(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
@@ -1268,7 +1272,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->if_false_assertions[] = new Assertion(
                             $i,
                             [$assertion_type_parts]
                         );
@@ -1276,7 +1280,7 @@ class FunctionLikeDocblockScanner
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
+                        $storage->if_false_assertions[] = new Assertion(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
                             [$assertion_type_parts]
                         );
@@ -1284,7 +1288,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
 
-                $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
+                $storage->if_false_assertions[] = new Assertion(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
                     [$assertion_type_parts]
                 );
@@ -1354,7 +1358,7 @@ class FunctionLikeDocblockScanner
      */
     private static function handleTemplates(
         FunctionLikeStorage $storage,
-        \Psalm\Internal\Scanner\FunctionDocblockComment $docblock_info,
+        FunctionDocblockComment $docblock_info,
         Aliases $aliases,
         ?array $template_types,
         array $type_aliases,

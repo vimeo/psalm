@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -13,16 +18,22 @@ use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use UnexpectedValueException;
 
+use function array_merge;
 use function array_pop;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
+use function in_array;
+use function is_int;
 use function reset;
 use function strtolower;
 
@@ -117,7 +128,7 @@ class Methods
 
         try {
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return false;
         }
 
@@ -127,7 +138,7 @@ class Methods
             }
 
             if ($class_storage->enum_type
-                && \in_array($method_name, ['from', 'tryFrom'], true)
+                && in_array($method_name, ['from', 'tryFrom'], true)
             ) {
                 return true;
             }
@@ -374,7 +385,7 @@ class Methods
                 $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
 
                 if ($function_callables === null) {
-                    throw new \UnexpectedValueException(
+                    throw new UnexpectedValueException(
                         'Not expecting $function_callables to be null for ' . $callmap_id
                     );
                 }
@@ -385,13 +396,13 @@ class Methods
                     return $function_callables[0]->params;
                 }
 
-                if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                if ($context && $source instanceof StatementsAnalyzer) {
                     $was_inside_call = $context->inside_call;
 
                     $context->inside_call = true;
 
                     foreach ($args as $arg) {
-                        \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::analyze(
+                        ExpressionAnalyzer::analyze(
                             $source,
                             $arg->value,
                             $context
@@ -482,7 +493,7 @@ class Methods
             return $params;
         }
 
-        throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
+        throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
     }
 
     public static function localizeType(
@@ -524,7 +535,7 @@ class Methods
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
-                        $types = \array_values($extended_param->getAtomicTypes());
+                        $types = array_values($extended_param->getAtomicTypes());
 
                         if (count($types) === 1 && $types[0] instanceof Type\Atomic\TNamedObject) {
                             $atomic_type->as_type = $types[0];
@@ -616,7 +627,7 @@ class Methods
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
                 if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                    $extra_added_types = \array_merge(
+                    $extra_added_types = array_merge(
                         $extra_added_types,
                         self::getExtendedTemplatedTypes(
                             $extended_atomic_type,
@@ -652,7 +663,7 @@ class Methods
     public function getMethodReturnType(
         MethodIdentifier $method_id,
         ?string &$self_class,
-        ?\Psalm\Internal\Analyzer\SourceAnalyzer $source_analyzer = null,
+        ?SourceAnalyzer $source_analyzer = null,
         ?array $args = null
     ): ?Type\Union {
         $original_fq_class_name = $method_id->fq_class_name;
@@ -727,7 +738,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        \is_int($case_storage->value) ?
+                        is_int($case_storage->value) ?
                             Type::getInt(false, $case_storage->value) :
                             Type::getString($case_storage->value),
                         $first_arg_type
@@ -789,7 +800,7 @@ class Methods
             $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $appearing_method_id);
 
             if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                throw new \UnexpectedValueException('Shouldn’t get here');
+                throw new UnexpectedValueException('Shouldn’t get here');
             }
 
             $return_type_candidate = $callmap_callables[0]->return_type;
@@ -844,7 +855,7 @@ class Methods
                 $overridden_class_storage =
                     $this->classlike_storage_provider->get($overridden_method_id->fq_class_name);
 
-                $overridden_storage_return_type = \Psalm\Internal\Type\TypeExpander::expandUnion(
+                $overridden_storage_return_type = TypeExpander::expandUnion(
                     $source_analyzer->getCodebase(),
                     clone $overridden_storage->return_type,
                     $overridden_method_id->fq_class_name,
@@ -1146,11 +1157,11 @@ class Methods
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
-            if (\Psalm\Internal\Codebase\InternalCallMapHandler::inCallMap((string) $method_id)) {
+            if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 return null;
             }
 
-            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+            throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
         $storage = $this->getStorage($declaring_method_id);
@@ -1184,7 +1195,7 @@ class Methods
             if (InternalCallMapHandler::inCallMap((string) $method_id)) {
                 $declaring_method_id = $method_id;
             } else {
-                throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+                throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
             }
         }
 
@@ -1197,14 +1208,14 @@ class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (\InvalidArgumentException $e) {
-            throw new \UnexpectedValueException($e->getMessage());
+        } catch (InvalidArgumentException $e) {
+            throw new UnexpectedValueException($e->getMessage());
         }
 
         $method_name = $method_id->method_name;
 
         if (!isset($class_storage->methods[$method_name])) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id
             );
         }
@@ -1216,7 +1227,7 @@ class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return false;
         }
 

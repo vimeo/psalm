@@ -4,11 +4,16 @@ namespace Psalm\Tests;
 
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\IssueBuffer;
 use Psalm\Report\ReportOptions;
+
+use function microtime;
+use function ob_get_clean;
+use function ob_start;
 
 class IssueBufferTest extends TestCase
 {
@@ -18,7 +23,7 @@ class IssueBufferTest extends TestCase
         IssueBuffer::clear();
         IssueBuffer::addIssues([
             '/path/one.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,
@@ -37,7 +42,7 @@ class IssueBufferTest extends TestCase
                 )
             ],
             '/path/two.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,
@@ -56,7 +61,7 @@ class IssueBufferTest extends TestCase
                 )
             ],
             '/path/three.php' => [
-                new \Psalm\Internal\Analyzer\IssueData(
+                new IssueData(
                     "error",
                     0,
                     0,
@@ -99,9 +104,9 @@ class IssueBufferTest extends TestCase
         $projectAnalzyer->stdout_report_options = new ReportOptions();
         $projectAnalzyer->generated_report_options = [];
 
-        \ob_start();
-        IssueBuffer::finish($projectAnalzyer, false, \microtime(true), false, $baseline);
-        $output = \ob_get_clean();
+        ob_start();
+        IssueBuffer::finish($projectAnalzyer, false, microtime(true), false, $baseline);
+        $output = ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }

@@ -2,11 +2,12 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 
 use function count;
 
-class SimpleXmlElementAsXml implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
+class SimpleXmlElementAsXml implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames() : array
     {

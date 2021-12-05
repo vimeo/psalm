@@ -1,15 +1,22 @@
 <?php
 namespace Psalm\Tests\Config;
 
+use Composer\Autoload\ClassLoader;
+use ErrorException;
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_map;
@@ -31,12 +38,12 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-class ConfigTest extends \Psalm\Tests\TestCase
+class ConfigTest extends TestCase
 {
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public static function setUpBeforeClass() : void
@@ -58,13 +65,13 @@ class ConfigTest extends \Psalm\Tests\TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): \Psalm\Internal\Analyzer\ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
-        $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
 
@@ -199,7 +206,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
             $last_error = error_get_last();
 
             if (is_array($last_error) && !preg_match($regex, $last_error['message'])) {
-                throw new \ErrorException(
+                throw new ErrorException(
                     $last_error['message'],
                     0,
                     $last_error['type'],
@@ -787,7 +794,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
                 function ($issue_name): string {
                     return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
                 },
-                \Psalm\Config\IssueHandler::getAllIssueTypes()
+                IssueHandler::getAllIssueTypes()
             )
         );
 
@@ -931,7 +938,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -979,7 +986,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
     public function testInvalidThrowValidCatch(): void
     {
         $this->expectExceptionMessage('InvalidThrow');
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -1261,7 +1268,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
     public function testNotIgnoredException() : void
     {
-        $this->expectException(\Psalm\Exception\CodeException::class);
+        $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MissingThrowsDocblock');
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1311,7 +1318,7 @@ class ConfigTest extends \Psalm\Tests\TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $classloader = new \Composer\Autoload\ClassLoader();
+        $classloader = new ClassLoader();
         $classloader->addPsr4(
             'Psalm\\',
             [

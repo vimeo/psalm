@@ -4,16 +4,21 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+use UnexpectedValueException;
 
 use function array_shift;
 use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -61,12 +66,12 @@ class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?\Psalm\Internal\Provider\NodeDataProvider $nodes
+        ?NodeDataProvider $nodes
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
         if ($possible_callables === null) {
-            throw new \UnexpectedValueException(
+            throw new UnexpectedValueException(
                 'Not expecting $function_param_options to be null for ' . $method_id
             );
         }
@@ -89,7 +94,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         array $callables,
         array $args,
-        ?\Psalm\NodeTypeProvider $nodes,
+        ?NodeTypeProvider $nodes,
         string $method_id
     ): TCallable {
         if (count($callables) === 1) {
@@ -170,7 +175,7 @@ class InternalCallMapHandler
                     }
                 }
 
-                $arg_result = new \Psalm\Internal\Type\Comparator\TypeComparisonResult();
+                $arg_result = new TypeComparisonResult();
 
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -286,7 +291,7 @@ class InternalCallMapHandler
 
                 $out_type = null;
 
-                if (\strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
+                if (strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
                     $out_type = $param_type;
                     $param_type = Type::getMixed();
                 }

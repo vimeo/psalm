@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Scope;
 
+use Psalm\Context;
 use Psalm\Internal\Clause;
 use Psalm\Type;
 
@@ -86,7 +87,7 @@ class IfScope
     public $final_actions = [];
 
     /**
-     * @var ?\Psalm\Context
+     * @var ?Context
      */
     public $post_leaving_if_context;
 }

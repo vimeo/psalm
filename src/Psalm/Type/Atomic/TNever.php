@@ -1,11 +1,13 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or
  * terminating (like the builtin `exit()`).
  */
-class TNever extends \Psalm\Type\Atomic
+class TNever extends Atomic
 {
     public function __toString(): string
     {

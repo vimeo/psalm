@@ -2,16 +2,19 @@
 namespace Psalm\Tests;
 
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use UnexpectedValueException;
 
 use function count;
 use function strpos;
 
 class FileReferenceTest extends TestCase
 {
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
     public function setUp() : void
@@ -20,11 +23,11 @@ class FileReferenceTest extends TestCase
 
         $this->file_provider = new FakeFileProvider();
 
-        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Internal\Provider\Providers(
+            new Providers(
                 $this->file_provider,
-                new Provider\FakeParserCacheProvider()
+                new FakeParserCacheProvider()
             )
         );
 
@@ -58,7 +61,7 @@ class FileReferenceTest extends TestCase
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
 
         if (!$found_references) {
-            throw new \UnexpectedValueException('No file references found in this file');
+            throw new UnexpectedValueException('No file references found in this file');
         }
 
         $this->assertSame(count($found_references), count($expected_locations));
