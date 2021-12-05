@@ -10,6 +10,7 @@
       *  Configuration                                                                                                *
       ************************************************************************************************************** -->
 
+    <config name="php_version" value="70100"/>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
     <arg name="basepath" value="."/>
