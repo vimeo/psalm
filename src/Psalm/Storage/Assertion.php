@@ -77,7 +77,7 @@ class Assertion
                                     if ($first_type instanceof TTemplateParam) {
                                         $rule_token[0] = $first_type->param_name;
                                     } else {
-                                        $rule_token[0] = $first_type->getKey();
+                                        $rule_token[0] = $first_type->getId();
                                     }
                                 }
                             }
