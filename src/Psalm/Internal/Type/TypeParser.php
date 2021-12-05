@@ -845,7 +845,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Union
      * @throws TypeParseTreeException
      */
     private static function getTypeFromUnionTree(
@@ -1151,7 +1150,6 @@ class TypeParser
 
     /**
      * @param  array<string, array<string, Union>> $template_type_map
-     * @return Atomic\TTemplateIndexedAccess
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIndexAccessTree(

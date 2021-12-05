@@ -47,8 +47,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     /**
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
-     *
-     * @return Type\Union
      */
     public static function reconcile(
         string $assertion,

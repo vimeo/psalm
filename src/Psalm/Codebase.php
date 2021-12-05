@@ -823,8 +823,6 @@ class Codebase
      *
      * @param  string|MethodIdentifier      $method_id
      * @param  string|MethodIdentifier|null $calling_method_id
-     *
-     @return bool
      */
     public function methodExists(
         $method_id,

@@ -68,7 +68,6 @@ class CodeClimateReport extends Report
     /**
      * convert our own severity to CodeClimate format
      * Values can be : info, minor, major, critical, or blocker
-     * @return string
      */
     protected function convertSeverity(string $input): string
     {
