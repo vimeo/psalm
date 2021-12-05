@@ -242,7 +242,7 @@ class TextDocument
         if (substr( $symbol_information['type'], 0, 6 ) === 'array{') {
             $union = Type::parseString($symbol_information['type']);
             $types = $union->getAtomicTypes();
-            if ( count( $types ) === 1 ) {
+            if (count($types) === 1) {
                 /** @var Type\Atomic\TKeyedArray */
                 $keyed_array = reset($types);
 
