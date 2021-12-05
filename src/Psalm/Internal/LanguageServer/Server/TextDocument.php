@@ -24,12 +24,14 @@ use UnexpectedValueException;
 
 use function addslashes;
 use function array_keys;
+use function array_map;
 use function count;
 use function error_log;
 use function implode;
 use function is_string;
 use function preg_match;
 use function reset;
+use function str_replace;
 use function substr;
 use function substr_count;
 
@@ -239,7 +241,7 @@ class TextDocument
         }
 
         // Pretty print keyed arrays (only).
-        if (substr( $symbol_information['type'], 0, 6 ) === 'array{') {
+        if (substr($symbol_information['type'], 0, 6) === 'array{') {
             $union = Type::parseString($symbol_information['type']);
             $types = $union->getAtomicTypes();
             if (count($types) === 1) {
