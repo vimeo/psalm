@@ -550,7 +550,10 @@ class PluginTest extends TestCase
         );
 
         $hook = new class implements AfterCodebasePopulatedInterface {
-            /** @return void */
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }

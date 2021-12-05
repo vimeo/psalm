@@ -2100,7 +2100,7 @@ class Config
             $codebase->classlikes->forgetMissingClassLikes();
 
             $this->include_collector->runAndCollect(
-                function () {
+                function (): void {
                     // do this in a separate method so scope does not leak
                     /** @psalm-suppress UnresolvableInclude */
                     require $this->autoloader;

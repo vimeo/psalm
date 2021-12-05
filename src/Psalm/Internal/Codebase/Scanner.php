@@ -361,7 +361,7 @@ class Scanner
             // files up among a given number of child processes.
             $pool = new Pool(
                 $process_file_paths,
-                function () {
+                function (): void {
                     $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 
                     $project_analyzer = ProjectAnalyzer::getInstance();

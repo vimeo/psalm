@@ -14,6 +14,7 @@ interface AfterClassLikeVisitInterface
      * @param  FileManipulation[] $file_replacements
      *
      * @return void
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
      */
     public static function afterClassLikeVisit(
         ClassLike $stmt,

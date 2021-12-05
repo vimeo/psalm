@@ -124,8 +124,7 @@ class ProjectCheckerTest extends TestCase
             /** @var bool */
             public static $called = false;
 
-            /** @return void */
-            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
             {
                 self::$called = true;
             }

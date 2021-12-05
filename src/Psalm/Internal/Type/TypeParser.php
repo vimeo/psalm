@@ -909,7 +909,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Atomic
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIntersectionTree(
@@ -917,7 +916,7 @@ class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
-    ) {
+    ): Atomic {
         $intersection_types = array_map(
             function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
                 $atomic_type = self::getTypeFromTree(
