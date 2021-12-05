@@ -19,7 +19,7 @@ class InstanceofAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Instanceof_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
 

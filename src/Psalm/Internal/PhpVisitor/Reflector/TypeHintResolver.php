@@ -27,7 +27,7 @@ class TypeHintResolver
         Aliases $aliases,
         int $php_major_version,
         int $php_minor_version
-    ) : Type\Union {
+    ): Type\Union {
         if ($hint instanceof PhpParser\Node\UnionType) {
             $type = null;
 

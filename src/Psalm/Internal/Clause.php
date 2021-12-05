@@ -189,7 +189,7 @@ class Clause
         return reset($clause_strings);
     }
 
-    public function makeUnique() : self
+    public function makeUnique(): self
     {
         $possibilities = $this->possibilities;
 
@@ -208,7 +208,7 @@ class Clause
         );
     }
 
-    public function removePossibilities(string $var_id) : ?self
+    public function removePossibilities(string $var_id): ?self
     {
         $possibilities = $this->possibilities;
         unset($possibilities[$var_id]);
@@ -231,7 +231,7 @@ class Clause
     /**
      * @param non-empty-list<string> $clause_var_possibilities
      */
-    public function addPossibilities(string $var_id, array $clause_var_possibilities) : self
+    public function addPossibilities(string $var_id, array $clause_var_possibilities): self
     {
         $possibilities = $this->possibilities;
         $possibilities[$var_id] = $clause_var_possibilities;
@@ -247,7 +247,7 @@ class Clause
         );
     }
 
-    public function calculateNegation() : self
+    public function calculateNegation(): self
     {
         if ($this->impossibilities !== null) {
             return $this;

@@ -26,7 +26,7 @@ class ConstantTypeResolver
         UnresolvedConstantComponent $c,
         StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
-    ) : Type\Atomic {
+    ): Type\Atomic {
         $c_id = spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
@@ -305,7 +305,7 @@ class ConstantTypeResolver
     /**
      * @param  string|int|float|bool|null $value
      */
-    private static function getLiteralTypeFromScalarValue($value) : Type\Atomic
+    private static function getLiteralTypeFromScalarValue($value): Type\Atomic
     {
         if (is_string($value)) {
             return new Type\Atomic\TLiteralString($value);

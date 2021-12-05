@@ -18,7 +18,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(PropertyTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(PropertyTypeProviderEvent): ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -32,7 +32,7 @@ class PropertyTypeProvider
      *     bool,
      *     ?StatementsSource=,
      *     ?Context=
-     *   ) : ?Type\Union>
+     *   ): ?Type\Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -66,7 +66,7 @@ class PropertyTypeProvider
     }
 
     /**
-     * @param Closure(PropertyTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(PropertyTypeProviderEvent): ?Type\Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -80,14 +80,14 @@ class PropertyTypeProvider
      *     bool,
      *     ?StatementsSource=,
      *     ?Context=
-     *   ) : ?Type\Union $c
+     *   ): ?Type\Union $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

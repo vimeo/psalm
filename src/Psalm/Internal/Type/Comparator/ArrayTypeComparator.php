@@ -31,7 +31,7 @@ class ArrayTypeComparator
         Type\Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
-    ) : bool {
+    ): bool {
         $all_types_contain = true;
 
         $is_empty_array = $input_type_part->equals(

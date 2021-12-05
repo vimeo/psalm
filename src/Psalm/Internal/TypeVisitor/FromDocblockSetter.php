@@ -15,7 +15,7 @@ class FromDocblockSetter extends NodeVisitor
      * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         $type->from_docblock = true;
 

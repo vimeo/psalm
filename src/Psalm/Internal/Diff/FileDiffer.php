@@ -34,7 +34,7 @@ class FileDiffer
     private static function calculateTrace(
         array $a,
         array $b
-    ) : array {
+    ): array {
         $n = count($a);
         $m = count($b);
         $max = $n + $m;
@@ -74,7 +74,7 @@ class FileDiffer
      *
      * @psalm-pure
      */
-    private static function extractDiff(array $trace, int $x, int $y, array $a, array $b) : array
+    private static function extractDiff(array $trace, int $x, int $y, array $a, array $b): array
     {
         $result = [];
         for ($d = count($trace) - 1; $d >= 0; --$d) {

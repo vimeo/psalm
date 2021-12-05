@@ -325,7 +325,7 @@ class Reconciler
      *
      * @return array<string, array<array<int, string>>>
      */
-    private static function addNestedAssertions(array $new_types, array $existing_types) : array
+    private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
@@ -823,7 +823,7 @@ class Reconciler
         Codebase $codebase,
         string $fq_class_name,
         string $property_name
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
         if (!$codebase->properties->propertyExists($property_id, true)) {
@@ -1080,7 +1080,7 @@ class Reconciler
         }
     }
 
-    protected static function refineArrayKey(Union $key_type) : void
+    protected static function refineArrayKey(Union $key_type): void
     {
         foreach ($key_type->getAtomicTypes() as $key => $cat) {
             if ($cat instanceof TTemplateParam) {

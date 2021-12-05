@@ -58,7 +58,7 @@ class TaintFlowGraph extends DataFlowGraph
     /** @var array<string, array<string, true>> */
     private $specializations = [];
 
-    public function addNode(DataFlowNode $node) : void
+    public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;
 
@@ -68,19 +68,19 @@ class TaintFlowGraph extends DataFlowGraph
         }
     }
 
-    public function addSource(TaintSource $node) : void
+    public function addSource(TaintSource $node): void
     {
         $this->sources[$node->id] = $node;
     }
 
-    public function addSink(TaintSink $node) : void
+    public function addSink(TaintSink $node): void
     {
         $this->sinks[$node->id] = $node;
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $node;
     }
 
-    public function addGraph(self $taint) : void
+    public function addGraph(self $taint): void
     {
         $this->sources += $taint->sources;
         $this->sinks += $taint->sinks;
@@ -104,7 +104,7 @@ class TaintFlowGraph extends DataFlowGraph
         }
     }
 
-    public function getPredecessorPath(DataFlowNode $source) : string
+    public function getPredecessorPath(DataFlowNode $source): string
     {
         $location_summary = '';
 
@@ -135,7 +135,7 @@ class TaintFlowGraph extends DataFlowGraph
         return $source_descriptor;
     }
 
-    public function getSuccessorPath(DataFlowNode $sink) : string
+    public function getSuccessorPath(DataFlowNode $sink): string
     {
         $location_summary = '';
 
@@ -169,7 +169,7 @@ class TaintFlowGraph extends DataFlowGraph
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
      */
-    public function getIssueTrace(DataFlowNode $source) : array
+    public function getIssueTrace(DataFlowNode $source): array
     {
         $previous_source = $source->previous;
 
@@ -190,7 +190,7 @@ class TaintFlowGraph extends DataFlowGraph
         return [$node];
     }
 
-    public function connectSinksAndSources() : void
+    public function connectSinksAndSources(): void
     {
         $visited_source_ids = [];
 
@@ -241,7 +241,7 @@ class TaintFlowGraph extends DataFlowGraph
         array $source_taints,
         array $sinks,
         array $visited_source_ids
-    ) : array {
+    ): array {
         $new_sources = [];
 
         $config = Config::getInstance();
@@ -474,7 +474,7 @@ class TaintFlowGraph extends DataFlowGraph
     }
 
     /** @return array<int, DataFlowNode> */
-    private function getSpecializedSources(DataFlowNode $source) : array
+    private function getSpecializedSources(DataFlowNode $source): array
     {
         $generated_sources = [];
 

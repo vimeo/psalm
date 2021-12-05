@@ -77,7 +77,7 @@ class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null
-    ) : array {
+    ): array {
         $var_id = null;
 
         $var_type_tokens = null;
@@ -211,7 +211,7 @@ class CommentAnalyzer
     private static function decorateVarDocblockComment(
         VarDocblockComment $var_comment,
         ParsedDocblock $parsed_docblock
-    ) : void {
+    ): void {
         $var_comment->deprecated = isset($parsed_docblock->tags['deprecated']);
         $var_comment->internal = isset($parsed_docblock->tags['internal']);
         $var_comment->readonly = isset($parsed_docblock->tags['readonly'])
@@ -252,7 +252,7 @@ class CommentAnalyzer
     /**
      * @psalm-pure
      */
-    public static function sanitizeDocblockType(string $docblock_type) : string
+    public static function sanitizeDocblockType(string $docblock_type): string
     {
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
         $docblock_type = preg_replace('/,\n\s+\}/', '}', $docblock_type);

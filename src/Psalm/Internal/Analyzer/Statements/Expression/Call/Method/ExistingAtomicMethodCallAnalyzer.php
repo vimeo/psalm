@@ -58,7 +58,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result
-    ) : Type\Union {
+    ): Type\Union {
         $config = $codebase->config;
 
         $fq_class_name = $lhs_type_part->value;
@@ -300,7 +300,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
                 $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
             }
-    
+
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,
@@ -370,7 +370,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $class_template_params,
                             $lhs_var_id,
                             $codebase
-                        ) : Assertion {
+                        ): Assertion {
                             return $assertion->getUntemplatedCopy(
                                 $class_template_params ?: [],
                                 $lhs_var_id,
@@ -390,7 +390,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $class_template_params,
                             $lhs_var_id,
                             $codebase
-                        ) : Assertion {
+                        ): Assertion {
                             return $assertion->getUntemplatedCopy(
                                 $class_template_params ?: [],
                                 $lhs_var_id,
@@ -468,7 +468,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
         string $fq_class_name
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $method_name = strtolower($stmt_name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {
             return null;

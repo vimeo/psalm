@@ -282,7 +282,7 @@ class Analyzer
 
         $this->files_to_analyze = array_filter(
             $this->files_to_analyze,
-            function (string $file_path) : bool {
+            function (string $file_path): bool {
                 return $this->file_provider->fileExists($file_path);
             }
         );
@@ -339,7 +339,7 @@ class Analyzer
         }
     }
 
-    private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size) : void
+    private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
     {
         $this->progress->start(count($this->files_to_analyze));
 
@@ -1147,7 +1147,7 @@ class Analyzer
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getMixedMemberNames() : array
+    public function getMixedMemberNames(): array
     {
         return $this->mixed_member_names;
     }
@@ -1157,7 +1157,7 @@ class Analyzer
         $this->mixed_member_names[$member_id][$reference] = true;
     }
 
-    public function hasMixedMemberName(string $member_id) : bool
+    public function hasMixedMemberName(string $member_id): bool
     {
         return isset($this->mixed_member_names[$member_id]);
     }
@@ -1266,7 +1266,7 @@ class Analyzer
         return $this->function_timings;
     }
 
-    public function addFunctionTiming(string $function_id, float $time_per_node) : void
+    public function addFunctionTiming(string $function_id, float $time_per_node): void
     {
         $this->function_timings[$function_id] = $time_per_node;
     }
@@ -1620,7 +1620,7 @@ class Analyzer
         return $this->possible_method_param_types;
     }
 
-    public function addMutableClass(string $fqcln) : void
+    public function addMutableClass(string $fqcln): void
     {
         $this->mutable_classes[strtolower($fqcln)] = true;
     }

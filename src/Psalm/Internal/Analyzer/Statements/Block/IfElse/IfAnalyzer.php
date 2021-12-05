@@ -263,7 +263,7 @@ class IfAnalyzer
         IfScope $if_scope,
         Context $post_if_context,
         array $new_assigned_var_ids
-    ) : bool {
+    ): bool {
         if (!$if_scope->negated_types) {
             return false;
         }
@@ -352,7 +352,7 @@ class IfAnalyzer
         Context $post_leaving_if_context,
         Context $post_if_context,
         array $assigned_in_conditional_var_ids
-    ) : void {
+    ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
         $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
 
@@ -432,7 +432,7 @@ class IfAnalyzer
         return [$stmt];
     }
 
-    private static function negateExpr(PhpParser\Node\Expr $expr) : PhpParser\Node\Expr
+    private static function negateExpr(PhpParser\Node\Expr $expr): PhpParser\Node\Expr
     {
         if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
             return $expr->expr;
@@ -455,7 +455,7 @@ class IfAnalyzer
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true
-    ) : void {
+    ): void {
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 
         if ($if_scope->new_vars === null) {

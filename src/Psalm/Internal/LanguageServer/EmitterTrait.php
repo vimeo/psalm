@@ -113,7 +113,7 @@ trait EmitterTrait
      *
      * @return callable[]
      */
-    public function listeners(string $eventName) : array
+    public function listeners(string $eventName): array
     {
         if (!isset($this->listeners[$eventName])) {
             return [];
@@ -137,7 +137,7 @@ trait EmitterTrait
      * If the listener could not be found, this method will return false. If it
      * was removed it will return true.
      */
-    public function removeListener(string $eventName, callable $listener) : bool
+    public function removeListener(string $eventName, callable $listener): bool
     {
         if (!isset($this->listeners[$eventName])) {
             return false;

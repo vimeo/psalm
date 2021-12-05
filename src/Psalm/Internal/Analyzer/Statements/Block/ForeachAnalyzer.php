@@ -979,7 +979,7 @@ class ForeachAnalyzer
                     : array_values(
                         array_map(
                             /** @param array<string, Type\Union> $arr */
-                            function (array $arr) use ($iterator_atomic_type) : Type\Union {
+                            function (array $arr) use ($iterator_atomic_type): Type\Union {
                                 return $arr[$iterator_atomic_type->value] ?? Type::getMixed();
                             },
                             $generic_storage->template_types
@@ -1016,7 +1016,7 @@ class ForeachAnalyzer
         PhpParser\Node\Expr $foreach_expr,
         Context $context,
         string $method_name
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;

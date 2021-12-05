@@ -8,7 +8,7 @@ interface PropertyVisibilityProviderInterface
     /**
      * @return array<string>
      */
-    public static function getClassLikeNames() : array;
+    public static function getClassLikeNames(): array;
 
     public static function isPropertyVisible(PropertyVisibilityProviderEvent $event): ?bool;
 }

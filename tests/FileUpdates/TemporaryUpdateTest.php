@@ -23,7 +23,7 @@ use const DIRECTORY_SEPARATOR;
 
 class TemporaryUpdateTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 

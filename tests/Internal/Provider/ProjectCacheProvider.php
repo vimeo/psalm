@@ -29,12 +29,12 @@ class ProjectCacheProvider extends PsalmProjectCacheProvider
         return $this->last_run > 0;
     }
 
-    public function hasLockfileChanged() : bool
+    public function hasLockfileChanged(): bool
     {
         return false;
     }
 
-    public function updateComposerLockHash() : void
+    public function updateComposerLockHash(): void
     {
     }
 }

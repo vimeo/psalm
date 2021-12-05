@@ -149,7 +149,7 @@ class IssueBuffer
     /**
      * This is part of the findUnusedPsalmSuppress feature
      */
-    public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type) : void
+    public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
     {
         if (strpos($issue_type, 'Tainted') === 0) {
             return;
@@ -173,7 +173,7 @@ class IssueBuffer
      * - The issue is included in the list of issues to be suppressed in param
      * @param string[] $suppressed_issues
      */
-    public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
+    public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []): bool
     {
         $config = Config::getInstance();
 
@@ -329,7 +329,7 @@ class IssueBuffer
     /**
      * This will try to remove an issue that has been added for emission
      */
-    public static function remove(string $file_path, string $issue_type, int $file_offset) : void
+    public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {
         if (!isset(self::$issues_data[$file_path])) {
             return;
@@ -350,7 +350,7 @@ class IssueBuffer
         }
     }
 
-    public static function addFixableIssue(string $issue_type) : void
+    public static function addFixableIssue(string $issue_type): void
     {
         if (isset(self::$fixable_issue_counts[$issue_type])) {
             self::$fixable_issue_counts[$issue_type]++;
@@ -386,7 +386,7 @@ class IssueBuffer
     /**
      * @param array<string, int> $fixable_issue_counts
      */
-    public static function addFixableIssues(array $fixable_issue_counts) : void
+    public static function addFixableIssues(array $fixable_issue_counts): void
     {
         foreach ($fixable_issue_counts as $issue_type => $count) {
             if (isset(self::$fixable_issue_counts[$issue_type])) {
@@ -400,7 +400,7 @@ class IssueBuffer
     /**
      * @return array<string, array<int, int>>
      */
-    public static function getUnusedSuppressions() : array
+    public static function getUnusedSuppressions(): array
     {
         return self::$unused_suppressions;
     }
@@ -408,7 +408,7 @@ class IssueBuffer
     /**
      * @return array<string, array<int, bool>>
      */
-    public static function getUsedSuppressions() : array
+    public static function getUsedSuppressions(): array
     {
         return self::$used_suppressions;
     }
@@ -416,7 +416,7 @@ class IssueBuffer
     /**
      * @param array<string, array<int, int>> $unused_suppressions
      */
-    public static function addUnusedSuppressions(array $unused_suppressions) : void
+    public static function addUnusedSuppressions(array $unused_suppressions): void
     {
         self::$unused_suppressions += $unused_suppressions;
     }
@@ -424,7 +424,7 @@ class IssueBuffer
     /**
      * @param array<string, array<int, bool>> $used_suppressions
      */
-    public static function addUsedSuppressions(array $used_suppressions) : void
+    public static function addUsedSuppressions(array $used_suppressions): void
     {
         foreach ($used_suppressions as $file => $offsets) {
             if (!isset(self::$used_suppressions[$file])) {
@@ -435,7 +435,7 @@ class IssueBuffer
         }
     }
 
-    public static function processUnusedSuppressions(FileProvider $file_provider) : void
+    public static function processUnusedSuppressions(FileProvider $file_provider): void
     {
         $config = Config::getInstance();
 
@@ -539,7 +539,7 @@ class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    function (IssueData $d1, IssueData $d2) : int {
+                    function (IssueData $d1, IssueData $d2): int {
                         if ($d1->file_path === $d2->file_path) {
                             if ($d1->line_from === $d2->line_from) {
                                 if ($d1->column_from === $d2->column_from) {

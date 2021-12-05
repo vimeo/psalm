@@ -13,7 +13,7 @@ class BooleanNotAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BooleanNot $stmt,
         Context $context
-    ) : bool {
+    ): bool {
 
 
         $inside_negation = $context->inside_negation;

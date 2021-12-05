@@ -39,7 +39,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $method_id = null;
 
         $lhs_type = null;
@@ -251,7 +251,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
         ?Context $context = null
-    ) : void {
+    ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
         }

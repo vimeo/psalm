@@ -20,7 +20,7 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(FunctionReturnTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(FunctionReturnTypeProviderEvent): ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -34,7 +34,7 @@ class FunctionReturnTypeProvider
      *     list<Arg>,
      *     Context,
      *     CodeLocation
-     *   ) : ?Type\Union>
+     *   ): ?Type\Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -114,14 +114,14 @@ class FunctionReturnTypeProvider
      *     list<Arg>,
      *     Context,
      *     CodeLocation
-     *   ) : ?Type\Union $c
+     *   ): ?Type\Union $c
      */
     public function registerLegacyClosure(string $function_id, Closure $c): void
     {
         self::$legacy_handlers[$function_id][] = $c;
     }
 
-    public function has(string $function_id) : bool
+    public function has(string $function_id): bool
     {
         return isset(self::$handlers[strtolower($function_id)]) ||
             isset(self::$legacy_handlers[strtolower($function_id)]);

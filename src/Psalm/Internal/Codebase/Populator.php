@@ -447,7 +447,7 @@ class Populator
     private static function extendType(
         Type\Union $type,
         ClassLikeStorage $storage
-    ) : Type\Union {
+    ): Type\Union {
         $extended_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {

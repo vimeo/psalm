@@ -28,12 +28,12 @@ class TDependentGetDebugType extends TString implements DependentType
         return 'get-debug-type-of<' . $this->typeof . '>';
     }
 
-    public function getVarId() : string
+    public function getVarId(): string
     {
         return $this->typeof;
     }
 
-    public function getReplacement() : Atomic
+    public function getReplacement(): Atomic
     {
         return new TString();
     }

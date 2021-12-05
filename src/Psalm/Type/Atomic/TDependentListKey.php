@@ -28,7 +28,7 @@ class TDependentListKey extends TInt implements DependentType
         return 'list-key<' . $this->var_id . '>';
     }
 
-    public function getVarId() : string
+    public function getVarId(): string
     {
         return $this->var_id;
     }
@@ -38,7 +38,7 @@ class TDependentListKey extends TInt implements DependentType
         return 'int';
     }
 
-    public function getReplacement() : Atomic
+    public function getReplacement(): Atomic
     {
         return new TInt();
     }

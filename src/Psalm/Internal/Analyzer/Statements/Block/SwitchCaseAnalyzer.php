@@ -675,7 +675,7 @@ class SwitchCaseAnalyzer
     private static function simplifyCaseEqualityExpression(
         PhpParser\Node\Expr $case_equality_expr,
         PhpParser\Node\Expr\Variable $var
-    ) : ?PhpParser\Node\Expr\FuncCall {
+    ): ?PhpParser\Node\Expr\FuncCall {
         if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $nested_or_options = self::getOptionsFromNestedOr($case_equality_expr, $var);
 
@@ -719,7 +719,7 @@ class SwitchCaseAnalyzer
         PhpParser\Node\Expr $case_equality_expr,
         PhpParser\Node\Expr\Variable $var,
         array $in_array_values = []
-    ) : ?array {
+    ): ?array {
         if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\Identical
             && $case_equality_expr->left instanceof PhpParser\Node\Expr\Variable
             && $case_equality_expr->left->name === $var->name

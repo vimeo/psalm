@@ -145,7 +145,7 @@ class TClassStringMap extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         $map = clone $this;
 
         foreach ([Type::getString(), $map->value_param] as $offset => $type_param) {
@@ -198,7 +198,7 @@ class TClassStringMap extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         TemplateInferredTypeReplacer::replace(
             $this->value_param,
             $template_result,
@@ -206,7 +206,7 @@ class TClassStringMap extends Atomic
         );
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return [$this->value_param];
     }
@@ -229,7 +229,7 @@ class TClassStringMap extends Atomic
         return $this->getKey();
     }
 
-    public function getStandinKeyParam() : Type\Union
+    public function getStandinKeyParam(): Type\Union
     {
         return new Type\Union([
             new TTemplateParamClass(

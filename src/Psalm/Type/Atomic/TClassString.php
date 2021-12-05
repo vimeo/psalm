@@ -108,7 +108,7 @@ class TClassString extends TString
         return false;
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return $this->as_type ? [$this->as_type] : [];
     }
@@ -124,7 +124,7 @@ class TClassString extends TString
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         $class_string = clone $this;
 
         if (!$class_string->as_type) {

@@ -35,7 +35,7 @@ class WhileTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A(): new B();
+                            $this->parent = rand(0, 1) ? new A() : new B();
                         }
                     }
 
@@ -60,7 +60,7 @@ class WhileTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A(): new B();
+                            $this->parent = rand(0, 1) ? new A() : new B();
                         }
                     }
 
@@ -87,7 +87,7 @@ class WhileTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A(): null;
+                            $this->parent = rand(0, 1) ? new A() : null;
                         }
                     }
 
@@ -111,7 +111,7 @@ class WhileTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A(): null;
+                            $this->parent = rand(0, 1) ? new A() : null;
                         }
                     }
 

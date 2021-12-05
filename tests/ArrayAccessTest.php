@@ -144,7 +144,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testNoIssueAfterManyIssets() : void
+    public function testNoIssueAfterManyIssets(): void
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
 
@@ -208,7 +208,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testEnsureOffsetExistsAfterArrayPush() : void
+    public function testEnsureOffsetExistsAfterArrayPush(): void
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
 

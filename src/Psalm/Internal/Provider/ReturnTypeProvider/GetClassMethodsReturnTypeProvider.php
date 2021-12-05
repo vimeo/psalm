@@ -11,7 +11,7 @@ class GetClassMethodsReturnTypeProvider implements FunctionReturnTypeProviderInt
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return [
             'get_class_methods',

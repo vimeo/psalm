@@ -25,9 +25,6 @@ class ArrayType
         $this->is_list = $is_list;
     }
 
-    /**
-     * @return self|null
-     */
     public static function infer(Type\Atomic $type): ?self
     {
         if ($type instanceof Type\Atomic\TKeyedArray) {

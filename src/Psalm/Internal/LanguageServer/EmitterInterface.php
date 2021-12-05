@@ -46,7 +46,7 @@ interface EmitterInterface
         string $eventName,
         array $arguments = [],
         ?callable $continueCallBack = null
-    ) : void;
+    ): void;
 
     /**
      * Returns the list of listeners for an event.
@@ -56,7 +56,7 @@ interface EmitterInterface
      *
      * @return callable[]
      */
-    public function listeners(string $eventName) : array;
+    public function listeners(string $eventName): array;
 
     /**
      * Removes a specific listener from an event.
@@ -65,5 +65,5 @@ interface EmitterInterface
      * was removed it will return true.
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function removeListener(string $eventName, callable $listener) : bool;
+    public function removeListener(string $eventName, callable $listener): bool;
 }

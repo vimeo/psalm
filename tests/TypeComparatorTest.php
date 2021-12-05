@@ -16,7 +16,7 @@ use function array_map;
 
 class TypeComparatorTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();

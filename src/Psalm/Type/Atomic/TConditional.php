@@ -124,7 +124,7 @@ class TConditional extends Atomic
         return '';
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return [$this->conditional_type, $this->if_type, $this->else_type];
     }
@@ -137,7 +137,7 @@ class TConditional extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         TemplateInferredTypeReplacer::replace(
             $this->conditional_type,
             $template_result,

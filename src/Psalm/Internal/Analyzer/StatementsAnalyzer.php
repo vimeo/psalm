@@ -234,7 +234,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
      */
-    private function hoistFunctions(array $stmts, Context $context) : void
+    private function hoistFunctions(array $stmts, Context $context): void
     {
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
@@ -285,7 +285,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $stmts,
         Context $context
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($stmts as $stmt) {
@@ -667,7 +667,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         PhpParser\Comment\Doc $docblock,
         PhpParser\Node\Stmt $stmt,
         Context $context
-    ) : void {
+    ): void {
         $codebase = $this->getCodebase();
 
         try {
@@ -863,7 +863,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     public function registerPossiblyUndefinedVariable(
         string $undefined_var_id,
         PhpParser\Node\Expr\Variable $stmt
-    ) : void {
+    ): void {
         if (!$this->data_flow_graph) {
             return;
         }
@@ -889,7 +889,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @return array<string, DataFlowNode>
      */
-    public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id) : array
+    public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
     {
         if (!$this->data_flow_graph) {
             return [];
@@ -925,12 +925,12 @@ class StatementsAnalyzer extends SourceAnalyzer
         $this->vars_to_initialize[$var_id] = $branch_point;
     }
 
-    public function getFileAnalyzer() : FileAnalyzer
+    public function getFileAnalyzer(): FileAnalyzer
     {
         return $this->file_analyzer;
     }
 
-    public function getCodebase() : Codebase
+    public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
@@ -1004,12 +1004,12 @@ class StatementsAnalyzer extends SourceAnalyzer
         return $uncaught_throws;
     }
 
-    public function getFunctionAnalyzer(string $function_id) : ?FunctionAnalyzer
+    public function getFunctionAnalyzer(string $function_id): ?FunctionAnalyzer
     {
         return $this->function_analyzers[$function_id] ?? null;
     }
 
-    public function getParsedDocblock() : ?ParsedDocblock
+    public function getParsedDocblock(): ?ParsedDocblock
     {
         return $this->parsed_docblock;
     }
@@ -1023,7 +1023,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         return parent::getFQCLN();
     }
 
-    public function setFQCLN(string $fake_this_class) : void
+    public function setFQCLN(string $fake_this_class): void
     {
         $this->fake_this_class = $fake_this_class;
     }
@@ -1031,7 +1031,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @return NodeDataProvider
      */
-    public function getNodeTypeProvider() : NodeTypeProvider
+    public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->node_data;
     }

@@ -17,7 +17,7 @@ class ClassMoveTest extends TestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
 

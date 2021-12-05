@@ -43,7 +43,7 @@ class Assertion
         array $inferred_lower_bounds,
         ?string $this_var_id,
         ?Codebase $codebase
-    ) : self {
+    ): self {
         return new Assertion(
             is_string($this->var_id) && $this_var_id
                 ? str_replace('$this->', $this_var_id . '->', $this->var_id)
@@ -54,7 +54,7 @@ class Assertion
                  *
                  * @return array{0: string}
                  */
-                function (array $rules) use ($inferred_lower_bounds, $codebase) : array {
+                function (array $rules) use ($inferred_lower_bounds, $codebase): array {
                     $first_rule = $rules[0];
 
                     if ($inferred_lower_bounds) {

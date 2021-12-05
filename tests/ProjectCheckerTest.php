@@ -39,7 +39,7 @@ class ProjectCheckerTest extends TestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
 
@@ -52,7 +52,7 @@ class ProjectCheckerTest extends TestCase
         }
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -124,7 +124,10 @@ class ProjectCheckerTest extends TestCase
             /** @var bool */
             public static $called = false;
 
-            /** @return void */
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;

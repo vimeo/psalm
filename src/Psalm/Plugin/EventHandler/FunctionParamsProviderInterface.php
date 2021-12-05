@@ -9,7 +9,7 @@ interface FunctionParamsProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array;
+    public static function getFunctionIds(): array;
 
     /**
      * @return ?array<int, FunctionLikeParameter>

@@ -19,7 +19,7 @@ use function stripos;
 
 class TypeParseTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -212,7 +212,7 @@ class TypeParseTest extends TestCase
         Type::parseString('array{a: string}&array{a: int}');
     }
 
-    public function testIntersectionOfTwoRegularArrays() : void
+    public function testIntersectionOfTwoRegularArrays(): void
     {
         $this->expectException(TypeParseTreeException::class);
         Type::parseString('string[]&array<string, string>');
@@ -236,7 +236,7 @@ class TypeParseTest extends TestCase
         Type::parseString('array{a: int}&T1');
     }
 
-    public function testIterableContainingTKeyedArray() : void
+    public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, array{int}>', Type::parseString('iterable<string, array{int}>')->getId());
     }
@@ -559,7 +559,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    public function testConditionalTypeWithGenerics() : void
+    public function testConditionalTypeWithGenerics(): void
     {
         $this->assertSame(
             '(T is string ? string : array<string, string>)',
@@ -571,7 +571,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    public function testConditionalTypeWithCallableBracketed() : void
+    public function testConditionalTypeWithCallableBracketed(): void
     {
         $this->assertSame(
             '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
@@ -583,7 +583,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    public function testConditionalTypeWithCallableNotBracketed() : void
+    public function testConditionalTypeWithCallableNotBracketed(): void
     {
         $this->assertSame(
             '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
@@ -780,7 +780,7 @@ class TypeParseTest extends TestCase
         );
     }
 
-    public function testClassStringMap() : void
+    public function testClassStringMap(): void
     {
         $this->assertSame(
             'class-string-map<T as Foo, T>',
@@ -817,7 +817,7 @@ class TypeParseTest extends TestCase
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
     }
 
-    public function testEmptyString() : void
+    public function testEmptyString(): void
     {
         $docblock_type = Type::parseString('""|"admin"|"fun"');
 
@@ -974,7 +974,7 @@ class TypeParseTest extends TestCase
     {
         if (!function_exists('Psalm\Tests\someFunction')) {
             /** @psalm-suppress UnusedParam */
-            function someFunction(string $param, array $param2, ?int $param3 = null) : string
+            function someFunction(string $param, array $param2, ?int $param3 = null): string
             {
                 return 'hello';
             }

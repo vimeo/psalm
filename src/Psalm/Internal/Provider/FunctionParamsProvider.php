@@ -19,7 +19,7 @@ class FunctionParamsProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(FunctionParamsProviderEvent) : ?array<int, FunctionLikeParameter>>
+     *   array<Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -33,7 +33,7 @@ class FunctionParamsProvider
      *     list<Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?array<int, FunctionLikeParameter>>
+     *   ): ?array<int, FunctionLikeParameter>>
      * >
      */
     private static $legacy_handlers = [];
@@ -65,7 +65,7 @@ class FunctionParamsProvider
     }
 
     /**
-     * @param Closure(FunctionParamsProviderEvent) : ?array<int, FunctionLikeParameter> $c
+     * @param Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -79,14 +79,14 @@ class FunctionParamsProvider
      *     list<Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?array<int, FunctionLikeParameter> $c
+     *   ): ?array<int, FunctionLikeParameter> $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

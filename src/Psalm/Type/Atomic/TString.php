@@ -24,7 +24,7 @@ class TString extends Scalar
         return 'string';
     }
 
-    public function getKey(bool $include_extra = true) : string
+    public function getKey(bool $include_extra = true): string
     {
         return 'string';
     }

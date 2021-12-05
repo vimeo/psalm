@@ -16,7 +16,7 @@ class YieldFromAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\YieldFrom $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
@@ -45,7 +45,7 @@ class YieldFromAnalyzer
             ) {
                 return false;
             }
-            
+
             $yield_from_type = null;
 
             foreach ($stmt_expr_type->getAtomicTypes() as $atomic_type) {

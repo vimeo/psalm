@@ -7,6 +7,7 @@ interface AfterClassLikeVisitInterface
 {
     /**
      * @return void
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
      */
     public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event);
 }

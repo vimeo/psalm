@@ -41,7 +41,7 @@ class MatchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Match_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
@@ -296,7 +296,7 @@ class MatchAnalyzer
         array $conds,
         PhpParser\Node\Expr $match_condition,
         array $attributes
-    ) : PhpParser\Node\Expr {
+    ): PhpParser\Node\Expr {
         if (count($conds) === 1) {
             return new VirtualIdentical(
                 $match_condition,

@@ -23,7 +23,7 @@ class EchoAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Echo_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $echo_param = new FunctionLikeParameter(
             'var',
             false

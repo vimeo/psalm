@@ -16,12 +16,12 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return ['current', 'next', 'prev', 'reset', 'end'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

@@ -51,7 +51,7 @@ class IncludeAnalyzer
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
         ?Context $global_context = null
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
@@ -398,7 +398,7 @@ class IncludeAnalyzer
     /**
      * @psalm-pure
      */
-    public static function normalizeFilePath(string $path_to_file) : string
+    public static function normalizeFilePath(string $path_to_file): string
     {
         // replace all \ with / for normalization
         $path_to_file = str_replace('\\', '/', $path_to_file);

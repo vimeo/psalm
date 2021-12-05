@@ -53,7 +53,7 @@ class VariableFetchAnalyzer
         ?Type\Union $by_ref_type = null,
         bool $array_assignment = false,
         bool $from_global = false
-    ) : bool {
+    ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
@@ -403,7 +403,7 @@ class VariableFetchAnalyzer
         string $var_name,
         Type\Union $stmt_type,
         Context $context
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($statements_analyzer->data_flow_graph
@@ -477,7 +477,7 @@ class VariableFetchAnalyzer
         string $var_name,
         Type\Union $type,
         PhpParser\Node\Expr\Variable $stmt
-    ) : void {
+    ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -508,7 +508,7 @@ class VariableFetchAnalyzer
     /**
      * @psalm-pure
      */
-    public static function isSuperGlobal(string $var_id) : bool
+    public static function isSuperGlobal(string $var_id): bool
     {
         return in_array(
             $var_id,
@@ -517,7 +517,7 @@ class VariableFetchAnalyzer
         );
     }
 
-    public static function getGlobalType(string $var_id) : Type\Union
+    public static function getGlobalType(string $var_id): Type\Union
     {
         $config = Config::getInstance();
 

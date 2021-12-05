@@ -8,7 +8,7 @@ use Psalm\Type\Atomic\TLiteralString;
  */
 class TSqlSelectString extends TLiteralString
 {
-    public function getKey(bool $include_extra = true) : string
+    public function getKey(bool $include_extra = true): string
     {
         return 'sql-select-string';
     }

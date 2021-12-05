@@ -53,7 +53,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Name $function_name,
         ?string $function_id,
         Context $context
-    ) : void {
+    ): void {
         if ($function_id === 'get_class'
             || $function_id === 'gettype'
             || $function_id === 'get_debug_type'
@@ -347,7 +347,7 @@ class NamedFunctionCallHandler
 
             foreach ($anded_assertions as $assertions) {
                 $referenced_var_ids = array_map(
-                    function (array $_) : bool {
+                    function (array $_): bool {
                         return true;
                     },
                     $assertions
@@ -461,7 +461,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $real_stmt,
         string $function_id,
         Context $context
-    ) : void {
+    ): void {
         $first_arg = $stmt->getArgs()[0] ?? null;
 
         if ($first_arg) {

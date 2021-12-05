@@ -24,7 +24,7 @@ class YieldAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Yield_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];

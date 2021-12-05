@@ -19,6 +19,9 @@ class TypeMappingVisitor extends NodeVisitorAbstract
         $this->real_type_provider = $real_type_provider;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingAnyTypeHint
+     */
     public function enterNode(Node $node)
     {
         $origNode = $node;

@@ -9,7 +9,7 @@ interface FunctionReturnTypeProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array;
+    public static function getFunctionIds(): array;
 
     /**
      * Use this hook for providing custom return type logic. If this plugin does not know what a function should

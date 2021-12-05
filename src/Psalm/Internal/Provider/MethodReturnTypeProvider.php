@@ -19,7 +19,7 @@ class MethodReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(MethodReturnTypeProviderEvent) : ?Type\Union>
+     *   array<Closure(MethodReturnTypeProviderEvent): ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -37,7 +37,7 @@ class MethodReturnTypeProvider
      *     ?array<Type\Union>=,
      *     ?string=,
      *     ?lowercase-string=
-     *   ) : ?Type\Union>
+     *   ): ?Type\Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -75,7 +75,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param Closure(MethodReturnTypeProviderEvent) : ?Type\Union $c
+     * @param Closure(MethodReturnTypeProviderEvent): ?Type\Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -93,7 +93,7 @@ class MethodReturnTypeProvider
      *     ?array<Type\Union>=,
      *     ?string=,
      *     ?lowercase-string=
-     *   ) : ?Type\Union $c
+     *   ): ?Type\Union $c
      *
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
@@ -101,7 +101,7 @@ class MethodReturnTypeProvider
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

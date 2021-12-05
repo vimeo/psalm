@@ -41,7 +41,7 @@ class FileManipulationBuffer
     }
 
     /** @param CodeMigration[] $code_migrations */
-    public static function addCodeMigrations(array $code_migrations) : void
+    public static function addCodeMigrations(array $code_migrations): void
     {
         self::$code_migrations = array_merge(self::$code_migrations, $code_migrations);
     }
@@ -53,7 +53,7 @@ class FileManipulationBuffer
         string $source_file_path,
         int $source_start,
         int $source_end
-    ) : array {
+    ): array {
         if (!isset(self::$file_manipulations[$source_file_path])) {
             return [0, 0];
         }

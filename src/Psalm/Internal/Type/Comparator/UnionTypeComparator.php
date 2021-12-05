@@ -37,7 +37,7 @@ class UnionTypeComparator
         ?TypeComparisonResult $union_comparison_result = null,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true
-    ) : bool {
+    ): bool {
         if ($container_type->isMixed()) {
             return true;
         }

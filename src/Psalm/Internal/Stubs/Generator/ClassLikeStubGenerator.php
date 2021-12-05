@@ -110,7 +110,7 @@ class ClassLikeStubGenerator
     /**
      * @return list<PhpParser\Node\Stmt\ClassConst>
      */
-    private static function getConstantNodes(\Psalm\Codebase $codebase, ClassLikeStorage $storage) : array
+    private static function getConstantNodes(\Psalm\Codebase $codebase, ClassLikeStorage $storage): array
     {
         $constant_nodes = [];
 
@@ -149,7 +149,7 @@ class ClassLikeStubGenerator
     /**
      * @return list<PhpParser\Node\Stmt\Property>
      */
-    private static function getPropertyNodes(ClassLikeStorage $storage) : array
+    private static function getPropertyNodes(ClassLikeStorage $storage): array
     {
         $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
 

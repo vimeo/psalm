@@ -55,7 +55,7 @@ class FileReferenceCacheProvider
         $this->config = $config;
     }
 
-    public function hasConfigChanged() : bool
+    public function hasConfigChanged(): bool
     {
         $new_hash = $this->config->computeHash();
         $has_changed = $new_hash !== $this->getConfigHashCache();

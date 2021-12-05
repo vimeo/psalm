@@ -15,7 +15,7 @@ class BreakAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Break_ $stmt,
         Context $context
-    ) : void {
+    ): void {
         $loop_scope = $context->loop_scope;
 
         $leaving_switch = true;

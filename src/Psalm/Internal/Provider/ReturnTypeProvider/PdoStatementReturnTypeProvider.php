@@ -10,7 +10,7 @@ use function class_exists;
 
 class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['PDOStatement'];
     }

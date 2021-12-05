@@ -28,7 +28,7 @@ class ExpressionResolver
         Aliases $aliases,
         ?string $fq_classlike_name,
         ?string $parent_fq_class_name = null
-    ) : ?UnresolvedConstantComponent {
+    ): ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
                 $stmt->left,
@@ -285,7 +285,7 @@ class ExpressionResolver
         Codebase $codebase,
         string $file_path,
         PhpParser\Node\Expr $expr
-    ) : ?bool {
+    ): ?bool {
         if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
             $enter_negated = self::enterConditional($codebase, $file_path, $expr->expr);
 
@@ -350,7 +350,7 @@ class ExpressionResolver
         Codebase $codebase,
         string $file_path,
         PhpParser\Node\Expr\FuncCall $function
-    ) : ?bool {
+    ): ?bool {
         if (!$function->name instanceof PhpParser\Node\Name) {
             return null;
         }

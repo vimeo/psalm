@@ -616,7 +616,7 @@ class AssignmentAnalyzer
         ?Type\Union &$comment_type = null,
         ?CodeLocation\DocblockTypeLocation &$comment_type_location = null,
         array $not_ignored_docblock_var_ids = []
-    ) : void {
+    ): void {
         if (!$var_comment->type) {
             return;
         }
@@ -726,7 +726,7 @@ class AssignmentAnalyzer
         CodeLocation $var_location,
         array $removed_taints,
         array $added_taints
-    ) : void {
+    ): void {
         $parent_nodes = $type->parent_nodes;
 
         $unspecialized_parent_nodes = array_filter(
@@ -842,7 +842,7 @@ class AssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $assignment_type = self::analyze(
             $statements_analyzer,
             $stmt->var,

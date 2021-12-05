@@ -17,7 +17,7 @@ class ContainsLiteralVisitor extends NodeVisitor
      */
     private $contains_literal = false;
 
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TLiteralString
             || $type instanceof TLiteralInt
@@ -37,7 +37,7 @@ class ContainsLiteralVisitor extends NodeVisitor
         return null;
     }
 
-    public function matches() : bool
+    public function matches(): bool
     {
         return $this->contains_literal;
     }

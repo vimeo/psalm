@@ -46,7 +46,7 @@ class ClassConstFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());

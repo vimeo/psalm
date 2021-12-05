@@ -32,7 +32,7 @@ class TypeScanner extends NodeVisitor
         $this->phantom_classes = $phantom_classes;
     }
 
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
             $fq_classlike_name_lc = strtolower($type->value);

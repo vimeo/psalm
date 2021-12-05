@@ -10,7 +10,7 @@ use Psalm\Type;
 
 class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['Closure'];
     }

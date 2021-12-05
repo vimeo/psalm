@@ -23,7 +23,7 @@ final class SystemCommandExecutor
      *
      * @return string[]
      */
-    public function execute(string $command) : array
+    public function execute(string $command): array
     {
         if (!function_exists('exec')) {
             throw new RuntimeException(sprintf('exec does not exist, failed to execute command: %s', $command));

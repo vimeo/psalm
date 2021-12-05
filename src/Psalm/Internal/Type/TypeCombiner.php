@@ -1277,7 +1277,7 @@ class TypeCombiner
     /**
      * @return array<string, bool>
      */
-    private static function getSharedTypes(TypeCombination $combination, Codebase $codebase) : array
+    private static function getSharedTypes(TypeCombination $combination, Codebase $codebase): array
     {
         /** @var array<string, bool>|null */
         $shared_classlikes = null;
@@ -1347,7 +1347,7 @@ class TypeCombiner
     private static function handleKeyedArrayEntries(
         TypeCombination $combination,
         bool $overwrite_empty_array
-    ) : array {
+    ): array {
         $new_types = [];
 
         if ($combination->array_type_params
@@ -1442,7 +1442,7 @@ class TypeCombiner
         bool $allow_mixed_union,
         Atomic $type,
         array $generic_type_params
-    ) : Atomic {
+    ): Atomic {
         if ($combination->objectlike_entries) {
             $objectlike_generic_type = null;
 

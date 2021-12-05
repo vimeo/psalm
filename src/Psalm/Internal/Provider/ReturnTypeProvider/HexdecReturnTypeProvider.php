@@ -11,12 +11,12 @@ class HexdecReturnTypeProvider implements FunctionReturnTypeProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return ['hexdec'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
     {
         $statements_source = $event->getStatementsSource();
         if (!$statements_source instanceof StatementsAnalyzer) {

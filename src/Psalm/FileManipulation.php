@@ -38,14 +38,14 @@ class FileManipulation
         $this->remove_trailing_newline = $remove_trailing_newline;
     }
 
-    public function getKey() : string
+    public function getKey(): string
     {
         return $this->start === $this->end
             ? ($this->start . ':' . sha1($this->insertion_text))
             : ($this->start . ':' . $this->end);
     }
 
-    public function transform(string $existing_contents) : string
+    public function transform(string $existing_contents): string
     {
         if ($this->preserve_indentation) {
             $newline_pos = strrpos($existing_contents, "\n", $this->start - strlen($existing_contents));

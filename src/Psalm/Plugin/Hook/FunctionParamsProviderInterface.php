@@ -13,7 +13,7 @@ interface FunctionParamsProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array;
+    public static function getFunctionIds(): array;
 
     /**
      * @param  list<Arg>    $call_args

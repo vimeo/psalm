@@ -414,7 +414,7 @@ class PropertyTypeTest extends TestCase
                         public $foo = "";
                     }
 
-                    $a = rand(0, 10) ? new A(): (rand(0, 10) ? new B(): null);
+                    $a = rand(0, 10) ? new A(): (rand(0, 10) ? new B() : null);
                     $b = null;
 
                     if ($a instanceof A || $a instanceof B) {
@@ -435,7 +435,7 @@ class PropertyTypeTest extends TestCase
                         public $foo = "";
                     }
 
-                    $a = rand(0, 10) ? new A(): new B();
+                    $a = rand(0, 10) ? new A() : new B();
                     if (rand(0, 1)) {
                         $a = null;
                     }
@@ -463,7 +463,7 @@ class PropertyTypeTest extends TestCase
                         public $bb;
                     }
 
-                    $b = rand(0, 10) ? new A(): new B();
+                    $b = rand(0, 10) ? new A() : new B();
 
                     if ($b instanceof B && isset($b->bb) && $b->bb->aa === "aa") {
                         echo $b->bb->aa;
@@ -2759,7 +2759,7 @@ class PropertyTypeTest extends TestCase
                         public $foo = "";
                     }
 
-                    $a = rand(0, 10) ? new Foo(): null;
+                    $a = rand(0, 10) ? new Foo() : null;
 
                     $a->foo = "hello";',
                 'error_message' => 'PossiblyNullPropertyAssignment',
@@ -2778,7 +2778,7 @@ class PropertyTypeTest extends TestCase
                         public $foo = "";
                     }
 
-                    $a = rand(0, 10) ? new Foo(): null;
+                    $a = rand(0, 10) ? new Foo() : null;
 
                     echo $a->foo;',
                 'error_message' => 'PossiblyNullPropertyFetch',

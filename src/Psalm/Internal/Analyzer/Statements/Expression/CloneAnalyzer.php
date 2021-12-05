@@ -27,7 +27,7 @@ class CloneAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Clone_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $codebase_methods = $codebase->methods;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {

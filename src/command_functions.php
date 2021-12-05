@@ -24,7 +24,7 @@ function getVendorDir(string $current_dir): string
  * @return list<string>
  * @deprecated going to be removed in Psalm 5
  */
-function getArguments() : array
+function getArguments(): array
 {
     return CliUtils::getArguments();
 }
@@ -67,7 +67,7 @@ function initialiseConfig(
 }
 
 /** @deprecated going to be removed in Psalm 5 */
-function update_config_file(Config $config, string $config_file_path, string $baseline_path) : void
+function update_config_file(Config $config, string $config_file_path, string $baseline_path): void
 {
     CliUtils::updateConfigFile($config, $config_file_path, $baseline_path);
 }

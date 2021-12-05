@@ -339,7 +339,7 @@ class AnnotationTest extends TestCase
                      * @psalm-ignore-nullable-return
                      */
                     function makeA() {
-                        return rand(0, 1) ? new A(): null;
+                        return rand(0, 1) ? new A() : null;
                     }
 
                     function takeA(A $_a): void { }

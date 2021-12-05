@@ -26,7 +26,7 @@ class DocblockParser
      * $offsetStart is the absolute position of the docblock in the file. It'll be used to add to the position of some
      * special tags (like `psalm-suppress`) for future uses
      */
-    public static function parse(string $docblock, int $offsetStart) : ParsedDocblock
+    public static function parse(string $docblock, int $offsetStart): ParsedDocblock
     {
         // Strip off comments.
         $docblock = trim($docblock);
@@ -141,7 +141,7 @@ class DocblockParser
         return $parsed;
     }
 
-    private static function resolveTags(ParsedDocblock $docblock) : void
+    private static function resolveTags(ParsedDocblock $docblock): void
     {
         if (isset($docblock->tags['template'])
             || isset($docblock->tags['psalm-template'])

@@ -280,7 +280,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testExtendDocblockParamTypeWithWrongParam() : void
+    public function testExtendDocblockParamTypeWithWrongParam(): void
     {
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MethodSignatureMismatch');

@@ -522,7 +522,7 @@ class FunctionDocblockManipulator
         return $file_manipulations;
     }
 
-    public function makePure() : void
+    public function makePure(): void
     {
         $this->is_pure = true;
     }
@@ -535,7 +535,7 @@ class FunctionDocblockManipulator
     /**
      * @param array<string, array<int, FunctionDocblockManipulator>> $manipulators
      */
-    public static function addManipulators(array $manipulators) : void
+    public static function addManipulators(array $manipulators): void
     {
         self::$manipulators = array_merge($manipulators, self::$manipulators);
     }

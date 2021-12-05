@@ -359,7 +359,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
-                function (IssueData $issue_data) : Diagnostic {
+                function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
                     $description = $issue_data->message;
                     $severity = $issue_data->severity;

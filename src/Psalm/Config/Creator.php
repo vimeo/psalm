@@ -56,7 +56,7 @@ class Creator
         ?string $suggested_dir,
         int $level,
         string $vendor_dir
-    ) : string {
+    ): string {
         $paths = self::getPaths($current_dir, $suggested_dir);
 
         $template = str_replace(
@@ -90,7 +90,7 @@ class Creator
         string $current_dir,
         ?string $suggested_dir,
         string $vendor_dir
-    ) : Config {
+    ): Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 
         return Config::loadFromXML($current_dir, $config_contents);
@@ -99,7 +99,7 @@ class Creator
     /**
      * @param  array<IssueData>  $issues
      */
-    public static function getLevel(array $issues, int $counted_types) : int
+    public static function getLevel(array $issues, int $counted_types): int
     {
         if ($counted_types === 0) {
             $counted_types = 1;
@@ -210,7 +210,7 @@ class Creator
      * @psalm-suppress MixedArgument
      * @psalm-suppress PossiblyUndefinedArrayOffset
      */
-    private static function getPsr4Or0Paths(string $current_dir, array $composer_json) : array
+    private static function getPsr4Or0Paths(string $current_dir, array $composer_json): array
     {
         $psr_paths = array_merge(
             $composer_json['autoload']['psr-4'] ?? [],
@@ -256,7 +256,7 @@ class Creator
     /**
      * @return list<string>
      */
-    private static function guessPhpFileDirs(string $current_dir) : array
+    private static function guessPhpFileDirs(string $current_dir): array
     {
         $nodes = [];
 

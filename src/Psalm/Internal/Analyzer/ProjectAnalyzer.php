@@ -334,7 +334,7 @@ class ProjectAnalyzer
         self::$instance = $this;
     }
 
-    private function clearCacheDirectoryIfConfigOrComposerLockfileChanged() : void
+    private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
     {
         if ($this->project_cache_provider
             && $this->project_cache_provider->hasLockfileChanged()
@@ -414,7 +414,7 @@ class ProjectAnalyzer
         return $report_options;
     }
 
-    private function visitAutoloadFiles() : void
+    private function visitAutoloadFiles(): void
     {
         $start_time = microtime(true);
 
@@ -718,7 +718,7 @@ class ProjectAnalyzer
         $this->codebase->track_unused_suppressions = true;
     }
 
-    public function interpretRefactors() : void
+    public function interpretRefactors(): void
     {
         if (!$this->codebase->alter_code) {
             throw new UnexpectedValueException('Should not be checking references');
@@ -919,7 +919,7 @@ class ProjectAnalyzer
         }
     }
 
-    public function prepareMigration() : void
+    public function prepareMigration(): void
     {
         if (!$this->codebase->alter_code) {
             throw new UnexpectedValueException('Should not be checking references');
@@ -940,7 +940,7 @@ class ProjectAnalyzer
         );
     }
 
-    public function migrateCode() : void
+    public function migrateCode(): void
     {
         if (!$this->codebase->alter_code) {
             throw new UnexpectedValueException('Should not be checking references');
@@ -1095,7 +1095,7 @@ class ProjectAnalyzer
         $this->project_files[$file_path] = $file_path;
     }
 
-    public function addExtraFile(string $file_path) : void
+    public function addExtraFile(string $file_path): void
     {
         $this->extra_files[$file_path] = $file_path;
     }
@@ -1445,7 +1445,7 @@ class ProjectAnalyzer
     public function getFunctionLikeAnalyzer(
         MethodIdentifier $method_id,
         string $file_path
-    ) : ?FunctionLikeAnalyzer {
+    ): ?FunctionLikeAnalyzer {
         $file_analyzer = new FileAnalyzer(
             $this,
             $file_path,

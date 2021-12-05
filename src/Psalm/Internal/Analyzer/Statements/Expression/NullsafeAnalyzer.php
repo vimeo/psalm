@@ -26,7 +26,7 @@ class NullsafeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         if (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 

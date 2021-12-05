@@ -118,7 +118,7 @@ class TList extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         $list = clone $this;
 
         foreach ([Type::getInt(), $list->type_param] as $offset => $type_param) {
@@ -171,7 +171,7 @@ class TList extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
@@ -201,7 +201,7 @@ class TList extends Atomic
         return $this->toNamespacedString(null, [], null, false);
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return [$this->type_param];
     }

@@ -25,7 +25,7 @@ class AttributeResolver
         Aliases $aliases,
         PhpParser\Node\Attribute $stmt,
         ?string $fq_classlike_name
-    ) : AttributeStorage {
+    ): AttributeStorage {
         if ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$stmt->name;
         } else {

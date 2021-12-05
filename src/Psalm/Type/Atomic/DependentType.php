@@ -5,10 +5,10 @@ use Psalm\Type\Atomic;
 
 interface DependentType
 {
-    public function getVarId() : string;
+    public function getVarId(): string;
 
     /**
      * This returns a replacement type for when the dependent data is invalidated
      */
-    public function getReplacement() : Atomic;
+    public function getReplacement(): Atomic;
 }

@@ -28,7 +28,7 @@ class CustomTraverser extends NodeTraverser
      *
      * @return Node Result of traversal (may be original node or new one)
      */
-    protected function traverseNode(Node $node) : Node
+    protected function traverseNode(Node $node): Node
     {
         foreach ($node->getSubNodeNames() as $name) {
             $subNode = &$node->$name;
@@ -98,7 +98,7 @@ class CustomTraverser extends NodeTraverser
      *
      * @return array Result of traversal (may be original array or changed one)
      */
-    protected function traverseArray(array $nodes) : array
+    protected function traverseArray(array $nodes): array
     {
         $doNodes = [];
 

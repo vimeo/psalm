@@ -494,7 +494,7 @@ HELP;
         $codeowners_file = file_get_contents($codeowners_file_path);
 
         $codeowner_lines = array_map(
-            function (string $line) : array {
+            function (string $line): array {
                 $line_parts = preg_split('/\s+/', $line);
 
                 $file_selector = substr(array_shift($line_parts), 1);
@@ -502,7 +502,7 @@ HELP;
             },
             array_filter(
                 explode("\n", $codeowners_file),
-                function (string $line) : bool {
+                function (string $line): bool {
                     $line = trim($line);
 
                     // currently we don’t match wildcard files or files that could appear anywhere

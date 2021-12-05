@@ -184,7 +184,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getFunctionLikeAnalyzer(string $method_name) : ?MethodAnalyzer
+    public function getFunctionLikeAnalyzer(string $method_name): ?MethodAnalyzer
     {
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
@@ -639,7 +639,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getFileAnalyzer() : FileAnalyzer
+    public function getFileAnalyzer(): FileAnalyzer
     {
         return $this->file_analyzer;
     }

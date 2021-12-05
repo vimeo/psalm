@@ -666,7 +666,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_class_name,
         ?string $parent_fq_class_name,
         array $stmts = []
-    ) : void {
+    ): void {
         $codebase = $statements_source->getCodebase();
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
@@ -1113,7 +1113,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $constructor_storage = $constructor_class_storage->methods['__construct'];
 
                 $fake_constructor_params = array_map(
-                    function (FunctionLikeParameter $param) : PhpParser\Node\Param {
+                    function (FunctionLikeParameter $param): PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
                             $fake_param->setType((string)$param->signature_type);
@@ -1137,7 +1137,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 $fake_constructor_stmt_args = array_map(
-                    function (FunctionLikeParameter $param) : PhpParser\Node\Arg {
+                    function (FunctionLikeParameter $param): PhpParser\Node\Arg {
                         $attributes = $param->location
                             ? [
                                 'startFilePos' => $param->location->raw_file_start,
@@ -1591,7 +1591,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Type\Union $inferred_type,
         StatementsSource $source,
         bool $docblock_only = false
-    ) : void {
+    ): void {
         $manipulator = PropertyDocblockManipulator::getForProperty(
             $project_analyzer,
             $source->getFilePath(),
@@ -1849,7 +1849,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
         bool $did_explicitly_return
-    ) : void {
+    ): void {
         $secondary_return_type_location = null;
 
         $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
@@ -2149,7 +2149,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Codebase $codebase,
         string $fq_class_name,
         ClassLikeStorage $storage
-    ) : bool {
+    ): bool {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         foreach ($class->implements as $interface_name) {
@@ -2425,7 +2425,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Codebase $codebase,
         ?Context $class_context
-    ) : void {
+    ): void {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         if (!$parent_fq_class_name) {

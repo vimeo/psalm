@@ -228,7 +228,7 @@ class TObjectWithProperties extends TObject
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         $object_like = clone $this;
 
         foreach ($this->properties as $offset => $property) {
@@ -262,7 +262,7 @@ class TObjectWithProperties extends TObject
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         foreach ($this->properties as $property) {
             TemplateInferredTypeReplacer::replace(
                 $property,
@@ -272,7 +272,7 @@ class TObjectWithProperties extends TObject
         }
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
     }

@@ -377,7 +377,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         return null;
     }
 
-    public function mustRescan() : bool
+    public function mustRescan(): bool
     {
         return $this->must_rescan || $this->non_method_changes;
     }
@@ -385,7 +385,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @psalm-pure
      */
-    private static function balanceBrackets(string $fake_class) : string
+    private static function balanceBrackets(string $fake_class): string
     {
         $tokens = token_get_all($fake_class);
 

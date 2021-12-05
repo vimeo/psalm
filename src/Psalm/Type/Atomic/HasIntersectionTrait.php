@@ -25,7 +25,7 @@ trait HasIntersectionTrait
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format
-    ) : string {
+    ): string {
         if (!$this->extra_types) {
             return '';
         }
@@ -59,7 +59,7 @@ trait HasIntersectionTrait
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
      */
-    public function addIntersectionType(Type\Atomic $type) : void
+    public function addIntersectionType(Type\Atomic $type): void
     {
         $this->extra_types[$type->getKey()] = $type;
     }
@@ -67,7 +67,7 @@ trait HasIntersectionTrait
     /**
      * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
-    public function getIntersectionTypes() : ?array
+    public function getIntersectionTypes(): ?array
     {
         return $this->extra_types;
     }
@@ -75,7 +75,7 @@ trait HasIntersectionTrait
     public function replaceIntersectionTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         if (!$this->extra_types) {
             return;
         }

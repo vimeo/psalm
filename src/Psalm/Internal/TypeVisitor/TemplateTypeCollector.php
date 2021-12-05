@@ -16,7 +16,7 @@ class TemplateTypeCollector extends NodeVisitor
      */
     private $template_types = [];
 
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TTemplateParam) {
             $this->template_types[] = $type;
@@ -42,7 +42,7 @@ class TemplateTypeCollector extends NodeVisitor
     /**
      * @return list<TTemplateParam>
      */
-    public function getTemplateTypes() : array
+    public function getTemplateTypes(): array
     {
         return $this->template_types;
     }

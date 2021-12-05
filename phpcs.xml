@@ -10,6 +10,7 @@
       *  Configuration                                                                                                *
       ************************************************************************************************************** -->
 
+    <config name="php_version" value="70100"/>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
     <arg name="basepath" value="."/>
@@ -123,6 +124,31 @@
     <rule ref="SlevomatCodingStandard.Namespaces.UseSpacing">
         <properties>
             <property name="linesCountBetweenUseTypes" value="1"/>
+        </properties>
+    </rule>
+
+    <!--
+        Checks for missing return typehints and useless @return annotations.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehint-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
+        <properties>
+			<property name="enableObjectTypeHint" type="bool" value="false"/>
+			<property name="enableStaticTypeHint" type="bool" value="false"/>
+			<property name="enableMixedTypeHint" type="bool" value="false"/>
+			<property name="enableUnionTypeHint" type="bool" value="false"/>
+        </properties>
+
+        <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification"/>
+    </rule>
+
+    <!--
+        Enforces consistent formatting of return typehints.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehintspacing-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing">
+        <properties>
+            <property name="spacesCountBeforeColon" value="0"/>
         </properties>
     </rule>
 

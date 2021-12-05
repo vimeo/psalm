@@ -109,7 +109,7 @@ class TypeChecker extends NodeVisitor
      * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type->checked) {
             return NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -140,12 +140,12 @@ class TypeChecker extends NodeVisitor
         return null;
     }
 
-    public function hasErrors() : bool
+    public function hasErrors(): bool
     {
         return $this->has_errors;
     }
 
-    private function checkNamedObject(TNamedObject $atomic) : void
+    private function checkNamedObject(TNamedObject $atomic): void
     {
         $codebase = $this->source->getCodebase();
 
@@ -212,7 +212,7 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    private function checkGenericParams(TGenericObject $atomic) : void
+    private function checkGenericParams(TGenericObject $atomic): void
     {
         $codebase = $this->source->getCodebase();
 
@@ -293,7 +293,7 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    public function checkScalarClassConstant(TClassConstant $atomic) : void
+    public function checkScalarClassConstant(TClassConstant $atomic): void
     {
         $fq_classlike_name = $atomic->fq_classlike_name === 'self'
             ? $this->source->getClassName()
@@ -352,7 +352,7 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    public function checkTemplateParam(TTemplateParam $atomic) : void
+    public function checkTemplateParam(TTemplateParam $atomic): void
     {
         if ($this->prevent_template_covariance
             && strpos($atomic->defining_class, 'fn-') !== 0
@@ -392,7 +392,7 @@ class TypeChecker extends NodeVisitor
         }
     }
 
-    public function checkResource(TResource $atomic) : void
+    public function checkResource(TResource $atomic): void
     {
         if (!$atomic->from_docblock) {
             IssueBuffer::maybeAdd(

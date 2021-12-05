@@ -5,7 +5,7 @@ use Psalm\CodeLocation;
 
 interface MixedIssue
 {
-    public function getMixedOriginMessage() : string;
+    public function getMixedOriginMessage(): string;
 
-    public function getOriginalLocation() : ?CodeLocation;
+    public function getOriginalLocation(): ?CodeLocation;
 }

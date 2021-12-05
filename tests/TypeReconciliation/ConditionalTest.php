@@ -232,7 +232,7 @@ class ConditionalTest extends TestCase
                       return new D();
                     }
 
-                    $a = rand(0, 1) ? makeA(): makeC();
+                    $a = rand(0, 1) ? makeA() : makeC();
 
                     if ($a instanceof B || $a instanceof D) { }',
             ],
@@ -277,7 +277,7 @@ class ConditionalTest extends TestCase
                 '<?php
                     function foo(): void {
                         $b = null;
-                        $c = rand(0, 1) ? bar($b): null;
+                        $c = rand(0, 1) ? bar($b) : null;
                         if (is_int($b)) { }
                     }
                     function bar(?int &$a): void {
@@ -449,7 +449,7 @@ class ConditionalTest extends TestCase
             ],
             'eraseNullAfterInequalityCheck' => [
                 '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
 
                     if ($a > 0) {
                       echo $a + 3;
@@ -2858,7 +2858,7 @@ class ConditionalTest extends TestCase
                     class A { }
                     class B { }
                     class C { }
-                    $a = rand(0, 10) > 5 ? new A(): new B();
+                    $a = rand(0, 10) > 5 ? new A() : new B();
                     if ($a instanceof A) {
                     } elseif ($a instanceof C) {
                     }',

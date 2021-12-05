@@ -105,7 +105,7 @@ class Methods
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
         bool $is_used = false
-    ) : bool {
+    ): bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
@@ -353,7 +353,7 @@ class Methods
         ?StatementsSource $source = null,
         ?array $args = null,
         ?Context $context = null
-    ) : array {
+    ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
@@ -501,7 +501,7 @@ class Methods
         Type\Union $type,
         string $appearing_fq_class_name,
         string $base_fq_class_name
-    ) : Type\Union {
+    ): Type\Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_extended_params;
 
@@ -619,7 +619,7 @@ class Methods
     public static function getExtendedTemplatedTypes(
         Type\Atomic\TTemplateParam $atomic_type,
         array $extends
-    ) : array {
+    ): array {
         $extra_added_types = [];
 
         if (isset($extends[$atomic_type->defining_class][$atomic_type->param_name])) {
@@ -1083,7 +1083,7 @@ class Methods
 
     public function getDeclaringMethodId(
         MethodIdentifier $method_id
-    ) : ?MethodIdentifier {
+    ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
@@ -1106,7 +1106,7 @@ class Methods
      */
     public function getAppearingMethodId(
         MethodIdentifier $method_id
-    ) : ?MethodIdentifier {
+    ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);

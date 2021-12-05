@@ -363,7 +363,7 @@ class TypeParser
         string $param_name,
         Union $as,
         string $defining_class
-    ) : Atomic\TTemplateParamClass {
+    ): Atomic\TTemplateParamClass {
         if ($as->hasMixed()) {
             return new Atomic\TTemplateParamClass(
                 $param_name,
@@ -442,7 +442,7 @@ class TypeParser
      * @param  non-empty-list<int>  $potential_ints
      * @return  non-empty-list<TLiteralInt>
      */
-    public static function getComputedIntsFromMask(array $potential_ints) : array
+    public static function getComputedIntsFromMask(array $potential_ints): array
     {
         /** @var list<int> */
         $potential_values = [];
@@ -845,7 +845,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Union
      * @throws TypeParseTreeException
      */
     private static function getTypeFromUnionTree(
@@ -909,7 +908,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Atomic
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIntersectionTree(
@@ -917,7 +915,7 @@ class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
-    ) {
+    ): Atomic {
         $intersection_types = array_map(
             function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
                 $atomic_type = self::getTypeFromTree(
@@ -1152,7 +1150,6 @@ class TypeParser
 
     /**
      * @param  array<string, array<string, Union>> $template_type_map
-     * @return Atomic\TTemplateIndexedAccess
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIndexAccessTree(

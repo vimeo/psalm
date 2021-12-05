@@ -57,7 +57,7 @@ class DefaultProgress extends LongProgress
      *
      * @see https://en.wikipedia.org/wiki/Block_Elements
      */
-    private static function renderInnerProgressBar(int $length, float $p) : string
+    private static function renderInnerProgressBar(int $length, float $p): string
     {
         $current_float = $p * $length;
         $current = (int)$current_float;

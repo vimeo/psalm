@@ -62,7 +62,7 @@ class Shepherd implements AfterAnalysisInterface
         if ($build_info) {
             $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
-                static function (IssueData $i) : bool {
+                static function (IssueData $i): bool {
                     return $i->severity === 'error';
                 }
             );
@@ -133,7 +133,7 @@ class Shepherd implements AfterAnalysisInterface
      *
      * @psalm-pure
      */
-    public static function getCurlErrorMessage($ch) : string
+    public static function getCurlErrorMessage($ch): string
     {
         /**
          * @psalm-suppress MixedArgument

@@ -445,7 +445,7 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getFunctionLikeAnalyzer(MethodIdentifier $method_id) : ?MethodAnalyzer
+    public function getFunctionLikeAnalyzer(MethodIdentifier $method_id): ?MethodAnalyzer
     {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -634,7 +634,7 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @psalm-mutation-free
      */
-    public function getFileAnalyzer() : FileAnalyzer
+    public function getFileAnalyzer(): FileAnalyzer
     {
         return $this;
     }
@@ -642,22 +642,22 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @psalm-mutation-free
      */
-    public function getProjectAnalyzer() : ProjectAnalyzer
+    public function getProjectAnalyzer(): ProjectAnalyzer
     {
         return $this->project_analyzer;
     }
 
-    public function getCodebase() : Codebase
+    public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
 
-    public function getFirstStatementOffset() : int
+    public function getFirstStatementOffset(): int
     {
         return $this->first_statement_offset;
     }
 
-    public function getNodeTypeProvider() : NodeTypeProvider
+    public function getNodeTypeProvider(): NodeTypeProvider
     {
         if (!$this->node_data) {
             throw new UnexpectedValueException('There should be a node type provider');
@@ -666,12 +666,12 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->node_data;
     }
 
-    public function getReturnType() : ?Type\Union
+    public function getReturnType(): ?Type\Union
     {
         return $this->return_type;
     }
 
-    public function clearSourceBeforeDestruction() : void
+    public function clearSourceBeforeDestruction(): void
     {
         unset($this->source);
     }

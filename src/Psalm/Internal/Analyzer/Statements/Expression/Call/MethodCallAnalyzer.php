@@ -42,7 +42,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true
-    ) : bool {
+    ): bool {
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
@@ -440,7 +440,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         return true;
     }
 
-    public static function hasNullsafe(PhpParser\Node\Expr $expr) : bool
+    public static function hasNullsafe(PhpParser\Node\Expr $expr): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\MethodCall
             || $expr instanceof PhpParser\Node\Expr\PropertyFetch

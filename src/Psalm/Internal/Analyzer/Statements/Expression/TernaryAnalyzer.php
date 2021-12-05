@@ -39,7 +39,7 @@ class TernaryAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new IfScope();

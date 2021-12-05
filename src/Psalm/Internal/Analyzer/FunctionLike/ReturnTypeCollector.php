@@ -243,7 +243,7 @@ class ReturnTypeCollector
         Codebase $codebase,
         array $return_types,
         array $yield_types
-    ) : array {
+    ): array {
         $key_type = null;
         $value_type = null;
 

@@ -148,11 +148,11 @@ class TNamedObject extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return $this->extra_types ?? [];
     }

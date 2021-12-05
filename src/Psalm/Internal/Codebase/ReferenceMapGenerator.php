@@ -11,7 +11,7 @@ class ReferenceMapGenerator
     public static function getReferenceMap(
         ClassLikeStorageProvider $classlike_storage_provider,
         array $expected_references
-    ) : array {
+    ): array {
         $reference_dictionary = [];
 
         foreach ($classlike_storage_provider->getAll() as $storage) {

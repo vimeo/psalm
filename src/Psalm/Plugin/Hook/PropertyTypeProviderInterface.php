@@ -11,7 +11,7 @@ interface PropertyTypeProviderInterface
     /**
      * @return array<string>
      */
-    public static function getClassLikeNames() : array;
+    public static function getClassLikeNames(): array;
 
     public static function getPropertyType(
         string $fq_classlike_name,

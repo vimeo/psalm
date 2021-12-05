@@ -54,7 +54,7 @@ class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $fq_class_name = null;
 
         $codebase = $statements_analyzer->getCodebase();

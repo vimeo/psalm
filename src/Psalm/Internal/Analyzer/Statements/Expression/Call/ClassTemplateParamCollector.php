@@ -233,7 +233,7 @@ class ClassTemplateParamCollector
         array $e,
         string $static_fq_class_name,
         ?array $static_template_types
-    ) : array {
+    ): array {
         $output_type_extends = [];
 
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {

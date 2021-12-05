@@ -176,7 +176,7 @@ class DoAnalyzer
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
         LoopScope $loop_scope
-    ) : void {
+    ): void {
         $do_context = clone $context;
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();

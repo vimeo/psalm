@@ -59,7 +59,7 @@ class ScalarTypeComparator
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
-    ) : bool {
+    ): bool {
         if (get_class($container_type_part) === TString::class
             && $input_type_part instanceof TString
         ) {

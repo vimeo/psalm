@@ -19,7 +19,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return [
             'get_object_vars',

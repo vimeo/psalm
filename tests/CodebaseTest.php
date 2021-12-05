@@ -21,7 +21,7 @@ class CodebaseTest extends TestCase
     /** @var Codebase */
     private $codebase;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
         $this->codebase = $this->project_analyzer->getCodebase();
@@ -46,7 +46,7 @@ class CodebaseTest extends TestCase
     }
 
     /** @return iterable<int,array{string,string,bool}> */
-    public function typeContainments()
+    public function typeContainments(): iterable
     {
         yield ['int', 'int|string', true];
         yield ['int|string', 'int', false];
@@ -76,7 +76,7 @@ class CodebaseTest extends TestCase
     }
 
     /** @return iterable<int,array{string,string,bool}> */
-    public function typeIntersections()
+    public function typeIntersections(): iterable
     {
         yield ['int', 'int|string', true];
         yield ['int|string', 'int', true];
@@ -115,7 +115,7 @@ class CodebaseTest extends TestCase
     }
 
     /** @return iterable<int,array{string,array{string,string}}> */
-    public function iterableParams()
+    public function iterableParams(): iterable
     {
         yield ['iterable<int,string>', ['int', 'string']];
         yield ['iterable<int|string,bool|float>', ['int|string', 'bool|float']];
@@ -146,6 +146,7 @@ class CodebaseTest extends TestCase
         $hook = new class implements AfterClassLikeVisitInterface {
             /**
              * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
              */
             public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
             {

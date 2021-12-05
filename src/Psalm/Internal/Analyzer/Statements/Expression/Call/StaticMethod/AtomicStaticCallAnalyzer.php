@@ -57,7 +57,7 @@ class AtomicStaticCallAnalyzer
         bool &$moved_call,
         bool &$has_mock,
         bool &$has_existing_method
-    ) : void {
+    ): void {
         $intersection_types = [];
 
         if ($lhs_type_part instanceof TNamedObject) {
@@ -253,7 +253,7 @@ class AtomicStaticCallAnalyzer
         string $fq_class_name,
         bool &$moved_call,
         bool &$has_existing_method
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $method_name_lc = strtolower($stmt_name->name);
@@ -901,7 +901,7 @@ class AtomicStaticCallAnalyzer
         Context $context,
         Type\Atomic $lhs_type_part,
         bool $ignore_nullable_issues
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 

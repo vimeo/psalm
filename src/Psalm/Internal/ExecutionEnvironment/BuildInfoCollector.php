@@ -44,7 +44,7 @@ class BuildInfoCollector
     /**
      * Collect environment variables.
      */
-    public function collect() : array
+    public function collect(): array
     {
         $this->readEnv = [];
 
@@ -70,7 +70,7 @@ class BuildInfoCollector
      *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
-    protected function fillTravisCi() : self
+    protected function fillTravisCi(): self
     {
         if (isset($this->env['TRAVIS']) && $this->env['TRAVIS'] && isset($this->env['TRAVIS_JOB_ID'])) {
             $this->readEnv['CI_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
@@ -113,7 +113,7 @@ class BuildInfoCollector
      *
      * @return $this
      */
-    protected function fillCircleCi() : self
+    protected function fillCircleCi(): self
     {
         if (isset($this->env['CIRCLECI']) && $this->env['CIRCLECI'] && isset($this->env['CIRCLE_BUILD_NUM'])) {
             $this->env['CI_BUILD_NUMBER'] = $this->env['CIRCLE_BUILD_NUM'];
@@ -147,7 +147,7 @@ class BuildInfoCollector
      *
      * @return $this
      */
-    protected function fillAppVeyor() : self
+    protected function fillAppVeyor(): self
     {
         if (isset($this->env['APPVEYOR']) && $this->env['APPVEYOR'] && isset($this->env['APPVEYOR_BUILD_NUMBER'])) {
             $this->readEnv['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
@@ -195,7 +195,7 @@ class BuildInfoCollector
      *
      * @return $this
      */
-    protected function fillJenkins() : self
+    protected function fillJenkins(): self
     {
         if (isset($this->env['JENKINS_URL']) && isset($this->env['BUILD_NUMBER'])) {
             $this->readEnv['CI_BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
@@ -220,7 +220,7 @@ class BuildInfoCollector
      *
      * @return $this
      */
-    protected function fillScrutinizer() : self
+    protected function fillScrutinizer(): self
     {
         if (isset($this->env['SCRUTINIZER']) && $this->env['SCRUTINIZER']) {
             $this->readEnv['CI_JOB_ID'] = $this->env['SCRUTINIZER_INSPECTION_UUID'];

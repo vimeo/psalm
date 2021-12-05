@@ -127,7 +127,7 @@ class DocumentationTest extends TestCase
         return $issue_code;
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
 

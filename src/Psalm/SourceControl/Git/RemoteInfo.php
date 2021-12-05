@@ -22,7 +22,7 @@ class RemoteInfo
      */
     protected $url;
 
-    public function toArray() : array
+    public function toArray(): array
     {
         return [
             'name' => $this->name,

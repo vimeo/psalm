@@ -225,7 +225,7 @@ class MethodComparator
         bool $trait_mismatches_are_fatal,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         if ($implementer_visibility > $guide_visibility) {
             if ($trait_mismatches_are_fatal
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
@@ -322,7 +322,7 @@ class MethodComparator
         bool $prevent_method_signature_mismatch,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         if ($prevent_method_signature_mismatch) {
             if (!$guide_classlike_storage->user_defined
                 && $guide_param->type
@@ -530,7 +530,7 @@ class MethodComparator
         string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         $guide_param_signature_type = $guide_param->signature_type
             ? TypeExpander::expandUnion(
                 $codebase,
@@ -652,7 +652,7 @@ class MethodComparator
         Type\Union $implementer_param_type,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         $implementer_method_storage_param_type = TypeExpander::expandUnion(
             $codebase,
             $implementer_param_type,
@@ -817,7 +817,7 @@ class MethodComparator
         string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
@@ -906,7 +906,7 @@ class MethodComparator
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
         array $suppressed_issues
-    ) : void {
+    ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
             $implementer_return_type,
@@ -1031,7 +1031,7 @@ class MethodComparator
         string $base_class_name,
         Type\Union $templated_type,
         Codebase $codebase
-    ) : void {
+    ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];
 

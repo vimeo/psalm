@@ -78,7 +78,7 @@ class ConsoleReport extends Report
     /**
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
-    private function getTaintSnippets(array $taint_trace) : string
+    private function getTaintSnippets(array $taint_trace): string
     {
         $snippets = '';
 

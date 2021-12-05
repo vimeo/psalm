@@ -39,7 +39,7 @@ class StaticPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         if (!$stmt->class instanceof PhpParser\Node\Name) {
             self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
             return true;
@@ -397,7 +397,7 @@ class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr $stmt_class,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
-    ) : void {
+    ): void {
         $was_inside_general_use = $context->inside_general_use;
 
         $context->inside_general_use = true;

@@ -54,7 +54,7 @@ class FunctionCallReturnTypeFetcher
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
         Context $context
-    ) : Type\Union {
+    ): Type\Union {
         $stmt_type = null;
         $config = $codebase->config;
 
@@ -539,7 +539,7 @@ class FunctionCallReturnTypeFetcher
         Type\Union $stmt_type,
         TemplateResult $template_result,
         Context $context
-    ) : ?DataFlowNode {
+    ): ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
         }
@@ -703,7 +703,7 @@ class FunctionCallReturnTypeFetcher
         DataFlowNode $function_call_node,
         array $removed_taints,
         array $added_taints = []
-    ) : void {
+    ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {
                 continue;
@@ -749,7 +749,7 @@ class FunctionCallReturnTypeFetcher
     /**
      * @psalm-pure
      */
-    private static function simpleExclusion(string $pattern, string $escape_char) : bool
+    private static function simpleExclusion(string $pattern, string $escape_char): bool
     {
         $str_length = strlen($pattern);
 

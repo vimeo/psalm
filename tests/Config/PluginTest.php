@@ -51,7 +51,7 @@ class PluginTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
 
@@ -64,7 +64,7 @@ class PluginTest extends TestCase
         }
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -550,7 +550,10 @@ class PluginTest extends TestCase
         );
 
         $hook = new class implements AfterCodebasePopulatedInterface {
-            /** @return void */
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }
@@ -625,13 +628,17 @@ class PluginTest extends TestCase
         );
 
         $hook = new class implements AfterClassLikeVisitInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
             public static function afterClassLikeVisit(
                 ClassLike $stmt,
                 ClassLikeStorage $storage,
                 FileSource $statements_source,
                 Codebase $codebase,
                 array &$file_replacements = []
-            ): void {
+            ) {
             }
         };
 
@@ -997,7 +1004,7 @@ class PluginTest extends TestCase
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
     }
 
-    public function testPluginInvalidAbsoluteFilenameThrowsException() : void
+    public function testPluginInvalidAbsoluteFilenameThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
