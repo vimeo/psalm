@@ -127,4 +127,19 @@
         </properties>
     </rule>
 
+    <!--
+        Checks for missing return typehints and useless @return annotations.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehint-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
+        <properties>
+			<property name="enableObjectTypeHint" type="bool" value="false"/>
+			<property name="enableStaticTypeHint" type="bool" value="false"/>
+			<property name="enableMixedTypeHint" type="bool" value="false"/>
+			<property name="enableUnionTypeHint" type="bool" value="false"/>
+        </properties>
+
+        <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification"/>
+    </rule>
+
 </ruleset>
