@@ -230,6 +230,28 @@ class TextDocument
             return new Success(null);
         }
 
+        // Pretty print arrays (only).
+        if ( substr( $symbol_information['type'], 0, 6 ) === 'array{' ) {
+            $union = \Psalm\Type::parseString( $symbol_information['type'] );
+            $types = $union->getAtomicTypes();
+            if ( count( $types ) === 1 ) {
+                /** @var \Psalm\Type\Atomic\TKeyedArray */
+                $keyed_array = reset( $types );
+
+                $property_strings = array_map(
+                    function ($name, \Psalm\Type\Union $type): string {
+                        if ( is_string( $name ) ) {
+                            $name = "'" . $name . "'";
+                        }
+                        return "\t" . $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
+                    },
+                    array_keys($keyed_array->properties),
+                    $keyed_array->properties
+                );
+
+                $symbol_information['type'] = "array{\n" . implode(", \n", $property_strings) . "\n}";
+            }
+        }
         $content = "```php\n" . $symbol_information['type'] . "\n```";
         if (isset($symbol_information['description'])) {
             $content .= "\n---\n" . $symbol_information['description'];
