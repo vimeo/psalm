@@ -19,6 +19,7 @@ use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use Psalm\Codebase;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\LanguageServer\LanguageServer;
+use Psalm\Type;
 use UnexpectedValueException;
 
 use function count;
@@ -230,16 +231,16 @@ class TextDocument
             return new Success(null);
         }
 
-        // Pretty print arrays (only).
+        // Pretty print keyed arrays (only).
         if (substr( $symbol_information['type'], 0, 6 ) === 'array{') {
-            $union = \Psalm\Type::parseString($symbol_information['type']);
+            $union = Type::parseString($symbol_information['type']);
             $types = $union->getAtomicTypes();
             if ( count( $types ) === 1 ) {
-                /** @var \Psalm\Type\Atomic\TKeyedArray */
+                /** @var Type\Atomic\TKeyedArray */
                 $keyed_array = reset($types);
 
                 $property_strings = array_map(
-                    function ($name, \Psalm\Type\Union $type): string {
+                    function ($name, Type\Union $type): string {
                         if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
                             $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
                         }
