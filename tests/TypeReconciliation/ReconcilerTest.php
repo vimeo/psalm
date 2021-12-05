@@ -18,7 +18,7 @@ class ReconcilerTest extends TestCase
     /** @var StatementsAnalyzer */
     protected $statements_analyzer;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 

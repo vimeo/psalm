@@ -15,7 +15,7 @@ use Psalm\Tests\TestConfig;
 
 class SymbolLookupTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 

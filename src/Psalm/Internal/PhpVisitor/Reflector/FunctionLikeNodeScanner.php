@@ -737,7 +737,7 @@ class FunctionLikeNodeScanner
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodStorage $storage,
         ClassLikeStorage $classlike_storage
-    ) : void {
+    ): void {
         if (!$stmt->stmts) {
             return;
         }
@@ -803,7 +803,7 @@ class FunctionLikeNodeScanner
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method,
         ?string $fq_classlike_name
-    ) : FunctionLikeParameter {
+    ): FunctionLikeParameter {
         $param_type = null;
 
         $is_nullable = $param->default !== null &&

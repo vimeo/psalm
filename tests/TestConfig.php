@@ -44,7 +44,7 @@ class TestConfig extends Config
         $this->collectPredefinedFunctions();
     }
 
-    protected function getContents() : string
+    protected function getContents(): string
     {
         return '<?xml version="1.0"?>
                 <projectFiles>

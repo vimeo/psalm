@@ -144,7 +144,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
         throw new InvalidArgumentException('Given $visibility not supported');
     }
 
-    public function getFileAnalyzer() : FileAnalyzer
+    public function getFileAnalyzer(): FileAnalyzer
     {
         return $this->source;
     }

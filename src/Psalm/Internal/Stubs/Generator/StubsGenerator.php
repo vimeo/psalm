@@ -30,7 +30,7 @@ class StubsGenerator
         \Psalm\Codebase $codebase,
         \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider,
         \Psalm\Internal\Provider\FileStorageProvider $file_provider
-    ) : string {
+    ): string {
         $namespaced_nodes = [];
 
         $psalm_base = dirname(__DIR__, 5);

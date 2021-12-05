@@ -493,7 +493,7 @@ class ClassLikeDocblockParser
         ClassLikeDocblockComment $info,
         array $specials,
         string $property_tag
-    ) : void {
+    ): void {
         $magic_property_comments = $specials[$property_tag] ?? [];
 
         foreach ($magic_property_comments as $offset => $property) {

@@ -43,7 +43,7 @@ class TestCase extends BaseTestCase
     /** @var Config */
     protected $testConfig;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         ini_set('memory_limit', '-1');
 
@@ -59,12 +59,12 @@ class TestCase extends BaseTestCase
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
-    protected function makeConfig() : Config
+    protected function makeConfig(): Config
     {
         return new TestConfig();
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -87,7 +87,7 @@ class TestCase extends BaseTestCase
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
-    public function tearDown() : void
+    public function tearDown(): void
     {
         unset($this->project_analyzer, $this->file_provider, $this->testConfig);
         RuntimeCaches::clearAll();

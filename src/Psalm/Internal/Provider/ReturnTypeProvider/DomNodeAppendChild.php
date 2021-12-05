@@ -8,7 +8,7 @@ use Psalm\Type;
 
 class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['DomNode'];
     }

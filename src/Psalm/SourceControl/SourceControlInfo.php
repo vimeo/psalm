@@ -3,5 +3,5 @@ namespace Psalm\SourceControl;
 
 abstract class SourceControlInfo
 {
-    abstract public function toArray() : array;
+    abstract public function toArray(): array;
 }

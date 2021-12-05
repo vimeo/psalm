@@ -29,7 +29,7 @@ class TemplateInferredTypeReplacer
         Union $union,
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         $keys_to_unset = [];
 
         $new_types = [];

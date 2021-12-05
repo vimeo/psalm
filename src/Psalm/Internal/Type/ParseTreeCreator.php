@@ -41,7 +41,7 @@ class ParseTreeCreator
         $this->current_leaf = $this->parse_tree;
     }
 
-    public function create() : ParseTree
+    public function create(): ParseTree
     {
         while ($this->t < $this->type_token_count) {
             $type_token = $this->type_tokens[$this->t];
@@ -150,7 +150,7 @@ class ParseTreeCreator
     /**
      * @param  array{0: string, 1: int} $current_token
      */
-    private function createMethodParam(array $current_token, ParseTree $current_parent) : void
+    private function createMethodParam(array $current_token, ParseTree $current_parent): void
     {
         $byref = false;
         $variadic = false;
@@ -216,7 +216,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
-    private function handleOpenSquareBracket() : void
+    private function handleOpenSquareBracket(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException('Unexpected token [');
@@ -267,7 +267,7 @@ class ParseTreeCreator
         ++$this->t;
     }
 
-    private function handleOpenRoundBracket() : void
+    private function handleOpenRoundBracket(): void
     {
         if ($this->current_leaf instanceof ParseTree\Value) {
             throw new TypeParseTreeException('Unrecognised token (');
@@ -291,7 +291,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_leaf;
     }
 
-    private function handleClosedRoundBracket() : void
+    private function handleClosedRoundBracket(): void
     {
         $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
 
@@ -319,7 +319,7 @@ class ParseTreeCreator
         }
     }
 
-    private function handleComma() : void
+    private function handleComma(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException('Unexpected token ,');
@@ -356,7 +356,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleEllipsisOrEquals(array $type_token) : void
+    private function handleEllipsisOrEquals(array $type_token): void
     {
         $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
 
@@ -408,7 +408,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_leaf;
     }
 
-    private function handleColon() : void
+    private function handleColon(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException('Unexpected token :');
@@ -493,7 +493,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
-    private function handleSpace() : void
+    private function handleSpace(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException('Unexpected space');
@@ -525,7 +525,7 @@ class ParseTreeCreator
         $this->createMethodParam($next_token, $current_parent);
     }
 
-    private function handleQuestionMark() : void
+    private function handleQuestionMark(): void
     {
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
@@ -584,7 +584,7 @@ class ParseTreeCreator
         }
     }
 
-    private function handleBar() : void
+    private function handleBar(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException('Unexpected token |');
@@ -637,7 +637,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
-    private function handleAmpersand() : void
+    private function handleAmpersand(): void
     {
         if ($this->current_leaf instanceof ParseTree\Root) {
             throw new TypeParseTreeException(
@@ -672,7 +672,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int} $type_token */
-    private function handleIsOrAs(array $type_token) : void
+    private function handleIsOrAs(array $type_token): void
     {
         if ($this->t === 0) {
             $this->handleValue($type_token);
@@ -715,7 +715,7 @@ class ParseTreeCreator
     }
 
     /** @param array{0: string, 1: int, 2?: string} $type_token */
-    private function handleValue(array $type_token) : void
+    private function handleValue(array $type_token): void
     {
         $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
 

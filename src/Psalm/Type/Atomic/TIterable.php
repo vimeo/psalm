@@ -121,7 +121,7 @@ class TIterable extends Atomic
         return true;
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return array_merge($this->type_params, $this->extra_types ?? []);
     }

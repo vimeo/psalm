@@ -8,7 +8,7 @@ interface FunctionExistenceProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array;
+    public static function getFunctionIds(): array;
 
     /**
      * Use this hook for informing whether or not a global function exists. If you know the function does

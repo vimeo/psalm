@@ -11,5 +11,5 @@ interface StringInterpreterInterface
      */
     public static function getTypeFromValue(
         string $value
-    ) : ?Type\Atomic\TLiteralString;
+    ): ?Type\Atomic\TLiteralString;
 }

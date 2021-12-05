@@ -416,7 +416,7 @@ class Reflection
         return null;
     }
 
-    public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null) : Type\Union
+    public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Type\Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
@@ -542,7 +542,7 @@ class Reflection
         return self::$builtin_functions;
     }
 
-    public static function clearCache() : void
+    public static function clearCache(): void
     {
         self::$builtin_functions = [];
     }

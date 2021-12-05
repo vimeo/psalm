@@ -25,7 +25,7 @@ class KeyedArrayComparator
         Type\Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
-    ) : bool {
+    ): bool {
         $all_types_contain = true;
 
         foreach ($container_type_part->properties as $key => $container_property_type) {
@@ -90,7 +90,7 @@ class KeyedArrayComparator
         TObjectWithProperties $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
-    ) : bool {
+    ): bool {
         $all_types_contain = true;
 
         foreach ($container_type_part->properties as $property_name => $container_property_type) {

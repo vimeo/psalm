@@ -12,7 +12,7 @@ use function stripos;
 
 class SqlStringProvider implements StringInterpreterInterface
 {
-    public static function getTypeFromValue(StringInterpreterEvent $event) : ?TLiteralString
+    public static function getTypeFromValue(StringInterpreterEvent $event): ?TLiteralString
     {
         $value = $event->getValue();
         if (stripos($value, 'select ') !== false) {

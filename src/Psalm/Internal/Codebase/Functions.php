@@ -78,7 +78,7 @@ class Functions
         string $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null
-    ) : FunctionStorage {
+    ): FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
@@ -271,7 +271,7 @@ class Functions
         int $offset,
         string $file_path,
         Codebase $codebase
-    ) : array {
+    ): array {
         if ($stub[0] === '*') {
             $stub = substr($stub, 1);
         }
@@ -396,7 +396,7 @@ class Functions
         string $function_id,
         ?array $args,
         bool &$must_use = true
-    ) : bool {
+    ): bool {
         $impure_functions = [
             // file io
             'chdir', 'chgrp', 'chmod', 'chown', 'chroot', 'copy', 'file_get_contents', 'file_put_contents',
@@ -591,7 +591,7 @@ class Functions
         return true;
     }
 
-    public static function clearCache() : void
+    public static function clearCache(): void
     {
         self::$stubbed_functions = [];
     }

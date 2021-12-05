@@ -42,7 +42,7 @@ class ClassDocblockManipulator
         ProjectAnalyzer $project_analyzer,
         string $file_path,
         Class_ $stmt
-    ) : self {
+    ): self {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
         }
@@ -75,7 +75,7 @@ class ClassDocblockManipulator
         $this->indentation = str_replace(ltrim($first_line), '', $first_line);
     }
 
-    public function makeImmutable() : void
+    public function makeImmutable(): void
     {
         $this->immutable = true;
     }

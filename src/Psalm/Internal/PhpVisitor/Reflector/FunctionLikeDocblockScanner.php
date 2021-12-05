@@ -63,7 +63,7 @@ class FunctionLikeDocblockScanner
         bool $is_functionlike_override,
         bool $fake_method,
         string $cased_function_id
-    ) : void {
+    ): void {
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
         $config = Config::getInstance();
@@ -416,7 +416,7 @@ class FunctionLikeDocblockScanner
         ?ClassLikeStorage $classlike_storage,
         string $cased_function_id,
         array $function_template_types
-    ) : array {
+    ): array {
         $fixed_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
             $docblock_return_type,
             $aliases,
@@ -537,7 +537,7 @@ class FunctionLikeDocblockScanner
         array $function_template_types,
         array $type_aliases,
         ?string $self_fqcln
-    ) : ?array {
+    ): ?array {
         $prefix = '';
 
         if ($assertion_type[0] === '!') {
@@ -852,7 +852,7 @@ class FunctionLikeDocblockScanner
 
         $params_without_docblock_type = array_filter(
             $storage->params,
-            function (FunctionLikeParameter $p) : bool {
+            function (FunctionLikeParameter $p): bool {
                 return !$p->has_docblock_type && (!$p->type || $p->type->hasArray());
             }
         );
@@ -882,7 +882,7 @@ class FunctionLikeDocblockScanner
         ?ClassLikeStorage $classlike_storage,
         string $cased_function_id,
         FileStorage $file_storage
-    ) : void {
+    ): void {
         if (!$fake_method
             && $docblock_info->return_type_line_number
             && $docblock_info->return_type_start

@@ -17,7 +17,7 @@ class PropertyVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(PropertyVisibilityProviderEvent) : ?bool>
+     *   array<Closure(PropertyVisibilityProviderEvent): ?bool>
      * >
      */
     private static $handlers = [];
@@ -32,7 +32,7 @@ class PropertyVisibilityProvider
      *     bool,
      *     Context,
      *     CodeLocation
-     *   ) : ?bool>
+     *   ): ?bool>
      * >
      */
     private static $legacy_handlers = [];
@@ -87,7 +87,7 @@ class PropertyVisibilityProvider
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

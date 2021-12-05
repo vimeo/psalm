@@ -56,7 +56,7 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
         return null;
     }
 
-    public function getNode() : ?PhpParser\Node\Stmt\Trait_
+    public function getNode(): ?PhpParser\Node\Stmt\Trait_
     {
         if (!count($this->matching_trait_nodes)) {
             return null;

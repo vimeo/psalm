@@ -10,7 +10,7 @@ interface MethodExistenceProviderInterface
     /**
      * @return array<string>
      */
-    public static function getClassLikeNames() : array;
+    public static function getClassLikeNames(): array;
 
     /**
      * Use this hook for informing whether or not a method exists on a given object. If you know the method does

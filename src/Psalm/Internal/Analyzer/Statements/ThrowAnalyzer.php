@@ -24,7 +24,7 @@ class ThrowAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;

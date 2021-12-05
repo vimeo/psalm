@@ -45,12 +45,12 @@ class TDependentGetClass extends TString implements DependentType
             . '>';
     }
 
-    public function getVarId() : string
+    public function getVarId(): string
     {
         return $this->typeof;
     }
 
-    public function getReplacement() : Atomic
+    public function getReplacement(): Atomic
     {
         return new TClassString();
     }

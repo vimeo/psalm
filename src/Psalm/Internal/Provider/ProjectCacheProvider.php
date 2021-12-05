@@ -78,7 +78,7 @@ class ProjectCacheProvider
         return $this->last_run;
     }
 
-    public function hasLockfileChanged() : bool
+    public function hasLockfileChanged(): bool
     {
         if (!file_exists($this->composer_lock_location)) {
             return true;
@@ -99,7 +99,7 @@ class ProjectCacheProvider
         return $changed;
     }
 
-    public function updateComposerLockHash() : void
+    public function updateComposerLockHash(): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -116,7 +116,7 @@ class ProjectCacheProvider
         file_put_contents($lock_hash_location, $this->composer_lock_hash);
     }
 
-    protected function getComposerLockHash() : string
+    protected function getComposerLockHash(): string
     {
         if ($this->composer_lock_hash === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();

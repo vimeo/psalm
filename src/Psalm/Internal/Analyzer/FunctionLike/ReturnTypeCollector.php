@@ -243,7 +243,7 @@ class ReturnTypeCollector
         Codebase $codebase,
         array $return_types,
         array $yield_types
-    ) : array {
+    ): array {
         $key_type = null;
         $value_type = null;
 
@@ -283,7 +283,7 @@ class ReturnTypeCollector
                         $key_type ?? Type::getMixed(),
                         $value_type ?? Type::getMixed(),
                         Type::getMixed(),
-                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
+                        $return_types ? Type::combineUnionTypeArray($return_types, null): Type::getVoid()
                     ]
                 ),
             ])

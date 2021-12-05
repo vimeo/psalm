@@ -11,7 +11,7 @@ use Psalm\Type;
 
 class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['PDOStatement'];
     }

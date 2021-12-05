@@ -175,7 +175,7 @@ trait GenericTrait
     /**
      * @return array<TypeNode>
      */
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return $this->type_params;
     }
@@ -191,7 +191,7 @@ trait GenericTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         if ($input_type instanceof Atomic\TList) {
             $input_type = new Atomic\TArray([Type::getInt(), $input_type->type_param]);
         }
@@ -263,7 +263,7 @@ trait GenericTrait
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         foreach ($this->type_params as $offset => $type_param) {
             TemplateInferredTypeReplacer::replace(
                 $type_param,

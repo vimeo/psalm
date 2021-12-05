@@ -285,7 +285,7 @@ class ClassLikes
     /**
      * @return list<string>
      */
-    public function getMatchingClassLikeNames(string $stub) : array
+    public function getMatchingClassLikeNames(string $stub): array
     {
         $matching_classes = [];
 
@@ -932,7 +932,7 @@ class ClassLikes
         PhpParser\Node\Stmt\Class_ $class_stmt,
         ProjectAnalyzer $project_analyzer,
         string $file_path
-    ) : void {
+    ): void {
         $manipulator = ClassDocblockManipulator::getForClass(
             $project_analyzer,
             $file_path,
@@ -1208,7 +1208,7 @@ class ClassLikes
         ?string $calling_method_id,
         bool $force_change = false,
         bool $was_self = false
-    ) : bool {
+    ): bool {
         if ($class_name_node instanceof VirtualNode) {
             return false;
         }
@@ -1391,7 +1391,7 @@ class ClassLikes
         Type\Union $type,
         CodeLocation $type_location,
         ?string $calling_method_id
-    ) : void {
+    ): void {
         $calling_fq_class_name = $source->getFQCLN();
         $fq_class_name_lc = strtolower($calling_fq_class_name ?? '');
 
@@ -1519,7 +1519,7 @@ class ClassLikes
         int $source_end,
         bool $add_class_constant = false,
         bool $allow_self = false
-    ) : void {
+    ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
@@ -1555,7 +1555,7 @@ class ClassLikes
         string $source_file_path,
         int $source_start,
         int $source_end
-    ) : void {
+    ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
@@ -1635,7 +1635,7 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $class_name = strtolower($class_name);
 
         if (!$this->classlike_storage_provider->has($class_name)) {
@@ -2224,7 +2224,7 @@ class ClassLikes
             && $this->existing_classlikes_lc[$fq_classlike_name_lc];
     }
 
-    public function forgetMissingClassLikes() : void
+    public function forgetMissingClassLikes(): void
     {
         $this->existing_classlikes_lc = array_filter($this->existing_classlikes_lc);
     }

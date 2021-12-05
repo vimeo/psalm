@@ -813,7 +813,7 @@ class AssertionFinder
         StatementsAnalyzer $source,
         Codebase $codebase,
         bool $negate
-    ) : void {
+    ): void {
         if ($first_var_type->hasMixed()) {
             return;
         }

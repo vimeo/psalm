@@ -40,7 +40,7 @@ class ExpressionAnalyzer
         bool $array_assignment = false,
         ?Context $global_context = null,
         bool $from_stmt = false
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if (self::handleExpression(
@@ -114,7 +114,7 @@ class ExpressionAnalyzer
         bool $array_assignment,
         ?Context $global_context,
         bool $from_stmt
-    ) : bool {
+    ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return Expression\Fetch\VariableFetchAnalyzer::analyze(
                 $statements_analyzer,

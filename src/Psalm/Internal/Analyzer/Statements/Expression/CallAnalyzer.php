@@ -268,7 +268,7 @@ class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$method_id) {
@@ -383,7 +383,7 @@ class CallAnalyzer
         ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = [],
         array $class_template_params = []
-    ) : array {
+    ): array {
         $template_types = $existing_template_types;
 
         if ($declaring_class_storage) {
@@ -1006,7 +1006,7 @@ class CallAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         ?string $function_id
-    ) : void {
+    ): void {
         if ($template_result->lower_bounds && $template_result->upper_bounds) {
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {
                 foreach ($defining_map as $defining_id => $upper_bound) {

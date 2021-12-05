@@ -21,7 +21,7 @@ trait MixedIssueTrait
         $this->origin_location = $origin_location;
     }
 
-    public function getMixedOriginMessage() : string
+    public function getMixedOriginMessage(): string
     {
         return $this->message
             . ($this->origin_location
@@ -29,7 +29,7 @@ trait MixedIssueTrait
                 : '');
     }
 
-    public function getOriginalLocation() : ?CodeLocation
+    public function getOriginalLocation(): ?CodeLocation
     {
         return $this->origin_location;
     }

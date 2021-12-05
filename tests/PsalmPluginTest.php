@@ -31,7 +31,7 @@ class PsalmPluginTest extends TestCase
     /** @var Application */
     private $app;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->plugin_list = $this->prophesize(PluginList::class);

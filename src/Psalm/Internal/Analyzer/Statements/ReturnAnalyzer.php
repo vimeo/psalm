@@ -534,7 +534,7 @@ class ReturnAnalyzer
         string $cased_method_id,
         Type\Union $inferred_type,
         FunctionLikeStorage $storage
-    ) : void {
+    ): void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || !$stmt->expr
             || !$storage->location

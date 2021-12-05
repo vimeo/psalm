@@ -412,10 +412,10 @@ class FileFilter
         return self::loadFromArray($config, $base_dir, $inclusive);
     }
 
-    private static function isRegularExpression(string $string) : bool
+    private static function isRegularExpression(string $string): bool
     {
         set_error_handler(
-            function () : bool {
+            function (): bool {
                 return false;
             },
             E_WARNING

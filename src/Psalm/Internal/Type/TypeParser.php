@@ -363,7 +363,7 @@ class TypeParser
         string $param_name,
         Union $as,
         string $defining_class
-    ) : Atomic\TTemplateParamClass {
+    ): Atomic\TTemplateParamClass {
         if ($as->hasMixed()) {
             return new Atomic\TTemplateParamClass(
                 $param_name,
@@ -442,7 +442,7 @@ class TypeParser
      * @param  non-empty-list<int>  $potential_ints
      * @return  non-empty-list<TLiteralInt>
      */
-    public static function getComputedIntsFromMask(array $potential_ints) : array
+    public static function getComputedIntsFromMask(array $potential_ints): array
     {
         /** @var list<int> */
         $potential_values = [];

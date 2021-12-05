@@ -79,7 +79,7 @@ class AtomicPropertyFetchAnalyzer
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
         bool $is_static_access = false
-    ) : void {
+    ): void {
         if ($lhs_type_part instanceof TNull) {
             return;
         }
@@ -538,7 +538,7 @@ class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $class_storage,
         MethodIdentifier $get_method_id,
         bool $in_assignment
-    ) : bool {
+    ): bool {
         if ((!$naive_property_exists
                 || ($stmt_var_id !== '$this'
                     && $fq_class_name !== $context->self
@@ -698,7 +698,7 @@ class AtomicPropertyFetchAnalyzer
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage
-    ) : Type\Union {
+    ): Type\Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
             $property_declaring_class_storage,
@@ -771,7 +771,7 @@ class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $class_storage,
         bool $in_assignment,
         ?Context $context = null
-    ) : void {
+    ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
         }

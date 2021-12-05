@@ -310,12 +310,12 @@ class Scanner
         return $has_changes;
     }
 
-    private function scanFilePaths(int $pool_size) : bool
+    private function scanFilePaths(int $pool_size): bool
     {
         $filetype_scanners = $this->config->getFiletypeScanners();
         $files_to_scan = array_filter(
             $this->files_to_scan,
-            function (string $file_path) : bool {
+            function (string $file_path): bool {
                 return $this->file_provider->fileExists($file_path)
                     && (!isset($this->scanned_files[$file_path])
                         || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));

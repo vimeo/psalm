@@ -17,7 +17,7 @@ class MethodVisibilityProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(MethodVisibilityProviderEvent) : ?bool>
+     *   array<Closure(MethodVisibilityProviderEvent): ?bool>
      * >
      */
     private static $handlers = [];
@@ -31,7 +31,7 @@ class MethodVisibilityProvider
      *     string,
      *     Context,
      *     ?CodeLocation
-     *   ) : ?bool>
+     *   ): ?bool>
      * >
      */
     private static $legacy_handlers = [];
@@ -64,7 +64,7 @@ class MethodVisibilityProvider
     }
 
     /**
-     * @param Closure(MethodVisibilityProviderEvent) : ?bool $c
+     * @param Closure(MethodVisibilityProviderEvent): ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -78,14 +78,14 @@ class MethodVisibilityProvider
      *     string,
      *     Context,
      *     ?CodeLocation
-     *   ) : ?bool $c
+     *   ): ?bool $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

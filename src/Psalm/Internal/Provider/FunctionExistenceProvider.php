@@ -15,7 +15,7 @@ class FunctionExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(FunctionExistenceProviderEvent) : ?bool>
+     *   array<Closure(FunctionExistenceProviderEvent): ?bool>
      * >
      */
     private static $handlers = [];
@@ -26,7 +26,7 @@ class FunctionExistenceProvider
      *   array<Closure(
      *     StatementsSource,
      *     string
-     *   ) : ?bool>
+     *   ): ?bool>
      * >
      */
     private static $legacy_handlers = [];
@@ -59,7 +59,7 @@ class FunctionExistenceProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param Closure(FunctionExistenceProviderEvent) : ?bool $c
+     * @param Closure(FunctionExistenceProviderEvent): ?bool $c
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
@@ -71,14 +71,14 @@ class FunctionExistenceProvider
      * @param Closure(
      *     StatementsSource,
      *     string
-     *   ) : ?bool $c
+     *   ): ?bool $c
      */
     public function registerLegacyClosure(string $function_id, Closure $c): void
     {
         self::$legacy_handlers[$function_id][] = $c;
     }
 
-    public function has(string $function_id) : bool
+    public function has(string $function_id): bool
     {
         return isset(self::$handlers[strtolower($function_id)]) ||
             isset(self::$legacy_handlers[strtolower($function_id)]);

@@ -32,7 +32,7 @@ class MethodCallPurityAnalyzer
         Context $context,
         Config $config,
         AtomicMethodCallAnalysisResult $result
-    ) : void {
+    ): void {
         $method_pure_compatible = $method_storage->external_mutation_free
             && $statements_analyzer->node_data->isPureCompatible($stmt->var);
 

@@ -320,7 +320,7 @@ abstract class Atomic implements TypeNode
         return new TNamedObject($value);
     }
 
-    abstract public function getKey(bool $include_extra = true) : string;
+    abstract public function getKey(bool $include_extra = true): string;
 
     public function isNumericType(): bool
     {
@@ -398,7 +398,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        function (Atomic $a) use ($codebase) : bool {
+                        function (Atomic $a) use ($codebase): bool {
                             return $a->hasTraversableInterface($codebase);
                         }
                     )
@@ -423,7 +423,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        function (Atomic $a) use ($codebase) : bool {
+                        function (Atomic $a) use ($codebase): bool {
                             return $a->hasCountableInterface($codebase);
                         }
                     )
@@ -464,7 +464,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        function (Atomic $a) use ($codebase) : bool {
+                        function (Atomic $a) use ($codebase): bool {
                             return $a->hasArrayAccessInterface($codebase);
                         }
                     )
@@ -472,12 +472,12 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return [];
     }
 
-    public function replaceClassLike(string $old, string $new) : void
+    public function replaceClassLike(string $old, string $new): void
     {
         if ($this instanceof TNamedObject) {
             if (strtolower($this->value) === $old) {
@@ -620,14 +620,14 @@ abstract class Atomic implements TypeNode
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : self {
+    ): self {
         return $this;
     }
 
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         // do nothing
     }
 

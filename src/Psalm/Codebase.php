@@ -560,7 +560,7 @@ class Codebase
         }
     }
 
-    public static function getPsalmTypeFromReflection(?ReflectionType $type) : Type\Union
+    public static function getPsalmTypeFromReflection(?ReflectionType $type): Type\Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
@@ -1511,7 +1511,7 @@ class Codebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForClassishThing(string $type_string, string $gap) : array
+    public function getCompletionItemsForClassishThing(string $type_string, string $gap): array
     {
         $completion_items = [];
 
@@ -1593,7 +1593,7 @@ class Codebase
         string $type_string,
         int $offset,
         string $file_path
-    ) : array {
+    ): array {
         $fq_suggestion = false;
 
         if (($type_string[1] ?? '') === '\\') {
@@ -1816,7 +1816,7 @@ class Codebase
      */
     public function getCompletionItemsForArrayKeys(
         string $type_string
-    ) : array {
+    ): array {
         $completion_items = [];
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -1837,7 +1837,7 @@ class Codebase
         return $completion_items;
     }
 
-    private static function getPositionFromOffset(int $offset, string $file_contents) : Position
+    private static function getPositionFromOffset(int $offset, string $file_contents): Position
     {
         $file_contents = substr($file_contents, 0, $offset);
 
@@ -1955,7 +1955,7 @@ class Codebase
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
-    ) : void {
+    ): void {
         if (!$this->taint_flow_graph) {
             return;
         }
@@ -1984,7 +1984,7 @@ class Codebase
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
-    ) : void {
+    ): void {
         if (!$this->taint_flow_graph) {
             return;
         }

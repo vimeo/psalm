@@ -20,7 +20,7 @@ class ErrorBaselineTest extends TestCase
     /** @var ObjectProphecy */
     private $fileProvider;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->fileProvider = $this->prophesize(FileProvider::class);

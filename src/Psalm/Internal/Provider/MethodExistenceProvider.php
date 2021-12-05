@@ -16,7 +16,7 @@ class MethodExistenceProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(MethodExistenceProviderEvent) : ?bool>
+     *   array<Closure(MethodExistenceProviderEvent): ?bool>
      * >
      */
     private static $handlers = [];
@@ -29,7 +29,7 @@ class MethodExistenceProvider
      *     string,
      *     ?StatementsSource=,
      *     ?CodeLocation
-     *   ) : ?bool>
+     *   ): ?bool>
      * >
      */
     private static $legacy_handlers = [];
@@ -61,7 +61,7 @@ class MethodExistenceProvider
     }
 
     /**
-     * @param Closure(MethodExistenceProviderEvent) : ?bool $c
+     * @param Closure(MethodExistenceProviderEvent): ?bool $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -74,14 +74,14 @@ class MethodExistenceProvider
      *     string,
      *     ?StatementsSource=,
      *     ?CodeLocation
-     *   ) : ?bool $c
+     *   ): ?bool $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    public function has(string $fq_classlike_name) : bool
+    public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
             isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);

@@ -21,7 +21,7 @@ class CodebaseTest extends TestCase
     /** @var Codebase */
     private $codebase;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
         $this->codebase = $this->project_analyzer->getCodebase();

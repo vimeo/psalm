@@ -38,12 +38,12 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return ['array_map'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -256,7 +256,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Expr $fake_call,
         Context $context,
         ?array &$assertions = null
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -339,7 +339,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null
-    ) : Type\Union {
+    ): Type\Union {
         $mapping_return_type = null;
 
         $codebase = $statements_source->getCodebase();

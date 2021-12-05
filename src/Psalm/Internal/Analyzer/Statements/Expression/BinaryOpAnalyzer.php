@@ -37,7 +37,7 @@ class BinaryOpAnalyzer
         Context $context,
         int $nesting = 0,
         bool $from_stmt = false
-    ) : bool {
+    ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
             $statements_analyzer->node_data->setType($stmt, Type::getString());
 
@@ -365,7 +365,7 @@ class BinaryOpAnalyzer
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         string $type = 'binaryop'
-    ) : void {
+    ): void {
         if ($stmt->getLine() === -1) {
             throw new UnexpectedValueException('bad');
         }
@@ -446,7 +446,7 @@ class BinaryOpAnalyzer
         PhpParser\Node\Expr\BinaryOp\Equal $stmt,
         Type\Union $stmt_left_type,
         Type\Union $stmt_right_type
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {

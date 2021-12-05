@@ -32,7 +32,7 @@ class AttributeAnalyzer
         array $suppressed_issues,
         int $target,
         ?ClassLikeStorage $classlike_storage = null
-    ) : void {
+    ): void {
         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $source,
             $attribute->fq_class_name,
@@ -186,7 +186,7 @@ class AttributeAnalyzer
         SourceAnalyzer $source,
         AttributeStorage $attribute,
         int $target
-    ) : void {
+    ): void {
         $codebase = $source->getCodebase();
 
         $attribute_class_storage = $codebase->classlike_storage_provider->get($attribute->fq_class_name);

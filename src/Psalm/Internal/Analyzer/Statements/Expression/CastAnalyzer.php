@@ -43,7 +43,7 @@ class CastAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -274,7 +274,7 @@ class CastAnalyzer
         Type\Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
-    ) : Type\Union {
+    ): Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $invalid_casts = [];

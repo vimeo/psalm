@@ -18,7 +18,7 @@ class MagicConstAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Scalar\MagicConst $stmt,
         Context $context
-    ) : void {
+    ): void {
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt());
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_) {

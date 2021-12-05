@@ -46,7 +46,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @param Expr|Name|Return_ $node
      */
-    public function setType(NodeAbstract $node, Union $type) : void
+    public function setType(NodeAbstract $node, Union $type): void
     {
         $this->node_types[$node] = $type;
     }
@@ -54,7 +54,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @param Expr|Name|Return_ $node
      */
-    public function getType(NodeAbstract $node) : ?Union
+    public function getType(NodeAbstract $node): ?Union
     {
         return $this->node_types[$node] ?? null;
     }
@@ -62,7 +62,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @param list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null $assertions
      */
-    public function setAssertions(Expr $node, ?array $assertions) : void
+    public function setAssertions(Expr $node, ?array $assertions): void
     {
         if (!$this->cache_assertions) {
             return;
@@ -74,7 +74,7 @@ class NodeDataProvider implements NodeTypeProvider
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
      */
-    public function getAssertions(Expr $node) : ?array
+    public function getAssertions(Expr $node): ?array
     {
         if (!$this->cache_assertions) {
             return null;
@@ -87,7 +87,7 @@ class NodeDataProvider implements NodeTypeProvider
      * @param FuncCall|MethodCall|StaticCall|New_ $node
      * @param array<int, Assertion>  $assertions
      */
-    public function setIfTrueAssertions(Expr $node, array $assertions) : void
+    public function setIfTrueAssertions(Expr $node, array $assertions): void
     {
         $this->node_if_true_assertions[$node] = $assertions;
     }
@@ -96,7 +96,7 @@ class NodeDataProvider implements NodeTypeProvider
      * @param Expr\FuncCall|MethodCall|StaticCall|New_ $node
      * @return array<int, Assertion>|null
      */
-    public function getIfTrueAssertions(Expr $node) : ?array
+    public function getIfTrueAssertions(Expr $node): ?array
     {
         return $this->node_if_true_assertions[$node] ?? null;
     }
@@ -105,7 +105,7 @@ class NodeDataProvider implements NodeTypeProvider
      * @param FuncCall|MethodCall|StaticCall|New_ $node
      * @param array<int, Assertion>  $assertions
      */
-    public function setIfFalseAssertions(Expr $node, array $assertions) : void
+    public function setIfFalseAssertions(Expr $node, array $assertions): void
     {
         $this->node_if_false_assertions[$node] = $assertions;
     }
@@ -114,19 +114,19 @@ class NodeDataProvider implements NodeTypeProvider
      * @param FuncCall|MethodCall|StaticCall|New_ $node
      * @return array<int, Assertion>|null
      */
-    public function getIfFalseAssertions(Expr $node) : ?array
+    public function getIfFalseAssertions(Expr $node): ?array
     {
         return $this->node_if_false_assertions[$node] ?? null;
     }
 
-    public function isPureCompatible(Expr $node) : bool
+    public function isPureCompatible(Expr $node): bool
     {
         $node_type = $this->getType($node);
 
         return ($node_type && $node_type->reference_free) || $node->getAttribute('pure', false);
     }
 
-    public function clearNodeOfTypeAndAssertions(Expr $node) : void
+    public function clearNodeOfTypeAndAssertions(Expr $node): void
     {
         unset($this->node_types[$node], $this->node_assertions[$node]);
     }

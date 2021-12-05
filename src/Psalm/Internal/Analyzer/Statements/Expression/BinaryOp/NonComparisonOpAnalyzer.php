@@ -16,7 +16,7 @@ class NonComparisonOpAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context
-    ) : void {
+    ): void {
         $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
         $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 

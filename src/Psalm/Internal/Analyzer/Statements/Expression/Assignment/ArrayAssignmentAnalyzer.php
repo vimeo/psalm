@@ -283,7 +283,7 @@ class ArrayAssignmentAnalyzer
         Type\Union $child_stmt_type,
         Type\Union $current_type,
         array $key_values
-    ) : Type\Union {
+    ): Type\Union {
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
@@ -394,7 +394,7 @@ class ArrayAssignmentAnalyzer
         Type\Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values
-    ) : void {
+    ): void {
         if ($statements_analyzer->data_flow_graph
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                 || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))

@@ -307,7 +307,7 @@ class TypeTokenizer
     public static function fixScalarTerms(
         string $type_string,
         ?array $php_version = null
-    ) : string {
+    ): string {
         $type_string_lc = strtolower($type_string);
 
         switch ($type_string_lc) {
@@ -503,7 +503,7 @@ class TypeTokenizer
         return $type_tokens;
     }
 
-    public static function clearCache() : void
+    public static function clearCache(): void
     {
         self::$memoized_tokens = [];
     }

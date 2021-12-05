@@ -17,7 +17,7 @@ abstract class FileManipulationTestCase extends TestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
 

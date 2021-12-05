@@ -24,7 +24,7 @@ class UnaryPlusMinusAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }

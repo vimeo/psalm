@@ -142,4 +142,14 @@
         <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification"/>
     </rule>
 
+    <!--
+        Enforces consistent formatting of return typehints.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehintspacing-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing">
+        <properties>
+            <property name="spacesCountBeforeColon" value="0"/>
+        </properties>
+    </rule>
+
 </ruleset>

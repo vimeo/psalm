@@ -7,7 +7,7 @@ use Psalm\Exception\CodeException;
 
 class ThrowsAnnotationTest extends TestCase
 {
-    public function testUndefinedClassAsThrows() : void
+    public function testUndefinedClassAsThrows(): void
     {
         $this->expectExceptionMessage('UndefinedDocblockClass - somefile.php:3:28');
         $this->expectException(CodeException::class);
@@ -26,7 +26,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    public function testNonThrowableClassAsThrows() : void
+    public function testNonThrowableClassAsThrows(): void
     {
         $this->expectExceptionMessage('InvalidThrow');
         $this->expectException(CodeException::class);
@@ -47,7 +47,7 @@ class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    public function testInheritedThrowableClassAsThrows() : void
+    public function testInheritedThrowableClassAsThrows(): void
     {
         $this->addFile(
             'somefile.php',

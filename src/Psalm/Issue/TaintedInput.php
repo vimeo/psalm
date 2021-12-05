@@ -57,7 +57,7 @@ abstract class TaintedInput extends CodeIssue
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,
         string $label
-    ) : DataFlowNodeData {
+    ): DataFlowNodeData {
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
@@ -76,7 +76,7 @@ abstract class TaintedInput extends CodeIssue
         );
     }
 
-    public function getJourneyMessage() : string
+    public function getJourneyMessage(): string
     {
         return $this->message . ' in path: ' . $this->journey_text;
     }

@@ -21,7 +21,7 @@ class PrintAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Print_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {

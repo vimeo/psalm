@@ -261,7 +261,7 @@ class PhpStormMetaScanner
                     ) use (
                         $map,
                         $offset
-                    ) : Type\Union {
+                    ): Type\Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();
@@ -314,7 +314,7 @@ class PhpStormMetaScanner
                         FunctionReturnTypeProviderEvent $event
                     ) use (
                         $type_offset
-                    ) : Type\Union {
+                    ): Type\Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();
@@ -348,7 +348,7 @@ class PhpStormMetaScanner
                         FunctionReturnTypeProviderEvent $event
                     ) use (
                         $element_type_offset
-                    ) : Type\Union {
+                    ): Type\Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();

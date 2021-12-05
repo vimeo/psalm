@@ -24,7 +24,7 @@ class ExitAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Exit_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $expr_type = null;
 
         $config = $statements_analyzer->getProjectAnalyzer()->getConfig();

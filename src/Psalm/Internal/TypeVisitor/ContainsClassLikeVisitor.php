@@ -29,7 +29,7 @@ class ContainsClassLikeVisitor extends NodeVisitor
         $this->fq_classlike_name = $fq_classlike_name;
     }
 
-    protected function enterNode(TypeNode $type) : ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
             if (strtolower($type->value) === $this->fq_classlike_name) {
@@ -55,7 +55,7 @@ class ContainsClassLikeVisitor extends NodeVisitor
         return null;
     }
 
-    public function matches() : bool
+    public function matches(): bool
     {
         return $this->contains_classlike;
     }

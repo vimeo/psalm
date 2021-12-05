@@ -203,7 +203,7 @@ class AlgebraTest extends TestCase
         $this->assertSame(['$b' => ['!falsy']], $simplified_formula[0]->possibilities);
     }
 
-    public function testGroupImpossibilities() : void
+    public function testGroupImpossibilities(): void
     {
         $clause1 = (new Clause(
             [

@@ -448,7 +448,7 @@ class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $class_storage,
         Type\Union $assignment_value_type,
         Context $context
-    ) : void {
+    ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
         }
@@ -1412,7 +1412,7 @@ class InstancePropertyAssignmentAnalyzer
         string $fq_class_name,
         string $property_name,
         ClassLikeStorage $storage
-    ) : ?Type\Union {
+    ): ?Type\Union {
         $property_class_name = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
             true

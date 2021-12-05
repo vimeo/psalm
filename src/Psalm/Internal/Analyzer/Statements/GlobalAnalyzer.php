@@ -21,7 +21,7 @@ class GlobalAnalyzer
         PhpParser\Node\Stmt\Global_ $stmt,
         Context $context,
         ?Context $global_context
-    ) : void {
+    ): void {
         if (!$context->collect_initializations && !$global_context) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(

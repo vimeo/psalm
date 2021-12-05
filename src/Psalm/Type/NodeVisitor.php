@@ -9,12 +9,12 @@ abstract class NodeVisitor
     /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
-    abstract protected function enterNode(TypeNode $type) : ?int;
+    abstract protected function enterNode(TypeNode $type): ?int;
 
     /**
      * @return bool - true if we want to continue traversal, false otherwise
      */
-    public function traverse(TypeNode $node) : bool
+    public function traverse(TypeNode $node): bool
     {
         $visitor_result = $this->enterNode($node);
 
@@ -38,7 +38,7 @@ abstract class NodeVisitor
     /**
      * @param array<TypeNode> $nodes
      */
-    public function traverseArray(array $nodes) : void
+    public function traverseArray(array $nodes): void
     {
         foreach ($nodes as $node) {
             if ($this->traverse($node) === false) {

@@ -59,7 +59,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality = false,
         bool $is_strict_equality = false,
         bool $inside_loop = false
-    ) : ?Type\Union {
+    ): ?Type\Union {
         if ($assertion === 'object' && !$existing_var_type->hasMixed()) {
             return self::reconcileObject(
                 $existing_var_type,
@@ -264,7 +264,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
     private static function reconcileCallable(
         Type\Union $existing_var_type
-    ) : Type\Union {
+    ): Type\Union {
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof Type\Atomic\TLiteralString
                 && InternalCallMapHandler::inCallMap($type->value)
@@ -292,7 +292,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_bool_types = [];
         $did_remove_type = false;
@@ -361,7 +361,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality,
         ?int $min_count
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -433,7 +433,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = false;
 
@@ -500,7 +500,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = $existing_var_type->hasScalar();
 
@@ -570,7 +570,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
         bool $is_strict_equality,
         bool $recursive_check
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
 
         //empty is used a lot to check for array offset existence, so we have to silent errors a lot
@@ -767,7 +767,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_scalar_types = [];
         $did_remove_type = false;
@@ -853,7 +853,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_object_types = [];
         $did_remove_type = false;
@@ -954,7 +954,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_numeric_types = [];
         $did_remove_type = $existing_var_type->hasString()
@@ -1044,7 +1044,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_int_types = [];
         $did_remove_type = false;
@@ -1144,7 +1144,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_float_types = [];
         $did_remove_type = false;
@@ -1239,7 +1239,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_string_types = [];
         $did_remove_type = $existing_var_type->hasScalar();
@@ -1343,7 +1343,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_array_types = [];
         $did_remove_type = $existing_var_type->hasScalar();
@@ -1444,7 +1444,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $is_equality
-    ) : Type\Union {
+    ): Type\Union {
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = false;
 

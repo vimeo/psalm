@@ -238,7 +238,7 @@ class ArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
         ?TemplateResult &$template_result
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $generic_param_type = new Type\Union([
@@ -295,7 +295,7 @@ class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         FunctionLikeParameter $param
-    ) : void {
+    ): void {
         if (!$param->type) {
             return;
         }

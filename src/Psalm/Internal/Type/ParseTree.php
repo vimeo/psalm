@@ -31,7 +31,7 @@ class ParseTree
         $this->parent = null;
     }
 
-    public function cleanParents() : void
+    public function cleanParents(): void
     {
         foreach ($this->children as $child) {
             $child->cleanParents();

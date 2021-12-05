@@ -32,7 +32,7 @@ class DebugProgress extends Progress
         $this->write('Updating files...' . "\n");
     }
 
-    public function alterFileDone(string $file_name) : void
+    public function alterFileDone(string $file_name): void
     {
         $this->write('Altered ' . $file_name . "\n");
     }

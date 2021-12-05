@@ -62,7 +62,7 @@ class ArithmeticOpAnalyzer
         PhpParser\Node $parent,
         ?Type\Union &$result_type = null,
         ?Context $context = null
-    ) : void {
+    ): void {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
         $left_type = $nodes->getType($left);
@@ -733,7 +733,7 @@ class ArithmeticOpAnalyzer
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
+                            $always_positive ? Type::getPositiveInt(true): Type::getInt(true),
                             $result_type
                         );
                     }

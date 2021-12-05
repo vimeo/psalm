@@ -22,7 +22,7 @@ use function count;
 class AstDiffer
 {
     /**
-     * @param Closure(Stmt, Stmt, string, string, bool=) : bool $is_equal
+     * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
      *
@@ -34,7 +34,7 @@ class AstDiffer
         array $b,
         string $a_code,
         string $b_code
-    ) : array {
+    ): array {
         $n = count($a);
         $m = count($b);
         $max = $n + $m;
@@ -81,7 +81,7 @@ class AstDiffer
      *
      * @psalm-pure
      */
-    protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc) : array
+    protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc): array
     {
         $result = [];
         for ($d = count($trace) - 1; $d >= 0; --$d) {

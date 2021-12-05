@@ -181,7 +181,7 @@ class DocComment
     /**
      * Parse a docblock comment into its parts.
      */
-    public static function parsePreservingLength(Doc $docblock) : ParsedDocblock
+    public static function parsePreservingLength(Doc $docblock): ParsedDocblock
     {
         $parsed_docblock = DocblockParser::parse(
             $docblock->getText(),

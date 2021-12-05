@@ -26,7 +26,7 @@ class ClassLikeStringComparator
         Scalar $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result = null
-    ) : bool {
+    ): bool {
         if ($container_type_part instanceof TLiteralClassString
             && $input_type_part instanceof TLiteralClassString
         ) {

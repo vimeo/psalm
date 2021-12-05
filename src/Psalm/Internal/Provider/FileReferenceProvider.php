@@ -229,7 +229,7 @@ class FileReferenceProvider
     /**
      * @param array<string, string> $map
      */
-    public function addClassLikeFiles(array $map) : void
+    public function addClassLikeFiles(array $map): void
     {
         self::$classlike_files += $map;
     }
@@ -238,7 +238,7 @@ class FileReferenceProvider
         string $source_file,
         string $referenced_member_id,
         bool $inside_return
-    ) : void {
+    ): void {
         self::$file_references_to_class_members[$referenced_member_id][$source_file] = true;
 
         if ($inside_return) {
@@ -827,31 +827,31 @@ class FileReferenceProvider
         }
     }
 
-    public function isClassMethodReferenced(string $method_id) : bool
+    public function isClassMethodReferenced(string $method_id): bool
     {
         return !empty(self::$file_references_to_class_members[$method_id])
             || !empty(self::$method_references_to_class_members[$method_id]);
     }
 
-    public function isClassPropertyReferenced(string $property_id) : bool
+    public function isClassPropertyReferenced(string $property_id): bool
     {
         return !empty(self::$file_references_to_class_properties[$property_id])
             || !empty(self::$method_references_to_class_properties[$property_id]);
     }
 
-    public function isMethodReturnReferenced(string $method_id) : bool
+    public function isMethodReturnReferenced(string $method_id): bool
     {
         return !empty(self::$file_references_to_method_returns[$method_id])
             || !empty(self::$method_references_to_method_returns[$method_id]);
     }
 
-    public function isClassReferenced(string $fq_class_name_lc) : bool
+    public function isClassReferenced(string $fq_class_name_lc): bool
     {
         return isset(self::$method_references_to_classes[$fq_class_name_lc])
             || isset(self::$nonmethod_references_to_classes[$fq_class_name_lc]);
     }
 
-    public function isMethodParamUsed(string $method_id, int $offset) : bool
+    public function isMethodParamUsed(string $method_id, int $offset): bool
     {
         return !empty(self::$method_param_uses[$method_id][$offset]);
     }
@@ -868,7 +868,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<int, CodeLocation>>
      */
-    public function getAllClassMethodLocations() : array
+    public function getAllClassMethodLocations(): array
     {
         return self::$class_method_locations;
     }
@@ -876,7 +876,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<int, CodeLocation>>
      */
-    public function getAllClassPropertyLocations() : array
+    public function getAllClassPropertyLocations(): array
     {
         return self::$class_property_locations;
     }
@@ -884,7 +884,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<int, CodeLocation>>
      */
-    public function getAllClassLocations() : array
+    public function getAllClassLocations(): array
     {
         return self::$class_locations;
     }
@@ -892,7 +892,7 @@ class FileReferenceProvider
     /**
      * @return array<int, CodeLocation>
      */
-    public function getClassMethodLocations(string $method_id) : array
+    public function getClassMethodLocations(string $method_id): array
     {
         return self::$class_method_locations[$method_id] ?? [];
     }
@@ -900,7 +900,7 @@ class FileReferenceProvider
     /**
      * @return array<int, CodeLocation>
      */
-    public function getClassPropertyLocations(string $property_id) : array
+    public function getClassPropertyLocations(string $property_id): array
     {
         return self::$class_property_locations[$property_id] ?? [];
     }
@@ -908,7 +908,7 @@ class FileReferenceProvider
     /**
      * @return array<int, CodeLocation>
      */
-    public function getClassLocations(string $fq_class_name_lc) : array
+    public function getClassLocations(string $fq_class_name_lc): array
     {
         return self::$class_locations[$fq_class_name_lc] ?? [];
     }
@@ -1210,7 +1210,7 @@ class FileReferenceProvider
     /**
      * @return array<string, array<int, IssueData>>
      */
-    public function getExistingIssues() : array
+    public function getExistingIssues(): array
     {
         return self::$issues;
     }
@@ -1251,7 +1251,7 @@ class FileReferenceProvider
     /**
      * @param array<string, FileMapType> $file_maps
      */
-    public function setFileMaps(array $file_maps) : void
+    public function setFileMaps(array $file_maps): void
     {
         self::$file_maps = $file_maps;
     }

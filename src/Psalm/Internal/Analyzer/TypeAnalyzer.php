@@ -30,7 +30,7 @@ class TypeAnalyzer
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
         bool $allow_interface_equality = false
-    ) : bool {
+    ): bool {
         return UnionTypeComparator::isContainedBy(
             $codebase,
             $input_type,
@@ -55,7 +55,7 @@ class TypeAnalyzer
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
-    ) : bool {
+    ): bool {
         return AtomicTypeComparator::isContainedBy(
             $codebase,
             $input_type_part,

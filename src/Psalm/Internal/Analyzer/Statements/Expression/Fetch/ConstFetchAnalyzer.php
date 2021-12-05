@@ -266,7 +266,7 @@ class ConstFetchAnalyzer
         NodeDataProvider $type_provider,
         Codebase $codebase,
         Aliases $aliases
-    ) : ?string {
+    ): ?string {
         $const_name = null;
 
         if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {

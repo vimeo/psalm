@@ -25,7 +25,7 @@ class PluginListTest extends TestCase
     /** @var ObjectProphecy<ComposerLock> */
     private $composer_lock;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
 

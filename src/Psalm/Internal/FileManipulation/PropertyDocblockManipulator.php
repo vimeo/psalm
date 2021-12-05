@@ -71,7 +71,7 @@ class PropertyDocblockManipulator
         ProjectAnalyzer $project_analyzer,
         string $file_path,
         Property $stmt
-    ) : self {
+    ): self {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
         }
@@ -152,7 +152,7 @@ class PropertyDocblockManipulator
         string $phpdoc_type,
         bool $is_php_compatible,
         ?string $description = null
-    ) : void {
+    ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
 
         $this->new_php_type = $php_type;

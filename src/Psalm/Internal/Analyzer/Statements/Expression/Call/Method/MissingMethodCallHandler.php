@@ -33,7 +33,7 @@ class MissingMethodCallHandler
         Config $config,
         ?Type\Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result
-    ) : ?AtomicCallContext {
+    ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
@@ -204,7 +204,7 @@ class MissingMethodCallHandler
         ?string $intersection_method_id,
         string $cased_method_id,
         AtomicMethodCallAnalysisResult $result
-    ) : void {
+    ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 

@@ -38,7 +38,7 @@ interface StatementsSource extends FileSource
 
     public function getSource(): StatementsSource;
 
-    public function getCodebase() : Codebase;
+    public function getCodebase(): Codebase;
 
     /**
      * Get a list of suppressed issues
@@ -57,5 +57,5 @@ interface StatementsSource extends FileSource
      */
     public function removeSuppressedIssues(array $new_issues): void;
 
-    public function getNodeTypeProvider() : NodeTypeProvider;
+    public function getNodeTypeProvider(): NodeTypeProvider;
 }

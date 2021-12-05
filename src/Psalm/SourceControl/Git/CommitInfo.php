@@ -57,7 +57,7 @@ class CommitInfo
      */
     protected $date;
 
-    public function toArray() : array
+    public function toArray(): array
     {
         return [
             'id' => $this->id,
@@ -75,7 +75,7 @@ class CommitInfo
     /**
      * Set commit ID.
      */
-    public function setId(string $id) : self
+    public function setId(string $id): self
     {
         $this->id = $id;
 
@@ -94,7 +94,7 @@ class CommitInfo
     /**
      * Set author name.
      */
-    public function setAuthorName(string $author_name) : self
+    public function setAuthorName(string $author_name): self
     {
         $this->author_name = $author_name;
 
@@ -114,7 +114,7 @@ class CommitInfo
      * Set author email.
      *
      */
-    public function setAuthorEmail(string $author_email) : self
+    public function setAuthorEmail(string $author_email): self
     {
         $this->author_email = $author_email;
 
@@ -133,7 +133,7 @@ class CommitInfo
     /**
      * Set committer name.
      */
-    public function setCommitterName(string $committer_name) : self
+    public function setCommitterName(string $committer_name): self
     {
         $this->committer_name = $committer_name;
 
@@ -152,7 +152,7 @@ class CommitInfo
     /**
      * Set committer email.
      */
-    public function setCommitterEmail(string $committer_email) : self
+    public function setCommitterEmail(string $committer_email): self
     {
         $this->committer_email = $committer_email;
 
@@ -171,7 +171,7 @@ class CommitInfo
     /**
      * Set commit message.
      */
-    public function setMessage(string $message) : self
+    public function setMessage(string $message): self
     {
         $this->message = $message;
 
@@ -190,7 +190,7 @@ class CommitInfo
     /**
      * Set commit date
      */
-    public function setDate(int $date) : self
+    public function setDate(int $date): self
     {
         $this->date = $date;
 

@@ -48,7 +48,7 @@ class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result
-    ) : Type\Union {
+    ): Type\Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
         $fq_class_name = $method_id->fq_class_name;
@@ -215,7 +215,7 @@ class MethodCallReturnTypeFetcher
         }
 
         if (!$return_type_candidate) {
-            $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
+            $return_type_candidate = $method_name === '__tostring' ? Type::getString(): Type::getMixed();
         }
 
         self::taintMethodCallResult(
@@ -246,7 +246,7 @@ class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
         Context $context
-    ) : void {
+    ): void {
         if (!$statements_analyzer->data_flow_graph
             || !$declaring_method_id
         ) {
@@ -526,7 +526,7 @@ class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         int $arg_count,
         Codebase $codebase
-    ) : Type\Union {
+    ): Type\Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 

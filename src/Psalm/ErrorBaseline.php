@@ -258,7 +258,7 @@ class ErrorBaseline
                     ('php:' . PHP_VERSION),
                 ],
                 array_map(
-                    function (string $extension) : string {
+                    function (string $extension): string {
                         return $extension . ':' . phpversion($extension);
                     },
                     $extensions
@@ -302,7 +302,7 @@ class ErrorBaseline
             /**
              * @param string[] $matches
              */
-            function (array $matches) : string {
+            function (array $matches): string {
                 return
                     '<files' .
                     "\n  " .

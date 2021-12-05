@@ -41,7 +41,7 @@ class GitInfoCollector
     /**
      * Collect git repository info.
      */
-    public function collect() : GitInfo
+    public function collect(): GitInfo
     {
         $branch = $this->collectBranch();
         $commit = $this->collectCommit();
@@ -55,7 +55,7 @@ class GitInfoCollector
      *
      * @throws RuntimeException
      */
-    protected function collectBranch() : string
+    protected function collectBranch(): string
     {
         $branchesResult = $this->executor->execute('git branch');
 
@@ -75,7 +75,7 @@ class GitInfoCollector
      *
      * @throws RuntimeException
      */
-    protected function collectCommit() : CommitInfo
+    protected function collectCommit(): CommitInfo
     {
         $commitResult = $this->executor->execute('git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s%n%at');
 

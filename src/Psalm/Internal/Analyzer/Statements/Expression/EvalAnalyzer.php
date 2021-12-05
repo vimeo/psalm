@@ -24,7 +24,7 @@ class EvalAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Eval_ $stmt,
         Context $context
-    ) : void {
+    ): void {
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
 
         $codebase = $statements_analyzer->getCodebase();

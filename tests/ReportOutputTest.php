@@ -26,7 +26,7 @@ use function unlink;
 
 class ReportOutputTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
@@ -70,7 +70,7 @@ class ReportOutputTest extends TestCase
         ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']);
     }
 
-    public function analyzeTaintFlowFilesForReport() : void
+    public function analyzeTaintFlowFilesForReport(): void
     {
         $vulnerable_file_contents = '<?php
 
@@ -670,7 +670,7 @@ echo "Successfully executed the command: " . $prefixedData;';
         );
     }
 
-    public function analyzeFileForReport() : void
+    public function analyzeFileForReport(): void
     {
         $file_contents = '<?php
 function psalmCanVerify(int $your_code): ?string {

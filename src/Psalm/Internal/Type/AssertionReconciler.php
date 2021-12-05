@@ -64,7 +64,7 @@ class AssertionReconciler extends Reconciler
         array $suppressed_issues = [],
         ?int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $negated = false
-    ) : Union {
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $is_strict_equality = false;
@@ -248,7 +248,7 @@ class AssertionReconciler extends Reconciler
         bool $inside_loop,
         bool $is_equality,
         array $template_type_map
-    ) : Union {
+    ): Union {
         if (($assertion === 'isset' && !$is_negation)
             || ($assertion === 'empty' && $is_negation)
         ) {
@@ -305,7 +305,7 @@ class AssertionReconciler extends Reconciler
         bool $is_loose_equality,
         array $suppressed_issues,
         int &$failed_reconciliation
-    ) : Union {
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $old_var_type_string = $existing_var_type->getId();
@@ -599,7 +599,7 @@ class AssertionReconciler extends Reconciler
         array $template_type_map,
         bool &$has_match = false,
         bool &$any_scalar_type_match_found = false
-    ) : Type\Union {
+    ): Type\Union {
         $matching_atomic_types = [];
 
         $has_cloned_type = false;
@@ -958,7 +958,7 @@ class AssertionReconciler extends Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues
-    ) : Type\Union {
+    ): Type\Union {
         $value = substr($assertion, $bracket_pos + 1, -1);
 
         $scalar_type = substr($assertion, 0, $bracket_pos);

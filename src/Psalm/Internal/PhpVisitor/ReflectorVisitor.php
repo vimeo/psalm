@@ -403,7 +403,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         return null;
     }
 
-    private function handleNamespace(PhpParser\Node\Stmt\Namespace_ $node) : void
+    private function handleNamespace(PhpParser\Node\Stmt\Namespace_ $node): void
     {
         $this->file_storage->aliases = $this->aliases;
 
@@ -426,7 +426,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         }
     }
 
-    private function handleUse(PhpParser\Node\Stmt\Use_ $node) : void
+    private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
     {
         foreach ($node->uses as $use) {
             $use_path = implode('\\', $use->name->parts);
@@ -458,7 +458,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
     }
 
-    private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node) : void
+    private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node): void
     {
         $use_prefix = implode('\\', $node->prefix->parts);
 

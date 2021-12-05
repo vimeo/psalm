@@ -27,12 +27,12 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
     /**
      * @return array<lowercase-string>
      */
-    public static function getFunctionIds() : array
+    public static function getFunctionIds(): array
     {
         return ['array_reduce'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event) : Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

@@ -38,7 +38,7 @@ class InstancePropertyFetchAnalyzer
         Context $context,
         bool $in_assignment = false,
         bool $is_static_access = false
-    ) : bool {
+    ): bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
 

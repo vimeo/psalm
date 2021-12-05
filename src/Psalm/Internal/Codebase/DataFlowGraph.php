@@ -20,7 +20,7 @@ abstract class DataFlowGraph
     /** @var array<string, array<string, Path>> */
     protected $forward_edges = [];
 
-    abstract public function addNode(DataFlowNode $node) : void;
+    abstract public function addNode(DataFlowNode $node): void;
 
     /**
      * @param array<string> $added_taints
@@ -32,7 +32,7 @@ abstract class DataFlowGraph
         string $path_type,
         ?array $added_taints = null,
         ?array $removed_taints = null
-    ) : void {
+    ): void {
         $from_id = $from->id;
         $to_id = $to->id;
 
@@ -63,7 +63,7 @@ abstract class DataFlowGraph
         string $path_type,
         string $expression_type,
         array $previous_path_types
-    ) : bool {
+    ): bool {
         $el = strlen($expression_type);
 
         // arraykey-fetch requires a matching arraykey-assignment at the same level
@@ -107,7 +107,7 @@ abstract class DataFlowGraph
     /**
      * @return array{int, int, int, float}
      */
-    public function getEdgeStats() : array
+    public function getEdgeStats(): array
     {
         $lengths = 0;
 

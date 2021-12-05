@@ -46,7 +46,7 @@ class ConfigTest extends TestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
 
@@ -59,7 +59,7 @@ class ConfigTest extends TestCase
         }
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -1266,7 +1266,7 @@ class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testNotIgnoredException() : void
+    public function testNotIgnoredException(): void
     {
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MissingThrowsDocblock');

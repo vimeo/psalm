@@ -15,7 +15,7 @@ use function in_array;
 
 class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['imagickpixel'];
     }

@@ -13,7 +13,7 @@ interface MethodParamsProviderInterface
     /**
      * @return array<string>
      */
-    public static function getClassLikeNames() : array;
+    public static function getClassLikeNames(): array;
 
     /**
      * @param  list<Arg> $call_args

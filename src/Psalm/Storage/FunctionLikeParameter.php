@@ -136,7 +136,7 @@ class FunctionLikeParameter
         $this->default_type = $default_type;
     }
 
-    public function getId() : string
+    public function getId(): string
     {
         return ($this->type ? $this->type->getId() : 'mixed')
             . ($this->is_variadic ? '...' : '')

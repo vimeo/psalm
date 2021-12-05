@@ -51,7 +51,7 @@ class PluginTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
 
@@ -64,7 +64,7 @@ class PluginTest extends TestCase
         }
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -1000,7 +1000,7 @@ class PluginTest extends TestCase
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
     }
 
-    public function testPluginInvalidAbsoluteFilenameThrowsException() : void
+    public function testPluginInvalidAbsoluteFilenameThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');

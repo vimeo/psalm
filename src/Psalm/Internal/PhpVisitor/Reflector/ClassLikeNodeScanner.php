@@ -415,7 +415,7 @@ class ClassLikeNodeScanner
 
                 usort(
                     $docblock_info->templates,
-                    function (array $l, array $r) : int {
+                    function (array $l, array $r): int {
                         return $l[4] > $r[4] ? 1 : -1;
                     }
                 );
@@ -743,7 +743,7 @@ class ClassLikeNodeScanner
         return null;
     }
 
-    public function finish(PhpParser\Node\Stmt\ClassLike $node) : ClassLikeStorage
+    public function finish(PhpParser\Node\Stmt\ClassLike $node): ClassLikeStorage
     {
         if (!$this->storage) {
             throw new UnexpectedValueException(
@@ -812,7 +812,7 @@ class ClassLikeNodeScanner
         return $classlike_storage;
     }
 
-    public function handleTraitUse(PhpParser\Node\Stmt\TraitUse $node) : void
+    public function handleTraitUse(PhpParser\Node\Stmt\TraitUse $node): void
     {
         $storage = $this->storage;
 
@@ -1152,7 +1152,7 @@ class ClassLikeNodeScanner
         }
     }
 
-    private static function registerEmptyConstructor(ClassLikeStorage $class_storage) : void
+    private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void
     {
         $method_name_lc = '__construct';
 
@@ -1596,7 +1596,7 @@ class ClassLikeNodeScanner
      *
      * @return array<string, TypeAlias\LinkableTypeAlias>
      */
-    private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name) : array
+    private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name): array
     {
         /** @var array<string, TypeAlias\LinkableTypeAlias> $results */
         $results = [];

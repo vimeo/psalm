@@ -812,7 +812,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         FunctionLikeStorage $storage,
         ?ClassLikeStorage $class_storage,
         Context $context
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $unused_params = [];
@@ -956,7 +956,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array $params,
         Context $context,
         bool $has_template_types
-    ) : bool {
+    ): bool {
         $check_stmts = true;
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
@@ -1262,7 +1262,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         FunctionLikeStorage $storage,
         array $params,
         Context $context
-    ) : void {
+    ): void {
         foreach ($this->function->params as $param) {
             $param_name_node = null;
 
@@ -1589,7 +1589,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /** @return non-empty-string */
-    public function getId() : string
+    public function getId(): string
     {
         if ($this instanceof MethodAnalyzer) {
             return (string) $this->getMethodId();
@@ -1654,7 +1654,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->is_static;
     }
 
-    public function getCodebase() : Codebase
+    public function getCodebase(): Codebase
     {
         return $this->codebase;
     }

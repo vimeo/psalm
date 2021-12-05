@@ -21,7 +21,7 @@ class CoalesceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Coalesce $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $left_expr = $stmt->left;
 
         $root_expr = $left_expr;

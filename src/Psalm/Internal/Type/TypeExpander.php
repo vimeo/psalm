@@ -808,7 +808,7 @@ class TypeExpander
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type) : bool {
+                    static function (Atomic $atomic_type): bool {
                         return !($atomic_type instanceof TEmpty
                             || $atomic_type instanceof TNever);
                     }
@@ -820,7 +820,7 @@ class TypeExpander
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type) : bool {
+                    static function (Atomic $atomic_type): bool {
                         return !$atomic_type instanceof Atomic\TVoid;
                     }
                 );

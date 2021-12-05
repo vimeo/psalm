@@ -316,7 +316,7 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ) : Atomic {
+    ): Atomic {
         $object_like = clone $this;
 
         foreach ($this->properties as $offset => $property) {
@@ -350,7 +350,7 @@ class TKeyedArray extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ) : void {
+    ): void {
         foreach ($this->properties as $property) {
             TemplateInferredTypeReplacer::replace(
                 $property,
@@ -360,7 +360,7 @@ class TKeyedArray extends Atomic
         }
     }
 
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return $this->properties;
     }
@@ -397,7 +397,7 @@ class TKeyedArray extends Atomic
         return $this->getKey();
     }
 
-    public function getList() : TNonEmptyList
+    public function getList(): TNonEmptyList
     {
         if (!$this->is_list) {
             throw new UnexpectedValueException('Object-like array must be a list for conversion');

@@ -37,7 +37,7 @@ class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Array_ $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         // if the array is empty, this special type allows us to match any other array type against it
         if (empty($stmt->items)) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
@@ -233,7 +233,7 @@ class ArrayAnalyzer
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
         Codebase $codebase
-    ) : void {
+    ): void {
         if ($item->unpack) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
                 return;
@@ -485,7 +485,7 @@ class ArrayAnalyzer
         PhpParser\Node\Expr\ArrayItem $item,
         Type\Union $unpacked_array_type,
         Codebase $codebase
-    ) : void {
+    ): void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {

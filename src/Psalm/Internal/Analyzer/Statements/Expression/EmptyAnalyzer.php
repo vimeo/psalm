@@ -16,7 +16,7 @@ class EmptyAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Empty_ $stmt,
         Context $context
-    ) : void {
+    ): void {
         IssetAnalyzer::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
 
         $codebase = $statements_analyzer->getCodebase();

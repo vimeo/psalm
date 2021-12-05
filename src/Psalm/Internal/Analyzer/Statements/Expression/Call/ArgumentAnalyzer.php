@@ -1150,7 +1150,7 @@ class ArgumentAnalyzer
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
         Context $context
-    ) : void {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($param_type->getAtomicTypes() as $param_type_part) {
@@ -1333,7 +1333,7 @@ class ArgumentAnalyzer
         Context $context,
         bool $unpack,
         ?Type\Atomic $unpacked_atomic_array
-    ) : void {
+    ): void {
         if ($param_type->hasMixed()) {
             return;
         }
@@ -1458,7 +1458,7 @@ class ArgumentAnalyzer
         PhpParser\Node\Expr $expr,
         Context $context,
         bool $specialize_taint
-    ) : Type\Union {
+    ): Type\Union {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->data_flow_graph

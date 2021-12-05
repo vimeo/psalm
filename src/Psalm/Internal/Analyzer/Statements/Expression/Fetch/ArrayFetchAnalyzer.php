@@ -89,7 +89,7 @@ class ArrayFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $array_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -345,7 +345,7 @@ class ArrayFetchAnalyzer
         Type\Union $stmt_type,
         Type\Union $offset_type,
         ?Context $context = null
-    ) : void {
+    ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
@@ -848,7 +848,7 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer
-    ) : void {
+    ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
         }
@@ -901,7 +901,7 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer
-    ) : void {
+    ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
         }
@@ -1100,7 +1100,7 @@ class ArrayFetchAnalyzer
                 // ok, type becomes an TKeyedArray
                 $array_type->removeType($type_string);
                 $type = new TKeyedArray([
-                    $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getEmpty()
+                    $key_values[0] => $from_mixed_array ? Type::getMixed(): Type::getEmpty()
                 ]);
 
                 $type->sealed = $from_empty_array;

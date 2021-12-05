@@ -54,7 +54,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Function_ $stmt,
         Context $context
-    ) : void {
+    ): void {
         foreach ($stmt->stmts as $function_stmt) {
             if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {
                 foreach ($function_stmt->vars as $var) {

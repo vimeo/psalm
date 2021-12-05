@@ -229,7 +229,7 @@ class StatementsProvider
                 $file_path_hash = md5($file_path);
 
                 $changed_members = array_map(
-                    function (string $key) use ($file_path_hash) : string {
+                    function (string $key) use ($file_path_hash): string {
                         if (strpos($key, 'use:') === 0) {
                             return $key . ':' . $file_path_hash;
                         }
@@ -341,7 +341,7 @@ class StatementsProvider
     /**
      * @return array<string, bool>
      */
-    public function getErrors() : array
+    public function getErrors(): array
     {
         return $this->errors;
     }
@@ -513,7 +513,7 @@ class StatementsProvider
         return $stmts;
     }
 
-    public static function clearLexer() : void
+    public static function clearLexer(): void
     {
         self::$lexer = null;
     }

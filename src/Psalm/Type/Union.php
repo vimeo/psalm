@@ -245,7 +245,7 @@ class Union implements TypeNode
     /**
      * @param non-empty-array<string, Atomic>  $types
      */
-    public function replaceTypes(array $types) : void
+    public function replaceTypes(array $types): void
     {
         $this->types = $types;
     }
@@ -352,7 +352,7 @@ class Union implements TypeNode
         return implode('|', $types);
     }
 
-    public function getKey() : string
+    public function getKey(): string
     {
         $types = [];
 
@@ -660,7 +660,7 @@ class Union implements TypeNode
         return isset($this->types['array']) && $this->types['array'] instanceof Atomic\TClassStringMap;
     }
 
-    public function isTemplatedClassString() : bool
+    public function isTemplatedClassString(): bool
     {
         return $this->isSingle()
             && count(
@@ -673,7 +673,7 @@ class Union implements TypeNode
             ) === 1;
     }
 
-    public function hasArrayAccessInterface(Codebase $codebase) : bool
+    public function hasArrayAccessInterface(Codebase $codebase): bool
     {
         return (bool)array_filter(
             $this->types,
@@ -892,7 +892,7 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type) : bool {
+            function (Atomic $type): bool {
                 return $type instanceof Type\Atomic\TTemplateParam
                     || ($type instanceof Type\Atomic\TNamedObject
                         && $type->extra_types
@@ -911,7 +911,7 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type) : bool {
+            function (Atomic $type): bool {
                 return $type instanceof Type\Atomic\TConditional;
             }
         );
@@ -921,7 +921,7 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type) : bool {
+            function (Atomic $type): bool {
                 return $type instanceof Type\Atomic\TTemplateParam
                     || ($type instanceof Type\Atomic\TNamedObject
                         && ($type->was_static
@@ -1397,7 +1397,7 @@ class Union implements TypeNode
         return reset($this->literal_string_types);
     }
 
-    public function allStringLiterals() : bool
+    public function allStringLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
             if (!$atomic_key_type instanceof TLiteralString) {
@@ -1408,7 +1408,7 @@ class Union implements TypeNode
         return true;
     }
 
-    public function allIntLiterals() : bool
+    public function allIntLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
             if (!$atomic_key_type instanceof TLiteralInt) {
@@ -1419,7 +1419,7 @@ class Union implements TypeNode
         return true;
     }
 
-    public function allLiterals() : bool
+    public function allLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
             if (!$atomic_key_type instanceof TLiteralString
@@ -1437,7 +1437,7 @@ class Union implements TypeNode
         return true;
     }
 
-    public function hasLiteralValue() : bool
+    public function hasLiteralValue(): bool
     {
         return $this->literal_int_types
             || $this->literal_string_types
@@ -1492,7 +1492,7 @@ class Union implements TypeNode
         bool $inherited = false,
         bool $prevent_template_covariance = false,
         ?string $calling_method_id = null
-    ) : bool {
+    ): bool {
         if ($this->checked) {
             return true;
         }
@@ -1536,7 +1536,7 @@ class Union implements TypeNode
     /**
      * @param  lowercase-string $fq_class_like_name
      */
-    public function containsClassLike(string $fq_class_like_name) : bool
+    public function containsClassLike(string $fq_class_like_name): bool
     {
         $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
@@ -1545,7 +1545,7 @@ class Union implements TypeNode
         return $classlike_visitor->matches();
     }
 
-    public function containsAnyLiteral() : bool
+    public function containsAnyLiteral(): bool
     {
         $literal_visitor = new ContainsLiteralVisitor();
 
@@ -1573,7 +1573,7 @@ class Union implements TypeNode
         (new FromDocblockSetter())->traverseArray($this->types);
     }
 
-    public function replaceClassLike(string $old, string $new) : void
+    public function replaceClassLike(string $old, string $new): void
     {
         foreach ($this->types as $key => $atomic_type) {
             $atomic_type->replaceClassLike($old, $new);
@@ -1686,7 +1686,7 @@ class Union implements TypeNode
     /**
      * @return array<string, Atomic>
      */
-    public function getChildNodes() : array
+    public function getChildNodes(): array
     {
         return $this->types;
     }

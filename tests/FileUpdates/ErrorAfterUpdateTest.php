@@ -21,7 +21,7 @@ use const DIRECTORY_SEPARATOR;
 
 class ErrorAfterUpdateTest extends TestCase
 {
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 

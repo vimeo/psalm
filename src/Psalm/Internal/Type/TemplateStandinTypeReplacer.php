@@ -49,7 +49,7 @@ class TemplateStandinTypeReplacer
         bool $add_lower_bound = false,
         ?string $bound_equality_classlike = null,
         int $depth = 1
-    ) : Union {
+    ): Union {
         $atomic_types = [];
 
         $original_atomic_types = $union_type->getAtomicTypes();
@@ -148,7 +148,7 @@ class TemplateStandinTypeReplacer
         int $depth,
         bool $was_single,
         bool &$had_template
-    ) : array {
+    ): array {
         if ($bracket_pos = strpos($key, '<')) {
             $key = substr($key, 0, $bracket_pos);
         }
@@ -358,7 +358,7 @@ class TemplateStandinTypeReplacer
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         Union $input_type
-    ) : array {
+    ): array {
         $matching_atomic_types = [];
 
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
@@ -525,7 +525,7 @@ class TemplateStandinTypeReplacer
         ?string $bound_equality_classlike,
         int $depth,
         bool &$had_template
-    ) : array {
+    ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
         }
@@ -880,7 +880,7 @@ class TemplateStandinTypeReplacer
         int $depth,
         bool $was_single,
         bool &$had_template
-    ) : array {
+    ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
         }
@@ -1017,7 +1017,7 @@ class TemplateStandinTypeReplacer
         string $defining_class,
         array $visited_classes,
         ?Codebase $codebase
-    ) : ?Union {
+    ): ?Union {
         if (isset($visited_classes[$defining_class])) {
             return null;
         }
@@ -1117,7 +1117,7 @@ class TemplateStandinTypeReplacer
         Atomic $input_type_part,
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
-    ) : array {
+    ): array {
         $input_type_params = $input_type_part->type_params;
 
         try {

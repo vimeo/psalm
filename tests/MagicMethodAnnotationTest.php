@@ -123,7 +123,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->assertSame('Child', (string) $context->vars_in_scope['$child']);
     }
 
-    public function testOverrideExceptionMethodReturn() : void
+    public function testOverrideExceptionMethodReturn(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 

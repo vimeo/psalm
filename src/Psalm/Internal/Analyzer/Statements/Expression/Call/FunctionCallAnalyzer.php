@@ -74,7 +74,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $function_name = $stmt->name;
 
         $codebase = $statements_analyzer->getCodebase();
@@ -300,7 +300,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase): Assertion {
                             return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_true_assertions
@@ -312,7 +312,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase) : Assertion {
+                        function (Assertion $assertion) use ($inferred_lower_bounds, $codebase): Assertion {
                             return $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase);
                         },
                         $function_call_info->function_storage->if_false_assertions
@@ -781,7 +781,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr $function_name,
         Context $context,
         Type\Atomic $atomic_type
-    ) : void {
+    ): void {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -837,7 +837,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Arg $first_arg,
         Context $context
-    ) : void {
+    ): void {
         $first_arg_value_id = spl_object_id($first_arg->value);
 
         $assert_clauses = FormulaGenerator::getFormula(
@@ -929,7 +929,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node $function_name,
         FunctionCallInfo $function_call_info,
         Context $context
-    ) : void {
+    ): void {
         $config = $codebase->config;
 
         if (!$context->collect_initializations

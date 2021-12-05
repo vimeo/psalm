@@ -33,7 +33,7 @@ class AndAnalyzer
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
         bool $from_stmt = false
-    ) : bool {
+    ): bool {
         if ($from_stmt) {
             $fake_if_stmt = new VirtualIf(
                 $stmt->left,

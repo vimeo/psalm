@@ -106,7 +106,7 @@ class PropertyStorage
      */
     public $description;
 
-    public function getInfo() : string
+    public function getInfo(): string
     {
         switch ($this->visibility) {
             case ClassLikeAnalyzer::VISIBILITY_PRIVATE:

@@ -63,7 +63,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         bool $is_intersection,
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result
-    ) : void {
+    ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
@@ -471,7 +471,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
         array $intersection_types
-    ) : array {
+    ): array {
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
 
@@ -528,7 +528,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         Type\Union $return_type_candidate,
         ?Type\Union $all_intersection_return_type,
         Codebase $codebase
-    ) : void {
+    ): void {
         if ($all_intersection_return_type) {
             $return_type_candidate = Type::intersectUnionTypes(
                 $all_intersection_return_type,
@@ -550,7 +550,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         Context $context,
         bool $is_intersection,
         AtomicMethodCallAnalysisResult $result
-    ) : void {
+    ): void {
         switch (get_class($lhs_type_part)) {
             case Type\Atomic\TNull::class:
             case Type\Atomic\TFalse::class:

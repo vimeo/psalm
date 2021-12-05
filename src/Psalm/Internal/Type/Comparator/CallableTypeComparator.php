@@ -41,7 +41,7 @@ class CallableTypeComparator
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
-    ) : bool {
+    ): bool {
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
@@ -135,7 +135,7 @@ class CallableTypeComparator
         Type\Atomic $input_type_part,
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
-    ) : bool {
+    ): bool {
         if ($input_type_part instanceof TList) {
             if ($input_type_part->type_param->isMixed()
                 || $input_type_part->type_param->hasScalar()

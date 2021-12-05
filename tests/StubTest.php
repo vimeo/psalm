@@ -29,7 +29,7 @@ class StubTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    public static function setUpBeforeClass() : void
+    public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
 
@@ -42,7 +42,7 @@ class StubTest extends TestCase
         }
     }
 
-    public function setUp() : void
+    public function setUp(): void
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
@@ -1122,7 +1122,7 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testInheritedMethodUsedInStub() : void
+    public function testInheritedMethodUsedInStub(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(

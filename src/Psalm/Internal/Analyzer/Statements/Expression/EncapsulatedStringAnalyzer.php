@@ -18,7 +18,7 @@ class EncapsulatedStringAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
-    ) : bool {
+    ): bool {
         $stmt_type = Type::getString();
 
         $non_empty = false;

@@ -8,7 +8,7 @@ interface PropertyExistenceProviderInterface
     /**
      * @return array<string>
      */
-    public static function getClassLikeNames() : array;
+    public static function getClassLikeNames(): array;
 
     /**
      * Use this hook for informing whether or not a property exists on a given object. If you know the property does
