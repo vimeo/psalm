@@ -164,13 +164,15 @@ class ConstFetchAnalyzer
                 case 'PHP_RELEASE_VERSION':
                 case 'PHP_DEBUG':
                 case 'PHP_FLOAT_DIG':
-                case 'PHP_INT_MAX':
                 case 'PHP_INT_MIN':
+                case 'PHP_ZTS':
+                    return Type::getInt();
+
+                case 'PHP_INT_MAX':
                 case 'PHP_INT_SIZE':
                 case 'PHP_MAXPATHLEN':
                 case 'PHP_VERSION_ID':
-                case 'PHP_ZTS':
-                    return Type::getInt();
+                    return Type::getPositiveInt();
 
                 case 'PHP_FLOAT_EPSILON':
                 case 'PHP_FLOAT_MAX':
