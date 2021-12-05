@@ -628,13 +628,17 @@ class PluginTest extends TestCase
         );
 
         $hook = new class implements AfterClassLikeVisitInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
             public static function afterClassLikeVisit(
                 ClassLike $stmt,
                 ClassLikeStorage $storage,
                 FileSource $statements_source,
                 Codebase $codebase,
                 array &$file_replacements = []
-            ): void {
+            ) {
             }
         };
 

@@ -124,7 +124,11 @@ class ProjectCheckerTest extends TestCase
             /** @var bool */
             public static $called = false;
 
-            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;
             }
