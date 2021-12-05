@@ -8,6 +8,9 @@ use Psalm\Type;
 
 use function array_values;
 use function count;
+use function round;
+
+use const PHP_ROUND_HALF_UP;
 
 class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -37,21 +40,20 @@ class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $precision_val = 0;
         }
 
+        if (count($call_args) > 2) {
+            $mode_val = $call_args[2]->value;
+        } else {
+            $mode_val = PHP_ROUND_HALF_UP;
+        }
+
         if ($num_arg !== null && $num_arg->isSingle()) {
             $num_type = array_values($num_arg->getAtomicTypes())[0];
-            if ($num_type instanceof Type\Atomic\TFloat) {
-                if ($precision_val > 0) {
-                    return new Type\Union([new Type\Atomic\TFloat()]);
-                }
-
-                return new Type\Union([new Type\Atomic\TInt()]);
-            }
-
-            if ($num_type instanceof Type\Atomic\TInt) {
-                return new Type\Union([new Type\Atomic\TInt()]);
+            if ($num_type instanceof Type\Atomic\TLiteralFloat || $num_type instanceof Type\Atomic\TLiteralInt) {
+                $rounded_val = round($num_type->value, $precision_val, $mode_val);
+                return new Type\Union([new Type\Atomic\TLiteralFloat($rounded_val)]);
             }
         }
 
-        return new Type\Union([new Type\Atomic\TInt(), new Type\Atomic\TFloat()]);
+        return new Type\Union([new Type\Atomic\TFloat()]);
     }
 }
