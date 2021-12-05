@@ -870,8 +870,8 @@ return [
       'new' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool', 'encoding='=>'string|null'],
     ],
     'mb_strlen' => [
-      'old' => ['int', 'string'=>'string', 'encoding='=>'string'],
-      'new' => ['int', 'string'=>'string', 'encoding='=>'string|null'],
+      'old' => ['0|positive-int', 'string'=>'string', 'encoding='=>'string'],
+      'new' => ['0|positive-int', 'string'=>'string', 'encoding='=>'string|null'],
     ],
     'mb_strpos' => [
       'old' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int', 'encoding='=>'string'],
