@@ -633,6 +633,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         return $this->aliases;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingAnyTypeHint
+     */
     public function afterTraverse(array $nodes)
     {
         $this->file_storage->type_aliases = $this->type_aliases;
