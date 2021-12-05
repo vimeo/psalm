@@ -355,6 +355,18 @@ class ReturnTypeCollector
             return $yield_types;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Array_) {
+            $yield_types = [];
+
+            foreach ($stmt->items as $item) {
+                if ($item instanceof PhpParser\Node\Expr\ArrayItem) {
+                    $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($item->value, $nodes));
+                }
+            }
+
+            return $yield_types;
+        }
+
         return [];
     }
 }

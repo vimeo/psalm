@@ -298,6 +298,15 @@ class GeneratorTest extends TestCase
                     '$_a' => 'pure-Closure():Generator<int, "a", mixed, RuntimeException>',
                 ]
             ],
+            'detectYieldInArray' => [
+                '<?php
+                    /** @psalm-suppress MissingClosureReturnType */
+                    $_a = function() { return [yield "a"]; };
+                    ',
+                'assertions' => [
+                    '$_a' => 'pure-Closure():Generator<int, "a", mixed, array{"a"}>',
+                ]
+            ],
         ];
     }
 
