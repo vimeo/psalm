@@ -84,11 +84,7 @@ class ThrowAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
-            // TODO: Find bug in Psalm:
-            // Conversion to "Type::getEmpty()" triggers Psalm DeprecatedMethod, which is correct
-            // To be investigated: Why isn’t it triggered with "\Psalm\Type::getEmpty()"?!
-            // @phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            $statements_analyzer->node_data->setType($stmt, \Psalm\Type::getEmpty());
+            $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
         }
 
         return true;
