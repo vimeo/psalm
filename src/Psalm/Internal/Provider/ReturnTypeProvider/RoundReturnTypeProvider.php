@@ -35,13 +35,14 @@ class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $num_arg = $nodeTypeProvider->getType($call_args[0]->value);
 
         if (count($call_args) > 1) {
-            $precision_val = $call_args[1]->value;
+            $precision_val = (int)$call_args[1]->value;
         } else {
             $precision_val = 0;
         }
 
         if (count($call_args) > 2) {
-            $mode_val = $call_args[2]->value;
+            /** @var positive-int|0 $mode_val */
+            $mode_val = (int)$call_args[2]->value;
         } else {
             $mode_val = PHP_ROUND_HALF_UP;
         }
