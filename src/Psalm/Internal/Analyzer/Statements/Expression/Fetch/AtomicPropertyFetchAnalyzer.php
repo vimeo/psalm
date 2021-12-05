@@ -202,7 +202,7 @@ class AtomicPropertyFetchAnalyzer
                         new Type\Union([new Type\Atomic\TLiteralString($lhs_type_part->case_name)])
                     );
                 } else {
-                    $statements_analyzer->node_data->setType($stmt, Type::getString());
+                    $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
                 }
             } else {
                 self::handleNonExistentProperty(
