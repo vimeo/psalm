@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -34,17 +35,29 @@ class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         $num_arg = $nodeTypeProvider->getType($call_args[0]->value);
 
-        if (count($call_args) > 1) {
-            $precision_val = (int)$call_args[1]->value;
-        } else {
-            $precision_val = 0;
+        $precision_val = 0;
+        if ($statements_source instanceof StatementsAnalyzer && count($call_args) > 1) {
+            $type = $statements_source->node_data->getType($call_args[1]->value);
+
+            if ($type !== null && $type->isSingle()) {
+                $atomic_type = array_values($type->getAtomicTypes())[0];
+                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                    $precision_val = $atomic_type->value;
+                }
+            }
         }
 
-        if (count($call_args) > 2) {
-            /** @var positive-int|0 $mode_val */
-            $mode_val = (int)$call_args[2]->value;
-        } else {
-            $mode_val = PHP_ROUND_HALF_UP;
+        $mode_val = PHP_ROUND_HALF_UP;
+        if ($statements_source instanceof StatementsAnalyzer && count($call_args) > 2) {
+            $type = $statements_source->node_data->getType($call_args[2]->value);
+
+            if ($type !== null && $type->isSingle()) {
+                $atomic_type = array_values($type->getAtomicTypes())[0];
+                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                    /** @var positive-int|0 $mode_val */
+                    $mode_val = $atomic_type->value;
+                }
+            }
         }
 
         if ($num_arg !== null && $num_arg->isSingle()) {
