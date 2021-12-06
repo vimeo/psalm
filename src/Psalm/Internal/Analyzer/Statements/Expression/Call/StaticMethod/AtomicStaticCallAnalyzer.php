@@ -477,7 +477,13 @@ class AtomicStaticCallAnalyzer
             )) {
                 $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
                 assert($callstatic_appearing_id !== null);
-                $callstatic_storage =  $codebase->methods->getStorage($callstatic_appearing_id);
+                $callstatic_pure = false;
+                $callstatic_mutation_free = false;
+                if ($codebase->methods->hasStorage($callstatic_appearing_id)) {
+                    $callstatic_storage = $codebase->methods->getStorage($callstatic_appearing_id);
+                    $callstatic_pure = $callstatic_storage->pure;
+                    $callstatic_mutation_free = $callstatic_storage->mutation_free;
+                }
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                         $statements_analyzer,
@@ -525,7 +531,7 @@ class AtomicStaticCallAnalyzer
                     }
 
                     if (!$context->inside_throw) {
-                        if ($context->pure && !$callstatic_storage->pure) {
+                        if ($context->pure && !$callstatic_pure) {
                             IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call an impure method from a pure context',
@@ -533,7 +539,7 @@ class AtomicStaticCallAnalyzer
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             );
-                        } elseif ($context->mutation_free&& !$callstatic_storage->mutation_free) {
+                        } elseif ($context->mutation_free && !$callstatic_mutation_free) {
                             IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method from a mutation-free context',
@@ -544,9 +550,9 @@ class AtomicStaticCallAnalyzer
                         } elseif ($statements_analyzer->getSource()
                             instanceof FunctionLikeAnalyzer
                             && $statements_analyzer->getSource()->track_mutations
-                            && !$callstatic_storage->pure
+                            && !$callstatic_pure
                         ) {
-                            if (!$callstatic_storage->mutation_free) {
+                            if (!$callstatic_mutation_free) {
                                 $statements_analyzer->getSource()->inferred_has_mutation = true;
                             }
 
