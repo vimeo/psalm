@@ -1066,25 +1066,6 @@ class ProjectAnalyzer
         $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
-    /**
-     * @return list<string>
-     * @deprecated going to be removed in Psalm 5
-     */
-    private function getAllFiles(Config $config): array
-    {
-        $file_extensions = $config->getFileExtensions();
-        $file_paths = [];
-
-        foreach ($config->getProjectDirectories() as $dir_name) {
-            $file_paths = array_merge(
-                $file_paths,
-                $this->file_provider->getFilesInDir($dir_name, $file_extensions)
-            );
-        }
-
-        return $file_paths;
-    }
-
     public function addProjectFile(string $file_path): void
     {
         $this->project_files[$file_path] = $file_path;
