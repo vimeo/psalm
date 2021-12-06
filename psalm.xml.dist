@@ -111,6 +111,12 @@
             </errorLevel>
         </PossiblyUnusedProperty>
 
+        <UnusedMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Psalm\Internal\Analyzer\ProjectAnalyzer::getAllFiles"/>
+            </errorLevel>
+        </UnusedMethod>
+
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="src/Psalm/Plugin"/>
@@ -128,6 +134,8 @@
                 <referencedMethod name="Psalm\Codebase::createClassLikeStorage"/>
                 <referencedMethod name="Psalm\Codebase::isVariadic"/>
                 <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef"/>
+                <referencedMethod name="Psalm\Internal\Provider\ParserCacheProvider::processSuccessfulRun"/>
+                <referencedMethod name="Psalm\Internal\Provider\ParserCacheProvider::touchParserCaches"/>
             </errorLevel>
         </PossiblyUnusedMethod>
 

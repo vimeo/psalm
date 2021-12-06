@@ -1068,6 +1068,7 @@ class ProjectAnalyzer
 
     /**
      * @return list<string>
+     * @deprecated going to be removed in Psalm 5
      */
     private function getAllFiles(Config $config): array
     {

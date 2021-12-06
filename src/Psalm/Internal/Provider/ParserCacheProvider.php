@@ -349,6 +349,9 @@ class ParserCacheProvider
         return $removed_count;
     }
 
+    /**
+     * @deprecated going to be removed in Psalm 5
+     */
     public function processSuccessfulRun(): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
@@ -376,6 +379,7 @@ class ParserCacheProvider
 
     /**
      * @param  array<string>    $file_names
+     * @deprecated going to be removed in Psalm 5
      */
     public function touchParserCaches(array $file_names, int $min_time): void
     {
