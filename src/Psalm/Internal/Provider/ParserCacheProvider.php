@@ -321,7 +321,7 @@ class ParserCacheProvider
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if ($cache_directory) {
+        if (!$cache_directory) {
             return 0;
         }
 
