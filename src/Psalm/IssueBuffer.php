@@ -746,10 +746,6 @@ class IssueBuffer
             if ($project_analyzer->project_cache_provider) {
                 $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, PSALM_VERSION);
             }
-
-            if ($codebase->statements_provider->parser_cache_provider) {
-                $codebase->statements_provider->parser_cache_provider->processSuccessfulRun();
-            }
         }
 
         if ($error_count

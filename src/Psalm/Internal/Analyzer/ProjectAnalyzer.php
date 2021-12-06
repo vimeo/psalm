@@ -684,17 +684,11 @@ class ProjectAnalyzer
             true
         );
 
-        if ($this->project_cache_provider && $this->parser_cache_provider) {
-            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->project_cache_provider->getLastRun(PSALM_VERSION) : $start_checks
-            );
+        if ($this->project_cache_provider && $this->parser_cache_provider && !$is_diff) {
+            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches($start_checks);
 
             if ($removed_parser_files) {
                 $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . "\n");
-            }
-
-            if ($is_diff) {
-                $this->parser_cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
             }
         }
     }
