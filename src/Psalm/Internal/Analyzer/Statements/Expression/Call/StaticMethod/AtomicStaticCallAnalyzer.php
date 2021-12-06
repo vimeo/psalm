@@ -242,6 +242,7 @@ class AtomicStaticCallAnalyzer
 
     /**
      * @psalm-suppress UnusedReturnValue not used but seems important
+     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function handleNamedCall(
         StatementsAnalyzer $statements_analyzer,
