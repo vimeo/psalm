@@ -423,7 +423,7 @@ function gettimeofday(bool $as_float = false) {}
  * @psalm-pure
  *
  * @param numeric $num
- * @return ($num is int ? int : ($num is float ? float : int|float))
+ * @return ($num is int ? positive-int|0 : ($num is float ? float : positive-int|0|float))
  */
 function abs($num) {}
 

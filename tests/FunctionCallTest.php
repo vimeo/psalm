@@ -47,9 +47,9 @@ class FunctionCallTest extends TestCase
                     $c = $_GET["c"];
                     $c = is_numeric($c) ? abs($c) : null;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int|positive-int',
                     '$b' => 'float',
-                    '$c' => 'float|int|null',
+                    '$c' => 'float|int|null|positive-int',
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
