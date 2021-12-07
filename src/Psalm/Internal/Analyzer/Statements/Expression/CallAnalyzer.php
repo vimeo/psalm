@@ -784,8 +784,9 @@ class CallAnalyzer
 
                             if ($replacement_atomic_type instanceof Type\Atomic\TArray
                                 || $replacement_atomic_type instanceof Type\Atomic\TKeyedArray
+                                || $replacement_atomic_type instanceof Type\Atomic\TList
                             ) {
-                                $ored_type_assertions[] = $prefix . 'array';
+                                $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
