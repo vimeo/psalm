@@ -1537,7 +1537,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x' => 'non-empty-array<int|string, mixed>']
+                'assertions' => ['$x' => 'non-empty-array<int|string, mixed|string>']
             ],
             'ArrayOffsetNumericSupPHPINTMAX' => [
                 '<?php
