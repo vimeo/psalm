@@ -1693,6 +1693,28 @@ class ArrayAssignmentTest extends TestCase
                 [],
                 '8.1'
             ],
+            'unpackArrayWithTwoTypesNotObjectLike' => [
+                '<?php
+                    function int(): int
+                    {
+                        return 0;
+                    }
+
+                    /**
+                     * @return list<positive-int>
+                     */
+                    function posiviteIntegers(): array
+                    {
+                        return [1];
+                    }
+
+                    $_a = [...posiviteIntegers(), int()];',
+                'assertions' => [
+                    '$_a' => 'non-empty-list<int>',
+                ],
+                [],
+                '8.1'
+            ],
         ];
     }
 
