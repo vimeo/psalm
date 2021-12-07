@@ -174,24 +174,12 @@ return [
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count_chars' => [
-      'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0'],
-      'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'0'],
+      'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
+      'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'0|1|2'],
     ],
     'count_chars\'1' => [
-      'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'1'],
-      'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'1'],
-    ],
-    'count_chars\'2' => [
-      'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'2'],
-      'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'2'],
-    ],
-    'count_chars\'3' => [
-      'old' => ['string|false', 'input'=>'string', 'mode='=>'3'],
-      'new' => ['string', 'input'=>'string', 'mode='=>'3'],
-    ],
-    'count_chars\'4' => [
-      'old' => ['string|false', 'input'=>'string', 'mode='=>'4'],
-      'new' => ['string', 'input'=>'string', 'mode='=>'4'],
+      'old' => ['string|false', 'input'=>'string', 'mode='=>'3|4'],
+      'new' => ['string', 'input'=>'string', 'mode='=>'3|4'],
     ],
     'curl_close' => [
       'old' => ['void', 'ch'=>'resource'],
