@@ -1747,6 +1747,24 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.1',
             ],
+            'count_charsProducesArrayOrString' => [
+                '<?php
+                    $a = count_chars("foo");
+                    $b = count_chars("foo", 1);
+                    $c = count_chars("foo", 2);
+                    $d = count_chars("foo", 3);
+                    $e = count_chars("foo", 4);
+                ',
+                'assertions' => [
+                    '$a===' => 'array<int, int>',
+                    '$b===' => 'array<int, int>',
+                    '$c===' => 'array<int, int>',
+                    '$d===' => 'string',
+                    '$e===' => 'string',
+                ],
+                [],
+                '8.1',
+            ],
         ];
     }
 
@@ -2283,6 +2301,13 @@ class FunctionCallTest extends TestCase
 
                     echo get_class();',
                 'error_message' => 'TooFewArguments',
+            ],
+            'count_charsWithInvalidMode' => [
+                '<?php
+                    function scope(int $mode){
+                        $a = count_chars("foo", $mode);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
