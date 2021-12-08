@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -1131,6 +1132,15 @@ class TypeCombiner
                         && get_class($type) === TNonEmptyLowercaseString::class
                     ) {
                         //no-change
+                    } elseif (get_class($combination->value_types['string'])
+                            === TNonEmptyNonspecificLiteralString::class
+                        && $type instanceof TNonEmptyString
+                    ) {
+                        $combination->value_types['string'] = new TNonEmptyString();
+                    } elseif (get_class($type) === TNonEmptyNonspecificLiteralString::class
+                        && $combination->value_types['string'] instanceof TNonEmptyString
+                    ) {
+                        // do nothing
                     } else {
                         $combination->value_types['string'] = new TString();
                     }

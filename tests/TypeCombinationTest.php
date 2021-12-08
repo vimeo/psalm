@@ -801,6 +801,20 @@ class TypeCombinationTest extends TestCase
                     'positive-int',
                 ]
             ],
+            'combineNonEmptyStringAndNonEmptyNonSpecificLiteralString' => [
+                'non-empty-string',
+                [
+                    'non-empty-literal-string',
+                    'non-empty-string',
+                ],
+            ],
+            'combineNonEmptyNonSpecificLiteralStringAndNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'non-empty-string',
+                    'non-empty-literal-string',
+                ],
+            ],
         ];
     }
 
