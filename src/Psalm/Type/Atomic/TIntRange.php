@@ -106,6 +106,10 @@ class TIntRange extends TInt
      */
     public static function convertToIntRange(TInt $int_atomic): TIntRange
     {
+        if ($int_atomic instanceof TIntRange) {
+            return $int_atomic;
+        }
+
         if ($int_atomic instanceof TPositiveInt) {
             return new TIntRange(1, null);
         }

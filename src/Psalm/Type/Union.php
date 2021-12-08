@@ -17,6 +17,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -280,8 +281,12 @@ class Union implements TypeNode
                 }
             }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
-            foreach ($this->literal_int_types as $key => $_) {
-                unset($this->literal_int_types[$key], $this->types[$key]);
+            //we remove any literal that is already included in a wider type
+            $int_type_in_range = TIntRange::convertToIntRange($type);
+            foreach ($this->literal_int_types as $key => $literal_int_type) {
+                if ($int_type_in_range->contains($literal_int_type->value)) {
+                    unset($this->literal_int_types[$key], $this->types[$key]);
+                }
             }
         } elseif ($type instanceof TFloat && $this->literal_float_types) {
             foreach ($this->literal_float_types as $key => $_) {
