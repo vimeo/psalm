@@ -644,6 +644,30 @@ class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'positiveIntToRangeWithInferior' => [
+                '<?php
+                    /** @var positive-int $length */
+                    $length = 0;
+
+                    if ($length < 8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<8, max>',
+                ],
+            ],
+            'positiveIntToRangeWithSuperiorOrEqual' => [
+                '<?php
+                    /** @var positive-int $length */
+                    $length = 0;
+
+                    if ($length >= 8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<1, 7>',
+                ],
+            ],
         ];
     }
 
