@@ -1969,6 +1969,11 @@ class Config
             $this->internal_stubs[] = $ext_mysqli_path;
         }
 
+        if (extension_loaded('decimal')) {
+            $ext_decimal_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'decimal.phpstub';
+            $this->internal_stubs[] = $ext_decimal_path;
+        }
+
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
                 throw new UnexpectedValueException('Cannot locate ' . $stub_path);

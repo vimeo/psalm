@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 
@@ -609,6 +610,49 @@ class ArithmeticOpAnalyzer
             }
 
             return null;
+        }
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus
+            || $parent instanceof PhpParser\Node\Expr\BinaryOp\Minus
+            || $parent instanceof PhpParser\Node\Expr\BinaryOp\Mul
+            || $parent instanceof PhpParser\Node\Expr\BinaryOp\Div
+            || $parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
+            || $parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+        ) {
+            $non_decimal_type = null;
+            if ($left_type_part instanceof TNamedObject
+                && strtolower($left_type_part->value) === "decimal\\decimal"
+            ) {
+                $non_decimal_type = $right_type_part;
+            } elseif ($right_type_part instanceof TNamedObject
+                && strtolower($right_type_part->value) === "decimal\\decimal"
+            ) {
+                $non_decimal_type = $left_type_part;
+            }
+            if ($non_decimal_type !== null) {
+                if ($non_decimal_type instanceof TInt
+                    || $non_decimal_type instanceof TNumericString
+                    || $non_decimal_type instanceof TNamedObject
+                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+                ) {
+                    $result_type = Type::combineUnionTypes(
+                        new Type\Union([new TNamedObject("Decimal\\Decimal")]),
+                        $result_type
+                    );
+                } else {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new InvalidOperand(
+                            "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
+                            new CodeLocation($statements_source, $parent)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                return null;
+            }
         }
 
         if ($left_type_part instanceof Type\Atomic\TLiteralString) {
