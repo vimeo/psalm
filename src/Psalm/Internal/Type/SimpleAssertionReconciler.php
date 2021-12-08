@@ -1651,11 +1651,10 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                 }*/
             } elseif ($atomic_type instanceof Atomic\TPositiveInt) {
-                if ($assertion_value <= 0) {
-                    //emit an issue here in the future about incompatible type
+                if ($assertion_value > 1) {
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    $existing_var_type->addType(new Atomic\TIntRange($assertion_value, null));
                 }
-                $existing_var_type->removeType($atomic_type->getKey());
-                $existing_var_type->addType(new Atomic\TIntRange($assertion_value, null));
             } elseif ($atomic_type instanceof TInt) {
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new Atomic\TIntRange($assertion_value, null));
@@ -1698,11 +1697,10 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                 }*/
             } elseif ($atomic_type instanceof Atomic\TPositiveInt) {
-                if ($assertion_value <= 0) {
-                    //emit an issue here in the future about incompatible type
-                }
                 $existing_var_type->removeType($atomic_type->getKey());
-                $existing_var_type->addType(new Atomic\TIntRange(1, $assertion_value));
+                if ($assertion_value >= 1) {
+                    $existing_var_type->addType(new Atomic\TIntRange(1, $assertion_value));
+                }
             } elseif ($atomic_type instanceof TInt) {
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new Atomic\TIntRange(null, $assertion_value));
