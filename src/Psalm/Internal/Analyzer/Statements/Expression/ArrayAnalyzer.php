@@ -453,10 +453,6 @@ class ArrayAnalyzer
             }
         }
 
-        if ($array_creation_info->item_value_atomic_types && !$array_creation_info->can_create_objectlike) {
-            return;
-        }
-
         if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
             if ($item_key_value !== null && count($array_creation_info->property_types) <= 100) {
                 $array_creation_info->property_types[$item_key_value] = $item_value_type;
