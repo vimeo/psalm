@@ -58,7 +58,6 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
@@ -574,6 +573,34 @@ class Config
     /** @var ?int */
     public $threads;
 
+    /**
+     * @psalm-readonly-allow-private-mutation
+     * @var array{
+     *     decimal: bool,
+     *     dom: bool,
+     *     ds: bool,
+     *     geos: bool,
+     *     gmp: bool,
+     *     mongodb: bool,
+     *     mysqli: bool,
+     *     pdo: bool,
+     *     soap: bool,
+     *     xdebug: bool,
+     * }
+     */
+    public $php_extensions = [
+        "decimal" => false,
+        "dom" => false,
+        "ds" => false,
+        "geos" => false,
+        "gmp" => false,
+        "mongodb" => false,
+        "mysqli" => false,
+        "pdo" => false,
+        "soap" => false,
+        "xdebug" => false,
+    ];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -962,6 +989,32 @@ class Config
         } else {
             $config->base_dir = $current_dir;
             $base_dir = $current_dir;
+        }
+
+        $composer_json_path = Composer::getJsonFilePath($config->base_dir);
+
+        $composer_json = null;
+        if (file_exists($composer_json_path)) {
+            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+                throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+            }
+        }
+        foreach ([
+            "decimal",
+            "dom",
+            "ds",
+            "geos",
+            "mongodb",
+            "mysqli",
+            "pdo",
+            "soap",
+            "xdebug",
+        ] as $ext) {
+            $config->php_extensions[$ext] = isset($composer_json["require"]["ext-$ext"]);
+        }
+
+        if ($config->load_xdebug_stub !== null) {
+            $config->php_extensions[$ext] = $config->load_xdebug_stub;
         }
 
         if (isset($config_xml['phpVersion'])) {
@@ -1967,7 +2020,6 @@ class Config
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DOM.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
@@ -1982,39 +2034,11 @@ class Config
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (extension_loaded('PDO')) {
-            $ext_pdo_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'pdo.phpstub';
-            $this->internal_stubs[] = $ext_pdo_path;
-        }
-
-        if (extension_loaded('soap')) {
-            $ext_soap_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'soap.phpstub';
-            $this->internal_stubs[] = $ext_soap_path;
-        }
-
-        if (extension_loaded('ds')) {
-            $ext_ds_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-ds.phpstub';
-            $this->internal_stubs[] = $ext_ds_path;
-        }
-
-        if (extension_loaded('mongodb')) {
-            $ext_mongodb_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mongodb.phpstub';
-            $this->internal_stubs[] = $ext_mongodb_path;
-        }
-
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Xdebug.phpstub';
-            $this->internal_stubs[] = $xdebug_stub_path;
-        }
-
-        if (extension_loaded('mysqli')) {
-            $ext_mysqli_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mysqli.phpstub';
-            $this->internal_stubs[] = $ext_mysqli_path;
-        }
-
-        if (extension_loaded('decimal')) {
-            $ext_decimal_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'decimal.phpstub';
-            $this->internal_stubs[] = $ext_decimal_path;
+        foreach ($this->php_extensions as $ext => $enabled) {
+            if ($enabled) {
+                $this->internal_stubs[] = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs"
+                    . DIRECTORY_SEPARATOR . "extensions" . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            }
         }
 
         foreach ($this->internal_stubs as $stub_path) {
