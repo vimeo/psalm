@@ -1638,8 +1638,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
-                $new_range = new Atomic\TIntRange($assertion_value, null);
-                if (!$new_range->contains($atomic_type->value)) {
+                if ($atomic_type->value < $assertion_value) {
                     $existing_var_type->removeType($atomic_type->getKey());
                 } /*elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
@@ -1684,10 +1683,9 @@ class SimpleAssertionReconciler extends Reconciler
                 }
                 $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof Atomic\TLiteralInt) {
-                $new_range = new Atomic\TIntRange(null, $assertion_value);
-                if (!$new_range->contains($atomic_type->value)) {
+                if ($atomic_type->value > $assertion_value) {
                     $existing_var_type->removeType($atomic_type->getKey());
-                }/* elseif ($inside_loop) {
+                } /* elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
                     $existing_var_type->removeType($atomic_type->getKey());
                     if ($atomic_type->value < $assertion_value) {
