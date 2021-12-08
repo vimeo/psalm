@@ -640,14 +640,14 @@ class ArithmeticOpAnalyzer
                         $result_type
                     );
                 } else {
-                    if ($statements_source && IssueBuffer::accepts(
-                        new InvalidOperand(
-                            "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
-                            new CodeLocation($statements_source, $parent)
-                        ),
-                        $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($statements_source) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOperand(
+                                "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
+                                new CodeLocation($statements_source, $parent)
+                            ),
+                            $statements_source->getSuppressedIssues()
+                        );
                     }
                 }
 
