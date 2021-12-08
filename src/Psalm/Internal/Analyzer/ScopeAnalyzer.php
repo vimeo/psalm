@@ -449,30 +449,16 @@ class ScopeAnalyzer
                     return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
                 }
 
-                if ($stmt->finally) {
-                    if ($stmt->finally->stmts) {
-                        $finally_statement_actions = self::getControlActions(
-                            $stmt->finally->stmts,
-                            $nodes,
-                            $exit_functions,
-                            $break_types,
-                            $return_is_exit
-                        );
+                if ($stmt->finally && $stmt->finally->stmts) {
+                    $finally_statement_actions = self::getControlActions(
+                        $stmt->finally->stmts,
+                        $nodes,
+                        $exit_functions,
+                        $break_types,
+                        $return_is_exit
+                    );
 
-                        if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
-                            return array_merge(
-                                array_filter(
-                                    $control_actions,
-                                    function ($action) {
-                                        return $action !== self::ACTION_NONE;
-                                    }
-                                ),
-                                $finally_statement_actions
-                            );
-                        }
-                    }
-
-                    if (!$stmt->catches && !in_array(self::ACTION_NONE, $try_statement_actions, true)) {
+                    if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
                         return array_merge(
                             array_filter(
                                 $control_actions,
@@ -480,7 +466,7 @@ class ScopeAnalyzer
                                     return $action !== self::ACTION_NONE;
                                 }
                             ),
-                            $try_statement_actions
+                            $finally_statement_actions
                         );
                     }
                 }
