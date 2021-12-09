@@ -3,6 +3,7 @@ namespace Psalm\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -543,7 +544,13 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
+            if (isset($existing_keys[$key_parts[0]])) {
+                return clone $existing_keys[$key_parts[0]];
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $key_parts[0], $key_parts[0])) {
+                return $type;
+            }
         }
 
         $base_key = array_shift($key_parts);
