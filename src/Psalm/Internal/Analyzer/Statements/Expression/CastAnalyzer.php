@@ -65,6 +65,7 @@ class CastAnalyzer
             }
 
             $valid_int_type = null;
+            $type_parent_nodes = null;
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($maybe_type) {
@@ -73,12 +74,8 @@ class CastAnalyzer
                     if (!$maybe_type->from_calculation) {
                         self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                     }
-
-                    if ($maybe_type->isSingleStringLiteral()) {
-                        $valid_int_type = new Union([
-                            new TLiteralInt((int)$maybe_type->getSingleStringLiteral()->value),
-                        ]);
-                    }
+                } elseif ($maybe_type->isSingleStringLiteral()) {
+                    $valid_int_type = Type::getInt(false, (int)$maybe_type->getSingleStringLiteral()->value);
                 }
 
                 if (count($maybe_type->getAtomicTypes()) === 1
@@ -88,13 +85,15 @@ class CastAnalyzer
                         new TLiteralInt(1),
                     ]);
                 }
+
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    $type_parent_nodes = $maybe_type->parent_nodes;
+                }
             }
 
             $type = $valid_int_type ?? Type::getInt();
-
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-            ) {
-                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
+            if ($type_parent_nodes !== null) {
+                $type->parent_nodes = $type_parent_nodes;
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
