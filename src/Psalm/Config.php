@@ -1017,6 +1017,32 @@ class Config
             $config->php_extensions[$ext] = $config->load_xdebug_stub;
         }
 
+        if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
+            foreach ($config_xml->enableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(in_array(
+                    $extensionName,
+                    ["decimal", "dom", "ds", "geos", "mongodb", "mysqli", "pdo", "soap", "xdebug"],
+                    true
+                ));
+                $config->php_extensions[$extensionName] = true;
+            }
+        }
+
+        if (isset($config_xml->disableExtensions) && isset($config_xml->disableExtensions->extension)) {
+            foreach ($config_xml->disableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(in_array(
+                    $extensionName,
+                    ["decimal", "dom", "ds", "geos", "mongodb", "mysqli", "pdo", "soap", "xdebug"],
+                    true
+                ));
+                $config->php_extensions[$extensionName] = false;
+            }
+        }
+
         if (isset($config_xml['phpVersion'])) {
             $config->configured_php_version = (string) $config_xml['phpVersion'];
         }

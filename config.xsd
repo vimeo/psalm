@@ -21,6 +21,8 @@
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="universalObjectCrates" type="UniversalObjectCratesType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="enableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="disableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
         <xs:attribute name="autoloader" type="xs:string" />
@@ -682,4 +684,29 @@
             <xs:enumeration value="always"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:complexType name="ExtensionsType">
+        <xs:sequence>
+            <xs:element name="extension" maxOccurs="unbounded" type="ExtensionAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="ExtensionType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="decimal"/>
+            <xs:enumeration value="dom"/>
+            <xs:enumeration value="ds"/>
+            <xs:enumeration value="geos"/>
+            <xs:enumeration value="gmp"/>
+            <xs:enumeration value="mongodb"/>
+            <xs:enumeration value="mysqli"/>
+            <xs:enumeration value="pdo"/>
+            <xs:enumeration value="soap"/>
+            <xs:enumeration value="xdebug"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="ExtensionAttributeType">
+        <xs:attribute name="name" type="ExtensionType" use="required" />
+    </xs:complexType>
 </xs:schema>
