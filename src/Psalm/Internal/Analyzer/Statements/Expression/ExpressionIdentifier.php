@@ -217,6 +217,10 @@ class ExpressionIdentifier
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
+            return implode('\\', $stmt->name->parts);
+        }
+
         return self::getVarId($stmt, $this_class_name, $source);
     }
 }
