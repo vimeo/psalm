@@ -46,6 +46,7 @@ use UnexpectedValueException;
 use XdgBaseDir\Xdg;
 use stdClass;
 
+use function array_key_exists;
 use function array_map;
 use function array_merge;
 use function array_pad;
@@ -999,33 +1000,19 @@ class Config
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
         }
-        foreach ([
-            "decimal",
-            "dom",
-            "ds",
-            "geos",
-            "mongodb",
-            "mysqli",
-            "pdo",
-            "soap",
-            "xdebug",
-        ] as $ext) {
+        foreach ($config->php_extensions as $ext => $_) {
             $config->php_extensions[$ext] = isset($composer_json["require"]["ext-$ext"]);
         }
 
         if ($config->load_xdebug_stub !== null) {
-            $config->php_extensions[$ext] = $config->load_xdebug_stub;
+            $config->php_extensions["xdebug"] = $config->load_xdebug_stub;
         }
 
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
             foreach ($config_xml->enableExtensions->extension as $extension) {
                 assert(isset($extension["name"]));
                 $extensionName = (string) $extension["name"];
-                assert(in_array(
-                    $extensionName,
-                    ["decimal", "dom", "ds", "geos", "mongodb", "mysqli", "pdo", "soap", "xdebug"],
-                    true
-                ));
+                assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = true;
             }
         }
@@ -1034,11 +1021,7 @@ class Config
             foreach ($config_xml->disableExtensions->extension as $extension) {
                 assert(isset($extension["name"]));
                 $extensionName = (string) $extension["name"];
-                assert(in_array(
-                    $extensionName,
-                    ["decimal", "dom", "ds", "geos", "mongodb", "mysqli", "pdo", "soap", "xdebug"],
-                    true
-                ));
+                assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = false;
             }
         }

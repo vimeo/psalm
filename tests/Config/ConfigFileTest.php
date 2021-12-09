@@ -3,6 +3,7 @@
 namespace Psalm\Tests\Config;
 
 use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
@@ -16,7 +17,6 @@ use function trim;
 use function unlink;
 
 use const PHP_EOL;
-use Psalm\Exception\ConfigException;
 
 /** @group PluginManager */
 class ConfigFileTest extends TestCase
