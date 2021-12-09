@@ -20,6 +20,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -85,6 +86,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $real_stmt = $stmt;
 
         if ($function_name instanceof PhpParser\Node\Name
+            && !$stmt->isFirstClassCallable()
             && isset($stmt->getArgs()[0])
             && !$stmt->getArgs()[0]->unpack
         ) {
@@ -143,6 +145,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $is_first_class_callable = $stmt->isFirstClassCallable();
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -153,14 +156,16 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $set_inside_conditional = true;
         }
 
-        ArgumentsAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->getArgs(),
-            $function_call_info->function_params,
-            $function_call_info->function_id,
-            $function_call_info->allow_named_args,
-            $context
-        );
+        if (!$is_first_class_callable) {
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                $function_call_info->function_params,
+                $function_call_info->function_id,
+                $function_call_info->allow_named_args,
+                $context
+            );
+        }
 
         if ($set_inside_conditional) {
             $context->inside_conditional = false;
@@ -168,7 +173,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_callable = null;
 
-        if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
+        if (!$is_first_class_callable
+            && $function_name instanceof PhpParser\Node\Name
+            && $function_call_info->function_id
+        ) {
             if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
@@ -184,7 +192,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $template_result = new TemplateResult([], []);
 
         // do this here to allow closure param checks
-        if ($function_call_info->function_params !== null) {
+        if (!$is_first_class_callable && $function_call_info->function_params !== null) {
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -235,6 +243,45 @@ class FunctionCallAnalyzer extends CallAnalyzer
             );
 
             $config->eventDispatcher->dispatchAfterEveryFunctionCallAnalysis($event);
+
+            if ($is_first_class_callable) {
+                return true;
+            }
+        }
+
+        if ($is_first_class_callable) {
+            $type_provider = $statements_analyzer->getNodeTypeProvider();
+            $closure_types = [];
+
+            if ($input_type = $type_provider->getType($function_name)) {
+                foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                    $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
+                        $codebase,
+                        $atomic_type,
+                        null,
+                        $statements_analyzer
+                    );
+
+                    if ($candidate_callable) {
+                        $closure_types[] = new Type\Atomic\TClosure(
+                            'Closure',
+                            $candidate_callable->params,
+                            $candidate_callable->return_type,
+                            $candidate_callable->is_pure
+                        );
+                    }
+                }
+            }
+
+            if ($closure_types) {
+                $stmt_type = TypeCombiner::combine($closure_types, $codebase);
+            } else {
+                $stmt_type = Type::getClosure();
+            }
+
+            $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+
+            return true;
         }
 
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
@@ -457,13 +504,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $function_call_info->function_params = null;
         $function_call_info->defined_constants = [];
         $function_call_info->global_variables = [];
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         if ($function_call_info->function_exists) {
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
                 $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,
-                    $stmt->getArgs(),
+                    $args,
                     null,
                     $code_location
                 );
@@ -496,7 +544,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $function_call_info->function_id,
-                        $stmt->getArgs(),
+                        $args,
                         $statements_analyzer->node_data
                     );
 
@@ -789,7 +837,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $fake_method_call = new VirtualMethodCall(
             $function_name,
             new VirtualIdentifier('__invoke', $function_name->getAttributes()),
-            $stmt->getArgs()
+            $stmt->isFirstClassCallable() ? [new PhpParser\Node\VariadicPlaceholder()] : $stmt->getArgs()
         );
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -948,7 +996,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $statements_analyzer->node_data,
                     $function_call_info->function_id,
-                    $stmt->getArgs(),
+                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     $must_use
                 )
                 : null;

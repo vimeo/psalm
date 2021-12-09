@@ -412,6 +412,14 @@ class ClosureTest extends TestCase
                         }
                     }',
             ],
+            'PHP71-closureFromCallableNamedFunction' => [
+                '<?php
+                    $closure = Closure::fromCallable("strlen");
+                ',
+                'assertions' => [
+                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                ]
+            ],
             'allowClosureWithNarrowerReturn' => [
                 '<?php
                     class A {}
@@ -555,6 +563,94 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$result' => 'array{stdClass}'
                 ],
+            ],
+            'FirstClassCallable:NamedFunction:is_int' => [
+                '<?php
+                    $closure = is_int(...);
+                    $result = $closure(1);
+                ',
+                'assertions' => [
+                    '$closure' => 'pure-Closure(mixed):bool',
+                    '$result' => 'bool',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:NamedFunction:strlen' => [
+                '<?php
+                    $closure = strlen(...);
+                    $result = $closure("test");
+                ',
+                'assertions' => [
+                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                    '$result' => 'int|positive-int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:InstanceMethod' => [
+                '<?php
+                    class Test {
+                        public function __construct(private readonly string $string) {
+                        }
+
+                        public function length(): int {
+                            return strlen($this->string);
+                        }
+                    }
+                    $test = new Test("test");
+                    $closure = $test->length(...);
+                    $length = $closure();
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:StaticMethod' => [
+                '<?php
+                    class Test {
+                        public static function length(string $param): int {
+                            return strlen($param);
+                        }
+                    }
+                    $closure = Test::length(...);
+                    $length = $closure("test");
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:InvokableObject' => [
+                '<?php
+                    class Test {
+                        public function __invoke(string $param): int {
+                            return strlen($param);
+                        }
+                    }
+                    $test = new Test();
+                    $closure = $test(...);
+                    $length = $closure("test");
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:FromClosure' => [
+                '<?php
+                    $closure = fn (string $string): int => strlen($string);
+                    $closure = $closure(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                ],
+                [],
+                '8.1'
             ],
         ];
     }

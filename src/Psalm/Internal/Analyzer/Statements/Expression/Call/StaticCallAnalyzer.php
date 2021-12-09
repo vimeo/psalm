@@ -220,7 +220,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if (!$has_existing_method) {
+        if (!$stmt->isFirstClassCallable() && !$has_existing_method) {
             return self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),

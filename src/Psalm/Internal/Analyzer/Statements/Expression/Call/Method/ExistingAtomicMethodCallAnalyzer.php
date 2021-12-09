@@ -196,17 +196,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if (self::checkMethodArgs(
-            $method_id,
-            $args,
-            $template_result,
-            $context,
-            new CodeLocation($source, $stmt_name),
-            $statements_analyzer
-        ) === false) {
-            return Type::getMixed();
-        }
-
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
@@ -224,6 +213,21 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $template_result
         );
+
+        if ($stmt->isFirstClassCallable()) {
+            return $return_type_candidate;
+        }
+
+        if (self::checkMethodArgs(
+                $method_id,
+                $args,
+                $template_result,
+                $context,
+                new CodeLocation($source, $stmt_name),
+                $statements_analyzer
+            ) === false) {
+            return Type::getMixed();
+        }
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
