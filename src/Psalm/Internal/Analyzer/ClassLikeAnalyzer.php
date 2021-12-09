@@ -336,7 +336,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return null;
         }
 
-        foreach ($class_storage->invalid_dependencies as $dependency_class_name) {
+        foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
             if ($codebase->classlike_storage_provider->has($dependency_class_name)) {
