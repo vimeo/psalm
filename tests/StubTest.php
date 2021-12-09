@@ -212,6 +212,48 @@ class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubFileParentClass(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace A\B\C;
+
+                class Foo extends \SystemClass
+                {
+                    public function foo(string $a, string $b): string
+                    {
+                        return $a . $b;
+                    }
+                }
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testPhpStormMetaParsingFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
