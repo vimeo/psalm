@@ -81,7 +81,7 @@ jobs:
           php-version: '8.0'
           tools: composer:v2
           coverage: none
-          extensions: :pdo
+          extensions: none, curl, dom, filter, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
 
       - uses: actions/checkout@v2
 
