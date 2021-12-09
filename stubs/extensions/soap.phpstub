@@ -296,3 +296,16 @@ class SoapFault extends Exception {
         mixed $headerFault = null
     ) {}
 }
+
+class SoapHeader {
+    public function __construct(
+        string $namespace,
+        string $name,
+        // Actually doesn't have a default, not specifying results in no SoapHeader::$data property. Specifying null
+        // results in a SoapHeader::$data property with null as the value. This probably makes no difference.
+        mixed $data = null,
+        bool $mustUnderstand = false,
+        // Same as $data, no default. The documentation specifies this as a `string` but it accepts null.
+        ?string $actor = null
+    ) {}
+}
