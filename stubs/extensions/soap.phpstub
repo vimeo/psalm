@@ -282,3 +282,17 @@ class SoapClient  {
      public function __setSoapHeaders ($soapheaders = null) {}
 
 }
+
+class SoapFault extends Exception {
+    /**
+     * @param array|string|null $code
+     */
+    public function __construct(
+        $code,
+        string $string,
+        ?string $actor = null,
+        mixed $details = null,
+        ?string $name = null,
+        mixed $headerFault = null
+    ) {}
+}
