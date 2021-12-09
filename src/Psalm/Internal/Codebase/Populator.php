@@ -529,7 +529,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $parent_storage_class,
+        string $parent_storage_class
     ): void {
         $parent_storage_class = strtolower(
             $this->classlikes->getUnAliasedName(
