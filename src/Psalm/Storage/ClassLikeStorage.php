@@ -386,7 +386,7 @@ class ClassLikeStorage
     public $initialized_properties = [];
 
     /**
-     * @var array<string, "implemented_interface"|"parent_interface"|"trait"|"parent_class">
+     * @var array<string, true>
      */
     public $invalid_dependencies = [];
 

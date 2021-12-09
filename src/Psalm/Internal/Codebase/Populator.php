@@ -86,22 +86,6 @@ class Populator
             $this->populateClassLikeStorage($class_storage);
         }
 
-        // After loading new classes, go over existing classes with
-        // invalid dependencies to see if any of those have been loaded
-        foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
-            foreach ($class_storage->invalid_dependencies as $dependency => $dependency_type) {
-                if ($this->populateDataFromDependency(
-                    $class_storage,
-                    $this->classlike_storage_provider,
-                    [], // TODO
-                    $dependency,
-                    $dependency_type
-                )) {
-                    unset($class_storage->invalid_dependencies[$dependency]);
-                }
-            }
-        }
-
         $this->progress->debug('ClassLikeStorage is populated' . "\n");
 
         $this->progress->debug('FileStorage is populating' . "\n");
@@ -267,7 +251,21 @@ class Populator
 
         if (isset($this->invalid_class_storages[$fq_classlike_name_lc])) {
             foreach ($this->invalid_class_storages[$fq_classlike_name_lc] as $dependency) {
+                if (isset($dependency->dependent_classlikes[$fq_classlike_name_lc])) {
+                    if ($dependency->location) {
+                        IssueBuffer::maybeAdd(
+                            new CircularReference(
+                                'Circular reference discovered when loading ' . $dependency->name,
+                                $dependency->location
+                            )
+                        );
+                    }
+
+                    continue;
+                }
+
                 $dependency->populated = false;
+                unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
                 $this->populateClassLikeStorage($dependency, $dependent_classlikes);
             }
 
@@ -426,54 +424,12 @@ class Populator
         }
     }
 
-    /**
-     * @param "implemented_interface"|"parent_interface"|"trait"|"parent_class" $dependency_type
-     */
-    private function populateDataFromDependency(
-        ClassLikeStorage $storage,
-        ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes,
-        string $dependency,
-        string $dependency_type
-    ): bool {
-        switch ($dependency_type) {
-            case "implemented_interface":
-                return $this->populateDataFromImplementedInterface(
-                    $storage,
-                    $storage_provider,
-                    $dependent_classlikes,
-                    $dependency
-                );
-            case "parent_interface":
-                return $this->populateInterfaceDataFromParentInterface(
-                    $storage,
-                    $storage_provider,
-                    $dependent_classlikes,
-                    $dependency
-                );
-            case "trait":
-                return $this->populateDataFromTrait(
-                    $storage,
-                    $storage_provider,
-                    $dependent_classlikes,
-                    $dependency
-                );
-            case "parent_class":
-                return $this->populateDataFromParentClass(
-                    $storage,
-                    $storage_provider,
-                    $dependent_classlikes,
-                    $dependency
-                );
-        }
-    }
-
     private function populateDataFromTrait(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $used_trait_lc
-    ): bool {
+    ): void {
         try {
             $used_trait_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -482,7 +438,7 @@ class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException $e) {
-            return false;
+            return;
         }
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
@@ -536,8 +492,6 @@ class Populator
 
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
-
-        return true;
     }
 
     private static function extendType(
@@ -576,7 +530,7 @@ class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $parent_storage_class,
-    ): bool {
+    ): void {
         $parent_storage_class = strtolower(
             $this->classlikes->getUnAliasedName(
                 $parent_storage_class
@@ -588,11 +542,11 @@ class Populator
         } catch (InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            $storage->invalid_dependencies[$parent_storage_class] = "parent_class";
+            $storage->invalid_dependencies[$parent_storage_class] = true;
 
             $this->invalid_class_storages[$parent_storage_class][] = $storage;
 
-            return false;
+            return;
         }
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
@@ -693,8 +647,6 @@ class Populator
 
         $storage->pseudo_methods += $parent_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
-
-        return true;
     }
 
     private function populateInterfaceData(
@@ -783,7 +735,7 @@ class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $parent_interface_lc
-    ): bool {
+    ): void {
         try {
             $parent_interface_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -794,8 +746,8 @@ class Populator
         } catch (InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            $storage->invalid_dependencies[$parent_interface_lc] = "parent_interface";
-            return false;
+            $storage->invalid_dependencies[$parent_interface_lc] = true;
+            return;
         }
 
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
@@ -809,8 +761,6 @@ class Populator
             $parent_interface_storage->parent_interfaces,
             $storage->parent_interfaces
         );
-
-        return true;
     }
 
     private function populateDataFromImplementedInterface(
@@ -818,7 +768,7 @@ class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $implemented_interface_lc
-    ): bool {
+    ): void {
         try {
             $implemented_interface_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -829,8 +779,8 @@ class Populator
         } catch (InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            $storage->invalid_dependencies[$implemented_interface_lc] = "implemented_interface";
-            return false;
+            $storage->invalid_dependencies[$implemented_interface_lc] = true;
+            return;
         }
 
         $this->populateInterfaceData(
@@ -844,8 +794,6 @@ class Populator
             $storage->class_implements,
             $implemented_interface_storage->parent_interfaces
         );
-
-        return true;
     }
 
     /**
