@@ -27,7 +27,7 @@ use Psalm\Report\PhpStormReport;
 use Psalm\Report\PylintReport;
 use Psalm\Report\ReportOptions;
 use Psalm\Report\SarifReport;
-use Psalm\Report\SonarqubeReport;
+use Psalm\Report\SonarSourceReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
@@ -804,7 +804,8 @@ class IssueBuffer
                 break;
 
             case Report::TYPE_SONARQUBE:
-                $output = new SonarqubeReport($normalized_data, self::$fixable_issue_counts, $report_options);
+            case Report::TYPE_SONARCLOUD:
+                $output = new SonarSourceReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_PYLINT:
