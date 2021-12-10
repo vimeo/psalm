@@ -1199,6 +1199,19 @@ class ConstantTest extends TestCase
                 [],
                 '8.1'
             ],
+            'inferStaticClassConst' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = "baz";
+
+                        public function foobar(): string
+                        {
+                            return static::BAR;
+                        }
+                    }
+                '
+            ],
         ];
     }
 
