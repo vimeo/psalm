@@ -35,7 +35,7 @@ class ClassTemplateExtendsTest extends TestCase
                          */
                         public function arity(): int
                         {
-                            return (int)static::ARITY;
+                            return static::ARITY;
                         }
 
                         /**
@@ -73,7 +73,7 @@ class ClassTemplateExtendsTest extends TestCase
                          */
                         public function arity(): int
                         {
-                            return (int)static::ARITY;
+                            return static::ARITY;
                         }
 
                         /**
