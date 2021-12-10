@@ -1,7 +1,7 @@
 <?php
 namespace Psalm;
 
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 /**
  * @deprecated Use {@see Webmozart\PathUtil\Path::isAbsolute}. No longer used by Psalm, going to be removed in Psalm 5
