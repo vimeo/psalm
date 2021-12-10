@@ -1092,7 +1092,7 @@ function str_getcsv(string $string, string $separator = ',', string $enclosure =
  *
  * @param TArray $array
  *
- * @return (TArray is non-empty-array ? non-empty-array<TKey, positive-int> : array<empty, empty>)
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, positive-int> : array<TKey, positive-int>)
  *
  * @psalm-pure
  */
