@@ -137,80 +137,95 @@ class MethodCallReturnTypeFetcher
         } else {
             $self_fq_class_name = $fq_class_name;
 
-            $return_type_candidate = $codebase->methods->getMethodReturnType(
-                $method_id,
-                $self_fq_class_name,
-                $statements_analyzer,
-                $args
-            );
+            if ($stmt->isFirstClassCallable()) {
+                $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
 
-            if ($return_type_candidate) {
-                $return_type_candidate = clone $return_type_candidate;
+                if ($method_storage) {
+                    $return_type_candidate = new Type\Union([new Type\Atomic\TClosure(
+                        'Closure',
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->pure
+                    )]);
+                } else {
+                    $return_type_candidate = Type::getClosure();
+                }
+            } else {
+                $return_type_candidate = $codebase->methods->getMethodReturnType(
+                    $method_id,
+                    $self_fq_class_name,
+                    $statements_analyzer,
+                    $args
+                );
 
-                if ($template_result->lower_bounds) {
+                if ($return_type_candidate) {
+                    $return_type_candidate = clone $return_type_candidate;
+
+                    if ($template_result->lower_bounds) {
+                        $return_type_candidate = TypeExpander::expandUnion(
+                            $codebase,
+                            $return_type_candidate,
+                            $fq_class_name,
+                            null,
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            $static_type instanceof Type\Atomic\TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                            true
+                        );
+                    }
+
+                    $return_type_candidate = self::replaceTemplateTypes(
+                        $return_type_candidate,
+                        $template_result,
+                        $method_id,
+                        count($stmt->getArgs()),
+                        $codebase
+                    );
+
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
-                        $fq_class_name,
-                        null,
+                        $self_fq_class_name,
+                        $static_type,
                         $class_storage->parent_class,
                         true,
                         false,
                         $static_type instanceof Type\Atomic\TNamedObject
-                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true
                     );
-                }
 
-                $return_type_candidate = self::replaceTemplateTypes(
-                    $return_type_candidate,
-                    $template_result,
-                    $method_id,
-                    count($stmt->getArgs()),
-                    $codebase
-                );
-
-                $return_type_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type_candidate,
-                    $self_fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class,
-                    true,
-                    false,
-                    $static_type instanceof Type\Atomic\TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                    true
-                );
-
-                $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                    $method_id,
-                    $secondary_return_type_location
-                );
-
-                if ($secondary_return_type_location) {
-                    $return_type_location = $secondary_return_type_location;
-                }
-
-                $config = Config::getInstance();
-
-                // only check the type locally if it's defined externally
-                if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context->calling_method_id
+                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location
                     );
-                }
-            } else {
-                $result->returns_by_ref =
-                    $result->returns_by_ref
+
+                    if ($secondary_return_type_location) {
+                        $return_type_location = $secondary_return_type_location;
+                    }
+
+                    $config = Config::getInstance();
+
+                    // only check the type locally if it's defined externally
+                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context->calling_method_id
+                        );
+                    }
+                } else {
+                    $result->returns_by_ref =
+                        $result->returns_by_ref
                         || $codebase->methods->getMethodReturnsByRef($method_id);
+                }
             }
         }
 

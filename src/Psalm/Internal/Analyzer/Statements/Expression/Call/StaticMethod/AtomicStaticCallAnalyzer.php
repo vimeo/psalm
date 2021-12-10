@@ -274,7 +274,7 @@ class AtomicStaticCallAnalyzer
             );
         }
 
-        $args = $stmt->getArgs();
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         if ($intersection_types
             && !$codebase->methods->methodExists($method_id)
@@ -775,6 +775,25 @@ class AtomicStaticCallAnalyzer
         }
 
         $has_existing_method = true;
+
+        if ($stmt->isFirstClassCallable()) {
+            $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
+
+            if ($method_storage) {
+                $return_type_candidate = new Type\Union([new Type\Atomic\TClosure(
+                    'Closure',
+                    $method_storage->params,
+                    $method_storage->return_type,
+                    $method_storage->pure
+                )]);
+            } else {
+                $return_type_candidate = Type::getClosure();
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
+
+            return true;
+        }
 
         ExistingAtomicStaticCallAnalyzer::analyze(
             $statements_analyzer,

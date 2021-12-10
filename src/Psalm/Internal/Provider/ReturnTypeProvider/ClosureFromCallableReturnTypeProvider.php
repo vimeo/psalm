@@ -38,7 +38,8 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
                         $codebase,
                         $atomic_type,
                         null,
-                        $source
+                        $source,
+                        true
                     );
 
                     if ($candidate_callable) {

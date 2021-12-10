@@ -69,6 +69,10 @@ class NamedFunctionCallHandler
             return;
         }
 
+        if ($stmt->isFirstClassCallable()) {
+            return;
+        }
+
         $first_arg = $stmt->getArgs()[0] ?? null;
 
         if ($function_id === 'method_exists') {

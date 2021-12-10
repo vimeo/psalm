@@ -196,7 +196,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if (self::checkMethodArgs(
+        $is_first_class_callable = $stmt->isFirstClassCallable();
+
+        if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
             $args,
             $template_result,
@@ -224,6 +226,10 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $template_result
         );
+
+        if ($is_first_class_callable) {
+            return $return_type_candidate;
+        }
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 

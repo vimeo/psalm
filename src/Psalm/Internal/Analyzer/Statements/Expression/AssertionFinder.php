@@ -227,7 +227,7 @@ class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
+        if ($conditional instanceof PhpParser\Node\Expr\FuncCall && !$conditional->isFirstClassCallable()) {
             return self::processFunctionCall(
                 $conditional,
                 $this_class_name,
@@ -237,8 +237,9 @@ class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\MethodCall
-            || $conditional instanceof PhpParser\Node\Expr\StaticCall
+        if (($conditional instanceof PhpParser\Node\Expr\MethodCall
+            || $conditional instanceof PhpParser\Node\Expr\StaticCall)
+            && !$conditional->isFirstClassCallable()
         ) {
             $custom_assertions = self::processCustomAssertion($conditional, $this_class_name, $source);
 

@@ -13,6 +13,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -58,7 +59,26 @@ class FunctionCallReturnTypeFetcher
         $stmt_type = null;
         $config = $codebase->config;
 
-        if ($codebase->functions->return_type_provider->has($function_id)) {
+        if ($stmt->isFirstClassCallable()) {
+            $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
+                $codebase,
+                new Type\Atomic\TLiteralString($function_id),
+                null,
+                $statements_analyzer,
+                true
+            );
+
+            if ($candidate_callable) {
+                $stmt_type = new Type\Union([new Type\Atomic\TClosure(
+                    'Closure',
+                    $candidate_callable->params,
+                    $candidate_callable->return_type,
+                    $candidate_callable->is_pure
+                )]);
+            } else {
+                $stmt_type = Type::getClosure();
+            }
+        } elseif ($codebase->functions->return_type_provider->has($function_id)) {
             $stmt_type = $codebase->functions->return_type_provider->getReturnType(
                 $statements_analyzer,
                 $function_id,
