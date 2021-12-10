@@ -111,8 +111,8 @@ abstract class CodeIssue
             $snippet_bounds[1],
             $location->getColumn(),
             $location->getEndColumn(),
-            (int) static::SHORTCODE,
-            (int) static::ERROR_LEVEL,
+            static::SHORTCODE,
+            static::ERROR_LEVEL,
             $this instanceof TaintedInput
                 ? $this->getTaintTrace()
                 : null,
