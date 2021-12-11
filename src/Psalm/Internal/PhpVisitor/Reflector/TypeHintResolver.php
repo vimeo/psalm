@@ -11,7 +11,6 @@ use Psalm\Type;
 use UnexpectedValueException;
 
 use function implode;
-use function reset;
 use function strtolower;
 
 class TypeHintResolver

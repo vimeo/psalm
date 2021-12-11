@@ -34,7 +34,6 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function count;
-use function current;
 use function get_class;
 
 class CastAnalyzer

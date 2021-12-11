@@ -38,7 +38,6 @@ use Psalm\Type;
 
 use function array_merge;
 use function count;
-use function current;
 use function explode;
 use function reset;
 use function strtolower;

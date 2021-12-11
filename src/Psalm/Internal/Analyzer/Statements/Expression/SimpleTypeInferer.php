@@ -18,12 +18,10 @@ use Psalm\Type;
 use ReflectionProperty;
 
 use function array_merge;
-use function array_shift;
 use function array_values;
 use function count;
 use function is_string;
 use function preg_match;
-use function reset;
 use function strtolower;
 
 use const PHP_INT_MAX;
