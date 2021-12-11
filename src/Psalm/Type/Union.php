@@ -29,7 +29,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_merge;
 use function array_unique;
-use function array_values;
 use function count;
 use function get_class;
 use function implode;
@@ -1245,8 +1244,7 @@ class Union implements TypeNode
                 ) {
                     $this->types[$key] = $new_type_part;
                 } else {
-                    $combined = TypeCombiner::combine([$new_type_part, $this->types[$key]]);
-                    $this->types[$key] = array_values($combined->types)[0];
+                    $this->types[$key] = TypeCombiner::combine([$new_type_part, $this->types[$key]])->getSingleAtomic();
                 }
             }
         } elseif (count($this->types) === 0) {
