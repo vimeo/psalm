@@ -1121,7 +1121,7 @@ class FunctionLikeDocblockScanner
 
             $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
 
-            $removed_taint_single = array_values($removed_taint->getAtomicTypes())[0];
+            $removed_taint_single = $removed_taint->getSingleAtomic();
 
             if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
                 throw new TypeParseTreeException('Escaped taint must be a conditional');

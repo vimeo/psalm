@@ -28,7 +28,6 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use ReflectionProperty;
 
-use function array_values;
 use function explode;
 use function in_array;
 use function strtolower;
@@ -398,7 +397,7 @@ class ClassConstFetchAnalyzer
                     );
                 } elseif ($lhs_atomic_type instanceof Type\Atomic\TTemplateParam
                     && $lhs_atomic_type->as->isSingle()) {
-                    $as_atomic_type = array_values($lhs_atomic_type->as->getAtomicTypes())[0];
+                    $as_atomic_type = $lhs_atomic_type->as->getSingleAtomic();
 
                     if ($as_atomic_type instanceof Type\Atomic\TObject) {
                         $class_string_types[] = new Type\Atomic\TTemplateParamClass(
@@ -435,7 +434,7 @@ class ClassConstFetchAnalyzer
             $fq_class_name = null;
             $lhs_type_definite_class = null;
             if ($lhs_type->isSingle()) {
-                $atomic_type = array_values($lhs_type->getAtomicTypes())[0];
+                $atomic_type = $lhs_type->getSingleAtomic();
                 if ($atomic_type instanceof TNamedObject) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;

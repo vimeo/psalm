@@ -9,7 +9,6 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use ReflectionProperty;
 
-use function array_values;
 use function ctype_digit;
 use function is_float;
 use function is_int;
@@ -253,7 +252,7 @@ class ConstantTypeResolver
             );
 
             if ($found_type) {
-                return array_values($found_type->getAtomicTypes())[0];
+                return $found_type->getSingleAtomic();
             }
         }
 
@@ -279,7 +278,7 @@ class ConstantTypeResolver
                 $union = $var_type->properties[$offset_type->value] ?? null;
 
                 if ($union && $union->isSingle()) {
-                    return array_values($union->getAtomicTypes())[0];
+                    return $union->getSingleAtomic();
                 }
             }
         }
@@ -294,7 +293,7 @@ class ConstantTypeResolver
                 );
 
                 if ($found_type) {
-                    return array_values($found_type->getAtomicTypes())[0];
+                    return $found_type->getSingleAtomic();
                 }
             }
         }

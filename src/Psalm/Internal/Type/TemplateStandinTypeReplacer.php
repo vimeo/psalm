@@ -219,8 +219,8 @@ class TemplateStandinTypeReplacer
                         && !$array_template_type->isMixed()
                         && !$offset_template_type->isMixed()
                     ) {
-                        $array_template_type = array_values($array_template_type->getAtomicTypes())[0];
-                        $offset_template_type = array_values($offset_template_type->getAtomicTypes())[0];
+                        $array_template_type = $array_template_type->getSingleAtomic();
+                        $offset_template_type = $offset_template_type->getSingleAtomic();
 
                         if ($array_template_type instanceof Atomic\TKeyedArray
                             && ($offset_template_type instanceof Atomic\TLiteralString
@@ -260,7 +260,7 @@ class TemplateStandinTypeReplacer
                         = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
 
                     if ($template_type->isSingle()) {
-                        $template_type = array_values($template_type->getAtomicTypes())[0];
+                        $template_type = $template_type->getSingleAtomic();
 
                         if ($template_type instanceof Atomic\TKeyedArray
                             || $template_type instanceof Atomic\TArray
@@ -566,7 +566,7 @@ class TemplateStandinTypeReplacer
                 );
 
                 if ($extra_type->isSingle()) {
-                    $extra_type = array_values($extra_type->getAtomicTypes())[0];
+                    $extra_type = $extra_type->getSingleAtomic();
 
                     if ($extra_type instanceof Atomic\TNamedObject
                         || $extra_type instanceof Atomic\TTemplateParam
@@ -628,7 +628,7 @@ class TemplateStandinTypeReplacer
                         $keyed_template = $template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class];
 
                         if ($keyed_template->isSingle()) {
-                            $keyed_template = array_values($keyed_template->getAtomicTypes())[0];
+                            $keyed_template = $keyed_template->getSingleAtomic();
                         }
 
                         if ($keyed_template instanceof Atomic\TKeyedArray

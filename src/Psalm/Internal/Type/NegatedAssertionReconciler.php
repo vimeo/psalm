@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 
-use function array_values;
 use function count;
 use function explode;
 use function get_class;
@@ -297,7 +296,7 @@ class NegatedAssertionReconciler extends Reconciler
                         continue;
                     }
 
-                    $new_type_part = array_values($assertion_type->getAtomicTypes())[0];
+                    $new_type_part = $assertion_type->getSingleAtomic();
 
                     if (!$new_type_part instanceof TNamedObject) {
                         continue;
