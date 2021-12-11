@@ -70,7 +70,7 @@ class CallableTest extends TestCase
                         /**
                          * @param Closure(int, int): int $_fn
                          */
-                        public function __invoke(Closure $_fn): void
+                        public function __invoke(Closure $_fn): int
                         {
                             return $_fn(42, 42);
                         }
