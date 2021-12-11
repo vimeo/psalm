@@ -53,7 +53,6 @@ use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_search;
-use function array_values;
 use function count;
 use function end;
 use function is_string;
@@ -598,7 +597,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 /**
                  * @var Type\Atomic\TClosure
                  */
-                $closure_atomic = array_values($function_type->getAtomicTypes())[0];
+                $closure_atomic = $function_type->getSingleAtomic();
 
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type

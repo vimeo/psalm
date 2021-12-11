@@ -29,7 +29,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
 
 use function array_map;
-use function array_values;
 use function extension_loaded;
 use function implode;
 use function in_array;
@@ -511,7 +510,7 @@ class NamedFunctionCallHandler
                     } elseif ($class_type instanceof Type\Atomic\TTemplateParam
                         && $class_type->as->isSingle()
                     ) {
-                        $as_atomic_type = array_values($class_type->as->getAtomicTypes())[0];
+                        $as_atomic_type = $class_type->as->getSingleAtomic();
 
                         if ($as_atomic_type instanceof Type\Atomic\TObject) {
                             $class_string_types[] = new Type\Atomic\TTemplateParamClass(

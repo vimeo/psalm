@@ -5,8 +5,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
-use function array_values;
-
 class TypeCombinationTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -824,6 +822,6 @@ class TypeCombinationTest extends TestCase
      */
     private static function getAtomic($string): Type\Atomic
     {
-        return array_values(Type::parseString($string)->getAtomicTypes())[0];
+        return Type::parseString($string)->getSingleAtomic();
     }
 }

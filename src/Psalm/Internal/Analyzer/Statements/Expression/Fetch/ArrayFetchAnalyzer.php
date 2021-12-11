@@ -553,7 +553,7 @@ class ArrayFetchAnalyzer
                     continue;
                 }
 
-                $type = clone array_values($type->as->getAtomicTypes())[0];
+                $type = clone $type->as->getSingleAtomic();
             }
 
             if ($type instanceof TNull) {

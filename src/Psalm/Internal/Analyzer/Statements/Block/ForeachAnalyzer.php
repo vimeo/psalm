@@ -406,7 +406,7 @@ class ForeachAnalyzer
 
         foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
             if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
-                $iterator_atomic_type = array_values($iterator_atomic_type->as->getAtomicTypes())[0];
+                $iterator_atomic_type = $iterator_atomic_type->as->getSingleAtomic();
             }
 
             // if it's an empty array, we cannot iterate over it

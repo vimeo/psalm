@@ -658,7 +658,7 @@ class ClassLikeNodeScanner
                 $mixin_type->setFromDocblock();
 
                 if ($mixin_type->isSingle()) {
-                    $mixin_type = array_values($mixin_type->getAtomicTypes())[0];
+                    $mixin_type = $mixin_type->getSingleAtomic();
 
                     if ($mixin_type instanceof Type\Atomic\TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
@@ -1249,7 +1249,7 @@ class ClassLikeNodeScanner
             if ($const_type
                 && $const->value instanceof Concat
                 && $const_type->isSingle()
-                && get_class(array_values($const_type->getAtomicTypes())[0]) === Type\Atomic\TString::class
+                && get_class($const_type->getSingleAtomic()) === Type\Atomic\TString::class
             ) {
                 // Prefer unresolved type over inferred string from concat, so that it can later be resolved to literal.
                 $const_type = null;

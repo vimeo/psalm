@@ -152,7 +152,7 @@ class TemplateInferredTypeReplacer
                                 $template_type_part
                             );
                         } elseif ($template_type_part instanceof Atomic\TTemplateParam) {
-                            $first_atomic_type = array_values($template_type_part->as->getAtomicTypes())[0];
+                            $first_atomic_type = $template_type_part->as->getSingleAtomic();
 
                             $class_template_type = new Atomic\TTemplateParamClass(
                                 $template_type_part->param_name,
@@ -193,8 +193,8 @@ class TemplateInferredTypeReplacer
                         && !$array_template_type->isMixed()
                         && !$offset_template_type->isMixed()
                     ) {
-                        $array_template_type = array_values($array_template_type->getAtomicTypes())[0];
-                        $offset_template_type = array_values($offset_template_type->getAtomicTypes())[0];
+                        $array_template_type = $array_template_type->getSingleAtomic();
+                        $offset_template_type = $offset_template_type->getSingleAtomic();
 
                         if ($array_template_type instanceof Atomic\TKeyedArray
                             && ($offset_template_type instanceof Atomic\TLiteralString

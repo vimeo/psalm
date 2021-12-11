@@ -6,7 +6,6 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
-use function array_values;
 use function count;
 
 class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
@@ -38,7 +37,7 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         $min_value = null;
         if ($first_arg !== null && $first_arg->isSingle()) {
-            $first_atomic_type = array_values($first_arg->getAtomicTypes())[0];
+            $first_atomic_type = $first_arg->getSingleAtomic();
             if ($first_atomic_type instanceof Type\Atomic\TLiteralInt) {
                 $min_value = $first_atomic_type->value;
             } elseif ($first_atomic_type instanceof Type\Atomic\TIntRange) {
@@ -50,7 +49,7 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         $max_value = null;
         if ($second_arg !== null && $second_arg->isSingle()) {
-            $second_atomic_type = array_values($second_arg->getAtomicTypes())[0];
+            $second_atomic_type = $second_arg->getSingleAtomic();
             if ($second_atomic_type instanceof Type\Atomic\TLiteralInt) {
                 $max_value = $second_atomic_type->value;
             } elseif ($second_atomic_type instanceof Type\Atomic\TIntRange) {

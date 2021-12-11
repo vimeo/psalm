@@ -29,7 +29,6 @@ use function array_reverse;
 use function array_shift;
 use function array_slice;
 use function array_unshift;
-use function array_values;
 use function count;
 use function implode;
 use function in_array;
@@ -472,7 +471,7 @@ class ArrayAssignmentAnalyzer
                 }
 
                 if ($key_type->isSingle()) {
-                    $key_type_type = array_values($key_type->getAtomicTypes())[0];
+                    $key_type_type = $key_type->getSingleAtomic();
 
                     if ($key_type_type instanceof Type\Atomic\TDependentListKey
                         && $key_type_type->getVarId() === $parent_var_id
@@ -485,9 +484,9 @@ class ArrayAssignmentAnalyzer
                         && $root_type->isSingle()
                         && $value_type->isSingle()
                     ) {
-                        $key_type_as_type = array_values($key_type_type->as->getAtomicTypes())[0];
-                        $value_atomic_type = array_values($value_type->getAtomicTypes())[0];
-                        $root_atomic_type = array_values($root_type->getAtomicTypes())[0];
+                        $key_type_as_type = $key_type_type->as->getSingleAtomic();
+                        $value_atomic_type = $value_type->getSingleAtomic();
+                        $root_atomic_type = $root_type->getSingleAtomic();
 
                         if ($key_type_as_type instanceof Type\Atomic\TTemplateKeyOf
                             && $root_atomic_type instanceof Type\Atomic\TTemplateParam
@@ -532,7 +531,7 @@ class ArrayAssignmentAnalyzer
                     /**
                      * @var Type\Atomic\TTemplateParamClass
                      */
-                    $offset_type_part = array_values($key_type->getAtomicTypes())[0];
+                    $offset_type_part = $key_type->getSingleAtomic();
 
                     $template_result = new TemplateResult(
                         [],

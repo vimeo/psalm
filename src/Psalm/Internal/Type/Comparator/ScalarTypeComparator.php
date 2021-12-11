@@ -42,7 +42,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
-use function array_values;
 use function get_class;
 use function is_numeric;
 use function strtolower;
@@ -180,7 +179,7 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TDependentGetClass) {
-            $first_type = array_values($container_type_part->as_type->getAtomicTypes())[0];
+            $first_type = $container_type_part->as_type->getSingleAtomic();
 
             $container_type_part = new TClassString(
                 'object',
@@ -189,10 +188,10 @@ class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TDependentGetClass) {
-            $first_type = array_values($input_type_part->as_type->getAtomicTypes())[0];
+            $first_type = $input_type_part->as_type->getSingleAtomic();
 
             if ($first_type instanceof TTemplateParam) {
-                $object_type = array_values($first_type->as->getAtomicTypes())[0];
+                $object_type = $first_type->as->getSingleAtomic();
 
                 $input_type_part = new TTemplateParamClass(
                     $first_type->param_name,

@@ -813,7 +813,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage->final
                 );
 
-                $new_lhs_type_part = array_values($lhs_type_expanded->getAtomicTypes())[0];
+                $new_lhs_type_part = $lhs_type_expanded->getSingleAtomic();
 
                 if ($new_lhs_type_part instanceof TNamedObject) {
                     $lhs_type_part = $new_lhs_type_part;

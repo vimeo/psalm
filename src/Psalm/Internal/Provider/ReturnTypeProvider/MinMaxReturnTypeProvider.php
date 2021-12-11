@@ -11,7 +11,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_values;
 use function assert;
 use function count;
 use function get_class;
@@ -117,7 +116,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
         foreach ($call_args as $arg) {
             if ($array_arg_type = $nodeTypeProvider->getType($arg->value)) {
                 if ($array_arg_type->isSingle()) {
-                    $atomic_type = array_values($array_arg_type->getAtomicTypes())[0];
+                    $atomic_type = $array_arg_type->getSingleAtomic();
                     if ($atomic_type instanceof Type\Atomic\TPositiveInt) {
                         //we replace TPositiveInt with a range for better combination
                         $array_arg_type->removeType('int');

@@ -8,7 +8,6 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_map;
-use function array_values;
 use function implode;
 use function is_string;
 use function str_replace;
@@ -72,7 +71,7 @@ class Assertion
                                         $codebase
                                     );
 
-                                    $first_type = array_values($bound_type->getAtomicTypes())[0];
+                                    $first_type = $bound_type->getSingleAtomic();
 
                                     if ($first_type instanceof TTemplateParam) {
                                         $rule_token[0] = $first_type->param_name;

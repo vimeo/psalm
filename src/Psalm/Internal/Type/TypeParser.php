@@ -632,7 +632,7 @@ class TypeParser
                 $template_param_name = $template_marker->value;
             } elseif ($template_marker instanceof Atomic\TTemplateParam) {
                 $template_param_name = $template_marker->param_name;
-                $template_as_type = array_values($template_marker->as->getAtomicTypes())[0];
+                $template_as_type = $template_marker->as->getSingleAtomic();
 
                 if (!$template_as_type instanceof TNamedObject) {
                     throw new TypeParseTreeException(
@@ -1179,7 +1179,7 @@ class TypeParser
             && isset($offset_template_data[''])
             && $offset_template_data['']->isSingle()
         ) {
-            $offset_template_type = array_values($offset_template_data['']->getAtomicTypes())[0];
+            $offset_template_type = $offset_template_data['']->getSingleAtomic();
 
             if ($offset_template_type instanceof Atomic\TTemplateKeyOf) {
                 $offset_defining_class = $offset_template_type->defining_class;
