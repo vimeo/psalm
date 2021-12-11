@@ -2159,7 +2159,7 @@ class ClassLikes
                             }
                         } elseif (IssueBuffer::accepts(
                             $issue,
-                            $classlike_storage->suppressed_issues
+                            $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
                         )) {
                             // fall through
                         }
@@ -2189,7 +2189,7 @@ class ClassLikes
                         }
                     } elseif (IssueBuffer::accepts(
                         $issue,
-                        $classlike_storage->suppressed_issues
+                        $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
                     )) {
                         // fall through
                     }

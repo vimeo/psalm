@@ -194,8 +194,10 @@ class CommentAnalyzer
                 || isset($parsed_docblock->tags['readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation'])
+                || isset($parsed_docblock->tags['psalm-allow-private-mutation'])
                 || isset($parsed_docblock->tags['psalm-taint-escape'])
                 || isset($parsed_docblock->tags['psalm-internal'])
+                || isset($parsed_docblock->tags['psalm-suppress'])
                 || $parsed_docblock->description)
         ) {
             $var_comment = new VarDocblockComment();
@@ -245,7 +247,11 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
-            $var_comment->suppressed_issues = $parsed_docblock->tags['psalm-suppress'];
+            foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
+                foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                    $var_comment->suppressed_issues[$issue_offset + $offset] = $suppressed_issue;
+                }
+            }
         }
     }
 
