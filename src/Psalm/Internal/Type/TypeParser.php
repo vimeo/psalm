@@ -6,6 +6,22 @@ use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Type\ParseTree\CallableParamTree;
+use Psalm\Internal\Type\ParseTree\CallableTree;
+use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\ConditionalTree;
+use Psalm\Internal\Type\ParseTree\EncapsulationTree;
+use Psalm\Internal\Type\ParseTree\GenericTree;
+use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
+use Psalm\Internal\Type\ParseTree\IntersectionTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayPropertyTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayTree;
+use Psalm\Internal\Type\ParseTree\MethodTree;
+use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\NullableTree;
+use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\UnionTree;
+use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -133,7 +149,7 @@ class TypeParser
         array $template_type_map = [],
         array $type_aliases = []
     ): TypeNode {
-        if ($parse_tree instanceof ParseTree\GenericTree) {
+        if ($parse_tree instanceof GenericTree) {
             return self::getTypeFromGenericTree(
                 $parse_tree,
                 $codebase,
@@ -142,19 +158,19 @@ class TypeParser
             );
         }
 
-        if ($parse_tree instanceof ParseTree\UnionTree) {
+        if ($parse_tree instanceof UnionTree) {
             return self::getTypeFromUnionTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\IntersectionTree) {
+        if ($parse_tree instanceof IntersectionTree) {
             return self::getTypeFromIntersectionTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\KeyedArrayTree) {
+        if ($parse_tree instanceof KeyedArrayTree) {
             return self::getTypeFromKeyedArrayTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
+        if ($parse_tree instanceof CallableWithReturnTypeTree) {
             $callable_type = self::getTypeFromTree(
                 $parse_tree->children[0],
                 $codebase,
@@ -184,11 +200,11 @@ class TypeParser
             return $callable_type;
         }
 
-        if ($parse_tree instanceof ParseTree\CallableTree) {
+        if ($parse_tree instanceof CallableTree) {
             return self::getTypeFromCallableTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\EncapsulationTree) {
+        if ($parse_tree instanceof EncapsulationTree) {
             if (!$parse_tree->terminated) {
                 throw new TypeParseTreeException('Unterminated parentheses');
             }
@@ -206,7 +222,7 @@ class TypeParser
             );
         }
 
-        if ($parse_tree instanceof ParseTree\NullableTree) {
+        if ($parse_tree instanceof NullableTree) {
             if (!isset($parse_tree->children[0])) {
                 throw new TypeParseTreeException('Misplaced question mark');
             }
@@ -231,17 +247,17 @@ class TypeParser
             ]);
         }
 
-        if ($parse_tree instanceof ParseTree\MethodTree
-            || $parse_tree instanceof ParseTree\MethodWithReturnTypeTree
+        if ($parse_tree instanceof MethodTree
+            || $parse_tree instanceof MethodWithReturnTypeTree
         ) {
             throw new TypeParseTreeException('Misplaced brackets');
         }
 
-        if ($parse_tree instanceof ParseTree\IndexedAccessTree) {
+        if ($parse_tree instanceof IndexedAccessTree) {
             return self::getTypeFromIndexAccessTree($parse_tree, $template_type_map);
         }
 
-        if ($parse_tree instanceof ParseTree\TemplateAsTree) {
+        if ($parse_tree instanceof TemplateAsTree) {
             return new Atomic\TTemplateParam(
                 $parse_tree->param_name,
                 new Union([new TNamedObject($parse_tree->as)]),
@@ -249,7 +265,7 @@ class TypeParser
             );
         }
 
-        if ($parse_tree instanceof ParseTree\ConditionalTree) {
+        if ($parse_tree instanceof ConditionalTree) {
             $template_param_name = $parse_tree->condition->param_name;
 
             if (!isset($template_type_map[$template_param_name])) {
@@ -308,7 +324,7 @@ class TypeParser
             );
         }
 
-        if (!$parse_tree instanceof ParseTree\Value) {
+        if (!$parse_tree instanceof Value) {
             throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
@@ -479,7 +495,7 @@ class TypeParser
      * @psalm-suppress ComplexMethod to be refactored
      */
     private static function getTypeFromGenericTree(
-        ParseTree\GenericTree $parse_tree,
+        GenericTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -847,7 +863,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromUnionTree(
-        ParseTree\UnionTree $parse_tree,
+        UnionTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -857,7 +873,7 @@ class TypeParser
         $atomic_types = [];
 
         foreach ($parse_tree->children as $child_tree) {
-            if ($child_tree instanceof ParseTree\NullableTree) {
+            if ($child_tree instanceof NullableTree) {
                 if (!isset($child_tree->children[0])) {
                     throw new TypeParseTreeException('Invalid ? character');
                 }
@@ -910,7 +926,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIntersectionTree(
-        ParseTree\IntersectionTree $parse_tree,
+        IntersectionTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1072,7 +1088,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromCallableTree(
-        ParseTree\CallableTree $parse_tree,
+        CallableTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1089,7 +1105,7 @@ class TypeParser
                 $is_variadic = false;
                 $is_optional = false;
 
-                if ($child_tree instanceof ParseTree\CallableParamTree) {
+                if ($child_tree instanceof CallableParamTree) {
                     if (isset($child_tree->children[0])) {
                         $tree_type = self::getTypeFromTree(
                             $child_tree->children[0],
@@ -1105,7 +1121,7 @@ class TypeParser
                     $is_variadic = $child_tree->variadic;
                     $is_optional = $child_tree->has_default;
                 } else {
-                    if ($child_tree instanceof ParseTree\Value && strpos($child_tree->value, '$') > 0) {
+                    if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
                         $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                     }
 
@@ -1152,10 +1168,10 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIndexAccessTree(
-        ParseTree\IndexedAccessTree $parse_tree,
+        IndexedAccessTree $parse_tree,
         array $template_type_map
     ): Atomic\TTemplateIndexedAccess {
-        if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof ParseTree\Value) {
+        if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof Value) {
             throw new TypeParseTreeException('Unrecognised indexed access');
         }
 
@@ -1207,7 +1223,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromKeyedArrayTree(
-        ParseTree\KeyedArrayTree $parse_tree,
+        KeyedArrayTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1219,7 +1235,7 @@ class TypeParser
         $is_tuple = true;
 
         foreach ($parse_tree->children as $i => $property_branch) {
-            if (!$property_branch instanceof ParseTree\KeyedArrayPropertyTree) {
+            if (!$property_branch instanceof KeyedArrayPropertyTree) {
                 $property_type = self::getTypeFromTree(
                     $property_branch,
                     $codebase,
