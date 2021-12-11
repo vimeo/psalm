@@ -1581,7 +1581,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 new CodeLocation($source, $stmt->props[0]->name),
                 $property_id
             ),
-            $this->source->getSuppressedIssues()
+            $this->source->getSuppressedIssues() + $property_storage->suppressed_issues
         );
     }
 

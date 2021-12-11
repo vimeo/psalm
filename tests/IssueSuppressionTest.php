@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -197,6 +198,50 @@ class IssueSuppressionTest extends TestCase
         $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
     }
 
+    public function testPossiblyUnusedPropertySuppressedOnClass(): void
+    {
+        $this->project_analyzer->getCodebase()->find_unused_code = "always";
+
+        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress PossiblyUnusedProperty */
+                class Foo {
+                    public string $bar = "baz";
+                }
+
+                $foo = new Foo();
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+        IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+    }
+
+    public function testPossiblyUnusedPropertySuppressedOnProperty(): void
+    {
+        $this->project_analyzer->getCodebase()->find_unused_code = "always";
+
+        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Foo {
+                    /** @psalm-suppress PossiblyUnusedProperty */
+                    public string $bar = "baz";
+                }
+
+                $foo = new Foo();
+            '
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+        IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
@@ -315,7 +360,17 @@ class IssueSuppressionTest extends TestCase
                         }
                     }
                 ',
-            ]
+            ],
+            'missingPropertyTypeAtPropertyLevel' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @psalm-suppress MissingPropertyType
+                         */
+                        public $bar = "baz";
+                    }
+                ',
+            ],
         ];
     }
 
