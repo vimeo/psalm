@@ -63,6 +63,28 @@ class CallableTest extends TestCase
                 'error_levels' => [],
                 '7.4',
             ],
+            'inferArgFromClassContext' => [
+                '<?php
+                    final class Calc
+                    {
+                        /**
+                         * @param Closure(int, int): int $_fn
+                         */
+                        public function __invoke(Closure $_fn): void
+                        {
+                            return $_fn(42, 42);
+                        }
+                    }
+
+                    $calc = new Calc();
+
+                    $a = $calc(fn($a, $b) => $a + $b);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'error_levels' => [],
+                '7.4',
+            ],
             'varReturnType' => [
                 '<?php
                     $add_one = function(int $a) : int {

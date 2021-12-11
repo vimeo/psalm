@@ -181,8 +181,6 @@ class ArgumentsAnalyzer
 
             if (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
-                && $template_result
-                && $template_result->lower_bounds
                 && $param
                 && !$arg->value->getDocComment()
             ) {
@@ -191,7 +189,7 @@ class ArgumentsAnalyzer
                     $args,
                     $method_id,
                     $context,
-                    $template_result,
+                    $template_result ?? new TemplateResult([], []),
                     $argument_offset,
                     $arg,
                     $param

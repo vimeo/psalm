@@ -1377,8 +1377,6 @@ class FunctionCallTest extends TestCase
                 '<?php
                     /**
                      * @param string[] $ids
-                     * @psalm-suppress MissingClosureReturnType
-                     * @psalm-suppress MixedArgumentTypeCoercion
                      */
                     function(array $ids): array {
                         return \preg_replace_callback(
