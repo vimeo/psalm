@@ -3,7 +3,21 @@
 namespace Psalm\Internal;
 
 use Psalm\Plugin\EventHandler;
-use Psalm\Plugin\EventHandler\Event;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\Hook;
 use Psalm\Type\Atomic\TLiteralString;
 
@@ -264,7 +278,7 @@ class EventDispatcher
         return count($this->after_method_checks) || count($this->legacy_after_method_checks);
     }
 
-    public function dispatchAfterMethodCallAnalysis(Event\AfterMethodCallAnalysisEvent $event): void
+    public function dispatchAfterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
         foreach ($this->after_method_checks as $handler) {
             $handler::afterMethodCallAnalysis($event);
@@ -289,7 +303,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterFunctionCallAnalysis(Event\AfterFunctionCallAnalysisEvent $event): void
+    public function dispatchAfterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
         foreach ($this->after_function_checks as $handler) {
             $handler::afterFunctionCallAnalysis($event);
@@ -310,7 +324,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterEveryFunctionCallAnalysis(Event\AfterEveryFunctionCallAnalysisEvent $event): void
+    public function dispatchAfterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
     {
         foreach ($this->after_every_function_checks as $handler) {
             $handler::afterEveryFunctionCallAnalysis($event);
@@ -327,7 +341,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterExpressionAnalysis(Event\AfterExpressionAnalysisEvent $event): ?bool
+    public function dispatchAfterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
     {
         foreach ($this->after_expression_checks as $handler) {
             if ($handler::afterExpressionAnalysis($event) === false) {
@@ -352,7 +366,7 @@ class EventDispatcher
         return null;
     }
 
-    public function dispatchAfterStatementAnalysis(Event\AfterStatementAnalysisEvent $event): ?bool
+    public function dispatchAfterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool
     {
         foreach ($this->after_statement_checks as $handler) {
             if ($handler::afterStatementAnalysis($event) === false) {
@@ -377,7 +391,7 @@ class EventDispatcher
         return null;
     }
 
-    public function dispatchStringInterpreter(Event\StringInterpreterEvent $event): ?TLiteralString
+    public function dispatchStringInterpreter(StringInterpreterEvent $event): ?TLiteralString
     {
         foreach ($this->string_interpreters as $handler) {
             if ($type = $handler::getTypeFromValue($event)) {
@@ -394,7 +408,7 @@ class EventDispatcher
         return null;
     }
 
-    public function dispatchAfterClassLikeExistenceCheck(Event\AfterClassLikeExistenceCheckEvent $event): void
+    public function dispatchAfterClassLikeExistenceCheck(AfterClassLikeExistenceCheckEvent $event): void
     {
         foreach ($this->after_classlike_exists_checks as $handler) {
             $handler::afterClassLikeExistenceCheck($event);
@@ -413,7 +427,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterClassLikeAnalysis(Event\AfterClassLikeAnalysisEvent $event): ?bool
+    public function dispatchAfterClassLikeAnalysis(AfterClassLikeAnalysisEvent $event): ?bool
     {
         foreach ($this->after_classlike_checks as $handler) {
             if ($handler::afterStatementAnalysis($event) === false) {
@@ -443,7 +457,7 @@ class EventDispatcher
         return count($this->after_visit_classlikes) || count($this->legacy_after_visit_classlikes);
     }
 
-    public function dispatchAfterClassLikeVisit(Event\AfterClassLikeVisitEvent $event): void
+    public function dispatchAfterClassLikeVisit(AfterClassLikeVisitEvent $event): void
     {
         foreach ($this->after_visit_classlikes as $handler) {
             $handler::afterClassLikeVisit($event);
@@ -462,7 +476,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterCodebasePopulated(Event\AfterCodebasePopulatedEvent $event): void
+    public function dispatchAfterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
     {
         foreach ($this->after_codebase_populated as $handler) {
             $handler::afterCodebasePopulated($event);
@@ -475,7 +489,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterAnalysis(Event\AfterAnalysisEvent $event): void
+    public function dispatchAfterAnalysis(AfterAnalysisEvent $event): void
     {
         foreach ($this->after_analysis as $handler) {
             $handler::afterAnalysis($event);
@@ -492,7 +506,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterFileAnalysis(Event\AfterFileAnalysisEvent $event): void
+    public function dispatchAfterFileAnalysis(AfterFileAnalysisEvent $event): void
     {
         foreach ($this->after_file_checks as $handler) {
             $handler::afterAnalyzeFile($event);
@@ -508,7 +522,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchBeforeFileAnalysis(Event\BeforeFileAnalysisEvent $event): void
+    public function dispatchBeforeFileAnalysis(BeforeFileAnalysisEvent $event): void
     {
         foreach ($this->before_file_checks as $handler) {
             $handler::beforeAnalyzeFile($event);
@@ -524,7 +538,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatchAfterFunctionLikeAnalysis(Event\AfterFunctionLikeAnalysisEvent $event): ?bool
+    public function dispatchAfterFunctionLikeAnalysis(AfterFunctionLikeAnalysisEvent $event): ?bool
     {
         foreach ($this->after_functionlike_checks as $handler) {
             if ($handler::afterStatementAnalysis($event) === false) {
@@ -552,7 +566,7 @@ class EventDispatcher
     /**
      * @return list<string>
      */
-    public function dispatchAddTaints(Event\AddRemoveTaintsEvent $event): array
+    public function dispatchAddTaints(AddRemoveTaintsEvent $event): array
     {
         $added_taints = [];
 
@@ -566,7 +580,7 @@ class EventDispatcher
     /**
      * @return list<string>
      */
-    public function dispatchRemoveTaints(Event\AddRemoveTaintsEvent $event): array
+    public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): array
     {
         $removed_taints = [];
 
