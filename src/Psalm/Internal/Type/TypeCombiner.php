@@ -66,7 +66,6 @@ use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;
-use function is_string;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -704,12 +703,6 @@ class TypeCombiner
                         $codebase,
                         $overwrite_empty_array
                     );
-                }
-
-                if (is_string($candidate_property_name)
-                    && isset($type->class_strings[$candidate_property_name])
-                ) {
-                    $combination->objectlike_class_strings[$candidate_property_name] = true;
                 }
 
                 if (!$type->previous_value_type) {

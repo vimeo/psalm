@@ -39,9 +39,6 @@ class TypeCombination
     /** @var array<string|int, Union> */
     public $objectlike_entries = [];
 
-    /** @var array<string, bool> */
-    public $objectlike_class_strings = [];
-
     /** @var bool */
     public $objectlike_sealed = true;
 
