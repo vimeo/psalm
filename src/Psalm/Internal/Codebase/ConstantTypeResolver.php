@@ -4,7 +4,22 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Scanner\UnresolvedConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBinaryOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseAnd;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use ReflectionProperty;
@@ -32,11 +47,11 @@ class ConstantTypeResolver
             throw new CircularReferenceException('Found a circular reference');
         }
 
-        if ($c instanceof UnresolvedConstant\ScalarValue) {
+        if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
         }
 
-        if ($c instanceof UnresolvedConstant\UnresolvedBinaryOp) {
+        if ($c instanceof UnresolvedBinaryOp) {
             $left = self::resolve(
                 $classlikes,
                 $c->left,
@@ -54,7 +69,7 @@ class ConstantTypeResolver
                 return new Type\Atomic\TMixed;
             }
 
-            if ($c instanceof UnresolvedConstant\UnresolvedConcatOp) {
+            if ($c instanceof UnresolvedConcatOp) {
                 if (($left instanceof Type\Atomic\TLiteralString
                         || $left instanceof Type\Atomic\TLiteralFloat
                         || $left instanceof Type\Atomic\TLiteralInt)
@@ -68,38 +83,38 @@ class ConstantTypeResolver
                 return new Type\Atomic\TString();
             }
 
-            if ($c instanceof UnresolvedConstant\UnresolvedAdditionOp
-                || $c instanceof UnresolvedConstant\UnresolvedSubtractionOp
-                || $c instanceof UnresolvedConstant\UnresolvedDivisionOp
-                || $c instanceof UnresolvedConstant\UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseOr
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseXor
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseAnd
+            if ($c instanceof UnresolvedAdditionOp
+                || $c instanceof UnresolvedSubtractionOp
+                || $c instanceof UnresolvedDivisionOp
+                || $c instanceof UnresolvedMultiplicationOp
+                || $c instanceof UnresolvedBitwiseOr
+                || $c instanceof UnresolvedBitwiseXor
+                || $c instanceof UnresolvedBitwiseAnd
             ) {
                 if (($left instanceof Type\Atomic\TLiteralFloat || $left instanceof Type\Atomic\TLiteralInt)
                     && ($right instanceof Type\Atomic\TLiteralFloat || $right instanceof Type\Atomic\TLiteralInt)
                 ) {
-                    if ($c instanceof UnresolvedConstant\UnresolvedAdditionOp) {
+                    if ($c instanceof UnresolvedAdditionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value + $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedSubtractionOp) {
+                    if ($c instanceof UnresolvedSubtractionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value - $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedDivisionOp) {
+                    if ($c instanceof UnresolvedDivisionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseOr) {
+                    if ($c instanceof UnresolvedBitwiseOr) {
                         return self::getLiteralTypeFromScalarValue($left->value | $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseXor) {
+                    if ($c instanceof UnresolvedBitwiseXor) {
                         return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseAnd) {
+                    if ($c instanceof UnresolvedBitwiseAnd) {
                         return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
@@ -116,7 +131,7 @@ class ConstantTypeResolver
             return new Type\Atomic\TMixed;
         }
 
-        if ($c instanceof UnresolvedConstant\UnresolvedTernary) {
+        if ($c instanceof UnresolvedTernary) {
             $cond = self::resolve(
                 $classlikes,
                 $c->cond,
@@ -150,7 +165,7 @@ class ConstantTypeResolver
             }
         }
 
-        if ($c instanceof UnresolvedConstant\ArrayValue) {
+        if ($c instanceof ArrayValue) {
             $properties = [];
             $auto_key = 0;
 
@@ -161,7 +176,7 @@ class ConstantTypeResolver
             $is_list = true;
 
             foreach ($c->entries as $entry) {
-                if ($entry instanceof UnresolvedConstant\ArraySpread) {
+                if ($entry instanceof ArraySpread) {
                     $spread_array = self::resolve(
                         $classlikes,
                         $entry->array,
@@ -238,7 +253,7 @@ class ConstantTypeResolver
             return $resolved_type;
         }
 
-        if ($c instanceof UnresolvedConstant\ClassConstant) {
+        if ($c instanceof ClassConstant) {
             if ($c->name === 'class') {
                 return new Type\Atomic\TLiteralClassString($c->fqcln);
             }
@@ -256,7 +271,7 @@ class ConstantTypeResolver
             }
         }
 
-        if ($c instanceof UnresolvedConstant\ArrayOffsetFetch) {
+        if ($c instanceof ArrayOffsetFetch) {
             $var_type = self::resolve(
                 $classlikes,
                 $c->array,
@@ -283,7 +298,7 @@ class ConstantTypeResolver
             }
         }
 
-        if ($c instanceof UnresolvedConstant\Constant) {
+        if ($c instanceof Constant) {
             if ($statements_analyzer) {
                 $found_type = ConstFetchAnalyzer::getConstType(
                     $statements_analyzer,
