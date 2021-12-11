@@ -406,8 +406,7 @@ class TypeParser
             }
 
             if ($t instanceof Atomic\TTemplateParam) {
-                $t_atomic_types = $t->as->getAtomicTypes();
-                $t_atomic_type = count($t_atomic_types) === 1 ? reset($t_atomic_types) : null;
+                $t_atomic_type = count($t->as->getAtomicTypes()) === 1 ? $t->as->getSingleAtomic() : null;
 
                 if (!$t_atomic_type instanceof TNamedObject) {
                     $t_atomic_type = null;

@@ -18,12 +18,10 @@ use Psalm\Type;
 use ReflectionProperty;
 
 use function array_merge;
-use function array_shift;
 use function array_values;
 use function count;
 use function is_string;
 use function preg_match;
-use function reset;
 use function strtolower;
 
 use const PHP_INT_MAX;
@@ -77,20 +75,12 @@ class SimpleTypeInferer
                         return Type::getString($result);
                     }
 
-                    if ($left->isString()) {
-                        $left_string_types = $left->getAtomicTypes();
-                        $left_string_type = reset($left_string_types);
-                        if ($left_string_type instanceof Type\Atomic\TNonEmptyString) {
-                            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
-                        }
+                    if ($left->isSingle() && $left->getSingleAtomic() instanceof Type\Atomic\TNonEmptyString) {
+                        return new Type\Union([new Type\Atomic\TNonEmptyString()]);
                     }
 
-                    if ($right->isString()) {
-                        $right_string_types = $right->getAtomicTypes();
-                        $right_string_type = reset($right_string_types);
-                        if ($right_string_type instanceof Type\Atomic\TNonEmptyString) {
-                            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
-                        }
+                    if ($right->isSingle() && $right->getSingleAtomic() instanceof Type\Atomic\TNonEmptyString) {
+                        return new Type\Union([new Type\Atomic\TNonEmptyString()]);
                     }
                 }
 
@@ -639,15 +629,13 @@ class SimpleTypeInferer
                 return false;
             }
 
-            $dim_atomic_types = $dim_type->getAtomicTypes();
-
-            if (count($dim_atomic_types) > 1
+            if (count($dim_type->getAtomicTypes()) > 1
                 || $dim_type->hasMixed()
                 || count($array_creation_info->property_types) > 50
             ) {
                 $array_creation_info->can_create_objectlike = false;
             } else {
-                $atomic_type = array_shift($dim_atomic_types);
+                $atomic_type = $dim_type->getSingleAtomic();
 
                 if ($atomic_type instanceof Type\Atomic\TLiteralInt
                     || $atomic_type instanceof Type\Atomic\TLiteralString

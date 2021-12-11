@@ -38,7 +38,6 @@ use Psalm\Type;
 
 use function array_merge;
 use function count;
-use function current;
 use function explode;
 use function reset;
 use function strtolower;
@@ -606,7 +605,7 @@ class ReturnAnalyzer
         }
 
         /** @var Type\Atomic\TClosure|Type\Atomic\TCallable $parent_callable_return_type */
-        $parent_callable_return_type = current($parent_fn_storage->return_type->getAtomicTypes());
+        $parent_callable_return_type = $parent_fn_storage->return_type->getSingleAtomic();
 
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {
             return;

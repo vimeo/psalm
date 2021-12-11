@@ -34,7 +34,6 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function count;
-use function current;
 use function get_class;
 
 class CastAnalyzer
@@ -61,9 +60,8 @@ class CastAnalyzer
                     }
                 }
 
-                $maybe = $maybe_type->getAtomicTypes();
-
-                if (count($maybe) === 1 && current($maybe) instanceof Type\Atomic\TBool) {
+                if (count($maybe_type->getAtomicTypes()) === 1
+                    && $maybe_type->getSingleAtomic() instanceof Type\Atomic\TBool) {
                     $as_int = false;
                     $type = new Type\Union([
                         new Type\Atomic\TLiteralInt(0),
