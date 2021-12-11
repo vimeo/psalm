@@ -96,8 +96,7 @@ class TypeHintResolver
         );
 
         if ($type_string) {
-            $atomic_types = $type->getAtomicTypes();
-            $atomic_type = reset($atomic_types);
+            $atomic_type = $type->getSingleAtomic();
             $atomic_type->text = $type_string;
         }
 

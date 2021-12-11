@@ -947,11 +947,9 @@ class TemplateStandinTypeReplacer
                     $depth + 1
                 );
 
-                $as_type_union_types = $as_type_union->getAtomicTypes();
+                $first = $as_type_union->getSingleAtomic();
 
-                $first = reset($as_type_union_types);
-
-                if (count($as_type_union_types) === 1 && $first instanceof Atomic\TNamedObject) {
+                if (count($as_type_union->getAtomicTypes()) === 1 && $first instanceof Atomic\TNamedObject) {
                     $atomic_type->as_type = $first;
                 } else {
                     $atomic_type->as_type = null;
