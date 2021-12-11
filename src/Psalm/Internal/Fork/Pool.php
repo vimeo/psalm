@@ -367,10 +367,6 @@ class Pool
                         } elseif ($message instanceof ForkProcessErrorMessage) {
                             // Kill all children
                             foreach ($this->child_pid_list as $child_pid) {
-                                /**
-                                 * @psalm-suppress UndefinedConstant - does not exist on windows
-                                 * @psalm-suppress MixedArgument
-                                 */
                                 posix_kill($child_pid, SIGTERM);
                             }
                             throw new Exception($message->message);
@@ -421,10 +417,6 @@ class Pool
                 $status = 0;
 
                 if ($process_lookup) {
-                    /**
-                     * @psalm-suppress UndefinedConstant - does not exist on windows
-                     * @psalm-suppress MixedArgument
-                     */
                     posix_kill($child_pid, SIGALRM);
 
                     if (pcntl_waitpid($child_pid, $status) < 0) {
@@ -437,9 +429,6 @@ class Pool
                     $return_code = pcntl_wexitstatus($status);
                     $term_sig = pcntl_wtermsig($status);
 
-                    /**
-                     * @psalm-suppress UndefinedConstant - does not exist on windows
-                     */
                     if ($term_sig !== SIGALRM) {
                         $this->did_have_error = true;
                         error_log("Child terminated with return code $return_code and signal $term_sig");

@@ -97,7 +97,6 @@ class TypeTokenizer
      *
      * @return list<array{string, int}>
      *
-     * @psalm-suppress ComplexMethod
      * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array

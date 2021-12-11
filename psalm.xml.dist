@@ -16,6 +16,7 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
+    findUnusedPsalmSuppress="true"
 >
     <stubs>
         <file name="stubs/phpparser.phpstub"/>

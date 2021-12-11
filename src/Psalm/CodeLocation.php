@@ -137,9 +137,6 @@ class CodeLocation
         $this->docblock_line_number = $line;
     }
 
-    /**
-     * @psalm-suppress MixedArrayAccess
-     */
     private function calculateRealLocation(): void
     {
         if ($this->have_recalculated) {

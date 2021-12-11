@@ -72,8 +72,6 @@ class ParserCacheProvider
 
     /**
      * @return list<PhpParser\Node\Stmt>|null
-     *
-     * @psalm-suppress UndefinedFunction
      */
     public function loadStatementsFromCache(
         string $file_path,
@@ -117,8 +115,6 @@ class ParserCacheProvider
 
     /**
      * @return list<PhpParser\Node\Stmt>|null
-     *
-     * @psalm-suppress UndefinedFunction
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
@@ -218,9 +214,6 @@ class ParserCacheProvider
 
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     *
-     *
-     * @psalm-suppress UndefinedFunction
      */
     public function saveStatementsToCache(
         string $file_path,

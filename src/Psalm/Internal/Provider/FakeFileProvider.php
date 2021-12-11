@@ -49,9 +49,6 @@ class FakeFileProvider extends FileProvider
         return $this->fake_file_times[$file_path] ?? parent::getModifiedTime($file_path);
     }
 
-    /**
-     * @psalm-suppress InvalidPropertyAssignmentValue because microtime is needed for cache busting
-     */
     public function registerFile(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;

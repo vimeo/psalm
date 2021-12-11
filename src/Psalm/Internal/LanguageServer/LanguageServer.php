@@ -140,7 +140,6 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         // Invoke the method handler to get a result
                         /**
                          * @var Promise
-                         * @psalm-suppress UndefinedDocblockClass
                          */
                         $dispatched = $this->dispatch($msg->body);
                         /** @psalm-suppress MixedAssignment */

@@ -338,9 +338,6 @@ class InternalCallMapHandler
      * Gets the method/function call map
      *
      * @return array<string, array<int|string, string>>
-     * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedReturnStatement
-     * @psalm-suppress MixedReturnTypeCoercion
      */
     public static function getCallMap(): array
     {
@@ -397,7 +394,6 @@ class InternalCallMapHandler
                  *     }>,
                  *     removed: array<string, array<int|string, string>>
                  * }
-                 * @psalm-suppress UnresolvableInclude
                  */
                 $diff_call_map = require($delta_file);
 

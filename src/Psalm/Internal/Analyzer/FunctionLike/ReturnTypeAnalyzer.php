@@ -67,7 +67,6 @@ class ReturnTypeAnalyzer
      * @return  false|null
      *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
-     * @psalm-suppress ComplexMethod to be refactored
      */
     public static function verifyReturnType(
         FunctionLike $function,

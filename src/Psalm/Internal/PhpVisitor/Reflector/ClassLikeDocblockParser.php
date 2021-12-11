@@ -46,8 +46,6 @@ class ClassLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
-     *
-     * @psalm-suppress MixedArrayAccess
      */
     public static function parse(
         Node $node,

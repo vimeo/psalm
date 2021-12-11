@@ -58,7 +58,6 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        /** @psalm-suppress UndefinedConstant */
         $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
@@ -154,9 +153,7 @@ final class CliUtils
     }
 
     /**
-     * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
     public static function getVendorDir(string $current_dir): string
     {
