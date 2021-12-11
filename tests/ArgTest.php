@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Person;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
