@@ -18,7 +18,20 @@ use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
-use Psalm\Plugin\Hook;
+use Psalm\Plugin\Hook\AfterAnalysisInterface as LegacyAfterAnalysisInterface;
+use Psalm\Plugin\Hook\AfterClassLikeAnalysisInterface as LegacyAfterClassLikeAnalysisInterface;
+use Psalm\Plugin\Hook\AfterClassLikeExistenceCheckInterface as LegacyAfterClassLikeExistenceCheckInterface;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface as LegacyAfterClassLikeVisitInterface;
+use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface as LegacyAfterCodebasePopulatedInterface;
+use Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface as LegacyAfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface as LegacyAfterExpressionAnalysisInterface;
+use Psalm\Plugin\Hook\AfterFileAnalysisInterface as LegacyAfterFileAnalysisInterface;
+use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface as LegacyAfterFunctionCallAnalysisInterface;
+use Psalm\Plugin\Hook\AfterFunctionLikeAnalysisInterface as LegacyAfterFunctionLikeAnalysisInterface;
+use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface as LegacyAfterMethodCallAnalysisInterface;
+use Psalm\Plugin\Hook\AfterStatementAnalysisInterface as LegacyAfterStatementAnalysisInterface;
+use Psalm\Plugin\Hook\BeforeFileAnalysisInterface as LegacyBeforeFileAnalysisInterface;
+use Psalm\Plugin\Hook\StringInterpreterInterface as LegacyStringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
 
 use function array_merge;
@@ -33,7 +46,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterMethodCallAnalysisInterface>>
      */
     private $after_method_checks = [];
-    /** @var list<class-string<Hook\AfterMethodCallAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterMethodCallAnalysisInterface>> */
     private $legacy_after_method_checks = [];
 
     /**
@@ -46,7 +59,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterFunctionCallAnalysisInterface>>
      */
     public $after_function_checks = [];
-    /** @var list<class-string<Hook\AfterFunctionCallAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterFunctionCallAnalysisInterface>> */
     public $legacy_after_function_checks = [];
 
     /**
@@ -59,7 +72,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterEveryFunctionCallAnalysisInterface>>
      */
     public $after_every_function_checks = [];
-    /** @var list<class-string<Hook\AfterEveryFunctionCallAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterEveryFunctionCallAnalysisInterface>> */
     public $legacy_after_every_function_checks = [];
 
     /**
@@ -68,7 +81,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterExpressionAnalysisInterface>>
      */
     public $after_expression_checks = [];
-    /** @var list<class-string<Hook\AfterExpressionAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterExpressionAnalysisInterface>> */
     public $legacy_after_expression_checks = [];
 
     /**
@@ -77,7 +90,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterStatementAnalysisInterface>>
      */
     public $after_statement_checks = [];
-    /** @var list<class-string<Hook\AfterStatementAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterStatementAnalysisInterface>> */
     public $legacy_after_statement_checks = [];
 
     /**
@@ -86,7 +99,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\StringInterpreterInterface>>
      */
     public $string_interpreters = [];
-    /** @var list<class-string<Hook\StringInterpreterInterface>> */
+    /** @var list<class-string<LegacyStringInterpreterInterface>> */
     public $legacy_string_interpreters = [];
 
     /**
@@ -95,7 +108,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterClassLikeExistenceCheckInterface>>
      */
     public $after_classlike_exists_checks = [];
-    /** @var list<class-string<Hook\AfterClassLikeExistenceCheckInterface>> */
+    /** @var list<class-string<LegacyAfterClassLikeExistenceCheckInterface>> */
     public $legacy_after_classlike_exists_checks = [];
 
     /**
@@ -104,7 +117,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterClassLikeAnalysisInterface>>
      */
     public $after_classlike_checks = [];
-    /** @var list<class-string<Hook\AfterClassLikeAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterClassLikeAnalysisInterface>> */
     public $legacy_after_classlike_checks = [];
 
     /**
@@ -113,7 +126,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterClassLikeVisitInterface>>
      */
     private $after_visit_classlikes = [];
-    /** @var list<class-string<Hook\AfterClassLikeVisitInterface>> */
+    /** @var list<class-string<LegacyAfterClassLikeVisitInterface>> */
     private $legacy_after_visit_classlikes = [];
 
     /**
@@ -122,7 +135,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterCodebasePopulatedInterface>>
      */
     public $after_codebase_populated = [];
-    /** @var list<class-string<Hook\AfterCodebasePopulatedInterface>> */
+    /** @var list<class-string<LegacyAfterCodebasePopulatedInterface>> */
     public $legacy_after_codebase_populated = [];
 
     /**
@@ -131,7 +144,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterAnalysisInterface>>
      */
     public $after_analysis = [];
-    /** @var list<class-string<Hook\AfterAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterAnalysisInterface>> */
     public $legacy_after_analysis = [];
 
     /**
@@ -140,7 +153,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterFileAnalysisInterface>>
      */
     public $after_file_checks = [];
-    /** @var list<class-string<Hook\AfterFileAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterFileAnalysisInterface>> */
     public $legacy_after_file_checks = [];
 
     /**
@@ -149,7 +162,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\BeforeFileAnalysisInterface>>
      */
     public $before_file_checks = [];
-    /** @var list<class-string<Hook\BeforeFileAnalysisInterface>> */
+    /** @var list<class-string<LegacyBeforeFileAnalysisInterface>> */
     public $legacy_before_file_checks = [];
 
     /**
@@ -158,7 +171,7 @@ class EventDispatcher
      * @var list<class-string<EventHandler\AfterFunctionLikeAnalysisInterface>>
      */
     public $after_functionlike_checks = [];
-    /** @var list<class-string<Hook\AfterFunctionLikeAnalysisInterface>> */
+    /** @var list<class-string<LegacyAfterFunctionLikeAnalysisInterface>> */
     public $legacy_after_functionlike_checks = [];
 
     /**
@@ -180,85 +193,85 @@ class EventDispatcher
      */
     public function registerClass(string $class): void
     {
-        if (is_subclass_of($class, Hook\AfterMethodCallAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterMethodCallAnalysisInterface::class)) {
             $this->legacy_after_method_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterMethodCallAnalysisInterface::class)) {
             $this->after_method_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterFunctionCallAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterFunctionCallAnalysisInterface::class)) {
             $this->legacy_after_function_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterFunctionCallAnalysisInterface::class)) {
             $this->after_function_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterEveryFunctionCallAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterEveryFunctionCallAnalysisInterface::class)) {
             $this->legacy_after_every_function_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterEveryFunctionCallAnalysisInterface::class)) {
             $this->after_every_function_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterExpressionAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterExpressionAnalysisInterface::class)) {
             $this->legacy_after_expression_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterExpressionAnalysisInterface::class)) {
             $this->after_expression_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterStatementAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterStatementAnalysisInterface::class)) {
             $this->legacy_after_statement_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterStatementAnalysisInterface::class)) {
             $this->after_statement_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\StringInterpreterInterface::class)) {
+        if (is_subclass_of($class, LegacyStringInterpreterInterface::class)) {
             $this->legacy_string_interpreters[] = $class;
         } elseif (is_subclass_of($class, EventHandler\StringInterpreterInterface::class)) {
             $this->string_interpreters[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterClassLikeExistenceCheckInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterClassLikeExistenceCheckInterface::class)) {
             $this->legacy_after_classlike_exists_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterClassLikeExistenceCheckInterface::class)) {
             $this->after_classlike_exists_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterClassLikeAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterClassLikeAnalysisInterface::class)) {
             $this->legacy_after_classlike_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterClassLikeAnalysisInterface::class)) {
             $this->after_classlike_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterClassLikeVisitInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterClassLikeVisitInterface::class)) {
             $this->legacy_after_visit_classlikes[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterClassLikeVisitInterface::class)) {
             $this->after_visit_classlikes[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterCodebasePopulatedInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterCodebasePopulatedInterface::class)) {
             $this->legacy_after_codebase_populated[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterCodebasePopulatedInterface::class)) {
             $this->after_codebase_populated[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterAnalysisInterface::class)) {
             $this->legacy_after_analysis[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterAnalysisInterface::class)) {
             $this->after_analysis[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterFileAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterFileAnalysisInterface::class)) {
             $this->legacy_after_file_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterFileAnalysisInterface::class)) {
             $this->after_file_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\BeforeFileAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyBeforeFileAnalysisInterface::class)) {
             $this->legacy_before_file_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\BeforeFileAnalysisInterface::class)) {
             $this->before_file_checks[] = $class;
         }
 
-        if (is_subclass_of($class, Hook\AfterFunctionLikeAnalysisInterface::class)) {
+        if (is_subclass_of($class, LegacyAfterFunctionLikeAnalysisInterface::class)) {
             $this->legacy_after_functionlike_checks[] = $class;
         } elseif (is_subclass_of($class, EventHandler\AfterFunctionLikeAnalysisInterface::class)) {
             $this->after_functionlike_checks[] = $class;
