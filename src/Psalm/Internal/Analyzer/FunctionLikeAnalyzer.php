@@ -55,6 +55,7 @@ use function array_merge;
 use function array_search;
 use function count;
 use function end;
+use function in_array;
 use function is_string;
 use function md5;
 use function microtime;
@@ -185,8 +186,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $project_analyzer = $this->getProjectAnalyzer();
 
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            foreach ($storage->suppressed_issues as $offset => $issue_name) {
-                IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
+            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
+                || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
+            ) {
+                foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                    IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
+                }
             }
         }
 

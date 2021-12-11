@@ -850,7 +850,6 @@ class Config
     /**
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedOperand
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      *
@@ -1294,8 +1293,6 @@ class Config
 
     /**
      * Initialises all the plugins (done once the config is fully loaded)
-     *
-     * @psalm-suppress MixedAssignment
      */
     public function initializePlugins(ProjectAnalyzer $project_analyzer): void
     {
@@ -2065,10 +2062,6 @@ class Config
         $this->include_collector = $include_collector;
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArrayAccess
-     */
     public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, ?Progress $progress = null): void
     {
         if ($progress === null) {

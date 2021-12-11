@@ -54,9 +54,6 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
             $node->setAttribute('comments', $new_comments);
         }
 
-        /**
-         * @psalm-suppress MixedOperand
-         */
         $node->setAttribute(
             'startFilePos',
             $attrs['startFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['startFilePos']] ?? 0)

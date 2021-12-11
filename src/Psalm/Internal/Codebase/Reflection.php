@@ -422,9 +422,6 @@ class Reflection
             return Type::getMixed();
         }
 
-        /**
-         * @psalm-suppress UndefinedClass,TypeDoesNotContainType
-         */
         if ($reflection_type instanceof ReflectionNamedType) {
             $type = $reflection_type->getName();
         } elseif ($reflection_type instanceof ReflectionUnionType) {

@@ -57,8 +57,10 @@ use function array_combine;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function count;
 use function fwrite;
 use function get_class;
+use function in_array;
 use function is_string;
 use function preg_split;
 use function reset;
@@ -420,18 +422,25 @@ class StatementsAnalyzer extends SourceAnalyzer
                     foreach ($suppressed as $offset => $suppress_entry) {
                         foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
                             $new_issues[$issue_offset + $offset] = $issue_type;
+                        }
+                    }
 
+                    if ($codebase->track_unused_suppressions
+                        && (
+                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
+                            || !in_array("UnusedPsalmSuppress", $new_issues)
+                        )
+                    ) {
+                        foreach ($new_issues as $offset => $issue_type) {
                             if ($issue_type === 'InaccessibleMethod') {
                                 continue;
                             }
 
-                            if ($codebase->track_unused_suppressions) {
-                                IssueBuffer::addUnusedSuppression(
-                                    $statements_analyzer->getFilePath(),
-                                    $issue_offset + $offset,
-                                    $issue_type
-                                );
-                            }
+                            IssueBuffer::addUnusedSuppression(
+                                $statements_analyzer->getFilePath(),
+                                $offset,
+                                $issue_type
+                            );
                         }
                     }
 

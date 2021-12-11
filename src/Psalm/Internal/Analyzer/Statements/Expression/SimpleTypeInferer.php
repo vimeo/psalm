@@ -683,7 +683,6 @@ class SimpleTypeInferer
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
-                /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
                 if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
                     continue;
                 }

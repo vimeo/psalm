@@ -371,6 +371,24 @@ class IssueSuppressionTest extends TestCase
                     }
                 ',
             ],
+            'suppressUnusedSuppression' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @psalm-suppress UnusedPsalmSuppress, MissingPropertyType
+                         */
+                        public string $bar = "baz";
+
+                        /**
+                         * @psalm-suppress UnusedPsalmSuppress, MissingReturnType
+                         */
+                        public function foobar(): string
+                        {
+                            return "foobar";
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
@@ -407,6 +425,17 @@ class IssueSuppressionTest extends TestCase
                     /** @psalm-suppress MissingParamType */
                     function foo($s = Foo::BAR) : void {}',
                 'error_message' => 'UndefinedClass',
+            ],
+            'suppressUnusedSuppressionByItselfIsNotSuppressed' => [
+                '<?php
+                    class Foo {
+                        /**
+                         * @psalm-suppress UnusedPsalmSuppress
+                         */
+                        public string $bar = "baz";
+                    }
+                ',
+                'error_message' => 'UnusedPsalmSuppress',
             ],
         ];
     }

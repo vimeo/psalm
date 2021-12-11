@@ -368,7 +368,9 @@ class Pool
                             // Kill all children
                             foreach ($this->child_pid_list as $child_pid) {
                                 /**
-                                 * @psalm-suppress UndefinedConstant - does not exist on windows
+                                 * SIGTERM does not exist on windows
+                                 * @psalm-suppress UnusedPsalmSuppress
+                                 * @psalm-suppress UndefinedConstant
                                  * @psalm-suppress MixedArgument
                                  */
                                 posix_kill($child_pid, SIGTERM);
@@ -422,7 +424,9 @@ class Pool
 
                 if ($process_lookup) {
                     /**
-                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     * SIGALRM does not exist on windows
+                     * @psalm-suppress UnusedPsalmSuppress
+                     * @psalm-suppress UndefinedConstant
                      * @psalm-suppress MixedArgument
                      */
                     posix_kill($child_pid, SIGALRM);
@@ -438,7 +442,9 @@ class Pool
                     $term_sig = pcntl_wtermsig($status);
 
                     /**
-                     * @psalm-suppress UndefinedConstant - does not exist on windows
+                     * SIGALRM does not exist on windows
+                     * @psalm-suppress UnusedPsalmSuppress
+                     * @psalm-suppress UndefinedConstant
                      */
                     if ($term_sig !== SIGALRM) {
                         $this->did_have_error = true;
