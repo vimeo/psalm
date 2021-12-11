@@ -187,7 +187,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $project_analyzer = $this->getProjectAnalyzer();
 
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            if (count($storage->suppressed_issues) === 1
+            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
                 || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
             ) {
                 foreach ($storage->suppressed_issues as $offset => $issue_name) {

@@ -426,7 +426,10 @@ class StatementsAnalyzer extends SourceAnalyzer
                     }
 
                     if ($codebase->track_unused_suppressions
-                        && (count($new_issues) === 1) || !in_array("UnusedPsalmSuppress", $new_issues)
+                        && (
+                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
+                            || !in_array("UnusedPsalmSuppress", $new_issues)
+                        )
                     ) {
                         foreach ($new_issues as $offset => $issue_type) {
                             if ($issue_type === 'InaccessibleMethod') {
