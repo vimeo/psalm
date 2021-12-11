@@ -5,7 +5,16 @@ use InvalidArgumentException;
 use LogicException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Plugin\EventHandler;
+use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\EventHandler\MethodVisibilityProviderInterface;
+use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
+use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
+use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Plugin\Hook\FunctionExistenceProviderInterface as LegacyFunctionExistenceProviderInterface;
 use Psalm\Plugin\Hook\FunctionParamsProviderInterface as LegacyFunctionParamsProviderInterface;
 use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface as LegacyFunctionReturnTypeProviderInterface;
@@ -70,61 +79,61 @@ class PluginRegistrationSocket implements RegistrationInterface
         $this->config->eventDispatcher->registerClass($handler);
 
         if (is_subclass_of($handler, LegacyPropertyExistenceProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\PropertyExistenceProviderInterface::class)
+            is_subclass_of($handler, PropertyExistenceProviderInterface::class)
         ) {
             $this->codebase->properties->property_existence_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyPropertyVisibilityProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\PropertyVisibilityProviderInterface::class)
+            is_subclass_of($handler, PropertyVisibilityProviderInterface::class)
         ) {
             $this->codebase->properties->property_visibility_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyPropertyTypeProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\PropertyTypeProviderInterface::class)
+            is_subclass_of($handler, PropertyTypeProviderInterface::class)
         ) {
             $this->codebase->properties->property_type_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyMethodExistenceProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\MethodExistenceProviderInterface::class)
+            is_subclass_of($handler, MethodExistenceProviderInterface::class)
         ) {
             $this->codebase->methods->existence_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyMethodVisibilityProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\MethodVisibilityProviderInterface::class)
+            is_subclass_of($handler, MethodVisibilityProviderInterface::class)
         ) {
             $this->codebase->methods->visibility_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyMethodReturnTypeProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\MethodReturnTypeProviderInterface::class)
+            is_subclass_of($handler, MethodReturnTypeProviderInterface::class)
         ) {
             $this->codebase->methods->return_type_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyMethodParamsProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\MethodParamsProviderInterface::class)
+            is_subclass_of($handler, MethodParamsProviderInterface::class)
         ) {
             $this->codebase->methods->params_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyFunctionExistenceProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\FunctionExistenceProviderInterface::class)
+            is_subclass_of($handler, FunctionExistenceProviderInterface::class)
         ) {
             $this->codebase->functions->existence_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyFunctionParamsProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\FunctionParamsProviderInterface::class)
+            is_subclass_of($handler, FunctionParamsProviderInterface::class)
         ) {
             $this->codebase->functions->params_provider->registerClass($handler);
         }
 
         if (is_subclass_of($handler, LegacyFunctionReturnTypeProviderInterface::class) ||
-            is_subclass_of($handler, EventHandler\FunctionReturnTypeProviderInterface::class)
+            is_subclass_of($handler, FunctionReturnTypeProviderInterface::class)
         ) {
             $this->codebase->functions->return_type_provider->registerClass($handler);
         }
