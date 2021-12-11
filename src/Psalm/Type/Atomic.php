@@ -6,6 +6,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -310,7 +311,7 @@ abstract class Atomic implements TypeNode
         if (isset($type_aliases[$value])) {
             $type_alias = $type_aliases[$value];
 
-            if ($type_alias instanceof TypeAlias\LinkableTypeAlias) {
+            if ($type_alias instanceof LinkableTypeAlias) {
                 return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
             }
 

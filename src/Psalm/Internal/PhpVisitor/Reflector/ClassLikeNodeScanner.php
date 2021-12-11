@@ -31,6 +31,9 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
+use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
@@ -101,7 +104,7 @@ class ClassLikeNodeScanner
     private $file_storage;
 
     /**
-     * @var array<string, TypeAlias\InlineTypeAlias>
+     * @var array<string, InlineTypeAlias>
      */
     private $classlike_type_aliases = [];
 
@@ -777,7 +780,7 @@ class ClassLikeNodeScanner
         }
 
         $converted_aliases = array_map(
-            function (TypeAlias\InlineTypeAlias $t): ?TypeAlias\ClassTypeAlias {
+            function (InlineTypeAlias $t): ?ClassTypeAlias {
                 try {
                     $union = TypeParser::parseTokens(
                         $t->replacement_tokens,
@@ -788,7 +791,7 @@ class ClassLikeNodeScanner
 
                     $union->setFromDocblock();
 
-                    return new TypeAlias\ClassTypeAlias(
+                    return new ClassTypeAlias(
                         array_values($union->getAtomicTypes())
                     );
                 } catch (Exception $e) {
@@ -1581,11 +1584,11 @@ class ClassLikeNodeScanner
      * @param ClassLikeDocblockComment $comment
      * @param string $fq_classlike_name
      *
-     * @return array<string, TypeAlias\LinkableTypeAlias>
+     * @return array<string, LinkableTypeAlias>
      */
     private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name): array
     {
-        /** @var array<string, TypeAlias\LinkableTypeAlias> $results */
+        /** @var array<string, LinkableTypeAlias> $results */
         $results = [];
 
         foreach ($comment->imported_types as $import_type_entry) {
@@ -1653,7 +1656,7 @@ class ClassLikeNodeScanner
             $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
                 = $declaring_fq_classlike_name;
 
-            $results[$as_alias_name] = new TypeAlias\LinkableTypeAlias(
+            $results[$as_alias_name] = new LinkableTypeAlias(
                 $declaring_fq_classlike_name,
                 $type_alias_name,
                 $import_type_entry['line_number'],
@@ -1668,7 +1671,7 @@ class ClassLikeNodeScanner
     /**
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @return array<string, TypeAlias\InlineTypeAlias>
+     * @return array<string, InlineTypeAlias>
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
@@ -1701,7 +1704,7 @@ class ClassLikeNodeScanner
      * @param  array<string>    $type_alias_comment_lines
      * @param  array<string, TypeAlias> $type_aliases
      *
-     * @return array<string, TypeAlias\InlineTypeAlias>
+     * @return array<string, InlineTypeAlias>
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
@@ -1769,7 +1772,7 @@ class ClassLikeNodeScanner
                 throw new DocblockParseException($type_string . ' is not a valid type');
             }
 
-            $type_alias_tokens[$type_alias] = new TypeAlias\InlineTypeAlias($type_tokens);
+            $type_alias_tokens[$type_alias] = new InlineTypeAlias($type_tokens);
         }
 
         return $type_alias_tokens;
