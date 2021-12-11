@@ -7,7 +7,6 @@ use Psalm\Config;
 use RuntimeException;
 
 use function error_log;
-use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
@@ -321,7 +320,7 @@ class ParserCacheProvider
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if ($cache_directory) {
+        if (!$cache_directory) {
             return 0;
         }
 
@@ -347,57 +346,6 @@ class ParserCacheProvider
         }
 
         return $removed_count;
-    }
-
-    public function processSuccessfulRun(): void
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-        if (is_dir($cache_directory)) {
-            $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
-
-            foreach ($directory_files as $directory_file) {
-                $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
-
-                if ($directory_file[0] === '.') {
-                    continue;
-                }
-
-                touch($full_path);
-            }
-        }
-    }
-
-    /**
-     * @param  array<string>    $file_names
-     */
-    public function touchParserCaches(array $file_names, int $min_time): void
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
-
-        if (is_dir($cache_directory)) {
-            foreach ($file_names as $file_name) {
-                $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name);
-
-                if (file_exists($hash_file_name)) {
-                    if (filemtime($hash_file_name) < $min_time) {
-                        touch($hash_file_name, $min_time);
-                    }
-                }
-            }
-        }
     }
 
     private function getParserCacheKey(string $file_name): string

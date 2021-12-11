@@ -684,17 +684,11 @@ class ProjectAnalyzer
             true
         );
 
-        if ($this->project_cache_provider && $this->parser_cache_provider) {
-            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
-                $is_diff ? $this->project_cache_provider->getLastRun(PSALM_VERSION) : $start_checks
-            );
+        if ($this->parser_cache_provider && !$is_diff) {
+            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches($start_checks);
 
             if ($removed_parser_files) {
                 $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . "\n");
-            }
-
-            if ($is_diff) {
-                $this->parser_cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
             }
         }
     }
@@ -1070,24 +1064,6 @@ class ProjectAnalyzer
         }
 
         $this->codebase->addFilesToAnalyze($files_to_scan);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function getAllFiles(Config $config): array
-    {
-        $file_extensions = $config->getFileExtensions();
-        $file_paths = [];
-
-        foreach ($config->getProjectDirectories() as $dir_name) {
-            $file_paths = array_merge(
-                $file_paths,
-                $this->file_provider->getFilesInDir($dir_name, $file_extensions)
-            );
-        }
-
-        return $file_paths;
     }
 
     public function addProjectFile(string $file_path): void
