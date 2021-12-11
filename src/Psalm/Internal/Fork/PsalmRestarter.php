@@ -32,6 +32,7 @@ class PsalmRestarter extends XdebugHandler
     }
 
     /**
+     * No type hint to allow xdebug-handler v2 usage
      * @param bool $default
      */
     protected function requiresRestart($default): bool
@@ -47,7 +48,8 @@ class PsalmRestarter extends XdebugHandler
     }
 
     /**
-     * @param mixed $command
+     * No type hint to allow xdebug-handler v2 usage
+     * @param string[] $command
      */
     protected function restart($command): void
     {
@@ -60,7 +62,6 @@ class PsalmRestarter extends XdebugHandler
             file_put_contents($this->tmpIni, $content);
         }
 
-        /** @psalm-suppress MixedArgument */
         parent::restart($command);
     }
 }

@@ -26,7 +26,7 @@
         "amphp/byte-stream": "^1.5",
         "composer/package-versions-deprecated": "^1.8.0",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
-        "composer/xdebug-handler": "^1.1 || ^2.0",
+        "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
         "felixfbecker/language-server-protocol": "^1.5",
