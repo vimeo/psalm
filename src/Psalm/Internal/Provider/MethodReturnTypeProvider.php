@@ -5,6 +5,11 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ReturnTypeProvider\ClosureFromCallableReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
+use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\SimpleXmlElementAsXml;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface as LegacyMethodReturnTypeProviderInterface;
@@ -47,11 +52,11 @@ class MethodReturnTypeProvider
         self::$handlers = [];
         self::$legacy_handlers = [];
 
-        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
-        $this->registerClass(ReturnTypeProvider\ImagickPixelColorReturnTypeProvider::class);
-        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
-        $this->registerClass(ReturnTypeProvider\PdoStatementReturnTypeProvider::class);
-        $this->registerClass(ReturnTypeProvider\ClosureFromCallableReturnTypeProvider::class);
+        $this->registerClass(DomNodeAppendChild::class);
+        $this->registerClass(ImagickPixelColorReturnTypeProvider::class);
+        $this->registerClass(SimpleXmlElementAsXml::class);
+        $this->registerClass(PdoStatementReturnTypeProvider::class);
+        $this->registerClass(ClosureFromCallableReturnTypeProvider::class);
     }
 
     /**
