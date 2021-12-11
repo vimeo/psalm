@@ -1368,7 +1368,7 @@ class FunctionLikeDocblockScanner
     ): array {
         $storage->template_types = [];
 
-        foreach ($docblock_info->templates as $i => $template_map) {
+        foreach ($docblock_info->templates as $template_map) {
             $template_name = $template_map[0];
 
             if ($template_map[1] !== null && $template_map[2] !== null) {
@@ -1416,8 +1416,6 @@ class FunctionLikeDocblockScanner
                     'fn-' . strtolower($cased_function_id) => $template_type,
                 ];
             }
-
-            $storage->template_covariants[$i] = $template_map[3];
         }
 
         return array_merge($template_types ?: [], $storage->template_types);

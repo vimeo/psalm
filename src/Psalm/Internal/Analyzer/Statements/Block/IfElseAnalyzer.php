@@ -459,12 +459,6 @@ class IfElseAnalyzer
             }
         }
 
-        if ($if_scope->possible_param_types) {
-            foreach ($if_scope->possible_param_types as $var => $type) {
-                $context->possible_param_types[$var] = $type;
-            }
-        }
-
         if ($if_scope->reasonable_clauses
             && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
         ) {

@@ -39,11 +39,6 @@ class ClassConstantStorage
     public $deprecated = false;
 
     /**
-     * @var list<AttributeStorage>
-     */
-    public $attributes = [];
-
-    /**
      * @var ?string
      */
     public $description;
