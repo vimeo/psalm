@@ -1285,19 +1285,6 @@ class ClassLikeNodeScanner
             }
 
             $constant_storage->description = $description;
-
-            foreach ($stmt->attrGroups as $attr_group) {
-                foreach ($attr_group->attrs as $attr) {
-                    $constant_storage->attributes[] = AttributeResolver::resolve(
-                        $this->codebase,
-                        $this->file_scanner,
-                        $this->file_storage,
-                        $this->aliases,
-                        $attr,
-                        $this->storage->name ?? null
-                    );
-                }
-            }
         }
     }
 

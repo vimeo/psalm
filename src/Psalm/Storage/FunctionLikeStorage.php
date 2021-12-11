@@ -121,11 +121,6 @@ abstract class FunctionLikeStorage
     public $template_types;
 
     /**
-     * @var array<int, bool>|null
-     */
-    public $template_covariants;
-
-    /**
      * @var array<int, Assertion>
      */
     public $assertions = [];

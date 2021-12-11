@@ -1195,6 +1195,17 @@ class UnusedCodeTest extends TestCase
                     foobar
                 ',
             ],
+            'usedPropertyAsAssignmentKey' => [
+                '<?php
+                    class A {
+                        public string $foo = "bar";
+                        public array $bar = [];
+                    }
+
+                    $a = new A();
+                    $a->bar[$a->foo] = "bar";
+                    print_r($a->bar);',
+            ],
         ];
     }
 
@@ -1245,6 +1256,30 @@ class UnusedCodeTest extends TestCase
                     }
 
                     $a = new A();',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'possiblyUnusedPropertyWrittenNeverRead' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+                    }
+
+                    $a = new A();
+                    $a->foo = "bar";',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'possiblyUnusedPropertyWithArrayWrittenNeverRead' => [
+                '<?php
+                    class A {
+                        /** @var list<string> */
+                        public array $foo = [];
+                    }
+
+                    $a = new A();
+                    $a->foo[] = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
                 'error_levels' => ['UnusedVariable'],
             ],

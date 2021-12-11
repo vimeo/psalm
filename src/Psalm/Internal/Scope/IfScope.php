@@ -75,13 +75,6 @@ class IfScope
     public $reasonable_clauses = [];
 
     /**
-     * Variables that were mixed, but are no longer
-     *
-     * @var array<string, Type\Union>|null
-     */
-    public $possible_param_types;
-
-    /**
      * @var string[]
      */
     public $final_actions = [];

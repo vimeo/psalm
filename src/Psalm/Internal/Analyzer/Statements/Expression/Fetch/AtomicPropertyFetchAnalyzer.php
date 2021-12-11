@@ -228,7 +228,7 @@ class AtomicPropertyFetchAnalyzer
 
         $naive_property_exists = $codebase->properties->propertyExists(
             $property_id,
-            true,
+            !$in_assignment,
             $statements_analyzer,
             $context,
             $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
@@ -252,7 +252,7 @@ class AtomicPropertyFetchAnalyzer
                 if ($new_class_storage
                     && ($codebase->properties->propertyExists(
                         $new_property_id,
-                        true,
+                        !$in_assignment,
                         $statements_analyzer,
                         $context,
                         $codebase->collect_locations

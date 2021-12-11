@@ -72,8 +72,6 @@ trait CanAlias
                         // register the path
                         $codebase->use_referencing_locations[$use_path_lc][] =
                             new CodeLocation($this, $use);
-
-                        $codebase->use_referencing_files[$this->getFilePath()][$use_path_lc] = true;
                     }
 
                     if ($codebase->alter_code) {

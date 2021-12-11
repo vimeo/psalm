@@ -96,14 +96,6 @@ class Codebase
     public $use_referencing_locations = [];
 
     /**
-     * A map of file names to the classes that they contain explicit references to
-     * used in collaboration with use_referencing_locations
-     *
-     * @var array<string, array<lowercase-string, bool>>
-     */
-    public $use_referencing_files = [];
-
-    /**
      * @var FileStorageProvider
      */
     public $file_storage_provider;
