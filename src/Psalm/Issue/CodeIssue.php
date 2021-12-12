@@ -86,20 +86,23 @@ abstract class CodeIssue
         return $this->message;
     }
 
+    public static function getIssueType(): string
+    {
+        $fqcn_parts = explode('\\', static::class);
+        return array_pop($fqcn_parts);
+    }
+
     public function toIssueData(string $severity): IssueData
     {
         $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();
 
-        $fqcn_parts = explode('\\', static::class);
-        $issue_type = array_pop($fqcn_parts);
-
         return new IssueData(
             $severity,
             $location->getLineNumber(),
             $location->getEndLineNumber(),
-            $issue_type,
+            static::getIssueType(),
             $this->message,
             $location->file_name,
             $location->file_path,

@@ -326,11 +326,31 @@ class IssueBuffer
         return true;
     }
 
+    private static function removeRecordedIssue(string $issue_type, int $file_offset): void
+    {
+        $recorded_issues = self::$recorded_issues[self::$recording_level];
+        $filtered_issues = [];
+
+        foreach ($recorded_issues as $issue) {
+            [$from] = $issue->code_location->getSelectionBounds();
+
+            if ($issue::getIssueType() !== $issue_type || $from !== $file_offset) {
+                $filtered_issues[] = $issue;
+            }
+        }
+
+        self::$recorded_issues[self::$recording_level] = $filtered_issues;
+    }
+
     /**
      * This will try to remove an issue that has been added for emission
      */
     public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {
+        if (self::$recording_level > 0) {
+            self::removeRecordedIssue($issue_type, $file_offset);
+        }
+
         if (!isset(self::$issues_data[$file_path])) {
             return;
         }
