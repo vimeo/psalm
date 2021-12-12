@@ -75,6 +75,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\MinMaxReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\TriggerErrorReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\RandReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\InArrayReturnTypeProvider::class);
     }
 
     /**

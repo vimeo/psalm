@@ -122,7 +122,7 @@ class InArrayTest extends TestCase
                         return $x;
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'error_level' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
             'assertNegatedInArrayOfNotIntersectingTypeReturnsOriginalType' => [
                 '<?php
@@ -312,7 +312,7 @@ class InArrayTest extends TestCase
 
                         return $x;
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Docblock-defined type int for $x is never string',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
             ],
             'assertNegatedInArrayOfNotIntersectingTypeTriggersRedundantCondition' => [
                 '<?php
@@ -328,9 +328,9 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Docblock-defined type int for $x is never string',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type true is always true',
             ],
-            'assertInArrayOfNotIntersectingTypeTriggersRedundantCondition' => [
+            'assertInArrayOfNotIntersectingTypeTriggersDocblockTypeContradiction' => [
                 '<?php
                     /**
                      * @param int $x
@@ -344,9 +344,9 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Docblock-defined type int for $x is never string',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
             ],
-            'assertInArrayOfNotIntersectingTypeReturnsTriggersMixedReturnStatement' => [
+            'assertInArrayOfNotIntersectingTypeReturnsTriggersDocblockTypeContradiction' => [
                 '<?php
                     /**
                      * @param int $x
@@ -360,41 +360,8 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Could not infer a return type',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
                 'error_levels' => ['RedundantConditionGivenDocblockType'],
-            ],
-            'assertNegatedInArrayOfNotIntersectingTypeTriggersTypeContradiction' => [
-                '<?php
-                    /**
-                     * @param int $x
-                     * @param list<string> $y
-                     * @return string
-                     */
-                    function assertInArray($x, $y) {
-                        if (!in_array($x, $y, true)) {
-                            throw new \Exception();
-                        }
-
-                        return $x;
-                    }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Docblock-defined type int for $x is never string',
-            ],
-            'assertNegatedInArrayOfNotIntersectingTypeTriggersMixedReturnStatement' => [
-                '<?php
-                    /**
-                     * @param int $x
-                     * @param list<string> $y
-                     * @return string
-                     */
-                    function assertInArray($x, $y) {
-                        if (!in_array($x, $y, true)) {
-                            throw new \Exception();
-                        }
-
-                        return $x;
-                    }',
-                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Could not infer a return type',
-                'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [
                 '<?php
