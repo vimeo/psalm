@@ -63,7 +63,6 @@ use function array_merge;
 use function array_values;
 use function count;
 use function get_class;
-use function in_array;
 use function is_int;
 use function is_numeric;
 use function strpos;
@@ -93,10 +92,6 @@ class TypeCombiner
         bool $allow_mixed_union = true,
         int $literal_limit = 500
     ): Union {
-        if (in_array(null, $types, true)) {
-            return Type::getMixed();
-        }
-
         if (count($types) === 1) {
             $union_type = new Union([$types[0]]);
 
