@@ -406,6 +406,19 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidNamedArgument'
             ],
+            'usePositionalArgAfterNamed' => [
+                '<?php
+                    final class Person
+                    {
+                        public function __construct(
+                            public string $name,
+                            public int $age,
+                        ) { }
+                    }
+
+                    new Person(name: "", 0);',
+                'error_message' => 'InvalidNamedArgument'
+            ],
             'useUnpackedInvalidNamedArgument' => [
                 '<?php
                     class CustomerData {

@@ -644,8 +644,20 @@ class ArgumentsAnalyzer
 
         $arg_function_params = [];
         $matched_args = [];
+        $named_args_was_used = false;
 
         foreach ($args as $argument_offset => $arg) {
+            if ($named_args_was_used && !$arg->name) {
+                IssueBuffer::maybeAdd(
+                    new InvalidNamedArgument(
+                        'Cannot use positional argument after named argument',
+                        new CodeLocation($statements_analyzer, $arg),
+                        (string)$method_id
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+            }
+
             if ($arg->unpack) {
                 if ($function_param_count > $argument_offset) {
                     for ($i = $argument_offset; $i < $function_param_count; $i++) {
@@ -710,6 +722,8 @@ class ArgumentsAnalyzer
                     }
                 }
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+                $named_args_was_used = true;
+
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
