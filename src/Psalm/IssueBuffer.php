@@ -347,11 +347,6 @@ class IssueBuffer
      */
     public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {
-        if (self::$recording_level > 0) {
-            self::removeRecordedIssue($issue_type, $file_offset);
-            return;
-        }
-
         if (!isset(self::$issues_data[$file_path])) {
             return;
         }
@@ -368,6 +363,10 @@ class IssueBuffer
             unset(self::$issues_data[$file_path]);
         } else {
             self::$issues_data[$file_path] = $filtered_issues;
+        }
+
+        if (self::$recording_level > 0) {
+            self::removeRecordedIssue($issue_type, $file_offset);
         }
     }
 
