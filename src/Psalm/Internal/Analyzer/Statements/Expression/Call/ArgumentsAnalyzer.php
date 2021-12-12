@@ -127,6 +127,10 @@ class ArgumentsAnalyzer
                         break;
                     }
                 }
+
+                if ($last_param && $last_param->is_variadic) {
+                    $param = $last_param;
+                }
             } elseif ($argument_offset < count($function_params)) {
                 $param = $function_params[$argument_offset];
             } elseif ($last_param && $last_param->is_variadic) {

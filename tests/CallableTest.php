@@ -85,6 +85,31 @@ class CallableTest extends TestCase
                 'error_levels' => [],
                 '7.4',
             ],
+            'inferArgFromClassContextWithNamedArguments' => [
+                '<?php
+                    final class Calc
+                    {
+                        /**
+                         * @param Closure(int, int): int ...$_fn
+                         */
+                        public function __invoke(Closure ...$_fn): int
+                        {
+                            throw new RuntimeException("???");
+                        }
+                    }
+
+                    $calc = new Calc();
+
+                    $a = $calc(
+                        foo: fn($_a, $_b) => $_a + $_b,
+                        bar: fn($_a, $_b) => $_a + $_b,
+                    );',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'error_levels' => [],
+                '7.4',
+            ],
             'varReturnType' => [
                 '<?php
                     $add_one = function(int $a) : int {
