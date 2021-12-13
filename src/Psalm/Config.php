@@ -996,7 +996,7 @@ class Config
             $attribute_text = (int) $config_xml['errorLevel'];
 
             if (!in_array($attribute_text, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new Exception\ConfigException(
+                throw new ConfigException(
                     'Invalid error level ' . $config_xml['errorLevel']
                 );
             }
@@ -1129,7 +1129,7 @@ class Config
                 $file_path = realpath($stub_file_name);
 
                 if (!$file_path) {
-                    throw new Exception\ConfigException(
+                    throw new ConfigException(
                         'Cannot resolve stubfile path '
                             . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
                             . DIRECTORY_SEPARATOR
@@ -1253,7 +1253,7 @@ class Config
                 $path = $this->base_dir . (string)$extension['scanner'];
 
                 if (!file_exists($path)) {
-                    throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
+                    throw new ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
                 $this->filetype_scanner_paths[$extension_name] = $path;
@@ -1263,7 +1263,7 @@ class Config
                 $path = $this->base_dir . (string)$extension['checker'];
 
                 if (!file_exists($path)) {
-                    throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
+                    throw new ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
                 $this->filetype_analyzer_paths[$extension_name] = $path;
