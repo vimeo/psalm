@@ -51,6 +51,8 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
@@ -629,7 +631,7 @@ class Codebase
         return $locations;
     }
 
-    public function getClosureStorage(string $file_path, string $closure_id): Storage\FunctionStorage
+    public function getClosureStorage(string $file_path, string $closure_id): FunctionStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -795,7 +797,7 @@ class Codebase
      *
      * @param non-empty-string $function_id
      *
-     * @return Storage\FunctionStorage|Storage\MethodStorage
+     * @return FunctionStorage|MethodStorage
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
