@@ -110,4 +110,13 @@ class IssueBufferTest extends TestCase
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }
+
+    public function testPrintSuccessMessageWorks(): void
+    {
+        ob_start();
+        IssueBuffer::printSuccessMessage();
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('No errors found!', $output);
+    }
 }

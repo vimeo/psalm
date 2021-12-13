@@ -686,7 +686,7 @@ class IssueBuffer
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
             } else {
-                echo 'No errors found!' . "\n";
+                self::printSuccessMessage();
             }
 
             $show_info = $project_analyzer->stdout_report_options->show_info;
@@ -775,6 +775,37 @@ class IssueBuffer
         ) {
             exit(2);
         }
+    }
+
+    public static function printSuccessMessage(): void
+    {
+        // this message will be printed
+        $message = "No errors found!";
+
+        // color block will contain this amount of characters
+        $blockSize = 30;
+
+        // message with prepended and appended whitespace to be same as $blockSize
+        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+
+        // top side of the color block
+        $paddingTop = str_repeat(' ', $blockSize);
+
+        // bottom side of the color block
+        $paddingBottom = str_repeat(' ', $blockSize);
+
+        // background color, 42 = green
+        $background = "42";
+
+        // foreground/text color, 30 = black
+        $foreground = "30";
+
+        // text style, 1 = bold
+        $style = "1";
+
+        echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
+        echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
+        echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
     }
 
     /**
