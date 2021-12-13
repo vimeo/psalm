@@ -60,6 +60,9 @@
         "ext-curl": "In order to send data to shepherd"
     },
     "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        },
         "optimize-autoloader": true,
         "sort-packages": true,
         "platform-check": false
