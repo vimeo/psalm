@@ -3,6 +3,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use InvalidArgumentException;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -149,7 +150,7 @@ class TypeChecker extends NodeVisitor
     {
         $codebase = $this->source->getCodebase();
 
-        if ($this->code_location instanceof CodeLocation\DocblockTypeLocation
+        if ($this->code_location instanceof DocblockTypeLocation
             && $codebase->store_node_types
             && $atomic->offset_start !== null
             && $atomic->offset_end !== null

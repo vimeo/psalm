@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -624,7 +625,7 @@ class AssignmentAnalyzer
         Context $context,
         ?string $var_id = null,
         ?Union &$comment_type = null,
-        ?CodeLocation\DocblockTypeLocation &$comment_type_location = null,
+        ?DocblockTypeLocation &$comment_type_location = null,
         array $not_ignored_docblock_var_ids = []
     ): void {
         if (!$var_comment->type) {
@@ -661,7 +662,7 @@ class AssignmentAnalyzer
                 && $var_comment->type_end
                 && $var_comment->line_number
             ) {
-                $type_location = new CodeLocation\DocblockTypeLocation(
+                $type_location = new DocblockTypeLocation(
                     $statements_analyzer,
                     $var_comment->type_start,
                     $var_comment->type_end,

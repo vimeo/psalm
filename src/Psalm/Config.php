@@ -10,6 +10,7 @@ use DomElement;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
+use Psalm\CodeLocation\Raw;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Config\TaintAnalysisFileFilter;
@@ -806,7 +807,7 @@ class Config
                 $config->config_issues[] = new ConfigIssue(
                     'Attribute "' . $attribute->name . '" is deprecated '
                     . 'and is going to be removed in the next major version',
-                    new CodeLocation\Raw(
+                    new Raw(
                         $file_contents,
                         $config_path,
                         basename($config_path),
@@ -835,7 +836,7 @@ class Config
                 $config->config_issues[] = new ConfigIssue(
                     'Element "' . $deprecated_element . '" is deprecated '
                     . 'and is going to be removed in the next major version',
-                    new CodeLocation\Raw(
+                    new Raw(
                         $file_contents,
                         $config_path,
                         basename($config_path),

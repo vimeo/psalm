@@ -1486,7 +1486,7 @@ class ClassLikeNodeScanner
                     && $var_comment->type_end
                     && $var_comment->line_number
                 ) {
-                    $doc_var_location = new CodeLocation\DocblockTypeLocation(
+                    $doc_var_location = new DocblockTypeLocation(
                         $this->file_scanner,
                         $var_comment->type_start,
                         $var_comment->type_end,

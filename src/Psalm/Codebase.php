@@ -15,6 +15,7 @@ use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -1132,7 +1133,7 @@ class Codebase
 
             $file_contents = $this->getFileContents($file_path);
 
-            return new CodeLocation\Raw(
+            return new Raw(
                 $file_contents,
                 $file_path,
                 $this->config->shortenFileName($file_path),

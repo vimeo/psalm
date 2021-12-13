@@ -5,6 +5,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\InvalidMethodOverrideException;
@@ -163,7 +164,7 @@ class FunctionLikeDocblockScanner
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
-            $throw_location = new CodeLocation\DocblockTypeLocation(
+            $throw_location = new DocblockTypeLocation(
                 $file_scanner,
                 $offset,
                 $offset + strlen($throw),
@@ -691,7 +692,7 @@ class FunctionLikeDocblockScanner
             }
 
             if (!$fake_method) {
-                $docblock_type_location = new CodeLocation\DocblockTypeLocation(
+                $docblock_type_location = new DocblockTypeLocation(
                     $file_scanner,
                     $docblock_param['start'],
                     $docblock_param['end'],
@@ -898,7 +899,7 @@ class FunctionLikeDocblockScanner
             && $docblock_info->return_type_start
             && $docblock_info->return_type_end
         ) {
-            $storage->return_type_location = new CodeLocation\DocblockTypeLocation(
+            $storage->return_type_location = new DocblockTypeLocation(
                 $file_scanner,
                 $docblock_info->return_type_start,
                 $docblock_info->return_type_end,

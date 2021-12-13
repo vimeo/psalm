@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -163,7 +164,7 @@ class ForeachAnalyzer
                 && $var_comment->type_end
                 && $var_comment->line_number
             ) {
-                $type_location = new CodeLocation\DocblockTypeLocation(
+                $type_location = new DocblockTypeLocation(
                     $statements_analyzer,
                     $var_comment->type_start,
                     $var_comment->type_end,

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Psalm\CodeLocation\Raw;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
@@ -479,7 +480,7 @@ class IssueBuffer
                 self::add(
                     new UnusedPsalmSuppress(
                         'This suppression is never used',
-                        new CodeLocation\Raw(
+                        new Raw(
                             $file_contents,
                             $file_path,
                             $config->shortenFileName($file_path),
