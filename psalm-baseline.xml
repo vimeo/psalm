@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@ac230dac5c64b1b4c7f4bd2d067fb7ae6176b6e8">
+<files psalm-version="dev-master@76bb8bc65567d2bc600fd4925c812589917b6ab1">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -177,7 +177,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/AtomicMethodCallAnalyzer.php">
     <DeprecatedClass occurrences="1">
-      <code>Type\Atomic\TEmpty::class</code>
+      <code>TEmpty::class</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallReturnTypeFetcher.php">
@@ -226,7 +226,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
     <DeprecatedClass occurrences="3">
-      <code>Type\Atomic\TMixed|Type\Atomic\TTemplateParam|Type\Atomic\TEmpty</code>
+      <code>TMixed|TTemplateParam|TEmpty</code>
       <code>new TEmpty</code>
       <code>new TEmpty</code>
     </DeprecatedClass>
@@ -260,8 +260,8 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnsetAnalyzer.php">
     <DeprecatedClass occurrences="2">
-      <code>new Type\Atomic\TEmpty</code>
-      <code>new Type\Atomic\TEmpty</code>
+      <code>new TEmpty</code>
+      <code>new TEmpty</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
@@ -281,8 +281,8 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <DeprecatedClass occurrences="2">
-      <code>new Type\Atomic\TEmpty()</code>
-      <code>new Type\Atomic\TEmpty()</code>
+      <code>new TEmpty()</code>
+      <code>new TEmpty()</code>
     </DeprecatedClass>
     <DeprecatedMethod occurrences="2">
       <code>Type::getEmpty()</code>
@@ -395,8 +395,8 @@
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/ArrayTypeComparator.php">
     <DeprecatedClass occurrences="2">
-      <code>new Type\Atomic\TEmpty()</code>
-      <code>new Type\Atomic\TEmpty()</code>
+      <code>new TEmpty()</code>
+      <code>new TEmpty()</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Type/NegatedAssertionReconciler.php">
