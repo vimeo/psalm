@@ -2,7 +2,13 @@
 declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
-use AdvancedJsonRpc;
+use AdvancedJsonRpc\Dispatcher;
+use AdvancedJsonRpc\Error;
+use AdvancedJsonRpc\ErrorCode;
+use AdvancedJsonRpc\ErrorResponse;
+use AdvancedJsonRpc\Request;
+use AdvancedJsonRpc\Response;
+use AdvancedJsonRpc\SuccessResponse;
 use Amp\Promise;
 use Amp\Success;
 use Generator;
@@ -49,7 +55,7 @@ use function urldecode;
 /**
  * @internal
  */
-class LanguageServer extends AdvancedJsonRpc\Dispatcher
+class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
@@ -125,7 +131,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     }
 
                     // Ignore responses, this is the handler for requests and notifications
-                    if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
+                    if (Response::isResponse($msg->body)) {
                         return;
                     }
 
@@ -144,14 +150,14 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         $dispatched = $this->dispatch($msg->body);
                         /** @psalm-suppress MixedAssignment */
                         $result = yield $dispatched;
-                    } catch (AdvancedJsonRpc\Error $e) {
+                    } catch (Error $e) {
                         // If a ResponseError is thrown, send it back in the Response
                         $error = $e;
                     } catch (Throwable $e) {
                         // If an unexpected error occurred, send back an INTERNAL_ERROR error response
-                        $error = new AdvancedJsonRpc\Error(
+                        $error = new Error(
                             (string) $e,
-                            AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
+                            ErrorCode::INTERNAL_ERROR,
                             null,
                             $e
                         );
@@ -162,11 +168,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                      * @psalm-suppress UndefinedPropertyFetch
                      * @psalm-suppress MixedArgument
                      */
-                    if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
+                    if (Request::isRequest($msg->body)) {
                         if ($error !== null) {
-                            $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
+                            $responseBody = new ErrorResponse($msg->body->id, $error);
                         } else {
-                            $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
+                            $responseBody = new SuccessResponse($msg->body->id, $result);
                         }
                         yield $this->protocolWriter->write(new Message($responseBody));
                     }
