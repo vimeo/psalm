@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -21,7 +22,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['array_fill'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -42,14 +43,14 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($second_arg_type
                 && self::isPositiveNumericType($second_arg_type)
             ) {
-                return new Type\Union([
+                return new Union([
                     new TNonEmptyList(
                         $value_type_from_third_arg
                     )
                 ]);
             }
 
-            return new Type\Union([
+            return new Union([
                 new TList(
                     $value_type_from_third_arg
                 )
@@ -63,9 +64,9 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 && $first_arg_type->isSingleIntLiteral()
                 && $second_arg_type->isSingleIntLiteral()
             ) {
-                return new Type\Union([
+                return new Union([
                     new TNonEmptyArray([
-                        new Type\Union([new TIntRange(
+                        new Union([new TIntRange(
                             $first_arg_type->getSingleIntLiteral()->value,
                             $second_arg_type->getSingleIntLiteral()->value
                         )]),
@@ -74,7 +75,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 ]);
             }
 
-            return new Type\Union([
+            return new Union([
                 new TNonEmptyArray([
                     Type::getInt(),
                     $value_type_from_third_arg,
@@ -82,7 +83,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
             ]);
         }
 
-        return new Type\Union([
+        return new Union([
             new TArray([
                 Type::getInt(),
                 $value_type_from_third_arg,
@@ -90,7 +91,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
         ]);
     }
 
-    private static function isPositiveNumericType(Type\Union $arg): bool
+    private static function isPositiveNumericType(Union $arg): bool
     {
         if ($arg->isSingle() && $arg->hasPositiveInt()) {
             return true;

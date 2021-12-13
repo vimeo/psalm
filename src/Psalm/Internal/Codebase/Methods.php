@@ -24,6 +24,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
@@ -36,6 +37,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -479,7 +481,7 @@ class Methods
                     && $overridden_storage->params[$i]->has_docblock_type
                 ) {
                     $params[$i] = clone $param;
-                    /** @var Type\Union $params[$i]->type */
+                    /** @var Union $params[$i]->type */
                     $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
                     if ($source) {
@@ -510,10 +512,10 @@ class Methods
 
     public static function localizeType(
         Codebase $codebase,
-        Type\Union $type,
+        Union $type,
         string $appearing_fq_class_name,
         string $base_fq_class_name
-    ): Type\Union {
+    ): Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_extended_params;
 
@@ -625,8 +627,8 @@ class Methods
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $extends
-     * @return list<Type\Atomic>
+     * @param array<string, array<string, Union>> $extends
+     * @return list<Atomic>
      */
     public static function getExtendedTemplatedTypes(
         TTemplateParam $atomic_type,
@@ -677,7 +679,7 @@ class Methods
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
         ?array $args = null
-    ): ?Type\Union {
+    ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
 
@@ -726,13 +728,13 @@ class Methods
                 $types = [];
 
                 foreach ($original_class_storage->enum_cases as $case_name => $_) {
-                    $types[] = new Type\Union([new TEnumCase($original_fq_class_name, $case_name)]);
+                    $types[] = new Union([new TEnumCase($original_fq_class_name, $case_name)]);
                 }
 
                 $list = new TKeyedArray($types);
                 $list->is_list = true;
                 $list->sealed = true;
-                return new Type\Union([$list]);
+                return new Union([$list]);
             }
         }
 
@@ -762,7 +764,7 @@ class Methods
                     if ($original_method_name === 'tryfrom') {
                         $types[] = new TNull();
                     }
-                    return new Type\Union($types);
+                    return new Union($types);
                 }
                 return $original_method_name === 'tryfrom' ? Type::getNull() : Type::getNever();
             }
@@ -784,7 +786,7 @@ class Methods
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new TClosure(
+                        return new Union([new TClosure(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
@@ -800,7 +802,7 @@ class Methods
                             new MethodIdentifier($atomic_type->value, '__invoke')
                         );
 
-                        return new Type\Union([new TClosure(
+                        return new Union([new TClosure(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type

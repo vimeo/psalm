@@ -10,6 +10,7 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Union;
 
@@ -28,7 +29,7 @@ use function strtolower;
 class Context
 {
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $vars_in_scope = [];
 
@@ -204,7 +205,7 @@ class Context
     public $initialized_methods;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $constants = [];
 
@@ -453,9 +454,9 @@ class Context
     }
 
     /**
-     * @param  array<string, Type\Union> $new_vars_in_scope
+     * @param  array<string, Union> $new_vars_in_scope
      *
-     * @return array<string,Type\Union>
+     * @return array<string, Union>
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
     {
@@ -665,7 +666,7 @@ class Context
             }
 
             foreach ($type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof Type\Atomic\DependentType
+                if ($atomic_type instanceof DependentType
                     && $atomic_type->getVarId() === $remove_var_id
                 ) {
                     $type->addType($atomic_type->getReplacement());
@@ -772,7 +773,7 @@ class Context
     public function defineGlobals(): void
     {
         $globals = [
-            '$argv' => new Type\Union([
+            '$argv' => new Union([
                 new TArray([Type::getInt(), Type::getString()]),
             ]),
             '$argc' => Type::getInt(),

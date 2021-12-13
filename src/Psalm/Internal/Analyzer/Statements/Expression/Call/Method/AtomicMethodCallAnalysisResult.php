@@ -2,12 +2,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class AtomicMethodCallAnalysisResult
 {
     /**
-     * @var ?Type\Union
+     * @var ?Union
      */
     public $return_type;
 

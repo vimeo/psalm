@@ -4,6 +4,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmpty;
@@ -13,6 +14,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 use function array_map;
 use function range;
@@ -28,8 +30,8 @@ class ArrayTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
-        Type\Atomic $container_type_part,
+        Atomic $input_type_part,
+        Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
@@ -37,8 +39,8 @@ class ArrayTypeComparator
 
         $is_empty_array = $input_type_part->equals(
             new TArray([
-                new Type\Union([new TEmpty()]),
-                new Type\Union([new TEmpty()])
+                new Union([new TEmpty()]),
+                new Union([new TEmpty()])
             ]),
             false
         );
@@ -197,7 +199,7 @@ class ArrayTypeComparator
                     );
 
                     $input_type_part = new TNonEmptyArray([
-                        new Type\Union($literal_ints),
+                        new Union($literal_ints),
                         clone $input_type_part->type_param
                     ]);
                 } else {

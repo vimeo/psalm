@@ -8,6 +8,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Union;
 
 class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -19,7 +20,7 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_splice'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -69,6 +70,6 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
         }
 
-        return new Type\Union([$array_type]);
+        return new Union([$array_type]);
     }
 }

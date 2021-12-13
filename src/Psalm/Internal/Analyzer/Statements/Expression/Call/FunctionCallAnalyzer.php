@@ -40,6 +40,7 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
@@ -55,6 +56,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
@@ -833,7 +835,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
         Context $context,
-        Type\Atomic $atomic_type
+        Atomic $atomic_type
     ): void {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -851,7 +853,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer->addSuppressedIssues(['InternalMethod']);
         }
 
-        $statements_analyzer->node_data->setType($function_name, new Type\Union([$atomic_type]));
+        $statements_analyzer->node_data->setType($function_name, new Union([$atomic_type]));
 
         MethodCallAnalyzer::analyze(
             $statements_analyzer,

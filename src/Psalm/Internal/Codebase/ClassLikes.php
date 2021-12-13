@@ -41,6 +41,7 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionProperty;
 use UnexpectedValueException;
@@ -1389,7 +1390,7 @@ class ClassLikes
     public function handleDocblockTypeInMigration(
         Codebase $codebase,
         StatementsSource $source,
-        Type\Union $type,
+        Union $type,
         CodeLocation $type_location,
         ?string $calling_method_id
     ): void {
@@ -1551,7 +1552,7 @@ class ClassLikes
     }
 
     public function airliftClassDefinedDocblockType(
-        Type\Union $type,
+        Union $type,
         string $destination_fq_class_name,
         string $source_file_path,
         int $source_start,
@@ -1636,7 +1637,7 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
-    ): ?Type\Union {
+    ): ?Union {
         $class_name = strtolower($class_name);
 
         if (!$this->classlike_storage_provider->has($class_name)) {
@@ -1662,7 +1663,7 @@ class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
-                $constant_storage->type = new Type\Union([ConstantTypeResolver::resolve(
+                $constant_storage->type = new Union([ConstantTypeResolver::resolve(
                     $this,
                     $constant_storage->unresolved_node,
                     $statements_analyzer,
@@ -1672,7 +1673,7 @@ class ClassLikes
 
             return $constant_storage->type;
         } elseif (isset($storage->enum_cases[$constant_name])) {
-            return new Type\Union([new TEnumCase($storage->name, $constant_name)]);
+            return new Union([new TEnumCase($storage->name, $constant_name)]);
         }
         return null;
     }
@@ -2023,7 +2024,7 @@ class ClassLikes
                             }
 
                             if ($method_storage->params[$offset]->default_type) {
-                                if ($method_storage->params[$offset]->default_type instanceof Type\Union) {
+                                if ($method_storage->params[$offset]->default_type instanceof Union) {
                                     $default_type = clone $method_storage->params[$offset]->default_type;
                                 } else {
                                     $default_type_atomic = ConstantTypeResolver::resolve(
@@ -2032,7 +2033,7 @@ class ClassLikes
                                         null
                                     );
 
-                                    $default_type = new Type\Union([$default_type_atomic]);
+                                    $default_type = new Union([$default_type_atomic]);
                                 }
 
                                 $possible_type = Type::combineUnionTypes(

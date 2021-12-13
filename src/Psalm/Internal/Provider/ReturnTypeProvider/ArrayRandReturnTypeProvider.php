@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Union;
 
 class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -20,7 +21,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['array_rand'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -59,7 +60,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return $key_type;
         }
 
-        $arr_type = new Type\Union([
+        $arr_type = new Union([
             new TList(
                 $key_type
             ),

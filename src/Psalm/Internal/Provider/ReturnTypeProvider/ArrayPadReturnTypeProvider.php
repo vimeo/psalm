@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -23,7 +24,7 @@ class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['array_pad'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -45,7 +46,7 @@ class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 || $size_arg_type->getSingleIntLiteral()->value === 0
             );
 
-            return new Type\Union([
+            return new Union([
                 $array_type->is_list
                     ? (
                         $can_return_empty

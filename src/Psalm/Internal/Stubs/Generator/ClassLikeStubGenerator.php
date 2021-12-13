@@ -16,6 +16,8 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
+use Psalm\Type\Union;
+
 use function array_slice;
 
 class ClassLikeStubGenerator
@@ -116,7 +118,7 @@ class ClassLikeStubGenerator
 
         foreach ($storage->constants as $constant_name => $constant_storage) {
             if ($constant_storage->unresolved_node) {
-                $type = new Type\Union([
+                $type = new Union([
                     \Psalm\Internal\Codebase\ConstantTypeResolver::resolve(
                         $codebase->classlikes,
                         $constant_storage->unresolved_node

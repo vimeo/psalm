@@ -42,7 +42,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface as LegacyFunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 use function is_subclass_of;
 use function strtolower;
@@ -52,7 +52,7 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(FunctionReturnTypeProviderEvent): ?Type\Union>
+     *   array<Closure(FunctionReturnTypeProviderEvent): ?Union>
      * >
      */
     private static $handlers = [];
@@ -66,7 +66,7 @@ class FunctionReturnTypeProvider
      *     list<Arg>,
      *     Context,
      *     CodeLocation
-     *   ): ?Type\Union>
+     *   ): ?Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -132,7 +132,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param lowercase-string $function_id
-     * @param Closure(FunctionReturnTypeProviderEvent): ?Type\Union $c
+     * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
@@ -147,7 +147,7 @@ class FunctionReturnTypeProvider
      *     list<Arg>,
      *     Context,
      *     CodeLocation
-     *   ): ?Type\Union $c
+     *   ): ?Union $c
      */
     public function registerLegacyClosure(string $function_id, Closure $c): void
     {
@@ -169,7 +169,7 @@ class FunctionReturnTypeProvider
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
         CodeLocation $code_location
-    ): ?Type\Union {
+    ): ?Union {
         foreach (self::$legacy_handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $return_type = $function_handler(
                 $statements_source,

@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -50,8 +51,8 @@ class AtomicTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
-        Type\Atomic $container_type_part,
+        Atomic $input_type_part,
+        Atomic $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
@@ -670,8 +671,8 @@ class AtomicTypeComparator
      */
     public static function canBeIdentical(
         Codebase $codebase,
-        Type\Atomic $type1_part,
-        Type\Atomic $type2_part,
+        Atomic $type1_part,
+        Atomic $type2_part,
         bool $allow_interface_equality = true
     ): bool {
         if ((get_class($type1_part) === TList::class

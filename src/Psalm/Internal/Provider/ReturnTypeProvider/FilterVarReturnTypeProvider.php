@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
@@ -35,7 +36,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['filter_var'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

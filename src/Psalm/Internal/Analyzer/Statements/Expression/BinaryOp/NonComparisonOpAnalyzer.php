@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -69,7 +70,7 @@ class NonComparisonOpAnalyzer
             );
 
             if (!$result_type) {
-                $result_type = new Type\Union([new TInt(), new TFloat()]);
+                $result_type = new Union([new TInt(), new TFloat()]);
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);
@@ -129,7 +130,7 @@ class NonComparisonOpAnalyzer
             );
 
             if (!$result_type) {
-                $result_type = new Type\Union([new TInt(), new TFloat()]);
+                $result_type = new Union([new TInt(), new TFloat()]);
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);

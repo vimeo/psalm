@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 class BitwiseNotAnalyzer
 {
@@ -32,7 +33,7 @@ class BitwiseNotAnalyzer
         }
 
         if (!($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))) {
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TInt(), new TString()]));
+            $statements_analyzer->node_data->setType($stmt, new Union([new TInt(), new TString()]));
         } elseif ($stmt_expr_type->isMixed()) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         } else {
@@ -87,7 +88,7 @@ class BitwiseNotAnalyzer
 
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             } else {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union($acceptable_types));
+                $statements_analyzer->node_data->setType($stmt, new Union($acceptable_types));
             }
         }
 

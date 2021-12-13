@@ -3,32 +3,34 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Union;
 
 /**
  * @internal
  */
 class ArrayType
 {
-    /** @var Type\Union */
+    /** @var Union */
     public $key;
 
-    /** @var Type\Union */
+    /** @var Union */
     public $value;
 
     /** @var bool */
     public $is_list;
 
-    public function __construct(Type\Union $key, Type\Union $value, bool $is_list)
+    public function __construct(Union $key, Union $value, bool $is_list)
     {
         $this->key = $key;
         $this->value = $value;
         $this->is_list = $is_list;
     }
 
-    public static function infer(Type\Atomic $type): ?self
+    public static function infer(Atomic $type): ?self
     {
         if ($type instanceof TKeyedArray) {
             return new self(

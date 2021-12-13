@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -51,14 +52,14 @@ use function strlen;
 class ConcatAnalyzer
 {
     /**
-     * @param Type\Union|null $result_type
+     * @param Union|null $result_type
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
-        Type\Union &$result_type = null
+        Union &$result_type = null
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -180,9 +181,9 @@ class ConcatAnalyzer
 
                 if (!empty($result_type_parts)) {
                     if ($literal_concat && count($result_type_parts) < 64) {
-                        $result_type = new Type\Union($result_type_parts);
+                        $result_type = new Union($result_type_parts);
                     } else {
-                        $result_type = new Type\Union([new TNonEmptyNonspecificLiteralString]);
+                        $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     }
 
                     return;
@@ -244,7 +245,7 @@ class ConcatAnalyzer
 
                 if ($has_non_empty) {
                     if ($all_literals) {
-                        $result_type = new Type\Union([new TNonEmptyNonspecificLiteralString]);
+                        $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     } elseif ($all_lowercase) {
                         $result_type = Type::getNonEmptyLowercaseString();
                     } else {
@@ -252,7 +253,7 @@ class ConcatAnalyzer
                     }
                 } else {
                     if ($all_literals) {
-                        $result_type = new Type\Union([new TNonspecificLiteralString]);
+                        $result_type = new Union([new TNonspecificLiteralString]);
                     } elseif ($all_lowercase) {
                         $result_type = Type::getLowercaseString();
                     } else {
@@ -266,7 +267,7 @@ class ConcatAnalyzer
     private static function analyzeOperand(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $operand,
-        Type\Union $operand_type,
+        Union $operand_type,
         string $side,
         Context $context
     ): void {

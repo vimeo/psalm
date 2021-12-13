@@ -49,6 +49,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -56,6 +57,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKindGroup;
+use Psalm\Type\Union;
 use ReflectionProperty;
 use ReflectionType;
 use UnexpectedValueException;
@@ -147,7 +149,7 @@ class Codebase
     private $progress;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     private static $stubbed_constants = [];
 
@@ -558,7 +560,7 @@ class Codebase
         }
     }
 
-    public static function getPsalmTypeFromReflection(?ReflectionType $type): Type\Union
+    public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
@@ -639,18 +641,18 @@ class Codebase
         );
     }
 
-    public function addGlobalConstantType(string $const_id, Type\Union $type): void
+    public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
     }
 
-    public function getStubbedConstantType(string $const_id): ?Type\Union
+    public function getStubbedConstantType(string $const_id): ?Union
     {
         return self::$stubbed_constants[$const_id] ?? null;
     }
 
     /**
-     * @return array<string, Type\Union>
+     * @return array<string, Union>
      */
     public function getAllStubbedConstants(): array
     {
@@ -864,7 +866,7 @@ class Codebase
      * @param  list<Arg> $call_args
      *
      */
-    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
+    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
     {
         return $this->methods->getMethodReturnType(
             Internal\MethodIdentifier::wrap($method_id),
@@ -1481,7 +1483,7 @@ class Codebase
         return null;
     }
 
-    public function getTypeContextAtPosition(string $file_path, Position $position): ?Type\Union
+    public function getTypeContextAtPosition(string $file_path, Position $position): ?Union
     {
         $file_contents = $this->getFileContents($file_path);
         $offset = $position->toOffset($file_contents);
@@ -1756,7 +1758,7 @@ class Codebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForType(Type\Union $type): array
+    public function getCompletionItemsForType(Union $type): array
     {
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -1868,7 +1870,7 @@ class Codebase
      * Checks if type is a subtype of other
      *
      * Given two types, checks if `$input_type` is a subtype of `$container_type`.
-     * If you consider `Type\Union` as a set of types, this will tell you
+     * If you consider `Union` as a set of types, this will tell you
      * if `$input_type` is fully contained in `$container_type`,
      *
      * $input_type ⊆ $container_type
@@ -1877,8 +1879,8 @@ class Codebase
      * should be a subset of the function parameter type.
      */
     public function isTypeContainedByType(
-        Type\Union $input_type,
-        Type\Union $container_type
+        Union $input_type,
+        Union $container_type
     ): bool {
         return UnionTypeComparator::isContainedBy($this, $input_type, $container_type);
     }
@@ -1887,7 +1889,7 @@ class Codebase
      * Checks if type has any part that is a subtype of other
      *
      * Given two types, checks if *any part* of `$input_type` is a subtype of `$container_type`.
-     * If you consider `Type\Union` as a set of types, this will tell you if intersection
+     * If you consider `Union` as a set of types, this will tell you if intersection
      * of `$input_type` with `$container_type` is not empty.
      *
      * $input_type ∩ $container_type ≠ ∅ , e.g. they are not disjoint.
@@ -1897,8 +1899,8 @@ class Codebase
      * not a subtype of the required type.
      */
     public function canTypeBeContainedByType(
-        Type\Union $input_type,
-        Type\Union $container_type
+        Union $input_type,
+        Union $container_type
     ): bool {
         return UnionTypeComparator::canBeContainedBy($this, $input_type, $container_type);
     }
@@ -1915,9 +1917,9 @@ class Codebase
      * //  returns [Union(TInt), Union(TString)]
      * ```
      *
-     * @return array{Type\Union,Type\Union}
+     * @return array{Union, Union}
      */
-    public function getKeyValueParamsForTraversableObject(Type\Atomic $type): array
+    public function getKeyValueParamsForTraversableObject(Atomic $type): array
     {
         $key_type = null;
         $value_type = null;
@@ -1949,7 +1951,7 @@ class Codebase
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
-        Type\Union $expr_type,
+        Union $expr_type,
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null

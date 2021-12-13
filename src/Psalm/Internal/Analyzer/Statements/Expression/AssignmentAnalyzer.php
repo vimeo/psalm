@@ -74,6 +74,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -94,13 +95,13 @@ class AssignmentAnalyzer
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      *
-     * @return false|Type\Union
+     * @return false|Union
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        ?Type\Union $assign_value_type,
+        ?Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = []
@@ -622,7 +623,7 @@ class AssignmentAnalyzer
         VarDocblockComment $var_comment,
         Context $context,
         ?string $var_id = null,
-        ?Type\Union &$comment_type = null,
+        ?Union &$comment_type = null,
         ?CodeLocation\DocblockTypeLocation &$comment_type_location = null,
         array $not_ignored_docblock_var_ids = []
     ): void {
@@ -729,7 +730,7 @@ class AssignmentAnalyzer
      * @param  array<string> $added_taints
      */
     private static function taintAssignment(
-        Type\Union $type,
+        Union $type,
         DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
@@ -927,8 +928,8 @@ class AssignmentAnalyzer
     public static function assignByRefParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Type\Union $by_ref_type,
-        Type\Union $by_ref_out_type,
+        Union $by_ref_type,
+        Union $by_ref_out_type,
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false
@@ -1064,7 +1065,7 @@ class AssignmentAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
         ?string $array_var_id,
@@ -1491,7 +1492,7 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\PropertyFetch $assign_var,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         ?string $var_id
     ): void {
         if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
@@ -1591,7 +1592,7 @@ class AssignmentAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\Variable $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         ?string $var_id,
         Context $context
     ): void {

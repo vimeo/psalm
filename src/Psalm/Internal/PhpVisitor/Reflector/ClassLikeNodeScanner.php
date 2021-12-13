@@ -57,6 +57,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -114,7 +115,7 @@ class ClassLikeNodeScanner
     private $classlike_type_aliases = [];
 
     /**
-     * @var array<string, array<string, Type\Union>>
+     * @var array<string, array<string, Union>>
      */
     public $class_template_types = [];
 

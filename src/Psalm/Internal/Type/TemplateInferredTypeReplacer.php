@@ -259,7 +259,7 @@ class TemplateInferredTypeReplacer
                     foreach ($template_type->getAtomicTypes() as $candidate_atomic_type) {
                         if (UnionTypeComparator::isContainedBy(
                             $codebase,
-                            new Type\Union([$candidate_atomic_type]),
+                            new Union([$candidate_atomic_type]),
                             $atomic_type->conditional_type,
                             false,
                             false,
@@ -274,7 +274,7 @@ class TemplateInferredTypeReplacer
                         } elseif (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $atomic_type->conditional_type,
-                            new Type\Union([$candidate_atomic_type]),
+                            new Union([$candidate_atomic_type]),
                             false,
                             false,
                             null,
@@ -285,8 +285,8 @@ class TemplateInferredTypeReplacer
                         }
                     }
 
-                    $if_candidate_type = $matching_if_types ? new Type\Union($matching_if_types) : null;
-                    $else_candidate_type = $matching_else_types ? new Type\Union($matching_else_types) : null;
+                    $if_candidate_type = $matching_if_types ? new Union($matching_if_types) : null;
+                    $else_candidate_type = $matching_else_types ? new Union($matching_else_types) : null;
 
                     if ($if_candidate_type
                         && UnionTypeComparator::isContainedBy(

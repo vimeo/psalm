@@ -11,6 +11,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Union;
 
 use function in_array;
 
@@ -85,9 +86,9 @@ class EncapsulatedStringAnalyzer
 
         if ($non_empty) {
             if ($all_literals) {
-                $new_type = new Type\Union([new TNonEmptyNonspecificLiteralString()]);
+                $new_type = new Union([new TNonEmptyNonspecificLiteralString()]);
             } else {
-                $new_type = new Type\Union([new TNonEmptyString()]);
+                $new_type = new Union([new TNonEmptyString()]);
             }
 
             $new_type->parent_nodes = $stmt_type->parent_nodes;

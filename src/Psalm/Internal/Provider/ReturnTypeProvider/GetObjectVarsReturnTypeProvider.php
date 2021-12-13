@@ -12,6 +12,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Union;
 use stdClass;
 
 use function reset;
@@ -30,11 +31,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
     }
 
     public static function getGetObjectVarsReturnType(
-        Type\Union $first_arg_type,
+        Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
         CodeLocation $location
-    ): Type\Union {
+    ): Union {
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
@@ -43,7 +44,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 if ([] === $object_type->properties) {
                     return Type::getEmptyArray();
                 }
-                return new Type\Union([
+                return new Union([
                     new TKeyedArray($object_type->properties)
                 ]);
             }
@@ -87,7 +88,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return Type::getEmptyArray();
                 }
 
-                return new Type\Union([
+                return new Union([
                     new TKeyedArray($properties)
                 ]);
             }
@@ -95,7 +96,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         return Type::parseString('array<string, mixed>');
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

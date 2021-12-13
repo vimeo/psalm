@@ -75,7 +75,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfClassConstant;
 use Psalm\Type\Atomic\TVoid;
-
+use Psalm\Type\Atomic\Scalar;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
@@ -96,6 +96,8 @@ use Psalm\Node\VirtualName;
 use Psalm\Node\VirtualNullableType;
 use Psalm\Node\VirtualParam;
 use Psalm\Type;
+use Psalm\Type\Union;
+
 use function dirname;
 
 class StubsGenerator
@@ -343,7 +345,7 @@ class StubsGenerator
         foreach ($method_storage->params as $param) {
             $param_nodes[] = new VirtualParam(
                 new VirtualVariable($param->name),
-                $param->default_type instanceof Type\Union
+                $param->default_type instanceof Union
                     ? self::getExpressionFromType($param->default_type)
                     : null,
                 $param->signature_type
@@ -360,7 +362,7 @@ class StubsGenerator
     /**
      * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|null
      */
-    public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
+    public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
 
@@ -369,7 +371,7 @@ class StubsGenerator
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\Scalar
+            if ($atomic_type instanceof Scalar
                 || $atomic_type instanceof TObject
                 || $atomic_type instanceof TArray
                 || $atomic_type instanceof TIterable
@@ -404,7 +406,7 @@ class StubsGenerator
         return null;
     }
 
-    public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
+    public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralClassString) {

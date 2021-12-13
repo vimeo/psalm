@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -75,15 +76,15 @@ class UnsetAnalyzer
                                             new TArray([
                                                 $atomic_root_type->previous_key_type
                                                     ? clone $atomic_root_type->previous_key_type
-                                                    : new Type\Union([new TArrayKey]),
+                                                    : new Union([new TArrayKey]),
                                                 clone $atomic_root_type->previous_value_type,
                                             ])
                                         );
                                     } else {
                                         $root_type->addType(
                                             new TArray([
-                                                new Type\Union([new TEmpty]),
-                                                new Type\Union([new TEmpty]),
+                                                new Union([new TEmpty]),
+                                                new Union([new TEmpty]),
                                             ])
                                         );
                                     }

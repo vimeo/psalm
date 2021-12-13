@@ -64,12 +64,14 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -96,7 +98,7 @@ class InstancePropertyAssignmentAnalyzer
         PhpParser\NodeAbstract $stmt,
         string $prop_name,
         ?PhpParser\Node\Expr $assignment_value,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true
     ): ?bool {
@@ -449,7 +451,7 @@ class InstancePropertyAssignmentAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
         ClassLikeStorage $class_storage,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         Context $context
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
@@ -627,7 +629,7 @@ class InstancePropertyAssignmentAnalyzer
         Context $context,
         bool $direct_assignment,
         Codebase $codebase,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id
     ): array {
@@ -847,11 +849,11 @@ class InstancePropertyAssignmentAnalyzer
         ?PhpParser\Node\Expr $assignment_value,
         string $prop_name,
         Context $context,
-        Type\Union $lhs_type,
-        Type\Atomic $lhs_type_part,
+        Union $lhs_type,
+        Atomic $lhs_type_part,
         array &$invalid_assignment_types,
         ?string $var_id,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         ?string $lhs_var_id,
         bool &$has_valid_assignment_type,
         bool &$has_regular_setter
@@ -1415,7 +1417,7 @@ class InstancePropertyAssignmentAnalyzer
         string $fq_class_name,
         string $property_name,
         ClassLikeStorage $storage
-    ): ?Type\Union {
+    ): ?Union {
         $property_class_name = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
             true

@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -25,7 +26,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['explode'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -36,7 +37,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if (count($call_args) >= 2) {
             $second_arg_type = $statements_source->node_data->getType($call_args[1]->value);
 
-            $inner_type = new Type\Union([
+            $inner_type = new Union([
                 $second_arg_type && $second_arg_type->hasLowercaseString()
                     ? new TLowercaseString()
                     : new TString
@@ -53,7 +54,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getFalse();
                 }
 
-                return new Type\Union([
+                return new Union([
                     $can_return_empty
                         ? new TList($inner_type)
                         : new TNonEmptyList($inner_type)
@@ -73,7 +74,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     }
                 }
                 if ($can_be_false) {
-                    $array_type = new Type\Union([
+                    $array_type = new Union([
                         $can_return_empty
                             ? new TList($inner_type)
                             : new TNonEmptyList($inner_type),
@@ -84,7 +85,7 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $array_type->ignore_falsable_issues = true;
                     }
                 } else {
-                    $array_type = new Type\Union([
+                    $array_type = new Union([
                         $can_return_empty
                             ? new TList($inner_type)
                             : new TNonEmptyList($inner_type),

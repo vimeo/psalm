@@ -5,7 +5,7 @@ use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -167,7 +167,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<string, array<string, Type\Union>>|null
+     * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array
     {

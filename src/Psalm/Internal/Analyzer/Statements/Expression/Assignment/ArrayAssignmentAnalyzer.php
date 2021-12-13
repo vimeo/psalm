@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 
 use function array_pop;
 use function array_reverse;
@@ -56,7 +57,7 @@ class ArrayAssignmentAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assignment_value_type
+        Union $assignment_value_type
     ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
@@ -87,7 +88,7 @@ class ArrayAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assignment_type,
+        Union $assignment_type,
         Context $context
     ): ?bool {
         $root_array_expr = $stmt;
@@ -289,10 +290,10 @@ class ArrayAssignmentAnalyzer
      */
     private static function updateTypeWithKeyValues(
         Codebase $codebase,
-        Type\Union $child_stmt_type,
-        Type\Union $current_type,
+        Union $child_stmt_type,
+        Union $current_type,
         array $key_values
-    ): Type\Union {
+    ): Union {
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
@@ -309,7 +310,7 @@ class ArrayAssignmentAnalyzer
 
                 $has_matching_objectlike_property = true;
 
-                $child_stmt_type->substitute(new Type\Union([$type]), $type->as);
+                $child_stmt_type->substitute(new Union([$type]), $type->as);
 
                 continue;
             }
@@ -367,15 +368,15 @@ class ArrayAssignmentAnalyzer
 
                 $object_like->sealed = true;
 
-                $array_assignment_type = new Type\Union([
+                $array_assignment_type = new Union([
                     $object_like,
                 ]);
             } else {
                 $array_assignment_literals = $key_values;
 
-                $array_assignment_type = new Type\Union([
+                $array_assignment_type = new Union([
                     new TNonEmptyArray([
-                        new Type\Union($array_assignment_literals),
+                        new Union($array_assignment_literals),
                         clone $current_type
                     ])
                 ]);
@@ -399,8 +400,8 @@ class ArrayAssignmentAnalyzer
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $expr,
-        Type\Union $stmt_type,
-        Type\Union $child_stmt_type,
+        Union $stmt_type,
+        Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values
     ): void {
@@ -464,12 +465,12 @@ class ArrayAssignmentAnalyzer
         Codebase $codebase,
         ?PhpParser\Node\Expr $current_dim,
         Context $context,
-        Type\Union $value_type,
-        Type\Union $root_type,
+        Union $value_type,
+        Union $root_type,
         bool $offset_already_existed,
         ?PhpParser\Node\Expr $child_stmt,
         ?string $parent_var_id
-    ): Type\Union {
+    ): Union {
         $templated_assignment = false;
 
         if ($current_dim) {
@@ -547,11 +548,11 @@ class ArrayAssignmentAnalyzer
                         [],
                         [
                             $offset_type_part->param_name => [
-                                $offset_type_part->defining_class => new Type\Union([
+                                $offset_type_part->defining_class => new Union([
                                     new TTemplateParam(
                                         $class_string_map->param_name,
                                         $offset_type_part->as_type
-                                            ? new Type\Union([$offset_type_part->as_type])
+                                            ? new Union([$offset_type_part->as_type])
                                             : Type::getObject(),
                                         'class-string-map'
                                     )
@@ -615,7 +616,7 @@ class ArrayAssignmentAnalyzer
                     ) {
                         $array_atomic_type = clone $atomic_root_types['array'];
 
-                        $new_child_type = new Type\Union([$array_atomic_type]);
+                        $new_child_type = new Union([$array_atomic_type]);
 
                         $new_child_type->parent_nodes = $root_type->parent_nodes;
                     }
@@ -631,7 +632,7 @@ class ArrayAssignmentAnalyzer
             }
         }
 
-        $array_assignment_type = new Type\Union([
+        $array_assignment_type = new Union([
             $array_atomic_type,
         ]);
 
@@ -672,13 +673,13 @@ class ArrayAssignmentAnalyzer
         Codebase $codebase,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assignment_type,
+        Union $assignment_type,
         array $child_stmts,
         ?string $root_var_id,
         ?string &$parent_var_id,
         ?PhpParser\Node\Expr &$child_stmt,
-        Type\Union &$root_type,
-        Type\Union &$current_type,
+        Union &$root_type,
+        Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed
     ): void {
@@ -873,13 +874,13 @@ class ArrayAssignmentAnalyzer
                 );
             } else {
                 if (!$current_dim) {
-                    $array_assignment_type = new Type\Union([
+                    $array_assignment_type = new Union([
                         new TList($current_type),
                     ]);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
 
-                    $array_assignment_type = new Type\Union([
+                    $array_assignment_type = new Union([
                         new TArray([
                             $key_type && !$key_type->hasMixed()
                                 ? $key_type
@@ -939,7 +940,7 @@ class ArrayAssignmentAnalyzer
     private static function getArrayAssignmentOffsetType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $child_stmt,
-        Type\Union $child_stmt_dim_type
+        Union $child_stmt_dim_type
     ): array {
         if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_
             || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch

@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Union;
 use ReflectionFunction;
 
 use function function_exists;
@@ -769,7 +770,7 @@ class TypeParseTest extends TestCase
                 null,
                 [
                     'T' => ['' => Type::getArray()],
-                    'K' => ['' => new Type\Union([
+                    'K' => ['' => new Union([
                         new TTemplateKeyOf('T', 'fn-foo', Type::getMixed())
                     ])],
                 ]
@@ -807,7 +808,7 @@ class TypeParseTest extends TestCase
     {
         $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3 | 4.5)');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString('foo\'with'),
             new TLiteralString('bar"bar'),
             new TLiteralString('baz'),
@@ -826,7 +827,7 @@ class TypeParseTest extends TestCase
     {
         $docblock_type = Type::parseString('""|"admin"|"fun"');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString(''),
             new TLiteralString('admin'),
             new TLiteralString('fun'),
@@ -836,7 +837,7 @@ class TypeParseTest extends TestCase
 
         $docblock_type = Type::parseString('"admin"|""|"fun"');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString('admin'),
             new TLiteralString(''),
             new TLiteralString('fun'),
@@ -846,7 +847,7 @@ class TypeParseTest extends TestCase
 
         $docblock_type = Type::parseString('"admin"|"fun"|""');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString('admin'),
             new TLiteralString('fun'),
             new TLiteralString(''),
@@ -859,7 +860,7 @@ class TypeParseTest extends TestCase
     {
         $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3|4.5');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString('foo\'with'),
             new TLiteralString('bar"bar'),
             new TLiteralString('baz'),
@@ -911,7 +912,7 @@ class TypeParseTest extends TestCase
     {
         $docblock_type = Type::parseString('("baz" | One2::TWO_THREE | Foo::BAR_BAR | Bat\Bar::BAZ_BAM)');
 
-        $resolved_type = new Type\Union([
+        $resolved_type = new Union([
             new TLiteralString('baz'),
             new TClassConstant('One2', 'TWO_THREE'),
             new TClassConstant('Foo', 'BAR_BAR'),

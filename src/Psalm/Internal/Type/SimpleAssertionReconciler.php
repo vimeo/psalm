@@ -86,7 +86,7 @@ class SimpleAssertionReconciler extends Reconciler
         bool $is_equality = false,
         bool $is_strict_equality = false,
         bool $inside_loop = false
-    ): ?Type\Union {
+    ): ?Union {
         if ($assertion === 'mixed' && $existing_var_type->hasMixed()) {
             return $existing_var_type;
         }
@@ -718,7 +718,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($positive_types) {
-            return new Type\Union($positive_types);
+            return new Union($positive_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -823,7 +823,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($object_types) {
-            return new Type\Union($object_types);
+            return new Union($object_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -915,7 +915,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($string_types) {
-            return new Type\Union($string_types);
+            return new Union($string_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1013,7 +1013,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($int_types) {
-            return new Type\Union($int_types);
+            return new Union($int_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1092,7 +1092,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($bool_types) {
-            return new Type\Union($bool_types);
+            return new Union($bool_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1167,7 +1167,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($scalar_types) {
-            return new Type\Union($scalar_types);
+            return new Union($scalar_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1259,7 +1259,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($numeric_types) {
-            return new Type\Union($numeric_types);
+            return new Union($numeric_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1352,7 +1352,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($object_types) {
-            return new Type\Union($object_types);
+            return new Union($object_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1409,7 +1409,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($resource_types) {
-            return new Type\Union($resource_types);
+            return new Union($resource_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1439,7 +1439,7 @@ class SimpleAssertionReconciler extends Reconciler
 
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Type\Union([
+            return new Union([
                 new TArray([Type::getArrayKey(), Type::getMixed()]),
                 new TNamedObject('Countable'),
             ]);
@@ -1480,7 +1480,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($iterable_types) {
-            return new Type\Union($iterable_types);
+            return new Union($iterable_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1507,7 +1507,7 @@ class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Type\Union([new TIterable]);
+            return new Union([new TIterable]);
         }
 
         $iterable_types = [];
@@ -1540,7 +1540,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($iterable_types) {
-            return new Type\Union($iterable_types);
+            return new Union($iterable_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1735,7 +1735,7 @@ class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Type\Union([new TNamedObject('Traversable')]);
+            return new Union([new TNamedObject('Traversable')]);
         }
 
         $traversable_types = [];
@@ -1777,7 +1777,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($traversable_types) {
-            return new Type\Union($traversable_types);
+            return new Union($traversable_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -2044,7 +2044,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($array_types) {
-            return new Type\Union($array_types);
+            return new Union($array_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -2304,8 +2304,8 @@ class SimpleAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array');
             $existing_var_type->addType(new TArray(
                 [
-                    new Type\Union([new TEmpty()]),
-                    new Type\Union([new TEmpty()]),
+                    new Union([new TEmpty()]),
+                    new Union([new TEmpty()]),
                 ]
             ));
         }

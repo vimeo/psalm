@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_intersect_key;
@@ -450,9 +451,9 @@ class Populator
     }
 
     private static function extendType(
-        Type\Union $type,
+        Union $type,
         ClassLikeStorage $storage
-    ): Type\Union {
+    ): Union {
         $extended_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -477,7 +478,7 @@ class Populator
             }
         }
 
-        return new Type\Union($extended_types);
+        return new Union($extended_types);
     }
 
     private function populateDataFromParentClass(
@@ -989,7 +990,7 @@ class Populator
         $storage->populated = true;
     }
 
-    private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, bool $is_property = false): void
+    private function convertPhpStormGenericToPsalmGeneric(Union $candidate, bool $is_property = false): void
     {
         if (!$candidate->from_docblock) {
             //never convert a type that comes from a signature

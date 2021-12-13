@@ -22,6 +22,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function ctype_digit;
@@ -52,7 +54,7 @@ class ConstantTypeResolver
         UnresolvedConstantComponent $c,
         StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
-    ): Type\Atomic {
+    ): Atomic {
         $c_id = spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
@@ -240,7 +242,7 @@ class ConstantTypeResolver
                     return new TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
 
-                $value_type = new Type\Union([self::resolve(
+                $value_type = new Union([self::resolve(
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
@@ -252,8 +254,8 @@ class ConstantTypeResolver
 
             if (empty($properties)) {
                 $resolved_type = new TArray([
-                    new Type\Union([new TEmpty()]),
-                    new Type\Union([new TEmpty()]),
+                    new Union([new TEmpty()]),
+                    new Union([new TEmpty()]),
                 ]);
             } else {
                 $resolved_type = new TKeyedArray($properties);
@@ -331,7 +333,7 @@ class ConstantTypeResolver
     /**
      * @param  string|int|float|bool|null $value
      */
-    private static function getLiteralTypeFromScalarValue($value): Type\Atomic
+    private static function getLiteralTypeFromScalarValue($value): Atomic
     {
         if (is_string($value)) {
             return new TLiteralString($value);

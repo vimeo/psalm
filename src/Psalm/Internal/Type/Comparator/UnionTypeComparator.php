@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassConstant;
@@ -16,6 +15,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_pop;
@@ -32,8 +32,8 @@ class UnionTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Union $input_type,
-        Type\Union $container_type,
+        Union $input_type,
+        Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
@@ -320,8 +320,8 @@ class UnionTypeComparator
      *
      */
     public static function isContainedByInPhp(
-        ?Type\Union $input_type,
-        Type\Union $container_type
+        ?Union $input_type,
+        Union $container_type
     ): bool {
         if ($container_type->isMixed()) {
             return true;
@@ -365,8 +365,8 @@ class UnionTypeComparator
      */
     public static function canBeContainedBy(
         Codebase $codebase,
-        Type\Union $input_type,
-        Type\Union $container_type,
+        Union $input_type,
+        Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
         array &$matching_input_keys = []
@@ -420,8 +420,8 @@ class UnionTypeComparator
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
-        Type\Union $type1,
-        Type\Union $type2,
+        Union $type1,
+        Union $type2,
         bool $allow_interface_equality = true
     ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
@@ -477,11 +477,11 @@ class UnionTypeComparator
     }
 
     /**
-     * @return list<Type\Atomic>
+     * @return list<Atomic>
      */
     private static function getTypeParts(
         Codebase $codebase,
-        Type\Union $union_type
+        Union $union_type
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
@@ -498,7 +498,7 @@ class UnionTypeComparator
                 true,
                 true
             );
-            if ($expanded instanceof Type\Atomic) {
+            if ($expanded instanceof Atomic) {
                 array_push($atomic_types, $expanded);
                 continue;
             }

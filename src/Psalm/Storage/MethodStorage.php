@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Storage;
 
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class MethodStorage extends FunctionLikeStorage
 {
@@ -86,12 +86,12 @@ class MethodStorage extends FunctionLikeStorage
     public $this_property_mutations;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $self_out_type;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $if_this_is_type = null;
     /**

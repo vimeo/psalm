@@ -236,9 +236,9 @@ class TClassStringMap extends Atomic
         return $this->getKey();
     }
 
-    public function getStandinKeyParam(): Type\Union
+    public function getStandinKeyParam(): Union
     {
-        return new Type\Union([
+        return new Union([
             new TTemplateParamClass(
                 $this->param_name,
                 $this->as_type->value ?? 'object',

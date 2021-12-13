@@ -46,6 +46,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
@@ -228,7 +229,7 @@ class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Type\Union([$result_atomic_type])
+                new Union([$result_atomic_type])
             );
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
@@ -535,7 +536,7 @@ class NewAnalyzer extends CallAnalyzer
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Type\Union([$result_atomic_type])
+                    new Union([$result_atomic_type])
                 );
             }
         } elseif ($stmt->getArgs()) {
@@ -564,7 +565,7 @@ class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Type\Union([$result_atomic_type])
+                new Union([$result_atomic_type])
             );
         }
 
@@ -678,7 +679,7 @@ class NewAnalyzer extends CallAnalyzer
                     $new_type_part = new TTemplateParam(
                         $lhs_type_part->param_name,
                         $lhs_type_part->as_type
-                            ? new Type\Union([$lhs_type_part->as_type])
+                            ? new Union([$lhs_type_part->as_type])
                             : Type::getObject(),
                         $lhs_type_part->defining_class
                     );
@@ -693,7 +694,7 @@ class NewAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    $new_type = Type::combineUnionTypes($new_type, new Type\Union([$new_type_part]));
+                    $new_type = Type::combineUnionTypes($new_type, new Union([$new_type_part]));
 
                     if ($lhs_type_part->as_type
                         && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
@@ -796,7 +797,7 @@ class NewAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    $new_type = Type::combineUnionTypes($new_type, new Type\Union([$generated_type]));
+                    $new_type = Type::combineUnionTypes($new_type, new Union([$generated_type]));
                 }
 
                 continue;

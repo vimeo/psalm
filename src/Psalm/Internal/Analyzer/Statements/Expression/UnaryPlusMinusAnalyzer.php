@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 class UnaryPlusMinusAnalyzer
 {
@@ -33,7 +34,7 @@ class UnaryPlusMinusAnalyzer
         }
 
         if (!($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))) {
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TInt, new TFloat]));
+            $statements_analyzer->node_data->setType($stmt, new Union([new TInt, new TFloat]));
         } elseif ($stmt_expr_type->isMixed()) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         } else {
@@ -91,7 +92,7 @@ class UnaryPlusMinusAnalyzer
                 }
             }
 
-            $statements_analyzer->node_data->setType($stmt, new Type\Union($acceptable_types));
+            $statements_analyzer->node_data->setType($stmt, new Union($acceptable_types));
         }
 
         self::addDataFlow(

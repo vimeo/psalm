@@ -6,7 +6,6 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -33,6 +32,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfClassConstant;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_filter;
@@ -60,7 +60,7 @@ class TypeExpander
      */
     public static function expandUnion(
         Codebase $codebase,
-        Type\Union $return_type,
+        Union $return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -69,7 +69,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false
-    ): Type\Union {
+    ): Union {
         $return_type = clone $return_type;
 
         $new_return_type_parts = [];
@@ -104,7 +104,7 @@ class TypeExpander
                 $codebase
             );
         } else {
-            $fleshed_out_type = new Type\Union($new_return_type_parts);
+            $fleshed_out_type = new Union($new_return_type_parts);
         }
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
@@ -125,11 +125,11 @@ class TypeExpander
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *
-     * @return Type\Atomic|non-empty-list<Type\Atomic>
+     * @return Atomic|non-empty-list<Atomic>
      */
     public static function expandAtomic(
         Codebase $codebase,
-        Type\Atomic &$return_type,
+        Atomic &$return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -684,7 +684,7 @@ class TypeExpander
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *
-     * @return Type\Atomic|non-empty-list<Type\Atomic>
+     * @return Atomic|non-empty-list<Atomic>
      */
     private static function expandConditional(
         Codebase $codebase,

@@ -31,7 +31,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['min', 'max'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $call_args = $event->getCallArgs();
         if (count($call_args) === 0) {

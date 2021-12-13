@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_merge;
 
@@ -24,9 +25,9 @@ class ReturnTypeCollector
      * Gets the return types from a list of statements
      *
      * @param  array<PhpParser\Node>     $stmts
-     * @param  list<Type\Union>         $yield_types
+     * @param  list<Union>               $yield_types
      *
-     * @return list<Type\Union>    a list of return types
+     * @return list<Union>               a list of return types
      *
      * @psalm-suppress ComplexMethod to be refactored
      *
@@ -240,9 +241,9 @@ class ReturnTypeCollector
     }
 
     /**
-     * @param  list<Type\Union>    $return_types
-     * @param  non-empty-list<Type\Union>    $yield_types
-     * @return non-empty-list<Type\Union>
+     * @param  list<Union>           $return_types
+     * @param  non-empty-list<Union> $yield_types
+     * @return non-empty-list<Union>
      */
     private static function processYieldTypes(
         Codebase $codebase,
@@ -281,7 +282,7 @@ class ReturnTypeCollector
         }
 
         return [
-            new Type\Union([
+            new Union([
                 new TGenericObject(
                     'Generator',
                     [
@@ -296,7 +297,7 @@ class ReturnTypeCollector
     }
 
     /**
-     * @return  list<Type\Union>
+     * @return  list<Union>
      */
     protected static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
@@ -322,7 +323,7 @@ class ReturnTypeCollector
                     ]
                 );
 
-                return [new Type\Union([$generator_type])];
+                return [new Union([$generator_type])];
             }
 
             return [Type::getMixed()];

@@ -35,6 +35,8 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TEmpty;
@@ -53,6 +55,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_intersect_key;
@@ -374,11 +377,11 @@ class ForeachAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\NodeAbstract $stmt,
         PhpParser\Node\Expr $expr,
-        Type\Union $iterator_type,
+        Union $iterator_type,
         Codebase $codebase,
         Context $context,
-        ?Type\Union &$key_type,
-        ?Type\Union &$value_type,
+        ?Union &$key_type,
+        ?Union &$value_type,
         bool &$always_non_empty_array
     ): ?bool {
         if ($iterator_type->isNull()) {
@@ -465,10 +468,10 @@ class ForeachAnalyzer
 
                     $iterator_atomic_type = new TArray([
                         $list_var_id
-                            ? new Type\Union([
+                            ? new Union([
                                 new TDependentListKey($list_var_id)
                             ])
-                            : new Type\Union([new TIntRange(0, null)]),
+                            : new Union([new TIntRange(0, null)]),
                         $iterator_atomic_type->type_param
                     ]);
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
@@ -495,7 +498,7 @@ class ForeachAnalyzer
 
             $always_non_empty_array = false;
 
-            if ($iterator_atomic_type instanceof Type\Atomic\Scalar ||
+            if ($iterator_atomic_type instanceof Scalar ||
                 $iterator_atomic_type instanceof TVoid
             ) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
@@ -717,8 +720,8 @@ class ForeachAnalyzer
         PhpParser\Node\Expr $foreach_expr,
         Codebase $codebase,
         Context $context,
-        ?Type\Union &$key_type,
-        ?Type\Union &$value_type,
+        ?Union &$key_type,
+        ?Union &$value_type,
         bool &$has_valid_iterator
     ): void {
         if ($iterator_atomic_type->extra_types) {
@@ -745,7 +748,7 @@ class ForeachAnalyzer
             ) {
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    new Type\Union([clone $iterator_atomic_type])
+                    new Union([clone $iterator_atomic_type])
                 );
 
                 $key_type = Type::combineUnionTypes(
@@ -952,10 +955,10 @@ class ForeachAnalyzer
     }
 
     public static function getKeyValueParamsForTraversableObject(
-        Type\Atomic $iterator_atomic_type,
+        Atomic $iterator_atomic_type,
         Codebase $codebase,
-        ?Type\Union &$key_type,
-        ?Type\Union &$value_type
+        ?Union &$key_type,
+        ?Union &$value_type
     ): void {
         if ($iterator_atomic_type instanceof TIterable
             || ($iterator_atomic_type instanceof TGenericObject
@@ -996,8 +999,8 @@ class ForeachAnalyzer
                     ? $iterator_atomic_type->type_params
                     : array_values(
                         array_map(
-                            /** @param array<string, Type\Union> $arr */
-                            function (array $arr) use ($iterator_atomic_type): Type\Union {
+                            /** @param array<string, Union> $arr */
+                            function (array $arr) use ($iterator_atomic_type): Union {
                                 return $arr[$iterator_atomic_type->value] ?? Type::getMixed();
                             },
                             $generic_storage->template_types
@@ -1034,7 +1037,7 @@ class ForeachAnalyzer
         PhpParser\Node\Expr $foreach_expr,
         Context $context,
         string $method_name
-    ): ?Type\Union {
+    ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -1082,9 +1085,9 @@ class ForeachAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>>  $template_extended_params
-     * @param  array<string, array<string, Type\Union>>  $class_template_types
-     * @param  array<int, Type\Union> $calling_type_params
+     * @param  array<string, array<string, Union>>  $template_extended_params
+     * @param  array<string, array<string, Union>>  $class_template_types
+     * @param  array<int, Union> $calling_type_params
      */
     private static function getExtendedType(
         string $template_name,
@@ -1093,7 +1096,7 @@ class ForeachAnalyzer
         array $template_extended_params,
         ?array $class_template_types = null,
         ?array $calling_type_params = null
-    ): ?Type\Union {
+    ): ?Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
                 $offset = array_search($template_name, array_keys($class_template_types));

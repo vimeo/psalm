@@ -3,7 +3,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Internal\Clause;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -11,7 +11,7 @@ use Psalm\Type;
 class IfScope
 {
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $new_vars;
 
@@ -21,7 +21,7 @@ class IfScope
     public $new_vars_possibly_in_scope = [];
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $redefined_vars;
 
@@ -36,7 +36,7 @@ class IfScope
     public $possibly_assigned_var_ids = [];
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $possibly_redefined_vars = [];
 

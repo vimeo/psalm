@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
@@ -51,7 +52,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['array_map'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -83,7 +84,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($array_arg_types) {
-                return new Type\Union([new TKeyedArray($array_arg_types)]);
+                return new Union([new TKeyedArray($array_arg_types)]);
             }
 
             return Type::getArray();
@@ -195,9 +196,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $atomic_type = new TKeyedArray(
                     array_map(
                         /**
-                        * @return Type\Union
+                        * @return Union
                         */
-                        function (Type\Union $_) use ($mapping_return_type): Type\Union {
+                        function (Union $_) use ($mapping_return_type): Union {
                             return clone $mapping_return_type;
                         },
                         $array_arg_atomic_type->properties
@@ -208,21 +209,21 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $atomic_type->previous_key_type = $array_arg_atomic_type->previous_key_type;
                 $atomic_type->previous_value_type = $mapping_return_type;
 
-                return new Type\Union([$atomic_type]);
+                return new Union([$atomic_type]);
             }
 
             if ($array_arg_atomic_type instanceof TList
                 || count($call_args) !== 2
             ) {
                 if ($array_arg_atomic_type instanceof TNonEmptyList) {
-                    return new Type\Union([
+                    return new Union([
                         new TNonEmptyList(
                             $mapping_return_type
                         ),
                     ]);
                 }
 
-                return new Type\Union([
+                return new Union([
                     new TList(
                         $mapping_return_type
                     ),
@@ -230,7 +231,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($array_arg_atomic_type instanceof TNonEmptyArray) {
-                return new Type\Union([
+                return new Union([
                     new TNonEmptyArray([
                         $generic_key_type,
                         $mapping_return_type,
@@ -238,7 +239,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 ]);
             }
 
-            return new Type\Union([
+            return new Union([
                 new TArray([
                     $generic_key_type,
                     $mapping_return_type,
@@ -247,7 +248,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
-            ? new Type\Union([
+            ? new Union([
                 new TArray([
                     $array_arg_type->key ?? Type::getArrayKey(),
                     Type::getMixed(),
@@ -264,7 +265,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Expr $fake_call,
         Context $context,
         ?array &$assertions = null
-    ): ?Type\Union {
+    ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -347,7 +348,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null
-    ): Type\Union {
+    ): Union {
         $mapping_return_type = null;
 
         $codebase = $statements_source->getCodebase();
@@ -416,7 +417,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
                         $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
-                            ?: new Type\Union([
+                            ?: new Union([
                                 new TNamedObject($callable_fq_class_name)
                             ]);
 

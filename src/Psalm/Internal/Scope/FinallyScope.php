@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Internal\Scope;
 
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -9,12 +9,12 @@ use Psalm\Type;
 class FinallyScope
 {
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $vars_in_scope = [];
 
     /**
-     * @param array<string, Type\Union> $vars_in_scope
+     * @param array<string, Union> $vars_in_scope
      */
     public function __construct(array $vars_in_scope)
     {

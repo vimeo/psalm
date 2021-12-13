@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
@@ -123,7 +124,7 @@ class DoAnalyzer
             $changed_var_ids = [];
 
             $inner_loop_context->vars_in_scope =
-                Type\Reconciler::reconcileKeyedTypes(
+                Reconciler::reconcileKeyedTypes(
                     $negated_while_types,
                     [],
                     $inner_loop_context->vars_in_scope,

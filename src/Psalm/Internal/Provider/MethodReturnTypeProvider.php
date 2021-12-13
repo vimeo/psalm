@@ -14,7 +14,7 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface as LegacyMethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 use function is_subclass_of;
 use function strtolower;
@@ -24,7 +24,7 @@ class MethodReturnTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(MethodReturnTypeProviderEvent): ?Type\Union>
+     *   array<Closure(MethodReturnTypeProviderEvent): ?Union>
      * >
      */
     private static $handlers = [];
@@ -39,10 +39,10 @@ class MethodReturnTypeProvider
      *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
-     *     ?array<Type\Union>=,
+     *     ?array<Union>=,
      *     ?string=,
      *     ?lowercase-string=
-     *   ): ?Type\Union>
+     *   ): ?Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -80,7 +80,7 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param Closure(MethodReturnTypeProviderEvent): ?Type\Union $c
+     * @param Closure(MethodReturnTypeProviderEvent): ?Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -95,10 +95,10 @@ class MethodReturnTypeProvider
      *     list<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
-     *     ?array<Type\Union>=,
+     *     ?array<Union>=,
      *     ?string=,
      *     ?lowercase-string=
-     *   ): ?Type\Union $c
+     *   ): ?Union $c
      *
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
@@ -114,7 +114,7 @@ class MethodReturnTypeProvider
 
     /**
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Type\Union> $template_type_parameters
+     * @param  ?array<Union> $template_type_parameters
      */
     public function getReturnType(
         StatementsSource $statements_source,
@@ -126,7 +126,7 @@ class MethodReturnTypeProvider
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name = null
-    ): ?Type\Union {
+    ): ?Union {
         foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $result = $class_handler(
                 $statements_source,

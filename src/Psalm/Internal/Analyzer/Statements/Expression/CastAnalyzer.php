@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_pop;
@@ -74,7 +75,7 @@ class CastAnalyzer
                 if (count($maybe_type->getAtomicTypes()) === 1
                     && $maybe_type->getSingleAtomic() instanceof TBool) {
                     $as_int = false;
-                    $type = new Type\Union([
+                    $type = new Union([
                         new TLiteralInt(0),
                         new TLiteralInt(1),
                     ]);
@@ -188,7 +189,7 @@ class CastAnalyzer
             }
             $context->inside_general_use = $was_inside_general_use;
 
-            $type = new Type\Union([new TNamedObject('stdClass')]);
+            $type = new Union([new TNamedObject('stdClass')]);
 
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
@@ -222,7 +223,7 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Type\Union([$type])]);
+                        $keyed_array = new TKeyedArray([new Union([$type])]);
                         $keyed_array->is_list = true;
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
@@ -280,10 +281,10 @@ class CastAnalyzer
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        Type\Union $stmt_type,
+        Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
-    ): Type\Union {
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $invalid_casts = [];
@@ -331,7 +332,7 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TMixed
                 || $atomic_type instanceof TResource
-                || $atomic_type instanceof Type\Atomic\Scalar
+                || $atomic_type instanceof Scalar
             ) {
                 $castable_types[] = new TString();
 
@@ -451,7 +452,7 @@ class CastAnalyzer
     }
 
     private static function handleRedundantCast(
-        Type\Union $maybe_type,
+        Union $maybe_type,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt
     ): void {

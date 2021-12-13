@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_map;
 use function extension_loaded;
@@ -423,7 +424,7 @@ class NamedFunctionCallHandler
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
-                    new Type\Union([new TLowercaseString()])
+                    new Union([new TLowercaseString()])
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
@@ -505,7 +506,7 @@ class NamedFunctionCallHandler
                             $atomic_type = new TDependentGetDebugType($var_id);
                         }
 
-                        $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
+                        $statements_analyzer->node_data->setType($real_stmt, new Union([$atomic_type]));
 
                         return;
                     }
@@ -564,7 +565,7 @@ class NamedFunctionCallHandler
                 }
 
                 if ($class_string_types) {
-                    $statements_analyzer->node_data->setType($real_stmt, new Type\Union($class_string_types));
+                    $statements_analyzer->node_data->setType($real_stmt, new Union($class_string_types));
                 }
             }
         } elseif ($function_id === 'get_class'
@@ -572,7 +573,7 @@ class NamedFunctionCallHandler
         ) {
             $statements_analyzer->node_data->setType(
                 $real_stmt,
-                new Type\Union([
+                new Union([
                     new TClassString(
                         $get_class_name,
                         new TNamedObject($get_class_name)

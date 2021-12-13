@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Union;
 
 use function class_exists;
 
@@ -22,7 +23,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         return ['PDOStatement'];
     }
 
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
@@ -37,10 +38,10 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
 
             switch ($fetch_mode) {
                 case PDO::FETCH_ASSOC: // array<string,scalar|null>|false
-                    return new Type\Union([
+                    return new Union([
                         new TArray([
                             Type::getString(),
-                            new Type\Union([
+                            new Union([
                                 new TScalar(),
                                 new TNull()
                             ])
@@ -49,10 +50,10 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     ]);
 
                 case PDO::FETCH_BOTH: // array<array-key,scalar|null>|false
-                    return new Type\Union([
+                    return new Union([
                         new TArray([
                             Type::getArrayKey(),
-                            new Type\Union([
+                            new Union([
                                 new TScalar(),
                                 new TNull()
                             ])
@@ -64,7 +65,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     return Type::getBool();
 
                 case PDO::FETCH_CLASS: // object|false
-                    return new Type\Union([
+                    return new Union([
                         new TObject(),
                         new TFalse(),
                     ]);
@@ -72,16 +73,16 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                 case PDO::FETCH_LAZY: // object|false
                     // This actually returns a PDORow object, but that class is
                     // undocumented, and its attributes are all dynamic anyway
-                    return new Type\Union([
+                    return new Union([
                         new TObject(),
                         new TFalse(),
                     ]);
 
                 case PDO::FETCH_NAMED: // array<string, scalar|list<scalar>>|false
-                    return new Type\Union([
+                    return new Union([
                         new TArray([
                             Type::getString(),
-                            new Type\Union([
+                            new Union([
                                 new TScalar(),
                                 new TList(Type::getScalar())
                             ])
@@ -90,9 +91,9 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     ]);
 
                 case PDO::FETCH_NUM: // list<scalar|null>|false
-                    return new Type\Union([
+                    return new Union([
                         new TList(
-                            new Type\Union([
+                            new Union([
                                 new TScalar(),
                                 new TNull()
                             ])
@@ -101,7 +102,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     ]);
 
                 case PDO::FETCH_OBJ: // stdClass|false
-                    return new Type\Union([
+                    return new Union([
                         new TNamedObject('stdClass'),
                         new TFalse(),
                     ]);

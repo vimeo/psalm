@@ -35,6 +35,7 @@ use Psalm\Node\VirtualName;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -44,6 +45,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -379,9 +381,9 @@ class CallAnalyzer
      * This gets all the template params (and their types) that we think
      * we'll need to know about
      *
-     * @return array<string, array<string, Type\Union>>
-     * @param array<string, non-empty-array<string, Type\Union>> $existing_template_types
-     * @param array<string, array<string, Type\Union>> $class_template_params
+     * @return array<string, array<string, Union>>
+     * @param array<string, non-empty-array<string, Union>> $existing_template_types
+     * @param array<string, array<string, Union>> $class_template_params
      */
     public static function getTemplateTypesForCall(
         Codebase $codebase,
@@ -412,7 +414,7 @@ class CallAnalyzer
                                         $class_template_params + $template_types
                                     );
                                 } else {
-                                    $output_type_candidate = new Type\Union([$atomic_type]);
+                                    $output_type_candidate = new Union([$atomic_type]);
                                 }
 
                                 $output_type = Type::combineUnionTypes(
@@ -454,15 +456,15 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>>  $template_extended_params
-     * @param  array<string, array<string, Type\Union>>  $found_generic_params
+     * @param  array<string, array<string, Union>>  $template_extended_params
+     * @param  array<string, array<string, Union>>  $found_generic_params
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,
         string $template_name,
         array $template_extended_params,
         array $found_generic_params
-    ): Type\Union {
+    ): Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             return $found_generic_params[$template_name][$fq_class_name];
         }
@@ -796,7 +798,7 @@ class CallAnalyzer
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
                             } elseif ($replacement_atomic_type instanceof TNamedObject) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
+                            } elseif ($replacement_atomic_type instanceof Scalar) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getAssertionString();
                             } elseif ($replacement_atomic_type instanceof TNull) {
                                 $ored_type_assertions[] = $prefix . 'null';
@@ -904,7 +906,7 @@ class CallAnalyzer
 
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
                 foreach ($map as $ref => $type) {
-                    $template_type_map[$template_name][$ref] = new Type\Union([
+                    $template_type_map[$template_name][$ref] = new Union([
                         new TTemplateParam(
                             $template_name,
                             $type,

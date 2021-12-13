@@ -1,6 +1,8 @@
 <?php
 namespace Psalm;
 
+use Psalm\Type\Union;
+
 interface StatementsSource extends FileSource
 {
     public function getNamespace(): ?string;
@@ -22,7 +24,7 @@ interface StatementsSource extends FileSource
     public function getParentFQCLN(): ?string;
 
     /**
-     * @return array<string, array<string, Type\Union>>|null
+     * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array;
 

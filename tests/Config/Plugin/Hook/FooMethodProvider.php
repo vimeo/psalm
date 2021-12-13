@@ -48,7 +48,7 @@ class FooMethodProvider implements
         return null;
     }
 
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod') {

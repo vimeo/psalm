@@ -8,6 +8,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -21,7 +22,7 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['rand', 'mt_rand', 'random_int'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $call_args = $event->getCallArgs();
         if (count($call_args) === 0) {
@@ -62,6 +63,6 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
-        return new Type\Union([new TIntRange($min_value, $max_value)]);
+        return new Union([new TIntRange($min_value, $max_value)]);
     }
 }

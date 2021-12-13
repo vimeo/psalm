@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function explode;
@@ -160,7 +161,7 @@ class ClassConstFetchAnalyzer
 
                     $statements_analyzer->node_data->setType(
                         $stmt,
-                        new Type\Union([
+                        new Union([
                             new TClassString($fq_class_name, $static_named_object)
                         ])
                     );
@@ -427,9 +428,9 @@ class ClassConstFetchAnalyzer
             }
 
             if ($has_mixed_or_object) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TClassString()]));
+                $statements_analyzer->node_data->setType($stmt, new Union([new TClassString()]));
             } elseif ($class_string_types) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
+                $statements_analyzer->node_data->setType($stmt, new Union($class_string_types));
             }
 
             return true;

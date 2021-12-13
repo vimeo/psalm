@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
@@ -40,7 +41,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_filter'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -119,7 +120,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
                 $first_arg_array->sealed = false;
 
-                return new Type\Union([$first_arg_array]);
+                return new Union([$first_arg_array]);
             }
         }
 
@@ -140,7 +141,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && $key_type->isSingleIntLiteral()
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
-                return new Type\Union([
+                return new Union([
                     new TList(
                         $inner_type
                     ),
@@ -160,7 +161,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 return Type::getEmptyArray();
             }
 
-            return new Type\Union([
+            return new Union([
                 new TArray([
                     $key_type,
                     $inner_type,
@@ -300,7 +301,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
             }
 
-            return new Type\Union([
+            return new Union([
                 new TArray([
                     $key_type,
                     $inner_type,
@@ -313,7 +314,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return Type::getEmptyArray();
         }
 
-        return new Type\Union([
+        return new Union([
             new TArray([
                 $key_type,
                 $inner_type,

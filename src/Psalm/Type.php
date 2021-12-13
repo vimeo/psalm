@@ -10,7 +10,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -71,7 +70,7 @@ abstract class Type
      * Parses a string type representation
      *
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array<string, Type\Union>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      */
     public static function parseString(
         string $type_string,
@@ -366,8 +365,8 @@ abstract class Type
     {
         $type = new TArray(
             [
-                new Type\Union([new TArrayKey]),
-                new Type\Union([new TMixed]),
+                new Union([new TArrayKey]),
+                new Union([new TMixed]),
             ]
         );
 
@@ -378,26 +377,26 @@ abstract class Type
     {
         $array_type = new TArray(
             [
-                new Type\Union([new TEmpty]),
-                new Type\Union([new TEmpty]),
+                new Union([new TEmpty]),
+                new Union([new TEmpty]),
             ]
         );
 
-        return new Type\Union([
+        return new Union([
             $array_type,
         ]);
     }
 
     public static function getList(): Union
     {
-        $type = new TList(new Type\Union([new TMixed]));
+        $type = new TList(new Union([new TMixed]));
 
         return new Union([$type]);
     }
 
     public static function getNonEmptyList(): Union
     {
-        $type = new TNonEmptyList(new Type\Union([new TMixed]));
+        $type = new TNonEmptyList(new Union([new TMixed]));
 
         return new Union([$type]);
     }
@@ -429,9 +428,9 @@ abstract class Type
     }
 
     /**
-     * @param non-empty-list<Type\Union> $union_types
+     * @param non-empty-list<Union> $union_types
      */
-    public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase): Type\Union
+    public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase): Union
     {
         $first_type = array_pop($union_types);
 

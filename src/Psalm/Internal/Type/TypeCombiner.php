@@ -1384,7 +1384,7 @@ class TypeCombiner
             ) {
                 $combination->objectlike_entries = array_filter(
                     $combination->objectlike_entries,
-                    function (Type\Union $type): bool {
+                    function (Union $type): bool {
                         return !$type->possibly_undefined;
                     }
                 );
@@ -1477,7 +1477,7 @@ class TypeCombiner
 
             $objectlike_generic_type->possibly_undefined = false;
 
-            $objectlike_key_type = new Type\Union(array_values($objectlike_keys));
+            $objectlike_key_type = new Union(array_values($objectlike_keys));
 
             $objectlike_key_type = Type::combineUnionTypes(
                 $combination->objectlike_key_type,

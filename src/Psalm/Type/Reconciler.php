@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 
@@ -70,12 +71,12 @@ class Reconciler
      *
      * @param  array<string, array<array<int, string>>> $new_types
      * @param  array<string, array<array<int, string>>> $active_new_types - types we can complain about
-     * @param  array<string, Type\Union> $existing_types
+     * @param  array<string, Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  array<string, array<string, Type\Union>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      *
-     * @return array<string, Type\Union>
+     * @return array<string, Union>
      */
     public static function reconcileKeyedTypes(
         array $new_types,
@@ -328,7 +329,7 @@ class Reconciler
      * ]
      *
      * @param array<string, array<array<int, string>>> $new_types
-     * @param array<string, Type\Union> $existing_types
+     * @param array<string, Union> $existing_types
      *
      * @return array<string, array<array<int, string>>>
      */
@@ -542,7 +543,7 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param array<string,Type\Union>  $existing_keys
+     * @param array<string, Union>  $existing_keys
      * @param array<string,mixed>       $new_assertions
      */
     private static function getValueForKey(
@@ -836,7 +837,7 @@ class Reconciler
         Codebase $codebase,
         string $fq_class_name,
         string $property_name
-    ): ?Type\Union {
+    ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
         if (!$codebase->properties->propertyExists($property_id, true)) {
@@ -1001,14 +1002,14 @@ class Reconciler
 
     /**
      * @param  string[]                  $key_parts
-     * @param  array<string,Type\Union>  $existing_types
+     * @param  array<string, Union>  $existing_types
      * @param  array<string, bool>       $changed_var_ids
      */
     private static function adjustTKeyedArrayType(
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Type\Union $result_type
+        Union $result_type
     ): void {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);

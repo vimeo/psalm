@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -24,7 +25,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         return ['array_slice'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -91,6 +92,6 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $return_atomic_type = new TList($return_atomic_type->type_params[1]);
         }
 
-        return new Type\Union([$return_atomic_type]);
+        return new Union([$return_atomic_type]);
     }
 }

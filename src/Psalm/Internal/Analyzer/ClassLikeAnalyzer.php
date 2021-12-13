@@ -21,6 +21,7 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_pop;
@@ -457,7 +458,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array<string, Type\Union>>|null
+     * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array
     {
@@ -480,7 +481,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * @param  mixed $value
      *
      */
-    public static function getTypeFromValue($value): Type\Union
+    public static function getTypeFromValue($value): Union
     {
         switch (gettype($value)) {
             case 'boolean':

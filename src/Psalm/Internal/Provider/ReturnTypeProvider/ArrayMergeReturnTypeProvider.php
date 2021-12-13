@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_values;
@@ -32,7 +33,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         return ['array_merge', 'array_replace'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -225,18 +226,18 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 $objectlike->previous_value_type = $inner_value_type;
             }
 
-            return new Type\Union([$objectlike]);
+            return new Union([$objectlike]);
         }
 
         if ($inner_value_type) {
             if ($all_int_offsets) {
                 if ($any_nonempty) {
-                    return new Type\Union([
+                    return new Union([
                         new TNonEmptyList($inner_value_type),
                     ]);
                 }
 
-                return new Type\Union([
+                return new Union([
                     new TList($inner_value_type),
                 ]);
             }
@@ -244,7 +245,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $inner_key_type = $inner_key_type ?? Type::getArrayKey();
 
             if ($any_nonempty) {
-                return new Type\Union([
+                return new Union([
                     new TNonEmptyArray([
                         $inner_key_type,
                         $inner_value_type,
@@ -252,7 +253,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 ]);
             }
 
-            return new Type\Union([
+            return new Union([
                 new TArray([
                     $inner_key_type,
                     $inner_value_type,

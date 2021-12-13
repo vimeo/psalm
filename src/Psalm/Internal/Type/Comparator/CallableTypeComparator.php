@@ -41,8 +41,8 @@ class CallableTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
-        Type\Atomic $container_type_part,
+        Atomic $input_type_part,
+        Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
@@ -135,7 +135,7 @@ class CallableTypeComparator
 
     public static function isNotExplicitlyCallableTypeCallable(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
+        Atomic $input_type_part,
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
@@ -235,7 +235,7 @@ class CallableTypeComparator
      */
     public static function getCallableFromAtomic(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
+        Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
         bool $expand_callable = false

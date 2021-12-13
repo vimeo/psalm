@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 use function count;
 use function reset;
@@ -24,7 +25,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_column'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -131,6 +132,6 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 : new TList($result_element_type ?? Type::getMixed());
         }
 
-        return new Type\Union([$type]);
+        return new Union([$type]);
     }
 }

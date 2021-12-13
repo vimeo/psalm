@@ -37,6 +37,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
@@ -49,6 +50,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
@@ -63,7 +65,7 @@ class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         bool $ignore_nullable_issues,
         bool &$moved_call,
         bool &$has_mock,
@@ -260,7 +262,7 @@ class AtomicStaticCallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         array $intersection_types,
         string $fq_class_name,
         bool &$moved_call,
@@ -384,7 +386,7 @@ class AtomicStaticCallAnalyzer
                     // In that case, Union will be initialized with an empty array but
                     // replaced with non-empty types in the following loop.
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $mixin_candidate_type = new Type\Union($mixin_candidates_no_generic);
+                    $mixin_candidate_type = new Union($mixin_candidates_no_generic);
 
                     foreach ($mixin_candidates as $tGenericMixin) {
                         if (!($tGenericMixin instanceof TGenericObject)) {
@@ -397,7 +399,7 @@ class AtomicStaticCallAnalyzer
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
-                            new Type\Union([$lhs_type_part]),
+                            new Union([$lhs_type_part]),
                             $tGenericMixin,
                             $class_storage,
                             $mixin_declaring_class_storage
@@ -791,7 +793,7 @@ class AtomicStaticCallAnalyzer
             $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
 
             if ($method_storage) {
-                $return_type_candidate = new Type\Union([new TClosure(
+                $return_type_candidate = new Union([new TClosure(
                     'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
@@ -936,7 +938,7 @@ class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         bool $ignore_nullable_issues
     ): void {
         $codebase = $statements_analyzer->getCodebase();

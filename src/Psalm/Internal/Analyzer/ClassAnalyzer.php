@@ -76,6 +76,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -105,7 +106,7 @@ use function substr;
 class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $inferred_property_types = [];
 
@@ -292,7 +293,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             && $storage->mixin_declaring_fqcln === $storage->name) {
             /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
             $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
-            $union = new Type\Union($mixins);
+            $union = new Union($mixins);
 
             $static_self = new TNamedObject($storage->name);
             $static_self->was_static = true;
@@ -1228,7 +1229,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $this_atomic_object_type = new TNamedObject($fq_class_name);
             $this_atomic_object_type->was_static = !$storage->final;
 
-            $method_context->vars_in_scope['$this'] = new Type\Union([$this_atomic_object_type]);
+            $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
@@ -1592,7 +1593,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private static function addOrUpdatePropertyType(
         ProjectAnalyzer $project_analyzer,
         PhpParser\Node\Stmt\Property $property,
-        Type\Union $inferred_type,
+        Union $inferred_type,
         StatementsSource $source,
         bool $docblock_only = false
     ): void {
@@ -1824,7 +1825,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($class_storage->template_types as $param_name => $template_map) {
                 $key = array_keys($template_map)[0];
 
-                $template_params[] = new Type\Union([
+                $template_params[] = new Union([
                     new TTemplateParam(
                         $param_name,
                         reset($template_map),

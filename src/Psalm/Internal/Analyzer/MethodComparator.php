@@ -32,6 +32,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function in_array;
 use function strpos;
@@ -527,7 +528,7 @@ class MethodComparator
         MethodStorage $guide_method_storage,
         MethodStorage $implementer_method_storage,
         FunctionLikeParameter $guide_param,
-        Type\Union $implementer_param_signature_type,
+        Union $implementer_param_signature_type,
         string $cased_guide_method_id,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
@@ -650,8 +651,8 @@ class MethodComparator
         MethodStorage $implementer_method_storage,
         string $cased_guide_method_id,
         string $cased_implementer_method_id,
-        Type\Union $guide_param_type,
-        Type\Union $implementer_param_type,
+        Union $guide_param_type,
+        Union $implementer_param_type,
         CodeLocation $code_location,
         array $suppressed_issues
     ): void {
@@ -813,7 +814,7 @@ class MethodComparator
         ClassLikeStorage $implementer_classlike_storage,
         MethodStorage $guide_method_storage,
         MethodStorage $implementer_method_storage,
-        Type\Union $guide_signature_return_type,
+        Union $guide_signature_return_type,
         string $cased_guide_method_id,
         string $implementer_called_class_name,
         string $cased_implementer_method_id,
@@ -901,8 +902,8 @@ class MethodComparator
         ClassLikeStorage $guide_classlike_storage,
         ClassLikeStorage $implementer_classlike_storage,
         MethodStorage $implementer_method_storage,
-        Type\Union $guide_return_type,
-        Type\Union $implementer_return_type,
+        Union $guide_return_type,
+        Union $implementer_return_type,
         string $cased_guide_method_id,
         string $implementer_called_class_name,
         ?MethodIdentifier $implementer_declaring_method_id,
@@ -1026,12 +1027,12 @@ class MethodComparator
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>>  $template_extended_params
+     * @param  array<string, array<string, Union>>  $template_extended_params
      */
     private static function transformTemplates(
         array $template_extended_params,
         string $base_class_name,
-        Type\Union $templated_type,
+        Union $templated_type,
         Codebase $codebase
     ): void {
         if (isset($template_extended_params[$base_class_name])) {

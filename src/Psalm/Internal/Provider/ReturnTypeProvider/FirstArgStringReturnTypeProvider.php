@@ -6,6 +6,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -19,7 +20,7 @@ class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInte
         ];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

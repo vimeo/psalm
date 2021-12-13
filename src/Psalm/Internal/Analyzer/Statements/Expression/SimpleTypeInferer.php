@@ -55,7 +55,7 @@ class SimpleTypeInferer
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
-    ): ?Type\Union {
+    ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 $left = self::infer(
@@ -121,7 +121,7 @@ class SimpleTypeInferer
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
-                return new Type\Union(
+                return new Union(
                     [
                         new TLiteralInt(-1),
                         new TLiteralInt(0),
@@ -223,7 +223,7 @@ class SimpleTypeInferer
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
             || $stmt instanceof PhpParser\Node\Scalar\MagicConst\File
         ) {
-            return new Type\Union([new TNonEmptyString()]);
+            return new Union([new TNonEmptyString()]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
@@ -444,7 +444,7 @@ class SimpleTypeInferer
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
-    ): ?Type\Union {
+    ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
         }
@@ -505,14 +505,14 @@ class SimpleTypeInferer
             );
             $objectlike->sealed = true;
             $objectlike->is_list = $array_creation_info->all_list;
-            return new Type\Union([$objectlike]);
+            return new Union([$objectlike]);
         }
 
         if (!$item_key_type || !$item_value_type) {
             return null;
         }
 
-        return new Type\Union([
+        return new Union([
             new TNonEmptyArray([
                 $item_key_type,
                 $item_value_type,
@@ -674,7 +674,7 @@ class SimpleTypeInferer
 
     private static function handleUnpackedArray(
         ArrayCreationInfo $array_creation_info,
-        Type\Union $unpacked_array_type
+        Union $unpacked_array_type
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof TKeyedArray) {
@@ -695,12 +695,7 @@ class SimpleTypeInferer
                     $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
-<<<<<<< HEAD
-            } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
-=======
             } elseif ($unpacked_atomic_type instanceof TArray) {
-                /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
->>>>>>> 9ac32c19b (Conversion of Psalm\Type\Atomic)
                 if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
                     continue;
                 }

@@ -27,9 +27,11 @@ use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 
 use function array_map;
 use function count;
@@ -52,7 +54,7 @@ class ExistingAtomicStaticCallAnalyzer
         PhpParser\Node\Identifier $stmt_name,
         array $args,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         MethodIdentifier $method_id,
         string $cased_method_id,
         ClassLikeStorage $class_storage,
@@ -259,10 +261,10 @@ class ExistingAtomicStaticCallAnalyzer
                     || !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $context->vars_in_scope['$this']
-                            ?? new Type\Union([
+                            ?? new Union([
                                 new TNamedObject($context->self)
                             ]),
-                        new Type\Union([
+                        new Union([
                             new TNamedObject($method_id->fq_class_name)
                         ])
                     ))
@@ -464,12 +466,12 @@ class ExistingAtomicStaticCallAnalyzer
         array $args,
         TemplateResult $template_result,
         ?string &$self_fq_class_name,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config
-    ): ?Type\Union {
+    ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
             $self_fq_class_name,
@@ -536,7 +538,7 @@ class ExistingAtomicStaticCallAnalyzer
                 $static_type = new TTemplateParam(
                     $lhs_type_part->param_name,
                     $lhs_type_part->as_type
-                        ? new Type\Union([$lhs_type_part->as_type])
+                        ? new Union([$lhs_type_part->as_type])
                         : Type::getObject(),
                     $lhs_type_part->defining_class
                 );

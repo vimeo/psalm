@@ -46,6 +46,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
@@ -56,6 +57,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -76,7 +78,7 @@ use const PREG_SPLIT_NO_EMPTY;
 class ArgumentAnalyzer
 {
     /**
-     * @param  array<string, array<string, Type\Union>> $class_generic_params
+     * @param  array<string, array<string, Union>> $class_generic_params
      * @return false|null
      */
     public static function checkArgumentMatches(
@@ -91,7 +93,7 @@ class ArgumentAnalyzer
         int $unpacked_argument_offset,
         bool $allow_named_args,
         PhpParser\Node\Arg $arg,
-        ?Type\Union $arg_value_type,
+        ?Union $arg_value_type,
         Context $context,
         array $class_generic_params,
         ?TemplateResult $template_result,
@@ -215,7 +217,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>> $class_generic_params
+     * @param  array<string, array<string, Union>> $class_generic_params
      * @return false|null
      */
     private static function checkFunctionLikeTypeMatches(
@@ -228,7 +230,7 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
         bool $allow_named_args,
-        Type\Union $arg_type,
+        Union $arg_type,
         int $argument_offset,
         int $unpacked_argument_offset,
         PhpParser\Node\Arg $arg,
@@ -493,7 +495,7 @@ class ArgumentAnalyzer
                     ) {
                         $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
-                        if ($function_param->default_type instanceof Type\Union) {
+                        if ($function_param->default_type instanceof Union) {
                             $arg_type = $function_param->default_type;
                         } else {
                             $arg_type_atomic = ConstantTypeResolver::resolve(
@@ -502,7 +504,7 @@ class ArgumentAnalyzer
                                 $statements_analyzer
                             );
 
-                            $arg_type = new Type\Union([$arg_type_atomic]);
+                            $arg_type = new Union([$arg_type_atomic]);
                         }
                     } else {
                         $arg_type = Type::getMixed();
@@ -661,9 +663,9 @@ class ArgumentAnalyzer
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $input_type,
-        Type\Union $param_type,
-        ?Type\Union $signature_param_type,
+        Union $input_type,
+        Union $param_type,
+        ?Union $signature_param_type,
         ?string $cased_method_id,
         ?MethodIdentifier $method_id,
         int $argument_offset,
@@ -672,7 +674,7 @@ class ArgumentAnalyzer
         Context $context,
         FunctionLikeParameter $function_param,
         bool $unpack,
-        ?Type\Atomic $unpacked_atomic_array,
+        ?Atomic $unpacked_atomic_array,
         bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_call_location
@@ -1155,7 +1157,7 @@ class ArgumentAnalyzer
      */
     private static function verifyExplicitParam(
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $param_type,
+        Union $param_type,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
         Context $context
@@ -1334,14 +1336,14 @@ class ArgumentAnalyzer
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $input_type,
+        Union $input_type,
         bool $input_type_changed,
         PhpParser\Node\Expr $input_expr,
-        Type\Union $param_type,
-        ?Type\Union $signature_param_type,
+        Union $param_type,
+        ?Union $signature_param_type,
         Context $context,
         bool $unpack,
-        ?Type\Atomic $unpacked_atomic_array
+        ?Atomic $unpacked_atomic_array
     ): void {
         if ($param_type->hasMixed()) {
             return;
@@ -1428,21 +1430,21 @@ class ArgumentAnalyzer
                     $unpacked_atomic_array = clone $unpacked_atomic_array;
                     $unpacked_atomic_array->type_param = $input_type;
 
-                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
                     $unpacked_atomic_array = clone $unpacked_atomic_array;
                     $unpacked_atomic_array->type_params[1] = $input_type;
 
-                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
                     $unpacked_atomic_array = $unpacked_atomic_array->getList();
                     $unpacked_atomic_array->type_param = $input_type;
 
-                    $context->vars_in_scope[$var_id] = new Type\Union([$unpacked_atomic_array]);
+                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } else {
-                    $context->vars_in_scope[$var_id] = new Type\Union([
+                    $context->vars_in_scope[$var_id] = new Union([
                         new TArray([
                             Type::getInt(),
                             $input_type
@@ -1463,11 +1465,11 @@ class ArgumentAnalyzer
         CodeLocation $arg_location,
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
-        Type\Union $input_type,
+        Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
         bool $specialize_taint
-    ): Type\Union {
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->data_flow_graph

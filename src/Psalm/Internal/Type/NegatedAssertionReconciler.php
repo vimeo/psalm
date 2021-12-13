@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function count;
 use function explode;
@@ -37,7 +38,7 @@ use function substr;
 class NegatedAssertionReconciler extends Reconciler
 {
     /**
-     * @param  array<string, array<string, Type\Union>> $template_type_map
+     * @param  array<string, array<string, Union>> $template_type_map
      * @param  string[]   $suppressed_issues
      * @param  0|1|2      $failed_reconciliation
      */
@@ -46,7 +47,7 @@ class NegatedAssertionReconciler extends Reconciler
         string $assertion,
         bool $is_strict_equality,
         bool $is_loose_equality,
-        Type\Union $existing_var_type,
+        Union $existing_var_type,
         array $template_type_map,
         string $old_var_type_string,
         ?string $key,
@@ -55,7 +56,7 @@ class NegatedAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation,
         bool $inside_loop
-    ): Type\Union {
+    ): Union {
         $is_equality = $is_strict_equality || $is_loose_equality;
 
         // this is a specific value comparison type that cannot be negated
@@ -378,7 +379,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return new Type\Union([new TEmptyMixed]);
+            return new Union([new TEmptyMixed]);
         }
 
         return $existing_var_type;
@@ -392,14 +393,14 @@ class NegatedAssertionReconciler extends Reconciler
         StatementsAnalyzer $statements_analyzer,
         string $assertion,
         int $bracket_pos,
-        Type\Union $existing_var_type,
+        Union $existing_var_type,
         string $old_var_type_string,
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
         bool $is_strict_equality
-    ): Type\Union {
+    ): Union {
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -475,7 +476,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $enum_storage = $codebase->classlike_storage_provider->get($fq_enum_name);
 
                     if (!$enum_storage->is_enum || !$enum_storage->enum_cases) {
-                        $scalar_var_type = new Type\Union([new TEnumCase($fq_enum_name, $case_name)]);
+                        $scalar_var_type = new Union([new TEnumCase($fq_enum_name, $case_name)]);
                     } else {
                         $existing_var_type->removeType($atomic_type->getKey());
                         $did_remove_type = true;

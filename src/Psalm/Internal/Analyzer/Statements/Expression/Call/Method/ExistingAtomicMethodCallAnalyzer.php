@@ -32,8 +32,10 @@ use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
@@ -56,11 +58,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         Codebase $codebase,
         Context $context,
         TNamedObject $lhs_type_part,
-        ?Type\Atomic $static_type,
+        ?Atomic $static_type,
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result
-    ): Type\Union {
+    ): Union {
         $config = $codebase->config;
 
         $fq_class_name = $lhs_type_part->value;
@@ -476,7 +478,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
         string $fq_class_name
-    ): ?Type\Union {
+    ): ?Union {
         $method_name = strtolower($stmt_name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {
             return null;

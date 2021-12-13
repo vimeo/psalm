@@ -10,7 +10,7 @@ use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\PropertyStorage;
-use Psalm\Type;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function explode;
@@ -289,7 +289,7 @@ class Properties
         bool $property_set,
         ?StatementsSource $source = null,
         ?Context $context = null
-    ): ?Type\Union {
+    ): ?Union {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 

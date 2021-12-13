@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\TaintKind;
 use UnexpectedValueException;
 
 use function array_shift;
@@ -58,7 +59,7 @@ class InternalCallMapHandler
     private static $call_map_callables = [];
 
     /**
-     * @var array<string, list<list<Type\TaintKind::*>>>
+     * @var array<string, list<list<TaintKind::*>>>
      */
     private static $taint_sink_map = [];
 
@@ -372,7 +373,7 @@ class InternalCallMapHandler
         }
 
         /**
-         * @var array<string, list<list<Type\TaintKind::*>>>
+         * @var array<string, list<list<TaintKind::*>>>
          */
         $taint_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 

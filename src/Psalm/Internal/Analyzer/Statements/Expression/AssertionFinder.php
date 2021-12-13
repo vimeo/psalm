@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_key_exists;
@@ -822,8 +823,8 @@ class AssertionFinder
     }
 
     private static function processIrreconcilableFunctionCall(
-        Type\Union $first_var_type,
-        Type\Union $expected_type,
+        Union $first_var_type,
+        Union $expected_type,
         PhpParser\Node\Expr $expr,
         StatementsAnalyzer $source,
         Codebase $codebase,
@@ -1856,7 +1857,7 @@ class AssertionFinder
         FileSource $source,
         PhpParser\Node\Expr\FuncCall $stmt,
         ?string $first_var_name,
-        ?Type\Union $first_var_type,
+        ?Union $first_var_type,
         PhpParser\Node\Expr\FuncCall $expr,
         bool $negate
     ): array {
@@ -1883,7 +1884,7 @@ class AssertionFinder
                     $callable = self::IS_TYPE_CHECKS[$function_name][1];
                     assert(is_callable($callable));
                     $type = $callable();
-                    assert($type instanceof Type\Union);
+                    assert($type instanceof Union);
                     self::processIrreconcilableFunctionCall(
                         $first_var_type,
                         $type,
@@ -3597,13 +3598,13 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\FuncCall $expr
-     * @param Type\Union|null $first_var_type
+     * @param Union|null $first_var_type
      * @param string|null $first_var_name
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function getArrayKeyExistsAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
-        ?Type\Union $first_var_type,
+        ?Union $first_var_type,
         ?string $first_var_name,
         FileSource $source,
         ?string $this_class_name
@@ -4041,9 +4042,9 @@ class AssertionFinder
      */
     private static function handleParadoxicalAssertions(
         StatementsAnalyzer $source,
-        Type\Union $var_type,
+        Union $var_type,
         ?string $this_class_name,
-        Type\Union $other_type,
+        Union $other_type,
         Codebase $codebase,
         PhpParser\Node\Expr\BinaryOp $conditional
     ): void {

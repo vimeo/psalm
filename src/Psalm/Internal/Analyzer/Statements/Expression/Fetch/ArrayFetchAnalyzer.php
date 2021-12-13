@@ -79,6 +79,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_keys;
@@ -276,7 +277,7 @@ class ArrayFetchAnalyzer
                             if (!isset($const_array_key_atomic_types[$offset_key])
                                 && !UnionTypeComparator::isContainedBy(
                                     $codebase,
-                                    new Type\Union([$offset_atomic_type]),
+                                    new Union([$offset_atomic_type]),
                                     $const_array_key_type
                                 )
                             ) {
@@ -285,7 +286,7 @@ class ArrayFetchAnalyzer
                         } elseif (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $const_array_key_type,
-                            new Type\Union([$offset_atomic_type])
+                            new Union([$offset_atomic_type])
                         )) {
                             $new_offset_type->removeType($offset_key);
                         }
@@ -355,8 +356,8 @@ class ArrayFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $var,
         ?string $keyed_array_var_id,
-        Type\Union $stmt_type,
-        Type\Union $offset_type,
+        Union $stmt_type,
+        Union $offset_type,
         ?Context $context = null
     ): void {
         if ($statements_analyzer->data_flow_graph
@@ -452,14 +453,14 @@ class ArrayFetchAnalyzer
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Type\Union $array_type,
-        Type\Union $offset_type,
+        Union $array_type,
+        Union $offset_type,
         bool $in_assignment,
         ?string $array_var_id,
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
-        Type\Union $replacement_type = null
-    ): Type\Union {
+        Union $replacement_type = null
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $has_array_access = false;
@@ -587,7 +588,7 @@ class ArrayFetchAnalyzer
                             $statements_analyzer->getSuppressedIssues()
                         );
 
-                        $array_access_type = new Type\Union([new TEmpty]);
+                        $array_access_type = new Union([new TEmpty]);
                     }
                 } else {
                     if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
@@ -855,8 +856,8 @@ class ArrayFetchAnalyzer
     }
 
     private static function checkLiteralIntArrayOffset(
-        Type\Union $offset_type,
-        Type\Union $expected_offset_type,
+        Union $offset_type,
+        Union $expected_offset_type,
         ?string $array_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -908,8 +909,8 @@ class ArrayFetchAnalyzer
     }
 
     private static function checkLiteralStringArrayOffset(
-        Type\Union $offset_type,
-        Type\Union $expected_offset_type,
+        Union $offset_type,
+        Union $expected_offset_type,
         ?string $array_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
@@ -955,7 +956,7 @@ class ArrayFetchAnalyzer
         }
     }
 
-    public static function replaceOffsetTypeWithInts(Type\Union $offset_type): Type\Union
+    public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
         $offset_types = $offset_type->getAtomicTypes();
 
@@ -1006,9 +1007,9 @@ class ArrayFetchAnalyzer
         bool $in_assignment,
         ?string $array_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        ?Type\Union $array_access_type,
-        Type\Atomic $type
-    ): Type\Union {
+        ?Union $array_access_type,
+        Atomic $type
+    ): Union {
         if (!$context->collect_initializations
             && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -1079,20 +1080,20 @@ class ArrayFetchAnalyzer
      */
     private static function handleArrayAccessOnArray(
         bool $in_assignment,
-        Type\Atomic &$type,
+        Atomic &$type,
         array &$key_values,
-        Type\Union $array_type,
+        Union $array_type,
         string $type_string,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        ?Type\Union $replacement_type,
-        Type\Union &$offset_type,
-        Type\Atomic $original_type,
+        ?Union $replacement_type,
+        Union &$offset_type,
+        Atomic $original_type,
         Codebase $codebase,
         ?string $array_var_id,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
         array &$expected_offset_types,
-        ?Type\Union &$array_access_type,
+        ?Union &$array_access_type,
         bool &$has_array_access,
         bool &$has_valid_offset
     ): void {
@@ -1222,15 +1223,15 @@ class ArrayFetchAnalyzer
         Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Type\Union $array_type,
+        Union $array_type,
         ?string $array_var_id,
         TArray $type,
-        Type\Union $offset_type,
+        Union $offset_type,
         bool $in_assignment,
         array &$expected_offset_types,
-        ?Type\Union $replacement_type,
-        ?Type\Union &$array_access_type,
-        Type\Atomic $original_type,
+        ?Union $replacement_type,
+        ?Union &$array_access_type,
+        Atomic $original_type,
         bool &$has_valid_offset
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
@@ -1242,7 +1243,7 @@ class ArrayFetchAnalyzer
             }
         } elseif (!$type->type_params[0]->isEmpty()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
-                ? new Type\Union([new TArrayKey])
+                ? new Union([new TArrayKey])
                 : $type->type_params[0];
 
             $templated_offset_type = null;
@@ -1261,7 +1262,7 @@ class ArrayFetchAnalyzer
                         && $offset_as->param_name === $original_type->param_name
                         && $offset_as->defining_class === $original_type->defining_class
                     ) {
-                        $type->type_params[1] = new Type\Union([
+                        $type->type_params[1] = new Union([
                             new TTemplateIndexedAccess(
                                 $offset_as->param_name,
                                 $templated_offset_type->param_name,
@@ -1383,9 +1384,9 @@ class ArrayFetchAnalyzer
     private static function handleArrayAccessOnClassStringMap(
         Codebase $codebase,
         TClassStringMap $type,
-        Type\Union $offset_type,
-        ?Type\Union $replacement_type,
-        ?Type\Union &$array_access_type
+        Union $offset_type,
+        ?Union $replacement_type,
+        ?Union &$array_access_type
     ): void {
         $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
@@ -1396,11 +1397,11 @@ class ArrayFetchAnalyzer
                         [],
                         [
                             $type->param_name => [
-                                'class-string-map' => new Type\Union([
+                                'class-string-map' => new Union([
                                     new TTemplateParam(
                                         $offset_type_part->param_name,
                                         $offset_type_part->as_type
-                                            ? new Type\Union([$offset_type_part->as_type])
+                                            ? new Union([$offset_type_part->as_type])
                                             : Type::getObject(),
                                         $offset_type_part->defining_class
                                     )
@@ -1413,11 +1414,11 @@ class ArrayFetchAnalyzer
                         [],
                         [
                             $offset_type_part->param_name => [
-                                $offset_type_part->defining_class => new Type\Union([
+                                $offset_type_part->defining_class => new Union([
                                     new TTemplateParam(
                                         $type->param_name,
                                         $type->as_type
-                                            ? new Type\Union([$type->as_type])
+                                            ? new Union([$type->as_type])
                                             : Type::getObject(),
                                         'class-string-map'
                                     )
@@ -1430,7 +1431,7 @@ class ArrayFetchAnalyzer
                         [],
                         [
                             $type->param_name => [
-                                'class-string-map' => new Type\Union([
+                                'class-string-map' => new Union([
                                     $offset_type_part->as_type
                                         ?: new TObject()
                                 ])
@@ -1484,15 +1485,15 @@ class ArrayFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         array &$key_values,
-        ?Type\Union $replacement_type,
-        ?Type\Union &$array_access_type,
+        ?Union $replacement_type,
+        ?Union &$array_access_type,
         bool $in_assignment,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Type\Union $offset_type,
+        Union $offset_type,
         ?string $array_var_id,
         Context $context,
         TKeyedArray $type,
-        Type\Union $array_type,
+        Union $array_type,
         array &$expected_offset_types,
         string $type_string,
         bool &$has_valid_offset
@@ -1520,7 +1521,7 @@ class ArrayFetchAnalyzer
                         clone $type->properties[$key_value]
                     );
                 } elseif ($in_assignment) {
-                    $type->properties[$key_value] = new Type\Union([new TEmpty]);
+                    $type->properties[$key_value] = new Union([new TEmpty]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
@@ -1688,14 +1689,14 @@ class ArrayFetchAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         TList $type,
-        Type\Union $offset_type,
+        Union $offset_type,
         ?string $array_var_id,
         array $key_values,
         Context $context,
         bool $in_assignment,
         array &$expected_offset_types,
-        ?Type\Union $replacement_type,
-        ?Type\Union &$array_access_type,
+        ?Union $replacement_type,
+        ?Union &$array_access_type,
         bool &$has_valid_offset
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
@@ -1755,11 +1756,11 @@ class ArrayFetchAnalyzer
         Context $context,
         bool $in_assignment,
         ?PhpParser\Node\Expr $assign_value,
-        ?Type\Union &$array_access_type,
+        ?Union &$array_access_type,
         bool &$has_array_access
     ): void {
         if (strtolower($type->value) === 'simplexmlelement') {
-            $call_array_access_type = new Type\Union([new TNamedObject('SimpleXMLElement')]);
+            $call_array_access_type = new Union([new TNamedObject('SimpleXMLElement')]);
         } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
             $old_data_provider = $statements_analyzer->node_data;
 
@@ -1900,11 +1901,11 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         bool $in_assignment,
         Context $context,
-        ?Type\Union $replacement_type,
+        ?Union $replacement_type,
         TString $type,
-        Type\Union $offset_type,
+        Union $offset_type,
         array &$expected_offset_types,
-        ?Type\Union &$array_access_type,
+        ?Union &$array_access_type,
         bool &$has_valid_offset
     ): void {
         if ($in_assignment && $replacement_type) {
@@ -1955,7 +1956,7 @@ class ArrayFetchAnalyzer
                     throw new UnexpectedValueException('This is weird');
                 }
 
-                $valid_offset_type = new Type\Union($valid_offsets);
+                $valid_offset_type = new Union($valid_offsets);
             } else {
                 $valid_offset_type = Type::getInt();
             }
@@ -1986,7 +1987,7 @@ class ArrayFetchAnalyzer
      * @param Atomic[] $offset_types
      */
     private static function checkArrayOffsetType(
-        Type\Union $offset_type,
+        Union $offset_type,
         array $offset_types,
         Codebase $codebase
     ): bool {

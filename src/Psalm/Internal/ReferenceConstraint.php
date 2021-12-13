@@ -1,20 +1,20 @@
 <?php
 namespace Psalm\Internal;
 
-use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 /**
  * @internal
  */
 class ReferenceConstraint
 {
-    /** @var Type\Union|null */
+    /** @var Union|null */
     public $type;
 
-    public function __construct(?Type\Union $type = null)
+    public function __construct(?Union $type = null)
     {
         if ($type) {
             $this->type = clone $type;

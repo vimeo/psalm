@@ -2,7 +2,7 @@
 namespace Psalm\Plugin\EventHandler;
 
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 interface MethodReturnTypeProviderInterface
 {
@@ -16,5 +16,5 @@ interface MethodReturnTypeProviderInterface
      * but another plugin may be able to determine the type, return null. Otherwise return a mixed union type if
      * something should be returned, but can't be more specific.
      */
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union;
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union;
 }

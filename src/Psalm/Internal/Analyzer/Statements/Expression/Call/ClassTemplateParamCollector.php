@@ -19,7 +19,7 @@ class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
-     * @return array<string, non-empty-array<string, Type\Union>>|null
+     * @return array<string, non-empty-array<string, Union>>|null
      * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress LessSpecificReturnStatement
      */
@@ -28,7 +28,7 @@ class ClassTemplateParamCollector
         ClassLikeStorage $class_storage,
         ClassLikeStorage $static_class_storage,
         ?string $method_name = null,
-        ?Type\Atomic $lhs_type_part = null,
+        ?Atomic $lhs_type_part = null,
         bool $self_call = false
     ): ?array {
         $static_fq_class_name = $static_class_storage->name;
@@ -141,7 +141,7 @@ class ClassTemplateParamCollector
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = new Type\Union(
+                        $class_template_params[$type_name][$candidate_class_storage->name] = new Union(
                             self::expandType(
                                 $codebase,
                                 $e[$candidate_class_storage->name][$type_name],
@@ -216,7 +216,7 @@ class ClassTemplateParamCollector
                 }
             } else {
                 $output_type_extends = Type::combineUnionTypes(
-                    new Type\Union([$type_extends_atomic]),
+                    new Union([$type_extends_atomic]),
                     $output_type_extends
                 );
             }
@@ -225,12 +225,12 @@ class ClassTemplateParamCollector
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $e
-     * @return non-empty-list<Type\Atomic>
+     * @param array<string, array<string, Union>> $e
+     * @return non-empty-list<Atomic>
      */
     private static function expandType(
         Codebase $codebase,
-        Type\Union $input_type_extends,
+        Union $input_type_extends,
         array $e,
         string $static_fq_class_name,
         ?array $static_template_types

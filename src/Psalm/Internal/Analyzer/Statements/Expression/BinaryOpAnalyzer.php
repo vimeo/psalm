@@ -23,6 +23,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
@@ -195,7 +196,7 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Type\Union(
+                new Union(
                     [
                         new TLiteralInt(-1),
                         new TLiteralInt(0),
@@ -446,8 +447,8 @@ class BinaryOpAnalyzer
     private static function checkForImpureEqualityComparison(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Equal $stmt,
-        Type\Union $stmt_left_type,
-        Type\Union $stmt_right_type
+        Union $stmt_left_type,
+        Union $stmt_right_type
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 

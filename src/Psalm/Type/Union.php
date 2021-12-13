@@ -15,6 +15,7 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
@@ -1271,7 +1272,7 @@ class Union implements TypeNode
         if ($new_type) {
             foreach ($new_type->types as $key => $new_type_part) {
                 if (!isset($this->types[$key])
-                    || ($new_type_part instanceof Type\Atomic\Scalar
+                    || ($new_type_part instanceof Scalar
                         && get_class($new_type_part) === get_class($this->types[$key]))
                 ) {
                     $this->types[$key] = $new_type_part;

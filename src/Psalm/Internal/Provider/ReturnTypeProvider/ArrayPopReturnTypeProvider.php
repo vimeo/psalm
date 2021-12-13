@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -22,7 +23,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['array_pop', 'array_shift'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

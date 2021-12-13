@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -535,7 +536,7 @@ class ReturnAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
-        Type\Union $inferred_type,
+        Union $inferred_type,
         FunctionLikeStorage $storage
     ): void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -639,9 +640,9 @@ class ReturnAnalyzer
      */
     private static function inferInnerClosureTypeFromParent(
         Codebase $codebase,
-        ?Type\Union $return_type,
-        ?Type\Union $parent_return_type
-    ): ?Type\Union {
+        ?Union $return_type,
+        ?Union $parent_return_type
+    ): ?Union {
         if (!$parent_return_type) {
             return $return_type;
         }

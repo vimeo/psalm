@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -26,7 +27,7 @@ class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_values'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -81,6 +82,6 @@ class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             throw new UnexpectedValueException('This should never happen');
         }
 
-        return new Type\Union([$return_atomic_type]);
+        return new Union([$return_atomic_type]);
     }
 }

@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -23,7 +24,7 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
         return ['version_compare'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -36,7 +37,7 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
 
             if ($operator_type) {
                 if (!$operator_type->hasMixed()) {
-                    $acceptable_operator_type = new Type\Union([
+                    $acceptable_operator_type = new Union([
                         new TLiteralString('<'),
                         new TLiteralString('lt'),
                         new TLiteralString('<='),
@@ -65,13 +66,13 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
                 }
             }
 
-            return new Type\Union([
+            return new Union([
                 new TBool,
                 new TNull,
             ]);
         }
 
-        return new Type\Union([
+        return new Union([
             new TLiteralInt(-1),
             new TLiteralInt(0),
             new TLiteralInt(1),

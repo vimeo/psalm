@@ -13,6 +13,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Union;
 
 class MagicConstAnalyzer
 {
@@ -80,15 +81,15 @@ class MagicConstAnalyzer
             } elseif ($source instanceof FunctionAnalyzer) {
                 $statements_analyzer->node_data->setType($stmt, Type::getString($source->getCorrectlyCasedMethodId()));
             } else {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TCallableString]));
+                $statements_analyzer->node_data->setType($stmt, new Union([new TCallableString]));
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File
             || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
         ) {
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNonEmptyString()]));
+            $statements_analyzer->node_data->setType($stmt, new Union([new TNonEmptyString()]));
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_) {
             if ($statements_analyzer->getSource() instanceof TraitAnalyzer) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TNonEmptyString()]));
+                $statements_analyzer->node_data->setType($stmt, new Union([new TNonEmptyString()]));
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getString());
             }

@@ -7,7 +7,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class MethodReturnTypeProviderEvent
 {
@@ -36,7 +36,7 @@ class MethodReturnTypeProviderEvent
      */
     private $stmt;
     /**
-     * @var Type\Union[]|null
+     * @var Union[]|null
      */
     private $template_type_parameters;
     /**
@@ -54,7 +54,7 @@ class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Type\Union> $template_type_parameters
+     * @param  ?array<Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
      */
@@ -117,7 +117,7 @@ class MethodReturnTypeProviderEvent
     }
 
     /**
-     * @return Type\Union[]|null
+     * @return Union[]|null
      */
     public function getTemplateTypeParameters(): ?array
     {

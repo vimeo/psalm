@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
@@ -55,7 +56,7 @@ use function trim;
 class FunctionLikeDocblockScanner
 {
     /**
-     * @param array<string, non-empty-array<string, Type\Union>> $existing_function_template_types
+     * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function addDocblockInfo(
@@ -407,13 +408,13 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>> $template_types
+     * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
-     * @param  array<string, array<string, Type\Union>> $function_template_types
+     * @param  array<string, array<string, Union>> $function_template_types
      *
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
-     *     array<string, array<string, Type\Union>>
+     *     array<string, array<string, Union>>
      * }
      */
     private static function getConditionalSanitizedTypeTokens(
@@ -461,7 +462,7 @@ class FunctionLikeDocblockScanner
 
                             $param_type_mapping[$token_body] = $template_name;
 
-                            $param_storage->type = new Type\Union([
+                            $param_storage->type = new Union([
                                 new TTemplateParam(
                                     $template_name,
                                     $template_as_type,
@@ -529,8 +530,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $class_template_types
-     * @param array<string, array<string, Type\Union>> $function_template_types
+     * @param array<string, array<string, Union>> $class_template_types
+     * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @return non-empty-list<string>|null
      */
@@ -629,8 +630,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $class_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
+     * @param array<string, array<string, Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @param array<
      *     int,
@@ -816,7 +817,7 @@ class FunctionLikeDocblockScanner
                 $config = Config::getInstance();
 
                 if ($config->add_param_default_to_docblock_type
-                    && $storage_param->default_type instanceof Type\Union
+                    && $storage_param->default_type instanceof Union
                     && !$storage_param->default_type->hasMixed()
                     && (!$storage_param->type || !$storage_param->type->hasMixed())
                 ) {
@@ -873,8 +874,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleReturn(
         Codebase $codebase,
@@ -1092,8 +1093,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleRemovedTaint(
         Codebase $codebase,
@@ -1147,8 +1148,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleAssertions(
         FunctionDocblockComment $docblock_info,
@@ -1307,8 +1308,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      * @param  array{name:string, type:string, line_number: int} $docblock_param_out
      */
     private static function handleParamOut(
@@ -1361,9 +1362,9 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param ?array<string, non-empty-array<string, Type\Union>> $template_types
+     * @param ?array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @return array<string, non-empty-array<string, Type\Union>>
+     * @return array<string, non-empty-array<string, Union>>
      */
     private static function handleTemplates(
         FunctionLikeStorage $storage,

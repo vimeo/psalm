@@ -20,7 +20,7 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
         return ['imagickpixel'];
     }
 
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();

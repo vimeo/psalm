@@ -77,7 +77,7 @@ class ReturnTypeAnalyzer
         SourceAnalyzer $source,
         NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
-        ?Type\Union $return_type = null,
+        ?Union $return_type = null,
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
@@ -167,7 +167,7 @@ class ReturnTypeAnalyzer
                 if (!$inferred_return_type_part->isVoid()) {
                     $atomic_null = new TNull();
                     $atomic_null->from_docblock = true;
-                    $inferred_return_type_parts[] = new Type\Union([$atomic_null]);
+                    $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
                 }
             }
@@ -253,7 +253,7 @@ class ReturnTypeAnalyzer
             : Type::getVoid();
 
         if ($function_always_exits) {
-            $inferred_return_type = new Type\Union([new TNever]);
+            $inferred_return_type = new Union([new TNever]);
         }
 
         $inferred_yield_type = $inferred_yield_types
@@ -293,7 +293,7 @@ class ReturnTypeAnalyzer
             && !$inferred_yield_type
             && !$inferred_return_type->isVoid()
         ) {
-            $inferred_return_type = new Type\Union([new TNamedObject('Generator')]);
+            $inferred_return_type = new Union([new TNamedObject('Generator')]);
         }
 
         if ($is_to_string) {
@@ -920,7 +920,7 @@ class ReturnTypeAnalyzer
     private static function addOrUpdateReturnType(
         FunctionLike $function,
         ProjectAnalyzer $project_analyzer,
-        Type\Union $inferred_return_type,
+        Union $inferred_return_type,
         StatementsSource $source,
         bool $docblock_only = false,
         ?FunctionLikeStorage $function_like_storage = null

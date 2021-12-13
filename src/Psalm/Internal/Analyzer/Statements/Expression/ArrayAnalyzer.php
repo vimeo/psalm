@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_values;
@@ -129,7 +130,7 @@ class ArrayAnalyzer
             $object_like->sealed = true;
             $object_like->is_list = $array_creation_info->all_list;
 
-            $stmt_type = new Type\Union([$object_like]);
+            $stmt_type = new Union([$object_like]);
 
             if ($array_creation_info->parent_taint_nodes) {
                 $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
@@ -148,7 +149,7 @@ class ArrayAnalyzer
                 $array_type->count = count($array_creation_info->property_types);
             }
 
-            $stmt_type = new Type\Union([
+            $stmt_type = new Union([
                 $array_type,
             ]);
 
@@ -235,7 +236,7 @@ class ArrayAnalyzer
 
         $array_type->count = count($array_creation_info->property_types);
 
-        $stmt_type = new Type\Union([
+        $stmt_type = new Union([
             $array_type,
         ]);
 
@@ -500,7 +501,7 @@ class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
-        Type\Union $unpacked_array_type,
+        Union $unpacked_array_type,
         Codebase $codebase
     ): void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {

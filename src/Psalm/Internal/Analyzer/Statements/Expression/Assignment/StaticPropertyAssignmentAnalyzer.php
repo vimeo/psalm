@@ -24,6 +24,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function explode;
 use function strtolower;
@@ -40,7 +41,7 @@ class StaticPropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         ?PhpParser\Node\Expr $assignment_value,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         Context $context
     ): ?bool {
         $var_id = ExpressionIdentifier::getArrayVarId(

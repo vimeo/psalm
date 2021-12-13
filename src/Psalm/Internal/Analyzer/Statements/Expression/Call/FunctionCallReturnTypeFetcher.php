@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -73,7 +74,7 @@ class FunctionCallReturnTypeFetcher
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
         Context $context
-    ): Type\Union {
+    ): Union {
         $stmt_type = null;
         $config = $codebase->config;
 
@@ -87,7 +88,7 @@ class FunctionCallReturnTypeFetcher
             );
 
             if ($candidate_callable) {
-                $stmt_type = new Type\Union([new TClosure(
+                $stmt_type = new Union([new TClosure(
                     'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
@@ -316,7 +317,7 @@ class FunctionCallReturnTypeFetcher
         array $call_args,
         TCallable $callmap_callable,
         Context $context
-    ): Type\Union {
+    ): Union {
         $call_map_key = strtolower($function_id);
 
         $codebase = $statements_analyzer->getCodebase();
@@ -324,7 +325,7 @@ class FunctionCallReturnTypeFetcher
         if (!$call_args) {
             switch ($call_map_key) {
                 case 'hrtime':
-                    return new Type\Union([
+                    return new Union([
                         new TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
@@ -332,7 +333,7 @@ class FunctionCallReturnTypeFetcher
                     ]);
 
                 case 'get_called_class':
-                    return new Type\Union([
+                    return new Union([
                         new TClassString(
                             $context->self ?: 'object',
                             $context->self ? new TNamedObject($context->self, true) : null
@@ -344,7 +345,7 @@ class FunctionCallReturnTypeFetcher
                         $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
 
                         if ($classlike_storage->parent_classes) {
-                            return new Type\Union([
+                            return new Union([
                                 new TClassString(
                                     array_values($classlike_storage->parent_classes)[0]
                                 )
@@ -368,7 +369,7 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof TNonEmptyArray) {
-                                    return new Type\Union([
+                                    return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
                                             : new TPositiveInt
@@ -376,7 +377,7 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof TNonEmptyList) {
-                                    return new Type\Union([
+                                    return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
                                             : new TPositiveInt
@@ -404,14 +405,14 @@ class FunctionCallReturnTypeFetcher
                                     if ($atomic_types['array']->sealed) {
                                         //the KeyedArray is sealed, we can use the min and max
                                         if ($min === $max) {
-                                            return new Type\Union([new TLiteralInt($max)]);
+                                            return new Union([new TLiteralInt($max)]);
                                         }
 
-                                        return new Type\Union([new TIntRange($min, $max)]);
+                                        return new Union([new TIntRange($min, $max)]);
                                     }
 
                                     //the type is not sealed, we can only use the min
-                                    return new Type\Union([new TIntRange($min, null)]);
+                                    return new Union([new TIntRange($min, null)]);
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray
@@ -421,7 +422,7 @@ class FunctionCallReturnTypeFetcher
                                     return Type::getInt(false, 0);
                                 }
 
-                                return new Type\Union([
+                                return new Union([
                                     new TLiteralInt(0),
                                     new TPositiveInt
                                 ]);
@@ -440,7 +441,7 @@ class FunctionCallReturnTypeFetcher
                         }
 
                         if ((string) $first_arg_type === 'false') {
-                            return new Type\Union([
+                            return new Union([
                                 new TKeyedArray([
                                     Type::getInt(),
                                     Type::getInt()
@@ -448,7 +449,7 @@ class FunctionCallReturnTypeFetcher
                             ]);
                         }
 
-                        return new Type\Union([
+                        return new Union([
                             new TKeyedArray([
                                 Type::getInt(),
                                 Type::getInt()
@@ -508,7 +509,7 @@ class FunctionCallReturnTypeFetcher
                     $string_type->addType(new TNull);
                     $string_type->ignore_nullable_issues = true;
 
-                    $call_map_return_type = new Type\Union([
+                    $call_map_return_type = new Union([
                         new TNonEmptyList(
                             $string_type
                         ),
@@ -574,7 +575,7 @@ class FunctionCallReturnTypeFetcher
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
         FunctionLikeStorage $function_storage,
-        Type\Union $stmt_type,
+        Union $stmt_type,
         TemplateResult $template_result,
         Context $context
     ): ?DataFlowNode {

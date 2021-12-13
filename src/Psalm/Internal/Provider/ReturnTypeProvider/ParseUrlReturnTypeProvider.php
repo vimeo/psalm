@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -34,7 +35,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['parse_url'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -47,7 +48,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if (!$component_type->hasMixed()) {
                     $codebase = $statements_source->getCodebase();
 
-                    $acceptable_string_component_type = new Type\Union([
+                    $acceptable_string_component_type = new Union([
                         new TLiteralInt(PHP_URL_SCHEME),
                         new TLiteralInt(PHP_URL_USER),
                         new TLiteralInt(PHP_URL_PASS),
@@ -57,7 +58,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         new TLiteralInt(PHP_URL_FRAGMENT),
                     ]);
 
-                    $acceptable_int_component_type = new Type\Union([
+                    $acceptable_int_component_type = new Union([
                         new TLiteralInt(PHP_URL_PORT),
                     ]);
 
@@ -66,7 +67,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $component_type,
                         $acceptable_string_component_type
                     )) {
-                        $nullable_falsable_string = new Type\Union([
+                        $nullable_falsable_string = new Union([
                             new TString,
                             new TFalse,
                             new TNull,
@@ -90,7 +91,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $component_type,
                         $acceptable_int_component_type
                     )) {
-                        $nullable_falsable_int = new Type\Union([
+                        $nullable_falsable_int = new Union([
                             new TInt,
                             new TFalse,
                             new TNull,
@@ -111,7 +112,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 }
             }
 
-            $nullable_string_or_int = new Type\Union([
+            $nullable_string_or_int = new Union([
                 new TString,
                 new TInt,
                 new TNull,
@@ -141,7 +142,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $component_type->possibly_undefined = true;
         }
 
-        $return_type = new Type\Union([
+        $return_type = new Union([
             new TKeyedArray($component_types),
             new TFalse(),
         ]);
