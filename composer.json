@@ -61,7 +61,8 @@
     },
     "config": {
         "allow-plugins": {
-            "bamarni/composer-bin-plugin": true
+            "bamarni/composer-bin-plugin": true,
+            "composer/package-versions-deprecated": true
         },
         "optimize-autoloader": true,
         "sort-packages": true,
