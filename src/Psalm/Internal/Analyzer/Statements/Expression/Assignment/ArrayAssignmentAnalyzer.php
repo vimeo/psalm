@@ -19,10 +19,20 @@ use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 
 use function array_pop;
 use function array_reverse;
@@ -163,9 +173,9 @@ class ArrayAssignmentAnalyzer
         $key_values = [];
 
         if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
-            $key_values[] = new Type\Atomic\TLiteralString($current_dim->value);
+            $key_values[] = new TLiteralString($current_dim->value);
         } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string) {
-            $key_values[] = new Type\Atomic\TLiteralInt($current_dim->value);
+            $key_values[] = new TLiteralInt($current_dim->value);
         } elseif ($current_dim
             && ($key_type = $statements_analyzer->node_data->getType($current_dim))
             && !$root_is_string
@@ -275,7 +285,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param non-empty-list<Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString> $key_values
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
         Codebase $codebase,
@@ -289,7 +299,7 @@ class ArrayAssignmentAnalyzer
         $child_stmt_type = clone $child_stmt_type;
 
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
-            if ($type instanceof Type\Atomic\TTemplateParam) {
+            if ($type instanceof TTemplateParam) {
                 $type->as = self::updateTypeWithKeyValues(
                     $codebase,
                     $type->as,
@@ -311,12 +321,12 @@ class ArrayAssignmentAnalyzer
 
                         $type->properties[$key_value->value] = clone $current_type;
                     }
-                } elseif ($type instanceof Type\Atomic\TString
-                    && $key_value instanceof Type\Atomic\TLiteralInt
+                } elseif ($type instanceof TString
+                    && $key_value instanceof TLiteralInt
                 ) {
                     $has_matching_string = true;
 
-                    if ($type instanceof Type\Atomic\TLiteralString
+                    if ($type instanceof TLiteralString
                         && $current_type->isSingleStringLiteral()
                     ) {
                         $new_char = $current_type->getSingleStringLiteral()->value;
@@ -326,7 +336,7 @@ class ArrayAssignmentAnalyzer
                         }
                     }
                 } elseif ($type instanceof TNonEmptyList
-                    && $key_value instanceof Type\Atomic\TLiteralInt
+                    && $key_value instanceof TLiteralInt
                     && count($key_values) === 1
                 ) {
                     $has_matching_objectlike_property = true;
@@ -350,7 +360,7 @@ class ArrayAssignmentAnalyzer
 
                 $object_like = new TKeyedArray(
                     [$key_value->value => clone $current_type],
-                    $key_value instanceof Type\Atomic\TLiteralClassString
+                    $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
                         : null
                 );
@@ -364,7 +374,7 @@ class ArrayAssignmentAnalyzer
                 $array_assignment_literals = $key_values;
 
                 $array_assignment_type = new Type\Union([
-                    new Type\Atomic\TNonEmptyArray([
+                    new TNonEmptyArray([
                         new Type\Union($array_assignment_literals),
                         clone $current_type
                     ])
@@ -384,7 +394,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param list<Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString> $key_values $key_values
+     * @param list<TLiteralInt|TLiteralString> $key_values $key_values
      */
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -473,13 +483,13 @@ class ArrayAssignmentAnalyzer
                 if ($key_type->isSingle()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
-                    if ($key_type_type instanceof Type\Atomic\TDependentListKey
+                    if ($key_type_type instanceof TDependentListKey
                         && $key_type_type->getVarId() === $parent_var_id
                     ) {
                         $offset_already_existed = true;
                     }
 
-                    if ($key_type_type instanceof Type\Atomic\TTemplateParam
+                    if ($key_type_type instanceof TTemplateParam
                         && $key_type_type->as->isSingle()
                         && $root_type->isSingle()
                         && $value_type->isSingle()
@@ -488,9 +498,9 @@ class ArrayAssignmentAnalyzer
                         $value_atomic_type = $value_type->getSingleAtomic();
                         $root_atomic_type = $root_type->getSingleAtomic();
 
-                        if ($key_type_as_type instanceof Type\Atomic\TTemplateKeyOf
-                            && $root_atomic_type instanceof Type\Atomic\TTemplateParam
-                            && $value_atomic_type instanceof Type\Atomic\TTemplateIndexedAccess
+                        if ($key_type_as_type instanceof TTemplateKeyOf
+                            && $root_atomic_type instanceof TTemplateParam
+                            && $value_atomic_type instanceof TTemplateIndexedAccess
                             && $key_type_as_type->param_name === $root_atomic_type->param_name
                             && $key_type_as_type->defining_class === $root_atomic_type->defining_class
                             && $value_atomic_type->array_param_name === $root_atomic_type->param_name
@@ -524,12 +534,12 @@ class ArrayAssignmentAnalyzer
                     && $key_type->isTemplatedClassString()
                 ) {
                     /**
-                     * @var Type\Atomic\TClassStringMap
+                     * @var TClassStringMap
                      * @psalm-suppress PossiblyUndefinedStringArrayOffset
                      */
                     $class_string_map = $parent_type->getAtomicTypes()['array'];
                     /**
-                     * @var Type\Atomic\TTemplateParamClass
+                     * @var TTemplateParamClass
                      */
                     $offset_type_part = $key_type->getSingleAtomic();
 
@@ -538,7 +548,7 @@ class ArrayAssignmentAnalyzer
                         [
                             $offset_type_part->param_name => [
                                 $offset_type_part->defining_class => new Type\Union([
-                                    new Type\Atomic\TTemplateParam(
+                                    new TTemplateParam(
                                         $class_string_map->param_name,
                                         $offset_type_part->as_type
                                             ? new Type\Union([$offset_type_part->as_type])
@@ -556,7 +566,7 @@ class ArrayAssignmentAnalyzer
                         $codebase
                     );
 
-                    $array_atomic_type = new Type\Atomic\TClassStringMap(
+                    $array_atomic_type = new TClassStringMap(
                         $class_string_map->param_name,
                         $class_string_map->as_type,
                         $value_type
@@ -585,7 +595,7 @@ class ArrayAssignmentAnalyzer
             $atomic_root_types = $root_type->getAtomicTypes();
 
             if (isset($atomic_root_types['array'])) {
-                if ($array_atomic_type instanceof Type\Atomic\TClassStringMap) {
+                if ($array_atomic_type instanceof TClassStringMap) {
                     $array_atomic_type = new TNonEmptyArray([
                         $array_atomic_type->getStandinKeyParam(),
                         $array_atomic_type->value_param
@@ -832,9 +842,9 @@ class ArrayAssignmentAnalyzer
             $key_values = [];
 
             if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
-                $key_values[] = new Type\Atomic\TLiteralString($current_dim->value);
+                $key_values[] = new TLiteralString($current_dim->value);
             } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber) {
-                $key_values[] = new Type\Atomic\TLiteralInt($current_dim->value);
+                $key_values[] = new TLiteralInt($current_dim->value);
             } elseif ($current_dim
                 && ($key_type = $statements_analyzer->node_data->getType($current_dim))
             ) {
@@ -924,7 +934,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @return array{Type\Atomic\TLiteralInt|Type\Atomic\TLiteralString|null, string, bool}
+     * @return array{TLiteralInt|TLiteralString|null, string, bool}
      */
     private static function getArrayAssignmentOffsetType(
         StatementsAnalyzer $statements_analyzer,
@@ -937,7 +947,7 @@ class ArrayAssignmentAnalyzer
                 && $child_stmt_dim_type->isSingleStringLiteral())
         ) {
             if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                $offset_type = new Type\Atomic\TLiteralString($child_stmt->dim->value);
+                $offset_type = new TLiteralString($child_stmt->dim->value);
             } else {
                 $offset_type = $child_stmt_dim_type->getSingleStringLiteral();
             }
@@ -957,7 +967,7 @@ class ArrayAssignmentAnalyzer
                 && $child_stmt_dim_type->isSingleIntLiteral())
         ) {
             if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-                $offset_type = new Type\Atomic\TLiteralInt($child_stmt->dim->value);
+                $offset_type = new TLiteralInt($child_stmt->dim->value);
             } else {
                 $offset_type = $child_stmt_dim_type->getSingleIntLiteral();
             }

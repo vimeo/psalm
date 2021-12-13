@@ -29,6 +29,8 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -403,7 +405,7 @@ class ArrayFunctionArgumentsAnalyzer
             && $replacement_arg_type->isSingle()
         ) {
             $replacement_arg_type = new Type\Union([
-                new Type\Atomic\TArray([Type::getInt(), $replacement_arg_type])
+                new TArray([Type::getInt(), $replacement_arg_type])
             ]);
 
             $statements_analyzer->node_data->setType($replacement_arg, $replacement_arg_type);
@@ -517,7 +519,7 @@ class ArrayFunctionArgumentsAnalyzer
                             array_shift($array_properties);
 
                             if (!$array_properties) {
-                                $array_atomic_type = new Type\Atomic\TList(
+                                $array_atomic_type = new TList(
                                     $array_atomic_type->previous_value_type ?: Type::getMixed()
                                 );
 
@@ -592,7 +594,7 @@ class ArrayFunctionArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$closure_type instanceof Type\Atomic\TClosure) {
+        if (!$closure_type instanceof TClosure) {
             if ($method_id === 'array_map') {
                 return;
             }
@@ -657,7 +659,7 @@ class ArrayFunctionArgumentsAnalyzer
                             continue;
                         }
 
-                        $closure_types[] = new Type\Atomic\TClosure(
+                        $closure_types[] = new TClosure(
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed()
@@ -710,7 +712,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $closure_types[] = $callmap_callables[0];
                         }
                     } else {
-                        $closure_types[] = new Type\Atomic\TClosure(
+                        $closure_types[] = new TClosure(
                             'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed()
@@ -741,7 +743,7 @@ class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  Type\Atomic\TClosure|Type\Atomic\TCallable $closure_type
+     * @param  TClosure|TCallable $closure_type
      * @param  (TArray|null)[] $array_arg_types
      */
     private static function checkClosureTypeArgs(

@@ -24,6 +24,18 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -483,7 +495,7 @@ class Methods
                     if ($params[$i]->signature_type
                         && $params[$i]->signature_type->isNullable()
                     ) {
-                        $params[$i]->type->addType(new Type\Atomic\TNull);
+                        $params[$i]->type->addType(new TNull);
                     }
 
                     $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
@@ -512,7 +524,7 @@ class Methods
         $type = clone $type;
 
         foreach ($type->getAtomicTypes() as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam
+            if ($atomic_type instanceof TTemplateParam
                 && ($atomic_type->defining_class === $base_fq_class_name
                     || isset($extends[$atomic_type->defining_class]))
             ) {
@@ -530,14 +542,14 @@ class Methods
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+            if ($atomic_type instanceof TTemplateParamClass) {
                 if ($atomic_type->defining_class === $base_fq_class_name) {
                     if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
                         $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
 
                         $types = array_values($extended_param->getAtomicTypes());
 
-                        if (count($types) === 1 && $types[0] instanceof Type\Atomic\TNamedObject) {
+                        if (count($types) === 1 && $types[0] instanceof TNamedObject) {
                             $atomic_type->as_type = $types[0];
                         } else {
                             $atomic_type->as_type = null;
@@ -546,9 +558,9 @@ class Methods
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TArray
-                || $atomic_type instanceof Type\Atomic\TIterable
-                || $atomic_type instanceof Type\Atomic\TGenericObject
+            if ($atomic_type instanceof TArray
+                || $atomic_type instanceof TIterable
+                || $atomic_type instanceof TGenericObject
             ) {
                 foreach ($atomic_type->type_params as &$type_param) {
                     $type_param = self::localizeType(
@@ -560,7 +572,7 @@ class Methods
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TList) {
+            if ($atomic_type instanceof TList) {
                 $atomic_type->type_param = self::localizeType(
                     $codebase,
                     $atomic_type->type_param,
@@ -569,7 +581,7 @@ class Methods
                 );
             }
 
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 foreach ($atomic_type->properties as &$property_type) {
                     $property_type = self::localizeType(
                         $codebase,
@@ -580,8 +592,8 @@ class Methods
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TCallable
-                || $atomic_type instanceof Type\Atomic\TClosure
+            if ($atomic_type instanceof TCallable
+                || $atomic_type instanceof TClosure
             ) {
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
@@ -617,7 +629,7 @@ class Methods
      * @return list<Type\Atomic>
      */
     public static function getExtendedTemplatedTypes(
-        Type\Atomic\TTemplateParam $atomic_type,
+        TTemplateParam $atomic_type,
         array $extends
     ): array {
         $extra_added_types = [];
@@ -626,7 +638,7 @@ class Methods
             $extended_param = clone $extends[$atomic_type->defining_class][$atomic_type->param_name];
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
-                if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                if ($extended_atomic_type instanceof TTemplateParam) {
                     $extra_added_types = array_merge(
                         $extra_added_types,
                         self::getExtendedTemplatedTypes(
@@ -714,10 +726,10 @@ class Methods
                 $types = [];
 
                 foreach ($original_class_storage->enum_cases as $case_name => $_) {
-                    $types[] = new Type\Union([new Type\Atomic\TEnumCase($original_fq_class_name, $case_name)]);
+                    $types[] = new Type\Union([new TEnumCase($original_fq_class_name, $case_name)]);
                 }
 
-                $list = new Type\Atomic\TKeyedArray($types);
+                $list = new TKeyedArray($types);
                 $list->is_list = true;
                 $list->sealed = true;
                 return new Type\Union([$list]);
@@ -743,12 +755,12 @@ class Methods
                             Type::getString($case_storage->value),
                         $first_arg_type
                     )) {
-                        $types[] = new Type\Atomic\TEnumCase($original_fq_class_name, $case_name);
+                        $types[] = new TEnumCase($original_fq_class_name, $case_name);
                     }
                 }
                 if ($types) {
                     if ($original_method_name === 'tryfrom') {
-                        $types[] = new Type\Atomic\TNull();
+                        $types[] = new TNull();
                     }
                     return new Type\Union($types);
                 }
@@ -767,19 +779,19 @@ class Methods
                 && $first_arg_type->isSingle()
             ) {
                 foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\TCallable
-                        || $atomic_type instanceof Type\Atomic\TClosure
+                    if ($atomic_type instanceof TCallable
+                        || $atomic_type instanceof TClosure
                     ) {
                         $callable_type = clone $atomic_type;
 
-                        return new Type\Union([new Type\Atomic\TClosure(
+                        return new Type\Union([new TClosure(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
                         )]);
                     }
 
-                    if ($atomic_type instanceof Type\Atomic\TNamedObject
+                    if ($atomic_type instanceof TNamedObject
                         && $this->methodExists(
                             new MethodIdentifier($atomic_type->value, '__invoke')
                         )
@@ -788,7 +800,7 @@ class Methods
                             new MethodIdentifier($atomic_type->value, '__invoke')
                         );
 
-                        return new Type\Union([new Type\Atomic\TClosure(
+                        return new Type\Union([new TClosure(
                             'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type

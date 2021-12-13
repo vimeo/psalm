@@ -10,6 +10,7 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -772,7 +773,7 @@ class Context
     {
         $globals = [
             '$argv' => new Type\Union([
-                new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
+                new TArray([Type::getInt(), Type::getString()]),
             ]),
             '$argc' => Type::getInt(),
         ];

@@ -52,6 +52,11 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -663,11 +668,11 @@ class ClassLikeNodeScanner
                 if ($mixin_type->isSingle()) {
                     $mixin_type = $mixin_type->getSingleAtomic();
 
-                    if ($mixin_type instanceof Type\Atomic\TNamedObject) {
+                    if ($mixin_type instanceof TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
                     }
 
-                    if ($mixin_type instanceof Type\Atomic\TTemplateParam) {
+                    if ($mixin_type instanceof TTemplateParam) {
                         $storage->templatedMixins[] = $mixin_type;
                     }
                 }
@@ -950,7 +955,7 @@ class ClassLikeNodeScanner
         );
 
         foreach ($extended_union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
+            if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     '@template-extends has invalid class ' . $atomic_type->getId(),
                     new CodeLocation($this->file_scanner, $node, null, true)
@@ -1036,7 +1041,7 @@ class ClassLikeNodeScanner
         );
 
         foreach ($implemented_union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
+            if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     '@template-implements has invalid class ' . $atomic_type->getId(),
                     new CodeLocation($this->file_scanner, $node, null, true)
@@ -1122,7 +1127,7 @@ class ClassLikeNodeScanner
         );
 
         foreach ($used_union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
+            if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     '@template-use has invalid class ' . $atomic_type->getId(),
                     new CodeLocation($this->file_scanner, $node, null, true)
@@ -1252,7 +1257,7 @@ class ClassLikeNodeScanner
             if ($const_type
                 && $const->value instanceof Concat
                 && $const_type->isSingle()
-                && get_class($const_type->getSingleAtomic()) === Type\Atomic\TString::class
+                && get_class($const_type->getSingleAtomic()) === TString::class
             ) {
                 // Prefer unresolved type over inferred string from concat, so that it can later be resolved to literal.
                 $const_type = null;
@@ -1521,7 +1526,7 @@ class ClassLikeNodeScanner
                     if ($property_storage->signature_type->isNullable()
                         && !$property_storage->type->isNullable()
                     ) {
-                        $property_storage->type->addType(new Type\Atomic\TNull());
+                        $property_storage->type->addType(new TNull());
                     }
                 }
 

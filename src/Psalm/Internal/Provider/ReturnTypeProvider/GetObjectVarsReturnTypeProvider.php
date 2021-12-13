@@ -9,6 +9,9 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use stdClass;
 
 use function reset;
@@ -36,16 +39,16 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
 
-            if ($object_type instanceof Type\Atomic\TObjectWithProperties) {
+            if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
                     return Type::getEmptyArray();
                 }
                 return new Type\Union([
-                    new Type\Atomic\TKeyedArray($object_type->properties)
+                    new TKeyedArray($object_type->properties)
                 ]);
             }
 
-            if ($object_type instanceof Type\Atomic\TNamedObject) {
+            if ($object_type instanceof TNamedObject) {
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
                     return Type::parseString('array<string, mixed>');
                 }
@@ -85,7 +88,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 }
 
                 return new Type\Union([
-                    new Type\Atomic\TKeyedArray($properties)
+                    new TKeyedArray($properties)
                 ]);
             }
         }

@@ -20,6 +20,8 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TList;
 
 use function in_array;
 use function is_string;
@@ -527,7 +529,7 @@ class VariableFetchAnalyzer
 
         if ($var_id === '$argv') {
             return new Type\Union([
-                new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
+                new TArray([Type::getInt(), Type::getString()]),
             ]);
         }
 
@@ -537,7 +539,7 @@ class VariableFetchAnalyzer
 
         if ($var_id === '$http_response_header') {
             return new Type\Union([
-                new Type\Atomic\TList(Type::getString())
+                new TList(Type::getString())
             ]);
         }
 

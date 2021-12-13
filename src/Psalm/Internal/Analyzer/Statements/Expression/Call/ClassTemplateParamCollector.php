@@ -8,6 +8,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -170,7 +171,7 @@ class ClassTemplateParamCollector
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
+            if ($type_extends_atomic instanceof TTemplateParam) {
                 if (isset(
                     $static_class_storage
                             ->template_types
@@ -237,7 +238,7 @@ class ClassTemplateParamCollector
         $output_type_extends = [];
 
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam
+            if ($type_extends_atomic instanceof TTemplateParam
                 && ($static_fq_class_name !== $type_extends_atomic->defining_class
                     || !isset($static_template_types[$type_extends_atomic->param_name]))
                 && isset($e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name])

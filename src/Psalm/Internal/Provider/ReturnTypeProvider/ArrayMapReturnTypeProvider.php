@@ -21,6 +21,14 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use UnexpectedValueException;
 
 use function array_map;
@@ -75,7 +83,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($array_arg_types) {
-                return new Type\Union([new Type\Atomic\TKeyedArray($array_arg_types)]);
+                return new Type\Union([new TKeyedArray($array_arg_types)]);
             }
 
             return Type::getArray();
@@ -150,15 +158,15 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $fake_method_call = null;
 
                     foreach ($variable_type->getAtomicTypes() as $variable_atomic_type) {
-                        if ($variable_atomic_type instanceof Type\Atomic\TTemplateParam
-                            || $variable_atomic_type instanceof Type\Atomic\TTemplateParamClass
+                        if ($variable_atomic_type instanceof TTemplateParam
+                            || $variable_atomic_type instanceof TTemplateParamClass
                         ) {
                             $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
                                 []
                             );
-                        } elseif ($variable_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                        } elseif ($variable_atomic_type instanceof TTemplateParamClass) {
                             $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
@@ -183,8 +191,8 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray && count($call_args) === 2) {
-                $atomic_type = new Type\Atomic\TKeyedArray(
+            if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
+                $atomic_type = new TKeyedArray(
                     array_map(
                         /**
                         * @return Type\Union
@@ -203,27 +211,27 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return new Type\Union([$atomic_type]);
             }
 
-            if ($array_arg_atomic_type instanceof Type\Atomic\TList
+            if ($array_arg_atomic_type instanceof TList
                 || count($call_args) !== 2
             ) {
-                if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyList) {
+                if ($array_arg_atomic_type instanceof TNonEmptyList) {
                     return new Type\Union([
-                        new Type\Atomic\TNonEmptyList(
+                        new TNonEmptyList(
                             $mapping_return_type
                         ),
                     ]);
                 }
 
                 return new Type\Union([
-                    new Type\Atomic\TList(
+                    new TList(
                         $mapping_return_type
                     ),
                 ]);
             }
 
-            if ($array_arg_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+            if ($array_arg_atomic_type instanceof TNonEmptyArray) {
                 return new Type\Union([
-                    new Type\Atomic\TNonEmptyArray([
+                    new TNonEmptyArray([
                         $generic_key_type,
                         $mapping_return_type,
                     ]),
@@ -231,7 +239,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             return new Type\Union([
-                new Type\Atomic\TArray([
+                new TArray([
                     $generic_key_type,
                     $mapping_return_type,
                 ])
@@ -240,7 +248,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
             ? new Type\Union([
-                new Type\Atomic\TArray([
+                new TArray([
                     $array_arg_type->key ?? Type::getArrayKey(),
                     Type::getMixed(),
                 ])
@@ -397,7 +405,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         if ($callable_type) {
                             foreach ($callable_type->getAtomicTypes() as $atomic_type) {
-                                if ($atomic_type instanceof Type\Atomic\TKeyedArray
+                                if ($atomic_type instanceof TKeyedArray
                                     && count($atomic_type->properties) === 2
                                     && isset($atomic_type->properties[0])
                                 ) {
@@ -409,7 +417,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
                         $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
                             ?: new Type\Union([
-                                new Type\Atomic\TNamedObject($callable_fq_class_name)
+                                new TNamedObject($callable_fq_class_name)
                             ]);
 
                         $fake_method_return_type = self::executeFakeCall(

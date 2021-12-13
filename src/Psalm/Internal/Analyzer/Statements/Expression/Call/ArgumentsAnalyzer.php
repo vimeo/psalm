@@ -36,8 +36,12 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_map;
@@ -244,10 +248,10 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $generic_param_type = new Type\Union([
-            new Type\Atomic\TArray([
+            new TArray([
                 Type::getArrayKey(),
                 new Type\Union([
-                    new Type\Atomic\TTemplateParam(
+                    new TTemplateParam(
                         'ArrayValue' . $argument_offset,
                         Type::getMixed(),
                         $method_id
@@ -314,7 +318,7 @@ class ArgumentsAnalyzer
                     'function',
                     false,
                     new Type\Union([
-                        new Type\Atomic\TTemplateParam(
+                        new TTemplateParam(
                             $template_name,
                             Type::getMixed(),
                             $method_id
@@ -324,7 +328,7 @@ class ArgumentsAnalyzer
             }
 
             $replaced_type = new Type\Union([
-                new Type\Atomic\TCallable(
+                new TCallable(
                     'callable',
                     array_reverse($function_like_params)
                 )
@@ -396,8 +400,8 @@ class ArgumentsAnalyzer
 
             if (!$has_different_docblock_type) {
                 foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
-                    if ($replaced_type_part instanceof Type\Atomic\TCallable
-                        || $replaced_type_part instanceof Type\Atomic\TClosure
+                    if ($replaced_type_part instanceof TCallable
+                        || $replaced_type_part instanceof TClosure
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)
                             && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
@@ -681,7 +685,7 @@ class ArgumentsAnalyzer
                         $key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
 
                         foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof Type\Atomic\TLiteralString
+                            if (!$key_type instanceof TLiteralString
                                 || ($function_storage && !$function_storage->allow_named_arg_calls)) {
                                 continue;
                             }
@@ -1054,7 +1058,7 @@ class ArgumentsAnalyzer
 
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
                     $by_ref_type = new Type\Union([
-                        new Type\Atomic\TArray([
+                        new TArray([
                             Type::getInt(),
                             $by_ref_type,
                         ]),

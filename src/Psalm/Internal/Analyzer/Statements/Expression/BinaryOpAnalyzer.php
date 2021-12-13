@@ -20,6 +20,8 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -195,9 +197,9 @@ class BinaryOpAnalyzer
                 $stmt,
                 new Type\Union(
                     [
-                        new Type\Atomic\TLiteralInt(-1),
-                        new Type\Atomic\TLiteralInt(0),
-                        new Type\Atomic\TLiteralInt(1)
+                        new TLiteralInt(-1),
+                        new TLiteralInt(0),
+                        new TLiteralInt(1)
                     ]
                 )
             );
@@ -273,7 +275,7 @@ class BinaryOpAnalyzer
 
                 if ($string_length > 0) {
                     foreach ($stmt_right_type->getAtomicTypes() as $atomic_right_type) {
-                        if ($atomic_right_type instanceof Type\Atomic\TLiteralString) {
+                        if ($atomic_right_type instanceof TLiteralString) {
                             if (strlen($atomic_right_type->value) !== $string_length) {
                                 if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical

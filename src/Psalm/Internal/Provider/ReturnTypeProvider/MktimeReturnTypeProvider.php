@@ -5,6 +5,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
 
 class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -30,7 +32,7 @@ class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))
                 || !$call_arg_type->isInt()
             ) {
-                $value_type = new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFalse]);
+                $value_type = new Type\Union([new TInt, new TFalse]);
 
                 $codebase = $statements_source->getCodebase();
 

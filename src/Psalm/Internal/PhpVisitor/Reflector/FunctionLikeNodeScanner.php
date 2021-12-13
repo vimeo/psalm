@@ -42,6 +42,9 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNull;
 use ReflectionFunction;
 use UnexpectedValueException;
 
@@ -723,7 +726,7 @@ class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
-                    $storage->return_type = new Type\Union([new Type\Atomic\TNever()]);
+                    $storage->return_type = new Type\Union([new TNever()]);
                 }
 
                 $storage->attributes[] = $attribute;
@@ -775,7 +778,7 @@ class FunctionLikeNodeScanner
                 $assigned_properties[$property_name] =
                     $storage->params[$param_index]->is_variadic
                         ? new Type\Union([
-                            new Type\Atomic\TArray([
+                            new TArray([
                                 Type::getInt(),
                                 $param_type,
                             ]),
@@ -829,7 +832,7 @@ class FunctionLikeNodeScanner
             );
 
             if ($is_nullable) {
-                $param_type->addType(new Type\Atomic\TNull);
+                $param_type->addType(new TNull);
             } else {
                 $is_nullable = $param_type->isNullable();
             }

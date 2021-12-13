@@ -6,6 +6,12 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 
 use function count;
 
@@ -42,17 +48,17 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $codebase = $statements_source->getCodebase();
 
                     $acceptable_string_component_type = new Type\Union([
-                        new Type\Atomic\TLiteralInt(PHP_URL_SCHEME),
-                        new Type\Atomic\TLiteralInt(PHP_URL_USER),
-                        new Type\Atomic\TLiteralInt(PHP_URL_PASS),
-                        new Type\Atomic\TLiteralInt(PHP_URL_HOST),
-                        new Type\Atomic\TLiteralInt(PHP_URL_PATH),
-                        new Type\Atomic\TLiteralInt(PHP_URL_QUERY),
-                        new Type\Atomic\TLiteralInt(PHP_URL_FRAGMENT),
+                        new TLiteralInt(PHP_URL_SCHEME),
+                        new TLiteralInt(PHP_URL_USER),
+                        new TLiteralInt(PHP_URL_PASS),
+                        new TLiteralInt(PHP_URL_HOST),
+                        new TLiteralInt(PHP_URL_PATH),
+                        new TLiteralInt(PHP_URL_QUERY),
+                        new TLiteralInt(PHP_URL_FRAGMENT),
                     ]);
 
                     $acceptable_int_component_type = new Type\Union([
-                        new Type\Atomic\TLiteralInt(PHP_URL_PORT),
+                        new TLiteralInt(PHP_URL_PORT),
                     ]);
 
                     if (UnionTypeComparator::isContainedBy(
@@ -61,9 +67,9 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $acceptable_string_component_type
                     )) {
                         $nullable_falsable_string = new Type\Union([
-                            new Type\Atomic\TString,
-                            new Type\Atomic\TFalse,
-                            new Type\Atomic\TNull,
+                            new TString,
+                            new TFalse,
+                            new TNull,
                         ]);
 
                         $codebase = $statements_source->getCodebase();
@@ -85,9 +91,9 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $acceptable_int_component_type
                     )) {
                         $nullable_falsable_int = new Type\Union([
-                            new Type\Atomic\TInt,
-                            new Type\Atomic\TFalse,
-                            new Type\Atomic\TNull,
+                            new TInt,
+                            new TFalse,
+                            new TNull,
                         ]);
 
                         $codebase = $statements_source->getCodebase();
@@ -106,9 +112,9 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             $nullable_string_or_int = new Type\Union([
-                new Type\Atomic\TString,
-                new Type\Atomic\TInt,
-                new Type\Atomic\TNull,
+                new TString,
+                new TInt,
+                new TNull,
             ]);
 
             $codebase = $statements_source->getCodebase();
@@ -136,8 +142,8 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         $return_type = new Type\Union([
-            new Type\Atomic\TKeyedArray($component_types),
-            new Type\Atomic\TFalse(),
+            new TKeyedArray($component_types),
+            new TFalse(),
         ]);
 
         if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {

@@ -40,9 +40,14 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -263,7 +268,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     );
 
                     if ($candidate_callable) {
-                        $closure_types[] = new Type\Atomic\TClosure(
+                        $closure_types[] = new TClosure(
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,
@@ -627,7 +632,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
-                if ($var_type_part instanceof Type\Atomic\TClosure || $var_type_part instanceof TCallable) {
+                if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure && $context->pure) {
                         IssueBuffer::maybeAdd(
                             new ImpureFunctionCall(
@@ -657,7 +662,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    if ($var_type_part instanceof Type\Atomic\TClosure) {
+                    if ($var_type_part instanceof TClosure) {
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
@@ -682,14 +687,14 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     // this is fine
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TString
-                    || $var_type_part instanceof Type\Atomic\TArray
-                    || $var_type_part instanceof Type\Atomic\TList
-                    || ($var_type_part instanceof Type\Atomic\TKeyedArray
+                    || $var_type_part instanceof TArray
+                    || $var_type_part instanceof TList
+                    || ($var_type_part instanceof TKeyedArray
                         && count($var_type_part->properties) === 2)
                 ) {
                     $potential_method_id = null;
 
-                    if ($var_type_part instanceof Type\Atomic\TKeyedArray) {
+                    if ($var_type_part instanceof TKeyedArray) {
                         $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                             $var_type_part,
                             $codebase,
@@ -700,7 +705,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if ($potential_method_id === 'not-callable') {
                             $potential_method_id = null;
                         }
-                    } elseif ($var_type_part instanceof Type\Atomic\TLiteralString) {
+                    } elseif ($var_type_part instanceof TLiteralString) {
                         if (!$var_type_part->value) {
                             $invalid_function_call_types[] = '\'\'';
                             continue;

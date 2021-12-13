@@ -22,6 +22,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_merge;
 use function array_shift;
@@ -201,7 +202,7 @@ class InstancePropertyFetchAnalyzer
         if (!$prop_name) {
             if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
                 foreach ($stmt_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\TNamedObject) {
+                    if ($type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($type->value) . '::$',
                             $context->calling_method_id ?: $statements_analyzer->getFileName()
@@ -232,7 +233,7 @@ class InstancePropertyFetchAnalyzer
         $var_atomic_types = $stmt_var_type->getAtomicTypes();
 
         while ($lhs_type_part = array_shift($var_atomic_types)) {
-            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+            if ($lhs_type_part instanceof TTemplateParam) {
                 $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
             }
@@ -382,7 +383,7 @@ class InstancePropertyFetchAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
 
-                    $stmt_type->addType(new Type\Atomic\TNull);
+                    $stmt_type->addType(new TNull);
                 }
             }
         }

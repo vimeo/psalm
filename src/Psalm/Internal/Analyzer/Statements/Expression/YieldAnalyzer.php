@@ -17,6 +17,8 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 
 class YieldAnalyzer
 {
@@ -57,7 +59,7 @@ class YieldAnalyzer
                     $codebase,
                     $var_comment->type,
                     $context->self,
-                    $context->self ? new Type\Atomic\TNamedObject($context->self) : null,
+                    $context->self ? new TNamedObject($context->self) : null,
                     $statements_analyzer->getParentFQCLN()
                 );
 
@@ -140,7 +142,7 @@ class YieldAnalyzer
         $yield_type = null;
 
         foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
-            if ($expression_atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($expression_atomic_type instanceof TNamedObject) {
                 if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
                     continue;
                 }
@@ -148,7 +150,7 @@ class YieldAnalyzer
                 $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
 
                 if ($classlike_storage->yield) {
-                    if ($expression_atomic_type instanceof Type\Atomic\TGenericObject) {
+                    if ($expression_atomic_type instanceof TGenericObject) {
                         $yield_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
                             clone $classlike_storage->yield,
@@ -186,10 +188,10 @@ class YieldAnalyzer
 
             if ($storage->return_type && !$yield_type) {
                 foreach ($storage->return_type->getAtomicTypes() as $atomic_return_type) {
-                    if ($atomic_return_type instanceof Type\Atomic\TNamedObject
+                    if ($atomic_return_type instanceof TNamedObject
                         && $atomic_return_type->value === 'Generator'
                     ) {
-                        if ($atomic_return_type instanceof Type\Atomic\TGenericObject) {
+                        if ($atomic_return_type instanceof TGenericObject) {
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,

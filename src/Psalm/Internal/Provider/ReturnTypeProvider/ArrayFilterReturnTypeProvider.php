@@ -15,6 +15,11 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
 
 use function array_filter;
@@ -53,9 +58,9 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && ($first_arg_type = $statements_source->node_data->getType($array_arg))
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
+            && ($array_atomic_type instanceof TArray
+                || $array_atomic_type instanceof TKeyedArray
+                || $array_atomic_type instanceof TList)
             ? $array_atomic_type
             : null;
 
@@ -63,10 +68,10 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
+        if ($first_arg_array instanceof TArray) {
             $inner_type = $first_arg_array->type_params[1];
             $key_type = clone $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof Type\Atomic\TList) {
+        } elseif ($first_arg_array instanceof TList) {
             $inner_type = $first_arg_array->type_param;
             $key_type = Type::getInt();
         } else {
@@ -130,24 +135,24 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $statements_source->getSuppressedIssues()
             );
 
-            if ($first_arg_array instanceof Type\Atomic\TKeyedArray
+            if ($first_arg_array instanceof TKeyedArray
                 && $first_arg_array->is_list
                 && $key_type->isSingleIntLiteral()
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
                 return new Type\Union([
-                    new Type\Atomic\TList(
+                    new TList(
                         $inner_type
                     ),
                 ]);
             }
 
             if ($key_type->getLiteralStrings()) {
-                $key_type->addType(new Type\Atomic\TString);
+                $key_type->addType(new TString);
             }
 
             if ($key_type->getLiteralInts()) {
-                $key_type->addType(new Type\Atomic\TInt);
+                $key_type->addType(new TInt);
             }
 
             /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
@@ -156,7 +161,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             return new Type\Union([
-                new Type\Atomic\TArray([
+                new TArray([
                     $key_type,
                     $inner_type,
                 ]),
@@ -296,7 +301,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             return new Type\Union([
-                new Type\Atomic\TArray([
+                new TArray([
                     $key_type,
                     $inner_type,
                 ]),
@@ -309,7 +314,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         return new Type\Union([
-            new Type\Atomic\TArray([
+            new TArray([
                 $key_type,
                 $inner_type,
             ]),

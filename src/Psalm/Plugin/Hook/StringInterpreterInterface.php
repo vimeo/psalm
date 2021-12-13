@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Plugin\Hook;
 
-use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
 
 /** @deprecated going to be removed in Psalm 5 */
 interface StringInterpreterInterface
@@ -11,5 +11,5 @@ interface StringInterpreterInterface
      */
     public static function getTypeFromValue(
         string $value
-    ): ?Type\Atomic\TLiteralString;
+    ): ?TLiteralString;
 }

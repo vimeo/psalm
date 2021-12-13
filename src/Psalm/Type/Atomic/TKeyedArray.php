@@ -9,6 +9,13 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -212,11 +219,11 @@ class TKeyedArray extends Atomic
 
         foreach ($this->properties as $key => $_) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TLiteralInt($key);
+                $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
-                $key_types[] = new Type\Atomic\TLiteralClassString($key);
+                $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new Type\Atomic\TLiteralString($key);
+                $key_types[] = new TLiteralString($key);
             }
         }
 
@@ -251,11 +258,11 @@ class TKeyedArray extends Atomic
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TLiteralInt($key);
+                $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
-                $key_types[] = new Type\Atomic\TLiteralClassString($key);
+                $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new Type\Atomic\TLiteralString($key);
+                $key_types[] = new TLiteralString($key);
             }
 
             $value_type = Type::combineUnionTypes(clone $property, $value_type);
@@ -322,7 +329,7 @@ class TKeyedArray extends Atomic
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
 
-            if ($input_type instanceof Atomic\TKeyedArray
+            if ($input_type instanceof TKeyedArray
                 && isset($input_type->properties[$offset])
             ) {
                 $input_type_param = $input_type->properties[$offset];

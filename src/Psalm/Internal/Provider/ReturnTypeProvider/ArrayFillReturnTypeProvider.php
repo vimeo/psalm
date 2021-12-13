@@ -5,6 +5,11 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 
 class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -38,14 +43,14 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 && self::isPositiveNumericType($second_arg_type)
             ) {
                 return new Type\Union([
-                    new Type\Atomic\TNonEmptyList(
+                    new TNonEmptyList(
                         $value_type_from_third_arg
                     )
                 ]);
             }
 
             return new Type\Union([
-                new Type\Atomic\TList(
+                new TList(
                     $value_type_from_third_arg
                 )
             ]);
@@ -59,8 +64,8 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 && $second_arg_type->isSingleIntLiteral()
             ) {
                 return new Type\Union([
-                    new Type\Atomic\TNonEmptyArray([
-                        new Type\Union([new Type\Atomic\TIntRange(
+                    new TNonEmptyArray([
+                        new Type\Union([new TIntRange(
                             $first_arg_type->getSingleIntLiteral()->value,
                             $second_arg_type->getSingleIntLiteral()->value
                         )]),
@@ -70,7 +75,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             return new Type\Union([
-                new Type\Atomic\TNonEmptyArray([
+                new TNonEmptyArray([
                     Type::getInt(),
                     $value_type_from_third_arg,
                 ])
@@ -78,7 +83,7 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         return new Type\Union([
-            new Type\Atomic\TArray([
+            new TArray([
                 Type::getInt(),
                 $value_type_from_third_arg,
             ])

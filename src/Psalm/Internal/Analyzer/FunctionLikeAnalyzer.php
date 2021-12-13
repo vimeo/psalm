@@ -44,7 +44,12 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -600,7 +605,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($function_type = $statements_analyzer->node_data->getType($this->function)) {
                 /**
-                 * @var Type\Atomic\TClosure
+                 * @var TClosure
                  */
                 $closure_atomic = $function_type->getSingleAtomic();
 
@@ -1033,11 +1038,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->is_variadic) {
                 if ($storage->allow_named_arg_calls) {
                     $var_type = new Type\Union([
-                        new Type\Atomic\TArray([Type::getArrayKey(), $param_type]),
+                        new TArray([Type::getArrayKey(), $param_type]),
                     ]);
                 } else {
                     $var_type = new Type\Union([
-                        new Type\Atomic\TList($param_type),
+                        new TList($param_type),
                     ]);
                 }
             }
@@ -1786,7 +1791,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $key = array_keys($template_map)[0];
 
                         $template_params[] = new Type\Union([
-                            new Type\Atomic\TTemplateParam(
+                            new TTemplateParam(
                                 $param_name,
                                 reset($template_map),
                                 $key
@@ -1794,7 +1799,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ]);
                     }
 
-                    $this_object_type = new Type\Atomic\TGenericObject(
+                    $this_object_type = new TGenericObject(
                         $context->self,
                         $template_params
                     );
@@ -1931,7 +1936,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
-            $closure_type = new Type\Atomic\TClosure(
+            $closure_type = new TClosure(
                 'Closure',
                 $storage->params,
                 $closure_return_type

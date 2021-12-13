@@ -10,7 +10,10 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 use UnexpectedValueException;
 
 use function array_shift;
@@ -161,13 +164,13 @@ class InternalCallMapHandler
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                         * @var TArray|TKeyedArray|TList
                          */
                         $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
-                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        if ($array_atomic_type instanceof TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
-                        } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                        } elseif ($array_atomic_type instanceof TList) {
                             $arg_type = $array_atomic_type->type_param;
                         } else {
                             $arg_type = $array_atomic_type->type_params[1];

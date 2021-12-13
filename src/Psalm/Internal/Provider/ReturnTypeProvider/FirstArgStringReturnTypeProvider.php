@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 
 class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -36,7 +37,7 @@ class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInte
             return $return_type;
         }
 
-        $return_type->addType(new Type\Atomic\TNull);
+        $return_type->addType(new TNull);
         $return_type->ignore_nullable_issues = true;
 
         return $return_type;

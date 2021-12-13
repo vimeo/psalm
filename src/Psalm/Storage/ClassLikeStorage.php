@@ -7,6 +7,8 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 
 class ClassLikeStorage
 {
@@ -45,12 +47,12 @@ class ClassLikeStorage
     public $internal = '';
 
     /**
-     * @var Type\Atomic\TTemplateParam[]
+     * @var TTemplateParam[]
      */
     public $templatedMixins = [];
 
     /**
-     * @var list<Type\Atomic\TNamedObject>
+     * @var list<TNamedObject>
      */
     public $namedMixins = [];
 

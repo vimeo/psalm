@@ -16,6 +16,7 @@ use Psalm\Node\Stmt\VirtualClass;
 use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 
 class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
@@ -58,7 +59,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                 }
 
                 $this_params->vars_in_scope['$this'] = new Type\Union([
-                    new Type\Atomic\TNamedObject(self::VIEW_CLASS),
+                    new TNamedObject(self::VIEW_CLASS),
                 ]);
             }
         }
@@ -68,7 +69,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $this_params->check_variables = false;
             $this_params->self = self::VIEW_CLASS;
             $this_params->vars_in_scope['$this'] = new Type\Union([
-                new Type\Atomic\TNamedObject(self::VIEW_CLASS),
+                new TNamedObject(self::VIEW_CLASS),
             ]);
         }
 
@@ -98,7 +99,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
 
-        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class_storage->name)]);
+        $this_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($class_storage->name)]);
 
         $this->project_analyzer->getMethodMutations(
             new \Psalm\Internal\MethodIdentifier($method_id->fq_class_name, '__construct'),
@@ -107,7 +108,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $this->getRootFileName()
         );
 
-        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class_storage->name)]);
+        $this_context->vars_in_scope['$this'] = new Type\Union([new TNamedObject($class_storage->name)]);
 
         // check the actual method
         $this->project_analyzer->getMethodMutations(

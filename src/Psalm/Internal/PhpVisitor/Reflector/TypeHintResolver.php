@@ -8,6 +8,7 @@ use Psalm\Internal\Codebase\Scanner as CodebaseScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 use UnexpectedValueException;
 
 use function implode;
@@ -100,7 +101,7 @@ class TypeHintResolver
         }
 
         if ($is_nullable) {
-            $type->addType(new Type\Atomic\TNull);
+            $type->addType(new TNull);
         }
 
         return $type;

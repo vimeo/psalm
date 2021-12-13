@@ -35,6 +35,10 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 
 use function array_merge;
 use function count;
@@ -422,7 +426,7 @@ class ReturnAnalyzer
                             }
 
                             foreach ($local_return_type->getAtomicTypes() as $local_type_part) {
-                                if ($local_type_part instanceof Type\Atomic\TClassString
+                                if ($local_type_part instanceof TClassString
                                     && $stmt->expr instanceof PhpParser\Node\Scalar\String_
                                 ) {
                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -437,13 +441,13 @@ class ReturnAnalyzer
                                     ) {
                                         return;
                                     }
-                                } elseif ($local_type_part instanceof Type\Atomic\TArray
+                                } elseif ($local_type_part instanceof TArray
                                     && $stmt->expr instanceof PhpParser\Node\Expr\Array_
                                 ) {
                                     $value_param = $local_type_part->type_params[1];
 
                                     foreach ($value_param->getAtomicTypes() as $local_array_type_part) {
-                                        if ($local_array_type_part instanceof Type\Atomic\TClassString) {
+                                        if ($local_array_type_part instanceof TClassString) {
                                             foreach ($stmt->expr->items as $item) {
                                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
                                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -604,7 +608,7 @@ class ReturnAnalyzer
             return;
         }
 
-        /** @var Type\Atomic\TClosure|Type\Atomic\TCallable $parent_callable_return_type */
+        /** @var TClosure|TCallable $parent_callable_return_type */
         $parent_callable_return_type = $parent_fn_storage->return_type->getSingleAtomic();
 
         if ($parent_callable_return_type->params === null && $parent_callable_return_type->return_type === null) {

@@ -20,7 +20,10 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -31,7 +34,7 @@ use function strtolower;
 class MethodCallReturnTypeFetcher
 {
     /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
+     * @param  TNamedObject|TTemplateParam  $static_type
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function fetch(
@@ -141,7 +144,7 @@ class MethodCallReturnTypeFetcher
                 $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
 
                 if ($method_storage) {
-                    $return_type_candidate = new Type\Union([new Type\Atomic\TClosure(
+                    $return_type_candidate = new Type\Union([new TClosure(
                         'Closure',
                         $method_storage->params,
                         $method_storage->return_type,
@@ -170,7 +173,7 @@ class MethodCallReturnTypeFetcher
                             $class_storage->parent_class,
                             true,
                             false,
-                            $static_type instanceof Type\Atomic\TNamedObject
+                            $static_type instanceof TNamedObject
                             && $codebase->classlike_storage_provider->get($static_type->value)->final,
                             true
                         );
@@ -192,7 +195,7 @@ class MethodCallReturnTypeFetcher
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof Type\Atomic\TNamedObject
+                        $static_type instanceof TNamedObject
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true
                     );

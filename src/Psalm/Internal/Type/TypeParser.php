@@ -28,14 +28,22 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOfClassConstant;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -46,8 +54,13 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOfClassConstant;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
@@ -258,7 +271,7 @@ class TypeParser
         }
 
         if ($parse_tree instanceof TemplateAsTree) {
-            return new Atomic\TTemplateParam(
+            return new TTemplateParam(
                 $parse_tree->param_name,
                 new Union([new TNamedObject($parse_tree->as)]),
                 'class-string-map'
@@ -314,7 +327,7 @@ class TypeParser
                 $else_type = new Union([$else_type]);
             }
 
-            return new Atomic\TConditional(
+            return new TConditional(
                 $template_param_name,
                 $first_class,
                 $template_type_map[$template_param_name][$first_class],
@@ -346,10 +359,10 @@ class TypeParser
             }
 
             if ($const_name === 'class') {
-                return new Atomic\TLiteralClassString($fq_classlike_name);
+                return new TLiteralClassString($fq_classlike_name);
             }
 
-            return new Atomic\TClassConstant($fq_classlike_name, $const_name);
+            return new TClassConstant($fq_classlike_name, $const_name);
         }
 
         if (preg_match('/^\-?(0|[1-9][0-9]*)(\.[0-9]{1,})$/', $parse_tree->value)) {
@@ -379,9 +392,9 @@ class TypeParser
         string $param_name,
         Union $as,
         string $defining_class
-    ): Atomic\TTemplateParamClass {
+    ): TTemplateParamClass {
         if ($as->hasMixed()) {
-            return new Atomic\TTemplateParamClass(
+            return new TTemplateParamClass(
                 $param_name,
                 'object',
                 null,
@@ -397,7 +410,7 @@ class TypeParser
 
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $param_name,
                     'object',
                     null,
@@ -413,7 +426,7 @@ class TypeParser
 
                 $as->substitute(new Union([$t]), new Union([$traversable]));
 
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $param_name,
                     $traversable->value,
                     $traversable,
@@ -421,14 +434,14 @@ class TypeParser
                 );
             }
 
-            if ($t instanceof Atomic\TTemplateParam) {
+            if ($t instanceof TTemplateParam) {
                 $t_atomic_type = count($t->as->getAtomicTypes()) === 1 ? $t->as->getSingleAtomic() : null;
 
                 if (!$t_atomic_type instanceof TNamedObject) {
                     $t_atomic_type = null;
                 }
 
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $t->param_name,
                     $t_atomic_type->value ?? 'object',
                     $t_atomic_type,
@@ -442,7 +455,7 @@ class TypeParser
                 );
             }
 
-            return new Atomic\TTemplateParamClass(
+            return new TTemplateParamClass(
                 $param_name,
                 $t->value,
                 $t,
@@ -645,7 +658,7 @@ class TypeParser
 
             if ($template_marker instanceof TNamedObject) {
                 $template_param_name = $template_marker->value;
-            } elseif ($template_marker instanceof Atomic\TTemplateParam) {
+            } elseif ($template_marker instanceof TTemplateParam) {
                 $template_param_name = $template_marker->param_name;
                 $template_as_type = $template_marker->as->getSingleAtomic();
 
@@ -673,7 +686,7 @@ class TypeParser
             if (isset($template_type_map[$param_name])) {
                 $defining_class = array_keys($template_type_map[$param_name])[0];
 
-                return new Atomic\TTemplateKeyOf(
+                return new TTemplateKeyOf(
                     $param_name,
                     $defining_class,
                     $template_type_map[$param_name][$defining_class]
@@ -686,13 +699,13 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in key-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
+            if (!$param_union_types[0] instanceof TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be a class constant'
                 );
             }
 
-            return new Atomic\TKeyOfClassConstant(
+            return new TKeyOfClassConstant(
                 $param_union_types[0]->fq_classlike_name,
                 $param_union_types[0]->const_name
             );
@@ -707,13 +720,13 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in value-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
+            if (!$param_union_types[0] instanceof TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated value-of param ' . $param_name . ' should be a class constant'
                 );
             }
 
-            return new Atomic\TValueOfClassConstant(
+            return new TValueOfClassConstant(
                 $param_union_types[0]->fq_classlike_name,
                 $param_union_types[0]->const_name
             );
@@ -753,7 +766,7 @@ class TypeParser
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
-                    && !($atomic_type instanceof Atomic\TClassConstant
+                    && !($atomic_type instanceof TClassConstant
                         && strpos($atomic_type->const_name, '*') === false)
                 ) {
                     throw new TypeParseTreeException(
@@ -768,7 +781,7 @@ class TypeParser
 
             foreach ($atomic_types as $atomic_type) {
                 if (!$atomic_type instanceof TLiteralInt) {
-                    return new Atomic\TIntMask($atomic_types);
+                    return new TIntMask($atomic_types);
                 }
 
                 $potential_ints[] = $atomic_type->value;
@@ -786,14 +799,14 @@ class TypeParser
 
             $param_type = $param_union_types[0];
 
-            if (!$param_type instanceof Atomic\TClassConstant
-                && !$param_type instanceof Atomic\TValueOfClassConstant
-                && !$param_type instanceof Atomic\TKeyOfClassConstant
+            if (!$param_type instanceof TClassConstant
+                && !$param_type instanceof TValueOfClassConstant
+                && !$param_type instanceof TKeyOfClassConstant
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'
                 );
-            } elseif ($param_type instanceof Atomic\TClassConstant
+            } elseif ($param_type instanceof TClassConstant
                 && strpos($param_type->const_name, '*') === false
             ) {
                 throw new TypeParseTreeException(
@@ -801,7 +814,7 @@ class TypeParser
                 );
             }
 
-            return new Atomic\TIntMaskOf($param_type);
+            return new TIntMaskOf($param_type);
         }
 
         if ($generic_type_value === 'int') {
@@ -837,14 +850,14 @@ class TypeParser
             }
 
             if ($min_bound === null && $max_bound === null) {
-                return new Atomic\TInt();
+                return new TInt();
             }
 
             if ($min_bound === 1 && $max_bound === null) {
-                return new Atomic\TPositiveInt();
+                return new TPositiveInt();
             }
 
-            return new Atomic\TIntRange($min_bound, $max_bound);
+            return new TIntRange($min_bound, $max_bound);
         }
 
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1170,7 +1183,7 @@ class TypeParser
     private static function getTypeFromIndexAccessTree(
         IndexedAccessTree $parse_tree,
         array $template_type_map
-    ): Atomic\TTemplateIndexedAccess {
+    ): TTemplateIndexedAccess {
         if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof Value) {
             throw new TypeParseTreeException('Unrecognised indexed access');
         }
@@ -1196,7 +1209,7 @@ class TypeParser
         ) {
             $offset_template_type = $offset_template_data['']->getSingleAtomic();
 
-            if ($offset_template_type instanceof Atomic\TTemplateKeyOf) {
+            if ($offset_template_type instanceof TTemplateKeyOf) {
                 $offset_defining_class = $offset_template_type->defining_class;
             }
         }
@@ -1209,7 +1222,7 @@ class TypeParser
             throw new TypeParseTreeException('Template params are defined in different locations');
         }
 
-        return new Atomic\TTemplateIndexedAccess(
+        return new TTemplateIndexedAccess(
             $array_param_name,
             $offset_param_name,
             $array_defining_class
@@ -1219,7 +1232,7 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Atomic\TCallableKeyedArray|TKeyedArray|TObjectWithProperties
+     * @return TCallableKeyedArray|TKeyedArray|TObjectWithProperties
      * @throws TypeParseTreeException
      */
     private static function getTypeFromKeyedArrayTree(
@@ -1290,7 +1303,7 @@ class TypeParser
         }
 
         if ($type === 'callable-array') {
-            return new Atomic\TCallableKeyedArray($properties);
+            return new TCallableKeyedArray($properties);
         }
 
         $object_like = new TKeyedArray($properties);

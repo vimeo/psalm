@@ -25,7 +25,22 @@ use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Reconciler;
 
 use function array_map;
@@ -408,7 +423,7 @@ class NamedFunctionCallHandler
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
-                    new Type\Union([new Type\Atomic\TLowercaseString()])
+                    new Type\Union([new TLowercaseString()])
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
@@ -478,16 +493,16 @@ class NamedFunctionCallHandler
                 if (isset($context->vars_in_scope[$var_id])) {
                     if (!$context->vars_in_scope[$var_id]->hasTemplate()) {
                         if ($function_id === 'get_class') {
-                            $atomic_type = new Type\Atomic\TDependentGetClass(
+                            $atomic_type = new TDependentGetClass(
                                 $var_id,
                                 $context->vars_in_scope[$var_id]->hasMixed()
                                     ? Type::getObject()
                                     : $context->vars_in_scope[$var_id]
                             );
                         } elseif ($function_id === 'gettype') {
-                            $atomic_type = new Type\Atomic\TDependentGetType($var_id);
+                            $atomic_type = new TDependentGetType($var_id);
                         } else {
-                            $atomic_type = new Type\Atomic\TDependentGetDebugType($var_id);
+                            $atomic_type = new TDependentGetDebugType($var_id);
                         }
 
                         $statements_analyzer->node_data->setType($real_stmt, new Type\Union([$atomic_type]));
@@ -505,22 +520,22 @@ class NamedFunctionCallHandler
                 $class_string_types = [];
 
                 foreach ($var_type->getAtomicTypes() as $class_type) {
-                    if ($class_type instanceof Type\Atomic\TNamedObject) {
-                        $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
-                    } elseif ($class_type instanceof Type\Atomic\TTemplateParam
+                    if ($class_type instanceof TNamedObject) {
+                        $class_string_types[] = new TClassString($class_type->value, clone $class_type);
+                    } elseif ($class_type instanceof TTemplateParam
                         && $class_type->as->isSingle()
                     ) {
                         $as_atomic_type = $class_type->as->getSingleAtomic();
 
-                        if ($as_atomic_type instanceof Type\Atomic\TObject) {
-                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                        if ($as_atomic_type instanceof TObject) {
+                            $class_string_types[] = new TTemplateParamClass(
                                 $class_type->param_name,
                                 'object',
                                 null,
                                 $class_type->defining_class
                             );
                         } elseif ($as_atomic_type instanceof TNamedObject) {
-                            $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                            $class_string_types[] = new TTemplateParamClass(
                                 $class_type->param_name,
                                 $as_atomic_type->value,
                                 $as_atomic_type,
@@ -528,22 +543,22 @@ class NamedFunctionCallHandler
                             );
                         }
                     } elseif ($function_id === 'get_class') {
-                        $class_string_types[] = new Type\Atomic\TClassString();
+                        $class_string_types[] = new TClassString();
                     } else {
-                        if ($class_type instanceof Type\Atomic\TInt) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('int');
-                        } elseif ($class_type instanceof Type\Atomic\TString) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('string');
-                        } elseif ($class_type instanceof Type\Atomic\TFloat) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('float');
-                        } elseif ($class_type instanceof Type\Atomic\TBool) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('bool');
-                        } elseif ($class_type instanceof Type\Atomic\TClosedResource) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('resource (closed)');
-                        } elseif ($class_type instanceof Type\Atomic\TNull) {
-                            $class_string_types[] = new Type\Atomic\TLiteralString('null');
+                        if ($class_type instanceof TInt) {
+                            $class_string_types[] = new TLiteralString('int');
+                        } elseif ($class_type instanceof TString) {
+                            $class_string_types[] = new TLiteralString('string');
+                        } elseif ($class_type instanceof TFloat) {
+                            $class_string_types[] = new TLiteralString('float');
+                        } elseif ($class_type instanceof TBool) {
+                            $class_string_types[] = new TLiteralString('bool');
+                        } elseif ($class_type instanceof TClosedResource) {
+                            $class_string_types[] = new TLiteralString('resource (closed)');
+                        } elseif ($class_type instanceof TNull) {
+                            $class_string_types[] = new TLiteralString('null');
                         } else {
-                            $class_string_types[] = new Type\Atomic\TString();
+                            $class_string_types[] = new TString();
                         }
                     }
                 }
@@ -558,9 +573,9 @@ class NamedFunctionCallHandler
             $statements_analyzer->node_data->setType(
                 $real_stmt,
                 new Type\Union([
-                    new Type\Atomic\TClassString(
+                    new TClassString(
                         $get_class_name,
-                        new Type\Atomic\TNamedObject($get_class_name)
+                        new TNamedObject($get_class_name)
                     )
                 ])
             );

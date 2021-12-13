@@ -3,6 +3,9 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 
 /**
  * @internal
@@ -27,7 +30,7 @@ class ArrayType
 
     public static function infer(Type\Atomic $type): ?self
     {
-        if ($type instanceof Type\Atomic\TKeyedArray) {
+        if ($type instanceof TKeyedArray) {
             return new self(
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),
@@ -35,7 +38,7 @@ class ArrayType
             );
         }
 
-        if ($type instanceof Type\Atomic\TList) {
+        if ($type instanceof TList) {
             return new self(
                 Type::getInt(),
                 $type->type_param,
@@ -43,7 +46,7 @@ class ArrayType
             );
         }
 
-        if ($type instanceof Type\Atomic\TArray) {
+        if ($type instanceof TArray) {
             return new self(
                 $type->type_params[0],
                 $type->type_params[1],

@@ -6,6 +6,9 @@ use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 
 use function count;
 
@@ -34,16 +37,16 @@ class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && (string) $preserve_keys_arg_type !== 'false';
 
             return new Type\Union([
-                new Type\Atomic\TList(
+                new TList(
                     new Type\Union([
                         $preserve_keys
-                            ? new Type\Atomic\TNonEmptyArray([$array_type->key, $array_type->value])
-                            : new Type\Atomic\TNonEmptyList($array_type->value)
+                            ? new TNonEmptyArray([$array_type->key, $array_type->value])
+                            : new TNonEmptyList($array_type->value)
                     ])
                 )
             ]);
         }
 
-        return new Type\Union([new Type\Atomic\TList(Type::getArray())]);
+        return new Type\Union([new TList(Type::getArray())]);
     }
 }

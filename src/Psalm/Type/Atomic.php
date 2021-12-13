@@ -20,10 +20,14 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -31,17 +35,25 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
@@ -180,7 +192,7 @@ abstract class Atomic implements TypeNode
                 return new TNonEmptyArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'callable-array':
-                return new Type\Atomic\TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'list':
                 return new TList(Type::getMixed());
@@ -189,23 +201,23 @@ abstract class Atomic implements TypeNode
                 return new TNonEmptyList(Type::getMixed());
 
             case 'non-empty-string':
-                return new Type\Atomic\TNonEmptyString();
+                return new TNonEmptyString();
 
             case 'non-falsy-string':
-                return new Type\Atomic\TNonFalsyString();
+                return new TNonFalsyString();
 
             case 'lowercase-string':
-                return new Type\Atomic\TLowercaseString();
+                return new TLowercaseString();
 
             case 'non-empty-lowercase-string':
-                return new Type\Atomic\TNonEmptyLowercaseString();
+                return new TNonEmptyLowercaseString();
 
             case 'resource':
                 return $php_version !== null ? new TNamedObject($value) : new TResource();
 
             case 'resource (closed)':
             case 'closed-resource':
-                return new Type\Atomic\TClosedResource();
+                return new TClosedResource();
 
             case 'positive-int':
                 return new TPositiveInt();
@@ -247,7 +259,7 @@ abstract class Atomic implements TypeNode
                 return new TCallableObject();
 
             case 'stringable-object':
-                return new Type\Atomic\TObjectWithProperties([], ['__tostring' => 'string']);
+                return new TObjectWithProperties([], ['__tostring' => 'string']);
 
             case 'class-string':
             case 'interface-string':
@@ -266,13 +278,13 @@ abstract class Atomic implements TypeNode
                 return new THtmlEscapedString();
 
             case 'literal-string':
-                return new Type\Atomic\TNonspecificLiteralString();
+                return new TNonspecificLiteralString();
 
             case 'non-empty-literal-string':
-                return new Type\Atomic\TNonEmptyNonspecificLiteralString();
+                return new TNonEmptyNonspecificLiteralString();
 
             case 'literal-int':
-                return new Type\Atomic\TNonspecificLiteralInt();
+                return new TNonspecificLiteralInt();
 
             case 'false-y':
                 return new TAssertionFalsy();
@@ -437,7 +449,7 @@ abstract class Atomic implements TypeNode
         return $this instanceof TArray
             || $this instanceof TKeyedArray
             || $this instanceof TList
-            || $this instanceof Atomic\TClassStringMap
+            || $this instanceof TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
     }
@@ -519,23 +531,23 @@ abstract class Atomic implements TypeNode
             }
         }
 
-        if ($this instanceof Type\Atomic\TArray
-            || $this instanceof Type\Atomic\TGenericObject
-            || $this instanceof Type\Atomic\TIterable
+        if ($this instanceof TArray
+            || $this instanceof TGenericObject
+            || $this instanceof TIterable
         ) {
             foreach ($this->type_params as $type_param) {
                 $type_param->replaceClassLike($old, $new);
             }
         }
 
-        if ($this instanceof Type\Atomic\TKeyedArray) {
+        if ($this instanceof TKeyedArray) {
             foreach ($this->properties as $property_type) {
                 $property_type->replaceClassLike($old, $new);
             }
         }
 
-        if ($this instanceof Type\Atomic\TClosure
-            || $this instanceof Type\Atomic\TCallable
+        if ($this instanceof TClosure
+            || $this instanceof TCallable
         ) {
             if ($this->params) {
                 foreach ($this->params as $param) {
@@ -561,7 +573,7 @@ abstract class Atomic implements TypeNode
         if ($this instanceof TNamedObject
             || $this instanceof TTemplateParam
             || $this instanceof TIterable
-            || $this instanceof Type\Atomic\TObjectWithProperties
+            || $this instanceof TObjectWithProperties
         ) {
             if ($this->extra_types) {
                 foreach ($this->extra_types as &$type) {

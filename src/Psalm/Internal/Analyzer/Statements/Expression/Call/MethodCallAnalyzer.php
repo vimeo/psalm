@@ -26,6 +26,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_reduce;
 use function count;
@@ -184,8 +185,8 @@ class MethodCallAnalyzer extends CallAnalyzer
                 $context,
                 $class_type,
                 $lhs_type_part,
-                $lhs_type_part instanceof Type\Atomic\TNamedObject
-                    || $lhs_type_part instanceof Type\Atomic\TTemplateParam
+                $lhs_type_part instanceof TNamedObject
+                    || $lhs_type_part instanceof TTemplateParam
                     ? $lhs_type_part
                     : null,
                 false,

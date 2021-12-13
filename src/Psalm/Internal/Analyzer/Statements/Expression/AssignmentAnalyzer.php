@@ -65,6 +65,15 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNull;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -1119,7 +1128,7 @@ class AssignmentAnalyzer
             $has_null = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
-                if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
+                if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
                     // if object-like has int offsets
@@ -1190,7 +1199,7 @@ class AssignmentAnalyzer
                     }
                 }
 
-                if ($assign_value_atomic_type instanceof Type\Atomic\TMixed) {
+                if ($assign_value_atomic_type instanceof TMixed) {
                     IssueBuffer::maybeAdd(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
@@ -1198,7 +1207,7 @@ class AssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-                } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
+                } elseif ($assign_value_atomic_type instanceof TNull) {
                     $has_null = true;
 
                     if (IssueBuffer::accepts(
@@ -1211,15 +1220,15 @@ class AssignmentAnalyzer
                     ) {
                         // do nothing
                     }
-                } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
-                    && !$assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
-                    && !$assign_value_atomic_type instanceof Type\Atomic\TList
+                } elseif (!$assign_value_atomic_type instanceof TArray
+                    && !$assign_value_atomic_type instanceof TKeyedArray
+                    && !$assign_value_atomic_type instanceof TList
                     && !$assign_value_type->hasArrayAccessInterface($codebase)
                 ) {
                     if ($assign_value_type->hasArray()) {
-                        if (($assign_value_atomic_type instanceof Type\Atomic\TFalse
+                        if (($assign_value_atomic_type instanceof TFalse
                                 && $assign_value_type->ignore_falsable_issues)
-                            || ($assign_value_atomic_type instanceof Type\Atomic\TNull
+                            || ($assign_value_atomic_type instanceof TNull
                                 && $assign_value_type->ignore_nullable_issues)
                         ) {
                             // do nothing
@@ -1252,18 +1261,18 @@ class AssignmentAnalyzer
                 if ($var instanceof PhpParser\Node\Expr\List_
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                    if ($assign_value_atomic_type instanceof TKeyedArray) {
                         $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
                     }
 
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TList) {
-                        $assign_value_atomic_type = new Type\Atomic\TArray([
+                    if ($assign_value_atomic_type instanceof TList) {
+                        $assign_value_atomic_type = new TArray([
                             Type::getInt(),
                             $assign_value_atomic_type->type_param
                         ]);
                     }
 
-                    $array_value_type = $assign_value_atomic_type instanceof Type\Atomic\TArray
+                    $array_value_type = $assign_value_atomic_type instanceof TArray
                         ? clone $assign_value_atomic_type->type_params[1]
                         : Type::getMixed();
 
@@ -1307,7 +1316,7 @@ class AssignmentAnalyzer
                         }
                     }
 
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TArray) {
+                    if ($assign_value_atomic_type instanceof TArray) {
                         $new_assign_type = clone $assign_value_atomic_type->type_params[1];
 
                         if ($statements_analyzer->data_flow_graph
@@ -1322,8 +1331,8 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyArray;
-                    } elseif ($assign_value_atomic_type instanceof Type\Atomic\TList) {
+                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
+                    } elseif ($assign_value_atomic_type instanceof TList) {
                         $new_assign_type = clone $assign_value_atomic_type->type_param;
 
                         if ($statements_analyzer->data_flow_graph && $assign_value) {
@@ -1336,8 +1345,8 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
-                    } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyList;
+                    } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
@@ -1429,7 +1438,7 @@ class AssignmentAnalyzer
                     if (($context->error_suppressing && ($offset || $can_be_empty))
                         || $has_null
                     ) {
-                        $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
+                        $context->vars_in_scope[$list_var_id]->addType(new TNull);
                     }
 
                     if ($statements_analyzer->data_flow_graph) {
@@ -1533,7 +1542,7 @@ class AssignmentAnalyzer
 
                 if ($stmt_var_type->hasObjectType()) {
                     foreach ($stmt_var_type->getAtomicTypes() as $type) {
-                        if ($type instanceof Type\Atomic\TNamedObject) {
+                        if ($type instanceof TNamedObject) {
                             $codebase->analyzer->addMixedMemberName(
                                 strtolower($type->value) . '::$',
                                 $context->calling_method_id ?: $statements_analyzer->getFileName()

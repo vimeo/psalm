@@ -40,6 +40,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TEnumCase;
 use ReflectionClass;
 use ReflectionProperty;
 use UnexpectedValueException;
@@ -1671,7 +1672,7 @@ class ClassLikes
 
             return $constant_storage->type;
         } elseif (isset($storage->enum_cases[$constant_name])) {
-            return new Type\Union([new Type\Atomic\TEnumCase($storage->name, $constant_name)]);
+            return new Type\Union([new TEnumCase($storage->name, $constant_name)]);
         }
         return null;
     }

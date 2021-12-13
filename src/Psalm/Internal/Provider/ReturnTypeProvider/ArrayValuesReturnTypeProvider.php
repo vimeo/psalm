@@ -5,6 +5,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -45,26 +51,26 @@ class ArrayValuesReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $return_atomic_type = null;
 
         while ($atomic_type = array_shift($atomic_types)) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($atomic_type instanceof TTemplateParam) {
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 $atomic_type = $atomic_type->getGenericArrayType();
             }
 
-            if ($atomic_type instanceof Type\Atomic\TArray) {
-                if ($atomic_type instanceof Type\Atomic\TNonEmptyArray) {
-                    $return_atomic_type = new Type\Atomic\TNonEmptyList(
+            if ($atomic_type instanceof TArray) {
+                if ($atomic_type instanceof TNonEmptyArray) {
+                    $return_atomic_type = new TNonEmptyList(
                         clone $atomic_type->type_params[1]
                     );
                 } else {
-                    $return_atomic_type = new Type\Atomic\TList(
+                    $return_atomic_type = new TList(
                         clone $atomic_type->type_params[1]
                     );
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TList) {
+            } elseif ($atomic_type instanceof TList) {
                 $return_atomic_type = $atomic_type;
             } else {
                 return Type::getArray();

@@ -32,7 +32,20 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 
 use function array_map;
 use function array_merge;
@@ -206,7 +219,7 @@ class NewAnalyzer extends CallAnalyzer
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
                 $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
-                $result_atomic_type = new Type\Atomic\TAnonymousClassInstance($fq_class_name, false, $extends);
+                $result_atomic_type = new TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
                 //if the class is a Name, it can't represent a child
                 $definite_class = $stmt->class instanceof PhpParser\Node\Name;
@@ -513,7 +526,7 @@ class NewAnalyzer extends CallAnalyzer
             }
 
             if ($generic_param_types) {
-                $result_atomic_type = new Type\Atomic\TGenericObject(
+                $result_atomic_type = new TGenericObject(
                     $fq_class_name,
                     $generic_param_types
                 );
@@ -535,7 +548,7 @@ class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues()
             );
         } elseif ($storage->template_types) {
-            $result_atomic_type = new Type\Atomic\TGenericObject(
+            $result_atomic_type = new TGenericObject(
                 $fq_class_name,
                 array_values(
                     array_map(
@@ -655,14 +668,14 @@ class NewAnalyzer extends CallAnalyzer
         while ($stmt_class_types) {
             $lhs_type_part = array_shift($stmt_class_types);
 
-            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+            if ($lhs_type_part instanceof TTemplateParam) {
                 $stmt_class_types = array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
             }
 
-            if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
+            if ($lhs_type_part instanceof TTemplateParamClass) {
                 if (!$statements_analyzer->node_data->getType($stmt)) {
-                    $new_type_part = new Type\Atomic\TTemplateParam(
+                    $new_type_part = new TTemplateParam(
                         $lhs_type_part->param_name,
                         $lhs_type_part->as_type
                             ? new Type\Union([$lhs_type_part->as_type])
@@ -720,15 +733,15 @@ class NewAnalyzer extends CallAnalyzer
                 continue;
             }
 
-            if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
-                || $lhs_type_part instanceof Type\Atomic\TClassString
-                || $lhs_type_part instanceof Type\Atomic\TDependentGetClass
+            if ($lhs_type_part instanceof TLiteralClassString
+                || $lhs_type_part instanceof TClassString
+                || $lhs_type_part instanceof TDependentGetClass
             ) {
                 if (!$statements_analyzer->node_data->getType($stmt)) {
-                    if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                    if ($lhs_type_part instanceof TClassString) {
                         $generated_type = $lhs_type_part->as_type
                             ? clone $lhs_type_part->as_type
-                            : new Type\Atomic\TObject();
+                            : new TObject();
 
                         if ($lhs_type_part->as_type
                             && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
@@ -749,31 +762,31 @@ class NewAnalyzer extends CallAnalyzer
                                 );
                             }
                         }
-                    } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass) {
-                        $generated_type = new Type\Atomic\TObject();
+                    } elseif ($lhs_type_part instanceof TDependentGetClass) {
+                        $generated_type = new TObject();
 
                         if ($lhs_type_part->as_type->hasObjectType()
                             && $lhs_type_part->as_type->isSingle()
                         ) {
                             foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
-                                if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
-                                    $generated_type = new Type\Atomic\TNamedObject(
+                                if ($typeof_type_atomic instanceof TNamedObject) {
+                                    $generated_type = new TNamedObject(
                                         $typeof_type_atomic->value
                                     );
                                 }
                             }
                         }
                     } else {
-                        $generated_type = new Type\Atomic\TNamedObject(
+                        $generated_type = new TNamedObject(
                             $lhs_type_part->value
                         );
                     }
 
-                    if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                    if ($lhs_type_part instanceof TClassString) {
                         $can_extend = true;
                     }
 
-                    if ($generated_type instanceof Type\Atomic\TObject) {
+                    if ($generated_type instanceof TObject) {
                         IssueBuffer::maybeAdd(
                             new MixedMethodCall(
                                 'Cannot call constructor on an unknown class',
@@ -789,9 +802,9 @@ class NewAnalyzer extends CallAnalyzer
                 continue;
             }
 
-            if ($lhs_type_part instanceof Type\Atomic\TString) {
+            if ($lhs_type_part instanceof TString) {
                 if ($config->allow_string_standin_for_class
-                    && !$lhs_type_part instanceof Type\Atomic\TNumericString
+                    && !$lhs_type_part instanceof TNumericString
                 ) {
                     // do nothing
                 } elseif (IssueBuffer::accepts(
@@ -803,7 +816,7 @@ class NewAnalyzer extends CallAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($lhs_type_part instanceof Type\Atomic\TMixed) {
+            } elseif ($lhs_type_part instanceof TMixed) {
                 IssueBuffer::maybeAdd(
                     new MixedMethodCall(
                         'Cannot call constructor on an unknown class',
@@ -811,11 +824,11 @@ class NewAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
+            } elseif ($lhs_type_part instanceof TFalse
                 && $stmt_class_type->ignore_falsable_issues
             ) {
                 // do nothing
-            } elseif ($lhs_type_part instanceof Type\Atomic\TNull
+            } elseif ($lhs_type_part instanceof TNull
                 && $stmt_class_type->ignore_nullable_issues
             ) {
                 // do nothing

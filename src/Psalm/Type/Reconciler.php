@@ -20,8 +20,14 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -617,7 +623,7 @@ class Reconciler
                             continue;
                         }
 
-                        if ($existing_key_type_part instanceof Type\Atomic\TArray) {
+                        if ($existing_key_type_part instanceof TArray) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -630,12 +636,12 @@ class Reconciler
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate->addType(new Type\Atomic\TNull);
+                                    $new_base_type_candidate->addType(new TNull);
                                 }
 
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TList) {
+                        } elseif ($existing_key_type_part instanceof TList) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -644,29 +650,29 @@ class Reconciler
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate->addType(new Type\Atomic\TNull);
+                                    $new_base_type_candidate->addType(new TNull);
                                 }
 
                                 $new_base_type_candidate->possibly_undefined = true;
                             }
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNull
-                            || $existing_key_type_part instanceof Type\Atomic\TFalse
+                        } elseif ($existing_key_type_part instanceof TNull
+                            || $existing_key_type_part instanceof TFalse
                         ) {
                             $new_base_type_candidate = Type::getNull();
 
                             if ($existing_keys[$base_key]->ignore_nullable_issues) {
                                 $new_base_type_candidate->ignore_nullable_issues = true;
                             }
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TClassStringMap) {
+                        } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TEmpty
-                            || ($existing_key_type_part instanceof Type\Atomic\TMixed
+                        } elseif ($existing_key_type_part instanceof TEmpty
+                            || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)
                         ) {
                             return Type::getMixed($inside_loop);
                         } elseif ($existing_key_type_part instanceof TString) {
                             $new_base_type_candidate = Type::getString();
-                        } elseif ($existing_key_type_part instanceof Type\Atomic\TNamedObject
+                        } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset)
                         ) {
                             $has_object_array_access = true;
@@ -674,7 +680,7 @@ class Reconciler
                             unset($existing_keys[$new_base_key]);
 
                             return null;
-                        } elseif (!$existing_key_type_part instanceof Type\Atomic\TKeyedArray) {
+                        } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !is_numeric($array_key[0]))) {
                             if ($has_empty) {
@@ -1022,19 +1028,19 @@ class Reconciler
 
         if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                if ($base_atomic_type instanceof Type\Atomic\TKeyedArray
-                    || ($base_atomic_type instanceof Type\Atomic\TArray
+                if ($base_atomic_type instanceof TKeyedArray
+                    || ($base_atomic_type instanceof TArray
                         && !$base_atomic_type->type_params[1]->isEmpty())
-                    || $base_atomic_type instanceof Type\Atomic\TList
-                    || $base_atomic_type instanceof Type\Atomic\TClassStringMap
+                    || $base_atomic_type instanceof TList
+                    || $base_atomic_type instanceof TClassStringMap
                 ) {
                     $new_base_type = clone $existing_types[$base_key];
 
-                    if ($base_atomic_type instanceof Type\Atomic\TArray) {
+                    if ($base_atomic_type instanceof TArray) {
                         $previous_key_type = clone $base_atomic_type->type_params[0];
                         $previous_value_type = clone $base_atomic_type->type_params[1];
 
-                        $base_atomic_type = new Type\Atomic\TKeyedArray(
+                        $base_atomic_type = new TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -1045,11 +1051,11 @@ class Reconciler
                             $base_atomic_type->previous_key_type = $previous_key_type;
                         }
                         $base_atomic_type->previous_value_type = $previous_value_type;
-                    } elseif ($base_atomic_type instanceof Type\Atomic\TList) {
+                    } elseif ($base_atomic_type instanceof TList) {
                         $previous_key_type = Type::getInt();
                         $previous_value_type = clone $base_atomic_type->type_param;
 
-                        $base_atomic_type = new Type\Atomic\TKeyedArray(
+                        $base_atomic_type = new TKeyedArray(
                             [
                                 $array_key_offset => clone $result_type,
                             ],
@@ -1060,7 +1066,7 @@ class Reconciler
 
                         $base_atomic_type->previous_key_type = $previous_key_type;
                         $base_atomic_type->previous_value_type = $previous_value_type;
-                    } elseif ($base_atomic_type instanceof Type\Atomic\TClassStringMap) {
+                    } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
                     } else {
                         $base_atomic_type = clone $base_atomic_type;
@@ -1095,17 +1101,17 @@ class Reconciler
                 $key_type->bustCache();
             } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
                 $key_type->removeType($key);
-                $key_type->addType(new Type\Atomic\TArrayKey());
+                $key_type->addType(new TArrayKey());
             } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
                 $key_type->removeType($key);
-                $key_type->addType(new Type\Atomic\TArrayKey());
+                $key_type->addType(new TArrayKey());
             }
         }
 
         /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
         if (!$key_type->getAtomicTypes()) {
             // this should ideally prompt some sort of error
-            $key_type->addType(new Type\Atomic\TArrayKey());
+            $key_type->addType(new TArrayKey());
         }
     }
 }

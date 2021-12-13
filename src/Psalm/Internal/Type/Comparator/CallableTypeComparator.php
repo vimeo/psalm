@@ -15,12 +15,15 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function end;
@@ -33,8 +36,8 @@ use function substr;
 class CallableTypeComparator
 {
     /**
-     * @param  TCallable|Type\Atomic\TClosure   $input_type_part
-     * @param  TCallable|Type\Atomic\TClosure   $container_type_part
+     * @param  TCallable|TClosure   $input_type_part
+     * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -152,7 +155,7 @@ class CallableTypeComparator
                 return false;
             }
 
-            if (!$input_type_part instanceof Type\Atomic\TCallableList) {
+            if (!$input_type_part instanceof TCallableList) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced_from_mixed = true;
                     $atomic_comparison_result->type_coerced = true;
@@ -178,7 +181,7 @@ class CallableTypeComparator
                 return false;
             }
 
-            if (!$input_type_part instanceof Type\Atomic\TCallableArray) {
+            if (!$input_type_part instanceof TCallableArray) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced_from_mixed = true;
                     $atomic_comparison_result->type_coerced = true;
@@ -439,7 +442,7 @@ class CallableTypeComparator
                             strtolower($lhs_atomic_type->value) . '::',
                             $calling_method_id ?: $file_name
                         );
-                    } elseif ($lhs_atomic_type instanceof Atomic\TTemplateParam) {
+                    } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                         $lhs_template_type = $lhs_atomic_type->as;
                         if ($lhs_template_type->isSingle()) {
                             $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
@@ -477,7 +480,7 @@ class CallableTypeComparator
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
-                } elseif ($lhs_atomic_type instanceof Atomic\TTemplateParam) {
+                } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                     $lhs_template_type = $lhs_atomic_type->as;
                     if ($lhs_template_type->isSingle()) {
                         $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
@@ -487,7 +490,7 @@ class CallableTypeComparator
                             $class_name = $lhs_template_atomic_type->as;
                         }
                     }
-                } elseif ($lhs_atomic_type instanceof Type\Atomic\TClassString
+                } elseif ($lhs_atomic_type instanceof TClassString
                     && $lhs_atomic_type->as
                 ) {
                     $class_name = $lhs_atomic_type->as;

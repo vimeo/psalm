@@ -6,6 +6,9 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 
 class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -32,9 +35,9 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
+            && ($array_atomic_type instanceof TArray
+                || $array_atomic_type instanceof TKeyedArray
+                || $array_atomic_type instanceof TList)
         ? $array_atomic_type
         : null;
 
@@ -42,9 +45,9 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getMixed();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
+        if ($first_arg_array instanceof TArray) {
             $key_type = clone $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof Type\Atomic\TList) {
+        } elseif ($first_arg_array instanceof TList) {
             $key_type = Type::getInt();
         } else {
             $key_type = $first_arg_array->getGenericKeyType();
@@ -57,7 +60,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         $arr_type = new Type\Union([
-            new Type\Atomic\TList(
+            new TList(
                 $key_type
             ),
         ]);

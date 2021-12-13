@@ -24,6 +24,15 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TAssertionFalsy;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
 
 use function array_filter;
@@ -453,7 +462,7 @@ class FunctionLikeDocblockScanner
                             $param_type_mapping[$token_body] = $template_name;
 
                             $param_storage->type = new Type\Union([
-                                new Type\Atomic\TTemplateParam(
+                                new TTemplateParam(
                                     $template_name,
                                     $template_as_type,
                                     $template_function_id
@@ -599,14 +608,14 @@ class FunctionLikeDocblockScanner
         $assertion_type_parts = [];
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
-            if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
-                || $namespaced_type_part instanceof Type\Atomic\TClassConstant
-                || ($namespaced_type_part instanceof Type\Atomic\TList
+            if ($namespaced_type_part instanceof TAssertionFalsy
+                || $namespaced_type_part instanceof TClassConstant
+                || ($namespaced_type_part instanceof TList
                     && $namespaced_type_part->type_param->isMixed())
-                || ($namespaced_type_part instanceof Type\Atomic\TArray
+                || ($namespaced_type_part instanceof TArray
                     && $namespaced_type_part->type_params[0]->isArrayKey()
                     && $namespaced_type_part->type_params[1]->isMixed())
-                || ($namespaced_type_part instanceof Type\Atomic\TIterable
+                || ($namespaced_type_part instanceof TIterable
                     && $namespaced_type_part->type_params[0]->isMixed()
                     && $namespaced_type_part->type_params[1]->isMixed())
             ) {
@@ -777,13 +786,13 @@ class FunctionLikeDocblockScanner
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                 * @var TArray|TKeyedArray|TList
                  */
                 $array_type = $new_param_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof Type\Atomic\TKeyedArray) {
+                if ($array_type instanceof TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
-                } elseif ($array_type instanceof Type\Atomic\TList) {
+                } elseif ($array_type instanceof TList) {
                     $new_param_type = $array_type->type_param;
                 } else {
                     $new_param_type = $array_type->type_params[1];
@@ -801,7 +810,7 @@ class FunctionLikeDocblockScanner
                     && !$new_param_type->isNullable()
                     && !$new_param_type->hasTemplate()
                 ) {
-                    $new_param_type->addType(new Type\Atomic\TNull());
+                    $new_param_type->addType(new TNull());
                 }
 
                 $config = Config::getInstance();
@@ -827,8 +836,8 @@ class FunctionLikeDocblockScanner
                 if (isset($storage_param_atomic_types[$key])) {
                     $type->from_docblock = false;
 
-                    if ($storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
-                        && $type instanceof Type\Atomic\TArray
+                    if ($storage_param_atomic_types[$key] instanceof TArray
+                        && $type instanceof TArray
                         && $type->type_params[0]->hasArrayKey()
                     ) {
                         $type->type_params[0]->from_docblock = false;
@@ -843,7 +852,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->addType(new Type\Atomic\TNull());
+                $new_param_type->addType(new TNull());
             }
 
             $storage_param->type = $new_param_type;
@@ -967,7 +976,7 @@ class FunctionLikeDocblockScanner
                             $storage->signature_return_type
                         )
                     ) {
-                        $storage->return_type->addType(new Type\Atomic\TNull());
+                        $storage->return_type->addType(new TNull());
                     }
                 }
             }
@@ -1123,7 +1132,7 @@ class FunctionLikeDocblockScanner
 
             $removed_taint_single = $removed_taint->getSingleAtomic();
 
-            if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
+            if (!$removed_taint_single instanceof TConditional) {
                 throw new TypeParseTreeException('Escaped taint must be a conditional');
             }
 

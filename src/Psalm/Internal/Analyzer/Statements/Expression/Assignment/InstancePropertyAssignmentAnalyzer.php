@@ -64,9 +64,12 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -747,7 +750,7 @@ class InstancePropertyAssignmentAnalyzer
         while ($lhs_atomic_types) {
             $lhs_type_part = array_pop($lhs_atomic_types);
 
-            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+            if ($lhs_type_part instanceof TTemplateParam) {
                 $lhs_atomic_types = array_merge(
                     $lhs_atomic_types,
                     $lhs_type_part->as->getAtomicTypes()
@@ -857,7 +860,7 @@ class InstancePropertyAssignmentAnalyzer
             return null;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TFalse
+        if ($lhs_type_part instanceof TFalse
             && $lhs_type->ignore_falsable_issues
             && count($lhs_type->getAtomicTypes()) > 1
         ) {
@@ -1350,7 +1353,7 @@ class InstancePropertyAssignmentAnalyzer
                 $declaring_property_class
             );
 
-            if ($lhs_type_part instanceof Type\Atomic\TGenericObject) {
+            if ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                     $codebase,
                     $class_property_type,
@@ -1450,7 +1453,7 @@ class InstancePropertyAssignmentAnalyzer
             $property_class_storage,
             $storage,
             null,
-            new Type\Atomic\TNamedObject($fq_class_name),
+            new TNamedObject($fq_class_name),
             true
         );
 

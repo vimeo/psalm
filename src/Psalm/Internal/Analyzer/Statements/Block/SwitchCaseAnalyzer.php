@@ -34,6 +34,9 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -142,7 +145,7 @@ class SwitchCaseAnalyzer
                 $type_statements = [];
 
                 foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Type\Atomic\TDependentGetClass) {
+                    if ($type instanceof TDependentGetClass) {
                         $type_statements[] = new VirtualFuncCall(
                             new VirtualName(['get_class']),
                             [
@@ -158,7 +161,7 @@ class SwitchCaseAnalyzer
                             ],
                             $stmt->cond->getAttributes()
                         );
-                    } elseif ($type instanceof Type\Atomic\TDependentGetType) {
+                    } elseif ($type instanceof TDependentGetType) {
                         $type_statements[] = new VirtualFuncCall(
                             new VirtualName(['gettype']),
                             [
@@ -174,7 +177,7 @@ class SwitchCaseAnalyzer
                             ],
                             $stmt->cond->getAttributes()
                         );
-                    } elseif ($type instanceof Type\Atomic\TDependentGetDebugType) {
+                    } elseif ($type instanceof TDependentGetDebugType) {
                         $type_statements[] = new VirtualFuncCall(
                             new VirtualName(['get_debug_type']),
                             [

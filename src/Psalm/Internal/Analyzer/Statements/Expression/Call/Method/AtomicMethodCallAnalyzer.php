@@ -25,7 +25,16 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_keys;
@@ -77,7 +86,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($lhs_type_part instanceof TNamedObject) {
                 $lhs_type_part->extra_types = $extra_types;
-            } elseif ($lhs_type_part instanceof Type\Atomic\TObject && $extra_types) {
+            } elseif ($lhs_type_part instanceof TObject && $extra_types) {
                 $lhs_type_part = array_shift($extra_types);
                 if ($extra_types) {
                     $lhs_type_part->extra_types = $extra_types;
@@ -235,7 +244,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             // @mixin attributes are an absolute pain! Lots of complexity here,
             // as they can redefine the called class, method id etc.
             if ($class_storage->templatedMixins
-                && $lhs_type_part instanceof Type\Atomic\TGenericObject
+                && $lhs_type_part instanceof TGenericObject
                 && $class_storage->template_types
             ) {
                 [$lhs_type_part, $class_storage, $naive_method_exists, $method_id, $fq_class_name]
@@ -552,18 +561,18 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         AtomicMethodCallAnalysisResult $result
     ): void {
         switch (get_class($lhs_type_part)) {
-            case Type\Atomic\TNull::class:
-            case Type\Atomic\TFalse::class:
+            case TNull::class:
+            case TFalse::class:
                 // handled above
                 return;
 
             case TTemplateParam::class:
-            case Type\Atomic\TEmptyMixed::class:
-            case Type\Atomic\TEmpty::class:
-            case Type\Atomic\TMixed::class:
-            case Type\Atomic\TNonEmptyMixed::class:
-            case Type\Atomic\TObject::class:
-            case Type\Atomic\TObjectWithProperties::class:
+            case TEmptyMixed::class:
+            case TEmpty::class:
+            case TMixed::class:
+            case TNonEmptyMixed::class:
+            case TObject::class:
+            case TObjectWithProperties::class:
                 if (!$context->collect_initializations
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -576,7 +585,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 $result->has_mixed_method_call = true;
 
-                if ($lhs_type_part instanceof Type\Atomic\TObjectWithProperties
+                if ($lhs_type_part instanceof TObjectWithProperties
                     && $stmt->name instanceof PhpParser\Node\Identifier
                     && isset($lhs_type_part->methods[$stmt->name->name])
                 ) {
@@ -670,7 +679,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         $naive_method_exists = false;
 
         if ($class_storage->templatedMixins
-            && $lhs_type_part instanceof Type\Atomic\TGenericObject
+            && $lhs_type_part instanceof TGenericObject
             && $class_storage->template_types
         ) {
             $template_type_keys = array_keys($class_storage->template_types);

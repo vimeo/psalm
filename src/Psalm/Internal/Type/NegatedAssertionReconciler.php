@@ -14,8 +14,15 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -87,7 +94,7 @@ class NegatedAssertionReconciler extends Reconciler
                 ) {
                     foreach ($existing_var_type->getAtomicTypes() as $atomic) {
                         if (!$existing_var_type->hasMixed()
-                            || $atomic instanceof Type\Atomic\TNonEmptyMixed
+                            || $atomic instanceof TNonEmptyMixed
                         ) {
                             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
@@ -228,9 +235,9 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType($assertion);
 
             if ($assertion === 'int') {
-                $existing_var_type->addType(new Type\Atomic\TFloat);
+                $existing_var_type->addType(new TFloat);
             } else {
-                $existing_var_type->addType(new Type\Atomic\TInt);
+                $existing_var_type->addType(new TInt);
             }
 
             $existing_var_type->from_calculation = false;
@@ -256,7 +263,7 @@ class NegatedAssertionReconciler extends Reconciler
         if (strtolower($assertion) === 'traversable'
             && isset($existing_var_atomic_types['iterable'])
         ) {
-            /** @var Type\Atomic\TIterable */
+            /** @var TIterable */
             $iterable = $existing_var_atomic_types['iterable'];
             $existing_var_type->removeType('iterable');
             $existing_var_type->addType(new TArray(
@@ -371,7 +378,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return new Type\Union([new Type\Atomic\TEmptyMixed]);
+            return new Type\Union([new TEmptyMixed]);
         }
 
         return $existing_var_type;
@@ -435,7 +442,7 @@ class NegatedAssertionReconciler extends Reconciler
                         $did_remove_type = true;
                     }
                 } elseif ($assertion === 'string()') {
-                    $existing_var_type->addType(new Type\Atomic\TNonEmptyString());
+                    $existing_var_type->addType(new TNonEmptyString());
                 }
             } elseif ($scalar_type === 'string') {
                 $scalar_value = substr($assertion, $bracket_pos + 1, -1);
@@ -460,7 +467,7 @@ class NegatedAssertionReconciler extends Reconciler
             [$fq_enum_name, $case_name] = explode('::', substr($assertion, $bracket_pos + 1, -1));
 
             foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
-                if (get_class($atomic_type) === Type\Atomic\TNamedObject::class
+                if (get_class($atomic_type) === TNamedObject::class
                     && $atomic_type->value === $fq_enum_name
                 ) {
                     $codebase = $statements_analyzer->getCodebase();
@@ -468,7 +475,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $enum_storage = $codebase->classlike_storage_provider->get($fq_enum_name);
 
                     if (!$enum_storage->is_enum || !$enum_storage->enum_cases) {
-                        $scalar_var_type = new Type\Union([new Type\Atomic\TEnumCase($fq_enum_name, $case_name)]);
+                        $scalar_var_type = new Type\Union([new TEnumCase($fq_enum_name, $case_name)]);
                     } else {
                         $existing_var_type->removeType($atomic_type->getKey());
                         $did_remove_type = true;
@@ -478,10 +485,10 @@ class NegatedAssertionReconciler extends Reconciler
                                 continue;
                             }
 
-                            $existing_var_type->addType(new Type\Atomic\TEnumCase($fq_enum_name, $alt_case_name));
+                            $existing_var_type->addType(new TEnumCase($fq_enum_name, $alt_case_name));
                         }
                     }
-                } elseif ($atomic_type instanceof Type\Atomic\TEnumCase
+                } elseif ($atomic_type instanceof TEnumCase
                     && $atomic_type->value === $fq_enum_name
                     && $atomic_type->case_name !== $case_name
                 ) {

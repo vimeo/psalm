@@ -7,6 +7,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
 
 use function count;
 use function implode;
@@ -53,7 +57,7 @@ class PhpStormMetaScanner
                         && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Type\Union([
-                            new Type\Atomic\TNamedObject(implode('\\', $array_item->value->class->parts))
+                            new TNamedObject(implode('\\', $array_item->value->class->parts))
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -138,7 +142,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Type\Union([
-                                            new Type\Atomic\TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type)
                                         ]);
                                     }
                                 }
@@ -219,15 +223,15 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                             * @var TArray|TKeyedArray|TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
-                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                            if ($array_atomic_type instanceof TList) {
                                 return $array_atomic_type->type_param;
                             }
 
@@ -288,7 +292,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Type\Union([
-                                            new Type\Atomic\TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type)
                                         ]);
                                     }
                                 }
@@ -363,15 +367,15 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                             * @var TArray|TKeyedArray|TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
-                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                            if ($array_atomic_type instanceof TList) {
                                 return $array_atomic_type->type_param;
                             }
 

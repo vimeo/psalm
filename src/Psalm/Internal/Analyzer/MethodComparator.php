@@ -30,6 +30,8 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 
 use function in_array;
 use function strpos;
@@ -336,7 +338,7 @@ class MethodComparator
                     : null;
 
                 if ($or_null_guide_param_signature_type) {
-                    $or_null_guide_param_signature_type->addType(new Type\Atomic\TNull);
+                    $or_null_guide_param_signature_type->addType(new TNull);
                 }
 
                 if ($cased_guide_method_id === 'Serializable::unserialize') {
@@ -702,7 +704,7 @@ class MethodComparator
         }
 
         foreach ($implementer_method_storage_param_type->getAtomicTypes() as $k => $t) {
-            if ($t instanceof Type\Atomic\TTemplateParam
+            if ($t instanceof TTemplateParam
                 && strpos($t->defining_class, 'fn-') === 0
             ) {
                 $implementer_method_storage_param_type->removeType($k);
@@ -714,7 +716,7 @@ class MethodComparator
         }
 
         foreach ($guide_method_storage_param_type->getAtomicTypes() as $k => $t) {
-            if ($t instanceof Type\Atomic\TTemplateParam
+            if ($t instanceof TTemplateParam
                 && strpos($t->defining_class, 'fn-') === 0
             ) {
                 $guide_method_storage_param_type->removeType($k);

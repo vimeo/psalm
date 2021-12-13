@@ -22,7 +22,25 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TCallableList;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TPositiveInt;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -62,14 +80,14 @@ class FunctionCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
-                new Type\Atomic\TLiteralString($function_id),
+                new TLiteralString($function_id),
                 null,
                 $statements_analyzer,
                 true
             );
 
             if ($candidate_callable) {
-                $stmt_type = new Type\Union([new Type\Atomic\TClosure(
+                $stmt_type = new Type\Union([new TClosure(
                     'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
@@ -307,7 +325,7 @@ class FunctionCallReturnTypeFetcher
             switch ($call_map_key) {
                 case 'hrtime':
                     return new Type\Union([
-                        new Type\Atomic\TKeyedArray([
+                        new TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
                         ])
@@ -315,9 +333,9 @@ class FunctionCallReturnTypeFetcher
 
                 case 'get_called_class':
                     return new Type\Union([
-                        new Type\Atomic\TClassString(
+                        new TClassString(
                             $context->self ?: 'object',
-                            $context->self ? new Type\Atomic\TNamedObject($context->self, true) : null
+                            $context->self ? new TNamedObject($context->self, true) : null
                         )
                     ]);
 
@@ -327,7 +345,7 @@ class FunctionCallReturnTypeFetcher
 
                         if ($classlike_storage->parent_classes) {
                             return new Type\Union([
-                                new Type\Atomic\TClassString(
+                                new TClassString(
                                     array_values($classlike_storage->parent_classes)[0]
                                 )
                             ]);
@@ -342,30 +360,30 @@ class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof Type\Atomic\TCallableArray
-                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableList
-                                    || $atomic_types['array'] instanceof Type\Atomic\TCallableKeyedArray
+                                if ($atomic_types['array'] instanceof TCallableArray
+                                    || $atomic_types['array'] instanceof TCallableList
+                                    || $atomic_types['array'] instanceof TCallableKeyedArray
                                 ) {
                                     return Type::getInt(false, 2);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyArray) {
+                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
                                     return new Type\Union([
                                         $atomic_types['array']->count !== null
-                                            ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                            : new Type\Atomic\TPositiveInt
+                                            ? new TLiteralInt($atomic_types['array']->count)
+                                            : new TPositiveInt
                                     ]);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyList) {
+                                if ($atomic_types['array'] instanceof TNonEmptyList) {
                                     return new Type\Union([
                                         $atomic_types['array']->count !== null
-                                            ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                            : new Type\Atomic\TPositiveInt
+                                            ? new TLiteralInt($atomic_types['array']->count)
+                                            : new TPositiveInt
                                     ]);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\TKeyedArray) {
+                                if ($atomic_types['array'] instanceof TKeyedArray) {
                                     $min = 0;
                                     $max = 0;
                                     foreach ($atomic_types['array']->properties as $property) {
@@ -386,17 +404,17 @@ class FunctionCallReturnTypeFetcher
                                     if ($atomic_types['array']->sealed) {
                                         //the KeyedArray is sealed, we can use the min and max
                                         if ($min === $max) {
-                                            return new Type\Union([new Type\Atomic\TLiteralInt($max)]);
+                                            return new Type\Union([new TLiteralInt($max)]);
                                         }
 
-                                        return new Type\Union([new Type\Atomic\TIntRange($min, $max)]);
+                                        return new Type\Union([new TIntRange($min, $max)]);
                                     }
 
                                     //the type is not sealed, we can only use the min
-                                    return new Type\Union([new Type\Atomic\TIntRange($min, null)]);
+                                    return new Type\Union([new TIntRange($min, null)]);
                                 }
 
-                                if ($atomic_types['array'] instanceof Type\Atomic\TArray
+                                if ($atomic_types['array'] instanceof TArray
                                     && $atomic_types['array']->type_params[0]->isEmpty()
                                     && $atomic_types['array']->type_params[1]->isEmpty()
                                 ) {
@@ -404,8 +422,8 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 return new Type\Union([
-                                    new Type\Atomic\TLiteralInt(0),
-                                    new Type\Atomic\TPositiveInt
+                                    new TLiteralInt(0),
+                                    new TPositiveInt
                                 ]);
                             }
                         }
@@ -423,7 +441,7 @@ class FunctionCallReturnTypeFetcher
 
                         if ((string) $first_arg_type === 'false') {
                             return new Type\Union([
-                                new Type\Atomic\TKeyedArray([
+                                new TKeyedArray([
                                     Type::getInt(),
                                     Type::getInt()
                                 ])
@@ -431,11 +449,11 @@ class FunctionCallReturnTypeFetcher
                         }
 
                         return new Type\Union([
-                            new Type\Atomic\TKeyedArray([
+                            new TKeyedArray([
                                 Type::getInt(),
                                 Type::getInt()
                             ]),
-                            new Type\Atomic\TInt()
+                            new TInt()
                         ]);
                     }
 
@@ -452,15 +470,15 @@ class FunctionCallReturnTypeFetcher
                             if ($first_arg_type->hasArray()) {
                                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                                 $array_type = $first_arg_type->getAtomicTypes()['array'];
-                                if ($array_type instanceof Type\Atomic\TKeyedArray) {
+                                if ($array_type instanceof TKeyedArray) {
                                     return $array_type->getGenericValueType();
                                 }
 
-                                if ($array_type instanceof Type\Atomic\TArray) {
+                                if ($array_type instanceof TArray) {
                                     return clone $array_type->type_params[1];
                                 }
 
-                                if ($array_type instanceof Type\Atomic\TList) {
+                                if ($array_type instanceof TList) {
                                     return clone $array_type->type_param;
                                 }
                             } elseif ($first_arg_type->hasScalarType()
@@ -487,15 +505,15 @@ class FunctionCallReturnTypeFetcher
 
                 case 'fgetcsv':
                     $string_type = Type::getString();
-                    $string_type->addType(new Type\Atomic\TNull);
+                    $string_type->addType(new TNull);
                     $string_type->ignore_nullable_issues = true;
 
                     $call_map_return_type = new Type\Union([
-                        new Type\Atomic\TNonEmptyList(
+                        new TNonEmptyList(
                             $string_type
                         ),
-                        new Type\Atomic\TFalse,
-                        new Type\Atomic\TNull
+                        new TFalse,
+                        new TNull
                     ]);
 
                     if ($codebase->config->ignore_internal_nullable_issues) {

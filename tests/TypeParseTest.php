@@ -10,6 +10,11 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use ReflectionFunction;
 
 use function function_exists;
@@ -765,7 +770,7 @@ class TypeParseTest extends TestCase
                 [
                     'T' => ['' => Type::getArray()],
                     'K' => ['' => new Type\Union([
-                        new Type\Atomic\TTemplateKeyOf('T', 'fn-foo', Type::getMixed())
+                        new TTemplateKeyOf('T', 'fn-foo', Type::getMixed())
                     ])],
                 ]
             )
@@ -803,15 +808,15 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3 | 4.5)');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString('foo\'with'),
-            new Type\Atomic\TLiteralString('bar"bar'),
-            new Type\Atomic\TLiteralString('baz'),
-            new Type\Atomic\TLiteralString('bat\\'),
-            new Type\Atomic\TLiteralString('bang bang'),
-            new Type\Atomic\TLiteralInt(1),
-            new Type\Atomic\TLiteralInt(2),
-            new Type\Atomic\TLiteralInt(3),
-            new Type\Atomic\TLiteralFloat(4.5),
+            new TLiteralString('foo\'with'),
+            new TLiteralString('bar"bar'),
+            new TLiteralString('baz'),
+            new TLiteralString('bat\\'),
+            new TLiteralString('bang bang'),
+            new TLiteralInt(1),
+            new TLiteralInt(2),
+            new TLiteralInt(3),
+            new TLiteralFloat(4.5),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -822,9 +827,9 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('""|"admin"|"fun"');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString(''),
-            new Type\Atomic\TLiteralString('admin'),
-            new Type\Atomic\TLiteralString('fun'),
+            new TLiteralString(''),
+            new TLiteralString('admin'),
+            new TLiteralString('fun'),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -832,9 +837,9 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('"admin"|""|"fun"');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString('admin'),
-            new Type\Atomic\TLiteralString(''),
-            new Type\Atomic\TLiteralString('fun'),
+            new TLiteralString('admin'),
+            new TLiteralString(''),
+            new TLiteralString('fun'),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -842,9 +847,9 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('"admin"|"fun"|""');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString('admin'),
-            new Type\Atomic\TLiteralString('fun'),
-            new Type\Atomic\TLiteralString(''),
+            new TLiteralString('admin'),
+            new TLiteralString('fun'),
+            new TLiteralString(''),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -855,15 +860,15 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3|4.5');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString('foo\'with'),
-            new Type\Atomic\TLiteralString('bar"bar'),
-            new Type\Atomic\TLiteralString('baz'),
-            new Type\Atomic\TLiteralString('bat\\'),
-            new Type\Atomic\TLiteralString('bang bang'),
-            new Type\Atomic\TLiteralInt(1),
-            new Type\Atomic\TLiteralInt(2),
-            new Type\Atomic\TLiteralInt(3),
-            new Type\Atomic\TLiteralFloat(4.5),
+            new TLiteralString('foo\'with'),
+            new TLiteralString('bar"bar'),
+            new TLiteralString('baz'),
+            new TLiteralString('bat\\'),
+            new TLiteralString('bang bang'),
+            new TLiteralInt(1),
+            new TLiteralInt(2),
+            new TLiteralInt(3),
+            new TLiteralFloat(4.5),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -907,10 +912,10 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('("baz" | One2::TWO_THREE | Foo::BAR_BAR | Bat\Bar::BAZ_BAM)');
 
         $resolved_type = new Type\Union([
-            new Type\Atomic\TLiteralString('baz'),
-            new Type\Atomic\TClassConstant('One2', 'TWO_THREE'),
-            new Type\Atomic\TClassConstant('Foo', 'BAR_BAR'),
-            new Type\Atomic\TClassConstant('Bat\\Bar', 'BAZ_BAM'),
+            new TLiteralString('baz'),
+            new TClassConstant('One2', 'TWO_THREE'),
+            new TClassConstant('Foo', 'BAR_BAR'),
+            new TClassConstant('Bat\\Bar', 'BAZ_BAM'),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());

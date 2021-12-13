@@ -32,6 +32,8 @@ use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
 
 use function array_map;
@@ -43,7 +45,7 @@ use function strtolower;
 class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
+     * @param  TNamedObject|TTemplateParam  $static_type
      * @param  list<PhpParser\Node\Arg> $args
      */
     public static function analyze(
@@ -53,7 +55,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         array $args,
         Codebase $codebase,
         Context $context,
-        Type\Atomic\TNamedObject $lhs_type_part,
+        TNamedObject $lhs_type_part,
         ?Type\Atomic $static_type,
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
@@ -277,7 +279,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof Type\Atomic\TNamedObject
+                        $static_type instanceof TNamedObject
                             && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true
                     );
@@ -299,7 +301,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof Type\Atomic\TNamedObject
+                    $static_type instanceof TNamedObject
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                     true
                 );
@@ -530,7 +532,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $codebase,
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
-                        new Type\Atomic\TNamedObject($fq_class_name),
+                        new TNamedObject($fq_class_name),
                         $class_storage->parent_class
                     );
 

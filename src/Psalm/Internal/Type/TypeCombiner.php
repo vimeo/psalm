@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
@@ -46,10 +47,12 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
@@ -286,7 +289,7 @@ class TypeCombiner
             }
 
             $has_non_specific_string = isset($combination->value_types['string'])
-                && get_class($combination->value_types['string']) === Type\Atomic\TString::class;
+                && get_class($combination->value_types['string']) === TString::class;
 
             if (!$has_non_specific_string) {
                 $object_type = self::combine(
@@ -501,7 +504,7 @@ class TypeCombiner
         if ($type instanceof TNamedObject
             || $type instanceof TTemplateParam
             || $type instanceof TIterable
-            || $type instanceof Type\Atomic\TObjectWithProperties
+            || $type instanceof TObjectWithProperties
         ) {
             if ($type->extra_types) {
                 $combination->extra_types = array_merge(
@@ -601,7 +604,7 @@ class TypeCombiner
             return null;
         }
 
-        if ($type instanceof Atomic\TClassStringMap) {
+        if ($type instanceof TClassStringMap) {
             foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
@@ -924,9 +927,9 @@ class TypeCombiner
             return;
         }
 
-        if ($type instanceof Type\Atomic\TTemplateParamClass) {
+        if ($type instanceof TTemplateParamClass) {
             $combination->value_types[$type_key] = $type;
-        } elseif ($type instanceof Type\Atomic\TClassString) {
+        } elseif ($type instanceof TClassString) {
             if (!$type->as_type) {
                 $combination->class_string_types['object'] = new TObject();
             } else {
@@ -968,17 +971,17 @@ class TypeCombiner
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof Type\Atomic\TLowercaseString
+                    && $combination->value_types['string'] instanceof TLowercaseString
                     && strtolower($type->value) === $type->value
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof Type\Atomic\TNonFalsyString
+                    && $combination->value_types['string'] instanceof TNonFalsyString
                     && $type->value
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof Type\Atomic\TNonEmptyString
+                    && $combination->value_types['string'] instanceof TNonEmptyString
                     && $type->value !== ''
                 ) {
                     // do nothing
@@ -1008,7 +1011,7 @@ class TypeCombiner
                         }
 
                         $combination->strings = null;
-                    } elseif ($type instanceof Type\Atomic\TLowercaseString) {
+                    } elseif ($type instanceof TLowercaseString) {
                         $has_non_lowercase_string = false;
 
                         foreach ($combination->strings as $string_type) {
@@ -1025,7 +1028,7 @@ class TypeCombiner
                         }
 
                         $combination->strings = null;
-                    } elseif ($type instanceof Type\Atomic\TNonEmptyString) {
+                    } elseif ($type instanceof TNonEmptyString) {
                         $has_empty_string = false;
 
                         foreach ($combination->strings as $string_type) {
@@ -1420,7 +1423,7 @@ class TypeCombiner
 
                 $new_types[] = $objectlike;
             } else {
-                $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                $new_types[] = new TArray([Type::getArrayKey(), Type::getMixed()]);
             }
 
             // if we're merging an empty array with an object-like, clobber empty array
@@ -1537,7 +1540,7 @@ class TypeCombiner
                 && count($combination->class_string_map_as_types) === 1
                 && count($combination->class_string_map_names) === 1
             ) {
-                $array_type = new Type\Atomic\TClassStringMap(
+                $array_type = new TClassStringMap(
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
                     $generic_type_params[1]

@@ -8,10 +8,20 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
-use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -41,7 +51,7 @@ class TemplateInferredTypeReplacer
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
-            if ($atomic_type instanceof Atomic\TTemplateParam) {
+            if ($atomic_type instanceof TTemplateParam) {
                 $template_type = null;
 
                 $traversed_type = TemplateStandinTypeReplacer::getRootTemplateType(
@@ -66,13 +76,13 @@ class TemplateInferredTypeReplacer
                             if ($atomic_template_type instanceof TNamedObject
                                 || $atomic_template_type instanceof TTemplateParam
                                 || $atomic_template_type instanceof TIterable
-                                || $atomic_template_type instanceof Atomic\TObjectWithProperties
+                                || $atomic_template_type instanceof TObjectWithProperties
                             ) {
                                 $atomic_template_type->extra_types = array_merge(
                                     $atomic_type->extra_types,
                                     $atomic_template_type->extra_types ?: []
                                 );
-                            } elseif ($atomic_template_type instanceof Atomic\TObject) {
+                            } elseif ($atomic_template_type instanceof TObject) {
                                 $first_atomic_type = array_shift($atomic_type->extra_types);
 
                                 if ($atomic_type->extra_types) {
@@ -123,14 +133,14 @@ class TemplateInferredTypeReplacer
                     $keys_to_unset[] = $key;
 
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof Atomic\TMixed) {
+                        if ($template_type_part instanceof TMixed) {
                             $is_mixed = true;
                         }
 
                         $new_types[] = $template_type_part;
                     }
                 }
-            } elseif ($atomic_type instanceof Atomic\TTemplateParamClass) {
+            } elseif ($atomic_type instanceof TTemplateParamClass) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                     ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -142,19 +152,19 @@ class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof Atomic\TMixed
-                            || $template_type_part instanceof Atomic\TObject
+                        if ($template_type_part instanceof TMixed
+                            || $template_type_part instanceof TObject
                         ) {
-                            $class_template_type = new Atomic\TClassString();
-                        } elseif ($template_type_part instanceof Atomic\TNamedObject) {
-                            $class_template_type = new Atomic\TClassString(
+                            $class_template_type = new TClassString();
+                        } elseif ($template_type_part instanceof TNamedObject) {
+                            $class_template_type = new TClassString(
                                 $template_type_part->value,
                                 $template_type_part
                             );
-                        } elseif ($template_type_part instanceof Atomic\TTemplateParam) {
+                        } elseif ($template_type_part instanceof TTemplateParam) {
                             $first_atomic_type = $template_type_part->as->getSingleAtomic();
 
-                            $class_template_type = new Atomic\TTemplateParamClass(
+                            $class_template_type = new TTemplateParamClass(
                                 $template_type_part->param_name,
                                 $template_type_part->as->getId(),
                                 $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
@@ -168,7 +178,7 @@ class TemplateInferredTypeReplacer
                     $keys_to_unset[] = $key;
                     $new_types[] = $class_template_type;
                 }
-            } elseif ($atomic_type instanceof Atomic\TTemplateIndexedAccess) {
+            } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
                 $keys_to_unset[] = $key;
 
                 $template_type = null;
@@ -196,9 +206,9 @@ class TemplateInferredTypeReplacer
                         $array_template_type = $array_template_type->getSingleAtomic();
                         $offset_template_type = $offset_template_type->getSingleAtomic();
 
-                        if ($array_template_type instanceof Atomic\TKeyedArray
-                            && ($offset_template_type instanceof Atomic\TLiteralString
-                                || $offset_template_type instanceof Atomic\TLiteralInt)
+                        if ($array_template_type instanceof TKeyedArray
+                            && ($offset_template_type instanceof TLiteralString
+                                || $offset_template_type instanceof TLiteralInt)
                             && isset($array_template_type->properties[$offset_template_type->value])
                         ) {
                             $template_type = clone $array_template_type->properties[$offset_template_type->value];
@@ -208,16 +218,16 @@ class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof Atomic\TMixed) {
+                        if ($template_type_part instanceof TMixed) {
                             $is_mixed = true;
                         }
 
                         $new_types[] = $template_type_part;
                     }
                 } else {
-                    $new_types[] = new Atomic\TMixed();
+                    $new_types[] = new TMixed();
                 }
-            } elseif ($atomic_type instanceof Atomic\TConditional
+            } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
@@ -257,7 +267,7 @@ class TemplateInferredTypeReplacer
                             false,
                             false
                         )
-                            && (!$candidate_atomic_type instanceof Type\Atomic\TInt
+                            && (!$candidate_atomic_type instanceof TInt
                                 || $atomic_type->conditional_type->getId() !== 'float')
                         ) {
                             $matching_if_types[] = $candidate_atomic_type;

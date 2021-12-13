@@ -13,6 +13,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 
 class UnaryPlusMinusAnalyzer
@@ -38,17 +41,17 @@ class UnaryPlusMinusAnalyzer
 
             foreach ($stmt_expr_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TInt || $type_part instanceof TFloat) {
-                    if ($type_part instanceof Type\Atomic\TLiteralInt
+                    if ($type_part instanceof TLiteralInt
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
                         $type_part->value = -$type_part->value;
-                    } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
+                    } elseif ($type_part instanceof TLiteralFloat
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
                         $type_part->value = -$type_part->value;
                     }
 
-                    if ($type_part instanceof Type\Atomic\TIntRange
+                    if ($type_part instanceof TIntRange
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
                         //we'll have to inverse min and max bound and negate any literal
@@ -73,7 +76,7 @@ class UnaryPlusMinusAnalyzer
                         }
                     }
 
-                    if ($type_part instanceof Type\Atomic\TPositiveInt
+                    if ($type_part instanceof TPositiveInt
                         && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                     ) {
                         $type_part = new TIntRange(null, -1);

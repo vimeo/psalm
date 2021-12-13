@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -35,17 +36,17 @@ class ArrayTypeComparator
         $all_types_contain = true;
 
         $is_empty_array = $input_type_part->equals(
-            new Type\Atomic\TArray([
-                new Type\Union([new Type\Atomic\TEmpty()]),
-                new Type\Union([new Type\Atomic\TEmpty()])
+            new TArray([
+                new Type\Union([new TEmpty()]),
+                new Type\Union([new TEmpty()])
             ]),
             false
         );
 
         if ($is_empty_array
-            && (($container_type_part instanceof Type\Atomic\TArray
-                    && !$container_type_part instanceof Type\Atomic\TNonEmptyArray)
-                || ($container_type_part instanceof Type\Atomic\TKeyedArray
+            && (($container_type_part instanceof TArray
+                    && !$container_type_part instanceof TNonEmptyArray)
+                || ($container_type_part instanceof TKeyedArray
                     && !$container_type_part->isNonEmpty())
             )
         ) {
@@ -190,7 +191,7 @@ class ArrayTypeComparator
                 if ($input_type_part->count !== null && $input_type_part->count < 10) {
                     $literal_ints = array_map(
                         function ($i) {
-                            return new Type\Atomic\TLiteralInt($i);
+                            return new TLiteralInt($i);
                         },
                         range(0, $input_type_part->count - 1)
                     );
@@ -223,7 +224,7 @@ class ArrayTypeComparator
             }
 
             if ($input_param->isEmpty()
-                && $container_type_part instanceof Type\Atomic\TNonEmptyArray
+                && $container_type_part instanceof TNonEmptyArray
             ) {
                 return false;
             }
@@ -275,8 +276,8 @@ class ArrayTypeComparator
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
+        if ($container_type_part instanceof TNonEmptyArray
+            && !$input_type_part instanceof TNonEmptyArray
         ) {
             if ($all_types_contain && $atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

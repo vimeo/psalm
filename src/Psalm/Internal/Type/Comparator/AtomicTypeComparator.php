@@ -8,10 +8,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
@@ -22,6 +25,8 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -88,7 +93,7 @@ class AtomicTypeComparator
             return true;
         }
 
-        if ($input_type_part instanceof TNever || $input_type_part instanceof Type\Atomic\TEmpty) {
+        if ($input_type_part instanceof TNever || $input_type_part instanceof TEmpty) {
             return true;
         }
 
@@ -134,7 +139,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($input_type_part instanceof Type\Atomic\TCallableKeyedArray
+        if ($input_type_part instanceof TCallableKeyedArray
             && $container_type_part instanceof TArray
         ) {
             return ArrayTypeComparator::isContainedBy(
@@ -146,10 +151,10 @@ class AtomicTypeComparator
             );
         }
 
-        if (($container_type_part instanceof Type\Atomic\TCallable
-                && $input_type_part instanceof Type\Atomic\TCallable)
-            || ($container_type_part instanceof Type\Atomic\TClosure
-                && $input_type_part instanceof Type\Atomic\TClosure)
+        if (($container_type_part instanceof TCallable
+                && $input_type_part instanceof TCallable)
+            || ($container_type_part instanceof TClosure
+                && $input_type_part instanceof TClosure)
         ) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
@@ -159,7 +164,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof Type\Atomic\TClosure && $input_type_part instanceof TCallable) {
+        if ($container_type_part instanceof TClosure && $input_type_part instanceof TCallable) {
             if (CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -177,8 +182,8 @@ class AtomicTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof Type\Atomic\TClosure) {
-            if (!$input_type_part instanceof Type\Atomic\TClosure) {
+        if ($container_type_part instanceof TClosure) {
+            if (!$input_type_part instanceof TClosure) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_mixed = true;
@@ -195,7 +200,7 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof TCallable && $input_type_part instanceof Type\Atomic\TClosure) {
+        if ($container_type_part instanceof TCallable && $input_type_part instanceof TClosure) {
             return CallableTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part,
@@ -217,7 +222,7 @@ class AtomicTypeComparator
             return true;
         }
 
-        if ($input_type_part instanceof Type\Atomic\TCallableObject &&
+        if ($input_type_part instanceof TCallableObject &&
             $container_type_part instanceof TObject
         ) {
             return true;
@@ -670,9 +675,9 @@ class AtomicTypeComparator
         bool $allow_interface_equality = true
     ): bool {
         if ((get_class($type1_part) === TList::class
-                && $type2_part instanceof Type\Atomic\TNonEmptyList)
+                && $type2_part instanceof TNonEmptyList)
             || (get_class($type2_part) === TList::class
-                && $type1_part instanceof Type\Atomic\TNonEmptyList)
+                && $type1_part instanceof TNonEmptyList)
         ) {
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
@@ -682,9 +687,9 @@ class AtomicTypeComparator
         }
 
         if ((get_class($type1_part) === TArray::class
-                && $type2_part instanceof Type\Atomic\TNonEmptyArray)
+                && $type2_part instanceof TNonEmptyArray)
             || (get_class($type2_part) === TArray::class
-                && $type1_part instanceof Type\Atomic\TNonEmptyArray)
+                && $type1_part instanceof TNonEmptyArray)
         ) {
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,

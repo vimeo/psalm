@@ -7,6 +7,8 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -234,7 +236,7 @@ class TObjectWithProperties extends TObject
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
 
-            if ($input_type instanceof Atomic\TKeyedArray
+            if ($input_type instanceof TKeyedArray
                 && isset($input_type->properties[$offset])
             ) {
                 $input_type_param = $input_type->properties[$offset];

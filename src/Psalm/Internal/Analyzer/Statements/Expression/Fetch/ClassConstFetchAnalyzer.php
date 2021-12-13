@@ -24,8 +24,13 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use ReflectionProperty;
 
 use function explode;
@@ -150,13 +155,13 @@ class ClassConstFetchAnalyzer
                 }
 
                 if ($first_part_lc === 'static') {
-                    $static_named_object = new Type\Atomic\TNamedObject($fq_class_name);
+                    $static_named_object = new TNamedObject($fq_class_name);
                     $static_named_object->was_static = true;
 
                     $statements_analyzer->node_data->setType(
                         $stmt,
                         new Type\Union([
-                            new Type\Atomic\TClassString($fq_class_name, $static_named_object)
+                            new TClassString($fq_class_name, $static_named_object)
                         ])
                     );
                 } else {
@@ -390,39 +395,39 @@ class ClassConstFetchAnalyzer
             $has_mixed_or_object = false;
 
             foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
-                if ($lhs_atomic_type instanceof Type\Atomic\TNamedObject) {
-                    $class_string_types[] = new Type\Atomic\TClassString(
+                if ($lhs_atomic_type instanceof TNamedObject) {
+                    $class_string_types[] = new TClassString(
                         $lhs_atomic_type->value,
                         clone $lhs_atomic_type
                     );
-                } elseif ($lhs_atomic_type instanceof Type\Atomic\TTemplateParam
+                } elseif ($lhs_atomic_type instanceof TTemplateParam
                     && $lhs_atomic_type->as->isSingle()) {
                     $as_atomic_type = $lhs_atomic_type->as->getSingleAtomic();
 
-                    if ($as_atomic_type instanceof Type\Atomic\TObject) {
-                        $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                    if ($as_atomic_type instanceof TObject) {
+                        $class_string_types[] = new TTemplateParamClass(
                             $lhs_atomic_type->param_name,
                             'object',
                             null,
                             $lhs_atomic_type->defining_class
                         );
                     } elseif ($as_atomic_type instanceof TNamedObject) {
-                        $class_string_types[] = new Type\Atomic\TTemplateParamClass(
+                        $class_string_types[] = new TTemplateParamClass(
                             $lhs_atomic_type->param_name,
                             $as_atomic_type->value,
                             $as_atomic_type,
                             $lhs_atomic_type->defining_class
                         );
                     }
-                } elseif ($lhs_atomic_type instanceof Type\Atomic\TObject
-                    || $lhs_atomic_type instanceof Type\Atomic\TMixed
+                } elseif ($lhs_atomic_type instanceof TObject
+                    || $lhs_atomic_type instanceof TMixed
                 ) {
                     $has_mixed_or_object = true;
                 }
             }
 
             if ($has_mixed_or_object) {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union([new Type\Atomic\TClassString()]));
+                $statements_analyzer->node_data->setType($stmt, new Type\Union([new TClassString()]));
             } elseif ($class_string_types) {
                 $statements_analyzer->node_data->setType($stmt, new Type\Union($class_string_types));
             }

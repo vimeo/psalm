@@ -18,6 +18,27 @@ use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 
 use function array_merge;
 use function array_values;
@@ -101,7 +122,7 @@ class ArrayAnalyzer
             && $array_creation_info->can_create_objectlike
             && $array_creation_info->property_types
         ) {
-            $object_like = new Type\Atomic\TKeyedArray(
+            $object_like = new TKeyedArray(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings
             );
@@ -121,9 +142,9 @@ class ArrayAnalyzer
 
         if ($array_creation_info->all_list) {
             if (empty($array_creation_info->item_key_atomic_types)) {
-                $array_type = new Type\Atomic\TList($item_value_type ?? Type::getMixed());
+                $array_type = new TList($item_value_type ?? Type::getMixed());
             } else {
-                $array_type = new Type\Atomic\TNonEmptyList($item_value_type ?? Type::getMixed());
+                $array_type = new TNonEmptyList($item_value_type ?? Type::getMixed());
                 $array_type->count = count($array_creation_info->property_types);
             }
 
@@ -145,7 +166,7 @@ class ArrayAnalyzer
             $good_types = [];
 
             foreach ($item_key_type->getAtomicTypes() as $atomic_key_type) {
-                if ($atomic_key_type instanceof Type\Atomic\TMixed) {
+                if ($atomic_key_type instanceof TMixed) {
                     IssueBuffer::maybeAdd(
                         new MixedArrayOffset(
                             'Cannot create mixed offset – expecting array-key',
@@ -156,19 +177,19 @@ class ArrayAnalyzer
 
                     $bad_types[] = $atomic_key_type;
 
-                    $good_types[] = new Type\Atomic\TArrayKey;
+                    $good_types[] = new TArrayKey;
 
 
                     continue;
                 }
 
-                if (!$atomic_key_type instanceof Type\Atomic\TString
-                    && !$atomic_key_type instanceof Type\Atomic\TInt
-                    && !$atomic_key_type instanceof Type\Atomic\TArrayKey
-                    && !$atomic_key_type instanceof Type\Atomic\TMixed
-                    && !$atomic_key_type instanceof Type\Atomic\TTemplateParam
+                if (!$atomic_key_type instanceof TString
+                    && !$atomic_key_type instanceof TInt
+                    && !$atomic_key_type instanceof TArrayKey
+                    && !$atomic_key_type instanceof TMixed
+                    && !$atomic_key_type instanceof TTemplateParam
                     && !(
-                        $atomic_key_type instanceof Type\Atomic\TObjectWithProperties
+                        $atomic_key_type instanceof TObjectWithProperties
                         && isset($atomic_key_type->methods['__toString'])
                     )
                 ) {
@@ -182,19 +203,19 @@ class ArrayAnalyzer
 
                     $bad_types[] = $atomic_key_type;
 
-                    if ($atomic_key_type instanceof Type\Atomic\TFalse) {
-                        $good_types[] = new Type\Atomic\TLiteralInt(0);
-                    } elseif ($atomic_key_type instanceof Type\Atomic\TTrue) {
-                        $good_types[] = new Type\Atomic\TLiteralInt(1);
-                    } elseif ($atomic_key_type instanceof Type\Atomic\TBool) {
-                        $good_types[] = new Type\Atomic\TLiteralInt(0);
-                        $good_types[] = new Type\Atomic\TLiteralInt(1);
-                    } elseif ($atomic_key_type instanceof Type\Atomic\TLiteralFloat) {
-                        $good_types[] = new Type\Atomic\TLiteralInt((int) $atomic_key_type->value);
-                    } elseif ($atomic_key_type instanceof Type\Atomic\TFloat) {
-                        $good_types[] = new Type\Atomic\TInt;
+                    if ($atomic_key_type instanceof TFalse) {
+                        $good_types[] = new TLiteralInt(0);
+                    } elseif ($atomic_key_type instanceof TTrue) {
+                        $good_types[] = new TLiteralInt(1);
+                    } elseif ($atomic_key_type instanceof TBool) {
+                        $good_types[] = new TLiteralInt(0);
+                        $good_types[] = new TLiteralInt(1);
+                    } elseif ($atomic_key_type instanceof TLiteralFloat) {
+                        $good_types[] = new TLiteralInt((int) $atomic_key_type->value);
+                    } elseif ($atomic_key_type instanceof TFloat) {
+                        $good_types[] = new TInt;
                     } else {
-                        $good_types[] = new Type\Atomic\TArrayKey;
+                        $good_types[] = new TArrayKey;
                     }
                 }
             }
@@ -207,7 +228,7 @@ class ArrayAnalyzer
             }
         }
 
-        $array_type = new Type\Atomic\TNonEmptyArray([
+        $array_type = new TNonEmptyArray([
             $item_key_type && !$item_key_type->hasMixed() ? $item_key_type : Type::getArrayKey(),
             $item_value_type ?? Type::getMixed(),
         ]);
@@ -318,7 +339,7 @@ class ArrayAnalyzer
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
                     $item_key_value = $item_key_literal_type->value;
 
-                    if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
+                    if ($item_key_literal_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {
@@ -335,7 +356,7 @@ class ArrayAnalyzer
         } else {
             $item_is_list_item = true;
             $item_key_value = $array_creation_info->int_offset++;
-            $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
+            $array_creation_info->item_key_atomic_types[] = new TLiteralInt($item_key_value);
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
@@ -465,7 +486,7 @@ class ArrayAnalyzer
                 array_values($item_value_type->getAtomicTypes())
             );
         } else {
-            $array_creation_info->item_value_atomic_types[] = new Type\Atomic\TMixed();
+            $array_creation_info->item_value_atomic_types[] = new TMixed();
 
             if ($item_key_value !== null && count($array_creation_info->property_types) <= 100) {
                 $array_creation_info->property_types[$item_key_value] = Type::getMixed();
@@ -483,7 +504,7 @@ class ArrayAnalyzer
         Codebase $codebase
     ): void {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-            if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {
                         if ($codebase->php_major_version < 8 ||
@@ -500,10 +521,10 @@ class ArrayAnalyzer
                             return;
                         }
                         $new_offset = $key;
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
+                        $array_creation_info->item_key_atomic_types[] = new TLiteralString($new_offset);
                     } else {
                         $new_offset = $array_creation_info->int_offset++;
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_offset);
+                        $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 
                     $array_creation_info->item_value_atomic_types = array_merge(
@@ -517,10 +538,10 @@ class ArrayAnalyzer
             } else {
                 $codebase = $statements_analyzer->getCodebase();
 
-                if ($unpacked_atomic_type instanceof Type\Atomic\TArray
-                    || $unpacked_atomic_type instanceof Type\Atomic\TIterable
+                if ($unpacked_atomic_type instanceof TArray
+                    || $unpacked_atomic_type instanceof TIterable
                     || (
-                        $unpacked_atomic_type instanceof Type\Atomic\TGenericObject
+                        $unpacked_atomic_type instanceof TGenericObject
                         && $unpacked_atomic_type->hasTraversableInterface($codebase)
                         && count($unpacked_atomic_type->type_params) === 2
                 )) {
@@ -545,9 +566,9 @@ class ArrayAnalyzer
                             return;
                         }
 
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
+                        $array_creation_info->item_key_atomic_types[] = new TString();
                     } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+                        $array_creation_info->item_key_atomic_types[] = new TInt();
                     }
 
                     $array_creation_info->item_value_atomic_types = array_merge(
@@ -555,16 +576,16 @@ class ArrayAnalyzer
                         array_values(
                             isset($unpacked_atomic_type->type_params[1])
                                 ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                                : [new Type\Atomic\TMixed()]
+                                : [new TMixed()]
                         )
                     );
-                } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
+                } elseif ($unpacked_atomic_type instanceof TList) {
                     if ($unpacked_atomic_type->type_param->isEmpty()) {
                         continue;
                     }
                     $array_creation_info->can_create_objectlike = false;
 
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+                    $array_creation_info->item_key_atomic_types[] = new TInt();
 
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,

@@ -35,7 +35,14 @@ use Psalm\Node\VirtualName;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -397,7 +404,7 @@ class CallAnalyzer
                             $output_type = null;
 
                             foreach ($type->getAtomicTypes() as $atomic_type) {
-                                if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                if ($atomic_type instanceof TTemplateParam) {
                                     $output_type_candidate = self::getGenericParamForOffset(
                                         $atomic_type->defining_class,
                                         $atomic_type->param_name,
@@ -463,7 +470,7 @@ class CallAnalyzer
         foreach ($template_extended_params as $extended_class_name => $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
-                    if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam
+                    if ($extended_atomic_type instanceof TTemplateParam
                         && $extended_atomic_type->param_name === $template_name
                         && $extended_atomic_type->defining_class === $fq_class_name
                     ) {
@@ -571,8 +578,8 @@ class CallAnalyzer
 
                 if ($type_part->extra_types) {
                     foreach ($type_part->extra_types as $extra_type) {
-                        if ($extra_type instanceof Type\Atomic\TTemplateParam
-                            || $extra_type instanceof Type\Atomic\TObjectWithProperties
+                        if ($extra_type instanceof TTemplateParam
+                            || $extra_type instanceof TObjectWithProperties
                         ) {
                             throw new UnexpectedValueException('Shouldn’t get a generic param here');
                         }
@@ -778,22 +785,22 @@ class CallAnalyzer
                         $ored_type_assertions = [];
 
                         foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                            if ($replacement_atomic_type instanceof Type\Atomic\TMixed) {
+                            if ($replacement_atomic_type instanceof TMixed) {
                                 continue 3;
                             }
 
-                            if ($replacement_atomic_type instanceof Type\Atomic\TArray
-                                || $replacement_atomic_type instanceof Type\Atomic\TKeyedArray
-                                || $replacement_atomic_type instanceof Type\Atomic\TList
+                            if ($replacement_atomic_type instanceof TArray
+                                || $replacement_atomic_type instanceof TKeyedArray
+                                || $replacement_atomic_type instanceof TList
                             ) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
+                            } elseif ($replacement_atomic_type instanceof TNamedObject) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
                             } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getAssertionString();
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
+                            } elseif ($replacement_atomic_type instanceof TNull) {
                                 $ored_type_assertions[] = $prefix . 'null';
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                            } elseif ($replacement_atomic_type instanceof TTemplateParam) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->param_name;
                             }
                         }
@@ -898,7 +905,7 @@ class CallAnalyzer
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
                 foreach ($map as $ref => $type) {
                     $template_type_map[$template_name][$ref] = new Type\Union([
-                        new Type\Atomic\TTemplateParam(
+                        new TTemplateParam(
                             $template_name,
                             $type,
                             $ref
@@ -961,7 +968,7 @@ class CallAnalyzer
                     foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
                         $changed_atomic_type->from_docblock = true;
 
-                        if ($changed_atomic_type instanceof Type\Atomic\TNamedObject
+                        if ($changed_atomic_type instanceof TNamedObject
                             && $changed_atomic_type->extra_types
                         ) {
                             foreach ($changed_atomic_type->extra_types as $extra_type) {

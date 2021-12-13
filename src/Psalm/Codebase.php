@@ -49,6 +49,12 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKindGroup;
 use ReflectionProperty;
 use ReflectionType;
@@ -1510,7 +1516,7 @@ class Codebase
         $type = Type::parseString($type_string);
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($atomic_type instanceof TNamedObject) {
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
@@ -1754,7 +1760,7 @@ class Codebase
     {
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TBool) {
+            if ($atomic_type instanceof TBool) {
                 $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
                 foreach ($bools as $property_name) {
                     $completion_items[] = new CompletionItem(
@@ -1767,7 +1773,7 @@ class Codebase
                         $property_name
                     );
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
+            } elseif ($atomic_type instanceof TLiteralString) {
                 $completion_items[] = new CompletionItem(
                     $atomic_type->value,
                     CompletionItemKind::VALUE,
@@ -1777,7 +1783,7 @@ class Codebase
                     null,
                     "'$atomic_type->value'"
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+            } elseif ($atomic_type instanceof TLiteralInt) {
                 $completion_items[] = new CompletionItem(
                     (string) $atomic_type->value,
                     CompletionItemKind::VALUE,
@@ -1787,7 +1793,7 @@ class Codebase
                     null,
                     (string) $atomic_type->value
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TClassConstant) {
+            } elseif ($atomic_type instanceof TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
                 $completion_items[] = new CompletionItem(
                     $const,
@@ -1812,7 +1818,7 @@ class Codebase
         $completion_items = [];
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 foreach ($atomic_type->properties as $property_name => $property) {
                     $completion_items[] = new CompletionItem(
                         (string) $property_name,
