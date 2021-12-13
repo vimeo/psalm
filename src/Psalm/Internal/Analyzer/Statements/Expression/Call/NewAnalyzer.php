@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -394,7 +395,7 @@ class NewAnalyzer extends CallAnalyzer
                 return;
             }
 
-            if (Method\MethodVisibilityAnalyzer::analyze(
+            if (MethodVisibilityAnalyzer::analyze(
                 $method_id,
                 $context,
                 $statements_analyzer->getSource(),

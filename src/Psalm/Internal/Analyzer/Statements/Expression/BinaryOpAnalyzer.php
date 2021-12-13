@@ -5,6 +5,11 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\AndAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -54,7 +59,7 @@ class BinaryOpAnalyzer
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
 
-            $expr_result = BinaryOp\AndAnalyzer::analyze(
+            $expr_result = AndAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -74,7 +79,7 @@ class BinaryOpAnalyzer
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
 
-            $expr_result = BinaryOp\OrAnalyzer::analyze(
+            $expr_result = OrAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -89,7 +94,7 @@ class BinaryOpAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
-            $expr_result = BinaryOp\CoalesceAnalyzer::analyze(
+            $expr_result = CoalesceAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context
@@ -129,7 +134,7 @@ class BinaryOpAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $stmt_type = Type::getString();
 
-            BinaryOp\ConcatAnalyzer::analyze(
+            ConcatAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->left,
                 $stmt->right,
@@ -353,7 +358,7 @@ class BinaryOpAnalyzer
             return true;
         }
 
-        BinaryOp\NonComparisonOpAnalyzer::analyze(
+        NonComparisonOpAnalyzer::analyze(
             $statements_analyzer,
             $stmt,
             $context

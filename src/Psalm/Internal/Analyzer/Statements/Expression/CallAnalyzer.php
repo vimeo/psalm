@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -281,7 +282,7 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$method_id) {
-            return Call\ArgumentsAnalyzer::analyze(
+            return ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $args,
                 null,
@@ -339,7 +340,7 @@ class CallAnalyzer
             }
         }
 
-        if (Call\ArgumentsAnalyzer::analyze(
+        if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
             $method_params,
@@ -351,7 +352,7 @@ class CallAnalyzer
             return false;
         }
 
-        if (Call\ArgumentsAnalyzer::checkArgumentsMatch(
+        if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
             $method_id,

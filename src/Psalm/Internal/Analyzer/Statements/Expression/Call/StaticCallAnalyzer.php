@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -209,7 +210,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         $has_existing_method = false;
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
-            StaticMethod\AtomicStaticCallAnalyzer::analyze(
+            AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,

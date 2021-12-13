@@ -14,6 +14,7 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -1932,7 +1933,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $interface_method_id
                 );
 
-                FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+                ReturnTypeAnalyzer::verifyReturnType(
                     $stmt,
                     $stmt->getStmts() ?: [],
                     $source,
@@ -1959,7 +1960,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
 
-        FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+        ReturnTypeAnalyzer::verifyReturnType(
             $stmt,
             $stmt->getStmts() ?: [],
             $source,

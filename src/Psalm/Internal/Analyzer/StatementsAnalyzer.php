@@ -17,6 +17,9 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\SwitchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
+use Psalm\Internal\Analyzer\Statements\BreakAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
+use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
@@ -24,8 +27,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
+use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -536,7 +542,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
             ConstFetchAnalyzer::analyzeConstAssignment($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
-            Statements\UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
             $context->has_returned = true;
@@ -546,13 +552,13 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-            Statements\BreakAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            BreakAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-            Statements\ContinueAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            ContinueAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
-            Statements\StaticAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            StaticAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
-            if (Statements\EchoAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+            if (EchoAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
@@ -571,7 +577,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
-            Statements\GlobalAnalyzer::analyze($statements_analyzer, $stmt, $context, $global_context);
+            GlobalAnalyzer::analyze($statements_analyzer, $stmt, $context, $global_context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {

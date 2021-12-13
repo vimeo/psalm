@@ -18,6 +18,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -405,7 +406,7 @@ class Codebase
 
         $this->file_reference_provider->loadReferenceCache(false);
 
-        Internal\Analyzer\FunctionLikeAnalyzer::clearCache();
+        FunctionLikeAnalyzer::clearCache();
 
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;

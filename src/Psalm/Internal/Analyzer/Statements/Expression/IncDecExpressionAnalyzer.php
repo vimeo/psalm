@@ -7,6 +7,7 @@ use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
 use PhpParser\Node\Expr\PreInc;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
@@ -54,7 +55,7 @@ class IncDecExpressionAnalyzer
             $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
-            BinaryOp\ArithmeticOpAnalyzer::analyze(
+            ArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,

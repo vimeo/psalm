@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -175,11 +177,11 @@ class MethodCallAnalyzer extends CallAnalyzer
 
         $lhs_types = $class_type->getAtomicTypes();
 
-        $result = new Method\AtomicMethodCallAnalysisResult();
+        $result = new AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
-            Method\AtomicMethodCallAnalyzer::analyze(
+            AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $codebase,
