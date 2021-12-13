@@ -6824,7 +6824,7 @@ return [
 'ldap_sasl_bind' => ['bool', 'ldap'=>'LDAP\Connection', 'dn='=>'string', 'password='=>'string', 'mech='=>'string', 'realm='=>'string', 'authc_id='=>'string', 'authz_id='=>'string', 'props='=>'string'],
 'ldap_search' => ['LDAP\Connection|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
 'ldap_set_option' => ['bool', 'ldap'=>'LDAP\Connection|null', 'option'=>'int', 'value'=>'mixed'],
-'ldap_set_rebind_proc' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'string'],
+'ldap_set_rebind_proc' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'?callable'],
 'ldap_start_tls' => ['bool', 'ldap'=>'resource'],
 'ldap_t61_to_8859' => ['string', 'value'=>'string'],
 'ldap_unbind' => ['bool', 'ldap'=>'resource'],

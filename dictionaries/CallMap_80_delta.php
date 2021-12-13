@@ -713,6 +713,10 @@ return [
       'old' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array'],
       'new' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array|null'],
     ],
+    'ldap_set_rebind_proc' => [
+      'old' => ['bool', 'ldap'=>'resource', 'callback'=>'callable'],
+      'new' => ['bool', 'ldap'=>'resource', 'callback'=>'?callable'],
+    ],
     'mb_check_encoding' => [
       'old' => ['bool', 'value='=>'array|string', 'encoding='=>'string'],
       'new' => ['bool', 'value='=>'array|string|null', 'encoding='=>'string|null'],
