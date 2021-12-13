@@ -792,9 +792,12 @@ class ParseTreeCreator
             case '::':
                 $nexter_token = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
-                if ($this->current_leaf instanceof KeyedArrayTree) {
+                if ($this->current_leaf instanceof ParseTree\KeyedArrayTree
+                    && $nexter_token
+                    && strtolower($nexter_token[0]) !== 'class'
+                ) {
                     throw new TypeParseTreeException(
-                        'Unexpected :: in array key'
+                        ':: in array key is only allowed for ::class'
                     );
                 }
 
