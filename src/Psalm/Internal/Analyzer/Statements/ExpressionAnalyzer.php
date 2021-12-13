@@ -19,13 +19,13 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\EmptyAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\EncapsulatedStringAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\EvalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExitAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
@@ -240,7 +240,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            return ClassConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return ClassConstAnalyzer::analyzeFetch($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {

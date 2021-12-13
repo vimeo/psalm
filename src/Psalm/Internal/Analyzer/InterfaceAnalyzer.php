@@ -7,11 +7,16 @@ use LogicException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedInterface;
 use Psalm\IssueBuffer;
 use UnexpectedValueException;
+
+use function strtolower;
 
 /**
  * @internal
@@ -31,6 +36,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         if (!$this->class instanceof PhpParser\Node\Stmt\Interface_) {
             throw new LogicException('Something went badly wrong');
         }
+
+        $interface_context = new Context($this->fq_class_name);
 
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
@@ -106,6 +113,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             );
         }
 
+        $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
@@ -141,7 +149,35 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 );
 
                 return;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                $member_stmts[] = $stmt;
+
+                foreach ($stmt->consts as $const) {
+                    $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
+
+                    foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
+                        if ($const_id === $original_const_id) {
+                            $file_manipulations = [
+                                new FileManipulation(
+                                    (int) $const->name->getAttribute('startFilePos'),
+                                    (int) $const->name->getAttribute('endFilePos') + 1,
+                                    $new_const_name
+                                )
+                            ];
+
+                            FileManipulationBuffer::add(
+                                $this->getFilePath(),
+                                $file_manipulations
+                            );
+                        }
+                    }
+                }
             }
         }
+
+        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
+        $statements_analyzer->analyze($member_stmts, $interface_context, null, true);
+
+        ClassConstAnalyzer::analyze($this->storage, $this->getCodebase());
     }
 }

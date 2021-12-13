@@ -198,9 +198,9 @@
 
     <xs:complexType name="IssueHandlersType">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
-            <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
             <xs:element name="AbstractInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="AbstractMethodCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="AmbiguousConstantInheritance" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="ArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
@@ -292,6 +292,7 @@
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidTraversableImplementation" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidTypeImport" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LessSpecificClassConstantType" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -338,10 +339,10 @@
             <xs:element name="NamedArgumentNotAllowed" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="NoEnumProperties" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="ClassIssueHandlerType" minOccurs="0" />
-            <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="NoValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonInvariantDocblockPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonInvariantPropertyType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NoValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />
@@ -352,11 +353,13 @@
             <xs:element name="NullPropertyAssignment" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenInterfaceConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParamNameMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
             <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseIterator" type="IssueHandlerType" minOccurs="0" />
@@ -409,6 +412,7 @@
             <xs:element name="RedundantFunctionCallGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantPropertyInitializationCheck" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantPropertyInitializationCheck" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
@@ -466,8 +470,8 @@
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeGenericInstantiation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedConstructor" type="MethodIssueHandlerType" minOccurs="0" />

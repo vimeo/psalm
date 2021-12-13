@@ -26,6 +26,7 @@ class TList extends Atomic
      */
     public $type_param;
 
+    /** @var non-empty-lowercase-string */
     public const KEY = 'list';
 
     /**
@@ -67,7 +68,6 @@ class TList extends Atomic
                 );
         }
 
-        /** @psalm-suppress MixedOperand */
         return static::KEY
             . '<'
             . $this->type_param->toNamespacedString(

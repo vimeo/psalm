@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
@@ -532,6 +533,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context, true);
+
+        ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
         $config = Config::getInstance();
 

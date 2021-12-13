@@ -23,7 +23,7 @@ use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -577,7 +577,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-            ClassConstFetchAnalyzer::analyzeClassConstAssignment($statements_analyzer, $stmt, $context);
+            ClassConstAnalyzer::analyzeAssignment($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             try {
                 $class_analyzer = new ClassAnalyzer(

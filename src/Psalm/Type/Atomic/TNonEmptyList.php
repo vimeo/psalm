@@ -17,6 +17,7 @@ class TNonEmptyList extends TList
      */
     public $min_count;
 
+    /** @var non-empty-lowercase-string */
     public const KEY = 'non-empty-list';
 
     public function getAssertionString(): string
