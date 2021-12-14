@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Config;
 
+use FilesystemIterator;
 use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -186,11 +187,13 @@ class FileFilter
                 }
 
                 /** @var RecursiveDirectoryIterator */
-                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory_path));
+                $iterator = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS)
+                );
                 $iterator->rewind();
 
                 while ($iterator->valid()) {
-                    if (!$iterator->isDot() && $iterator->isLink()) {
+                    if ($iterator->isLink()) {
                         $linked_path = readlink($iterator->getPathname());
 
                         if (stripos($linked_path, $directory_path) !== 0) {
