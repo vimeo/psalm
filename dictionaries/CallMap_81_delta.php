@@ -45,6 +45,7 @@ return [
     'ReflectionEnumUnitCase::getEnum' => ['ReflectionEnum'],
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
+    'ReflectionFunctionAbstract::isStatic' => ['bool'],
   ],
 
   'changed' => [
@@ -1106,5 +1107,7 @@ return [
     ],
   ],
 
-  'removed' => [],
+  'removed' => [
+    'ReflectionMethod::isStatic' => ['bool'],
+  ],
 ];
