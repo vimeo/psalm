@@ -8,6 +8,13 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function get_class;
@@ -151,20 +158,20 @@ class TClassStringMap extends Atomic
         foreach ([Type::getString(), $map->value_param] as $offset => $type_param) {
             $input_type_param = null;
 
-            if (($input_type instanceof Atomic\TGenericObject
-                    || $input_type instanceof Atomic\TIterable
-                    || $input_type instanceof Atomic\TArray)
+            if (($input_type instanceof TGenericObject
+                    || $input_type instanceof TIterable
+                    || $input_type instanceof TArray)
                 &&
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = clone $input_type->type_params[$offset];
-            } elseif ($input_type instanceof Atomic\TKeyedArray) {
+            } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {
                     $input_type_param = $input_type->getGenericValueType();
                 }
-            } elseif ($input_type instanceof Atomic\TList) {
+            } elseif ($input_type instanceof TList) {
                 if ($offset === 0) {
                     continue;
                 }
@@ -229,9 +236,9 @@ class TClassStringMap extends Atomic
         return $this->getKey();
     }
 
-    public function getStandinKeyParam(): Type\Union
+    public function getStandinKeyParam(): Union
     {
-        return new Type\Union([
+        return new Union([
             new TTemplateParamClass(
                 $this->param_name,
                 $this->as_type->value ?? 'object',

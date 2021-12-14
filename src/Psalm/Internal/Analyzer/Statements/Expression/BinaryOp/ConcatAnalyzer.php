@@ -24,9 +24,20 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -41,14 +52,14 @@ use function strlen;
 class ConcatAnalyzer
 {
     /**
-     * @param Type\Union|null $result_type
+     * @param Union|null $result_type
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
-        Type\Union &$result_type = null
+        Union &$result_type = null
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -164,15 +175,15 @@ class ConcatAnalyzer
                             break 2;
                         }
 
-                        $result_type_parts[] = new Type\Atomic\TLiteralString($literal);
+                        $result_type_parts[] = new TLiteralString($literal);
                     }
                 }
 
                 if (!empty($result_type_parts)) {
                     if ($literal_concat && count($result_type_parts) < 64) {
-                        $result_type = new Type\Union($result_type_parts);
+                        $result_type = new Union($result_type_parts);
                     } else {
-                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
+                        $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     }
 
                     return;
@@ -181,8 +192,8 @@ class ConcatAnalyzer
 
             if (!$literal_concat) {
                 $numeric_type = Type::getNumericString();
-                $numeric_type->addType(new Type\Atomic\TInt());
-                $numeric_type->addType(new Type\Atomic\TFloat());
+                $numeric_type->addType(new TInt());
+                $numeric_type->addType(new TFloat());
                 $left_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
@@ -191,7 +202,7 @@ class ConcatAnalyzer
 
                 if ($left_is_numeric) {
                     $right_uint = Type::getPositiveInt();
-                    $right_uint->addType(new Type\Atomic\TLiteralInt(0));
+                    $right_uint->addType(new TLiteralInt(0));
                     $right_is_uint = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $right_type,
@@ -205,7 +216,7 @@ class ConcatAnalyzer
                 }
 
                 $lowercase_type = clone $numeric_type;
-                $lowercase_type->addType(new Type\Atomic\TLowercaseString());
+                $lowercase_type->addType(new TLowercaseString());
 
                 $all_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -218,7 +229,7 @@ class ConcatAnalyzer
                 );
 
                 $non_empty_string = clone $numeric_type;
-                $non_empty_string->addType(new Type\Atomic\TNonEmptyString());
+                $non_empty_string->addType(new TNonEmptyString());
 
                 $has_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -234,7 +245,7 @@ class ConcatAnalyzer
 
                 if ($has_non_empty) {
                     if ($all_literals) {
-                        $result_type = new Type\Union([new Type\Atomic\TNonEmptyNonspecificLiteralString]);
+                        $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     } elseif ($all_lowercase) {
                         $result_type = Type::getNonEmptyLowercaseString();
                     } else {
@@ -242,7 +253,7 @@ class ConcatAnalyzer
                     }
                 } else {
                     if ($all_literals) {
-                        $result_type = new Type\Union([new Type\Atomic\TNonspecificLiteralString]);
+                        $result_type = new Union([new TNonspecificLiteralString]);
                     } elseif ($all_lowercase) {
                         $result_type = Type::getLowercaseString();
                     } else {
@@ -256,7 +267,7 @@ class ConcatAnalyzer
     private static function analyzeOperand(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $operand,
-        Type\Union $operand_type,
+        Union $operand_type,
         string $side,
         Context $context
     ): void {
@@ -312,7 +323,7 @@ class ConcatAnalyzer
         $comparison_result = new TypeComparisonResult();
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
-            if ($operand_type_part instanceof Type\Atomic\TTemplateParam && !$operand_type_part->as->isString()) {
+            if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
                 IssueBuffer::maybeAdd(
                     new MixedOperand(
                         "$side operand cannot be a non-string template param",
@@ -324,14 +335,14 @@ class ConcatAnalyzer
                 return;
             }
 
-            if ($operand_type_part instanceof Type\Atomic\TNull || $operand_type_part instanceof Type\Atomic\TFalse) {
+            if ($operand_type_part instanceof TNull || $operand_type_part instanceof TFalse) {
                 continue;
             }
 
             $operand_type_part_match = AtomicTypeComparator::isContainedBy(
                 $codebase,
                 $operand_type_part,
-                new Type\Atomic\TString,
+                new TString,
                 false,
                 false,
                 $comparison_result

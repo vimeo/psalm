@@ -5,6 +5,7 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Plugin\Hook\MethodParamsProviderInterface as LegacyMethodParamsProviderInterface;
@@ -44,7 +45,7 @@ class MethodParamsProvider
         self::$handlers = [];
         self::$legacy_handlers = [];
 
-        $this->registerClass(ReturnTypeProvider\PdoStatementSetFetchMode::class);
+        $this->registerClass(PdoStatementSetFetchMode::class);
     }
 
     /**

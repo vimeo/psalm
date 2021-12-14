@@ -2,6 +2,13 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 /**
@@ -12,7 +19,7 @@ class TypeCombination
     /** @var array<string, Atomic> */
     public $value_types = [];
 
-    /** @var array<string, Atomic\TNamedObject>|null */
+    /** @var array<string, TNamedObject>|null */
     public $named_object_types = [];
 
     /** @var list<Union> */
@@ -57,20 +64,20 @@ class TypeCombination
     /** @var ?bool */
     public $mixed_from_loop_isset;
 
-    /** @var array<string, Atomic\TLiteralString>|null */
+    /** @var array<string, TLiteralString>|null */
     public $strings = [];
 
-    /** @var array<string, Atomic\TLiteralInt>|null */
+    /** @var array<string, TLiteralInt>|null */
     public $ints = [];
 
-    /** @var array<string, Atomic\TLiteralFloat>|null */
+    /** @var array<string, TLiteralFloat>|null */
     public $floats = [];
 
-    /** @var array<string, Atomic\TNamedObject|Atomic\TObject>|null */
+    /** @var array<string, TNamedObject|TObject>|null */
     public $class_string_types = [];
 
     /**
-     * @var array<string, Atomic\TNamedObject|Atomic\TTemplateParam|Atomic\TIterable|Atomic\TObject>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>|null
      */
     public $extra_types;
 
@@ -86,6 +93,6 @@ class TypeCombination
     /** @var array<string, bool> */
     public $class_string_map_names = [];
 
-    /** @var array<string, ?Atomic\TNamedObject> */
+    /** @var array<string, ?TNamedObject> */
     public $class_string_map_as_types = [];
 }

@@ -14,6 +14,12 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_intersect_key;
@@ -445,20 +451,20 @@ class Populator
     }
 
     private static function extendType(
-        Type\Union $type,
+        Union $type,
         ClassLikeStorage $storage
-    ): Type\Union {
+    ): Union {
         $extended_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($atomic_type instanceof TTemplateParam) {
                 $referenced_type
                     = $storage->template_extended_params[$atomic_type->defining_class][$atomic_type->param_name]
                         ?? null;
 
                 if ($referenced_type) {
                     foreach ($referenced_type->getAtomicTypes() as $atomic_referenced_type) {
-                        if (!$atomic_referenced_type instanceof Type\Atomic\TTemplateParam) {
+                        if (!$atomic_referenced_type instanceof TTemplateParam) {
                             $extended_types[] = $atomic_referenced_type;
                         } else {
                             $extended_types[] = $atomic_type;
@@ -472,7 +478,7 @@ class Populator
             }
         }
 
-        return new Type\Union($extended_types);
+        return new Union($extended_types);
     }
 
     private function populateDataFromParentClass(
@@ -984,7 +990,7 @@ class Populator
         $storage->populated = true;
     }
 
-    private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, bool $is_property = false): void
+    private function convertPhpStormGenericToPsalmGeneric(Union $candidate, bool $is_property = false): void
     {
         if (!$candidate->from_docblock) {
             //never convert a type that comes from a signature
@@ -1000,8 +1006,8 @@ class Populator
 
             try {
                 foreach ($atomic_types as $type_key => $type) {
-                    if ($type instanceof Type\Atomic\TIterable
-                        || ($type instanceof Type\Atomic\TNamedObject
+                    if ($type instanceof TIterable
+                        || ($type instanceof TNamedObject
                             && (!$type->from_docblock || $is_property)
                             && (
                                 strtolower($type->value) === 'traversable'
@@ -1017,7 +1023,7 @@ class Populator
                     ) {
                         $iterator_name = $type->value;
                         $iterator_key = $type_key;
-                    } elseif ($type instanceof Type\Atomic\TArray) {
+                    } elseif ($type instanceof TArray) {
                         $generic_params = $type->type_params;
                     }
                 }
@@ -1027,13 +1033,13 @@ class Populator
 
             if ($iterator_name && $iterator_key && $generic_params) {
                 if ($iterator_name === 'iterable') {
-                    $generic_iterator = new Type\Atomic\TIterable($generic_params);
+                    $generic_iterator = new TIterable($generic_params);
                 } else {
                     if (strtolower($iterator_name) === 'generator') {
                         $generic_params[] = Type::getMixed();
                         $generic_params[] = Type::getMixed();
                     }
-                    $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
+                    $generic_iterator = new TGenericObject($iterator_name, $generic_params);
                 }
 
                 $candidate->removeType('array');

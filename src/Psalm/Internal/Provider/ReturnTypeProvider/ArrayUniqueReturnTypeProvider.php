@@ -5,6 +5,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -16,7 +22,7 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_unique'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -30,9 +36,9 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
-            && ($array_atomic_type instanceof Type\Atomic\TArray
-                || $array_atomic_type instanceof Type\Atomic\TKeyedArray
-                || $array_atomic_type instanceof Type\Atomic\TList)
+            && ($array_atomic_type instanceof TArray
+                || $array_atomic_type instanceof TKeyedArray
+                || $array_atomic_type instanceof TList)
         ? $array_atomic_type
         : null;
 
@@ -40,34 +46,34 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TArray) {
+        if ($first_arg_array instanceof TArray) {
             $first_arg_array = clone $first_arg_array;
 
-            if ($first_arg_array instanceof Type\Atomic\TNonEmptyArray) {
+            if ($first_arg_array instanceof TNonEmptyArray) {
                 $first_arg_array->count = null;
             }
 
-            return new Type\Union([$first_arg_array]);
+            return new Union([$first_arg_array]);
         }
 
-        if ($first_arg_array instanceof Type\Atomic\TList) {
-            if ($first_arg_array instanceof Type\Atomic\TNonEmptyList) {
-                return new Type\Union([
-                    new Type\Atomic\TNonEmptyArray([
+        if ($first_arg_array instanceof TList) {
+            if ($first_arg_array instanceof TNonEmptyList) {
+                return new Union([
+                    new TNonEmptyArray([
                         Type::getInt(),
                         clone $first_arg_array->type_param
                     ])
                 ]);
             }
 
-            return new Type\Union([
-                new Type\Atomic\TArray([
+            return new Union([
+                new TArray([
                     Type::getInt(),
                     clone $first_arg_array->type_param
                 ])
             ]);
         }
 
-        return new Type\Union([$first_arg_array->getGenericArrayType()]);
+        return new Union([$first_arg_array->getGenericArrayType()]);
     }
 }

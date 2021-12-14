@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -178,7 +180,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             }
 
             if ($fq_class_name && !$lhs_type) {
-                $lhs_type = new Type\Union([new TNamedObject($fq_class_name)]);
+                $lhs_type = new Union([new TNamedObject($fq_class_name)]);
             }
         } else {
             $was_inside_general_use = $context->inside_general_use;
@@ -208,7 +210,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         $has_existing_method = false;
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
-            StaticMethod\AtomicStaticCallAnalyzer::analyze(
+            AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -247,7 +249,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
         string $cased_method_id,
-        Type\Union $return_type_candidate,
+        Union $return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
         ?Context $context = null

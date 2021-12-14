@@ -15,7 +15,9 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
-use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\ParseTree\MethodParamTree;
+use Psalm\Internal\Type\ParseTree\MethodTree;
+use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -355,12 +357,12 @@ class ClassLikeDocblockParser
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
-                if (!$method_tree instanceof ParseTree\MethodWithReturnTypeTree
-                    && !$method_tree instanceof ParseTree\MethodTree) {
+                if (!$method_tree instanceof MethodWithReturnTypeTree
+                    && !$method_tree instanceof MethodTree) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
-                if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
+                if ($method_tree instanceof MethodWithReturnTypeTree) {
                     if (!$has_return) {
                         $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                             $method_tree->children[1],
@@ -371,14 +373,14 @@ class ClassLikeDocblockParser
                     $method_tree = $method_tree->children[0];
                 }
 
-                if (!$method_tree instanceof ParseTree\MethodTree) {
+                if (!$method_tree instanceof MethodTree) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
                 $args = [];
 
                 foreach ($method_tree->children as $method_tree_child) {
-                    if (!$method_tree_child instanceof ParseTree\MethodParamTree) {
+                    if (!$method_tree_child instanceof MethodParamTree) {
                         throw new DocblockParseException($method_entry . ' is not a valid method');
                     }
 

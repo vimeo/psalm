@@ -10,7 +10,11 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\TaintKind;
 use UnexpectedValueException;
 
 use function array_shift;
@@ -55,7 +59,7 @@ class InternalCallMapHandler
     private static $call_map_callables = [];
 
     /**
-     * @var array<string, list<list<Type\TaintKind::*>>>
+     * @var array<string, list<list<TaintKind::*>>>
      */
     private static $taint_sink_map = [];
 
@@ -161,13 +165,13 @@ class InternalCallMapHandler
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                         * @var TArray|TKeyedArray|TList
                          */
                         $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 
-                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        if ($array_atomic_type instanceof TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
-                        } elseif ($array_atomic_type instanceof Type\Atomic\TList) {
+                        } elseif ($array_atomic_type instanceof TList) {
                             $arg_type = $array_atomic_type->type_param;
                         } else {
                             $arg_type = $array_atomic_type->type_params[1];
@@ -369,7 +373,7 @@ class InternalCallMapHandler
         }
 
         /**
-         * @var array<string, list<list<Type\TaintKind::*>>>
+         * @var array<string, list<list<TaintKind::*>>>
          */
         $taint_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 

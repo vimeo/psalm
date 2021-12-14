@@ -4,7 +4,6 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
@@ -59,7 +58,7 @@ trait HasIntersectionTrait
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
      */
-    public function addIntersectionType(Type\Atomic $type): void
+    public function addIntersectionType(Atomic $type): void
     {
         $this->extra_types[$type->getKey()] = $type;
     }

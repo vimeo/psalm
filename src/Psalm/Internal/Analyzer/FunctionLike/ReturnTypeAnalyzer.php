@@ -44,6 +44,9 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_diff;
@@ -74,7 +77,7 @@ class ReturnTypeAnalyzer
         SourceAnalyzer $source,
         NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
-        ?Type\Union $return_type = null,
+        ?Union $return_type = null,
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
@@ -162,9 +165,9 @@ class ReturnTypeAnalyzer
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if (!$inferred_return_type_part->isVoid()) {
-                    $atomic_null = new Type\Atomic\TNull();
+                    $atomic_null = new TNull();
                     $atomic_null->from_docblock = true;
-                    $inferred_return_type_parts[] = new Type\Union([$atomic_null]);
+                    $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
                 }
             }
@@ -250,7 +253,7 @@ class ReturnTypeAnalyzer
             : Type::getVoid();
 
         if ($function_always_exits) {
-            $inferred_return_type = new Type\Union([new Type\Atomic\TNever]);
+            $inferred_return_type = new Union([new TNever]);
         }
 
         $inferred_yield_type = $inferred_yield_types
@@ -290,7 +293,7 @@ class ReturnTypeAnalyzer
             && !$inferred_yield_type
             && !$inferred_return_type->isVoid()
         ) {
-            $inferred_return_type = new Type\Union([new Type\Atomic\TNamedObject('Generator')]);
+            $inferred_return_type = new Union([new TNamedObject('Generator')]);
         }
 
         if ($is_to_string) {
@@ -759,7 +762,7 @@ class ReturnTypeAnalyzer
 
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
             foreach ($storage->return_type->getAtomicTypes() as $type) {
-                if ($type instanceof Type\Atomic\TNamedObject
+                if ($type instanceof TNamedObject
                     && 'parent' === $type->value
                     && null === $parent_class
                 ) {
@@ -847,7 +850,7 @@ class ReturnTypeAnalyzer
                 $classlike_storage,
                 $codebase->classlike_storage_provider->get($context->self),
                 strtolower($function->name->name),
-                new Type\Atomic\TNamedObject($context->self),
+                new TNamedObject($context->self),
                 true
             );
 
@@ -917,7 +920,7 @@ class ReturnTypeAnalyzer
     private static function addOrUpdateReturnType(
         FunctionLike $function,
         ProjectAnalyzer $project_analyzer,
-        Type\Union $inferred_return_type,
+        Union $inferred_return_type,
         StatementsSource $source,
         bool $docblock_only = false,
         ?FunctionLikeStorage $function_like_storage = null

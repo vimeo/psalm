@@ -9,6 +9,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Union;
 use stdClass;
 
 use function reset;
@@ -27,25 +31,25 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
     }
 
     public static function getGetObjectVarsReturnType(
-        Type\Union $first_arg_type,
+        Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
         CodeLocation $location
-    ): Type\Union {
+    ): Union {
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
 
-            if ($object_type instanceof Type\Atomic\TObjectWithProperties) {
+            if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
                     return Type::getEmptyArray();
                 }
-                return new Type\Union([
-                    new Type\Atomic\TKeyedArray($object_type->properties)
+                return new Union([
+                    new TKeyedArray($object_type->properties)
                 ]);
             }
 
-            if ($object_type instanceof Type\Atomic\TNamedObject) {
+            if ($object_type instanceof TNamedObject) {
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
                     return Type::parseString('array<string, mixed>');
                 }
@@ -84,15 +88,15 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return Type::getEmptyArray();
                 }
 
-                return new Type\Union([
-                    new Type\Atomic\TKeyedArray($properties)
+                return new Union([
+                    new TKeyedArray($properties)
                 ]);
             }
         }
         return Type::parseString('array<string, mixed>');
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();

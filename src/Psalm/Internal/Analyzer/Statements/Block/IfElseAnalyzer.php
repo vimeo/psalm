@@ -10,6 +10,9 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
@@ -357,7 +360,7 @@ class IfElseAnalyzer
         );
 
         // check the if
-        if (IfElse\IfAnalyzer::analyze(
+        if (IfAnalyzer::analyze(
             $statements_analyzer,
             $stmt,
             $if_scope,
@@ -376,7 +379,7 @@ class IfElseAnalyzer
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
-            if (IfElse\ElseIfAnalyzer::analyze(
+            if (ElseIfAnalyzer::analyze(
                 $statements_analyzer,
                 $elseif,
                 $if_scope,
@@ -396,7 +399,7 @@ class IfElseAnalyzer
             }
         }
 
-        if (IfElse\ElseAnalyzer::analyze(
+        if (ElseAnalyzer::analyze(
             $statements_analyzer,
             $stmt->else,
             $if_scope,

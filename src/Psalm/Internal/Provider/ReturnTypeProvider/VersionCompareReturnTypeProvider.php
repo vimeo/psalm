@@ -6,6 +6,11 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -19,7 +24,7 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
         return ['version_compare'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -32,21 +37,21 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
 
             if ($operator_type) {
                 if (!$operator_type->hasMixed()) {
-                    $acceptable_operator_type = new Type\Union([
-                        new Type\Atomic\TLiteralString('<'),
-                        new Type\Atomic\TLiteralString('lt'),
-                        new Type\Atomic\TLiteralString('<='),
-                        new Type\Atomic\TLiteralString('le'),
-                        new Type\Atomic\TLiteralString('>'),
-                        new Type\Atomic\TLiteralString('gt'),
-                        new Type\Atomic\TLiteralString('>='),
-                        new Type\Atomic\TLiteralString('ge'),
-                        new Type\Atomic\TLiteralString('=='),
-                        new Type\Atomic\TLiteralString('='),
-                        new Type\Atomic\TLiteralString('eq'),
-                        new Type\Atomic\TLiteralString('!='),
-                        new Type\Atomic\TLiteralString('<>'),
-                        new Type\Atomic\TLiteralString('ne'),
+                    $acceptable_operator_type = new Union([
+                        new TLiteralString('<'),
+                        new TLiteralString('lt'),
+                        new TLiteralString('<='),
+                        new TLiteralString('le'),
+                        new TLiteralString('>'),
+                        new TLiteralString('gt'),
+                        new TLiteralString('>='),
+                        new TLiteralString('ge'),
+                        new TLiteralString('=='),
+                        new TLiteralString('='),
+                        new TLiteralString('eq'),
+                        new TLiteralString('!='),
+                        new TLiteralString('<>'),
+                        new TLiteralString('ne'),
                     ]);
 
                     $codebase = $statements_source->getCodebase();
@@ -61,16 +66,16 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
                 }
             }
 
-            return new Type\Union([
-                new Type\Atomic\TBool,
-                new Type\Atomic\TNull,
+            return new Union([
+                new TBool,
+                new TNull,
             ]);
         }
 
-        return new Type\Union([
-            new Type\Atomic\TLiteralInt(-1),
-            new Type\Atomic\TLiteralInt(0),
-            new Type\Atomic\TLiteralInt(1),
+        return new Union([
+            new TLiteralInt(-1),
+            new TLiteralInt(0),
+            new TLiteralInt(1),
         ]);
     }
 }

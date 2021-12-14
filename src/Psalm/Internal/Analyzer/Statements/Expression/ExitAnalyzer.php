@@ -17,6 +17,8 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 
 class ExitAnalyzer
 {
@@ -70,10 +72,10 @@ class ExitAnalyzer
                 );
 
                 $echo_param_sink->taints = [
-                    Type\TaintKind::INPUT_HTML,
-                    Type\TaintKind::INPUT_HAS_QUOTES,
-                    Type\TaintKind::USER_SECRET,
-                    Type\TaintKind::SYSTEM_SECRET
+                    TaintKind::INPUT_HTML,
+                    TaintKind::INPUT_HAS_QUOTES,
+                    TaintKind::USER_SECRET,
+                    TaintKind::SYSTEM_SECRET
                 ];
 
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
@@ -88,7 +90,7 @@ class ExitAnalyzer
                 if (ArgumentAnalyzer::verifyType(
                     $statements_analyzer,
                     $expr_type,
-                    new Type\Union([new TInt(), new TString()]),
+                    new Union([new TInt(), new TString()]),
                     null,
                     'exit',
                     null,

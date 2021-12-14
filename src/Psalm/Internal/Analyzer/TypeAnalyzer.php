@@ -6,6 +6,8 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 use function array_keys;
 use function array_merge;
@@ -24,8 +26,8 @@ class TypeAnalyzer
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Union $input_type,
-        Type\Union $container_type,
+        Union $input_type,
+        Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
@@ -50,8 +52,8 @@ class TypeAnalyzer
      */
     public static function isAtomicContainedBy(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
-        Type\Atomic $container_type_part,
+        Atomic $input_type_part,
+        Atomic $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
@@ -69,10 +71,10 @@ class TypeAnalyzer
     /**
      * Takes two arrays of types and merges them
      *
-     * @param  array<string, Type\Union>  $new_types
-     * @param  array<string, Type\Union>  $existing_types
+     * @param  array<string, Union>  $new_types
+     * @param  array<string, Union>  $existing_types
      *
-     * @return array<string, Type\Union>
+     * @return array<string, Union>
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types): array
     {

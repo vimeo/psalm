@@ -9,6 +9,8 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Union;
 
 class ReconcilerTest extends TestCase
 {
@@ -209,8 +211,8 @@ class ReconcilerTest extends TestCase
 
         $reconciled = AssertionReconciler::reconcile(
             $assertion,
-            new Type\Union([
-                new Type\Atomic\TLiteralString(''),
+            new Union([
+                new TLiteralString(''),
             ]),
             null,
             $this->statements_analyzer,

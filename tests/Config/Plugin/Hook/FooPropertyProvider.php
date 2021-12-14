@@ -8,6 +8,7 @@ use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Union;
 
 class FooPropertyProvider implements
     PropertyExistenceProviderInterface,
@@ -33,7 +34,7 @@ class FooPropertyProvider implements
         return true;
     }
 
-    public static function getPropertyType(PropertyTypeProviderEvent $event): ?Type\Union
+    public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union
     {
         return Type::getString();
     }

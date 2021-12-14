@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -26,6 +28,8 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_reduce;
 use function count;
@@ -173,19 +177,19 @@ class MethodCallAnalyzer extends CallAnalyzer
 
         $lhs_types = $class_type->getAtomicTypes();
 
-        $result = new Method\AtomicMethodCallAnalysisResult();
+        $result = new AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
-            Method\AtomicMethodCallAnalyzer::analyze(
+            AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $codebase,
                 $context,
                 $class_type,
                 $lhs_type_part,
-                $lhs_type_part instanceof Type\Atomic\TNamedObject
-                    || $lhs_type_part instanceof Type\Atomic\TTemplateParam
+                $lhs_type_part instanceof TNamedObject
+                    || $lhs_type_part instanceof TTemplateParam
                     ? $lhs_type_part
                     : null,
                 false,
@@ -193,7 +197,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 $result
             );
             if (isset($context->vars_in_scope[$lhs_var_id])
-                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Type\Union
+                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
@@ -221,7 +225,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         if (count($possible_new_class_types) > 0) {
             $class_type = array_reduce(
                 $possible_new_class_types,
-                function (?Type\Union $type_1, Type\Union $type_2) use ($codebase): Type\Union {
+                function (?Union $type_1, Union $type_2) use ($codebase): Union {
                     return Type::combineUnionTypes($type_1, $type_2, $codebase);
                 }
             );

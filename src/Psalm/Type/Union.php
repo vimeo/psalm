@@ -15,15 +15,48 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEmptyNumeric;
+use Psalm\Type\Atomic\TEmptyScalar;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -158,7 +191,7 @@ class Union implements TypeNode
     private $literal_string_types = [];
 
     /**
-     * @var array<string, Type\Atomic\TClassString>
+     * @var array<string, TClassString>
      */
     private $typed_class_strings = [];
 
@@ -228,8 +261,8 @@ class Union implements TypeNode
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof Type\Atomic\TClassString
-                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
+            } elseif ($type instanceof TClassString
+                && ($type->as_type || $type instanceof TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
             }
@@ -272,8 +305,8 @@ class Union implements TypeNode
             foreach ($this->literal_string_types as $key => $_) {
                 unset($this->literal_string_types[$key], $this->types[$key]);
             }
-            if (!$type instanceof Type\Atomic\TClassString
-                || (!$type->as_type && !$type instanceof Type\Atomic\TTemplateParamClass)
+            if (!$type instanceof TClassString
+                || (!$type->as_type && !$type instanceof TTemplateParamClass)
             ) {
                 foreach ($this->typed_class_strings as $key => $_) {
                     unset($this->typed_class_strings[$key], $this->types[$key]);
@@ -312,8 +345,8 @@ class Union implements TypeNode
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof Type\Atomic\TClassString
-                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
+            } elseif ($type instanceof TClassString
+                && ($type->as_type || $type instanceof TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
             }
@@ -656,12 +689,12 @@ class Union implements TypeNode
 
     public function hasList(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof Atomic\TList;
+        return isset($this->types['array']) && $this->types['array'] instanceof TList;
     }
 
     public function hasClassStringMap(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof Atomic\TClassStringMap;
+        return isset($this->types['array']) && $this->types['array'] instanceof TClassStringMap;
     }
 
     public function isTemplatedClassString(): bool
@@ -671,7 +704,7 @@ class Union implements TypeNode
                 array_filter(
                     $this->types,
                     function ($type): bool {
-                        return $type instanceof Atomic\TTemplateParamClass;
+                        return $type instanceof TTemplateParamClass;
                     }
                 )
             ) === 1;
@@ -693,27 +726,27 @@ class Union implements TypeNode
     }
 
     /**
-     * @return array<string, Atomic\TCallable>
+     * @return array<string, TCallable>
      */
     public function getCallableTypes(): array
     {
         return array_filter(
             $this->types,
             function ($type): bool {
-                return $type instanceof Atomic\TCallable;
+                return $type instanceof TCallable;
             }
         );
     }
 
     /**
-     * @return array<string, Atomic\TClosure>
+     * @return array<string, TClosure>
      */
     public function getClosureTypes(): array
     {
         return array_filter(
             $this->types,
             function ($type): bool {
-                return $type instanceof Atomic\TClosure;
+                return $type instanceof TClosure;
             }
         );
     }
@@ -832,8 +865,8 @@ class Union implements TypeNode
     public function hasLowercaseString(): bool
     {
         return isset($this->types['string'])
-            && ($this->types['string'] instanceof Atomic\TLowercaseString
-                || $this->types['string'] instanceof Atomic\TNonEmptyLowercaseString);
+            && ($this->types['string'] instanceof TLowercaseString
+                || $this->types['string'] instanceof TNonEmptyLowercaseString);
     }
 
     public function hasLiteralClassString(): bool
@@ -845,13 +878,13 @@ class Union implements TypeNode
     {
         return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
             || array_filter($this->types, function (Atomic $type) {
-                return $type instanceof Type\Atomic\TIntRange;
+                return $type instanceof TIntRange;
             });
     }
 
     public function hasPositiveInt(): bool
     {
-        return isset($this->types['int']) && $this->types['int'] instanceof Type\Atomic\TPositiveInt;
+        return isset($this->types['int']) && $this->types['int'] instanceof TPositiveInt;
     }
 
     public function hasArrayKey(): bool
@@ -897,13 +930,13 @@ class Union implements TypeNode
         return (bool) array_filter(
             $this->types,
             function (Atomic $type): bool {
-                return $type instanceof Type\Atomic\TTemplateParam
-                    || ($type instanceof Type\Atomic\TNamedObject
+                return $type instanceof TTemplateParam
+                    || ($type instanceof TNamedObject
                         && $type->extra_types
                         && array_filter(
                             $type->extra_types,
                             function ($t): bool {
-                                return $t instanceof Type\Atomic\TTemplateParam;
+                                return $t instanceof TTemplateParam;
                             }
                         )
                     );
@@ -916,7 +949,7 @@ class Union implements TypeNode
         return (bool) array_filter(
             $this->types,
             function (Atomic $type): bool {
-                return $type instanceof Type\Atomic\TConditional;
+                return $type instanceof TConditional;
             }
         );
     }
@@ -926,14 +959,14 @@ class Union implements TypeNode
         return (bool) array_filter(
             $this->types,
             function (Atomic $type): bool {
-                return $type instanceof Type\Atomic\TTemplateParam
-                    || ($type instanceof Type\Atomic\TNamedObject
+                return $type instanceof TTemplateParam
+                    || ($type instanceof TNamedObject
                         && ($type->was_static
                             || ($type->extra_types
                                 && array_filter(
                                     $type->extra_types,
                                     function ($t): bool {
-                                        return $t instanceof Type\Atomic\TTemplateParam;
+                                        return $t instanceof TTemplateParam;
                                     }
                                 )
                             )
@@ -956,14 +989,14 @@ class Union implements TypeNode
     public function isEmptyMixed(): bool
     {
         return isset($this->types['mixed'])
-            && $this->types['mixed'] instanceof Type\Atomic\TEmptyMixed
+            && $this->types['mixed'] instanceof TEmptyMixed
             && count($this->types) === 1;
     }
 
     public function isVanillaMixed(): bool
     {
         return isset($this->types['mixed'])
-            && get_class($this->types['mixed']) === Type\Atomic\TMixed::class
+            && get_class($this->types['mixed']) === TMixed::class
             && !$this->types['mixed']->from_loop_isset
             && count($this->types) === 1;
     }
@@ -986,37 +1019,37 @@ class Union implements TypeNode
     public function isAlwaysFalsy(): bool
     {
         foreach ($this->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TFalse) {
+            if ($atomic_type instanceof TFalse) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralInt && $atomic_type->value === 0) {
+            if ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralFloat && $atomic_type->value === 0.0) {
+            if ($atomic_type instanceof TLiteralFloat && $atomic_type->value === 0.0) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralString &&
+            if ($atomic_type instanceof TLiteralString &&
                 ($atomic_type->value === '' || $atomic_type->value === '0')
             ) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNull) {
+            if ($atomic_type instanceof TNull) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TEmptyMixed) {
+            if ($atomic_type instanceof TEmptyMixed) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TEmptyNumeric) {
+            if ($atomic_type instanceof TEmptyNumeric) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TEmptyScalar) {
+            if ($atomic_type instanceof TEmptyScalar) {
                 continue;
             }
 
@@ -1024,14 +1057,14 @@ class Union implements TypeNode
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TIntRange &&
+            if ($atomic_type instanceof TIntRange &&
                 $atomic_type->min_bound === 0 &&
                 $atomic_type->max_bound === 0
             ) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TArray && $atomic_type->getId() === 'array<empty, empty>') {
+            if ($atomic_type instanceof TArray && $atomic_type->getId() === 'array<empty, empty>') {
                 continue;
             }
 
@@ -1054,87 +1087,87 @@ class Union implements TypeNode
         }
 
         foreach ($this->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TTrue) {
+            if ($atomic_type instanceof TTrue) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralInt && $atomic_type->value !== 0) {
+            if ($atomic_type instanceof TLiteralInt && $atomic_type->value !== 0) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralFloat && $atomic_type->value !== 0.0) {
+            if ($atomic_type instanceof TLiteralFloat && $atomic_type->value !== 0.0) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralString &&
+            if ($atomic_type instanceof TLiteralString &&
                 ($atomic_type->value !== '' && $atomic_type->value !== '0')
             ) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonFalsyString) {
+            if ($atomic_type instanceof TNonFalsyString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TCallableString) {
+            if ($atomic_type instanceof TCallableString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+            if ($atomic_type instanceof TNonEmptyArray) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyScalar) {
+            if ($atomic_type instanceof TNonEmptyScalar) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyList) {
+            if ($atomic_type instanceof TNonEmptyList) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNonEmptyMixed) {
+            if ($atomic_type instanceof TNonEmptyMixed) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TObject) {
+            if ($atomic_type instanceof TObject) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNamedObject
+            if ($atomic_type instanceof TNamedObject
                 && $atomic_type->value !== 'SimpleXMLElement'
                 && $atomic_type->value !== 'SimpleXMLIterator') {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TIntRange && !$atomic_type->contains(0)) {
+            if ($atomic_type instanceof TIntRange && !$atomic_type->contains(0)) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TPositiveInt) {
+            if ($atomic_type instanceof TPositiveInt) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+            if ($atomic_type instanceof TLiteralClassString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TClassString) {
+            if ($atomic_type instanceof TClassString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TDependentGetClass) {
+            if ($atomic_type instanceof TDependentGetClass) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TTraitString) {
+            if ($atomic_type instanceof TTraitString) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TResource) {
+            if ($atomic_type instanceof TResource) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 foreach ($atomic_type->properties as $property) {
                     if ($property->possibly_undefined === false) {
                         continue 2;
@@ -1191,46 +1224,46 @@ class Union implements TypeNode
 
         foreach ($old_type->types as $old_type_part) {
             if (!$this->removeType($old_type_part->getKey())) {
-                if ($old_type_part instanceof Type\Atomic\TFalse
+                if ($old_type_part instanceof TFalse
                     && isset($this->types['bool'])
                     && !isset($this->types['true'])
                 ) {
                     $this->removeType('bool');
-                    $this->types['true'] = new Type\Atomic\TTrue;
-                } elseif ($old_type_part instanceof Type\Atomic\TTrue
+                    $this->types['true'] = new TTrue;
+                } elseif ($old_type_part instanceof TTrue
                     && isset($this->types['bool'])
                     && !isset($this->types['false'])
                 ) {
                     $this->removeType('bool');
-                    $this->types['false'] = new Type\Atomic\TFalse;
+                    $this->types['false'] = new TFalse;
                 } elseif (isset($this->types['iterable'])) {
-                    if ($old_type_part instanceof Type\Atomic\TNamedObject
+                    if ($old_type_part instanceof TNamedObject
                         && $old_type_part->value === 'Traversable'
                         && !isset($this->types['array'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['array'] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                        $this->types['array'] = new TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
-                    if ($old_type_part instanceof Type\Atomic\TArray
+                    if ($old_type_part instanceof TArray
                         && !isset($this->types['traversable'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['traversable'] = new Type\Atomic\TNamedObject('Traversable');
+                        $this->types['traversable'] = new TNamedObject('Traversable');
                     }
                 } elseif (isset($this->types['array-key'])) {
-                    if ($old_type_part instanceof Type\Atomic\TString
+                    if ($old_type_part instanceof TString
                         && !isset($this->types['int'])
                     ) {
                         $this->removeType('array-key');
-                        $this->types['int'] = new Type\Atomic\TInt();
+                        $this->types['int'] = new TInt();
                     }
 
-                    if ($old_type_part instanceof Type\Atomic\TInt
+                    if ($old_type_part instanceof TInt
                         && !isset($this->types['string'])
                     ) {
                         $this->removeType('array-key');
-                        $this->types['string'] = new Type\Atomic\TString();
+                        $this->types['string'] = new TString();
                     }
                 }
             }
@@ -1239,7 +1272,7 @@ class Union implements TypeNode
         if ($new_type) {
             foreach ($new_type->types as $key => $new_type_part) {
                 if (!isset($this->types[$key])
-                    || ($new_type_part instanceof Type\Atomic\Scalar
+                    || ($new_type_part instanceof Scalar
                         && get_class($new_type_part) === get_class($this->types[$key]))
                 ) {
                     $this->types[$key] = $new_type_part;
@@ -1248,7 +1281,7 @@ class Union implements TypeNode
                 }
             }
         } elseif (count($this->types) === 0) {
-            $this->types['mixed'] = new Atomic\TMixed();
+            $this->types['mixed'] = new TMixed();
         }
 
         $this->id = null;
@@ -1428,10 +1461,10 @@ class Union implements TypeNode
             if (!$atomic_key_type instanceof TLiteralString
                 && !$atomic_key_type instanceof TLiteralInt
                 && !$atomic_key_type instanceof TLiteralFloat
-                && !$atomic_key_type instanceof Atomic\TNonspecificLiteralString
-                && !$atomic_key_type instanceof Atomic\TNonspecificLiteralInt
-                && !$atomic_key_type instanceof Atomic\TFalse
-                && !$atomic_key_type instanceof Atomic\TTrue
+                && !$atomic_key_type instanceof TNonspecificLiteralString
+                && !$atomic_key_type instanceof TNonspecificLiteralInt
+                && !$atomic_key_type instanceof TFalse
+                && !$atomic_key_type instanceof TTrue
             ) {
                 return false;
             }
@@ -1664,13 +1697,13 @@ class Union implements TypeNode
     }
 
     /**
-     * @return array<string, Type\Atomic\TIntRange>
+     * @return array<string, TIntRange>
      */
     public function getRangeInts(): array
     {
         $ranges = [];
         foreach ($this->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof Type\Atomic\TIntRange) {
+            if ($atomic instanceof TIntRange) {
                 $ranges[$atomic->getKey()] = $atomic;
             }
         }

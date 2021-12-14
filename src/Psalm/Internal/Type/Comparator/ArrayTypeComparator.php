@@ -4,14 +4,17 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 use function array_map;
 use function range;
@@ -27,25 +30,25 @@ class ArrayTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Atomic $input_type_part,
-        Type\Atomic $container_type_part,
+        Atomic $input_type_part,
+        Atomic $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
         $all_types_contain = true;
 
         $is_empty_array = $input_type_part->equals(
-            new Type\Atomic\TArray([
-                new Type\Union([new Type\Atomic\TEmpty()]),
-                new Type\Union([new Type\Atomic\TEmpty()])
+            new TArray([
+                new Union([new TEmpty()]),
+                new Union([new TEmpty()])
             ]),
             false
         );
 
         if ($is_empty_array
-            && (($container_type_part instanceof Type\Atomic\TArray
-                    && !$container_type_part instanceof Type\Atomic\TNonEmptyArray)
-                || ($container_type_part instanceof Type\Atomic\TKeyedArray
+            && (($container_type_part instanceof TArray
+                    && !$container_type_part instanceof TNonEmptyArray)
+                || ($container_type_part instanceof TKeyedArray
                     && !$container_type_part->isNonEmpty())
             )
         ) {
@@ -190,13 +193,13 @@ class ArrayTypeComparator
                 if ($input_type_part->count !== null && $input_type_part->count < 10) {
                     $literal_ints = array_map(
                         function ($i) {
-                            return new Type\Atomic\TLiteralInt($i);
+                            return new TLiteralInt($i);
                         },
                         range(0, $input_type_part->count - 1)
                     );
 
                     $input_type_part = new TNonEmptyArray([
-                        new Type\Union($literal_ints),
+                        new Union($literal_ints),
                         clone $input_type_part->type_param
                     ]);
                 } else {
@@ -223,7 +226,7 @@ class ArrayTypeComparator
             }
 
             if ($input_param->isEmpty()
-                && $container_type_part instanceof Type\Atomic\TNonEmptyArray
+                && $container_type_part instanceof TNonEmptyArray
             ) {
                 return false;
             }
@@ -275,8 +278,8 @@ class ArrayTypeComparator
             }
         }
 
-        if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
-            && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
+        if ($container_type_part instanceof TNonEmptyArray
+            && !$input_type_part instanceof TNonEmptyArray
         ) {
             if ($all_types_contain && $atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

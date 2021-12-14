@@ -6,6 +6,14 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -21,7 +29,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         return ['current', 'next', 'prev', 'reset', 'end'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -48,20 +56,20 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         $definitely_has_items = false;
 
         while ($atomic_type = array_shift($atomic_types)) {
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($atomic_type instanceof TTemplateParam) {
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TArray) {
+            if ($atomic_type instanceof TArray) {
                 $value_type = clone $atomic_type->type_params[1];
-                $definitely_has_items = $atomic_type instanceof Type\Atomic\TNonEmptyArray;
-            } elseif ($atomic_type instanceof Type\Atomic\TList) {
+                $definitely_has_items = $atomic_type instanceof TNonEmptyArray;
+            } elseif ($atomic_type instanceof TList) {
                 $value_type = clone $atomic_type->type_param;
-                $definitely_has_items = $atomic_type instanceof Type\Atomic\TNonEmptyList;
-            } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                $definitely_has_items = $atomic_type instanceof TNonEmptyList;
+            } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_type = $atomic_type->getGenericValueType();
-                $definitely_has_items = $atomic_type->getGenericArrayType() instanceof Type\Atomic\TNonEmptyArray;
+                $definitely_has_items = $atomic_type->getGenericArrayType() instanceof TNonEmptyArray;
             } else {
                 return Type::getMixed();
             }
@@ -74,7 +82,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         if ($value_type->isEmpty()) {
             $value_type = Type::getFalse();
         } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
-            $value_type->addType(new Type\Atomic\TFalse);
+            $value_type->addType(new TFalse);
 
             $codebase = $statements_source->getCodebase();
 

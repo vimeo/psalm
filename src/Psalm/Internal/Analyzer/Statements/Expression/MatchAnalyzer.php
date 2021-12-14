@@ -22,6 +22,10 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -257,10 +261,10 @@ class MatchAnalyzer
                     $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
                         function ($type) {
-                            return $type instanceof Type\Atomic\TLiteralInt
-                                || $type instanceof Type\Atomic\TLiteralString
-                                || $type instanceof Type\Atomic\TLiteralFloat
-                                || $type instanceof Type\Atomic\TEnumCase;
+                            return $type instanceof TLiteralInt
+                                || $type instanceof TLiteralString
+                                || $type instanceof TLiteralFloat
+                                || $type instanceof TEnumCase;
                         }
                     );
 

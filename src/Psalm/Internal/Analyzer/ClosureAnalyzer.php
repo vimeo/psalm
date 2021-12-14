@@ -14,6 +14,7 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_map;
 use function in_array;
@@ -95,7 +96,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 $this_atomic = new TNamedObject($context->self);
                 $this_atomic->was_static = true;
 
-                $use_context->vars_in_scope['$this'] = new Type\Union([$this_atomic]);
+                $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }
         }
 

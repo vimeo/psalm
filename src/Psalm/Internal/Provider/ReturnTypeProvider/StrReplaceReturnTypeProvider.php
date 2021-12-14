@@ -5,6 +5,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 
 use function count;
 use function in_array;
@@ -25,7 +27,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         ];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -44,7 +46,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $return_type = Type::getString();
 
             if (in_array($function_id, ['preg_replace', 'preg_replace_callback'], true)) {
-                $return_type->addType(new Type\Atomic\TNull());
+                $return_type->addType(new TNull());
 
                 $codebase = $statements_source->getCodebase();
 

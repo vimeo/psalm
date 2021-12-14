@@ -21,14 +21,26 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_pop;
@@ -61,11 +73,11 @@ class CastAnalyzer
                 }
 
                 if (count($maybe_type->getAtomicTypes()) === 1
-                    && $maybe_type->getSingleAtomic() instanceof Type\Atomic\TBool) {
+                    && $maybe_type->getSingleAtomic() instanceof TBool) {
                     $as_int = false;
-                    $type = new Type\Union([
-                        new Type\Atomic\TLiteralInt(0),
-                        new Type\Atomic\TLiteralInt(1),
+                    $type = new Union([
+                        new TLiteralInt(0),
+                        new TLiteralInt(1),
                     ]);
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -177,7 +189,7 @@ class CastAnalyzer
             }
             $context->inside_general_use = $was_inside_general_use;
 
-            $type = new Type\Union([new TNamedObject('stdClass')]);
+            $type = new Union([new TNamedObject('stdClass')]);
 
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
@@ -211,7 +223,7 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Type\Union([$type])]);
+                        $keyed_array = new TKeyedArray([new Union([$type])]);
                         $keyed_array->is_list = true;
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
@@ -269,10 +281,10 @@ class CastAnalyzer
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        Type\Union $stmt_type,
+        Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
-    ): Type\Union {
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $invalid_casts = [];
@@ -292,14 +304,14 @@ class CastAnalyzer
 
             if ($atomic_type instanceof TFloat
                 || $atomic_type instanceof TInt
-                || $atomic_type instanceof Type\Atomic\TNumeric
+                || $atomic_type instanceof TNumeric
             ) {
-                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                    $castable_types[] = new Type\Atomic\TLiteralString((string) $atomic_type->value);
-                } elseif ($atomic_type instanceof Type\Atomic\TNonspecificLiteralInt) {
-                    $castable_types[] = new Type\Atomic\TNonspecificLiteralString();
+                if ($atomic_type instanceof TLiteralInt) {
+                    $castable_types[] = new TLiteralString((string) $atomic_type->value);
+                } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
+                    $castable_types[] = new TNonspecificLiteralString();
                 } else {
-                    $castable_types[] = new Type\Atomic\TNumericString();
+                    $castable_types[] = new TNumericString();
                 }
 
                 continue;
@@ -312,15 +324,15 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNull
-                || $atomic_type instanceof Type\Atomic\TFalse
+                || $atomic_type instanceof TFalse
             ) {
-                $valid_strings[] = new Type\Atomic\TLiteralString('');
+                $valid_strings[] = new TLiteralString('');
                 continue;
             }
 
             if ($atomic_type instanceof TMixed
-                || $atomic_type instanceof Type\Atomic\TResource
-                || $atomic_type instanceof Type\Atomic\Scalar
+                || $atomic_type instanceof TResource
+                || $atomic_type instanceof Scalar
             ) {
                 $castable_types[] = new TString();
 
@@ -328,7 +340,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNamedObject
-                || $atomic_type instanceof Type\Atomic\TObjectWithProperties
+                || $atomic_type instanceof TObjectWithProperties
             ) {
                 $intersection_types = [$atomic_type];
 
@@ -380,7 +392,7 @@ class CastAnalyzer
                         }
                     }
 
-                    if ($intersection_type instanceof Type\Atomic\TObjectWithProperties
+                    if ($intersection_type instanceof TObjectWithProperties
                         && isset($intersection_type->methods['__toString'])
                     ) {
                         $castable_types[] = new TString();
@@ -390,7 +402,7 @@ class CastAnalyzer
                 }
             }
 
-            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+            if ($atomic_type instanceof TTemplateParam) {
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
@@ -440,7 +452,7 @@ class CastAnalyzer
     }
 
     private static function handleRedundantCast(
-        Type\Union $maybe_type,
+        Union $maybe_type,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt
     ): void {

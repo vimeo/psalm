@@ -6,20 +6,44 @@ use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Type\ParseTree\CallableParamTree;
+use Psalm\Internal\Type\ParseTree\CallableTree;
+use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\ConditionalTree;
+use Psalm\Internal\Type\ParseTree\EncapsulationTree;
+use Psalm\Internal\Type\ParseTree\GenericTree;
+use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
+use Psalm\Internal\Type\ParseTree\IntersectionTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayPropertyTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayTree;
+use Psalm\Internal\Type\ParseTree\MethodTree;
+use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\NullableTree;
+use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\UnionTree;
+use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOfClassConstant;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -30,8 +54,13 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOfClassConstant;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
@@ -133,7 +162,7 @@ class TypeParser
         array $template_type_map = [],
         array $type_aliases = []
     ): TypeNode {
-        if ($parse_tree instanceof ParseTree\GenericTree) {
+        if ($parse_tree instanceof GenericTree) {
             return self::getTypeFromGenericTree(
                 $parse_tree,
                 $codebase,
@@ -142,19 +171,19 @@ class TypeParser
             );
         }
 
-        if ($parse_tree instanceof ParseTree\UnionTree) {
+        if ($parse_tree instanceof UnionTree) {
             return self::getTypeFromUnionTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\IntersectionTree) {
+        if ($parse_tree instanceof IntersectionTree) {
             return self::getTypeFromIntersectionTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\KeyedArrayTree) {
+        if ($parse_tree instanceof KeyedArrayTree) {
             return self::getTypeFromKeyedArrayTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
+        if ($parse_tree instanceof CallableWithReturnTypeTree) {
             $callable_type = self::getTypeFromTree(
                 $parse_tree->children[0],
                 $codebase,
@@ -184,11 +213,11 @@ class TypeParser
             return $callable_type;
         }
 
-        if ($parse_tree instanceof ParseTree\CallableTree) {
+        if ($parse_tree instanceof CallableTree) {
             return self::getTypeFromCallableTree($parse_tree, $codebase, $template_type_map, $type_aliases);
         }
 
-        if ($parse_tree instanceof ParseTree\EncapsulationTree) {
+        if ($parse_tree instanceof EncapsulationTree) {
             if (!$parse_tree->terminated) {
                 throw new TypeParseTreeException('Unterminated parentheses');
             }
@@ -206,7 +235,7 @@ class TypeParser
             );
         }
 
-        if ($parse_tree instanceof ParseTree\NullableTree) {
+        if ($parse_tree instanceof NullableTree) {
             if (!isset($parse_tree->children[0])) {
                 throw new TypeParseTreeException('Misplaced question mark');
             }
@@ -231,25 +260,25 @@ class TypeParser
             ]);
         }
 
-        if ($parse_tree instanceof ParseTree\MethodTree
-            || $parse_tree instanceof ParseTree\MethodWithReturnTypeTree
+        if ($parse_tree instanceof MethodTree
+            || $parse_tree instanceof MethodWithReturnTypeTree
         ) {
             throw new TypeParseTreeException('Misplaced brackets');
         }
 
-        if ($parse_tree instanceof ParseTree\IndexedAccessTree) {
+        if ($parse_tree instanceof IndexedAccessTree) {
             return self::getTypeFromIndexAccessTree($parse_tree, $template_type_map);
         }
 
-        if ($parse_tree instanceof ParseTree\TemplateAsTree) {
-            return new Atomic\TTemplateParam(
+        if ($parse_tree instanceof TemplateAsTree) {
+            return new TTemplateParam(
                 $parse_tree->param_name,
                 new Union([new TNamedObject($parse_tree->as)]),
                 'class-string-map'
             );
         }
 
-        if ($parse_tree instanceof ParseTree\ConditionalTree) {
+        if ($parse_tree instanceof ConditionalTree) {
             $template_param_name = $parse_tree->condition->param_name;
 
             if (!isset($template_type_map[$template_param_name])) {
@@ -298,7 +327,7 @@ class TypeParser
                 $else_type = new Union([$else_type]);
             }
 
-            return new Atomic\TConditional(
+            return new TConditional(
                 $template_param_name,
                 $first_class,
                 $template_type_map[$template_param_name][$first_class],
@@ -308,7 +337,7 @@ class TypeParser
             );
         }
 
-        if (!$parse_tree instanceof ParseTree\Value) {
+        if (!$parse_tree instanceof Value) {
             throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
@@ -330,10 +359,10 @@ class TypeParser
             }
 
             if ($const_name === 'class') {
-                return new Atomic\TLiteralClassString($fq_classlike_name);
+                return new TLiteralClassString($fq_classlike_name);
             }
 
-            return new Atomic\TClassConstant($fq_classlike_name, $const_name);
+            return new TClassConstant($fq_classlike_name, $const_name);
         }
 
         if (preg_match('/^\-?(0|[1-9][0-9]*)(\.[0-9]{1,})$/', $parse_tree->value)) {
@@ -363,9 +392,9 @@ class TypeParser
         string $param_name,
         Union $as,
         string $defining_class
-    ): Atomic\TTemplateParamClass {
+    ): TTemplateParamClass {
         if ($as->hasMixed()) {
-            return new Atomic\TTemplateParamClass(
+            return new TTemplateParamClass(
                 $param_name,
                 'object',
                 null,
@@ -381,7 +410,7 @@ class TypeParser
 
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $param_name,
                     'object',
                     null,
@@ -397,7 +426,7 @@ class TypeParser
 
                 $as->substitute(new Union([$t]), new Union([$traversable]));
 
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $param_name,
                     $traversable->value,
                     $traversable,
@@ -405,14 +434,14 @@ class TypeParser
                 );
             }
 
-            if ($t instanceof Atomic\TTemplateParam) {
+            if ($t instanceof TTemplateParam) {
                 $t_atomic_type = count($t->as->getAtomicTypes()) === 1 ? $t->as->getSingleAtomic() : null;
 
                 if (!$t_atomic_type instanceof TNamedObject) {
                     $t_atomic_type = null;
                 }
 
-                return new Atomic\TTemplateParamClass(
+                return new TTemplateParamClass(
                     $t->param_name,
                     $t_atomic_type->value ?? 'object',
                     $t_atomic_type,
@@ -426,7 +455,7 @@ class TypeParser
                 );
             }
 
-            return new Atomic\TTemplateParamClass(
+            return new TTemplateParamClass(
                 $param_name,
                 $t->value,
                 $t,
@@ -479,7 +508,7 @@ class TypeParser
      * @psalm-suppress ComplexMethod to be refactored
      */
     private static function getTypeFromGenericTree(
-        ParseTree\GenericTree $parse_tree,
+        GenericTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -629,7 +658,7 @@ class TypeParser
 
             if ($template_marker instanceof TNamedObject) {
                 $template_param_name = $template_marker->value;
-            } elseif ($template_marker instanceof Atomic\TTemplateParam) {
+            } elseif ($template_marker instanceof TTemplateParam) {
                 $template_param_name = $template_marker->param_name;
                 $template_as_type = $template_marker->as->getSingleAtomic();
 
@@ -657,7 +686,7 @@ class TypeParser
             if (isset($template_type_map[$param_name])) {
                 $defining_class = array_keys($template_type_map[$param_name])[0];
 
-                return new Atomic\TTemplateKeyOf(
+                return new TTemplateKeyOf(
                     $param_name,
                     $defining_class,
                     $template_type_map[$param_name][$defining_class]
@@ -670,13 +699,13 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in key-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
+            if (!$param_union_types[0] instanceof TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be a class constant'
                 );
             }
 
-            return new Atomic\TKeyOfClassConstant(
+            return new TKeyOfClassConstant(
                 $param_union_types[0]->fq_classlike_name,
                 $param_union_types[0]->const_name
             );
@@ -691,13 +720,13 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in value-of type');
             }
 
-            if (!$param_union_types[0] instanceof Atomic\TClassConstant) {
+            if (!$param_union_types[0] instanceof TClassConstant) {
                 throw new TypeParseTreeException(
                     'Untemplated value-of param ' . $param_name . ' should be a class constant'
                 );
             }
 
-            return new Atomic\TValueOfClassConstant(
+            return new TValueOfClassConstant(
                 $param_union_types[0]->fq_classlike_name,
                 $param_union_types[0]->const_name
             );
@@ -737,7 +766,7 @@ class TypeParser
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
-                    && !($atomic_type instanceof Atomic\TClassConstant
+                    && !($atomic_type instanceof TClassConstant
                         && strpos($atomic_type->const_name, '*') === false)
                 ) {
                     throw new TypeParseTreeException(
@@ -752,7 +781,7 @@ class TypeParser
 
             foreach ($atomic_types as $atomic_type) {
                 if (!$atomic_type instanceof TLiteralInt) {
-                    return new Atomic\TIntMask($atomic_types);
+                    return new TIntMask($atomic_types);
                 }
 
                 $potential_ints[] = $atomic_type->value;
@@ -770,14 +799,14 @@ class TypeParser
 
             $param_type = $param_union_types[0];
 
-            if (!$param_type instanceof Atomic\TClassConstant
-                && !$param_type instanceof Atomic\TValueOfClassConstant
-                && !$param_type instanceof Atomic\TKeyOfClassConstant
+            if (!$param_type instanceof TClassConstant
+                && !$param_type instanceof TValueOfClassConstant
+                && !$param_type instanceof TKeyOfClassConstant
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'
                 );
-            } elseif ($param_type instanceof Atomic\TClassConstant
+            } elseif ($param_type instanceof TClassConstant
                 && strpos($param_type->const_name, '*') === false
             ) {
                 throw new TypeParseTreeException(
@@ -785,7 +814,7 @@ class TypeParser
                 );
             }
 
-            return new Atomic\TIntMaskOf($param_type);
+            return new TIntMaskOf($param_type);
         }
 
         if ($generic_type_value === 'int') {
@@ -821,14 +850,14 @@ class TypeParser
             }
 
             if ($min_bound === null && $max_bound === null) {
-                return new Atomic\TInt();
+                return new TInt();
             }
 
             if ($min_bound === 1 && $max_bound === null) {
-                return new Atomic\TPositiveInt();
+                return new TPositiveInt();
             }
 
-            return new Atomic\TIntRange($min_bound, $max_bound);
+            return new TIntRange($min_bound, $max_bound);
         }
 
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -847,7 +876,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromUnionTree(
-        ParseTree\UnionTree $parse_tree,
+        UnionTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -857,7 +886,7 @@ class TypeParser
         $atomic_types = [];
 
         foreach ($parse_tree->children as $child_tree) {
-            if ($child_tree instanceof ParseTree\NullableTree) {
+            if ($child_tree instanceof NullableTree) {
                 if (!isset($child_tree->children[0])) {
                     throw new TypeParseTreeException('Invalid ? character');
                 }
@@ -910,7 +939,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIntersectionTree(
-        ParseTree\IntersectionTree $parse_tree,
+        IntersectionTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1072,7 +1101,7 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromCallableTree(
-        ParseTree\CallableTree $parse_tree,
+        CallableTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1089,7 +1118,7 @@ class TypeParser
                 $is_variadic = false;
                 $is_optional = false;
 
-                if ($child_tree instanceof ParseTree\CallableParamTree) {
+                if ($child_tree instanceof CallableParamTree) {
                     if (isset($child_tree->children[0])) {
                         $tree_type = self::getTypeFromTree(
                             $child_tree->children[0],
@@ -1105,7 +1134,7 @@ class TypeParser
                     $is_variadic = $child_tree->variadic;
                     $is_optional = $child_tree->has_default;
                 } else {
-                    if ($child_tree instanceof ParseTree\Value && strpos($child_tree->value, '$') > 0) {
+                    if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
                         $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                     }
 
@@ -1152,10 +1181,10 @@ class TypeParser
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIndexAccessTree(
-        ParseTree\IndexedAccessTree $parse_tree,
+        IndexedAccessTree $parse_tree,
         array $template_type_map
-    ): Atomic\TTemplateIndexedAccess {
-        if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof ParseTree\Value) {
+    ): TTemplateIndexedAccess {
+        if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof Value) {
             throw new TypeParseTreeException('Unrecognised indexed access');
         }
 
@@ -1180,7 +1209,7 @@ class TypeParser
         ) {
             $offset_template_type = $offset_template_data['']->getSingleAtomic();
 
-            if ($offset_template_type instanceof Atomic\TTemplateKeyOf) {
+            if ($offset_template_type instanceof TTemplateKeyOf) {
                 $offset_defining_class = $offset_template_type->defining_class;
             }
         }
@@ -1193,7 +1222,7 @@ class TypeParser
             throw new TypeParseTreeException('Template params are defined in different locations');
         }
 
-        return new Atomic\TTemplateIndexedAccess(
+        return new TTemplateIndexedAccess(
             $array_param_name,
             $offset_param_name,
             $array_defining_class
@@ -1203,11 +1232,11 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Atomic\TCallableKeyedArray|TKeyedArray|TObjectWithProperties
+     * @return TCallableKeyedArray|TKeyedArray|TObjectWithProperties
      * @throws TypeParseTreeException
      */
     private static function getTypeFromKeyedArrayTree(
-        ParseTree\KeyedArrayTree $parse_tree,
+        KeyedArrayTree $parse_tree,
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases
@@ -1219,7 +1248,7 @@ class TypeParser
         $is_tuple = true;
 
         foreach ($parse_tree->children as $i => $property_branch) {
-            if (!$property_branch instanceof ParseTree\KeyedArrayPropertyTree) {
+            if (!$property_branch instanceof KeyedArrayPropertyTree) {
                 $property_type = self::getTypeFromTree(
                     $property_branch,
                     $codebase,
@@ -1274,7 +1303,7 @@ class TypeParser
         }
 
         if ($type === 'callable-array') {
-            return new Atomic\TCallableKeyedArray($properties);
+            return new TCallableKeyedArray($properties);
         }
 
         $object_like = new TKeyedArray($properties);

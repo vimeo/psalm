@@ -2,7 +2,13 @@
 declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
-use AdvancedJsonRpc;
+use AdvancedJsonRpc\Dispatcher;
+use AdvancedJsonRpc\Error;
+use AdvancedJsonRpc\ErrorCode;
+use AdvancedJsonRpc\ErrorResponse;
+use AdvancedJsonRpc\Request;
+use AdvancedJsonRpc\Response;
+use AdvancedJsonRpc\SuccessResponse;
 use Amp\Promise;
 use Amp\Success;
 use Generator;
@@ -22,8 +28,8 @@ use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Server\TextDocument;
-use Psalm\Internal\LanguageServer\Server\Workspace;
+use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
+use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
 use Psalm\IssueBuffer;
 use Throwable;
 
@@ -49,19 +55,19 @@ use function urldecode;
 /**
  * @internal
  */
-class LanguageServer extends AdvancedJsonRpc\Dispatcher
+class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
      *
-     * @var ?Server\TextDocument
+     * @var ?ServerTextDocument
      */
     public $textDocument;
 
     /**
      * Handles workspace/* method calls
      *
-     * @var ?Server\Workspace
+     * @var ?ServerWorkspace
      */
     public $workspace;
 
@@ -125,7 +131,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     }
 
                     // Ignore responses, this is the handler for requests and notifications
-                    if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
+                    if (Response::isResponse($msg->body)) {
                         return;
                     }
 
@@ -144,14 +150,14 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         $dispatched = $this->dispatch($msg->body);
                         /** @psalm-suppress MixedAssignment */
                         $result = yield $dispatched;
-                    } catch (AdvancedJsonRpc\Error $e) {
+                    } catch (Error $e) {
                         // If a ResponseError is thrown, send it back in the Response
                         $error = $e;
                     } catch (Throwable $e) {
                         // If an unexpected error occurred, send back an INTERNAL_ERROR error response
-                        $error = new AdvancedJsonRpc\Error(
+                        $error = new Error(
                             (string) $e,
-                            AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
+                            ErrorCode::INTERNAL_ERROR,
                             null,
                             $e
                         );
@@ -162,11 +168,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                      * @psalm-suppress UndefinedPropertyFetch
                      * @psalm-suppress MixedArgument
                      */
-                    if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
+                    if (Request::isRequest($msg->body)) {
                         if ($error !== null) {
-                            $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
+                            $responseBody = new ErrorResponse($msg->body->id, $error);
                         } else {
-                            $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
+                            $responseBody = new SuccessResponse($msg->body->id, $result);
                         }
                         yield $this->protocolWriter->write(new Message($responseBody));
                     }
@@ -227,7 +233,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 $codebase->config->visitStubFiles($codebase);
 
                 if ($this->textDocument === null) {
-                    $this->textDocument = new TextDocument(
+                    $this->textDocument = new ServerTextDocument(
                         $this,
                         $codebase,
                         $this->project_analyzer->onchange_line_limit
@@ -235,7 +241,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 }
 
                 if ($this->workspace === null) {
-                    $this->workspace = new Workspace(
+                    $this->workspace = new ServerWorkspace(
                         $this,
                         $codebase,
                         $this->project_analyzer->onchange_line_limit

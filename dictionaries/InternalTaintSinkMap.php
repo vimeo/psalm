@@ -1,9 +1,11 @@
 <?php
 
+use Psalm\Type\TaintKind;
+
 // This maps internal function names to sink types that we don’t want to end up there
 
 /**
- * @var array<string, list<list<Type\TaintKind::*>>>
+ * @var array<string, list<list<TaintKind::*>>>
  */
 return [
 'exec' => [['shell']],

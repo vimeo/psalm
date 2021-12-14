@@ -7,6 +7,11 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function count;
 use function implode;
@@ -52,8 +57,8 @@ class PhpStormMetaScanner
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
                         && strtolower($array_item->value->name->name)
                     ) {
-                        $map[$array_item->key->value] = new Type\Union([
-                            new Type\Atomic\TNamedObject(implode('\\', $array_item->value->class->parts))
+                        $map[$array_item->key->value] = new Union([
+                            new TNamedObject(implode('\\', $array_item->value->class->parts))
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -105,7 +110,7 @@ class PhpStormMetaScanner
                         $offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ): ?Type\Union {
+                    ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
                         $method_name = $event->getMethodNameLowercase();
@@ -127,7 +132,7 @@ class PhpStormMetaScanner
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
                             if ($mapped_type = $map[$offset_arg_value] ?? null) {
-                                if ($mapped_type instanceof Type\Union) {
+                                if ($mapped_type instanceof Union) {
                                     return clone $mapped_type;
                                 }
                             }
@@ -137,8 +142,8 @@ class PhpStormMetaScanner
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
                                     if (strpos($mapped_type, '.') === false) {
-                                        return new Type\Union([
-                                            new Type\Atomic\TNamedObject($mapped_type)
+                                        return new Union([
+                                            new TNamedObject($mapped_type)
                                         ]);
                                     }
                                 }
@@ -160,7 +165,7 @@ class PhpStormMetaScanner
                         $type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ): ?Type\Union {
+                    ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
                         $method_name = $event->getMethodNameLowercase();
@@ -197,7 +202,7 @@ class PhpStormMetaScanner
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name
-                    ): ?Type\Union {
+                    ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
                         $method_name = $event->getMethodNameLowercase();
@@ -219,15 +224,15 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                             * @var TArray|TKeyedArray|TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
-                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                            if ($array_atomic_type instanceof TList) {
                                 return $array_atomic_type->type_param;
                             }
 
@@ -261,7 +266,7 @@ class PhpStormMetaScanner
                     ) use (
                         $map,
                         $offset
-                    ): Type\Union {
+                    ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();
@@ -277,7 +282,7 @@ class PhpStormMetaScanner
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
                             if ($mapped_type = $map[$offset_arg_value] ?? null) {
-                                if ($mapped_type instanceof Type\Union) {
+                                if ($mapped_type instanceof Union) {
                                     return clone $mapped_type;
                                 }
                             }
@@ -287,8 +292,8 @@ class PhpStormMetaScanner
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
                                     if (strpos($mapped_type, '.') === false) {
-                                        return new Type\Union([
-                                            new Type\Atomic\TNamedObject($mapped_type)
+                                        return new Union([
+                                            new TNamedObject($mapped_type)
                                         ]);
                                     }
                                 }
@@ -314,7 +319,7 @@ class PhpStormMetaScanner
                         FunctionReturnTypeProviderEvent $event
                     ) use (
                         $type_offset
-                    ): Type\Union {
+                    ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();
@@ -348,7 +353,7 @@ class PhpStormMetaScanner
                         FunctionReturnTypeProviderEvent $event
                     ) use (
                         $element_type_offset
-                    ): Type\Union {
+                    ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
                         $function_id = $event->getFunctionId();
@@ -363,15 +368,15 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                             * @var TArray|TKeyedArray|TList
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
-                            if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                            if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
                             }
 
-                            if ($array_atomic_type instanceof Type\Atomic\TList) {
+                            if ($array_atomic_type instanceof TList) {
                                 return $array_atomic_type->type_param;
                             }
 

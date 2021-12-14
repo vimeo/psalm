@@ -20,8 +20,8 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
-use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
-use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface as LegacyAfterClassLikeVisitInterface;
+use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface as LegacyAfterMethodCallAnalysisInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -587,7 +587,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $hook = new class implements AfterMethodCallAnalysisInterface {
+        $hook = new class implements LegacyAfterMethodCallAnalysisInterface {
             public static function afterMethodCallAnalysis(
                 Expr $expr,
                 string $method_id,
@@ -627,7 +627,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $hook = new class implements AfterClassLikeVisitInterface {
+        $hook = new class implements LegacyAfterClassLikeVisitInterface {
             /**
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint

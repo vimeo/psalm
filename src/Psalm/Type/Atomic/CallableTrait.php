@@ -8,6 +8,9 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
@@ -198,7 +201,7 @@ trait CallableTrait
             foreach ($callable->params as $offset => $param) {
                 $input_param_type = null;
 
-                if (($input_type instanceof Atomic\TClosure || $input_type instanceof Atomic\TCallable)
+                if (($input_type instanceof TClosure || $input_type instanceof TCallable)
                     && isset($input_type->params[$offset])
                 ) {
                     $input_param_type = $input_type->params[$offset]->type;
@@ -231,7 +234,7 @@ trait CallableTrait
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\TClosure
+                $input_type instanceof TCallable || $input_type instanceof TClosure
                     ? $input_type->return_type
                     : null,
                 $input_arg_offset,

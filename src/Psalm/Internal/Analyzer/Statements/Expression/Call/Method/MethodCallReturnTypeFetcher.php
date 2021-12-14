@@ -20,7 +20,12 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -31,7 +36,7 @@ use function strtolower;
 class MethodCallReturnTypeFetcher
 {
     /**
-     * @param  Type\Atomic\TNamedObject|Type\Atomic\TTemplateParam  $static_type
+     * @param  TNamedObject|TTemplateParam  $static_type
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function fetch(
@@ -43,12 +48,12 @@ class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         MethodIdentifier $premixin_method_id,
         string $cased_method_id,
-        Type\Atomic $lhs_type_part,
-        ?Type\Atomic $static_type,
+        Atomic $lhs_type_part,
+        ?Atomic $static_type,
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result
-    ): Type\Union {
+    ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
         $fq_class_name = $method_id->fq_class_name;
@@ -141,7 +146,7 @@ class MethodCallReturnTypeFetcher
                 $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
 
                 if ($method_storage) {
-                    $return_type_candidate = new Type\Union([new Type\Atomic\TClosure(
+                    $return_type_candidate = new Union([new TClosure(
                         'Closure',
                         $method_storage->params,
                         $method_storage->return_type,
@@ -170,7 +175,7 @@ class MethodCallReturnTypeFetcher
                             $class_storage->parent_class,
                             true,
                             false,
-                            $static_type instanceof Type\Atomic\TNamedObject
+                            $static_type instanceof TNamedObject
                             && $codebase->classlike_storage_provider->get($static_type->value)->final,
                             true
                         );
@@ -192,7 +197,7 @@ class MethodCallReturnTypeFetcher
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof Type\Atomic\TNamedObject
+                        $static_type instanceof TNamedObject
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true
                     );
@@ -253,7 +258,7 @@ class MethodCallReturnTypeFetcher
      */
     public static function taintMethodCallResult(
         StatementsAnalyzer $statements_analyzer,
-        Type\Union $return_type_candidate,
+        Union $return_type_candidate,
         PhpParser\Node $name_expr,
         PhpParser\Node\Expr $var_expr,
         array $args,
@@ -536,12 +541,12 @@ class MethodCallReturnTypeFetcher
     }
 
     public static function replaceTemplateTypes(
-        Type\Union $return_type_candidate,
+        Union $return_type_candidate,
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
         Codebase $codebase
-    ): Type\Union {
+    ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 

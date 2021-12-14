@@ -17,6 +17,7 @@ use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
@@ -31,7 +32,7 @@ class MissingMethodCallHandler
         ClassLikeStorage $class_storage,
         Context $context,
         Config $config,
-        ?Type\Union $all_intersection_return_type,
+        ?Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
@@ -199,7 +200,7 @@ class MissingMethodCallHandler
         bool $is_interface,
         Context $context,
         Config $config,
-        ?Type\Union $all_intersection_return_type,
+        ?Union $all_intersection_return_type,
         array $all_intersection_existent_method_ids,
         ?string $intersection_method_id,
         string $cased_method_id,

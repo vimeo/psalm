@@ -24,6 +24,7 @@ use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Type;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -125,7 +126,7 @@ class FileAnalyzer extends SourceAnalyzer
     /** @var ?NodeDataProvider */
     private $node_data;
 
-    /** @var ?Type\Union */
+    /** @var ?Union */
     private $return_type;
 
     public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
@@ -619,7 +620,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array<string, Type\Union>>|null
+     * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array
     {
@@ -666,7 +667,7 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->node_data;
     }
 
-    public function getReturnType(): ?Type\Union
+    public function getReturnType(): ?Union
     {
         return $this->return_type;
     }

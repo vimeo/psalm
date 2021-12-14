@@ -6,6 +6,11 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
@@ -31,7 +36,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['filter_var'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -83,13 +88,13 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 && $filter_type
             ) {
                 foreach ($third_arg_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                    if ($atomic_type instanceof TKeyedArray) {
                         $has_object_like = true;
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
                             && ($options_array = $atomic_type->properties['options']->getAtomicTypes()['array'])
-                            && $options_array instanceof Type\Atomic\TKeyedArray
+                            && $options_array instanceof TKeyedArray
                             && isset($options_array->properties['default'])
                         ) {
                             $filter_type = Type::combineUnionTypes(
@@ -97,7 +102,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                 $options_array->properties['default']
                             );
                         } else {
-                            $filter_type->addType(new Type\Atomic\TFalse);
+                            $filter_type->addType(new TFalse);
                         }
 
                         if (isset($atomic_type->properties['flags'])
@@ -109,20 +114,20 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             if ($filter_type->hasBool()
                                 && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
                             ) {
-                                $filter_type->addType(new Type\Atomic\TNull);
+                                $filter_type->addType(new TNull);
                             }
                         }
-                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                    } elseif ($atomic_type instanceof TLiteralInt) {
                         if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
                             $filter_null = true;
-                            $filter_type->addType(new Type\Atomic\TNull);
+                            $filter_type->addType(new TNull);
                         }
                     }
                 }
             }
 
             if (!$has_object_like && !$filter_null && $filter_type) {
-                $filter_type->addType(new Type\Atomic\TFalse);
+                $filter_type->addType(new TFalse);
             }
         }
 

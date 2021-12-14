@@ -16,8 +16,8 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -201,11 +201,11 @@ class IfConditionalAnalyzer
 
         $newish_var_ids = array_map(
             /**
-             * @param Type\Union $_
+             * @param Union $_
              *
              * @return true
              */
-            function (Type\Union $_): bool {
+            function (Union $_): bool {
                 return true;
             },
             array_diff_key(

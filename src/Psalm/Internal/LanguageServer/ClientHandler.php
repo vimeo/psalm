@@ -2,7 +2,10 @@
 declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
-use AdvancedJsonRpc;
+use AdvancedJsonRpc\Notification;
+use AdvancedJsonRpc\Request;
+use AdvancedJsonRpc\Response;
+use AdvancedJsonRpc\SuccessResponse;
 use Amp\Deferred;
 use Amp\Promise;
 use Generator;
@@ -56,7 +59,7 @@ class ClientHandler
             function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(
                     new Message(
-                        new AdvancedJsonRpc\Request($id, $method, (object) $params)
+                        new Request($id, $method, (object) $params)
                     )
                 );
 
@@ -70,12 +73,12 @@ class ClientHandler
                          * @psalm-suppress MixedArgument
                          */
                         if ($msg->body
-                            && AdvancedJsonRpc\Response::isResponse($msg->body)
+                            && Response::isResponse($msg->body)
                             && $msg->body->id === $id
                         ) {
                             // Received a response
                             $this->protocolReader->removeListener('message', $listener);
-                            if (AdvancedJsonRpc\SuccessResponse::isSuccessResponse($msg->body)) {
+                            if (SuccessResponse::isSuccessResponse($msg->body)) {
                                 $deferred->resolve($msg->body->result);
                             } else {
                                 $deferred->fail($msg->body->error);
@@ -99,7 +102,7 @@ class ClientHandler
     {
         $this->protocolWriter->write(
             new Message(
-                new AdvancedJsonRpc\Notification($method, (object)$params)
+                new Notification($method, (object)$params)
             )
         );
     }

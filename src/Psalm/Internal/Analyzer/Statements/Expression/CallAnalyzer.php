@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -35,8 +36,17 @@ use Psalm\Node\VirtualName;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -272,7 +282,7 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$method_id) {
-            return Call\ArgumentsAnalyzer::analyze(
+            return ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $args,
                 null,
@@ -330,7 +340,7 @@ class CallAnalyzer
             }
         }
 
-        if (Call\ArgumentsAnalyzer::analyze(
+        if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
             $method_params,
@@ -342,7 +352,7 @@ class CallAnalyzer
             return false;
         }
 
-        if (Call\ArgumentsAnalyzer::checkArgumentsMatch(
+        if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
             $method_id,
@@ -372,9 +382,9 @@ class CallAnalyzer
      * This gets all the template params (and their types) that we think
      * we'll need to know about
      *
-     * @return array<string, array<string, Type\Union>>
-     * @param array<string, non-empty-array<string, Type\Union>> $existing_template_types
-     * @param array<string, array<string, Type\Union>> $class_template_params
+     * @return array<string, array<string, Union>>
+     * @param array<string, non-empty-array<string, Union>> $existing_template_types
+     * @param array<string, array<string, Union>> $class_template_params
      */
     public static function getTemplateTypesForCall(
         Codebase $codebase,
@@ -397,7 +407,7 @@ class CallAnalyzer
                             $output_type = null;
 
                             foreach ($type->getAtomicTypes() as $atomic_type) {
-                                if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
+                                if ($atomic_type instanceof TTemplateParam) {
                                     $output_type_candidate = self::getGenericParamForOffset(
                                         $atomic_type->defining_class,
                                         $atomic_type->param_name,
@@ -405,7 +415,7 @@ class CallAnalyzer
                                         $class_template_params + $template_types
                                     );
                                 } else {
-                                    $output_type_candidate = new Type\Union([$atomic_type]);
+                                    $output_type_candidate = new Union([$atomic_type]);
                                 }
 
                                 $output_type = Type::combineUnionTypes(
@@ -447,15 +457,15 @@ class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>>  $template_extended_params
-     * @param  array<string, array<string, Type\Union>>  $found_generic_params
+     * @param  array<string, array<string, Union>>  $template_extended_params
+     * @param  array<string, array<string, Union>>  $found_generic_params
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,
         string $template_name,
         array $template_extended_params,
         array $found_generic_params
-    ): Type\Union {
+    ): Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             return $found_generic_params[$template_name][$fq_class_name];
         }
@@ -463,7 +473,7 @@ class CallAnalyzer
         foreach ($template_extended_params as $extended_class_name => $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
-                    if ($extended_atomic_type instanceof Type\Atomic\TTemplateParam
+                    if ($extended_atomic_type instanceof TTemplateParam
                         && $extended_atomic_type->param_name === $template_name
                         && $extended_atomic_type->defining_class === $fq_class_name
                     ) {
@@ -571,8 +581,8 @@ class CallAnalyzer
 
                 if ($type_part->extra_types) {
                     foreach ($type_part->extra_types as $extra_type) {
-                        if ($extra_type instanceof Type\Atomic\TTemplateParam
-                            || $extra_type instanceof Type\Atomic\TObjectWithProperties
+                        if ($extra_type instanceof TTemplateParam
+                            || $extra_type instanceof TObjectWithProperties
                         ) {
                             throw new UnexpectedValueException('Shouldn’t get a generic param here');
                         }
@@ -778,22 +788,22 @@ class CallAnalyzer
                         $ored_type_assertions = [];
 
                         foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                            if ($replacement_atomic_type instanceof Type\Atomic\TMixed) {
+                            if ($replacement_atomic_type instanceof TMixed) {
                                 continue 3;
                             }
 
-                            if ($replacement_atomic_type instanceof Type\Atomic\TArray
-                                || $replacement_atomic_type instanceof Type\Atomic\TKeyedArray
-                                || $replacement_atomic_type instanceof Type\Atomic\TList
+                            if ($replacement_atomic_type instanceof TArray
+                                || $replacement_atomic_type instanceof TKeyedArray
+                                || $replacement_atomic_type instanceof TList
                             ) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
+                            } elseif ($replacement_atomic_type instanceof TNamedObject) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
+                            } elseif ($replacement_atomic_type instanceof Scalar) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->getAssertionString();
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
+                            } elseif ($replacement_atomic_type instanceof TNull) {
                                 $ored_type_assertions[] = $prefix . 'null';
-                            } elseif ($replacement_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                            } elseif ($replacement_atomic_type instanceof TTemplateParam) {
                                 $ored_type_assertions[] = $prefix . $replacement_atomic_type->param_name;
                             }
                         }
@@ -897,8 +907,8 @@ class CallAnalyzer
 
             foreach (($statements_analyzer->getTemplateTypeMap() ?: []) as $template_name => $map) {
                 foreach ($map as $ref => $type) {
-                    $template_type_map[$template_name][$ref] = new Type\Union([
-                        new Type\Atomic\TTemplateParam(
+                    $template_type_map[$template_name][$ref] = new Union([
+                        new TTemplateParam(
                             $template_name,
                             $type,
                             $ref
@@ -961,7 +971,7 @@ class CallAnalyzer
                     foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
                         $changed_atomic_type->from_docblock = true;
 
-                        if ($changed_atomic_type instanceof Type\Atomic\TNamedObject
+                        if ($changed_atomic_type instanceof TNamedObject
                             && $changed_atomic_type->extra_types
                         ) {
                             foreach ($changed_atomic_type->extra_types as $extra_type) {

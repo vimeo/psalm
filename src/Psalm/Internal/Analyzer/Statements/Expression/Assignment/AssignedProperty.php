@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class AssignedProperty
 {
     /**
-     * @var Type\Union
+     * @var Union
      */
     public $property_type;
 
@@ -16,14 +16,14 @@ class AssignedProperty
     public $id;
 
     /**
-     * @var Type\Union
+     * @var Union
      */
     public $assignment_type;
 
     public function __construct(
-        Type\Union $property_type,
+        Union $property_type,
         string $id,
-        Type\Union $assignment_type
+        Union $assignment_type
     ) {
         $this->property_type = $property_type;
         $this->id = $id;

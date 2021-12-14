@@ -14,6 +14,7 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -72,6 +73,11 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -101,7 +107,7 @@ use function substr;
 class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $inferred_property_types = [];
 
@@ -286,11 +292,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         if (($storage->templatedMixins || $storage->namedMixins)
             && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, Type\Atomic\TTemplateParam|Type\Atomic\TNamedObject> $mixins */
+            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
             $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
-            $union = new Type\Union($mixins);
+            $union = new Union($mixins);
 
-            $static_self = new Type\Atomic\TNamedObject($storage->name);
+            $static_self = new TNamedObject($storage->name);
             $static_self->was_static = true;
 
             $union = TypeExpander::expandUnion(
@@ -859,7 +865,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_class_storage,
                 $storage,
                 null,
-                new Type\Atomic\TNamedObject($fq_class_name),
+                new TNamedObject($fq_class_name),
                 true
             );
 
@@ -869,14 +875,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_class_name
                 );
 
-                if (!$this_object_type instanceof Type\Atomic\TGenericObject) {
+                if (!$this_object_type instanceof TGenericObject) {
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
                         $type_params[] = clone array_values($type_map)[0];
                     }
 
-                    $this_object_type = new Type\Atomic\TGenericObject($this_object_type->value, $type_params);
+                    $this_object_type = new TGenericObject($this_object_type->value, $type_params);
                 }
 
                 $fleshed_out_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
@@ -1221,10 +1227,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
-            $this_atomic_object_type = new Type\Atomic\TNamedObject($fq_class_name);
+            $this_atomic_object_type = new TNamedObject($fq_class_name);
             $this_atomic_object_type->was_static = !$storage->final;
 
-            $method_context->vars_in_scope['$this'] = new Type\Union([$this_atomic_object_type]);
+            $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
@@ -1292,7 +1298,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     } elseif (!$property_storage->has_default) {
                         if (isset($this->inferred_property_types[$property_name])) {
-                            $this->inferred_property_types[$property_name]->addType(new Type\Atomic\TNull());
+                            $this->inferred_property_types[$property_name]->addType(new TNull());
                             $this->inferred_property_types[$property_name]->setFromDocblock();
                         }
                     }
@@ -1541,7 +1547,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
-            $suggested_type->addType(new Type\Atomic\TNull());
+            $suggested_type->addType(new TNull());
         }
 
         if ($suggested_type && !$suggested_type->isNull()) {
@@ -1588,7 +1594,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private static function addOrUpdatePropertyType(
         ProjectAnalyzer $project_analyzer,
         PhpParser\Node\Stmt\Property $property,
-        Type\Union $inferred_type,
+        Union $inferred_type,
         StatementsSource $source,
         bool $docblock_only = false
     ): void {
@@ -1813,15 +1819,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name
-    ): Type\Atomic\TNamedObject {
+    ): TNamedObject {
         if ($class_storage->template_types) {
             $template_params = [];
 
             foreach ($class_storage->template_types as $param_name => $template_map) {
                 $key = array_keys($template_map)[0];
 
-                $template_params[] = new Type\Union([
-                    new Type\Atomic\TTemplateParam(
+                $template_params[] = new Union([
+                    new TTemplateParam(
                         $param_name,
                         reset($template_map),
                         $key
@@ -1829,13 +1835,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ]);
             }
 
-            return new Type\Atomic\TGenericObject(
+            return new TGenericObject(
                 $original_fq_classlike_name,
                 $template_params
             );
         }
 
-        return new Type\Atomic\TNamedObject($original_fq_classlike_name);
+        return new TNamedObject($original_fq_classlike_name);
     }
 
     public static function analyzeClassMethodReturnType(
@@ -1927,7 +1933,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $interface_method_id
                 );
 
-                FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+                ReturnTypeAnalyzer::verifyReturnType(
                     $stmt,
                     $stmt->getStmts() ?: [],
                     $source,
@@ -1954,7 +1960,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
 
-        FunctionLike\ReturnTypeAnalyzer::verifyReturnType(
+        ReturnTypeAnalyzer::verifyReturnType(
             $stmt,
             $stmt->getStmts() ?: [],
             $source,
@@ -2042,7 +2048,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         && !$parent_storage->template_covariants[$i]
                     ) {
                         foreach ($extended_type->getAtomicTypes() as $t) {
-                            if ($t instanceof Type\Atomic\TTemplateParam
+                            if ($t instanceof TTemplateParam
                                 && $storage->template_types
                                 && $storage->template_covariants
                                 && ($local_offset
@@ -2064,7 +2070,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     if ($parent_storage->enforce_template_inheritance) {
                         foreach ($extended_type->getAtomicTypes() as $t) {
-                            if (!$t instanceof Type\Atomic\TTemplateParam
+                            if (!$t instanceof TTemplateParam
                                 || !isset($storage->template_types[$t->param_name])
                             ) {
                                 IssueBuffer::maybeAdd(

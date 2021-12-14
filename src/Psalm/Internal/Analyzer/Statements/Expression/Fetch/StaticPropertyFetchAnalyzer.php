@@ -22,7 +22,10 @@ use Psalm\Node\Expr\VirtualStaticPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function count;
 use function explode;
@@ -128,7 +131,7 @@ class StaticPropertyFetchAnalyzer
         if ($fq_class_name) {
             $statements_analyzer->node_data->setType(
                 $stmt->class,
-                new Type\Union([new TNamedObject($fq_class_name)])
+                new Union([new TNamedObject($fq_class_name)])
             );
         }
 
@@ -421,10 +424,10 @@ class StaticPropertyFetchAnalyzer
         foreach ($stmt_class_type->getAtomicTypes() as $class_atomic_type) {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $string_type = ($class_atomic_type instanceof Type\Atomic\TClassString
+            $string_type = ($class_atomic_type instanceof TClassString
                     && $class_atomic_type->as_type !== null)
                 ? $class_atomic_type->as_type->value
-                : ($class_atomic_type instanceof Type\Atomic\TLiteralString
+                : ($class_atomic_type instanceof TLiteralString
                     ? $class_atomic_type->value
                     : null);
 
@@ -451,7 +454,7 @@ class StaticPropertyFetchAnalyzer
                     $stmt_class->getAttributes()
                 );
 
-                $context->vars_in_scope['$' . $fake_var_name] = new Type\Union([$class_atomic_type]);
+                $context->vars_in_scope['$' . $fake_var_name] = new Union([$class_atomic_type]);
 
                 $fake_instance_property = new VirtualPropertyFetch(
                     $fake_var,

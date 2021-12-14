@@ -4,9 +4,38 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Scanner\UnresolvedConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBinaryOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseAnd;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function ctype_digit;
@@ -25,18 +54,18 @@ class ConstantTypeResolver
         UnresolvedConstantComponent $c,
         StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
-    ): Type\Atomic {
+    ): Atomic {
         $c_id = spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
             throw new CircularReferenceException('Found a circular reference');
         }
 
-        if ($c instanceof UnresolvedConstant\ScalarValue) {
+        if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
         }
 
-        if ($c instanceof UnresolvedConstant\UnresolvedBinaryOp) {
+        if ($c instanceof UnresolvedBinaryOp) {
             $left = self::resolve(
                 $classlikes,
                 $c->left,
@@ -50,73 +79,73 @@ class ConstantTypeResolver
                 $visited_constant_ids + [$c_id => true]
             );
 
-            if ($left instanceof Type\Atomic\TMixed || $right instanceof Type\Atomic\TMixed) {
-                return new Type\Atomic\TMixed;
+            if ($left instanceof TMixed || $right instanceof TMixed) {
+                return new TMixed;
             }
 
-            if ($c instanceof UnresolvedConstant\UnresolvedConcatOp) {
-                if (($left instanceof Type\Atomic\TLiteralString
-                        || $left instanceof Type\Atomic\TLiteralFloat
-                        || $left instanceof Type\Atomic\TLiteralInt)
-                    && ($right instanceof Type\Atomic\TLiteralString
-                        || $right instanceof Type\Atomic\TLiteralFloat
-                        || $right instanceof Type\Atomic\TLiteralInt)
+            if ($c instanceof UnresolvedConcatOp) {
+                if (($left instanceof TLiteralString
+                        || $left instanceof TLiteralFloat
+                        || $left instanceof TLiteralInt)
+                    && ($right instanceof TLiteralString
+                        || $right instanceof TLiteralFloat
+                        || $right instanceof TLiteralInt)
                 ) {
-                    return new Type\Atomic\TLiteralString($left->value . $right->value);
+                    return new TLiteralString($left->value . $right->value);
                 }
 
-                return new Type\Atomic\TString();
+                return new TString();
             }
 
-            if ($c instanceof UnresolvedConstant\UnresolvedAdditionOp
-                || $c instanceof UnresolvedConstant\UnresolvedSubtractionOp
-                || $c instanceof UnresolvedConstant\UnresolvedDivisionOp
-                || $c instanceof UnresolvedConstant\UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseOr
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseXor
-                || $c instanceof UnresolvedConstant\UnresolvedBitwiseAnd
+            if ($c instanceof UnresolvedAdditionOp
+                || $c instanceof UnresolvedSubtractionOp
+                || $c instanceof UnresolvedDivisionOp
+                || $c instanceof UnresolvedMultiplicationOp
+                || $c instanceof UnresolvedBitwiseOr
+                || $c instanceof UnresolvedBitwiseXor
+                || $c instanceof UnresolvedBitwiseAnd
             ) {
-                if (($left instanceof Type\Atomic\TLiteralFloat || $left instanceof Type\Atomic\TLiteralInt)
-                    && ($right instanceof Type\Atomic\TLiteralFloat || $right instanceof Type\Atomic\TLiteralInt)
+                if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
+                    && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
                 ) {
-                    if ($c instanceof UnresolvedConstant\UnresolvedAdditionOp) {
+                    if ($c instanceof UnresolvedAdditionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value + $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedSubtractionOp) {
+                    if ($c instanceof UnresolvedSubtractionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value - $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedDivisionOp) {
+                    if ($c instanceof UnresolvedDivisionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseOr) {
+                    if ($c instanceof UnresolvedBitwiseOr) {
                         return self::getLiteralTypeFromScalarValue($left->value | $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseXor) {
+                    if ($c instanceof UnresolvedBitwiseXor) {
                         return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
                     }
 
-                    if ($c instanceof UnresolvedConstant\UnresolvedBitwiseAnd) {
+                    if ($c instanceof UnresolvedBitwiseAnd) {
                         return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
                 }
 
-                if ($left instanceof Type\Atomic\TKeyedArray && $right instanceof Type\Atomic\TKeyedArray) {
-                    return new Type\Atomic\TKeyedArray($left->properties + $right->properties);
+                if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
+                    return new TKeyedArray($left->properties + $right->properties);
                 }
 
-                return new Type\Atomic\TMixed;
+                return new TMixed;
             }
 
-            return new Type\Atomic\TMixed;
+            return new TMixed;
         }
 
-        if ($c instanceof UnresolvedConstant\UnresolvedTernary) {
+        if ($c instanceof UnresolvedTernary) {
             $cond = self::resolve(
                 $classlikes,
                 $c->cond,
@@ -136,32 +165,32 @@ class ConstantTypeResolver
                 $visited_constant_ids + [$c_id => true]
             );
 
-            if ($cond instanceof Type\Atomic\TLiteralFloat
-                || $cond instanceof Type\Atomic\TLiteralInt
-                || $cond instanceof Type\Atomic\TLiteralString
+            if ($cond instanceof TLiteralFloat
+                || $cond instanceof TLiteralInt
+                || $cond instanceof TLiteralString
             ) {
                 if ($cond->value) {
                     return $if ?? $cond;
                 }
-            } elseif ($cond instanceof Type\Atomic\TFalse || $cond instanceof Type\Atomic\TNull) {
+            } elseif ($cond instanceof TFalse || $cond instanceof TNull) {
                 return $else;
-            } elseif ($cond instanceof Type\Atomic\TTrue) {
+            } elseif ($cond instanceof TTrue) {
                 return $if ?? $cond;
             }
         }
 
-        if ($c instanceof UnresolvedConstant\ArrayValue) {
+        if ($c instanceof ArrayValue) {
             $properties = [];
             $auto_key = 0;
 
             if (!$c->entries) {
-                return new Type\Atomic\TArray([Type::getEmpty(), Type::getEmpty()]);
+                return new TArray([Type::getEmpty(), Type::getEmpty()]);
             }
 
             $is_list = true;
 
             foreach ($c->entries as $entry) {
-                if ($entry instanceof UnresolvedConstant\ArraySpread) {
+                if ($entry instanceof ArraySpread) {
                     $spread_array = self::resolve(
                         $classlikes,
                         $entry->array,
@@ -169,12 +198,12 @@ class ConstantTypeResolver
                         $visited_constant_ids + [$c_id => true]
                     );
 
-                    if ($spread_array instanceof Type\Atomic\TArray && $spread_array->type_params[1]->isEmpty()) {
+                    if ($spread_array instanceof TArray && $spread_array->type_params[1]->isEmpty()) {
                         continue;
                     }
 
-                    if (!$spread_array instanceof Type\Atomic\TKeyedArray) {
-                        return new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                    if (!$spread_array instanceof TKeyedArray) {
+                        return new TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
                     foreach ($spread_array->properties as $spread_array_type) {
@@ -191,29 +220,29 @@ class ConstantTypeResolver
                         $visited_constant_ids + [$c_id => true]
                     );
 
-                    if (!$key_type instanceof Type\Atomic\TLiteralInt
+                    if (!$key_type instanceof TLiteralInt
                         || $key_type->value !== $auto_key
                     ) {
                         $is_list = false;
                     }
                 } else {
-                    $key_type = new Type\Atomic\TLiteralInt($auto_key);
+                    $key_type = new TLiteralInt($auto_key);
                 }
 
-                if ($key_type instanceof Type\Atomic\TLiteralInt
-                    || $key_type instanceof Type\Atomic\TLiteralString
+                if ($key_type instanceof TLiteralInt
+                    || $key_type instanceof TLiteralString
                 ) {
                     $key_value = $key_type->value;
-                    if ($key_type instanceof Type\Atomic\TLiteralInt) {
+                    if ($key_type instanceof TLiteralInt) {
                         $auto_key = $key_type->value + 1;
                     } elseif (ctype_digit($key_type->value)) {
                         $auto_key = ((int) $key_type->value) + 1;
                     }
                 } else {
-                    return new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                    return new TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
 
-                $value_type = new Type\Union([self::resolve(
+                $value_type = new Union([self::resolve(
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
@@ -224,12 +253,12 @@ class ConstantTypeResolver
             }
 
             if (empty($properties)) {
-                $resolved_type = new Type\Atomic\TArray([
-                    new Type\Union([new Type\Atomic\TEmpty()]),
-                    new Type\Union([new Type\Atomic\TEmpty()]),
+                $resolved_type = new TArray([
+                    new Union([new TEmpty()]),
+                    new Union([new TEmpty()]),
                 ]);
             } else {
-                $resolved_type = new Type\Atomic\TKeyedArray($properties);
+                $resolved_type = new TKeyedArray($properties);
 
                 $resolved_type->is_list = $is_list;
                 $resolved_type->sealed = true;
@@ -238,9 +267,9 @@ class ConstantTypeResolver
             return $resolved_type;
         }
 
-        if ($c instanceof UnresolvedConstant\ClassConstant) {
+        if ($c instanceof ClassConstant) {
             if ($c->name === 'class') {
-                return new Type\Atomic\TLiteralClassString($c->fqcln);
+                return new TLiteralClassString($c->fqcln);
             }
 
             $found_type = $classlikes->getClassConstantType(
@@ -256,7 +285,7 @@ class ConstantTypeResolver
             }
         }
 
-        if ($c instanceof UnresolvedConstant\ArrayOffsetFetch) {
+        if ($c instanceof ArrayOffsetFetch) {
             $var_type = self::resolve(
                 $classlikes,
                 $c->array,
@@ -271,9 +300,9 @@ class ConstantTypeResolver
                 $visited_constant_ids + [$c_id => true]
             );
 
-            if ($var_type instanceof Type\Atomic\TKeyedArray
-                && ($offset_type instanceof Type\Atomic\TLiteralInt
-                    || $offset_type instanceof Type\Atomic\TLiteralString)
+            if ($var_type instanceof TKeyedArray
+                && ($offset_type instanceof TLiteralInt
+                    || $offset_type instanceof TLiteralString)
             ) {
                 $union = $var_type->properties[$offset_type->value] ?? null;
 
@@ -283,7 +312,7 @@ class ConstantTypeResolver
             }
         }
 
-        if ($c instanceof UnresolvedConstant\Constant) {
+        if ($c instanceof Constant) {
             if ($statements_analyzer) {
                 $found_type = ConstFetchAnalyzer::getConstType(
                     $statements_analyzer,
@@ -298,34 +327,34 @@ class ConstantTypeResolver
             }
         }
 
-        return new Type\Atomic\TMixed;
+        return new TMixed;
     }
 
     /**
      * @param  string|int|float|bool|null $value
      */
-    private static function getLiteralTypeFromScalarValue($value): Type\Atomic
+    private static function getLiteralTypeFromScalarValue($value): Atomic
     {
         if (is_string($value)) {
-            return new Type\Atomic\TLiteralString($value);
+            return new TLiteralString($value);
         }
 
         if (is_int($value)) {
-            return new Type\Atomic\TLiteralInt($value);
+            return new TLiteralInt($value);
         }
 
         if (is_float($value)) {
-            return new Type\Atomic\TLiteralFloat($value);
+            return new TLiteralFloat($value);
         }
 
         if ($value === false) {
-            return new Type\Atomic\TFalse;
+            return new TFalse;
         }
 
         if ($value === true) {
-            return new Type\Atomic\TTrue;
+            return new TTrue;
         }
 
-        return new Type\Atomic\TNull;
+        return new TNull;
     }
 }

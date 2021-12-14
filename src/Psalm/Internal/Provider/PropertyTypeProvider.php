@@ -8,7 +8,7 @@ use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\Plugin\Hook\PropertyTypeProviderInterface as LegacyPropertyTypeProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 use function is_subclass_of;
 use function strtolower;
@@ -18,7 +18,7 @@ class PropertyTypeProvider
     /**
      * @var array<
      *   lowercase-string,
-     *   array<Closure(PropertyTypeProviderEvent): ?Type\Union>
+     *   array<Closure(PropertyTypeProviderEvent): ?Union>
      * >
      */
     private static $handlers = [];
@@ -32,7 +32,7 @@ class PropertyTypeProvider
      *     bool,
      *     ?StatementsSource=,
      *     ?Context=
-     *   ): ?Type\Union>
+     *   ): ?Union>
      * >
      */
     private static $legacy_handlers = [];
@@ -66,7 +66,7 @@ class PropertyTypeProvider
     }
 
     /**
-     * @param Closure(PropertyTypeProviderEvent): ?Type\Union $c
+     * @param Closure(PropertyTypeProviderEvent): ?Union $c
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -80,7 +80,7 @@ class PropertyTypeProvider
      *     bool,
      *     ?StatementsSource=,
      *     ?Context=
-     *   ): ?Type\Union $c
+     *   ): ?Union $c
      */
     public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -99,7 +99,7 @@ class PropertyTypeProvider
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null
-    ): ?Type\Union {
+    ): ?Union {
 
         if ($source) {
             $source->addSuppressedIssues(['NonInvariantDocblockPropertyType']);

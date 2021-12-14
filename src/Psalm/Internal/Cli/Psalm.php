@@ -16,9 +16,13 @@ use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
@@ -601,11 +605,11 @@ final class Psalm
         return $progress;
     }
 
-    private static function initProviders(array $options, Config $config, string $current_dir): Provider\Providers
+    private static function initProviders(array $options, Config $config, string $current_dir): Providers
     {
         if (isset($options['no-cache']) || isset($options['i'])) {
-            $providers = new Provider\Providers(
-                new Provider\FileProvider
+            $providers = new Providers(
+                new FileProvider
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -613,18 +617,18 @@ final class Psalm
 
             $file_storage_cache_provider = $no_reflection_cache
                 ? null
-                : new Provider\FileStorageCacheProvider($config);
+                : new FileStorageCacheProvider($config);
 
             $classlike_storage_cache_provider = $no_reflection_cache
                 ? null
-                : new Provider\ClassLikeStorageCacheProvider($config);
+                : new ClassLikeStorageCacheProvider($config);
 
-            $providers = new Provider\Providers(
-                new Provider\FileProvider,
-                new Provider\ParserCacheProvider($config, !$no_file_cache),
+            $providers = new Providers(
+                new FileProvider,
+                new ParserCacheProvider($config, !$no_file_cache),
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
-                new Provider\FileReferenceCacheProvider($config),
+                new FileReferenceCacheProvider($config),
                 new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
             );
         }
@@ -712,7 +716,7 @@ final class Psalm
         return $issue_baseline;
     }
 
-    private static function storeTypeMap(Provider\Providers $providers, Config $config, string $type_map_location): void
+    private static function storeTypeMap(Providers $providers, Config $config, string $type_map_location): void
     {
         $file_map = $providers->file_reference_provider->getFileMaps();
 
@@ -1149,7 +1153,7 @@ final class Psalm
 
     private static function generateStubs(
         array $options,
-        Provider\Providers $providers,
+        Providers $providers,
         ProjectAnalyzer $project_analyzer
     ): void {
         if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) {

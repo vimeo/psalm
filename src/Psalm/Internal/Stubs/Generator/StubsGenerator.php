@@ -2,6 +2,80 @@
 
 namespace Psalm\Internal\Stubs\Generator;
 
+use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TAssertionFalsy;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TCallableList;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TDependentListKey;
+use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEmptyNumeric;
+use Psalm\Type\Atomic\TEmptyScalar;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntMaskOf;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOfClassConstant;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOfClassConstant;
+use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Atomic\Scalar;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
@@ -22,6 +96,8 @@ use Psalm\Node\VirtualName;
 use Psalm\Node\VirtualNullableType;
 use Psalm\Node\VirtualParam;
 use Psalm\Type;
+use Psalm\Type\Union;
+
 use function dirname;
 
 class StubsGenerator
@@ -269,7 +345,7 @@ class StubsGenerator
         foreach ($method_storage->params as $param) {
             $param_nodes[] = new VirtualParam(
                 new VirtualVariable($param->name),
-                $param->default_type instanceof Type\Union
+                $param->default_type instanceof Union
                     ? self::getExpressionFromType($param->default_type)
                     : null,
                 $param->signature_type
@@ -286,19 +362,19 @@ class StubsGenerator
     /**
      * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|null
      */
-    public static function getParserTypeFromPsalmType(Type\Union $type): ?PhpParser\NodeAbstract
+    public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TNull) {
+            if ($atomic_type instanceof TNull) {
                 continue;
             }
 
-            if ($atomic_type instanceof Type\Atomic\Scalar
-                || $atomic_type instanceof Type\Atomic\TObject
-                || $atomic_type instanceof Type\Atomic\TArray
-                || $atomic_type instanceof Type\Atomic\TIterable
+            if ($atomic_type instanceof Scalar
+                || $atomic_type instanceof TObject
+                || $atomic_type instanceof TArray
+                || $atomic_type instanceof TIterable
             ) {
                 $identifier_string = $atomic_type->toPhpString(null, [], null, 8, 0);
 
@@ -316,7 +392,7 @@ class StubsGenerator
                 return $identifier;
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($atomic_type instanceof TNamedObject) {
                 $name_node = new VirtualFullyQualified($atomic_type->value);
 
                 if ($nullable) {
@@ -330,42 +406,42 @@ class StubsGenerator
         return null;
     }
 
-    public static function getExpressionFromType(Type\Union $type) : PhpParser\Node\Expr
+    public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+            if ($atomic_type instanceof TLiteralClassString) {
                 return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier('class'));
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralString) {
+            if ($atomic_type instanceof TLiteralString) {
                 return new VirtualString($atomic_type->value);
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+            if ($atomic_type instanceof TLiteralInt) {
                 return new VirtualLNumber($atomic_type->value);
             }
 
-            if ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
+            if ($atomic_type instanceof TLiteralFloat) {
                 return new VirtualDNumber($atomic_type->value);
             }
 
-            if ($atomic_type instanceof Type\Atomic\TFalse) {
+            if ($atomic_type instanceof TFalse) {
                 return new VirtualConstFetch(new VirtualName('false'));
             }
 
-            if ($atomic_type instanceof Type\Atomic\TTrue) {
+            if ($atomic_type instanceof TTrue) {
                 return new VirtualConstFetch(new VirtualName('true'));
             }
 
-            if ($atomic_type instanceof Type\Atomic\TNull) {
+            if ($atomic_type instanceof TNull) {
                 return new VirtualConstFetch(new VirtualName('null'));
             }
 
-            if ($atomic_type instanceof Type\Atomic\TArray) {
+            if ($atomic_type instanceof TArray) {
                 return new VirtualArray([]);
             }
 
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 $new_items = [];
 
                 foreach ($atomic_type->properties as $property_name => $property_type) {
@@ -386,7 +462,7 @@ class StubsGenerator
                 return new VirtualArray($new_items);
             }
 
-            if ($atomic_type instanceof Type\Atomic\TEnumCase) {
+            if ($atomic_type instanceof TEnumCase) {
                 return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier($atomic_type->case_name));
             }
         }

@@ -44,11 +44,19 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_keys;
 use function array_search;
@@ -73,8 +81,8 @@ class AtomicPropertyFetchAnalyzer
         bool $in_assignment,
         ?string $var_id,
         ?string $stmt_var_id,
-        Type\Union $stmt_var_type,
-        Type\Atomic $lhs_type_part,
+        Union $stmt_var_type,
+        Atomic $lhs_type_part,
         string $prop_name,
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
@@ -84,12 +92,12 @@ class AtomicPropertyFetchAnalyzer
             return;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TMixed) {
+        if ($lhs_type_part instanceof TMixed) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             return;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TFalse && $stmt_var_type->ignore_falsable_issues) {
+        if ($lhs_type_part instanceof TFalse && $stmt_var_type->ignore_falsable_issues) {
             return;
         }
 
@@ -181,25 +189,25 @@ class AtomicPropertyFetchAnalyzer
 
                 foreach ($class_storage->enum_cases as $enum_case) {
                     if (is_string($enum_case->value)) {
-                        $case_values[] = new Type\Atomic\TLiteralString($enum_case->value);
+                        $case_values[] = new TLiteralString($enum_case->value);
                     } elseif (is_int($enum_case->value)) {
-                        $case_values[] = new Type\Atomic\TLiteralInt($enum_case->value);
+                        $case_values[] = new TLiteralInt($enum_case->value);
                     } else {
                         // this should never happen
-                        $case_values[] = new Type\Atomic\TMixed();
+                        $case_values[] = new TMixed();
                     }
                 }
 
                 // todo: this is suboptimal when we reference enum directly, e.g. Status::Open->value
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Type\Union($case_values)
+                    new Union($case_values)
                 );
             } elseif ($prop_name === 'name') {
-                if ($lhs_type_part instanceof Type\Atomic\TEnumCase) {
+                if ($lhs_type_part instanceof TEnumCase) {
                     $statements_analyzer->node_data->setType(
                         $stmt,
-                        new Type\Union([new Type\Atomic\TLiteralString($lhs_type_part->case_name)])
+                        new Union([new TLiteralString($lhs_type_part->case_name)])
                     );
                 } else {
                     $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
@@ -527,7 +535,7 @@ class AtomicPropertyFetchAnalyzer
         Context $context,
         string $fq_class_name,
         string $prop_name,
-        Type\Atomic\TNamedObject $lhs_type_part,
+        TNamedObject $lhs_type_part,
         string &$property_id,
         bool &$has_magic_getter,
         ?string $stmt_var_id,
@@ -617,7 +625,7 @@ class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $statements_analyzer->node_data->setType($stmt->var, new Type\Union([$lhs_type_part]));
+            $statements_analyzer->node_data->setType($stmt->var, new Union([$lhs_type_part]));
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
@@ -694,11 +702,11 @@ class AtomicPropertyFetchAnalyzer
 
     public static function localizePropertyType(
         Codebase $codebase,
-        Type\Union $class_property_type,
+        Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage
-    ): Type\Union {
+    ): Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
             $property_declaring_class_storage,
@@ -730,7 +738,7 @@ class AtomicPropertyFetchAnalyzer
                     $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
 
                     foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
-                        if (!$mapped_type_atomic instanceof Type\Atomic\TTemplateParam) {
+                        if (!$mapped_type_atomic instanceof TTemplateParam) {
                             continue;
                         }
 
@@ -766,7 +774,7 @@ class AtomicPropertyFetchAnalyzer
     public static function processTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        Type\Union $type,
+        Union $type,
         string $property_id,
         ClassLikeStorage $class_storage,
         bool $in_assignment,
@@ -969,7 +977,7 @@ class AtomicPropertyFetchAnalyzer
     }
 
     /**
-     * @param  array<Type\Atomic>     $intersection_types
+     * @param  array<Atomic>     $intersection_types
      */
     private static function handleNonExistentClass(
         StatementsAnalyzer $statements_analyzer,
@@ -1125,7 +1133,7 @@ class AtomicPropertyFetchAnalyzer
         string $fq_class_name,
         string $prop_name,
         TNamedObject $lhs_type_part
-    ): Type\Union {
+    ): Union {
         $class_property_type = $codebase->properties->getPropertyType(
             $property_id,
             false,

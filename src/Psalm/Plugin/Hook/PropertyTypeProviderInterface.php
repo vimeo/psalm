@@ -3,7 +3,7 @@ namespace Psalm\Plugin\Hook;
 
 use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /** @deprecated going to be removed in Psalm 5 */
 interface PropertyTypeProviderInterface
@@ -19,5 +19,5 @@ interface PropertyTypeProviderInterface
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null
-    ): ?Type\Union;
+    ): ?Union;
 }

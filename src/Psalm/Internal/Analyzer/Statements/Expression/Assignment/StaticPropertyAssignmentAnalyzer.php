@@ -22,6 +22,9 @@ use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function explode;
 use function strtolower;
@@ -38,7 +41,7 @@ class StaticPropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         ?PhpParser\Node\Expr $assignment_value,
-        Type\Union $assignment_value_type,
+        Union $assignment_value_type,
         Context $context
     ): ?bool {
         $var_id = ExpressionIdentifier::getArrayVarId(
@@ -58,7 +61,7 @@ class StaticPropertyAssignmentAnalyzer
         $prop_name = $stmt->name;
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
-            if ($lhs_atomic_type instanceof Type\Atomic\TClassString) {
+            if ($lhs_atomic_type instanceof TClassString) {
                 if (!$lhs_atomic_type->as_type) {
                     continue;
                 }
@@ -66,7 +69,7 @@ class StaticPropertyAssignmentAnalyzer
                 $lhs_atomic_type = $lhs_atomic_type->as_type;
             }
 
-            if (!$lhs_atomic_type instanceof Type\Atomic\TNamedObject) {
+            if (!$lhs_atomic_type instanceof TNamedObject) {
                 continue;
             }
 

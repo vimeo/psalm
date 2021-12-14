@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -14,7 +15,7 @@ class SimpleXmlElementAsXml implements MethodReturnTypeProviderInterface
         return ['SimpleXMLElement'];
     }
 
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();

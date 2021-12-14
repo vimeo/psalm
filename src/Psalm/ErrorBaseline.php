@@ -3,6 +3,7 @@ namespace Psalm;
 
 use DOMDocument;
 use DOMElement;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
@@ -74,18 +75,18 @@ class ErrorBaseline
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      *
-     * @throws Exception\ConfigException
+     * @throws ConfigException
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
     {
         if (!$fileProvider->fileExists($baselineFile)) {
-            throw new Exception\ConfigException("{$baselineFile} does not exist or is not readable");
+            throw new ConfigException("{$baselineFile} does not exist or is not readable");
         }
 
         $xmlSource = $fileProvider->getContents($baselineFile);
 
         if ($xmlSource === '') {
-            throw new Exception\ConfigException('Baseline file is empty');
+            throw new ConfigException('Baseline file is empty');
         }
 
         $baselineDoc = new DOMDocument();
@@ -94,7 +95,7 @@ class ErrorBaseline
         $filesElement = $baselineDoc->getElementsByTagName('files');
 
         if ($filesElement->length === 0) {
-            throw new Exception\ConfigException('Baseline file does not contain <files>');
+            throw new ConfigException('Baseline file does not contain <files>');
         }
 
         $files = [];
@@ -136,7 +137,7 @@ class ErrorBaseline
      *
      * @return array<string, array<string, array{o: int, s: list<string>}>>
      *
-     * @throws Exception\ConfigException
+     * @throws ConfigException
      */
     public static function update(
         FileProvider $fileProvider,
