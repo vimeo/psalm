@@ -424,6 +424,7 @@ class Analyzer
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
+                $this->config,
                 $process_file_paths,
                 function (): void {
                     $project_analyzer = ProjectAnalyzer::getInstance();
