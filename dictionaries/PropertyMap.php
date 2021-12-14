@@ -527,11 +527,12 @@ return [
         'headers' => 'array<string, string>|null',
     ],
     'soapfault' => [
-        'faultcode' => 'string',
+        'faultcode' => 'string|null',
+        'faultcodens' => 'string|null',
         'faultstring' => 'string',
-        'faultactor' => 'string',
-        'detail' => 'string',
+        'faultactor' => 'string|null',
+        'detail' => 'mixed|null',
         '_name' => 'string',
-        'headerfault' => 'string',
+        'headerfault' => 'mixed|null',
     ],
 ];
