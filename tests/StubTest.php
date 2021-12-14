@@ -281,9 +281,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                class Foo extends Bar
-                {
-                }
+                class Foo extends Baz {}
             '
         );
 

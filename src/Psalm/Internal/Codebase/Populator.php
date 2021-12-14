@@ -20,8 +20,10 @@ use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_splice;
 use function count;
 use function in_array;
+use function key;
 use function reset;
 use function strlen;
 use function strpos;
@@ -251,18 +253,26 @@ class Populator
 
         if (isset($this->invalid_class_storages[$fq_classlike_name_lc])) {
             foreach ($this->invalid_class_storages[$fq_classlike_name_lc] as $dependency) {
-                if (isset($dependency->dependent_classlikes[$fq_classlike_name_lc])) {
-                    if ($dependency->location) {
-                        IssueBuffer::maybeAdd(
-                            new CircularReference(
-                                'Circular reference discovered when loading ' . $dependency->name,
-                                $dependency->location
-                            )
-                        );
-                    }
+                // Dependencies may not be fully set yet, so we have to loop through dependencies of dependencies
+                $dependencies = [strtolower($dependency->name) => true];
+                do {
+                    $current_dependency_name = key(array_splice($dependencies, 0, 1)); // Key shift
+                    $current_dependency = $storage_provider->get($current_dependency_name);
+                    $dependencies += $current_dependency->dependent_classlikes;
 
-                    continue;
-                }
+                    if (isset($current_dependency->dependent_classlikes[$fq_classlike_name_lc])) {
+                        if ($dependency->location) {
+                            IssueBuffer::maybeAdd(
+                                new CircularReference(
+                                    'Circular reference discovered when loading ' . $dependency->name,
+                                    $dependency->location
+                                )
+                            );
+                        }
+
+                        continue 2;
+                    }
+                } while (!empty($dependencies));
 
                 $dependency->populated = false;
                 unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
