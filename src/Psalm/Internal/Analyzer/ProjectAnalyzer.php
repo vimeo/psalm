@@ -308,7 +308,11 @@ class ProjectAnalyzer
         $file_extensions = $this->config->getFileExtensions();
 
         foreach ($this->config->getProjectDirectories() as $dir_name) {
-            $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
+            $file_paths = $this->file_provider->getFilesInDir(
+                $dir_name,
+                $file_extensions,
+                [$this->config, 'isInProjectDirs']
+            );
 
             foreach ($file_paths as $file_path) {
                 if ($this->config->isInProjectDirs($file_path)) {
@@ -318,7 +322,11 @@ class ProjectAnalyzer
         }
 
         foreach ($this->config->getExtraDirectories() as $dir_name) {
-            $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
+            $file_paths = $this->file_provider->getFilesInDir(
+                $dir_name,
+                $file_extensions,
+                [$this->config, 'isInExtraDirs']
+            );
 
             foreach ($file_paths as $file_path) {
                 if ($this->config->isInExtraDirs($file_path)) {
@@ -1048,8 +1056,13 @@ class ProjectAnalyzer
     private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
+        $directory_filter = $allow_non_project_files ? null : [$this->config, 'isInProjectDirs'];
 
-        $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
+        $file_paths = $this->file_provider->getFilesInDir(
+            $dir_name,
+            $file_extensions,
+            $directory_filter
+        );
 
         $files_to_scan = [];
 
