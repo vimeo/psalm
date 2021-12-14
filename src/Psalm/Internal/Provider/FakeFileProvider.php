@@ -57,12 +57,13 @@ class FakeFileProvider extends FileProvider
 
     /**
      * @param array<string> $file_extensions
+     * @param null|callable(string):bool $directory_filter
      *
      * @return list<string>
      */
-    public function getFilesInDir(string $dir_path, array $file_extensions): array
+    public function getFilesInDir(string $dir_path, array $file_extensions, callable $directory_filter = null): array
     {
-        $file_paths = parent::getFilesInDir($dir_path, $file_extensions);
+        $file_paths = parent::getFilesInDir($dir_path, $file_extensions, $directory_filter);
 
         foreach ($this->fake_files as $file_path => $_) {
             if (strpos(strtolower($file_path), strtolower($dir_path)) === 0) {
