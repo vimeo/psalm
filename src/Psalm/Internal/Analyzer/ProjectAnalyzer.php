@@ -610,11 +610,7 @@ class ProjectAnalyzer
             && $this->project_cache_provider->canDiffFiles()
         ) {
             $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
-            $diff_files = $deleted_files;
-
-            foreach ($this->config->getProjectDirectories() as $dir_name) {
-                $diff_files = array_merge($diff_files, $this->getDiffFilesInDir($dir_name, $this->config));
-            }
+            $diff_files = array_merge($deleted_files, $this->getDiffFiles());
         }
 
         $this->progress->write($this->generatePHPVersionMessage());
@@ -1079,10 +1075,8 @@ class ProjectAnalyzer
     /**
      * @return list<string>
      */
-    protected function getDiffFilesInDir(string $dir_name, Config $config): array
+    protected function getDiffFiles(): array
     {
-        $file_extensions = $config->getFileExtensions();
-
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');
         }
@@ -1091,16 +1085,12 @@ class ProjectAnalyzer
 
         $last_run = $this->project_cache_provider->getLastRun(PSALM_VERSION);
 
-        $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
-
-        foreach ($file_paths as $file_path) {
-            if ($config->isInProjectDirs($file_path)) {
-                if ($this->file_provider->getModifiedTime($file_path) >= $last_run
-                    && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
-                        !== $this->file_provider->getContents($file_path)
-                ) {
-                    $diff_files[] = $file_path;
-                }
+        foreach ($this->project_files as $file_path) {
+            if ($this->file_provider->getModifiedTime($file_path) >= $last_run
+                && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
+                    !== $this->file_provider->getContents($file_path)
+            ) {
+                $diff_files[] = $file_path;
             }
         }
 
