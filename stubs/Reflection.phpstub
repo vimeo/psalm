@@ -99,6 +99,8 @@ class ReflectionMethod implements Reflector
      * @return array<ReflectionAttribute<TClass>>
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    public function isStatic(): bool {}
 }
 
 class ReflectionClassConstant
