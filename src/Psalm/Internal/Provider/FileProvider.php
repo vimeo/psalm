@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use UnexpectedValueException;
@@ -119,16 +120,19 @@ class FileProvider
     {
         $file_paths = [];
 
+        $iterator = new RecursiveDirectoryIterator(
+            $dir_path,
+            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS
+        );
+
         /** @var RecursiveDirectoryIterator */
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_path));
+        $iterator = new RecursiveIteratorIterator($iterator);
         $iterator->rewind();
 
         while ($iterator->valid()) {
-            if (!$iterator->isDot()) {
-                $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions, true)) {
-                    $file_paths[] = (string)$iterator->getRealPath();
-                }
+            $extension = $iterator->getExtension();
+            if (in_array($extension, $file_extensions, true)) {
+                $file_paths[] = (string)$iterator->getRealPath();
             }
 
             $iterator->next();
