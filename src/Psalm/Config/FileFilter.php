@@ -114,6 +114,7 @@ class FileFilter
                 $ignore_type_stats = strtolower(
                     isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
                 ) === 'true';
+                $resolve_symlinks = isset($directory['resolveSymlinks']) && $directory['resolveSymlinks'] === true;
                 $declare_strict_types = strtolower(
                     isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
                 ) === 'true';
@@ -186,29 +187,33 @@ class FileFilter
                     );
                 }
 
-                /** @var RecursiveDirectoryIterator */
-                $iterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS)
-                );
-                $iterator->rewind();
+                if ($resolve_symlinks) {
+                    /** @var RecursiveDirectoryIterator */
+                    $iterator = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS)
+                    );
+                    $iterator->rewind();
 
-                while ($iterator->valid()) {
-                    if ($iterator->isLink()) {
-                        $linked_path = readlink($iterator->getPathname());
+                    while ($iterator->valid()) {
+                        if ($iterator->isLink()) {
+                            $linked_path = readlink($iterator->getPathname());
 
-                        if (stripos($linked_path, $directory_path) !== 0) {
-                            if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                                $filter->ignore_type_stats[$directory_path] = true;
-                            }
+                            if (stripos($linked_path, $directory_path) !== 0) {
+                                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                                    $filter->ignore_type_stats[$directory_path] = true;
+                                }
 
-                            if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                                $filter->declare_strict_types[$directory_path] = true;
-                            }
+                                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                                    $filter->declare_strict_types[$directory_path] = true;
+                                }
 
-                            if (is_dir($linked_path)) {
-                                $filter->addDirectory($linked_path);
+                                if (is_dir($linked_path)) {
+                                    $filter->addDirectory($linked_path);
+                                }
                             }
                         }
+
+                        $iterator->next();
                     }
 
                     $iterator->next();
@@ -356,6 +361,9 @@ class FileFilter
                         isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
                     ) === 'true',
 
+                    'resolveSymlinks' => strtolower(
+                        isset($directory['resolveSymlinks']) ? (string) $directory['resolveSymlinks'] : ''
+                    ) === 'true',
                     'useStrictTypes' => strtolower(
                         isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
                     ) === 'true',
