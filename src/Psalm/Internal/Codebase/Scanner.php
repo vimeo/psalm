@@ -360,6 +360,7 @@ class Scanner
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
+                $this->config,
                 $process_file_paths,
                 function (): void {
                     $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
