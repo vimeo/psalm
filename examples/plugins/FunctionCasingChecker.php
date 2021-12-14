@@ -14,6 +14,7 @@ use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 
 use function explode;
 use function strtolower;
@@ -36,7 +37,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
 
         try {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $declaring_method_id));
+            $method_id = new MethodIdentifier(...explode('::', $declaring_method_id));
             $function_storage = $codebase->methods->getStorage($method_id);
 
             if ($function_storage->cased_name === '__call') {

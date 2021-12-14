@@ -340,7 +340,7 @@ class Codebase
 
         self::$stubbed_constants = [];
 
-        $reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
+        $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
         $this->scanner = new Scanner(
             $this,
@@ -836,7 +836,7 @@ class Codebase
         bool $is_used = true
     ): bool {
         return $this->methods->methodExists(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
             $code_location,
             null,
@@ -853,7 +853,7 @@ class Codebase
      */
     public function getMethodParams($method_id): array
     {
-        return $this->methods->getMethodParams(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -862,7 +862,7 @@ class Codebase
      */
     public function isVariadic($method_id): bool
     {
-        return $this->methods->isVariadic(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -873,7 +873,7 @@ class Codebase
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
     {
         return $this->methods->getMethodReturnType(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             $self_class,
             null,
             $call_args
@@ -886,7 +886,7 @@ class Codebase
      */
     public function getMethodReturnsByRef($method_id): bool
     {
-        return $this->methods->getMethodReturnsByRef(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -899,7 +899,7 @@ class Codebase
         CodeLocation &$defined_location = null
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             $defined_location
         );
     }
@@ -910,7 +910,7 @@ class Codebase
      */
     public function getDeclaringMethodId($method_id): ?string
     {
-        $new_method_id = $this->methods->getDeclaringMethodId(Internal\MethodIdentifier::wrap($method_id));
+        $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
 
         return $new_method_id ? (string) $new_method_id : null;
     }
@@ -923,7 +923,7 @@ class Codebase
      */
     public function getAppearingMethodId($method_id): ?string
     {
-        $new_method_id = $this->methods->getAppearingMethodId(Internal\MethodIdentifier::wrap($method_id));
+        $new_method_id = $this->methods->getAppearingMethodId(MethodIdentifier::wrap($method_id));
 
         return $new_method_id ? (string) $new_method_id : null;
     }
@@ -931,11 +931,11 @@ class Codebase
     /**
      * @param  string|MethodIdentifier $method_id
      *
-     * @return array<string, Internal\MethodIdentifier>
+     * @return array<string, MethodIdentifier>
      */
     public function getOverriddenMethodIds($method_id): array
     {
-        return $this->methods->getOverriddenMethodIds(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -944,7 +944,7 @@ class Codebase
      */
     public function getCasedMethodId($method_id): string
     {
-        return $this->methods->getCasedMethodId(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
 
     public function invalidateInformationForFile(string $file_path): void

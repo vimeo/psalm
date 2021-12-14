@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BitwiseNotAnalyzer;
@@ -103,7 +104,7 @@ class ExpressionAnalyzer
                     $negate = !$negate;
                 }
 
-                Expression\AssertionFinder::scrapeAssertions(
+                AssertionFinder::scrapeAssertions(
                     $stmt,
                     $context->self,
                     $statements_analyzer,

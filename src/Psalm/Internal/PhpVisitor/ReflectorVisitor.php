@@ -14,6 +14,10 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Internal\PhpVisitor\Reflector\ClassLikeNodeScanner;
+use Psalm\Internal\PhpVisitor\Reflector\ExpressionResolver;
+use Psalm\Internal\PhpVisitor\Reflector\ExpressionScanner;
+use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeNodeScanner;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
@@ -77,12 +81,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     private $file_storage;
 
     /**
-     * @var array<Reflector\FunctionLikeNodeScanner>
+     * @var array<FunctionLikeNodeScanner>
      */
     private $functionlike_node_scanners = [];
 
     /**
-     * @var array<Reflector\ClassLikeNodeScanner>
+     * @var array<ClassLikeNodeScanner>
      */
     private $classlike_node_scanners = [];
 
@@ -134,7 +138,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 try {
-                    $type_aliases = Reflector\ClassLikeNodeScanner::getTypeAliasesFromComment(
+                    $type_aliases = ClassLikeNodeScanner::getTypeAliasesFromComment(
                         $comment,
                         $this->aliases,
                         $this->type_aliases,
@@ -167,7 +171,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 return null;
             }
 
-            $classlike_node_scanner = new Reflector\ClassLikeNodeScanner(
+            $classlike_node_scanner = new ClassLikeNodeScanner(
                 $this->codebase,
                 $this->file_storage,
                 $this->file_scanner,
@@ -217,7 +221,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $functionlike_types += $functionlike_storage->template_types ?? [];
             }
 
-            $functionlike_node_scanner = new Reflector\FunctionLikeNodeScanner(
+            $functionlike_node_scanner = new FunctionLikeNodeScanner(
                 $this->codebase,
                 $this->file_scanner,
                 $this->file_storage,
@@ -298,7 +302,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             if (!$this->functionlike_node_scanners) {
                 $this->exists_cond_expr = $node->cond;
 
-                if (Reflector\ExpressionResolver::enterConditional(
+                if (ExpressionResolver::enterConditional(
                     $this->codebase,
                     $this->file_path,
                     $this->exists_cond_expr
@@ -314,7 +318,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->exists_cond_expr = null;
             } elseif (!$this->skip_if_descendants) {
                 if ($this->exists_cond_expr
-                    && Reflector\ExpressionResolver::enterConditional(
+                    && ExpressionResolver::enterConditional(
                         $this->codebase,
                         $this->file_path,
                         $this->exists_cond_expr
@@ -331,7 +335,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $functionlike_storage = $functionlike_node_scanner->storage;
             }
 
-            Reflector\ExpressionScanner::scan(
+            ExpressionScanner::scan(
                 $this->codebase,
                 $this->file_scanner,
                 $this->file_storage,

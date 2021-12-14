@@ -32,6 +32,7 @@ use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
+use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use SimpleXMLElement;
@@ -1330,7 +1331,7 @@ class Config
                 /**
                  * @psalm-suppress InvalidStringClass
                  *
-                 * @var Plugin\PluginEntryPointInterface
+                 * @var PluginEntryPointInterface
                  */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);

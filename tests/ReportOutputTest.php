@@ -1092,7 +1092,7 @@ INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined g
     {
         $this->analyzeFileForReport();
 
-        $console_report_options = new Report\ReportOptions();
+        $console_report_options = new ReportOptions();
         $console_report_options->show_snippet = false;
         $console_report_options->use_color = true;
         $console_report_options->in_ci = true;

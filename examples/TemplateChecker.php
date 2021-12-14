@@ -18,6 +18,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use Psalm\Internal\MethodIdentifier;
 
 class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
@@ -51,7 +52,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                 }
 
                 /** @psalm-suppress ArgumentTypeCoercion */
-                $method_id = new \Psalm\Internal\MethodIdentifier(...explode('::', $matches[1]));
+                $method_id = new MethodIdentifier(...explode('::', $matches[1]));
 
                 $this_params = $this->checkMethod($method_id, $first_stmt, $codebase);
 
@@ -80,7 +81,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     /**
      * @return Context|false
      */
-    private function checkMethod(\Psalm\Internal\MethodIdentifier $method_id, PhpParser\Node $stmt, Codebase $codebase)
+    private function checkMethod(MethodIdentifier $method_id, PhpParser\Node $stmt, Codebase $codebase)
     {
         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $this,
@@ -103,7 +104,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         $this_context->vars_in_scope['$this'] = new Union([new TNamedObject($class_storage->name)]);
 
         $this->project_analyzer->getMethodMutations(
-            new \Psalm\Internal\MethodIdentifier($method_id->fq_class_name, '__construct'),
+            new MethodIdentifier($method_id->fq_class_name, '__construct'),
             $this_context,
             $this->getRootFilePath(),
             $this->getRootFileName()

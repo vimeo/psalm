@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -329,7 +330,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                     ConstFetchAnalyzer::setConstType(
                         $statements_analyzer,
                         $const_name,
-                        Statements\Expression\SimpleTypeInferer::infer(
+                        SimpleTypeInferer::infer(
                             $codebase,
                             $statements_analyzer->node_data,
                             $stmt->expr->getArgs()[1]->value,
@@ -733,7 +734,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         $project_analyzer = $this->getProjectAnalyzer();
 
-        $unused_var_remover = new Statements\UnusedAssignmentRemover();
+        $unused_var_remover = new UnusedAssignmentRemover();
 
         if ($this->data_flow_graph instanceof VariableUseGraph
             && $codebase->config->limit_method_complexity
