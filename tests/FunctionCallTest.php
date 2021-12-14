@@ -1763,6 +1763,14 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.1',
             ],
+            'number_formatNamedArgument' => [
+                '<?php
+                    echo number_format(10.363, 1, thousands_separator: " ");
+                ',
+                [],
+                [],
+                '8.0',
+            ],
         ];
     }
 
