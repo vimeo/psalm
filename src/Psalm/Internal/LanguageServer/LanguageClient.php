@@ -3,6 +3,7 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use JsonMapper;
+use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 
 /**
  * @internal
@@ -12,7 +13,7 @@ class LanguageClient
     /**
      * Handles textDocument/* methods
      *
-     * @var Client\TextDocument
+     * @var ClientTextDocument
      */
     public $textDocument;
 
@@ -28,7 +29,7 @@ class LanguageClient
         $this->handler = new ClientHandler($reader, $writer);
         $mapper = new JsonMapper;
 
-        $this->textDocument = new Client\TextDocument($this->handler, $mapper);
+        $this->textDocument = new ClientTextDocument($this->handler, $mapper);
     }
 
     /**

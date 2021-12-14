@@ -28,8 +28,8 @@ use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Server\TextDocument;
-use Psalm\Internal\LanguageServer\Server\Workspace;
+use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
+use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
 use Psalm\IssueBuffer;
 use Throwable;
 
@@ -60,14 +60,14 @@ class LanguageServer extends Dispatcher
     /**
      * Handles textDocument/* method calls
      *
-     * @var ?Server\TextDocument
+     * @var ?ServerTextDocument
      */
     public $textDocument;
 
     /**
      * Handles workspace/* method calls
      *
-     * @var ?Server\Workspace
+     * @var ?ServerWorkspace
      */
     public $workspace;
 
@@ -233,7 +233,7 @@ class LanguageServer extends Dispatcher
                 $codebase->config->visitStubFiles($codebase);
 
                 if ($this->textDocument === null) {
-                    $this->textDocument = new TextDocument(
+                    $this->textDocument = new ServerTextDocument(
                         $this,
                         $codebase,
                         $this->project_analyzer->onchange_line_limit
@@ -241,7 +241,7 @@ class LanguageServer extends Dispatcher
                 }
 
                 if ($this->workspace === null) {
-                    $this->workspace = new Workspace(
+                    $this->workspace = new ServerWorkspace(
                         $this,
                         $codebase,
                         $this->project_analyzer->onchange_line_limit
