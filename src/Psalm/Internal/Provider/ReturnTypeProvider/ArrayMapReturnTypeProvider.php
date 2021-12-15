@@ -39,7 +39,9 @@ use function array_slice;
 use function count;
 use function explode;
 use function in_array;
+use function mt_rand;
 use function reset;
+use function str_contains;
 use function strpos;
 use function substr;
 
@@ -340,6 +342,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     /**
      * @param non-empty-array<int, string> $mapping_function_ids
      * @param list<PhpParser\Node\Arg> $array_args
+     * @param int|null $fake_var_id Set the fake variable id to a known value and don't clear it from the context
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
@@ -348,16 +351,22 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
-        ?array &$assertions = null
+        ?array &$assertions = null,
+        ?int $fake_var_id = null,
     ): Union {
         $mapping_return_type = null;
 
         $codebase = $statements_source->getCodebase();
 
+        $clean_context = false;
+
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
-            $fake_var_id = mt_rand();
+            if ($fake_var_id === null) {
+                $fake_var_id = mt_rand();
+                $clean_context = true;
+            }
 
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];
@@ -476,13 +485,13 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                     $function_id_return_type = $fake_function_return_type ?? Type::getMixed();
                 }
-
-                foreach ($context->vars_in_scope as $var_in_scope => $_) {
-                    if (str_contains($var_in_scope, "__fake_{$fake_var_id}_")) {
-                        unset($context->vars_in_scope[$var_in_scope]);
-                    }
-                }
             }
+
+            if ($clean_context) {
+                self::cleanContext($context, $fake_var_id);
+            }
+
+            $fake_var_id = null;
 
             $mapping_return_type = Type::combineUnionTypes(
                 $function_id_return_type,
@@ -492,5 +501,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         return $mapping_return_type;
+    }
+
+    public static function cleanContext(Context $context, int $fake_var_id): void
+    {
+        foreach ($context->vars_in_scope as $var_in_scope => $_) {
+            if (str_contains($var_in_scope, "__fake_{$fake_var_id}_")) {
+                unset($context->vars_in_scope[$var_in_scope]);
+            }
+        }
     }
 }
