@@ -89,6 +89,12 @@
     </rule>
 
     <!--
+        Requires only one namespace in a file.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesrequireonenamespaceinfile
+     -->
+    <rule ref="SlevomatCodingStandard.Namespaces.RequireOneNamespaceInFile"/>
+
+    <!--
         Handle imports from namespaces.
         https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
      -->
