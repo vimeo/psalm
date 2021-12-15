@@ -186,7 +186,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 if ($array_arg && $mapping_function_ids) {
                     $assertions = [];
 
-                    $fake_var_id = mt_rand();
+                    $fake_var_discriminator = mt_rand();
                     ArrayMapReturnTypeProvider::getReturnTypeFromMappingIds(
                         $statements_source,
                         $mapping_function_ids,
@@ -194,7 +194,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $function_call_arg,
                         array_slice($call_args, 0, 1),
                         $assertions,
-                        $fake_var_id
+                        $fake_var_discriminator
                     );
 
                     $array_var_id = ExpressionIdentifier::getArrayVarId(
@@ -203,11 +203,12 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $statements_source
                     );
 
-                    if (isset($assertions[$array_var_id . "[\$__fake_{$fake_var_id}_offset_var__]"])) {
+                    if (isset($assertions[$array_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]"])) {
                         $changed_var_ids = [];
 
                         $assertions = [
-                            '$inner_type' => $assertions[$array_var_id . "[\$__fake_{$fake_var_id}_offset_var__]"]
+                            '$inner_type' =>
+                                $assertions["{$array_var_id}[\$__fake_{$fake_var_discriminator}_offset_var__]"],
                         ];
 
                         $reconciled_types = Reconciler::reconcileKeyedTypes(
@@ -227,7 +228,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         }
                     }
 
-                    ArrayMapReturnTypeProvider::cleanContext($context, $fake_var_id);
+                    ArrayMapReturnTypeProvider::cleanContext($context, $fake_var_discriminator);
                 }
             } elseif (($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
                     || $function_call_arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
