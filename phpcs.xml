@@ -95,6 +95,12 @@
     <rule ref="SlevomatCodingStandard.Namespaces.RequireOneNamespaceInFile"/>
 
     <!--
+        Enforces formatting of namespace.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesnamespacedeclaration-
+     -->
+    <rule ref="SlevomatCodingStandard.Namespaces.NamespaceDeclaration"/>
+
+    <!--
         Handle imports from namespaces.
         https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
      -->
