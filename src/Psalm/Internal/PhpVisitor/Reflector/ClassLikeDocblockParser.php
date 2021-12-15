@@ -26,6 +26,7 @@ use Psalm\Internal\Type\TypeTokenizer;
 use function array_key_first;
 use function array_shift;
 use function count;
+use function explode;
 use function implode;
 use function in_array;
 use function preg_match;
@@ -185,8 +186,7 @@ class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-yield'])
-        ) {
+        if (isset($parsed_docblock->tags['psalm-yield'])) {
             $yield = reset($parsed_docblock->tags['psalm-yield']);
 
             $info->yield = trim(preg_replace('@^[ \t]*\*@m', '', $yield));
@@ -440,7 +440,9 @@ class ClassLikeDocblockParser
                 /** @var Doc */
                 $node_doc_comment = $node->getDocComment();
 
-                $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine());
+                $method_offset = self::getMethodOffset($comment, $method_entry);
+
+                $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);
                 $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
                 $statements[0]->stmts[0]->setAttribute('endFilePos', $node->getAttribute('startFilePos'));
 
@@ -547,5 +549,20 @@ class ClassLikeDocblockParser
                 throw new DocblockParseException('Badly-formatted @property');
             }
         }
+    }
+
+    private static function getMethodOffset(Doc $comment, string $method_entry): int
+    {
+        $lines = explode("\n", $comment->getText());
+        $method_offset = 0;
+
+        foreach ($lines as $i => $line) {
+            if (strpos($line, $method_entry) !== false) {
+                $method_offset = $i;
+                break;
+            }
+        }
+
+        return $method_offset;
     }
 }
