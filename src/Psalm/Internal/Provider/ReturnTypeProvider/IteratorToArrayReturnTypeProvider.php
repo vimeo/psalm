@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;

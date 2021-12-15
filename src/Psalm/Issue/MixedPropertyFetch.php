@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Issue;
 
 class MixedPropertyFetch extends CodeIssue implements MixedIssue

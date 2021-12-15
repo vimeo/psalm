@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Issue;
 
 class MixedClone extends CodeIssue implements MixedIssue

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Plugin\Hook;
 
 use Psalm\StatementsSource;

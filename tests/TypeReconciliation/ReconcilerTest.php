@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Context;

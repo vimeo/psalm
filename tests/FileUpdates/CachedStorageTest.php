@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;

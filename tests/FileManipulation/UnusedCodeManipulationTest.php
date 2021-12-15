@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\FileManipulation;
 
 class UnusedCodeManipulationTest extends FileManipulationTestCase
