@@ -2272,7 +2272,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 2;
 
-            return Type::getEmpty();
+            return Type::getNever();
         }
 
         if (!$did_remove_type) {
@@ -2304,8 +2304,8 @@ class SimpleAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array');
             $existing_var_type->addType(new TArray(
                 [
-                    new Union([new TEmpty()]),
-                    new Union([new TEmpty()]),
+                    new Union([new TNever()]),
+                    new Union([new TNever()]),
                 ]
             ));
         }

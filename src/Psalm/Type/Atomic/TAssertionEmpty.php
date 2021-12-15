@@ -1,10 +1,12 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Represents any value that returns true to empty(). This is used for assertions
  */
-class TAssertionEmpty extends \Psalm\Type\Atomic
+class TAssertionEmpty extends Atomic
 {
     public function __toString(): string
     {

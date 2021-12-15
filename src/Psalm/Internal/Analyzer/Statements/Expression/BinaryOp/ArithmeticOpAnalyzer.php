@@ -45,7 +45,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;

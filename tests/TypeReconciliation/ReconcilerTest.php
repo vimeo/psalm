@@ -104,7 +104,7 @@ class ReconcilerTest extends TestCase
             'nullWithSomeClassPipeNull' => ['null', 'null', 'SomeClass|null'],
             'nullWithMixed' => ['null', 'null', 'mixed'],
 
-            'falsyWithSomeClass' => ['empty', 'falsy', 'SomeClass'],
+            'falsyWithSomeClass' => ['never', 'falsy', 'SomeClass'],
             'falsyWithSomeClassPipeFalse' => ['false', 'falsy', 'SomeClass|false'],
             'falsyWithSomeClassPipeBool' => ['false', 'falsy', 'SomeClass|bool'],
             'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
