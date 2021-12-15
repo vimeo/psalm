@@ -93,11 +93,14 @@ class TKeyedArray extends Atomic
                     return (string) $type;
                 }
 
-                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+                $class_string_suffix = '';
+                if (isset($this->class_strings[$name])) {
+                    $class_string_suffix = '::class';
                 }
 
-                return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
+                $name = $this->escapeAndQuote($name);
+
+                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
             },
             array_keys($this->properties),
             $this->properties
@@ -119,11 +122,14 @@ class TKeyedArray extends Atomic
                     return $type->getId();
                 }
 
-                if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                    $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+                $class_string_suffix = '';
+                if (isset($this->class_strings[$name])) {
+                    $class_string_suffix = '::class';
                 }
 
-                return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
+                $name = $this->escapeAndQuote($name);
+
+                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
             },
             array_keys($this->properties),
             $this->properties
@@ -178,16 +184,20 @@ class TKeyedArray extends Atomic
                             $this_class,
                             $use_phpdoc_format
                         ): string {
-                            if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
-                                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+                            $class_string_suffix = '';
+                            if (isset($this->class_strings[$name])) {
+                                $class_string_suffix = '::class';
                             }
 
-                            return $name . ($type->possibly_undefined ? '?' : '') . ': ' . $type->toNamespacedString(
-                                $namespace,
-                                $aliased_classes,
-                                $this_class,
-                                $use_phpdoc_format
-                            );
+                            $name = $this->escapeAndQuote($name);
+
+                            return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
+                                $type->toNamespacedString(
+                                    $namespace,
+                                    $aliased_classes,
+                                    $this_class,
+                                    $use_phpdoc_format
+                                );
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -412,5 +422,18 @@ class TKeyedArray extends Atomic
         }
 
         return new TNonEmptyList($this->getGenericValueType());
+    }
+
+    /**
+     * @param string|int $name
+     * @return string|int
+     */
+    private function escapeAndQuote($name)
+    {
+        if (is_string($name) && preg_match('/[ "\'\\\\.\n:]/', $name)) {
+            $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+        }
+
+        return $name;
     }
 }

@@ -1243,12 +1243,15 @@ class TypeParser
         array $type_aliases
     ) {
         $properties = [];
+        $class_strings = [];
 
         $type = $parse_tree->value;
 
         $is_tuple = true;
 
         foreach ($parse_tree->children as $i => $property_branch) {
+            $class_string = false;
+
             if (!$property_branch instanceof KeyedArrayPropertyTree) {
                 $property_type = self::getTypeFromTree(
                     $property_branch,
@@ -1268,7 +1271,17 @@ class TypeParser
                     $type_aliases
                 );
                 $property_maybe_undefined = $property_branch->possibly_undefined;
-                $property_key = $property_branch->value;
+                if (strpos($property_branch->value, '::')) {
+                    [$fq_classlike_name, $const_name] = explode('::', $property_branch->value);
+                    if ($const_name === 'class') {
+                        $property_key = $fq_classlike_name;
+                        $class_string = true;
+                    } else {
+                        $property_key = $property_branch->value;
+                    }
+                } else {
+                    $property_key = $property_branch->value;
+                }
                 $is_tuple = false;
             } else {
                 throw new TypeParseTreeException(
@@ -1289,6 +1302,9 @@ class TypeParser
             }
 
             $properties[$property_key] = $property_type;
+            if ($class_string) {
+                $class_strings[$property_key] = true;
+            }
         }
 
         if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array') {
@@ -1307,7 +1323,7 @@ class TypeParser
             return new TCallableKeyedArray($properties);
         }
 
-        $object_like = new TKeyedArray($properties);
+        $object_like = new TKeyedArray($properties, $class_strings);
 
         if ($is_tuple) {
             $object_like->sealed = true;
