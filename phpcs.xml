@@ -23,7 +23,6 @@
     <file>src/</file>
     <file>tests/</file>
 
-    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
     <exclude-pattern>tests/fixtures/</exclude-pattern>
