@@ -74,6 +74,21 @@
       ************************************************************************************************************** -->
 
     <!--
+        Handles enforcement and line spacing of declare(strict_types=1).
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsdeclarestricttypes-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+        <properties>
+            <property name="declareOnFirstLine" type="bool" value="false"/>
+            <property name="linesCountBeforeDeclare" type="int" value="1"/>
+            <property name="linesCountAfterDeclare" type="int" value="1"/>
+            <property name="spacesCountAroundEqualsSign" type="int" value="0"/>
+        </properties>
+
+        <exclude name="SlevomatCodingStandard.TypeHints.DeclareStrictTypes.DeclareStrictTypesMissing"/>
+    </rule>
+
+    <!--
         Handle imports from namespaces.
         https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
      -->
