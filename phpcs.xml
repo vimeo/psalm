@@ -151,6 +151,7 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
+            <property name="psr12Compatible" type="bool" value="true"/>
             <property name="caseSensitive" value="true"/>
         </properties>
     </rule>
