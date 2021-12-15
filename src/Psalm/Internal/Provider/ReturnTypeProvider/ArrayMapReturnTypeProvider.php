@@ -39,7 +39,9 @@ use function array_slice;
 use function count;
 use function explode;
 use function in_array;
+use function mt_rand;
 use function reset;
+use function str_contains;
 use function strpos;
 use function substr;
 
@@ -340,6 +342,8 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     /**
      * @param non-empty-array<int, string> $mapping_function_ids
      * @param list<PhpParser\Node\Arg> $array_args
+     * @param int|null $fake_var_discriminator Set the fake variable id to a known value with the discriminator
+     *                                         as a substring, and don't clear it from the context.
      * @param-out array<string, array<array<int, string>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
@@ -348,14 +352,22 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         Context $context,
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
-        ?array &$assertions = null
+        ?array &$assertions = null,
+        ?int $fake_var_discriminator = null
     ): Union {
         $mapping_return_type = null;
 
         $codebase = $statements_source->getCodebase();
 
+        $clean_context = false;
+
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
+
+            if ($fake_var_discriminator === null) {
+                $fake_var_discriminator = mt_rand();
+                $clean_context = true;
+            }
 
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];
@@ -365,7 +377,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         new VirtualArrayDimFetch(
                             $array_arg->value,
                             new VirtualVariable(
-                                '__fake_offset_var__',
+                                "__fake_{$fake_var_discriminator}_offset_var__",
                                 $array_arg->value->getAttributes()
                             ),
                             $array_arg->value->getAttributes()
@@ -390,7 +402,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     if ($is_instance) {
                         $fake_method_call = new VirtualMethodCall(
                             new VirtualVariable(
-                                '__fake_method_call_var__',
+                                "__fake_{$fake_var_discriminator}_method_call_var__",
                                 $function_call_arg->getAttributes()
                             ),
                             new VirtualIdentifier(
@@ -416,11 +428,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             }
                         }
 
-                        $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
-                        $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
-                            ?: new Union([
-                                new TNamedObject($callable_fq_class_name)
-                            ]);
+                        $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
+                        $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_method_call_var__"] =
+                            $lhs_instance_type ?: new Union([new TNamedObject($callable_fq_class_name)]);
 
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
@@ -428,9 +438,6 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $context,
                             $assertions
                         );
-
-                        unset($context->vars_in_scope['$__fake_offset_var__']);
-                        unset($context->vars_in_scope['$__method_call_var__']);
                     } else {
                         $fake_method_call = new VirtualStaticCall(
                             new VirtualFullyQualified(
@@ -445,7 +452,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $function_call_arg->getAttributes()
                         );
 
-                        $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
+                        $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
 
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
@@ -453,8 +460,6 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $context,
                             $assertions
                         );
-
-                        unset($context->vars_in_scope['$__fake_offset_var__']);
                     }
 
                     $function_id_return_type = $fake_method_return_type ?? Type::getMixed();
@@ -468,7 +473,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $function_call_arg->getAttributes()
                     );
 
-                    $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
+                    $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
 
                     $fake_function_return_type = self::executeFakeCall(
                         $statements_source,
@@ -477,11 +482,15 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $assertions
                     );
 
-                    unset($context->vars_in_scope['$__fake_offset_var__']);
-
                     $function_id_return_type = $fake_function_return_type ?? Type::getMixed();
                 }
             }
+
+            if ($clean_context) {
+                self::cleanContext($context, $fake_var_discriminator);
+            }
+
+            $fake_var_discriminator = null;
 
             $mapping_return_type = Type::combineUnionTypes(
                 $function_id_return_type,
@@ -491,5 +500,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         return $mapping_return_type;
+    }
+
+    public static function cleanContext(Context $context, int $fake_var_discriminator): void
+    {
+        foreach ($context->vars_in_scope as $var_in_scope => $_) {
+            if (str_contains($var_in_scope, "__fake_{$fake_var_discriminator}_")) {
+                unset($context->vars_in_scope[$var_in_scope]);
+            }
+        }
     }
 }

@@ -29,6 +29,7 @@ use function array_map;
 use function array_slice;
 use function count;
 use function is_string;
+use function mt_rand;
 use function reset;
 use function spl_object_id;
 
@@ -185,13 +186,15 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 if ($array_arg && $mapping_function_ids) {
                     $assertions = [];
 
+                    $fake_var_discriminator = mt_rand();
                     ArrayMapReturnTypeProvider::getReturnTypeFromMappingIds(
                         $statements_source,
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
                         array_slice($call_args, 0, 1),
-                        $assertions
+                        $assertions,
+                        $fake_var_discriminator
                     );
 
                     $array_var_id = ExpressionIdentifier::getArrayVarId(
@@ -200,10 +203,13 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $statements_source
                     );
 
-                    if (isset($assertions[$array_var_id . '[$__fake_offset_var__]'])) {
+                    if (isset($assertions[$array_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]"])) {
                         $changed_var_ids = [];
 
-                        $assertions = ['$inner_type' => $assertions[$array_var_id . '[$__fake_offset_var__]']];
+                        $assertions = [
+                            '$inner_type' =>
+                                $assertions["{$array_var_id}[\$__fake_{$fake_var_discriminator}_offset_var__]"],
+                        ];
 
                         $reconciled_types = Reconciler::reconcileKeyedTypes(
                             $assertions,
@@ -221,6 +227,8 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $inner_type = $reconciled_types['$inner_type'];
                         }
                     }
+
+                    ArrayMapReturnTypeProvider::cleanContext($context, $fake_var_discriminator);
                 }
             } elseif (($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
                     || $function_call_arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
