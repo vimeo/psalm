@@ -352,7 +352,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null,
-        ?int $fake_var_id = null,
+        ?int $fake_var_id = null
     ): Union {
         $mapping_return_type = null;
 
