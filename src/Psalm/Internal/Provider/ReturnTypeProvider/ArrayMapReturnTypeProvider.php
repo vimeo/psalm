@@ -357,6 +357,8 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
+            $fake_var_id = mt_rand();
+
             foreach ($mapping_function_id_parts as $mapping_function_id_part) {
                 $fake_args = [];
 
@@ -365,7 +367,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         new VirtualArrayDimFetch(
                             $array_arg->value,
                             new VirtualVariable(
-                                '__fake_offset_var__',
+                                "__fake_{$fake_var_id}_offset_var__",
                                 $array_arg->value->getAttributes()
                             ),
                             $array_arg->value->getAttributes()
@@ -390,7 +392,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     if ($is_instance) {
                         $fake_method_call = new VirtualMethodCall(
                             new VirtualVariable(
-                                '__fake_method_call_var__',
+                                "__fake_{$fake_var_id}_method_call_var__",
                                 $function_call_arg->getAttributes()
                             ),
                             new VirtualIdentifier(
@@ -416,8 +418,8 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             }
                         }
 
-                        $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
-                        $context->vars_in_scope['$__fake_method_call_var__'] = $lhs_instance_type
+                        $context->vars_in_scope["\$__fake_{$fake_var_id}_offset_var__"] = Type::getMixed();
+                        $context->vars_in_scope["\$__fake_{$fake_var_id}_method_call_var__"] = $lhs_instance_type
                             ?: new Union([
                                 new TNamedObject($callable_fq_class_name)
                             ]);
@@ -428,9 +430,6 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $context,
                             $assertions
                         );
-
-                        unset($context->vars_in_scope['$__fake_offset_var__']);
-                        unset($context->vars_in_scope['$__method_call_var__']);
                     } else {
                         $fake_method_call = new VirtualStaticCall(
                             new VirtualFullyQualified(
@@ -445,7 +444,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $function_call_arg->getAttributes()
                         );
 
-                        $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
+                        $context->vars_in_scope["\$__fake_{$fake_var_id}_offset_var__"] = Type::getMixed();
 
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
@@ -453,8 +452,6 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $context,
                             $assertions
                         );
-
-                        unset($context->vars_in_scope['$__fake_offset_var__']);
                     }
 
                     $function_id_return_type = $fake_method_return_type ?? Type::getMixed();
@@ -468,7 +465,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $function_call_arg->getAttributes()
                     );
 
-                    $context->vars_in_scope['$__fake_offset_var__'] = Type::getMixed();
+                    $context->vars_in_scope["\$__fake_{$fake_var_id}_offset_var__"] = Type::getMixed();
 
                     $fake_function_return_type = self::executeFakeCall(
                         $statements_source,
@@ -477,9 +474,13 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $assertions
                     );
 
-                    unset($context->vars_in_scope['$__fake_offset_var__']);
-
                     $function_id_return_type = $fake_function_return_type ?? Type::getMixed();
+                }
+
+                foreach ($context->vars_in_scope as $var_in_scope => $_) {
+                    if (str_contains($var_in_scope, "__fake_{$fake_var_id}_")) {
+                        unset($context->vars_in_scope[$var_in_scope]);
+                    }
                 }
             }
 
