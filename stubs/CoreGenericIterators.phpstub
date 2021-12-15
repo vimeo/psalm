@@ -446,11 +446,11 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator {
  */
 class EmptyIterator implements Iterator {
     /**
-     * @return empty
+     * @return never
      */
     public function current() {}
     /**
-     * @return empty
+     * @return never
      */
     public function key() {}
     /**

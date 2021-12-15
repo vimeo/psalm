@@ -1050,7 +1050,7 @@ class Union implements TypeNode
 
     public function isEmpty(): bool
     {
-        return isset($this->types['empty']) || isset($this->types['never']);
+        return $this->isNever();
     }
 
     public function substitute(Union $old_type, ?Union $new_type = null): void

@@ -9,7 +9,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
-use Psalm\Type\Atomic\TAssertionEmpty;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
@@ -78,8 +77,8 @@ class TypeCombiner
      *  - so `int + string = int|string`
      *  - so `array<int> + array<string> = array<int|string>`
      *  - and `array<int> + string = array<int>|string`
-     *  - and `array<empty> + array<empty> = array<empty>`
-     *  - and `array<string> + array<empty> = array<string>`
+     *  - and `array<never> + array<never> = array<never>`
+     *  - and `array<string> + array<never> = array<string>`
      *  - and `array + array<string> = array<mixed>`
      *
      * @param  non-empty-list<Atomic>    $types
@@ -336,20 +335,17 @@ class TypeCombiner
             $combination->value_types += $combination->named_object_types;
         }
 
-        $has_empty = (int) (isset($combination->value_types['never']) || isset($combination->value_types['empty']));
-        $has_never = false;
+        $has_never = isset($combination->value_types['never']);
 
         foreach ($combination->value_types as $type) {
             if ($type instanceof TMixed
                 && $combination->mixed_from_loop_isset
-                && (count($combination->value_types) > (1 + $has_empty) || count($new_types) > $has_empty)
+                && (count($combination->value_types) > (1 + (int) $has_never) || count($new_types) > (int) $has_never)
             ) {
                 continue;
             }
 
-            if (($type instanceof TNever || $type instanceof TAssertionEmpty)
-                && (count($combination->value_types) > 1 || count($new_types))
-            ) {
+            if ($type instanceof TNever && (count($combination->value_types) > 1 || count($new_types))) {
                 $has_never = true;
                 continue;
             }

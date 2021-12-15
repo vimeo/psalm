@@ -1170,7 +1170,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayResetEmptyList' => [
                 '<?php
-                    /** @return list<empty> */
+                    /** @return list<never> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = reset($a);',
@@ -1246,7 +1246,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayEndEmptyList' => [
                 '<?php
-                    /** @return list<empty> */
+                    /** @return list<never> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = end($a);',

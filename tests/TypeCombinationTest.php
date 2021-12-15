@@ -109,10 +109,10 @@ class TypeCombinationTest extends TestCase
                     'null',
                 ],
             ],
-            'mixedOrEmpty' => [
+            'mixedOrNever' => [
                 'mixed',
                 [
-                    'empty',
+                    'never',
                     'mixed',
                 ],
             ],
@@ -206,7 +206,7 @@ class TypeCombinationTest extends TestCase
             'arrayStringOrEmptyArray' => [
                 'array<array-key, string>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<string>',
                 ],
             ],
@@ -227,7 +227,7 @@ class TypeCombinationTest extends TestCase
             'arrayMixedOrEmpty' => [
                 'array<array-key, mixed>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<mixed>',
                 ],
             ],

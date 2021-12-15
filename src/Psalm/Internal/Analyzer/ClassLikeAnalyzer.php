@@ -50,7 +50,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         'bool' => 'bool',
         'false' => 'false',
         'object' => 'object',
-        'empty' => 'empty',
         'never' => 'never',
         'callable' => 'callable',
         'array' => 'array',
