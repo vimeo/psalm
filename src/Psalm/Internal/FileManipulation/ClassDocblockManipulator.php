@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser\Node\Stmt\Class_;

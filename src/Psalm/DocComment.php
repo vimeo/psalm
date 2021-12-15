@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm;
 
 use PhpParser\Comment\Doc;

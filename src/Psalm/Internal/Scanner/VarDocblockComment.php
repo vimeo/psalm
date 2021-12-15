@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Scanner;
 
 use Psalm\Type\Union;

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Psalm\Issue;
 
 class Trace extends CodeIssue

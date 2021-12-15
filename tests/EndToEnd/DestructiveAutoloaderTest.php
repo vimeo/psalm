@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\TestCase;

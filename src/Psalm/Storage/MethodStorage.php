@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Storage;
 
 use Psalm\Type\Union;

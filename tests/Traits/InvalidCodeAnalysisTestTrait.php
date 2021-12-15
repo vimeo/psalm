@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\Traits;
 
 use Psalm\Config;

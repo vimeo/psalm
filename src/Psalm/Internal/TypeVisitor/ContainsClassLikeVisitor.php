@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TClassConstant;

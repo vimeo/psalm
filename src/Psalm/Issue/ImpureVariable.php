@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Issue;
 
 class ImpureVariable extends CodeIssue

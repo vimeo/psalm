@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\ExecutionEnvironment;
 
 use Psalm\SourceControl\Git\CommitInfo;

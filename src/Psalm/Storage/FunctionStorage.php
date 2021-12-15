@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Storage;
 
 class FunctionStorage extends FunctionLikeStorage

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;

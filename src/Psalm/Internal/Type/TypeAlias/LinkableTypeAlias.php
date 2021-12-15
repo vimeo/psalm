@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;

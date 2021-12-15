@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Test\Config\Plugin\Hook\StringProvider;
 
 use Psalm\Type\Atomic\TLiteralString;

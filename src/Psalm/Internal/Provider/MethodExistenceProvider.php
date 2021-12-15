@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Provider;
 
 use Closure;

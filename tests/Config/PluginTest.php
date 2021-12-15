@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;

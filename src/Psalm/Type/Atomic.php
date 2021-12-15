@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Type;
 
 use Psalm\Codebase;
