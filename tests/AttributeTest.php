@@ -102,6 +102,31 @@ class AttributeTest extends TestCase
                 [],
                 '8.0'
             ],
+            'testReflectingAllAttributes' => [
+                '<?php
+
+                    final class a
+                    {
+                        /**
+                         * @psalm-param class-string $className
+                         */
+                        public function a(string $className): void
+                        {
+                            $a = new ReflectionClass($className);
+                            $b = $a->getAttributes();
+                            scope($b);
+                        }
+                    }
+
+                    /** @param array<ReflectionAttribute<object>> $_a */
+                    function scope($_a):void{
+
+                    }
+                    ',
+                [],
+                [],
+                '8.0'
+            ],
             'convertKeyedArray' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_CLASS)]
