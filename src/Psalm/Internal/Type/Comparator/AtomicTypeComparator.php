@@ -165,40 +165,24 @@ class AtomicTypeComparator
             );
         }
 
-        if ($container_type_part instanceof TClosure && $input_type_part instanceof TCallable) {
-            if (CallableTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part,
-                $container_type_part,
-                $atomic_comparison_result
-            ) === false
-            ) {
-                return false;
-            }
+        if ($container_type_part instanceof TClosure) {
+            if ($input_type_part instanceof TCallable) {
+                if (CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $atomic_comparison_result
+                ) === false
+                ) {
+                    return false;
+                }
 
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
             }
 
             return false;
-        }
-
-        if ($container_type_part instanceof TClosure) {
-            if (!$input_type_part instanceof TClosure) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced = true;
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                }
-
-                return false;
-            }
-
-            return CallableTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part,
-                $container_type_part,
-                $atomic_comparison_result
-            );
         }
 
         if ($container_type_part instanceof TCallable && $input_type_part instanceof TClosure) {
