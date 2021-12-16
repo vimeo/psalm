@@ -8,6 +8,20 @@ use Psalm\Type\Atomic;
  */
 class TObject extends Atomic
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+    ];
+
+    /**
+     * This intentionally does not include parent's, since TObject cannot be coerced to TFalse.
+     *
+     * @var array<class-string<Atomic>, true>
+     */
+    protected const COERCIBLE_TO = [
+        TTrue::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'object';

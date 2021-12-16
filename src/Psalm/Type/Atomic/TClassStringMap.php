@@ -3,11 +3,13 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function get_class;
@@ -211,7 +213,7 @@ class TClassStringMap extends Atomic
         return [$this->value_param];
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -239,5 +241,20 @@ class TClassStringMap extends Atomic
                 'class-string-map'
             )
         ]);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === TClassStringMap::class) {
+            $other = new TArray([$other->getStandinKeyParam(), $other->value_param]);
+        }
+
+        return (new TArray([$this->getStandinKeyParam(), $this->value_param]))->containedByAtomic($other, $codebase);
     }
 }

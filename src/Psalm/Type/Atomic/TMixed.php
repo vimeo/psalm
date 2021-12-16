@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Type\Atomic;
 
 /**
@@ -8,6 +10,13 @@ use Psalm\Type\Atomic;
  */
 class TMixed extends Atomic
 {
+    /**
+     * Mixed coercion is handled specially.
+     *
+     * @var array<class-string<Scalar>, true>
+     */
+    protected const COERCIBLE_TO = [];
+
     /** @var bool */
     public $from_loop_isset = false;
 
@@ -47,5 +56,16 @@ class TMixed extends Atomic
     public function getAssertionString(bool $exact = false): string
     {
         return 'mixed';
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        return $other instanceof TMixed ? TypeComparisonResult2::true() : TypeComparisonResult2::coercedFromMixed();
     }
 }

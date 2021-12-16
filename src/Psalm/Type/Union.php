@@ -25,6 +25,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use UnexpectedValueException;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 
 use function array_filter;
 use function array_merge;
@@ -37,120 +38,12 @@ use function reset;
 use function sort;
 use function strpos;
 
-class Union implements TypeNode
+final class Union extends TypeNode
 {
     /**
      * @var non-empty-array<string, Atomic>
      */
     private $types;
-
-    /**
-     * Whether the type originated in a docblock
-     *
-     * @var bool
-     */
-    public $from_docblock = false;
-
-    /**
-     * Whether the type originated from integer calculation
-     *
-     * @var bool
-     */
-    public $from_calculation = false;
-
-    /**
-     * Whether the type originated from a property
-     *
-     * This helps turn isset($foo->bar) into a different sort of issue
-     *
-     * @var bool
-     */
-    public $from_property = false;
-
-    /**
-     * Whether the type originated from *static* property
-     *
-     * Unlike non-static properties, static properties have no prescribed place
-     * like __construct() to be initialized in
-     *
-     * @var bool
-     */
-    public $from_static_property = false;
-
-    /**
-     * Whether the property that this type has been derived from has been initialized in a constructor
-     *
-     * @var bool
-     */
-    public $initialized = true;
-
-    /**
-     * Which class the type was initialised in
-     *
-     * @var ?string
-     */
-    public $initialized_class;
-
-    /**
-     * Whether or not the type has been checked yet
-     *
-     * @var bool
-     */
-    public $checked = false;
-
-    /**
-     * @var bool
-     */
-    public $failed_reconciliation = false;
-
-    /**
-     * Whether or not to ignore issues with possibly-null values
-     *
-     * @var bool
-     */
-    public $ignore_nullable_issues = false;
-
-    /**
-     * Whether or not to ignore issues with possibly-false values
-     *
-     * @var bool
-     */
-    public $ignore_falsable_issues = false;
-
-    /**
-     * Whether or not to ignore issues with isset on this type
-     *
-     * @var bool
-     */
-    public $ignore_isset = false;
-
-    /**
-     * Whether or not this variable is possibly undefined
-     *
-     * @var bool
-     */
-    public $possibly_undefined = false;
-
-    /**
-     * Whether or not this variable is possibly undefined
-     *
-     * @var bool
-     */
-    public $possibly_undefined_from_try = false;
-
-    /**
-     * Whether or not this union had a template, since replaced
-     *
-     * @var bool
-     */
-    public $had_template = false;
-
-    /**
-     * Whether or not this union comes from a template "as" default
-     *
-     * @var bool
-     */
-    public $from_template_default = false;
 
     /**
      * @var array<string, TLiteralString>
@@ -172,35 +65,8 @@ class Union implements TypeNode
      */
     private $literal_float_types = [];
 
-    /**
-     * Whether or not the type was passed by reference
-     *
-     * @var bool
-     */
-    public $by_ref = false;
-
-    /**
-     * @var bool
-     */
-    public $reference_free = false;
-
-    /**
-     * @var bool
-     */
-    public $allow_mutations = true;
-
-    /**
-     * @var bool
-     */
-    public $has_mutations = true;
-
     /** @var null|string */
     private $id;
-
-    /**
-     * @var array<string, DataFlowNode>
-     */
-    public $parent_nodes = [];
 
     /**
      * @var bool
@@ -214,32 +80,79 @@ class Union implements TypeNode
      */
     public function __construct(array $types)
     {
-        $from_docblock = false;
-
-        $keyed_types = [];
-
+        $this->types = [];
         foreach ($types as $type) {
-            $key = $type->getKey();
-            $keyed_types[$key] = $type;
+            $this->addType($type);
+            $this->from_docblock = $this->from_docblock || $type->from_docblock;
+        }
+        // $this->types = [];
+        // foreach ($types as $type) {
+        //     $newType = $this->addType2($type);
+        //     if (!$newType instanceof Union) {
+        //         $this->types = [];
+        //         $this->addType($newType);
+        //     } else {
+        //         $this->types = $newType->types;
+        //     }
+        // }
+    }
 
-            if ($type instanceof TLiteralInt) {
-                $this->literal_int_types[$key] = $type;
-            } elseif ($type instanceof TLiteralString) {
-                $this->literal_string_types[$key] = $type;
-            } elseif ($type instanceof TLiteralFloat) {
-                $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof Type\Atomic\TClassString
-                && ($type->as_type || $type instanceof Type\Atomic\TTemplateParamClass)
-            ) {
-                $this->typed_class_strings[$key] = $type;
+    /**
+     * Returns the Union of the given types.
+     *
+     * @param non-empty-list<TypeNode> $types
+     */
+    public static function create(array $types, ?Codebase $codebase = null, bool $negated = false): TypeNode
+    {
+        $union = new self([array_shift($types)]);
+        $union->negated = $negated;
+        foreach ($types as $type) {
+            $newType = $union->addType2($type, $codebase);
+            if (!$newType instanceof Union) {
+                $union->types = [$newType];
+            } else {
+                $union = $newType;
             }
-
-            $from_docblock = $from_docblock || $type->from_docblock;
         }
 
-        $this->types = $keyed_types;
+        if (count($union->types) === 1) {
+            return array_values($union->types)[0];
+        }
 
-        $this->from_docblock = $from_docblock;
+        // return $union;
+        return new Union(array_values($union->types));
+    }
+
+    public function addType2(TypeNode $type, ?Codebase $codebase = null): TypeNode
+    {
+        if ($type instanceof Union) {
+            $new_type = $this;
+            foreach ($type->getChildNodes() as $child_type) {
+                $new_type = $new_type->addType2($child_type, $codebase);
+                if ($new_type === null) {
+                    return $new_type;
+                }
+                if (!$new_type instanceof Union) {
+                    $new_type = new Union([$new_type]);
+                    $new_type->negated = $this->negated;
+                }
+            }
+            if (count($new_type->types) === 1) {
+                return array_pop($new_type->types);
+            }
+            return $new_type;
+        }
+
+        if ($type->containedBy($this, $codebase)->result) {
+            return $this;
+        }
+
+        if ($this->containedBy($type, $codebase)->result) {
+            return $type;
+        }
+
+        $this->addType($type);
+        return $this;
     }
 
     /**
@@ -251,15 +164,28 @@ class Union implements TypeNode
     }
 
     /**
-     * @return non-empty-array<string, Atomic>
+     * @return array<string, Atomic> TODO return non-empty-list<Atomic>
      */
     public function getAtomicTypes(): array
     {
         return $this->types;
     }
 
-    public function addType(Atomic $type): void
+    public function addType(TypeNode $type): void
     {
+        if ($type instanceof Union) {
+            foreach ($type->getChildNodes() as $child_type) {
+                $this->addType($child_type);
+            }
+            return;
+        }
+        if ($type instanceof Intersection) {
+            // TODO
+            return;
+        }
+        if (!$type instanceof Atomic) {
+            throw \RuntimeException('To be implemented');
+        }
         $this->types[$type->getKey()] = $type;
 
         if ($type instanceof TLiteralString) {
@@ -287,7 +213,7 @@ class Union implements TypeNode
                     unset($this->literal_int_types[$key], $this->types[$key]);
                 }
             }
-        } elseif ($type instanceof TFloat && $this->literal_float_types) {
+        } elseif (get_class($type) === TFloat::class && $this->literal_float_types) {
             foreach ($this->literal_float_types as $key => $_) {
                 unset($this->literal_float_types[$key], $this->types[$key]);
             }
@@ -782,21 +708,6 @@ class Union implements TypeNode
         return false;
     }
 
-    public function isNullable(): bool
-    {
-        if (isset($this->types['null'])) {
-            return true;
-        }
-
-        foreach ($this->types as $type) {
-            if ($type instanceof TTemplateParam && $type->as->isNullable()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public function isFalsable(): bool
     {
         if (isset($this->types['false'])) {
@@ -1170,6 +1081,9 @@ class Union implements TypeNode
             && ($single_type->value === 'Generator');
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isEmpty(): bool
     {
         return isset($this->types['empty']) && count($this->types) === 1;
@@ -1586,8 +1500,12 @@ class Union implements TypeNode
         }
     }
 
-    public function equals(Union $other_type, bool $ensure_source_equality = true): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality = true): bool
     {
+        if (!$other_type instanceof Union) {
+            return false;
+        }
+
         if ($other_type === $this) {
             return true;
         }
@@ -1724,5 +1642,32 @@ class Union implements TypeNode
     public function getSingleAtomic(): Atomic
     {
         return reset($this->types);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function containedBy(TypeNode $other, ?Codebase $codebase = null): TypeComparisonResult2
+    {
+        $result = TypeComparisonResult2::true();
+        foreach ($this->types as $child_type) {
+            $result = $result->and($child_type->containedBy($other, $codebase));
+        }
+        return $result;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function intersects(TypeNode $other, ?Codebase $codebase = null): TypeComparisonResult2
+    {
+        $result = TypeComparisonResult2::false();
+        foreach ($this->types as $child_type) {
+            $result = $result->or($child_type->intersects($other, $codebase));
+            if ($result->result) {
+                return $result;
+            }
+        }
+        return $result;
     }
 }

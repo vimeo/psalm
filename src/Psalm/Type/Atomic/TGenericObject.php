@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -83,7 +84,7 @@ class TGenericObject extends TNamedObject
         return substr($result, $intersection+1);
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;

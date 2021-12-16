@@ -1,11 +1,18 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `trait-string` type, used to describe a string representing a valid PHP trait.
  */
 class TTraitString extends TString
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+    ];
+
     public function getKey(bool $include_extra = true): string
     {
         return 'trait-string';

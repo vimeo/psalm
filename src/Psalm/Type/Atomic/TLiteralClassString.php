@@ -1,6 +1,11 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
+use Psalm\Type\Atomic;
+
+use function get_class;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -12,6 +17,13 @@ use function strtolower;
  */
 class TLiteralClassString extends TLiteralString
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
     /**
      * Whether or not this type can represent a child of the class named in $value
      * @var bool
@@ -101,4 +113,43 @@ class TLiteralClassString extends TLiteralString
 
         return '\\' . $this->value . '::class';
     }
+
+    public function getConstraintType(): TNamedObject
+    {
+        return new TNamedObject($this->value);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === TClassString::class) {
+            return $this->getConstraintType()->containedByAtomic($other->getConstraintType(), $codebase);
+        }
+
+        return parent::containedByAtomic($other, $codebase);
+    }
+
+    // public function queueClassLikesForScanning(
+    //     Codebase $codebase,
+    //     ?FileStorage $file_storage = null,
+    //     array $phantom_classes = []
+    // ): void {
+    //     $codebase->scanner->queueClassLikeForScanning(
+    //         $this->value,
+    //         false,
+    //         !$this->from_docblock,
+    //         $phantom_classes
+    //     );
+
+    //     if ($file_storage) {
+    //         $fq_classlike_name_lc = strtolower($this->value);
+
+    //         $file_storage->referenced_classlikes[$fq_classlike_name_lc] = $this->value;
+    //     }
+    // }
 }

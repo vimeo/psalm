@@ -1,11 +1,19 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes a string that's also a numeric value e.g. `"5"`. It can result from `is_string($s) && is_numeric($s)`.
  */
 class TNumericString extends TNonEmptyString
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+        TNumeric::class => true,
+    ];
+
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric-string';

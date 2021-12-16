@@ -1,12 +1,15 @@
 <?php
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TAssertionFalsy;
@@ -58,8 +61,42 @@ use function is_numeric;
 use function strpos;
 use function strtolower;
 
-abstract class Atomic implements TypeNode
+abstract class Atomic extends TypeNode
 {
+    /**
+     * Set of types that always contain this type.
+     *
+     * Most types should have `CONTAINED_BY = parent::CONTAINED_BY + [self::class => true]`, to indicate that one
+     * instance of that type is always contained by any other instance of that type. Exceptions to this are cases like
+     * TLiteralInt, where int(1) is not contained by int(2), but both are TLiteralInt.
+     *
+     * @var array<class-string<Atomic>, true>
+     */
+    protected const CONTAINED_BY = [
+        TMixed::class => true,
+    ];
+
+    /**
+     * Indicates the scalar types that this type is able to be coerced to.
+     *
+     * @var array<class-string<Scalar>, true>
+     */
+    protected const COERCIBLE_TO = [
+        TBool::class => true, // Everything can be coerced to bool
+    ];
+
+    /**
+     * Set of types that this type intersects with, but that aren't already contained by or contain this type.
+     *
+     * Containing types always intersect with contained types and vice versa, but siblings or other types can be added
+     * here as well. For instance TNonFalsyString and TNumericString are overlapping types, but neither contains the
+     * other.
+     * Only one side needs to be set for both types to be considered intersecting with each other.
+     *
+     * @var array<class-string<Atomic>, true>
+     */
+    protected const INTERSECTS = [];
+
     public const KEY = 'atomic';
 
     /**
@@ -329,6 +366,11 @@ abstract class Atomic implements TypeNode
             || $this instanceof TNumericString
             || $this instanceof TNumeric
             || ($this instanceof TLiteralString && is_numeric($this->value));
+    }
+
+    public function hasObjectType(): bool
+    {
+        return $this->isObjectType();
     }
 
     public function isObjectType(): bool
@@ -631,8 +673,205 @@ abstract class Atomic implements TypeNode
         // do nothing
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         return get_class($other_type) === get_class($this);
+    }
+
+    /**
+     * Should only be called where $this->negated === $other->negated === false.
+     *
+     * @psalm-mutation-free TODO enable on children
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (isset(static::CONTAINED_BY[get_class($other)])) {
+            return TypeComparisonResult2::true();
+        }
+
+        if (isset(static::COERCIBLE_TO[get_class($other)])
+            || isset($other::COERCIBLE_TO[get_class($this)])
+        ) {
+            // If both are scalars, scalar type coercion is used, but if both have the same
+            // PHP scalar type (eg non-empty-string and string) non-scalar coercion is used.
+            if (($this instanceof Scalar || $other instanceof Scalar)
+                && !($this instanceof TBool && $other instanceof TBool)
+                && !($this instanceof TFloat && $other instanceof TFloat)
+                && !($this instanceof TInt && $other instanceof TInt)
+                && !($this instanceof TString && $other instanceof TString)
+            ) {
+                return TypeComparisonResult2::scalarCoerced();
+            }
+            return TypeComparisonResult2::coerced();
+        }
+
+        return TypeComparisonResult2::false();
+    }
+
+    private function possiblyNegatedContainedBy(
+        Atomic $other,
+        ?Codebase $codebase,
+        bool $check_less_specific = true
+    ): TypeComparisonResult2 {
+        $a = $this;
+        if ($this->negated) {
+            $a = clone $a;
+            $a->negated = false;
+        }
+        $b = $other;
+        if ($other->negated) {
+            $b = clone $b;
+            $b->negated = false;
+        }
+
+        if ($this->negated && $other->negated) {
+            $result = $b->containedByAtomic($a, $codebase);
+        } elseif ($this->negated) {
+            // TODO
+            $result = TypeComparisonResult2::false();
+        } elseif ($other->negated) {
+            // TODO
+            $result = TypeComparisonResult2::false();
+        } else {
+            $result = $a->containedByAtomic($b, $codebase);
+        }
+
+        if ($result->result) {
+            return $result;
+        }
+
+        // Set $result->is_less_specific to false. It could be set to true if some contained type (eg in an array)
+        // is less specific, but the entire type still might not be less specific.
+        // TODO actually this might not be necessary, types containing other types should `and()` their results anyway.
+        $result = $result->and(TypeComparisonResult2::true());
+
+        if ($check_less_specific) {
+            $less_specific_result = TypeComparisonResult2::lessSpecific(
+                $other->possiblyNegatedContainedBy($this, $codebase, false)->result
+            );
+            if (!$result->result_with_coercion && $result->result_with_coercion_from_mixed) {
+                // Mixed is always less specific, but less specific implies coercible, so if the type is already
+                // coerced from mixed, we need to keep it that way.
+                $less_specific_result = $less_specific_result->and(TypeComparisonResult2::coercedFromMixed());
+            }
+            $result = $result->or($less_specific_result);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Should only be called where $this->negated === $other->negated === false.
+     */
+    protected function intersectsAtomic(Atomic $other, ?Codebase $codebase): TypeComparisonResult2
+    {
+        if (isset(static::INTERSECTS[get_class($other)]) || isset($other::INTERSECTS[get_class($this)])) {
+            return TypeComparisonResult2::true();
+        }
+
+        $subtype_result = $this->containedBy($other, $codebase);
+        $supertype_result = $other->containedBy($this, $codebase);
+        return $subtype_result->or($supertype_result);
+    }
+
+    private function possiblyNegatedIntersectsAtomic(Atomic $other, ?Codebase $codebase): TypeComparisonResult2
+    {
+        $a = $this;
+        if ($this->negated) {
+            $a = clone $a;
+            $a->negated = false;
+        }
+        $b = $other;
+        if ($other->negated) {
+            $b = clone $b;
+            $b->negated = false;
+        }
+
+        if ($this->negated && $other->negated) {
+            $result = TypeComparisonResult2::true(); // TODO is this always true?
+        } elseif ($this->negated) {
+            $result = $b->containedBy($a, $codebase)->not();
+        } elseif ($other->negated) {
+            $result = $a->containedBy($b, $codebase)->not();
+        } else {
+            $result = $a->intersectsAtomic($b, $codebase);
+        }
+
+        // $result = $result->or(new TypeComparisonResult2(false, false, false, false, $this instanceof Scalar && $other instanceof Scalar));
+
+        return $result;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    final public function containedBy(TypeNode $other, ?Codebase $codebase = null): TypeComparisonResult2
+    {
+        // static $calls = 0;
+        // if (++$calls % 1 === 0) {
+        //     echo "containedBy " . ($calls) . "\n";
+        // }
+        // if ($calls > 10000000) {
+        //     $e = new \Exception();
+        //     $trace = $e->getTraceAsString();
+        //     echo substr($trace, 0, 10000);
+        //     exit;
+        // }
+
+        if ($other instanceof Atomic) {
+            return $this->possiblyNegatedContainedBy($other, $codebase);
+        }
+
+        if ($other instanceof Union) {
+            if (get_class($this) === TArrayKey::class) {
+                // Special case, array-key needs to be expanded to string|int
+                // TODO handle in a more generic way? Need to do something like this for Scalar as well.
+                return Union::create([new TString(), new TInt()])->containedBy($other, $codebase);
+            }
+
+            $result = TypeComparisonResult2::false();
+            foreach ($other->getChildNodes() as $other_child) {
+                $result = $result->or($this->containedBy($other_child, $codebase));
+            }
+            return $result;
+        }
+
+        if ($other instanceof Intersection) {
+            $result = TypeComparisonResult2::true();
+            foreach ($other->getChildNodes() as $other_child) {
+                $result = $result->and($this->containedBy($other_child, $codebase));
+            }
+            return $result;
+        }
+
+        throw new InvalidArgumentException('Only Atomic, Union, and Intersection are supported.');
+    }
+
+    final public function intersects(TypeNode $other, ?Codebase $codebase = null): TypeComparisonResult2
+    {
+        if ($other instanceof Atomic) {
+            return $this->possiblyNegatedIntersectsAtomic($other, $codebase);
+        }
+
+        if ($other instanceof Union) {
+            $result = TypeComparisonResult2::false();
+            foreach ($other->getChildNodes() as $other_child) {
+                $result = $result->or($this->intersects($other_child, $codebase));
+            }
+            return $result;
+        }
+
+        if ($other instanceof Intersection) {
+            $result = TypeComparisonResult2::true();
+            foreach ($other->getChildNodes() as $other_child) {
+                $result = $result->and($this->intersects($other_child, $codebase));
+            }
+            return $result;
+        }
+
+        throw new InvalidArgumentException('Only Atomic, Union, and Intersection are supported.');
     }
 }

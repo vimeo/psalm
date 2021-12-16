@@ -35,8 +35,40 @@ class TScalar extends Scalar
         return false;
     }
 
+    // TODO this was removed on the original branch, why?
     public function getAssertionString(bool $exact = false): string
     {
         return 'scalar';
     }
+
+    // protected function containedByAtomic(
+    //     Atomic $other,
+    //     Codebase $codebase,
+    //     bool $allow_interface_equality = false,
+    //     bool $allow_int_to_float_coercion = true,
+    //     ?TypeComparisonResult $type_comparison_result = null
+    // ): bool {
+    //     if (parent::containedByAtomic(
+    //         $other,
+    //         $codebase,
+    //         $allow_interface_equality,
+    //         $allow_int_to_float_coercion,
+    //         $type_comparison_result
+    //     )) {
+    //         return true;
+    //     }
+
+    //     if ($type_comparison_result !== null
+    //         && $other instanceof TScalar
+    //     ) {
+    //         if (!$other instanceof TILiteral) {
+    //             $type_comparison_result->scalar_type_match_found = true;
+    //         }
+    //         if ($type_comparison_result->type_coerced) {
+    //             $type_comparison_result->type_coerced_from_scalar = true;
+    //         }
+    //     }
+
+    //     return false;
+    // }
 }

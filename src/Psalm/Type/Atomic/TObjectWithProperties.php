@@ -3,10 +3,12 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -14,6 +16,7 @@ use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
+use function get_class;
 use function implode;
 
 /**
@@ -190,7 +193,7 @@ class TObjectWithProperties extends TObject
         }
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -280,5 +283,47 @@ class TObjectWithProperties extends TObject
     public function getAssertionString(bool $exact = false): string
     {
         return $this->getKey();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === self::class) {
+            $result = TypeComparisonResult2::true();
+
+            foreach ($other->properties as $key => $other_type) {
+                if (!isset($this->properties[$key])) {
+                    if ($other_type->possibly_undefined) {
+                        // Optional key
+                        continue;
+                    }
+
+                    return TypeComparisonResult2::false();
+                }
+
+                $this_type = $this->properties[$key];
+                $result = $result->and($this_type->containedBy($other_type, $codebase));
+
+                if ($result->completelyDifferent()) {
+                    return $result;
+                }
+            }
+
+            foreach ($other->methods as $key => $other_method) {
+                // TODO
+                if ($result->completelyDifferent()) {
+                    return $result;
+                }
+            }
+
+            return $result;
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }

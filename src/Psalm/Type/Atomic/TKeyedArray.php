@@ -3,12 +3,14 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -206,6 +208,9 @@ class TKeyedArray extends Atomic
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getGenericKeyType(): Union
     {
         $key_types = [];
@@ -227,6 +232,9 @@ class TKeyedArray extends Atomic
         return Type::combineUnionTypes($this->previous_key_type, $key_type);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getGenericValueType(): Union
     {
         $value_type = null;
@@ -242,6 +250,9 @@ class TKeyedArray extends Atomic
         return $value_type;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
@@ -365,7 +376,7 @@ class TKeyedArray extends Atomic
         return $this->properties;
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         if (get_class($other_type) !== static::class) {
             return false;
@@ -404,5 +415,87 @@ class TKeyedArray extends Atomic
         }
 
         return new TNonEmptyList($this->getGenericValueType());
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === TNonEmptyList::class || get_class($other) === TNonEmptyArray::class) {
+            $has_required_key = false;
+            foreach ($this->properties as $property) {
+                if (!$property->possibly_undefined) {
+                    $has_required_key = true;
+                    break;
+                }
+            }
+            if (!$has_required_key) {
+                return TypeComparisonResult2::false();
+            }
+        }
+
+        switch (get_class($other)) {
+            // TODO use getGeneric*Type
+            case TNonEmptyList::class: // Non-emptiness checked above
+            case TList::class:
+                if (!$this->is_list) {
+                    return TypeComparisonResult2::false();
+                }
+
+                $value_types = [];
+                foreach ($this->properties as $key => $value_type) {
+                    $value_types[] = $value_type;
+                }
+                $generic_value_type = Union::create($value_types, $codebase);
+
+                return $generic_value_type->containedBy($other->type_param, $codebase);
+            case TNonEmptyArray::class: // Non-emptiness checked above
+            case TArray::class:
+            case TIterable::class:
+                $key_types = [];
+                $value_types = [];
+                foreach ($this->properties as $key => $value_type) {
+                    if (is_int($key)) {
+                        $key_type = new TLiteralInt($key);
+                    } else {
+                        $key_type = new TLiteralString($key);
+                    }
+                    $key_types[] = $key_type;
+                    $value_types[] = $value_type;
+                }
+                $generic_key_type = Union::create($key_types, $codebase);
+                $generic_value_type = Union::create($value_types, $codebase);
+
+                return $generic_key_type->containedBy($other->type_params[0], $codebase)->and(
+                    $generic_value_type->containedBy($other->type_params[1], $codebase)
+                );
+            case self::class:
+                $result = TypeComparisonResult2::true();
+
+                foreach ($other->properties as $key => $other_type) {
+                    if (!isset($this->properties[$key])) {
+                        if ($other_type->possibly_undefined) {
+                            // Optional key
+                            continue;
+                        }
+
+                        return TypeComparisonResult2::false();
+                    }
+
+                    $this_type = $this->properties[$key];
+                    $result = $result->and($this_type->containedBy($other_type, $codebase));
+                    if ($result->completelyDifferent()) {
+                        return $result;
+                    }
+                }
+
+                return $result;
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }

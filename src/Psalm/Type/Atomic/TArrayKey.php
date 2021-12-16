@@ -1,11 +1,19 @@
 <?php
+
 namespace Psalm\Type\Atomic;
+
+use Psalm\Type\Atomic;
 
 /**
  * Denotes the `array-key` type, used for something that could be the offset of an `array`.
  */
 class TArrayKey extends Scalar
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'array-key';
@@ -45,4 +53,28 @@ class TArrayKey extends Scalar
     ): string {
         return $use_phpdoc_format ? '(int|string)' : 'array-key';
     }
+
+    // protected function containedByAtomic(
+    //     Atomic $other,
+    //     Codebase $codebase,
+    //     bool $allow_interface_equality = false,
+    //     bool $allow_int_to_float_coercion = true,
+    //     ?TypeComparisonResult $type_comparison_result = null
+    // ): bool {
+    //     if (parent::containedByAtomic(
+    //         $other,
+    //         $codebase,
+    //         $allow_interface_equality,
+    //         $allow_int_to_float_coercion,
+    //         $type_comparison_result
+    //     )) {
+    //         return true;
+    //     }
+
+    //     if ($type_comparison_result !== null && ($other instanceof TInt || $other instanceof TString)) {
+    //         $type_comparison_result->type_coerced_from_mixed = true;
+    //     }
+
+    //     return false;
+    // }
 }

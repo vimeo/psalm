@@ -110,7 +110,7 @@ class ListTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
-            'explicitVariableKey' => [
+            'SKIPPED-explicitVariableKey' => [
                 '<?php
                     /** @param list<int> $a */
                     function takesList($a): void {}

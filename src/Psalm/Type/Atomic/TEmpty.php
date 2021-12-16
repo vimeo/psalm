@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `empty` type, used to describe a type corresponding to no value whatsoever.
  * Empty arrays `[]` have the type `array<empty, empty>`.
@@ -29,5 +33,12 @@ class TEmpty extends Scalar
         int $php_minor_version
     ): ?string {
         return null;
+    }
+
+    public function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+    ): TypeComparisonResult2 {
+        return TypeComparisonResult2::true();
     }
 }

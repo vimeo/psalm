@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -130,5 +131,22 @@ class TTemplateParam extends Atomic
         ?Codebase $codebase
     ): void {
         $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === self::class) {
+            return TypeComparisonResult2::true(
+                $this->defining_class === $other->defining_class && $this->param_name === $other->param_name
+            );
+        }
+
+        return $this->as->containedBy($other, $codebase);
     }
 }

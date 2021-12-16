@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -292,5 +293,73 @@ trait CallableTrait
         }
 
         return $child_nodes;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (isset(class_uses($other)[__TRAIT__])) {
+            if (!$this instanceof TCallable && !$this instanceof TClosure
+                || !$other instanceof TCallable && !$other instanceof TClosure
+            ) {
+                // This is here to assert both classes use this trait, if/when trait support improves it can be removed
+                throw new \Exception("Unknown callable type");
+            }
+
+            $result = TypeComparisonResult2::true();
+
+            if ($this->params !== null) {
+                if ($other->params === null) {
+                    return TypeComparisonResult2::false();
+                }
+
+                foreach ($this->params as $i => $param) {
+                    $other_param = null;
+                    if (isset($other->params[$i])) {
+                        $other_param = $other->params[$i];
+                    } elseif ($other->params) {
+                        $last_param = end($other->params);
+
+                        if ($last_param->is_variadic) {
+                            $other_param = $last_param;
+                        }
+                    }
+
+                    if ($other_param === null) {
+                        if ($param->is_optional) {
+                            break;
+                        }
+
+                        return TypeComparisonResult2::false();
+                    }
+
+                    $result = $result->and($param->type->containedBy($other_param->type, $codebase));
+
+                    if ($result->completelyDifferent()) {
+                        return $result;
+                    }
+                }
+            }
+
+            if ($other->return_type !== null) {
+                if ($this->return_type === null) {
+                    // This doesn't have a return type, so it defaults to mixed.
+                    $result = $result->and(TypeComparisonResult2::coercedFromMixed());
+                } else {
+                    if (!$this->return_type->isVoid() || !$other->return_type->isNullable()) { // TODO correct? necessary?
+                        $result = $result->and($this->return_type->containedBy($other->return_type, $codebase));
+                    }
+                }
+            }
+
+            return $result;
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }

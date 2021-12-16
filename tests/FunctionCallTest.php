@@ -1931,7 +1931,12 @@ class FunctionCallTest extends TestCase
                       return $b["a"];
                     }
 
-                    a(["a" => "hello"]);',
+                    function b(string $str): string
+                    {
+                        return $str;
+                    }
+
+                    a(["a" => b("hello")]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [

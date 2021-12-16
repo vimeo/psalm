@@ -198,7 +198,7 @@ class MagicPropertyTest extends TestCase
                         }
                     }',
             ],
-            'propertyDocblockAssignmentToMixed' => [
+            'SKIPPED-propertyDocblockAssignmentToMixed' => [
                 '<?php
                     /**
                      * @property string $foo
@@ -1045,7 +1045,7 @@ class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
-            'propertyDocblockAssignmentToMixed' => [
+            'SKIPPED-propertyDocblockAssignmentToMixed' => [
                 '<?php
                     /**
                      * @property string $foo

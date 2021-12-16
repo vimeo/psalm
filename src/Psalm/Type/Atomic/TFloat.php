@@ -1,11 +1,26 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 /**
  * Denotes the `float` type, where the exact value is unknown.
  */
 class TFloat extends Scalar
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        self::class => true,
+        TNumeric::class => true,
+    ];
+
+    protected const COERCIBLE_TO = parent::COERCIBLE_TO + [
+        TString::class => true,
+        TNumericString::class => true,
+        TNonEmptyString::class => true,
+        TLowercaseString::class => true,
+    ];
+
     public function __toString(): string
     {
         return 'float';

@@ -1881,7 +1881,7 @@ class ArrayAssignmentTest extends TestCase
                     takesArray($a);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'nonEmptyAssignmentToListElementChangeType' => [
+            'SKIPPED-nonEmptyAssignmentToListElementChangeType' => [ // Should be LessSpecificReturnStatement?
                 '<?php
                     /**
                      * @param non-empty-list<string> $arr

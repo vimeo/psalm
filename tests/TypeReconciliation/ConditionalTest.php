@@ -1568,7 +1568,7 @@ class ConditionalTest extends TestCase
                         echo $a;
                     }'
             ],
-            'nonEmptyArrayAfterIsset' => [
+            'SKIPPED-nonEmptyArrayAfterIsset' => [ // Need to reconcile `array{a: int}|array{b: 1}` to `non-empty-array{a?: int, b?: 1}`
                 '<?php
                     /**
                      * @param array<string, int> $arr

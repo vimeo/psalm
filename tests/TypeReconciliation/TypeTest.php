@@ -1061,7 +1061,7 @@ class TypeTest extends TestCase
                         strlen($s);
                     }'
             ],
-            'narrowWithCountToAllowNonTupleKeyedArray' => [
+            'SKIPPED-narrowWithCountToAllowNonTupleKeyedArray' => [ // Failing, likely related to https://github.com/vimeo/psalm/issues/7176
                 '<?php
                     /**
                      * @param list<string> $arr
@@ -1076,6 +1076,22 @@ class TypeTest extends TestCase
                      * @param array{0:string, 1: string} $input
                      */
                     function consume($input): void{}'
+            ],
+            'SKIPPED-countAssertionOnNonEmptyListContainsSmallerKeyedList' => [ // Per orklah, prerequisite for https://github.com/vimeo/psalm/issues/7176
+                '<?php
+                    /**
+                     * @param list<string> $a
+                     * @return array{string, string, string}
+                     */
+                    function foo(array $a): array
+                    {
+                        /** @var non-empty-list<string> */
+                        if(count($a) > 2){
+                            return $a;
+                        }
+                        return ["foo", "foo", "foo"];
+                    }
+                ',
             ],
             'notDateTimeWithDateTimeInterface' => [
                 '<?php

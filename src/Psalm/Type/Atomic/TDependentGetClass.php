@@ -1,14 +1,30 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+
+use function get_class;
 
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
  */
 class TDependentGetClass extends TString implements DependentType
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const INTERSECTS = parent::INTERSECTS + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+        TSingleLetter::class => true,
+    ];
+
     /**
      * Used to hold information as to what this refers to
      *
@@ -58,5 +74,26 @@ class TDependentGetClass extends TString implements DependentType
     public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
     {
         return false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === self::class
+        ) {
+            // TODO is this correct? Should it be equal instead of subtype?
+            return $this->as_type->containedBy($other->as_type, $codebase);
+        }
+
+        if ((get_class($other) === TClassString::class || get_class($other) === TLiteralClassString::class)) {
+            return $this->as_type->containedBy($other->getConstraintType(), $codebase);
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }

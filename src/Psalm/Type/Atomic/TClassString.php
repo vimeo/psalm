@@ -3,13 +3,16 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_values;
+use function assert;
 use function count;
+use function get_class;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -22,6 +25,18 @@ use function strtolower;
  */
 class TClassString extends TString
 {
+    /** @var array<class-string<Atomic>, true> */
+    protected const CONTAINED_BY = parent::CONTAINED_BY + [
+        TNonEmptyString::class => true,
+        TNonFalsyString::class => true,
+    ];
+
+    protected const INTERSECTS = parent::INTERSECTS + [
+        TLowercaseString::class => true,
+        TNonEmptyLowercaseString::class => true,
+        TSingleLetter::class => true,
+    ];
+
     /**
      * @var string
      */
@@ -166,5 +181,37 @@ class TClassString extends TString
         }
 
         return $class_string;
+    }
+
+    /**
+     * @return TObject|TNamedObject
+     */
+    public function getConstraintType(): Atomic
+    {
+        if ($this->as === 'object') {
+            return new TObject();
+        }
+
+        assert($this->as_type !== null);
+        return clone $this->as_type;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if ((get_class($other) === self::class || get_class($other) === TLiteralClassString::class)) {
+            return $this->getConstraintType()->containedByAtomic($other->getConstraintType(), $codebase);
+        }
+
+        if ($other instanceof TDependentGetClass) {
+            return $this->getConstraintType()->containedBy($other->as_type, $codebase);
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }

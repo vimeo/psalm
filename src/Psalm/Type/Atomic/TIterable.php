@@ -1,12 +1,16 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult2;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
+use function get_class;
 use function implode;
 use function substr;
 
@@ -102,7 +106,7 @@ class TIterable extends Atomic
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
 
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    public function equals(TypeNode $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
             return false;
@@ -124,5 +128,22 @@ class TIterable extends Atomic
     public function getChildNodes(): array
     {
         return array_merge($this->type_params, $this->extra_types ?? []);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    protected function containedByAtomic(
+        Atomic $other,
+        ?Codebase $codebase
+        // bool $allow_interface_equality = false,
+    ): TypeComparisonResult2 {
+        if (get_class($other) === self::class) {
+            return $this->type_params[0]->containedBy($other->type_params[0], $codebase)->and(
+                $this->type_params[1]->containedBy($other->type_params[1], $codebase)
+            );
+        }
+
+        return parent::containedByAtomic($other, $codebase);
     }
 }
