@@ -199,7 +199,7 @@ class ConstantTypeResolver
                         $visited_constant_ids + [$c_id => true]
                     );
 
-                    if ($spread_array instanceof TArray && $spread_array->type_params[1]->isEmpty()) {
+                    if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
                         continue;
                     }
 

@@ -1028,7 +1028,7 @@ class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
-                        || $stmt_type->isEmpty()
+                        || $stmt_type->isNever()
                     ) {
                         $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
                     }
@@ -1043,7 +1043,7 @@ class AssignmentAnalyzer
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-            if (!$stmt_type || $stmt_type->isEmpty()) {
+            if (!$stmt_type || $stmt_type->isNever()) {
                 $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
             }
 

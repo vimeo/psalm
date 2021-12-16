@@ -75,9 +75,9 @@ class ArithmeticOpAnalyzer
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
-        if ($left_type && $left_type->isEmpty()) {
+        if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
-        } elseif ($right_type && $right_type->isEmpty()) {
+        } elseif ($right_type && $right_type->isNever()) {
             $right_type = $left_type;
         }
 

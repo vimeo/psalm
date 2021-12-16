@@ -102,7 +102,7 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof TList
             && $input_type_part instanceof TArray
-            && $input_type_part->type_params[1]->isEmpty()
+            && $input_type_part->isEmptyArray()
         ) {
             return !$container_type_part instanceof TNonEmptyList;
         }
@@ -225,7 +225,7 @@ class ArrayTypeComparator
                 continue;
             }
 
-            if ($input_param->isEmpty()
+            if ($input_param->isNever()
                 && $container_type_part instanceof TNonEmptyArray
             ) {
                 return false;
@@ -233,7 +233,7 @@ class ArrayTypeComparator
 
             $param_comparison_result = new TypeComparisonResult();
 
-            if (!$input_param->isEmpty()) {
+            if (!$input_param->isNever()) {
                 if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_param,

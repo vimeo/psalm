@@ -697,7 +697,7 @@ class SimpleTypeInferer
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } elseif ($unpacked_atomic_type instanceof TArray) {
-                if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
+                if ($unpacked_atomic_type->isEmptyArray()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;
@@ -719,7 +719,7 @@ class SimpleTypeInferer
                     )
                 );
             } elseif ($unpacked_atomic_type instanceof TList) {
-                if ($unpacked_atomic_type->type_param->isEmpty()) {
+                if ($unpacked_atomic_type->type_param->isNever()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;

@@ -249,7 +249,7 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
-            if (!$did_type_exist && $result_type->isEmpty()) {
+            if (!$did_type_exist && $result_type->isNever()) {
                 continue;
             }
 
@@ -1018,7 +1018,7 @@ class Reconciler
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
                 if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
-                        && !$base_atomic_type->type_params[1]->isEmpty())
+                        && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
@@ -1035,7 +1035,7 @@ class Reconciler
                             null
                         );
 
-                        if (!$previous_key_type->isEmpty()) {
+                        if (!$previous_key_type->isNever()) {
                             $base_atomic_type->previous_key_type = $previous_key_type;
                         }
                         $base_atomic_type->previous_value_type = $previous_value_type;

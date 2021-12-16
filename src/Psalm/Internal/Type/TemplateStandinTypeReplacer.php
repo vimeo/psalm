@@ -1099,7 +1099,7 @@ class TemplateStandinTypeReplacer
             if ($current_depth === null) {
                 $current_depth = $template_bound->appearance_depth;
             } elseif ($current_depth !== $template_bound->appearance_depth && $current_type) {
-                if (!$current_type->isEmpty()
+                if (!$current_type->isNever()
                     && ($had_invariant || $last_arg_offset === $template_bound->arg_offset)
                 ) {
                     // escape switches when matching on invariant generic params

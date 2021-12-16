@@ -55,7 +55,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if ($first_arg_array instanceof TArray) {
             $value_type = clone $first_arg_array->type_params[1];
 
-            if ($value_type->isEmpty()) {
+            if ($first_arg_array->isEmptyArray()) {
                 return Type::getNull();
             }
 

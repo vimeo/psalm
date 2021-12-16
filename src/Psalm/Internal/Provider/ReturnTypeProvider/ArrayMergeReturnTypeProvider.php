@@ -154,7 +154,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             }
                         }
                     } else {
-                        if (!$unpacked_type_part->type_params[0]->isEmpty()) {
+                        if (!$unpacked_type_part->isEmptyArray()) {
                             foreach ($generic_properties as $key => $keyed_type) {
                                 $generic_properties[$key] = Type::combineUnionTypes(
                                     $keyed_type,
@@ -169,7 +169,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                     }
 
                     if ($unpacked_type_part instanceof TArray) {
-                        if ($unpacked_type_part->type_params[1]->isEmpty()) {
+                        if ($unpacked_type_part->isEmptyArray()) {
                             continue;
                         }
 

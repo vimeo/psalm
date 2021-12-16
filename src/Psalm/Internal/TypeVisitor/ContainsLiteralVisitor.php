@@ -30,7 +30,7 @@ class ContainsLiteralVisitor extends NodeVisitor
             return NodeVisitor::STOP_TRAVERSAL;
         }
 
-        if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
+        if ($type instanceof TArray && $type->isEmptyArray()) {
             $this->contains_literal = true;
             return NodeVisitor::STOP_TRAVERSAL;
         }

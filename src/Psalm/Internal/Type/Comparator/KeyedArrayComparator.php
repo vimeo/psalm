@@ -42,7 +42,7 @@ class KeyedArrayComparator
 
             $property_type_comparison = new TypeComparisonResult();
 
-            if (!$input_property_type->isEmpty()) {
+            if (!$input_property_type->isNever()) {
                 if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_property_type,
@@ -127,7 +127,7 @@ class KeyedArrayComparator
 
             $property_type_comparison = new TypeComparisonResult();
 
-            if (!$input_property_type->isEmpty()
+            if (!$input_property_type->isNever()
                 && !UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_property_type,

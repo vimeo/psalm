@@ -471,7 +471,7 @@ class AtomicTypeComparator
 
                     $array_comparison_result = new TypeComparisonResult();
 
-                    if (!$input_param->isEmpty()) {
+                    if (!$input_param->isNever()) {
                         if (!UnionTypeComparator::isContainedBy(
                             $codebase,
                             $input_param,

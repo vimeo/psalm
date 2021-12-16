@@ -171,7 +171,7 @@ class SwitchAnalyzer
                     );
 
                 if (isset($case_vars_in_scope_reconciled[$switch_var_id])
-                    && $case_vars_in_scope_reconciled[$switch_var_id]->isEmpty()
+                    && $case_vars_in_scope_reconciled[$switch_var_id]->isNever()
                 ) {
                     $all_options_matched = true;
                 }

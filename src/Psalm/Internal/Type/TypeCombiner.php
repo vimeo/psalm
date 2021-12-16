@@ -548,7 +548,7 @@ class TypeCombiner
                 $combination->array_always_filled = false;
             }
 
-            if (!$type->type_params[1]->isEmpty()) {
+            if (!$type->isEmptyArray()) {
                 $combination->all_arrays_lists = false;
                 $combination->all_arrays_class_string_maps = false;
             }
@@ -1326,11 +1326,11 @@ class TypeCombiner
         }
 
         if (!$combination->array_type_params
-            || $combination->array_type_params[1]->isEmpty()
+            || $combination->array_type_params[1]->isNever()
         ) {
             if (!$overwrite_empty_array
                 && ($combination->array_type_params
-                    && ($combination->array_type_params[1]->isEmpty()
+                    && ($combination->array_type_params[1]->isNever()
                         || $combination->array_type_params[1]->isMixed()))
             ) {
                 foreach ($combination->objectlike_entries as $objectlike_entry) {

@@ -513,11 +513,6 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($inside_loop) {
-            if ($existing_var_type->hasType('empty')) {
-                $existing_var_type->removeType('empty');
-                $existing_var_type->addType(new TMixed(true));
-            }
-
             if ($existing_var_type->hasType('never')) {
                 $existing_var_type->removeType('never');
                 $existing_var_type->addType(new TMixed(true));
@@ -1932,9 +1927,7 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                 }
 
-                if ($type->type_params[0]->isEmpty()
-                    || $type->type_params[1]->isEmpty()
-                ) {
+                if ($type->isEmptyArray()) {
                     //we allow an empty array to pass as a list. We keep the type as empty array though (more precise)
                     $array_types[] = $type;
                 }

@@ -390,14 +390,13 @@ class FunctionCallReturnTypeFetcher
                                     foreach ($atomic_types['array']->properties as $property) {
                                         // empty, never and possibly undefined can't count for min value
                                         if (!$property->possibly_undefined
-                                            && !$property->isEmpty()
                                             && !$property->isNever()
                                         ) {
                                             $min++;
                                         }
 
-                                        //empty and never can't count for max value because we know keys are undefined
-                                        if (!$property->isEmpty() && !$property->isNever()) {
+                                        //never can't count for max value because we know keys are undefined
+                                        if (!$property->isNever()) {
                                             $max++;
                                         }
                                     }
@@ -416,8 +415,7 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->type_params[0]->isEmpty()
-                                    && $atomic_types['array']->type_params[1]->isEmpty()
+                                    && $atomic_types['array']->isEmptyArray()
                                 ) {
                                     return Type::getInt(false, 0);
                                 }

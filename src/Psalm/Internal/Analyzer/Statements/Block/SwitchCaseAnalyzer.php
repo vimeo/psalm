@@ -591,7 +591,7 @@ class SwitchCaseAnalyzer
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
-            && $case_context->vars_in_scope[$switch_var_id]->isEmpty()
+            && $case_context->vars_in_scope[$switch_var_id]->isNever()
         ) {
             if (IssueBuffer::accepts(
                 new ParadoxicalCondition(

@@ -120,7 +120,7 @@ class InstancePropertyFetchAnalyzer
             return true;
         }
 
-        if ($stmt_var_type->isEmpty()) {
+        if ($stmt_var_type->isNever()) {
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
