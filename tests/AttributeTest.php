@@ -118,7 +118,7 @@ class AttributeTest extends TestCase
                         }
                     }
 
-                    /** @param array<ReflectionAttribute<object>> $a */
+                    /** @param array<ReflectionAttribute<object>> $_a */
                     function scope($_a):void{
 
                     }
