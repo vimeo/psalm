@@ -147,7 +147,13 @@ class DocumentationTest extends TestCase
     public function testAllIssuesCoveredInConfigSchema(): void
     {
         $all_issues = IssueHandler::getAllIssueTypes();
-        $all_issues[] = 'PluginIssue'; // not an ordinary issue
+
+        // not an ordinary issue
+        $all_issues[] = 'PluginIssue';
+
+        // removed, but we don't want people to have to edit configs in a major version change
+        $all_issues[] = 'InvalidScalarArgument';
+
         sort($all_issues);
 
         $schema = new DOMDocument();

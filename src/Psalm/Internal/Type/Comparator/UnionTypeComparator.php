@@ -48,10 +48,6 @@ class UnionTypeComparator
             return true;
         }
 
-        if ($union_comparison_result) {
-            $union_comparison_result->scalar_type_match_found = true;
-        }
-
         if ($input_type->possibly_undefined
             && !$input_type->possibly_undefined_from_try
             && !$container_type->possibly_undefined
@@ -107,7 +103,6 @@ class UnionTypeComparator
             }
 
             $type_match_found = false;
-            $scalar_type_match_found = false;
             $all_to_string_cast = true;
 
             $all_type_coerced = null;
@@ -180,10 +175,6 @@ class UnionTypeComparator
                 }
 
                 if ($atomic_comparison_result) {
-                    if ($atomic_comparison_result->scalar_type_match_found !== null) {
-                        $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
-                    }
-
                     if ($union_comparison_result
                         && $atomic_comparison_result->type_coerced_from_scalar !== null
                     ) {
@@ -212,7 +203,6 @@ class UnionTypeComparator
                     && $container_type->hasInt()
                     && $container_type->hasFloat()
                 ) {
-                    $scalar_type_match_found = false;
                     $is_atomic_contained_by = true;
                 }
 
@@ -300,10 +290,6 @@ class UnionTypeComparator
                         ) {
                             $union_comparison_result->type_coerced_from_as_mixed = true;
                         }
-                    }
-
-                    if (!$scalar_type_match_found) {
-                        $union_comparison_result->scalar_type_match_found = false;
                     }
                 }
 

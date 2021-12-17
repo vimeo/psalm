@@ -1197,7 +1197,7 @@ class SwitchTypeTest extends TestCase
                         case "integer":
                             testString($a);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'switchBadMethodCallInCase' => [
                 '<?php
@@ -1208,7 +1208,7 @@ class SwitchTypeTest extends TestCase
                             f($q); // this type problem is not detected
                             break;
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'continueIsNotBreak' => [
                 '<?php

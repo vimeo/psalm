@@ -717,7 +717,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = microtime(true);
                     $b = microtime();
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $c = microtime(1);
                     $d = microtime(false);',
                 'assertions' => [
@@ -1021,7 +1021,7 @@ class FunctionCallTest extends TestCase
             ],
             'mktime' => [
                 '<?php
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $a = mktime("foo");
                     /** @psalm-suppress MixedArgument */
                     $b = mktime($_GET["foo"]);
@@ -1036,7 +1036,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = hrtime(true);
                     $b = hrtime();
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $c = hrtime(1);
                     $d = hrtime(false);',
                 'assertions' => [
@@ -1415,7 +1415,7 @@ class FunctionCallTest extends TestCase
             ],
             'printrBadArg' => [
                 '<?php
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $a = print_r([], 1);
                     echo $a;',
             ],
@@ -1785,7 +1785,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'invalidArgumentWithDeclareStrictTypes' => [
                 '<?php declare(strict_types=1);
@@ -1796,7 +1796,7 @@ class FunctionCallTest extends TestCase
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
                 '<?php
                     $s = substr(5, 4);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithDeclareStrictTypes' => [
                 '<?php declare(strict_types=1);
@@ -1915,7 +1915,7 @@ class FunctionCallTest extends TestCase
                     }
 
                     function takes_int(int $i) {}',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 'error_levels' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
@@ -1941,7 +1941,7 @@ class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
                 '<?php
@@ -2031,7 +2031,7 @@ class FunctionCallTest extends TestCase
                     foreach (range(1, 10, .3) as $x) {
                         foo($x);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'rangeWithFloatStart' => [
                 '<?php
@@ -2043,7 +2043,7 @@ class FunctionCallTest extends TestCase
                     foreach (range(1.4, 10) as $x) {
                         foo($x);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'duplicateFunction' => [
                 '<?php
@@ -2142,7 +2142,7 @@ class FunctionCallTest extends TestCase
                         takesString($s);
                         takesInt($s);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'tooFewArgsAccurateCount' => [
                 '<?php

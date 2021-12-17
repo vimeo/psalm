@@ -171,7 +171,7 @@ class ArgTest extends TestCase
                       return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     foo(bar());',
             ],
             'allowArrayScalarForArrayStringWithScalarIgnored' => [
@@ -184,7 +184,7 @@ class ArgTest extends TestCase
                         return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     foo(bar());',
             ],
             'unpackObjectlikeListArgs' => [
@@ -521,7 +521,7 @@ class ArgTest extends TestCase
                     function takesArguments(int ...$args) : void {}
 
                     takesArguments(age: "abc");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 [],
                 false,
                 '8.0'

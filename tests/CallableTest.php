@@ -1047,7 +1047,7 @@ class CallableTest extends TestCase
                     function f(callable $_p): void {}
 
                     f("strcmp");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'checkCallableTypeArrayInstanceFirstArg' => [
                 '<?php
@@ -1061,7 +1061,7 @@ class CallableTest extends TestCase
                     }
 
                     f([new C, "m"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'checkCallableTypeArrayClassStringFirstArg' => [
                 '<?php
@@ -1075,7 +1075,7 @@ class CallableTest extends TestCase
                     }
 
                     f([C::class, "m"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'callableWithSpaceAfterColonBadVarArg' => [
                 '<?php
@@ -1205,7 +1205,7 @@ class CallableTest extends TestCase
                     }
 
                     takesFunction("myFunction");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'emptyCallable' => [
                 '<?php
@@ -1268,7 +1268,7 @@ class CallableTest extends TestCase
                     function foo(string $c) : void {
                         takesCallableReturningString([$c, "bar"]);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'inexistantCallableinCallableString' => [
                 '<?php

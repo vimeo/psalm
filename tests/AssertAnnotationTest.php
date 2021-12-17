@@ -1769,7 +1769,7 @@ class AssertAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'assertIfStaticTrueMethodCall' => [
                 '<?php
@@ -1790,7 +1790,7 @@ class AssertAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'noFatalForUnknownAssertClass' => [
                 '<?php

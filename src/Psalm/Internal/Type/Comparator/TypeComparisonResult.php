@@ -8,9 +8,6 @@ use Psalm\Type\Union;
 class TypeComparisonResult
 {
     /** @var ?bool */
-    public $scalar_type_match_found;
-
-    /** @var ?bool */
     public $type_coerced;
 
     /** @var ?bool */

@@ -146,7 +146,7 @@ class AnnotationTest extends TestCase
     public function testPhpStormGenericsInvalidArgument(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectExceptionMessage('InvalidArgument');
 
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -1848,14 +1848,14 @@ class AnnotationTest extends TestCase
                     /** @param string[] $_s */
                     function foo(string ...$_s) : void {}
                     foo(5);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorArrayAnnotationBadSpreadArg' => [
                 '<?php
                     /** @param string[] $_s */
                     function foo(string ...$_s) : void {}
                     foo(...[5]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall1' => [
                 '<?php
@@ -1864,7 +1864,7 @@ class AnnotationTest extends TestCase
 
                     $a = 1;
                     foo($a);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall2' => [
                 '<?php
@@ -1873,7 +1873,7 @@ class AnnotationTest extends TestCase
 
                     $b = 2;
                     foo($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall3' => [
                 '<?php
@@ -1882,7 +1882,7 @@ class AnnotationTest extends TestCase
 
                     $c = 3;
                     foo($c);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'identifyReturnType' => [
                 '<?php

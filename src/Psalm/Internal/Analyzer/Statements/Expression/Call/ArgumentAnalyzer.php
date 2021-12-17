@@ -33,7 +33,6 @@ use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
-use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NamedArgumentNotAllowed;
@@ -660,7 +659,6 @@ class ArgumentAnalyzer
     /**
      * @param TKeyedArray|TArray|TList|TClassStringMap $unpacked_atomic_array
      * @return  null|false
-     * @psalm-suppress ComplexMethod
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
@@ -946,8 +944,6 @@ class ArgumentAnalyzer
             && $cased_method_id !== 'print'
             && $cased_method_id !== 'sprintf'
         ) {
-            $union_comparison_results->scalar_type_match_found = false;
-
             if ($union_comparison_results->to_string_cast) {
                 $union_comparison_results->to_string_cast = false;
                 $type_match_found = false;
@@ -1017,19 +1013,8 @@ class ArgumentAnalyzer
             );
 
             $type = ($input_type->possibly_undefined ? 'possibly undefined ' : '') . $input_type->getId();
-            if ($union_comparison_results->scalar_type_match_found) {
-                if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type->getId() . ', ' . $type . ' provided',
-                            $arg_location,
-                            $cased_method_id
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                }
-            } elseif ($types_can_be_identical) {
+
+            if ($types_can_be_identical) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .

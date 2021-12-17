@@ -400,7 +400,7 @@ class StubTest extends TestCase
 
     public function testStubVariadicFunctionWrongArgType(): void
     {
-        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectExceptionMessage('InvalidArgument');
         $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(

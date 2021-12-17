@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -322,6 +323,7 @@ class ConcatAnalyzer
         $operand_type_match = true;
         $has_valid_operand = false;
         $comparison_result = new TypeComparisonResult();
+        $has_scalar_operand_match = false;
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
             if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
@@ -352,6 +354,17 @@ class ConcatAnalyzer
             $operand_type_match = $operand_type_match && $operand_type_part_match;
 
             $has_valid_operand = $has_valid_operand || $operand_type_part_match;
+
+            if (!$operand_type_part_match) {
+                $has_scalar_operand_match = $has_scalar_operand_match || AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $operand_type_part,
+                    new TScalar,
+                    false,
+                    false,
+                    $comparison_result
+                );
+            }
 
             if ($comparison_result->to_string_cast && $config->strict_binary_operands) {
                 IssueBuffer::maybeAdd(
@@ -410,7 +423,7 @@ class ConcatAnalyzer
         }
 
         if (!$operand_type_match
-            && (!$comparison_result->scalar_type_match_found || $config->strict_binary_operands)
+            && (!$has_scalar_operand_match || $config->strict_binary_operands)
         ) {
             if ($has_valid_operand) {
                 IssueBuffer::maybeAdd(

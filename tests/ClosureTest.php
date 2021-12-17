@@ -672,7 +672,7 @@ class ClosureTest extends TestCase
                         },
                         $bar
                     );',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'noReturn' => [
                 '<?php
@@ -712,7 +712,7 @@ class ClosureTest extends TestCase
                 '<?php
                     $take_string = function(string $s): string { return $s; };
                     $take_string(42);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'missingClosureReturnType' => [
                 '<?php
@@ -904,7 +904,7 @@ class ClosureTest extends TestCase
                     }
 
                     acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedClassForCallable' => [
                 '<?php

@@ -21,7 +21,7 @@ class VariadicTest extends TestCase
 
     public function testVariadicArrayBadParam(): void
     {
-        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectExceptionMessage('InvalidArgument');
         $this->expectException(CodeException::class);
         $this->addFile(
             'somefile.php',

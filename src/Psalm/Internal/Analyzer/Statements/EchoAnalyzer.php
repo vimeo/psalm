@@ -17,6 +17,8 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 
 class EchoAnalyzer
@@ -74,7 +76,7 @@ class EchoAnalyzer
             if (ArgumentAnalyzer::verifyType(
                 $statements_analyzer,
                 $expr_type ?? Type::getMixed(),
-                Type::getString(),
+                new Type\Union([new TString, new TScalar]),
                 null,
                 'echo',
                 null,

@@ -3351,7 +3351,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting scalar|string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutMixedMethodCall' => [
                 '<?php

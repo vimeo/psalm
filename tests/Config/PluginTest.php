@@ -870,7 +870,7 @@ class PluginTest extends TestCase
 
     public function testMethodProviderHooksInvalidArg(): void
     {
-        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectExceptionMessage('InvalidArgument');
         $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
@@ -913,7 +913,7 @@ class PluginTest extends TestCase
 
     public function testFunctionProviderHooksInvalidArg(): void
     {
-        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectExceptionMessage('InvalidArgument');
         $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 

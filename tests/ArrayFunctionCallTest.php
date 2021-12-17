@@ -2170,7 +2170,7 @@ class ArrayFunctionCallTest extends TestCase
                     }
 
                     array_filter(["hello"], "foo");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'arrayFillPositiveConstantLength' => [
                 '<?php
@@ -2193,7 +2193,7 @@ class ArrayFunctionCallTest extends TestCase
                     }
 
                     array_map("foo", ["hello"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'arrayMapTooFewArgs' => [
                 '<?php
@@ -2311,7 +2311,7 @@ class ArrayFunctionCallTest extends TestCase
                 '<?php
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 [],
                 false,
                 '7.4',

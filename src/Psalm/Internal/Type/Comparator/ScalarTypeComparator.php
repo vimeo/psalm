@@ -299,7 +299,6 @@ class ScalarTypeComparator
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_mixed = true;
-                $atomic_comparison_result->scalar_type_match_found = true;
             }
 
             return false;
@@ -616,25 +615,6 @@ class ScalarTypeComparator
             && $input_type_part->isNumericType()
         ) {
             return true;
-        }
-
-        if ($input_type_part instanceof TNumeric) {
-            if ($container_type_part->isNumericType()) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->scalar_type_match_found = true;
-                }
-            }
-        }
-
-        if ($input_type_part instanceof Scalar) {
-            if (!$container_type_part instanceof TLiteralInt
-                && !$container_type_part instanceof TLiteralString
-                && !$container_type_part instanceof TLiteralFloat
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->scalar_type_match_found = true;
-                }
-            }
         }
 
         return false;

@@ -3822,7 +3822,7 @@ class ClassTemplateTest extends TestCase
 
                     takesStringCollection($collection);
                     takesIntCollection($collection);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'argumentExpectsFleshOutTIndexedAccess' => [
                 '<?php
@@ -4155,7 +4155,7 @@ class ClassTemplateTest extends TestCase
 
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 [],
                 false,
                 '8.0'
@@ -4183,7 +4183,7 @@ class ClassTemplateTest extends TestCase
                         $fn = function(int $_p): bool { return true; };
                         $c->map($fn);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'limitTemplateTypeWithSameName' => [
                 '<?php
@@ -4240,7 +4240,7 @@ class ClassTemplateTest extends TestCase
                     }
                     $a = new A(function() { return "a";});
                     $a->setCallback(function() { return "b";});',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'preventBoundsMismatchDifferentContainers' => [
                 '<?php

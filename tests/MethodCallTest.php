@@ -1188,7 +1188,7 @@ class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q(1);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'explicitInvokeTypeMismatch' => [
                 '<?php
@@ -1196,7 +1196,7 @@ class MethodCallTest extends TestCase
                         public function __invoke(string $p): void {}
                     }
                     (new A)->__invoke(1);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedMethodPassedAsArg' => [
                 '<?php
@@ -1497,7 +1497,7 @@ class MethodCallTest extends TestCase
                         $a->val = 5;
                         echo strlen($a->getValue());
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'possiblyNullReferenceInInvokedCall' => [
                 '<?php

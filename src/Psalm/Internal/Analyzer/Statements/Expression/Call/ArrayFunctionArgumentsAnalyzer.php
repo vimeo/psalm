@@ -21,7 +21,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\TooFewArguments;
@@ -917,17 +916,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $closure_param_type
                 );
 
-                if ($union_comparison_results->scalar_type_match_found) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                } elseif ($types_can_be_identical) {
+                if ($types_can_be_identical) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '

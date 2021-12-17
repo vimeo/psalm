@@ -813,7 +813,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $child->setString("five");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'unionAnnotationInvalidArg' => [
                 '<?php
@@ -829,7 +829,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $b = $child->setBool("hello", 5);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'validAnnotationWithInvalidVariadicCall' => [
                 '<?php

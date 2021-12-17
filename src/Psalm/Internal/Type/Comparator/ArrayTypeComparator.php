@@ -259,10 +259,6 @@ class ArrayTypeComparator
                         $atomic_comparison_result->type_coerced_from_scalar
                             = $param_comparison_result->type_coerced_from_scalar === true
                                 && $atomic_comparison_result->type_coerced_from_scalar !== false;
-
-                        $atomic_comparison_result->scalar_type_match_found
-                            = $param_comparison_result->scalar_type_match_found === true
-                                && $atomic_comparison_result->scalar_type_match_found !== false;
                     }
 
                     if (!$param_comparison_result->type_coerced_from_as_mixed) {

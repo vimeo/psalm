@@ -600,9 +600,6 @@ class AssertionReconciler extends Reconciler
      * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
      *
      * @param array<string, array<string, Union>> $template_type_map
-     *
-     * @psalm-suppress ComplexMethod we'd probably want to extract specific handling blocks at the end and also allow
-     * early return once a specific case has been handled
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,
@@ -937,10 +934,6 @@ class AssertionReconciler extends Reconciler
 
                 if ($atomic_comparison_results->type_coerced) {
                     continue;
-                }
-
-                if ($atomic_comparison_results->scalar_type_match_found) {
-                    $any_scalar_type_match_found = true;
                 }
             }
 

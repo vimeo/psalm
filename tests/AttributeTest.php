@@ -332,7 +332,7 @@ class AttributeTest extends TestCase
 
                     #[Foo("foo")]
                     class Bar{}',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 [],
                 false,
                 '8.0'

@@ -1628,7 +1628,7 @@ class FunctionTemplateTest extends TestCase
                     function bar(string $a): void { }
 
                     bar(foo(4));',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'invalidTemplatedStaticMethodType' => [
                 '<?php
@@ -1648,7 +1648,7 @@ class FunctionTemplateTest extends TestCase
                     function bar(string $a): void { }
 
                     bar(A::foo(4));',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'invalidTemplatedInstanceMethodType' => [
                 '<?php
@@ -1668,7 +1668,7 @@ class FunctionTemplateTest extends TestCase
                     function bar(string $a): void { }
 
                     bar((new A())->foo(4));',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'replaceChildTypeNoHint' => [
                 '<?php
@@ -1770,7 +1770,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     apply(function(int $_i) : void {}, "hello");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'bindFirstTemplatedClosureParameterTypeCoercion' => [
                 '<?php
@@ -1811,7 +1811,7 @@ class FunctionTemplateTest extends TestCase
                     function takesReturnTCallable(callable $s) {}
 
                     takesReturnTCallable($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveFirstArg' => [
                 '<?php

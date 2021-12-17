@@ -27,7 +27,6 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidDocblock;
-use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
@@ -1067,16 +1066,6 @@ class CallAnalyzer
                                         $statements_analyzer->getSuppressedIssues()
                                     );
                                 }
-                            } elseif ($union_comparison_result->scalar_type_match_found) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidScalarArgument(
-                                        'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
-                                                . $upper_bound_type->getId(),
-                                        $code_location,
-                                        $function_id
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues()
-                                );
                             } else {
                                 IssueBuffer::maybeAdd(
                                     new InvalidArgument(
