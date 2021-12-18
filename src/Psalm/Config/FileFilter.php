@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
+use Psalm\Exception\NonExistentPathDefinedInConfigException;
 use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -103,6 +104,13 @@ class FileFilter
         string $base_dir,
         bool $inclusive
     ) {
+        /*
+         * usually $base_dir contains DIRECTORY_SEPARATOR at the end of it,
+         * see Psalm\Internal\Cli\Psalm::getCurrentDir()
+         * but some code such as tests may not provide it
+         * So, lets ensure $base_dir always contains DIRECTORY_SEPARATOR suffix
+         */
+        $base_dir = rtrim($base_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $allow_missing_files = ($config['allowMissingFiles'] ?? false) === true;
 
         $filter = new static($inclusive);
@@ -117,7 +125,7 @@ class FileFilter
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_directory_path = $directory_path;
                 } else {
-                    $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
+                    $prospective_directory_path = $base_dir . $directory_path;
                 }
 
                 if (strpos($prospective_directory_path, '*') !== false) {
@@ -131,10 +139,7 @@ class FileFilter
                             continue;
                         }
 
-                        throw new ConfigException(
-                            'Could not resolve config path to ' . $base_dir
-                            . DIRECTORY_SEPARATOR . $directory_path
-                        );
+                        throw NonExistentPathDefinedInConfigException::fromPath($prospective_directory_path);
                     }
 
                     foreach ($globs as $glob_index => $directory_path) {
@@ -143,9 +148,8 @@ class FileFilter
                                 continue;
                             }
 
-                            throw new ConfigException(
-                                'Could not resolve config path to ' . $base_dir
-                                . DIRECTORY_SEPARATOR . $directory_path . ':' . $glob_index
+                            throw NonExistentPathDefinedInConfigException::fromPath(
+                                $prospective_directory_path . ':' . $glob_index
                             );
                         }
 
@@ -169,16 +173,13 @@ class FileFilter
                         continue;
                     }
 
-                    throw new ConfigException(
-                        'Could not resolve config path to ' . $base_dir
-                        . DIRECTORY_SEPARATOR . $directory_path
-                    );
+                    throw NonExistentPathDefinedInConfigException::fromPath($prospective_directory_path);
                 }
 
                 if (!is_dir($directory_path)) {
                     throw new ConfigException(
-                        $base_dir . DIRECTORY_SEPARATOR . $directory_path
-                        . ' is not a directory'
+                        $directory_path
+                        . ' is not a directory. This path is defined in your config file.'
                     );
                 }
 
@@ -228,7 +229,7 @@ class FileFilter
                 if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_file_path = $file_path;
                 } else {
-                    $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
+                    $prospective_file_path = $base_dir . $file_path;
                 }
 
                 if (strpos($prospective_file_path, '*') !== false) {
@@ -245,17 +246,14 @@ class FileFilter
                             continue;
                         }
 
-                        throw new ConfigException(
-                            'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                            $file_path
-                        );
+                        throw NonExistentPathDefinedInConfigException::fromPath($prospective_file_path, 'file');
                     }
 
                     foreach ($globs as $glob_index => $file_path) {
                         if (!$file_path && !$allow_missing_files) {
-                            throw new ConfigException(
-                                'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                $file_path . ':' . $glob_index
+                            throw NonExistentPathDefinedInConfigException::fromPath(
+                                $prospective_file_path . ':' . $glob_index,
+                                'file'
                             );
                         }
                         $filter->addFile($file_path);
@@ -266,9 +264,7 @@ class FileFilter
                 $file_path = realpath($prospective_file_path);
 
                 if (!$file_path && !$allow_missing_files) {
-                    throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_file_path
-                    );
+                    throw NonExistentPathDefinedInConfigException::fromPath($prospective_file_path, 'file');
                 }
 
                 $filter->addFile($file_path);

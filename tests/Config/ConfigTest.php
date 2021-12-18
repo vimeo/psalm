@@ -1549,4 +1549,128 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
         $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
     }
+
+    public function testNonexistentDirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Could not resolve directory path to ' .
+            ((string) getcwd()) . DIRECTORY_SEPARATOR . 'src2' . PHP_EOL .
+            'This path is defined in your config file. Please make sure this directory exists.' . PHP_EOL .
+            'Or add allowMissingFiles="true" to your config file to ignore non-existent files.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd() . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src2" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
+
+    public function testNonexistentDirectoryGlob(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Could not resolve directory path to ' .
+            ((string) getcwd()) . DIRECTORY_SEPARATOR . 'src2' . DIRECTORY_SEPARATOR . '*' . PHP_EOL .
+            'This path is defined in your config file. Please make sure this directory exists.' . PHP_EOL .
+            'Or add allowMissingFiles="true" to your config file to ignore non-existent files.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd() . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src2/*" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
+
+    public function testNonexistentChildDirectoryGlob(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Could not resolve directory path to ' .
+            realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR . '*' . PHP_EOL .
+            'This path is defined in your config file. Please make sure this directory exists.' . PHP_EOL .
+            'Or add allowMissingFiles="true" to your config file to ignore non-existent files.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src/Psalm/Config/*" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
+
+    public function testNonexistentFile(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Could not resolve file path to ' .
+            ((string) getcwd()) . DIRECTORY_SEPARATOR . 'src2' . PHP_EOL .
+            'This path is defined in your config file. Please make sure this file exists.' . PHP_EOL .
+            'Or add allowMissingFiles="true" to your config file to ignore non-existent files.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd() . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <file name="src2" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
+
+    public function testNonexistentFileGlob(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Could not resolve file path to ' .
+            ((string) getcwd()) . DIRECTORY_SEPARATOR . 'src2' . '*' . PHP_EOL .
+            'This path is defined in your config file. Please make sure this file exists.' . PHP_EOL .
+            'Or add allowMissingFiles="true" to your config file to ignore non-existent files.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd() . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <file name="src2*" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
+
+    public function testNotDirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage(realpath('src/Psalm/Type.php') . ' is not a directory.' .
+            ' This path is defined in your config file.');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd() . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src/Psalm/Type.php" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+    }
 }
