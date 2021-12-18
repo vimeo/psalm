@@ -1483,4 +1483,70 @@ class ConfigTest extends TestCase
         self::assertSame(get_class($analyzerMock), $config->getFiletypeAnalyzers()[$extension] ?? null);
         self::assertNull($expectedExceptionCode, 'Expected exception code was not thrown');
     }
+
+    public function testTypeStatsForFileReporting(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory ignoreTypeStats="true" name="src/Psalm/Config" />
+                        <directory ignoreTypeStats="1" name="src/Psalm/Internal" />
+                        <directory ignoreTypeStats="true1" name="src/Psalm/Issue" />
+                        <directory ignoreTypeStats="false" name="src/Psalm/Node" />
+                        <directory ignoreTypeStats="invalid" name="src/Psalm/Plugin" />
+                        <directory ignoreTypeStats="0" name="src/Psalm/Progress" />
+                        <directory ignoreTypeStats="" name="src/Psalm/Report" />
+                        <directory name="src/Psalm/SourceControl" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertFalse($config->reportTypeStatsForFile(realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
+    }
+
+    public function testStrictTypesForFileReporting(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string) getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory useStrictTypes="true" name="src/Psalm/Config" />
+                        <directory useStrictTypes="1" name="src/Psalm/Internal" />
+                        <directory useStrictTypes="true1" name="src/Psalm/Issue" />
+                        <directory useStrictTypes="false" name="src/Psalm/Node" />
+                        <directory useStrictTypes="invalid" name="src/Psalm/Plugin" />
+                        <directory useStrictTypes="0" name="src/Psalm/Progress" />
+                        <directory useStrictTypes="" name="src/Psalm/Report" />
+                        <directory name="src/Psalm/SourceControl" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->useStrictTypesForFile(realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
+    }
 }
