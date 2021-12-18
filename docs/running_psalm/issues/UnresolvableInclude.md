@@ -6,6 +6,6 @@ Emitted when Psalm cannot figure out what specific file is being included/requir
 <?php
 
 function requireFile(string $s) : void {
-    require_once($s);
+    require_once $s;
 }
 ```
