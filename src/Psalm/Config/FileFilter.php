@@ -111,12 +111,8 @@ class FileFilter
             /** @var array $directory */
             foreach ($config['directory'] as $directory) {
                 $directory_path = (string) ($directory['name'] ?? '');
-                $ignore_type_stats = strtolower(
-                    isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
-                ) === 'true';
-                $declare_strict_types = strtolower(
-                    isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
-                ) === 'true';
+                $ignore_type_stats = (bool) ($directory['ignoreTypeStats'] ?? false);
+                $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_directory_path = $directory_path;
@@ -350,13 +346,8 @@ class FileFilter
             foreach ($e->directory as $directory) {
                 $config['directory'][] = [
                     'name' => (string) $directory['name'],
-                    'ignoreTypeStats' => strtolower(
-                        isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
-                    ) === 'true',
-
-                    'useStrictTypes' => strtolower(
-                        isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
-                    ) === 'true',
+                    'ignoreTypeStats' => strtolower((string) ($directory['ignoreTypeStats'] ?? '')) === 'true',
+                    'useStrictTypes' => strtolower((string) ($directory['useStrictTypes'] ?? '')) === 'true',
                 ];
             }
         }
