@@ -376,7 +376,8 @@ abstract class Atomic implements TypeNode
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
             || $this instanceof TCallableList
-            || $this instanceof TCallableKeyedArray;
+            || $this instanceof TCallableKeyedArray
+            || $this instanceof TClosure;
     }
 
     public function isIterable(Codebase $codebase): bool
