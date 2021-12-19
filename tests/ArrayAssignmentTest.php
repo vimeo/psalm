@@ -1887,7 +1887,7 @@ class ArrayAssignmentTest extends TestCase
                     $a[] = 2;
 
                     takesArray($a);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'listUsedAsArrayWrongListType' => [
                 '<?php
@@ -1899,7 +1899,7 @@ class ArrayAssignmentTest extends TestCase
                     $a[] = 2;
 
                     takesArray($a);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'nonEmptyAssignmentToListElementChangeType' => [
                 '<?php

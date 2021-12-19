@@ -1811,7 +1811,7 @@ class FunctionTemplateTest extends TestCase
                     function takesReturnTCallable(callable $s) {}
 
                     takesReturnTCallable($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveFirstArg' => [
                 '<?php

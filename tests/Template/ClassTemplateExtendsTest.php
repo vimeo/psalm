@@ -4626,7 +4626,7 @@ class ClassTemplateExtendsTest extends TestCase
                     class AppUser extends User {}
 
                     $au = new AppUser("string");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'extendsTwiceDifferentNameBrokenChain' => [
                 '<?php

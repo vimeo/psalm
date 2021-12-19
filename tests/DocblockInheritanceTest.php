@@ -173,7 +173,7 @@ class DocblockInheritanceTest extends TestCase
                     }
 
                     (new X())->boo([1, 2]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
