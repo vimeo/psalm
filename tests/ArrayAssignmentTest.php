@@ -1716,6 +1716,25 @@ class ArrayAssignmentTest extends TestCase
                 [],
                 '8.1'
             ],
+            'nullableDestructuring' => [
+                '<?php
+                    /**
+                     * @return array{"foo", "bar"}|null
+                     */
+                    function foobar(): ?array
+                    {
+                        return null;
+                    }
+
+                    [$_foo, $_bar] = foobar();
+                    ',
+                'assertions' => [
+                    '$_foo' => 'null|string',
+                    '$_bar' => 'null|string',
+                ],
+                [],
+                '8.1'
+            ],
         ];
     }
 

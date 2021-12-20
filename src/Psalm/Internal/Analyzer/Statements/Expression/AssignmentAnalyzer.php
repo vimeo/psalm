@@ -1404,6 +1404,8 @@ class AssignmentAnalyzer
                 }
             }
 
+
+
             if (!$assigned) {
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
@@ -1437,12 +1439,6 @@ class AssignmentAnalyzer
 
                 if ($list_var_id) {
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if (($context->error_suppressing && ($offset || $can_be_empty))
-                        || $has_null
-                    ) {
-                        $context->vars_in_scope[$list_var_id]->addType(new TNull);
-                    }
 
                     if ($statements_analyzer->data_flow_graph) {
                         $data_flow_graph = $statements_analyzer->data_flow_graph;
@@ -1483,6 +1479,14 @@ class AssignmentAnalyzer
                             }
                         }
                     }
+                }
+            }
+
+            if ($list_var_id) {
+                if (($context->error_suppressing && ($offset || $can_be_empty))
+                    || $has_null
+                ) {
+                    $context->vars_in_scope[$list_var_id]->addType(new TNull);
                 }
             }
         }
