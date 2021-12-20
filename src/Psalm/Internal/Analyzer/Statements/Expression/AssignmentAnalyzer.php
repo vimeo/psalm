@@ -1212,17 +1212,6 @@ class AssignmentAnalyzer
                     );
                 } elseif ($assign_value_atomic_type instanceof TNull) {
                     $has_null = true;
-
-                    if (IssueBuffer::accepts(
-                        new PossiblyNullArrayAccess(
-                            'Cannot access array value on null variable ' . $array_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )
-                    ) {
-                        // do nothing
-                    }
                 } elseif (!$assign_value_atomic_type instanceof TArray
                     && !$assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_value_atomic_type instanceof TList
@@ -1404,7 +1393,19 @@ class AssignmentAnalyzer
                 }
             }
 
+
+
             if (!$assigned) {
+                if ($has_null) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyNullArrayAccess(
+                            'Cannot access array value on null variable ' . $array_var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
+
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
                         continue;
@@ -1437,12 +1438,6 @@ class AssignmentAnalyzer
 
                 if ($list_var_id) {
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if (($context->error_suppressing && ($offset || $can_be_empty))
-                        || $has_null
-                    ) {
-                        $context->vars_in_scope[$list_var_id]->addType(new TNull);
-                    }
 
                     if ($statements_analyzer->data_flow_graph) {
                         $data_flow_graph = $statements_analyzer->data_flow_graph;
@@ -1483,6 +1478,14 @@ class AssignmentAnalyzer
                             }
                         }
                     }
+                }
+            }
+
+            if ($list_var_id) {
+                if (($context->error_suppressing && ($offset || $can_be_empty))
+                    || $has_null
+                ) {
+                    $context->vars_in_scope[$list_var_id]->addType(new TNull);
                 }
             }
         }
