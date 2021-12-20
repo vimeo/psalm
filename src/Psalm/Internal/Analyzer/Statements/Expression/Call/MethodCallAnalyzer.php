@@ -61,6 +61,8 @@ class MethodCallAnalyzer extends CallAnalyzer
         if ($existing_stmt_var_type) {
             $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
         } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+            $context->inside_call = $was_inside_call;
+
             return false;
         }
 
@@ -70,6 +72,8 @@ class MethodCallAnalyzer extends CallAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
         }

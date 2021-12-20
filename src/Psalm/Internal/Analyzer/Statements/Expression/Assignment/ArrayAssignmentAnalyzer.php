@@ -712,6 +712,8 @@ class ArrayAssignmentAnalyzer
                     $child_stmt->dim,
                     $context
                 ) === false) {
+                    $context->inside_general_use = $was_inside_general_use;
+
                     return;
                 }
 

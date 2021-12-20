@@ -67,6 +67,8 @@ class IncludeAnalyzer
         $context->inside_call = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            $context->inside_call = $was_inside_call;
+
             return false;
         }
 

@@ -380,6 +380,8 @@ class ClassConstFetchAnalyzer
         $context->inside_general_use = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
+            $context->inside_general_use = $was_inside_general_use;
+
             return false;
         }
 

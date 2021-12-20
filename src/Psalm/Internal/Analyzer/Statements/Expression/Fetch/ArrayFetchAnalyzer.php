@@ -119,6 +119,9 @@ class ArrayFetchAnalyzer
             $context->inside_unset = false;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
+                $context->inside_unset = $was_inside_unset;
+                $context->inside_general_use = $was_inside_general_use;
+
                 return false;
             }
 

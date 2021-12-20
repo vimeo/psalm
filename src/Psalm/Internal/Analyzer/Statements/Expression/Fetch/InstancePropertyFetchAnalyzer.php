@@ -51,6 +51,8 @@ class InstancePropertyFetchAnalyzer
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
+            $context->inside_general_use = $was_inside_general_use;
+
             return false;
         }
 

@@ -211,6 +211,8 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
@@ -1116,6 +1118,8 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
@@ -1225,6 +1229,8 @@ class ArgumentsAnalyzer
                 $arg->value,
                 $context
             ) === false) {
+                $context->inside_assignment = $was_inside_assignment;
+
                 return false;
             }
 

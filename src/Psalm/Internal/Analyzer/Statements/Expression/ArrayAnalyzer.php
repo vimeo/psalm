@@ -311,6 +311,8 @@ class ArrayAnalyzer
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
             $context->inside_general_use = $was_inside_general_use;
