@@ -4,14 +4,25 @@ namespace {
         /** @var non-empty-string $name */
         public readonly string $name;
 
-        /** @return non-empty-list<static> */
+        /**
+         * @psalm-pure
+         * @return non-empty-list<static>
+         */
         public static function cases(): array;
     }
 
     interface BackedEnum
     {
         public readonly int|string $value;
+
+        /**
+         * @psalm-pure
+         */
         public static function from(string|int $value): static;
+
+        /**
+         * @psalm-pure
+         */
         public static function tryFrom(string|int $value): ?static;
     }
 
@@ -27,12 +38,22 @@ namespace {
 
     class ReflectionEnumUnitCase extends ReflectionClassConstant implements Reflector
     {
+        /**
+         * @psalm-pure
+         */
         public function getEnum(): ReflectionEnum;
+
+        /**
+         * @psalm-pure
+         */
         public function getValue(): UnitEnum;
     }
 
     class ReflectionEnumBackedCase extends ReflectionEnumUnitCase implements Reflector
     {
+        /**
+         * @psalm-pure
+         */
         public function getBackingValue(): int|string;
     }
 }
