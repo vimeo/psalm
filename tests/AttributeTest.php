@@ -104,26 +104,15 @@ class AttributeTest extends TestCase
             ],
             'testReflectingAllAttributes' => [
                 '<?php
+                    /** @var class-string $a */
+                    $cs = stdClass::class;
 
-                    final class a
-                    {
-                        /**
-                         * @psalm-param class-string $className
-                         */
-                        public function a(string $className): void
-                        {
-                            $a = new ReflectionClass($className);
-                            $b = $a->getAttributes();
-                            scope($b);
-                        }
-                    }
-
-                    /** @param array<ReflectionAttribute<object>> $_a */
-                    function scope($_a):void{
-
-                    }
+                    $a = new ReflectionClass($cs);
+                    $b = $a->getAttributes();
                     ',
-                [],
+                'assertions' => [
+                    '$b' => 'array<array-key, ReflectionAttribute<object>>',
+                ],
                 [],
                 '8.0'
             ],
