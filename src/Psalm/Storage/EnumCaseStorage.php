@@ -15,6 +15,11 @@ class EnumCaseStorage
     public $stmt_location;
 
     /**
+     * @var bool
+     */
+    public $deprecated = false;
+
+    /**
      * @param int|string|null  $value
      */
     public function __construct(

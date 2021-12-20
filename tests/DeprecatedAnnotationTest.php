@@ -251,6 +251,22 @@ class DeprecatedAnnotationTest extends TestCase
                     ',
                 'error_message' => 'DeprecatedProperty',
             ],
+            'deprecatedEnumCaseFetch' => [
+                '<?php
+                    enum Foo {
+                        case A;
+
+                        /** @deprecated */
+                        case B;
+                    }
+
+                    Foo::B;
+                ',
+                'error_message' => 'DeprecatedConstant',
+                [],
+                false,
+                '8.1',
+            ]
         ];
     }
 }

@@ -1345,10 +1345,20 @@ class ClassLikeNodeScanner
         $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
-            $storage->enum_cases[$stmt->name->name] = new EnumCaseStorage(
+            $case = new EnumCaseStorage(
                 $enum_value,
                 $case_location
             );
+
+            $comment = $stmt->getDocComment();
+            if ($comment) {
+                $comments = DocComment::parsePreservingLength($comment);
+
+                if (isset($comments->tags['deprecated'])) {
+                    $case->deprecated = true;
+                }
+            }
+            $storage->enum_cases[$stmt->name->name] = $case;
         } else {
             if (IssueBuffer::accepts(
                 new DuplicateEnumCase(
