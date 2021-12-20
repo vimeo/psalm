@@ -31,12 +31,17 @@ class SwitchAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
+        $was_inside_conditional = $context->inside_conditional;
+
         $context->inside_conditional = true;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
+            $context->inside_conditional = $was_inside_conditional;
+
             return;
         }
 
-        $context->inside_conditional = false;
+        $context->inside_conditional = $was_inside_conditional;
 
         $switch_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->cond,

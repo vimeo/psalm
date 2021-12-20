@@ -163,13 +163,15 @@ class IfConditionalAnalyzer
             $referenced_var_ids = $first_cond_referenced_var_ids;
             $if_conditional_context->referenced_var_ids = [];
 
+            $was_inside_conditional = $if_conditional_context->inside_conditional;
+
             $if_conditional_context->inside_conditional = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
                 throw new ScopeAnalysisException();
             }
 
-            $if_conditional_context->inside_conditional = false;
+            $if_conditional_context->inside_conditional = $was_inside_conditional;
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->referenced_var_ids;
