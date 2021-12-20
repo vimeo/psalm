@@ -134,9 +134,7 @@ class IfConditionalAnalyzer
             $first_cond_referenced_var_ids
         );
 
-        if (!$was_inside_conditional) {
-            $outer_context->inside_conditional = false;
-        }
+        $outer_context->inside_conditional = $was_inside_conditional;
 
         if (!$if_context) {
             $if_context = clone $outer_context;

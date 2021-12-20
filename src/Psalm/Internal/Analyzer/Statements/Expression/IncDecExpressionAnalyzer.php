@@ -31,15 +31,12 @@ class IncDecExpressionAnalyzer
         $context->inside_assignment = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
-            if (!$was_inside_assignment) {
-                $context->inside_assignment = false;
-            }
+            $context->inside_assignment = $was_inside_assignment;
+
             return false;
         }
 
-        if (!$was_inside_assignment) {
-            $context->inside_assignment = false;
-        }
+        $context->inside_assignment = $was_inside_assignment;
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 

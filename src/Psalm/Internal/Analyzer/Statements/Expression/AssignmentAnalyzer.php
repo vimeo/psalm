@@ -551,9 +551,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getNull();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -571,9 +569,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getEmpty();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -612,9 +608,7 @@ class AssignmentAnalyzer
             }
         }
 
-        if (!$was_in_assignment) {
-            $context->inside_assignment = false;
-        }
+        $context->inside_assignment = $was_in_assignment;
 
         return $assign_value_type;
     }

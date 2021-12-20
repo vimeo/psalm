@@ -424,9 +424,7 @@ class Methods
                         );
                     }
 
-                    if (!$was_inside_call) {
-                        $context->inside_call = false;
-                    }
+                    $context->inside_call = $was_inside_call;
                 }
 
                 $matching_callable = InternalCallMapHandler::getMatchingCallableFromCallMapOptions(

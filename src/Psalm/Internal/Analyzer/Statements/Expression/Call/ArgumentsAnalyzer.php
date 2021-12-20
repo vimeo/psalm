@@ -214,9 +214,7 @@ class ArgumentsAnalyzer
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
 
             if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -1121,9 +1119,7 @@ class ArgumentsAnalyzer
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
         }
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
