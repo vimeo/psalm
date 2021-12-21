@@ -6,7 +6,7 @@ namespace {
 
         /**
          * @psalm-pure
-         * @return non-empty-list<static>
+         * @return list<static>
          */
         public static function cases(): array;
     }
