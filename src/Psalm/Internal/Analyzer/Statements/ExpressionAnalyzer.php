@@ -453,6 +453,8 @@ class ExpressionAnalyzer
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
             if (PrintAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
             $context->inside_call = $was_inside_call;

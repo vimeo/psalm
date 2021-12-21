@@ -211,12 +211,12 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
 
             if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -1118,12 +1118,12 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
         }
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
@@ -1229,6 +1229,8 @@ class ArgumentsAnalyzer
                 $arg->value,
                 $context
             ) === false) {
+                $context->inside_assignment = $was_inside_assignment;
+
                 return false;
             }
 

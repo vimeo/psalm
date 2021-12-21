@@ -163,6 +163,8 @@ class ArrayFunctionArgumentsAnalyzer
                     $args[$i]->value,
                     $context
                 ) === false) {
+                    $context->inside_assignment = $was_inside_assignment;
+
                     return false;
                 }
 

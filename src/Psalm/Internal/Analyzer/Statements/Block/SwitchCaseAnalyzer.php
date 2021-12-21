@@ -114,9 +114,7 @@ class SwitchCaseAnalyzer
                 return false;
             }
 
-            if (!$was_inside_conditional) {
-                $case_context->inside_conditional = false;
-            }
+            $case_context->inside_conditional = $was_inside_conditional;
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 

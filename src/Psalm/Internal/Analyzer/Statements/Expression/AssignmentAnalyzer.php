@@ -236,6 +236,8 @@ class AssignmentAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 if ($var_id) {
                     if ($array_var_id) {
                         $context->removeDescendents($array_var_id, null, $assign_value_type);
@@ -551,9 +553,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getNull();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -571,9 +571,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getEmpty();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -612,9 +610,7 @@ class AssignmentAnalyzer
             }
         }
 
-        if (!$was_in_assignment) {
-            $context->inside_assignment = false;
-        }
+        $context->inside_assignment = $was_in_assignment;
 
         return $assign_value_type;
     }
@@ -1507,10 +1503,14 @@ class AssignmentAnalyzer
             // this can happen when the user actually means to type $this-><autocompleted>, but there's
             // a variable on the next line
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->var, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 
@@ -1699,6 +1699,8 @@ class AssignmentAnalyzer
             $context->inside_general_use = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 
