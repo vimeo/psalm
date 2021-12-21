@@ -46,6 +46,7 @@ use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
+use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
@@ -1350,6 +1351,24 @@ class ClassLikeNodeScanner
                 $case_location
             );
 
+            $attrs = $this->getAttributeStorageFromStatement(
+                $this->codebase,
+                $this->file_scanner,
+                $this->file_storage,
+                $this->aliases,
+                $stmt,
+                $this->storage->name ?? null
+            );
+
+            foreach ($attrs as $attribute) {
+                if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                ) {
+                    $case->deprecated = true;
+                    break;
+                }
+            }
+
             $comment = $stmt->getDocComment();
             if ($comment) {
                 $comments = DocComment::parsePreservingLength($comment);
@@ -1369,6 +1388,34 @@ class ClassLikeNodeScanner
             )) {
             }
         }
+    }
+
+    /**
+     * @param PhpParser\Node\Stmt\Property|PhpParser\Node\Stmt\EnumCase $stmt
+     * @return list<AttributeStorage>
+     */
+    private function getAttributeStorageFromStatement(
+        Codebase $codebase,
+        FileScanner $file_scanner,
+        FileStorage $file_storage,
+        Aliases $aliases,
+        PhpParser\Node\Stmt $stmt,
+        ?string $fq_classlike_name
+    ): array {
+        $storages = [];
+        foreach ($stmt->attrGroups as $attr_group) {
+            foreach ($attr_group->attrs as $attr) {
+                $storages[] = AttributeResolver::resolve(
+                    $codebase,
+                    $file_scanner,
+                    $file_storage,
+                    $aliases,
+                    $attr,
+                    $fq_classlike_name
+                );
+            }
+        }
+        return $storages;
     }
 
     private function visitPropertyDeclaration(
@@ -1566,33 +1613,31 @@ class ClassLikeNodeScanner
                 $storage->inheritable_property_ids[$property->name->name] = $property_id;
             }
 
-            foreach ($stmt->attrGroups as $attr_group) {
-                foreach ($attr_group->attrs as $attr) {
-                    $attribute = AttributeResolver::resolve(
-                        $this->codebase,
-                        $this->file_scanner,
-                        $this->file_storage,
-                        $this->aliases,
-                        $attr,
-                        $this->storage->name ?? null
-                    );
+            $attrs = $this->getAttributeStorageFromStatement(
+                $this->codebase,
+                $this->file_scanner,
+                $this->file_storage,
+                $this->aliases,
+                $stmt,
+                $this->storage->name ?? null
+            );
 
-                    if ($attribute->fq_class_name === 'Psalm\\Deprecated'
-                        || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
-                    ) {
-                        $property_storage->deprecated = true;
-                    }
-
-                    if ($attribute->fq_class_name === 'Psalm\\Internal' && !$property_storage->internal) {
-                        $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
-                    }
-
-                    if ($attribute->fq_class_name === 'Psalm\\Readonly') {
-                        $property_storage->readonly = true;
-                    }
-
-                    $property_storage->attributes[] = $attribute;
+            foreach ($attrs as $attribute) {
+                if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                ) {
+                    $property_storage->deprecated = true;
                 }
+
+                if ($attribute->fq_class_name === 'Psalm\\Internal' && !$property_storage->internal) {
+                    $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                }
+
+                if ($attribute->fq_class_name === 'Psalm\\Readonly') {
+                    $property_storage->readonly = true;
+                }
+
+                $property_storage->attributes[] = $attribute;
             }
         }
     }
