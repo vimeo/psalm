@@ -118,11 +118,11 @@ class FileProvider
 
     /**
      * @param array<string> $file_extensions
-     * @param null|callable(string):bool $directory_filter
+     * @param null|callable(string):bool $filter
      *
      * @return list<string>
      */
-    public function getFilesInDir(string $dir_path, array $file_extensions, callable $directory_filter = null): array
+    public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array
     {
         $file_paths = [];
 
@@ -131,12 +131,18 @@ class FileProvider
             FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS
         );
 
-        if ($directory_filter !== null) {
+        if ($filter !== null) {
             $iterator = new RecursiveCallbackFilterIterator(
                 $iterator,
                 /** @param mixed $_ */
-                function (string $current, $_, RecursiveIterator $iterator) use ($directory_filter): bool {
-                    return !$iterator->hasChildren() || $directory_filter($current . DIRECTORY_SEPARATOR);
+                function (string $current, $_, RecursiveIterator $iterator) use ($filter): bool {
+                    if ($iterator->hasChildren()) {
+                        $path = $current . DIRECTORY_SEPARATOR;
+                    } else {
+                        $path = $current;
+                    }
+
+                    return $filter($path);
                 }
             );
         }
