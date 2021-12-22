@@ -218,6 +218,18 @@ class ClassConstFetchAnalyzer
             }
 
             $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            if ($const_class_storage->is_enum) {
+                $case = $const_class_storage->enum_cases[(string)$stmt->name] ?? null;
+                if ($case && $case->deprecated) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedConstant(
+                            "Enum Case $const_id is marked as deprecated",
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
+            }
 
             if ($fq_class_name === $context->self
                 || (
