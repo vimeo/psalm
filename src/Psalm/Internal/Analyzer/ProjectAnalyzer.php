@@ -1053,12 +1053,12 @@ class ProjectAnalyzer
     private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
-        $directory_filter = $allow_non_project_files ? null : [$this->config, 'isInProjectDirs'];
+        $filter = $allow_non_project_files ? null : [$this->config, 'isInProjectDirs'];
 
         $file_paths = $this->file_provider->getFilesInDir(
             $dir_name,
             $file_extensions,
-            $directory_filter
+            $filter
         );
 
         $files_to_scan = [];
