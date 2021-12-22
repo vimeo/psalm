@@ -142,8 +142,7 @@ class CallableTest extends TestCase
                     }
                     /** @var ArrayList<int> $a */
                     $a = new ArrayList();
-                    $b = asTupled($a);
-                    ',
+                    $b = asTupled($a);',
                 'assertions' => [
                     '$b' => 'ArrayList<array{int}>',
                 ],

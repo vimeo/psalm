@@ -406,18 +406,18 @@ class ArgumentsAnalyzer
                         || $replaced_type_part instanceof TClosure
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
-                            $param_type = $replaced_type_part->params[$closure_param_offset]->type;
+                            $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
-                            if ($param_type->hasTemplate()) {
-                                $param_type = TypeExpander::expandUnion(
+                            if ($replaced_param_type->hasTemplate()) {
+                                $replaced_param_type = TypeExpander::expandUnion(
                                     $codebase,
-                                    $param_type,
-                                    $class_storage->name ?? null,
-                                    $calling_class_storage->name ?? null,
+                                    $replaced_param_type,
+                                    null,
+                                    null,
                                     null,
                                     true,
                                     false,
-                                    $calling_class_storage->final ?? false,
+                                    false,
                                     true,
                                     true,
                                 );
@@ -426,7 +426,7 @@ class ArgumentsAnalyzer
                             if ($param_storage->type && !$param_type_inferred) {
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
-                                    $param_type,
+                                    $replaced_param_type,
                                     $param_storage->type
                                 );
 
@@ -437,7 +437,7 @@ class ArgumentsAnalyzer
 
                             $newly_inferred_type = Type::combineUnionTypes(
                                 $newly_inferred_type,
-                                $param_type,
+                                $replaced_param_type,
                                 $codebase
                             );
                         }
