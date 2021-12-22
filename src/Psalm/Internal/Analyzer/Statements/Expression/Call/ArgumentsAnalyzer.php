@@ -419,7 +419,7 @@ class ArgumentsAnalyzer
                                     false,
                                     false,
                                     true,
-                                    true,
+                                    true
                                 );
                             }
 
