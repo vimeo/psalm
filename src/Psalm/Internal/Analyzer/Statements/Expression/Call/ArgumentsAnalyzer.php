@@ -405,13 +405,28 @@ class ArgumentsAnalyzer
                     if ($replaced_type_part instanceof TCallable
                         || $replaced_type_part instanceof TClosure
                     ) {
-                        if (isset($replaced_type_part->params[$closure_param_offset]->type)
-                            && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
-                        ) {
+                        if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
+                            $param_type = $replaced_type_part->params[$closure_param_offset]->type;
+
+                            if ($param_type->hasTemplate()) {
+                                $param_type = TypeExpander::expandUnion(
+                                    $codebase,
+                                    $param_type,
+                                    $class_storage->name ?? null,
+                                    $calling_class_storage->name ?? null,
+                                    null,
+                                    true,
+                                    false,
+                                    $calling_class_storage->final ?? false,
+                                    true,
+                                    true,
+                                );
+                            }
+
                             if ($param_storage->type && !$param_type_inferred) {
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
-                                    $replaced_type_part->params[$closure_param_offset]->type,
+                                    $param_type,
                                     $param_storage->type
                                 );
 
@@ -422,7 +437,7 @@ class ArgumentsAnalyzer
 
                             $newly_inferred_type = Type::combineUnionTypes(
                                 $newly_inferred_type,
-                                $replaced_type_part->params[$closure_param_offset]->type,
+                                $param_type,
                                 $codebase
                             );
                         }
