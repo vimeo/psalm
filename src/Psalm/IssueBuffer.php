@@ -1,6 +1,9 @@
 <?php
+
 namespace Psalm;
 
+use Psalm\CodeLocation\Raw;
+use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -240,7 +243,7 @@ class IssueBuffer
 
     /**
      * Add an issue to be emitted
-     * @throws  Exception\CodeException
+     * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
@@ -306,7 +309,7 @@ class IssueBuffer
                     ? $e->getMixedOriginMessage()
                     : $e->message);
 
-            throw new Exception\CodeException(
+            throw new CodeException(
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->code_location->getColumn()
@@ -478,7 +481,7 @@ class IssueBuffer
                 self::add(
                     new UnusedPsalmSuppress(
                         'This suppression is never used',
-                        new CodeLocation\Raw(
+                        new Raw(
                             $file_contents,
                             $file_path,
                             $config->shortenFileName($file_path),

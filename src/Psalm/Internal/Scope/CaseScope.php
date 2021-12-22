@@ -1,8 +1,9 @@
 <?php
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -15,7 +16,7 @@ class CaseScope
     public $parent_context;
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $break_vars;
 

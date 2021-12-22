@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -16,6 +17,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\TaintKind;
 
 class EchoAnalyzer
 {
@@ -60,10 +62,10 @@ class EchoAnalyzer
                 );
 
                 $echo_param_sink->taints = [
-                    Type\TaintKind::INPUT_HTML,
-                    Type\TaintKind::INPUT_HAS_QUOTES,
-                    Type\TaintKind::USER_SECRET,
-                    Type\TaintKind::SYSTEM_SECRET
+                    TaintKind::INPUT_HTML,
+                    TaintKind::INPUT_HAS_QUOTES,
+                    TaintKind::USER_SECRET,
+                    TaintKind::SYSTEM_SECRET
                 ];
 
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);

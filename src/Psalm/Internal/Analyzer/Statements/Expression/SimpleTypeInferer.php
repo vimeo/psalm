@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -15,6 +16,19 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_merge;
@@ -42,7 +56,7 @@ class SimpleTypeInferer
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
-    ): ?Type\Union {
+    ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 $left = self::infer(
@@ -75,12 +89,12 @@ class SimpleTypeInferer
                         return Type::getString($result);
                     }
 
-                    if ($left->isSingle() && $left->getSingleAtomic() instanceof Type\Atomic\TNonEmptyString) {
-                        return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                    if ($left->isSingle() && $left->getSingleAtomic() instanceof TNonEmptyString) {
+                        return new Union([new TNonEmptyString()]);
                     }
 
-                    if ($right->isSingle() && $right->getSingleAtomic() instanceof Type\Atomic\TNonEmptyString) {
-                        return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+                    if ($right->isSingle() && $right->getSingleAtomic() instanceof TNonEmptyString) {
+                        return new Union([new TNonEmptyString()]);
                     }
                 }
 
@@ -108,11 +122,11 @@ class SimpleTypeInferer
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
-                return new Type\Union(
+                return new Union(
                     [
-                        new Type\Atomic\TLiteralInt(-1),
-                        new Type\Atomic\TLiteralInt(0),
-                        new Type\Atomic\TLiteralInt(1)
+                        new TLiteralInt(-1),
+                        new TLiteralInt(0),
+                        new TLiteralInt(1)
                     ]
                 );
             }
@@ -210,7 +224,7 @@ class SimpleTypeInferer
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
             || $stmt instanceof PhpParser\Node\Scalar\MagicConst\File
         ) {
-            return new Type\Union([new Type\Atomic\TNonEmptyString()]);
+            return new Union([new TNonEmptyString()]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
@@ -357,11 +371,11 @@ class SimpleTypeInferer
             }
 
             foreach ($type_to_invert->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof Type\Atomic\TLiteralInt
+                if ($type_part instanceof TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
                     $type_part->value = -$type_part->value;
-                } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
+                } elseif ($type_part instanceof TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
                     $type_part->value = -$type_part->value;
@@ -405,7 +419,7 @@ class SimpleTypeInferer
                     }
 
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
-                        if ($array_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        if ($array_atomic_type instanceof TKeyedArray) {
                             if (isset($array_atomic_type->properties[$dim_value])) {
                                 return clone $array_atomic_type->properties[$dim_value];
                             }
@@ -431,7 +445,7 @@ class SimpleTypeInferer
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
-    ): ?Type\Union {
+    ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
         }
@@ -486,21 +500,21 @@ class SimpleTypeInferer
             && $array_creation_info->can_create_objectlike
             && $array_creation_info->property_types
         ) {
-            $objectlike = new Type\Atomic\TKeyedArray(
+            $objectlike = new TKeyedArray(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings
             );
             $objectlike->sealed = true;
             $objectlike->is_list = $array_creation_info->all_list;
-            return new Type\Union([$objectlike]);
+            return new Union([$objectlike]);
         }
 
         if (!$item_key_type || !$item_value_type) {
             return null;
         }
 
-        return new Type\Union([
-            new Type\Atomic\TNonEmptyArray([
+        return new Union([
+            new TNonEmptyArray([
                 $item_key_type,
                 $item_value_type,
             ]),
@@ -577,7 +591,7 @@ class SimpleTypeInferer
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
                     $item_key_value = $item_key_literal_type->value;
 
-                    if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
+                    if ($item_key_literal_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {
@@ -594,7 +608,7 @@ class SimpleTypeInferer
         } else {
             $item_is_list_item = true;
             $item_key_value = $array_creation_info->int_offset++;
-            $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($item_key_value);
+            $array_creation_info->item_key_atomic_types[] = new TLiteralInt($item_key_value);
         }
 
         $single_item_value_type = self::infer(
@@ -637,10 +651,10 @@ class SimpleTypeInferer
             } else {
                 $atomic_type = $dim_type->getSingleAtomic();
 
-                if ($atomic_type instanceof Type\Atomic\TLiteralInt
-                    || $atomic_type instanceof Type\Atomic\TLiteralString
+                if ($atomic_type instanceof TLiteralInt
+                    || $atomic_type instanceof TLiteralString
                 ) {
-                    if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                    if ($atomic_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$atomic_type->value] = true;
                     }
 
@@ -661,17 +675,17 @@ class SimpleTypeInferer
 
     private static function handleUnpackedArray(
         ArrayCreationInfo $array_creation_info,
-        Type\Union $unpacked_array_type
+        Union $unpacked_array_type
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-            if ($unpacked_atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {
                         $new_offset = $key;
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralString($new_offset);
+                        $array_creation_info->item_key_atomic_types[] = new TLiteralString($new_offset);
                     } else {
                         $new_offset = $array_creation_info->int_offset++;
-                        $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TLiteralInt($new_offset);
+                        $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 
                     $array_creation_info->item_value_atomic_types = array_merge(
@@ -682,18 +696,18 @@ class SimpleTypeInferer
                     $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
-            } elseif ($unpacked_atomic_type instanceof Type\Atomic\TArray) {
+            } elseif ($unpacked_atomic_type instanceof TArray) {
                 if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;
 
                 if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TString();
+                    $array_creation_info->item_key_atomic_types[] = new TString();
                 }
 
                 if ($unpacked_atomic_type->type_params[0]->hasInt()) {
-                    $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+                    $array_creation_info->item_key_atomic_types[] = new TInt();
                 }
 
                 $array_creation_info->item_value_atomic_types = array_merge(
@@ -701,16 +715,16 @@ class SimpleTypeInferer
                     array_values(
                         isset($unpacked_atomic_type->type_params[1])
                             ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                            : [new Type\Atomic\TMixed()]
+                            : [new TMixed()]
                     )
                 );
-            } elseif ($unpacked_atomic_type instanceof Type\Atomic\TList) {
+            } elseif ($unpacked_atomic_type instanceof TList) {
                 if ($unpacked_atomic_type->type_param->isEmpty()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;
 
-                $array_creation_info->item_key_atomic_types[] = new Type\Atomic\TInt();
+                $array_creation_info->item_key_atomic_types[] = new TInt();
 
                 $array_creation_info->item_value_atomic_types = array_merge(
                     $array_creation_info->item_value_atomic_types,

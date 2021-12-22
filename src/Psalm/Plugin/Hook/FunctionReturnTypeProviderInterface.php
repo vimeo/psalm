@@ -1,11 +1,12 @@
 <?php
+
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /** @deprecated going to be removed in Psalm 5 */
 interface FunctionReturnTypeProviderInterface
@@ -28,5 +29,5 @@ interface FunctionReturnTypeProviderInterface
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ): ?Type\Union;
+    ): ?Union;
 }

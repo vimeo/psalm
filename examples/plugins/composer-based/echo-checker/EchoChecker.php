@@ -8,6 +8,9 @@ use Psalm\IssueBuffer;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\THtmlEscapedString;
 
 class EchoChecker implements AfterStatementAnalysisInterface
 {
@@ -43,9 +46,9 @@ class EchoChecker implements AfterStatementAnalysisInterface
                 $types = $expr_type->getAtomicTypes();
 
                 foreach ($types as $type) {
-                    if ($type instanceof \Psalm\Type\Atomic\TString
-                        && !$type instanceof \Psalm\Type\Atomic\TLiteralString
-                        && !$type instanceof \Psalm\Type\Atomic\THtmlEscapedString
+                    if ($type instanceof TString
+                        && !$type instanceof TLiteralString
+                        && !$type instanceof THtmlEscapedString
                     ) {
                         if (IssueBuffer::accepts(
                             new ArgumentTypeCoercion(

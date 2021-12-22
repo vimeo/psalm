@@ -1,8 +1,9 @@
 <?php
+
 namespace Psalm\Plugin\EventHandler;
 
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 interface FunctionReturnTypeProviderInterface
 {
@@ -16,5 +17,5 @@ interface FunctionReturnTypeProviderInterface
      * return but another plugin may be able to determine the type, return null. Otherwise return a mixed union type
      * if something should be returned, but can't be more specific.
      */
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union;
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union;
 }

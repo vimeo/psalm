@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -36,8 +37,13 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
@@ -205,12 +211,12 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
 
             if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -243,11 +249,11 @@ class ArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $generic_param_type = new Type\Union([
-            new Type\Atomic\TArray([
+        $generic_param_type = new Union([
+            new TArray([
                 Type::getArrayKey(),
-                new Type\Union([
-                    new Type\Atomic\TTemplateParam(
+                new Union([
+                    new TTemplateParam(
                         'ArrayValue' . $argument_offset,
                         Type::getMixed(),
                         $method_id
@@ -313,8 +319,8 @@ class ArgumentsAnalyzer
                 $function_like_params[] = new FunctionLikeParameter(
                     'function',
                     false,
-                    new Type\Union([
-                        new Type\Atomic\TTemplateParam(
+                    new Union([
+                        new TTemplateParam(
                             $template_name,
                             Type::getMixed(),
                             $method_id
@@ -323,8 +329,8 @@ class ArgumentsAnalyzer
                 );
             }
 
-            $replaced_type = new Type\Union([
-                new Type\Atomic\TCallable(
+            $replaced_type = new Union([
+                new TCallable(
                     'callable',
                     array_reverse($function_like_params)
                 )
@@ -396,8 +402,8 @@ class ArgumentsAnalyzer
 
             if (!$has_different_docblock_type) {
                 foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
-                    if ($replaced_type_part instanceof Type\Atomic\TCallable
-                        || $replaced_type_part instanceof Type\Atomic\TClosure
+                    if ($replaced_type_part instanceof TCallable
+                        || $replaced_type_part instanceof TClosure
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)
                             && !$replaced_type_part->params[$closure_param_offset]->type->hasTemplate()
@@ -603,7 +609,7 @@ class ArgumentsAnalyzer
                     && $function_params[$i]->type
                     && $function_params[$i]->type->hasTemplate()
                 ) {
-                    if ($function_params[$i]->default_type instanceof Type\Union) {
+                    if ($function_params[$i]->default_type instanceof Union) {
                         $default_type = $function_params[$i]->default_type;
                     } else {
                         $default_type_atomic = ConstantTypeResolver::resolve(
@@ -612,7 +618,7 @@ class ArgumentsAnalyzer
                             $statements_analyzer
                         );
 
-                        $default_type = new Type\Union([$default_type_atomic]);
+                        $default_type = new Union([$default_type_atomic]);
                     }
 
                     if ($default_type->hasLiteralValue()) {
@@ -681,7 +687,7 @@ class ArgumentsAnalyzer
                         $key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
 
                         foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof Type\Atomic\TLiteralString
+                            if (!$key_type instanceof TLiteralString
                                 || ($function_storage && !$function_storage->allow_named_arg_calls)) {
                                 continue;
                             }
@@ -1053,8 +1059,8 @@ class ArgumentsAnalyzer
                 }
 
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
-                    $by_ref_type = new Type\Union([
-                        new Type\Atomic\TArray([
+                    $by_ref_type = new Union([
+                        new TArray([
                             Type::getInt(),
                             $by_ref_type,
                         ]),
@@ -1112,12 +1118,12 @@ class ArgumentsAnalyzer
             $context->inside_call = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
 
-            if (!$was_inside_call) {
-                $context->inside_call = false;
-            }
+            $context->inside_call = $was_inside_call;
         }
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
@@ -1223,6 +1229,8 @@ class ArgumentsAnalyzer
                 $arg->value,
                 $context
             ) === false) {
+                $context->inside_assignment = $was_inside_assignment;
+
                 return false;
             }
 
@@ -1271,7 +1279,7 @@ class ArgumentsAnalyzer
                     $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
-                $by_ref_type = new Type\Union([clone $array_type]);
+                $by_ref_type = new Union([clone $array_type]);
 
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
@@ -1318,7 +1326,7 @@ class ArgumentsAnalyzer
     /**
      * @param   list<PhpParser\Node\Arg> $args
      * @param   array<int,FunctionLikeParameter>        $function_params
-     * @param   array<string, array<string, Type\Union>>  $class_generic_params
+     * @param   array<string, array<string, Union>>  $class_generic_params
      */
     private static function getProvisionalTemplateResultForFunctionLike(
         StatementsAnalyzer $statements_analyzer,
@@ -1501,7 +1509,7 @@ class ArgumentsAnalyzer
                     && !$param->is_variadic
                     && $template_result
                 ) {
-                    if ($param->default_type instanceof Type\Union) {
+                    if ($param->default_type instanceof Union) {
                         $default_type = clone $param->default_type;
                     } else {
                         $default_type_atomic = ConstantTypeResolver::resolve(
@@ -1510,7 +1518,7 @@ class ArgumentsAnalyzer
                             $statements_analyzer
                         );
 
-                        $default_type = new Type\Union([$default_type_atomic]);
+                        $default_type = new Union([$default_type_atomic]);
                     }
 
                     TemplateStandinTypeReplacer::replace(

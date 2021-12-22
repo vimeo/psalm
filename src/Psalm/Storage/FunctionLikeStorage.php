@@ -1,10 +1,11 @@
 <?php
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_column;
 use function array_fill_keys;
@@ -38,7 +39,7 @@ abstract class FunctionLikeStorage
     public $param_lookup = [];
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $return_type;
 
@@ -48,7 +49,7 @@ abstract class FunctionLikeStorage
     public $return_type_location;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $signature_return_type;
 
@@ -93,7 +94,7 @@ abstract class FunctionLikeStorage
     public $required_param_count;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $defined_constants = [];
 
@@ -103,7 +104,7 @@ abstract class FunctionLikeStorage
     public $global_variables = [];
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $global_types = [];
 
@@ -116,7 +117,7 @@ abstract class FunctionLikeStorage
      * function identifier. This allows operations with the same-named template defined
      * across multiple classes and/or functions to not run into trouble.
      *
-     * @var array<string, non-empty-array<string, Type\Union>>|null
+     * @var array<string, non-empty-array<string, Union>>|null
      */
     public $template_types;
 
@@ -204,7 +205,7 @@ abstract class FunctionLikeStorage
     public $removed_taints = [];
 
     /**
-     * @var array<Type\Union>
+     * @var array<Union>
      */
     public $conditionally_removed_taints = [];
 

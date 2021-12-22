@@ -1,8 +1,10 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
@@ -65,6 +67,16 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -85,13 +97,13 @@ class AssignmentAnalyzer
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      *
-     * @return false|Type\Union
+     * @return false|Union
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        ?Type\Union $assign_value_type,
+        ?Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = []
@@ -224,6 +236,8 @@ class AssignmentAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 if ($var_id) {
                     if ($array_var_id) {
                         $context->removeDescendents($array_var_id, null, $assign_value_type);
@@ -539,9 +553,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getNull();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -559,9 +571,7 @@ class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = Type::getEmpty();
 
-                if (!$was_in_assignment) {
-                    $context->inside_assignment = false;
-                }
+                $context->inside_assignment = $was_in_assignment;
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -600,9 +610,7 @@ class AssignmentAnalyzer
             }
         }
 
-        if (!$was_in_assignment) {
-            $context->inside_assignment = false;
-        }
+        $context->inside_assignment = $was_in_assignment;
 
         return $assign_value_type;
     }
@@ -613,8 +621,8 @@ class AssignmentAnalyzer
         VarDocblockComment $var_comment,
         Context $context,
         ?string $var_id = null,
-        ?Type\Union &$comment_type = null,
-        ?CodeLocation\DocblockTypeLocation &$comment_type_location = null,
+        ?Union &$comment_type = null,
+        ?DocblockTypeLocation &$comment_type_location = null,
         array $not_ignored_docblock_var_ids = []
     ): void {
         if (!$var_comment->type) {
@@ -651,7 +659,7 @@ class AssignmentAnalyzer
                 && $var_comment->type_end
                 && $var_comment->line_number
             ) {
-                $type_location = new CodeLocation\DocblockTypeLocation(
+                $type_location = new DocblockTypeLocation(
                     $statements_analyzer,
                     $var_comment->type_start,
                     $var_comment->type_end,
@@ -720,7 +728,7 @@ class AssignmentAnalyzer
      * @param  array<string> $added_taints
      */
     private static function taintAssignment(
-        Type\Union $type,
+        Union $type,
         DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
@@ -918,8 +926,8 @@ class AssignmentAnalyzer
     public static function assignByRefParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Type\Union $by_ref_type,
-        Type\Union $by_ref_out_type,
+        Union $by_ref_type,
+        Union $by_ref_out_type,
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false
@@ -1055,7 +1063,7 @@ class AssignmentAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
         ?string $array_var_id,
@@ -1119,7 +1127,7 @@ class AssignmentAnalyzer
             $has_null = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
-                if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
+                if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
                     // if object-like has int offsets
@@ -1190,7 +1198,7 @@ class AssignmentAnalyzer
                     }
                 }
 
-                if ($assign_value_atomic_type instanceof Type\Atomic\TMixed) {
+                if ($assign_value_atomic_type instanceof TMixed) {
                     IssueBuffer::maybeAdd(
                         new MixedArrayAccess(
                             'Cannot access array value on mixed variable ' . $array_var_id,
@@ -1198,28 +1206,17 @@ class AssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-                } elseif ($assign_value_atomic_type instanceof Type\Atomic\TNull) {
+                } elseif ($assign_value_atomic_type instanceof TNull) {
                     $has_null = true;
-
-                    if (IssueBuffer::accepts(
-                        new PossiblyNullArrayAccess(
-                            'Cannot access array value on null variable ' . $array_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )
-                    ) {
-                        // do nothing
-                    }
-                } elseif (!$assign_value_atomic_type instanceof Type\Atomic\TArray
-                    && !$assign_value_atomic_type instanceof Type\Atomic\TKeyedArray
-                    && !$assign_value_atomic_type instanceof Type\Atomic\TList
+                } elseif (!$assign_value_atomic_type instanceof TArray
+                    && !$assign_value_atomic_type instanceof TKeyedArray
+                    && !$assign_value_atomic_type instanceof TList
                     && !$assign_value_type->hasArrayAccessInterface($codebase)
                 ) {
                     if ($assign_value_type->hasArray()) {
-                        if (($assign_value_atomic_type instanceof Type\Atomic\TFalse
+                        if (($assign_value_atomic_type instanceof TFalse
                                 && $assign_value_type->ignore_falsable_issues)
-                            || ($assign_value_atomic_type instanceof Type\Atomic\TNull
+                            || ($assign_value_atomic_type instanceof TNull
                                 && $assign_value_type->ignore_nullable_issues)
                         ) {
                             // do nothing
@@ -1252,18 +1249,18 @@ class AssignmentAnalyzer
                 if ($var instanceof PhpParser\Node\Expr\List_
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                    if ($assign_value_atomic_type instanceof TKeyedArray) {
                         $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
                     }
 
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TList) {
-                        $assign_value_atomic_type = new Type\Atomic\TArray([
+                    if ($assign_value_atomic_type instanceof TList) {
+                        $assign_value_atomic_type = new TArray([
                             Type::getInt(),
                             $assign_value_atomic_type->type_param
                         ]);
                     }
 
-                    $array_value_type = $assign_value_atomic_type instanceof Type\Atomic\TArray
+                    $array_value_type = $assign_value_atomic_type instanceof TArray
                         ? clone $assign_value_atomic_type->type_params[1]
                         : Type::getMixed();
 
@@ -1307,7 +1304,7 @@ class AssignmentAnalyzer
                         }
                     }
 
-                    if ($assign_value_atomic_type instanceof Type\Atomic\TArray) {
+                    if ($assign_value_atomic_type instanceof TArray) {
                         $new_assign_type = clone $assign_value_atomic_type->type_params[1];
 
                         if ($statements_analyzer->data_flow_graph
@@ -1322,8 +1319,8 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyArray;
-                    } elseif ($assign_value_atomic_type instanceof Type\Atomic\TList) {
+                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
+                    } elseif ($assign_value_atomic_type instanceof TList) {
                         $new_assign_type = clone $assign_value_atomic_type->type_param;
 
                         if ($statements_analyzer->data_flow_graph && $assign_value) {
@@ -1336,8 +1333,8 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $can_be_empty = !$assign_value_atomic_type instanceof Type\Atomic\TNonEmptyList;
-                    } elseif ($assign_value_atomic_type instanceof Type\Atomic\TKeyedArray) {
+                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyList;
+                    } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
@@ -1392,7 +1389,19 @@ class AssignmentAnalyzer
                 }
             }
 
+
+
             if (!$assigned) {
+                if ($has_null) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyNullArrayAccess(
+                            'Cannot access array value on null variable ' . $array_var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
+
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
                         continue;
@@ -1425,12 +1434,6 @@ class AssignmentAnalyzer
 
                 if ($list_var_id) {
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if (($context->error_suppressing && ($offset || $can_be_empty))
-                        || $has_null
-                    ) {
-                        $context->vars_in_scope[$list_var_id]->addType(new Type\Atomic\TNull);
-                    }
 
                     if ($statements_analyzer->data_flow_graph) {
                         $data_flow_graph = $statements_analyzer->data_flow_graph;
@@ -1473,6 +1476,14 @@ class AssignmentAnalyzer
                     }
                 }
             }
+
+            if ($list_var_id) {
+                if (($context->error_suppressing && ($offset || $can_be_empty))
+                    || $has_null
+                ) {
+                    $context->vars_in_scope[$list_var_id]->addType(new TNull);
+                }
+            }
         }
     }
 
@@ -1482,7 +1493,7 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\PropertyFetch $assign_var,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         ?string $var_id
     ): void {
         if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
@@ -1492,10 +1503,14 @@ class AssignmentAnalyzer
             // this can happen when the user actually means to type $this-><autocompleted>, but there's
             // a variable on the next line
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->var, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 
@@ -1533,7 +1548,7 @@ class AssignmentAnalyzer
 
                 if ($stmt_var_type->hasObjectType()) {
                     foreach ($stmt_var_type->getAtomicTypes() as $type) {
-                        if ($type instanceof Type\Atomic\TNamedObject) {
+                        if ($type instanceof TNamedObject) {
                             $codebase->analyzer->addMixedMemberName(
                                 strtolower($type->value) . '::$',
                                 $context->calling_method_id ?: $statements_analyzer->getFileName()
@@ -1582,7 +1597,7 @@ class AssignmentAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\Variable $assign_var,
         ?PhpParser\Node\Expr $assign_value,
-        Type\Union $assign_value_type,
+        Union $assign_value_type,
         ?string $var_id,
         Context $context
     ): void {
@@ -1684,6 +1699,8 @@ class AssignmentAnalyzer
             $context->inside_general_use = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return;
             }
 

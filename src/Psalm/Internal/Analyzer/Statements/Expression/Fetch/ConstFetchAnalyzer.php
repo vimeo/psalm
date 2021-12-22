@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -15,6 +16,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_key_exists;
@@ -102,7 +104,7 @@ class ConstFetchAnalyzer
         Codebase $codebase,
         string $fq_const_name,
         string $const_name
-    ): ?Type\Union {
+    ): ?Union {
         if ($const_name === 'STDERR'
             || $const_name === 'STDOUT'
             || $const_name === 'STDIN'
@@ -195,7 +197,7 @@ class ConstFetchAnalyzer
         string $const_name,
         bool $is_fully_qualified,
         ?Context $context
-    ): ?Type\Union {
+    ): ?Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
@@ -250,7 +252,7 @@ class ConstFetchAnalyzer
     public static function setConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
-        Type\Union $const_type,
+        Union $const_type,
         Context $context
     ): void {
         $context->vars_in_scope[$const_name] = $const_type;

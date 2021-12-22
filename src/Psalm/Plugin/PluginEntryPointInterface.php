@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Plugin;
 
 use SimpleXMLElement;

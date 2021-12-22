@@ -1,9 +1,10 @@
 <?php
+
 namespace Psalm\Internal\Scope;
 
 use PhpParser;
 use Psalm\Internal\Clause;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -11,7 +12,7 @@ use Psalm\Type;
 class SwitchScope
 {
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $new_vars_in_scope;
 
@@ -21,12 +22,12 @@ class SwitchScope
     public $new_vars_possibly_in_scope = [];
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $redefined_vars;
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $possibly_redefined_vars;
 

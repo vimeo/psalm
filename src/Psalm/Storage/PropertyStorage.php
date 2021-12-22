@@ -1,9 +1,10 @@
 <?php
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class PropertyStorage
 {
@@ -40,17 +41,17 @@ class PropertyStorage
     public $signature_type_location;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $type;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $signature_type;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $suggested_type;
 

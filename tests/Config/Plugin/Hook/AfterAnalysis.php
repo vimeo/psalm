@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Internal\Analyzer\IssueData;

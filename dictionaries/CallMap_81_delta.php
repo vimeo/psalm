@@ -45,6 +45,7 @@ return [
     'ReflectionEnumUnitCase::getEnum' => ['ReflectionEnum'],
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
+    'ReflectionFunctionAbstract::isStatic' => ['bool'],
   ],
 
   'changed' => [
@@ -633,8 +634,8 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection|null', 'option'=>'int', 'value'=>'mixed'],
     ],
     'ldap_set_rebind_proc' => [
-      'old' => ['bool', 'ldap'=>'resource', 'callback'=>'string'],
-      'new' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'string'],
+      'old' => ['bool', 'ldap'=>'resource', 'callback'=>'?callable'],
+      'new' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'?callable'],
     ],
     'mysqli::connect' => [
       'old' => ['null|false', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
@@ -1106,5 +1107,7 @@ return [
     ],
   ],
 
-  'removed' => [],
+  'removed' => [
+    'ReflectionMethod::isStatic' => ['bool'],
+  ],
 ];

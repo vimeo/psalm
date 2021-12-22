@@ -1,11 +1,12 @@
 <?php
+
 namespace Psalm\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /** @deprecated going to be removed in Psalm 5 */
 interface MethodReturnTypeProviderInterface
@@ -21,7 +22,7 @@ interface MethodReturnTypeProviderInterface
      * something should be returned, but can't be more specific.
      *
      * @param  list<PhpParser\Node\Arg>    $call_args
-     * @param  ?array<Type\Union> $template_type_parameters
+     * @param  ?array<Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
      */
@@ -35,5 +36,5 @@ interface MethodReturnTypeProviderInterface
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name_lowercase = null
-    ): ?Type\Union;
+    ): ?Union;
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Config;
 
 use Psalm\Config;

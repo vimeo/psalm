@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
@@ -146,7 +147,7 @@ class IntegerRangeComparator
                     //the range in input is wider than container, we return false
                     return false;
                 }
-            } elseif ($container_atomic_type instanceof Atomic\TLiteralInt) {
+            } elseif ($container_atomic_type instanceof TLiteralInt) {
                 if (!$reduced_range->contains($container_atomic_type->value)) {
                     unset($container_atomic_types[$key]); //we don't need this one anymore
                 } elseif ($reduced_range->min_bound === $container_atomic_type->value) {

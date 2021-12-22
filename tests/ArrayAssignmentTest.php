@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -1711,6 +1712,25 @@ class ArrayAssignmentTest extends TestCase
                     $_a = [...posiviteIntegers(), int()];',
                 'assertions' => [
                     '$_a' => 'non-empty-list<int>',
+                ],
+                [],
+                '8.1'
+            ],
+            'nullableDestructuring' => [
+                '<?php
+                    /**
+                     * @return array{"foo", "bar"}|null
+                     */
+                    function foobar(): ?array
+                    {
+                        return null;
+                    }
+
+                    [$_foo, $_bar] = foobar();
+                    ',
+                'assertions' => [
+                    '$_foo' => 'null|string',
+                    '$_bar' => 'null|string',
                 ],
                 [],
                 '8.1'

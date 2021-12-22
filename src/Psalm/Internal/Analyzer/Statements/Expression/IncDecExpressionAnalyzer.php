@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -7,6 +8,7 @@ use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
 use PhpParser\Node\Expr\PreInc;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
@@ -29,15 +31,12 @@ class IncDecExpressionAnalyzer
         $context->inside_assignment = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
-            if (!$was_inside_assignment) {
-                $context->inside_assignment = false;
-            }
+            $context->inside_assignment = $was_inside_assignment;
+
             return false;
         }
 
-        if (!$was_inside_assignment) {
-            $context->inside_assignment = false;
-        }
+        $context->inside_assignment = $was_inside_assignment;
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
 
@@ -54,7 +53,7 @@ class IncDecExpressionAnalyzer
             $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
-            BinaryOp\ArithmeticOpAnalyzer::analyze(
+            ArithmeticOpAnalyzer::analyze(
                 $statements_analyzer,
                 $statements_analyzer->node_data,
                 $stmt->var,

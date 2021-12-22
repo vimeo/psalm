@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Tests\TestCase;
@@ -970,14 +971,16 @@ class ConditionalTest extends TestCase
                     }
                     strlen($a);',
             ],
-            'removeCallable' => [
+            'removeCallableString' => [
                 '<?php
                     $s = rand(0,1) ? "strlen" : [1];
                     if (!is_callable($s)) {
                         array_pop($s);
-                    }
-
-                    $a = rand(0, 1) ? (function(): void {}) : 1.1;
+                    }',
+            ],
+            'removeCallableClosure' => [
+                '<?php
+                    $a = rand(0, 1) ? (function(): void {}) : 1;
                     if (!is_callable($a)) {
                         echo $a;
                     }',

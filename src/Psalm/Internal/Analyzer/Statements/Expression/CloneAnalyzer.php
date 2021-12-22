@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -12,9 +13,10 @@ use Psalm\Issue\InvalidClone;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\IssueBuffer;
-use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 
@@ -83,13 +85,13 @@ class CloneAnalyzer
                 } elseif ($clone_type_part instanceof TTemplateParam) {
                     $atomic_types = array_merge($atomic_types, $clone_type_part->as->getAtomicTypes());
                 } else {
-                    if ($clone_type_part instanceof Type\Atomic\TFalse
+                    if ($clone_type_part instanceof TFalse
                         && $clone_type->ignore_falsable_issues
                     ) {
                         continue;
                     }
 
-                    if ($clone_type_part instanceof Type\Atomic\TNull
+                    if ($clone_type_part instanceof TNull
                         && $clone_type->ignore_nullable_issues
                     ) {
                         continue;

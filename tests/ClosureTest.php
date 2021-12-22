@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -1041,6 +1042,14 @@ class ClosureTest extends TestCase
                 [],
                 false,
                 '7.4'
+            ],
+            'closureInvalidArg' => [
+                '<?php
+                    /** @param Closure(int): string $c */
+                    function takesClosure(Closure $c): void {}
+
+                    takesClosure(5);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

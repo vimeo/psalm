@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Report;
 
 use LSS\Array2XML;

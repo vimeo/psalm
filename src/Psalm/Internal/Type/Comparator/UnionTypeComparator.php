@@ -4,16 +4,18 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_pop;
@@ -30,8 +32,8 @@ class UnionTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Type\Union $input_type,
-        Type\Union $container_type,
+        Union $input_type,
+        Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
@@ -82,7 +84,7 @@ class UnionTypeComparator
                 continue;
             }
 
-            if ($input_type_part instanceof Type\Atomic\TClassConstant) {
+            if ($input_type_part instanceof TClassConstant) {
                 $expanded = TypeExpander::expandAtomic(
                     $codebase,
                     $input_type_part,
@@ -94,7 +96,7 @@ class UnionTypeComparator
                 );
 
                 if ($expanded instanceof Atomic) {
-                    if (!$expanded instanceof Atomic\TClassConstant) {
+                    if (!$expanded instanceof TClassConstant) {
                         $input_atomic_types[] = $expanded;
                         continue;
                     }
@@ -129,7 +131,7 @@ class UnionTypeComparator
                 }
             }
 
-            if ($input_type_part instanceof Atomic\TIntRange && $container_type->hasInt()) {
+            if ($input_type_part instanceof TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
                     $input_type_part,
                     $container_type
@@ -318,8 +320,8 @@ class UnionTypeComparator
      *
      */
     public static function isContainedByInPhp(
-        ?Type\Union $input_type,
-        Type\Union $container_type
+        ?Union $input_type,
+        Union $container_type
     ): bool {
         if ($container_type->isMixed()) {
             return true;
@@ -363,8 +365,8 @@ class UnionTypeComparator
      */
     public static function canBeContainedBy(
         Codebase $codebase,
-        Type\Union $input_type,
-        Type\Union $container_type,
+        Union $input_type,
+        Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
         array &$matching_input_keys = []
@@ -418,8 +420,8 @@ class UnionTypeComparator
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
-        Type\Union $type1,
-        Type\Union $type2,
+        Union $type1,
+        Union $type2,
         bool $allow_interface_equality = true
     ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
@@ -434,7 +436,7 @@ class UnionTypeComparator
             foreach ($type2->getAtomicTypes() as $type2_part) {
                 //special cases for TIntRange because it can contain a part of the other type.
                 //For exemple int<0,1> and positive-int can be identical but none contain the other
-                if (($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TPositiveInt)) {
+                if (($type1_part instanceof TIntRange && $type2_part instanceof TPositiveInt)) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         TIntRange::convertToIntRange($type2_part),
                         $type1_part
@@ -442,7 +444,7 @@ class UnionTypeComparator
                     return $intersection_range !== null;
                 }
 
-                if ($type2_part instanceof Atomic\TIntRange && $type1_part instanceof Atomic\TPositiveInt) {
+                if ($type2_part instanceof TIntRange && $type1_part instanceof TPositiveInt) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         TIntRange::convertToIntRange($type1_part),
                         $type2_part
@@ -450,7 +452,7 @@ class UnionTypeComparator
                     return $intersection_range !== null;
                 }
 
-                if ($type1_part instanceof Atomic\TIntRange && $type2_part instanceof Atomic\TIntRange) {
+                if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,
                         $type2_part
@@ -475,11 +477,11 @@ class UnionTypeComparator
     }
 
     /**
-     * @return list<Type\Atomic>
+     * @return list<Atomic>
      */
     private static function getTypeParts(
         Codebase $codebase,
-        Type\Union $union_type
+        Union $union_type
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
@@ -496,7 +498,7 @@ class UnionTypeComparator
                 true,
                 true
             );
-            if ($expanded instanceof Type\Atomic) {
+            if ($expanded instanceof Atomic) {
                 array_push($atomic_types, $expanded);
                 continue;
             }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -6,11 +7,41 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BitwiseNotAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BooleanNotAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\EmptyAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\EncapsulatedStringAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\EvalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExitAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IncDecExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\InstanceofAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IssetAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\MagicConstAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\MatchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\PrintAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\TernaryAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\UnaryPlusMinusAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\YieldAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -74,7 +105,7 @@ class ExpressionAnalyzer
                     $negate = !$negate;
                 }
 
-                Expression\AssertionFinder::scrapeAssertions(
+                AssertionFinder::scrapeAssertions(
                     $stmt,
                     $context->self,
                     $statements_analyzer,
@@ -116,7 +147,7 @@ class ExpressionAnalyzer
         bool $from_stmt
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            return Expression\Fetch\VariableFetchAnalyzer::analyze(
+            return VariableFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -127,7 +158,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            $assignment_type = Expression\AssignmentAnalyzer::analyze(
+            $assignment_type = AssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
                 $stmt->expr,
@@ -148,7 +179,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
-            return Expression\AssignmentAnalyzer::analyzeAssignmentOperation($statements_analyzer, $stmt, $context);
+            return AssignmentAnalyzer::analyzeAssignmentOperation($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
@@ -160,7 +191,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            Expression\Fetch\ConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            ConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
             return true;
         }
@@ -176,7 +207,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
-            Expression\MagicConstAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            MagicConstAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
             return true;
         }
@@ -195,22 +226,22 @@ class ExpressionAnalyzer
 
 
         if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return Expression\UnaryPlusMinusAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return UnaryPlusMinusAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Isset_) {
-            Expression\IssetAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            IssetAnalyzer::analyze($statements_analyzer, $stmt, $context);
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
 
             return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
-            return Expression\Fetch\ClassConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return ClassConstFetchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            return Expression\Fetch\InstancePropertyFetchAnalyzer::analyze(
+            return InstancePropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -219,7 +250,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            return Expression\Fetch\StaticPropertyFetchAnalyzer::analyze(
+            return StaticPropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context
@@ -227,11 +258,11 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
-            return Expression\BitwiseNotAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return BitwiseNotAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return Expression\BinaryOpAnalyzer::analyze(
+            return BinaryOpAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
@@ -245,7 +276,7 @@ class ExpressionAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\PreInc
             || $stmt instanceof PhpParser\Node\Expr\PreDec
         ) {
-            return Expression\IncDecExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return IncDecExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\New_) {
@@ -253,11 +284,11 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {
-            return Expression\ArrayAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return ArrayAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
-            return Expression\EncapsulatedStringAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return EncapsulatedStringAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
@@ -269,15 +300,15 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Ternary) {
-            return Expression\TernaryAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return TernaryAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return Expression\BooleanNotAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return BooleanNotAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Empty_) {
-            Expression\EmptyAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            EmptyAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
             return true;
         }
@@ -289,7 +320,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return Expression\Fetch\ArrayFetchAnalyzer::analyze(
+            return ArrayFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context
@@ -297,32 +328,32 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast) {
-            return Expression\CastAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return CastAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Clone_) {
-            return Expression\CloneAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return CloneAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Instanceof_) {
-            return Expression\InstanceofAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return InstanceofAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Exit_) {
-            return Expression\ExitAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return ExitAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Include_) {
-            return Expression\IncludeAnalyzer::analyze($statements_analyzer, $stmt, $context, $global_context);
+            return IncludeAnalyzer::analyze($statements_analyzer, $stmt, $context, $global_context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Eval_) {
-            Expression\EvalAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            EvalAnalyzer::analyze($statements_analyzer, $stmt, $context);
             return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            return Expression\AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context);
+            return AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
@@ -421,7 +452,9 @@ class ExpressionAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\Print_) {
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
-            if (Expression\PrintAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+            if (PrintAnalyzer::analyze($statements_analyzer, $stmt, $context) === false) {
+                $context->inside_call = $was_inside_call;
+
                 return false;
             }
             $context->inside_call = $was_inside_call;
@@ -430,18 +463,18 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
-            return Expression\YieldAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return YieldAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
-            return Expression\YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return YieldFromAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         $php_major_version = $statements_analyzer->getCodebase()->php_major_version;
         $php_minor_version = $statements_analyzer->getCodebase()->php_minor_version;
 
         if ($stmt instanceof PhpParser\Node\Expr\Match_ && $php_major_version >= 8) {
-            return Expression\MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $php_major_version >= 8) {
@@ -452,7 +485,7 @@ class ExpressionAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
             && $php_major_version >= 8
         ) {
-            return Expression\NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Error) {

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -621,6 +622,8 @@ class LoopAnalyzer
         $pre_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = [];
 
+        $was_inside_conditional = $loop_context->inside_conditional;
+
         $loop_context->inside_conditional = true;
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -636,10 +639,12 @@ class LoopAnalyzer
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
+            $loop_context->inside_conditional = $was_inside_conditional;
+            
             return [];
         }
 
-        $loop_context->inside_conditional = false;
+        $loop_context->inside_conditional = $was_inside_conditional;
 
         $new_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);

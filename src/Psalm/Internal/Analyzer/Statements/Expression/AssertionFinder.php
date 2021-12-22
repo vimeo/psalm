@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -36,7 +37,22 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_key_exists;
@@ -808,8 +824,8 @@ class AssertionFinder
     }
 
     private static function processIrreconcilableFunctionCall(
-        Type\Union $first_var_type,
-        Type\Union $expected_type,
+        Union $first_var_type,
+        Union $expected_type,
         PhpParser\Node\Expr $expr,
         StatementsAnalyzer $source,
         Codebase $codebase,
@@ -1215,11 +1231,11 @@ class AssertionFinder
                 $literal_class_strings = [];
 
                 foreach ($stmt_class_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                    if ($atomic_type instanceof TLiteralClassString) {
                         $literal_class_strings[] = $atomic_type->value;
-                    } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                    } elseif ($atomic_type instanceof TTemplateParamClass) {
                         $literal_class_strings[] = $atomic_type->param_name;
-                    } elseif ($atomic_type instanceof Type\Atomic\TClassString && $atomic_type->as !== 'object') {
+                    } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
                         $literal_class_strings[] = $atomic_type->as;
                     }
                 }
@@ -1419,7 +1435,7 @@ class AssertionFinder
 
         if ($left_type && $left_type->isSingle()) {
             foreach ($left_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof Type\Atomic\TClassString) {
+                if ($type_part instanceof TClassString) {
                     $left_class_string_t = true;
                     break;
                 }
@@ -1458,7 +1474,7 @@ class AssertionFinder
 
         if ($right_type && $right_type->isSingle()) {
             foreach ($right_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof Type\Atomic\TClassString) {
+                if ($type_part instanceof TClassString) {
                     $right_class_string_t = true;
                     break;
                 }
@@ -1842,7 +1858,7 @@ class AssertionFinder
         FileSource $source,
         PhpParser\Node\Expr\FuncCall $stmt,
         ?string $first_var_name,
-        ?Type\Union $first_var_type,
+        ?Union $first_var_type,
         PhpParser\Node\Expr\FuncCall $expr,
         bool $negate
     ): array {
@@ -1869,7 +1885,7 @@ class AssertionFinder
                     $callable = self::IS_TYPE_CHECKS[$function_name][1];
                     assert(is_callable($callable));
                     $type = $callable();
-                    assert($type instanceof Type\Union);
+                    assert($type instanceof Union);
                     self::processIrreconcilableFunctionCall(
                         $first_var_type,
                         $type,
@@ -2562,7 +2578,7 @@ class AssertionFinder
 
             if ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                    if ($type_part instanceof TTemplateParamClass) {
                         $if_types[$var_name] = [['!=' . $type_part->param_name]];
                     }
                 }
@@ -3262,7 +3278,7 @@ class AssertionFinder
 
             if ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof Type\Atomic\TTemplateParamClass) {
+                    if ($type_part instanceof TTemplateParamClass) {
                         $if_types[$var_name] = [['=' . $type_part->param_name]];
                     }
                 }
@@ -3486,7 +3502,7 @@ class AssertionFinder
                     $vals = [];
 
                     foreach ($second_arg_type->getAtomicTypes() as $second_arg_atomic_type) {
-                        if ($second_arg_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                        if ($second_arg_atomic_type instanceof TTemplateParamClass) {
                             $vals[] = [$is_a_prefix . $second_arg_atomic_type->param_name];
                         }
                     }
@@ -3520,14 +3536,14 @@ class AssertionFinder
             && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof Type\Atomic\TArray
-                    || $atomic_type instanceof Type\Atomic\TKeyedArray
-                    || $atomic_type instanceof Type\Atomic\TList
+                if ($atomic_type instanceof TArray
+                    || $atomic_type instanceof TKeyedArray
+                    || $atomic_type instanceof TList
                 ) {
                     $is_sealed = false;
-                    if ($atomic_type instanceof Type\Atomic\TList) {
+                    if ($atomic_type instanceof TList) {
                         $value_type = $atomic_type->type_param;
-                    } elseif ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                    } elseif ($atomic_type instanceof TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
                         $is_sealed = $atomic_type->sealed;
                     } else {
@@ -3551,18 +3567,18 @@ class AssertionFinder
                         }
                     } else {
                         foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
-                            if ($atomic_value_type instanceof Type\Atomic\TLiteralInt
-                                || $atomic_value_type instanceof Type\Atomic\TLiteralString
-                                || $atomic_value_type instanceof Type\Atomic\TLiteralFloat
-                                || $atomic_value_type instanceof Type\Atomic\TEnumCase
+                            if ($atomic_value_type instanceof TLiteralInt
+                                || $atomic_value_type instanceof TLiteralString
+                                || $atomic_value_type instanceof TLiteralFloat
+                                || $atomic_value_type instanceof TEnumCase
                             ) {
                                 $assertions[] = '=' . $atomic_value_type->getAssertionString();
-                            } elseif ($atomic_value_type instanceof Type\Atomic\TFalse
-                                || $atomic_value_type instanceof Type\Atomic\TTrue
-                                || $atomic_value_type instanceof Type\Atomic\TNull
+                            } elseif ($atomic_value_type instanceof TFalse
+                                || $atomic_value_type instanceof TTrue
+                                || $atomic_value_type instanceof TNull
                             ) {
                                 $assertions[] = $atomic_value_type->getAssertionString();
-                            } elseif (!$atomic_value_type instanceof Type\Atomic\TMixed) {
+                            } elseif (!$atomic_value_type instanceof TMixed) {
                                 // mixed doesn't tell us anything and can be omitted.
                                 //
                                 // For the meaning of in-array, see the above comment.
@@ -3583,13 +3599,13 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\FuncCall $expr
-     * @param Type\Union|null $first_var_type
+     * @param Union|null $first_var_type
      * @param string|null $first_var_name
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>
      */
     private static function getArrayKeyExistsAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
-        ?Type\Union $first_var_type,
+        ?Union $first_var_type,
         ?string $first_var_name,
         FileSource $source,
         ?string $this_class_name
@@ -3607,10 +3623,10 @@ class AssertionFinder
             && ($second_var_type = $source->node_data->getType($expr->getArgs()[1]->value))
         ) {
             foreach ($second_var_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof Type\Atomic\TArray
-                    || $atomic_type instanceof Type\Atomic\TKeyedArray
+                if ($atomic_type instanceof TArray
+                    || $atomic_type instanceof TKeyedArray
                 ) {
-                    if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+                    if ($atomic_type instanceof TKeyedArray) {
                         $key_possibly_undefined = false;
 
                         foreach ($atomic_type->properties as $property_type) {
@@ -4027,9 +4043,9 @@ class AssertionFinder
      */
     private static function handleParadoxicalAssertions(
         StatementsAnalyzer $source,
-        Type\Union $var_type,
+        Union $var_type,
         ?string $this_class_name,
-        Type\Union $other_type,
+        Union $other_type,
         Codebase $codebase,
         PhpParser\Node\Expr\BinaryOp $conditional
     ): void {

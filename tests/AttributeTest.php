@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -98,6 +99,20 @@ class AttributeTest extends TestCase
                         }
                     }',
                 [],
+                [],
+                '8.0'
+            ],
+            'testReflectingAllAttributes' => [
+                '<?php
+                    /** @var class-string $a */
+                    $cs = stdClass::class;
+
+                    $a = new ReflectionClass($cs);
+                    $b = $a->getAttributes();
+                    ',
+                'assertions' => [
+                    '$b' => 'array<array-key, ReflectionAttribute<object>>',
+                ],
                 [],
                 '8.0'
             ],

@@ -5,6 +5,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\InvalidMethodOverrideException;
@@ -24,7 +25,17 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TAssertionFalsy;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
@@ -46,7 +57,7 @@ use function trim;
 class FunctionLikeDocblockScanner
 {
     /**
-     * @param array<string, non-empty-array<string, Type\Union>> $existing_function_template_types
+     * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function addDocblockInfo(
@@ -153,7 +164,7 @@ class FunctionLikeDocblockScanner
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
-            $throw_location = new CodeLocation\DocblockTypeLocation(
+            $throw_location = new DocblockTypeLocation(
                 $file_scanner,
                 $offset,
                 $offset + strlen($throw),
@@ -398,13 +409,13 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>> $template_types
+     * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
-     * @param  array<string, array<string, Type\Union>> $function_template_types
+     * @param  array<string, array<string, Union>> $function_template_types
      *
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
-     *     array<string, array<string, Type\Union>>
+     *     array<string, array<string, Union>>
      * }
      */
     private static function getConditionalSanitizedTypeTokens(
@@ -452,8 +463,8 @@ class FunctionLikeDocblockScanner
 
                             $param_type_mapping[$token_body] = $template_name;
 
-                            $param_storage->type = new Type\Union([
-                                new Type\Atomic\TTemplateParam(
+                            $param_storage->type = new Union([
+                                new TTemplateParam(
                                     $template_name,
                                     $template_as_type,
                                     $template_function_id
@@ -520,8 +531,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $class_template_types
-     * @param array<string, array<string, Type\Union>> $function_template_types
+     * @param array<string, array<string, Union>> $class_template_types
+     * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @return non-empty-list<string>|null
      */
@@ -599,14 +610,14 @@ class FunctionLikeDocblockScanner
         $assertion_type_parts = [];
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
-            if ($namespaced_type_part instanceof Type\Atomic\TAssertionFalsy
-                || $namespaced_type_part instanceof Type\Atomic\TClassConstant
-                || ($namespaced_type_part instanceof Type\Atomic\TList
+            if ($namespaced_type_part instanceof TAssertionFalsy
+                || $namespaced_type_part instanceof TClassConstant
+                || ($namespaced_type_part instanceof TList
                     && $namespaced_type_part->type_param->isMixed())
-                || ($namespaced_type_part instanceof Type\Atomic\TArray
+                || ($namespaced_type_part instanceof TArray
                     && $namespaced_type_part->type_params[0]->isArrayKey()
                     && $namespaced_type_part->type_params[1]->isMixed())
-                || ($namespaced_type_part instanceof Type\Atomic\TIterable
+                || ($namespaced_type_part instanceof TIterable
                     && $namespaced_type_part->type_params[0]->isMixed()
                     && $namespaced_type_part->type_params[1]->isMixed())
             ) {
@@ -620,8 +631,8 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $class_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
+     * @param array<string, array<string, Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
      * @param array<
      *     int,
@@ -681,7 +692,7 @@ class FunctionLikeDocblockScanner
             }
 
             if (!$fake_method) {
-                $docblock_type_location = new CodeLocation\DocblockTypeLocation(
+                $docblock_type_location = new DocblockTypeLocation(
                     $file_scanner,
                     $docblock_param['start'],
                     $docblock_param['end'],
@@ -777,13 +788,13 @@ class FunctionLikeDocblockScanner
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var Type\Atomic\TArray|Type\Atomic\TKeyedArray|Type\Atomic\TList
+                 * @var TArray|TKeyedArray|TList
                  */
                 $array_type = $new_param_type->getAtomicTypes()['array'];
 
-                if ($array_type instanceof Type\Atomic\TKeyedArray) {
+                if ($array_type instanceof TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
-                } elseif ($array_type instanceof Type\Atomic\TList) {
+                } elseif ($array_type instanceof TList) {
                     $new_param_type = $array_type->type_param;
                 } else {
                     $new_param_type = $array_type->type_params[1];
@@ -801,13 +812,13 @@ class FunctionLikeDocblockScanner
                     && !$new_param_type->isNullable()
                     && !$new_param_type->hasTemplate()
                 ) {
-                    $new_param_type->addType(new Type\Atomic\TNull());
+                    $new_param_type->addType(new TNull());
                 }
 
                 $config = Config::getInstance();
 
                 if ($config->add_param_default_to_docblock_type
-                    && $storage_param->default_type instanceof Type\Union
+                    && $storage_param->default_type instanceof Union
                     && !$storage_param->default_type->hasMixed()
                     && (!$storage_param->type || !$storage_param->type->hasMixed())
                 ) {
@@ -827,8 +838,8 @@ class FunctionLikeDocblockScanner
                 if (isset($storage_param_atomic_types[$key])) {
                     $type->from_docblock = false;
 
-                    if ($storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
-                        && $type instanceof Type\Atomic\TArray
+                    if ($storage_param_atomic_types[$key] instanceof TArray
+                        && $type instanceof TArray
                         && $type->type_params[0]->hasArrayKey()
                     ) {
                         $type->type_params[0]->from_docblock = false;
@@ -843,7 +854,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->addType(new Type\Atomic\TNull());
+                $new_param_type->addType(new TNull());
             }
 
             $storage_param->type = $new_param_type;
@@ -864,8 +875,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleReturn(
         Codebase $codebase,
@@ -888,7 +899,7 @@ class FunctionLikeDocblockScanner
             && $docblock_info->return_type_start
             && $docblock_info->return_type_end
         ) {
-            $storage->return_type_location = new CodeLocation\DocblockTypeLocation(
+            $storage->return_type_location = new DocblockTypeLocation(
                 $file_scanner,
                 $docblock_info->return_type_start,
                 $docblock_info->return_type_end,
@@ -967,7 +978,7 @@ class FunctionLikeDocblockScanner
                             $storage->signature_return_type
                         )
                     ) {
-                        $storage->return_type->addType(new Type\Atomic\TNull());
+                        $storage->return_type->addType(new TNull());
                     }
                 }
             }
@@ -1083,8 +1094,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleRemovedTaint(
         Codebase $codebase,
@@ -1123,7 +1134,7 @@ class FunctionLikeDocblockScanner
 
             $removed_taint_single = $removed_taint->getSingleAtomic();
 
-            if (!$removed_taint_single instanceof Type\Atomic\TConditional) {
+            if (!$removed_taint_single instanceof TConditional) {
                 throw new TypeParseTreeException('Escaped taint must be a conditional');
             }
 
@@ -1138,8 +1149,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, non-empty-array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
     private static function handleAssertions(
         FunctionDocblockComment $docblock_info,
@@ -1298,8 +1309,8 @@ class FunctionLikeDocblockScanner
 
     /**
      * @param array<string, TypeAlias> $type_aliases
-     * @param array<string, array<string, Type\Union>> $function_template_types
-     * @param array<string, non-empty-array<string, Type\Union>> $class_template_types
+     * @param array<string, array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
      * @param  array{name:string, type:string, line_number: int} $docblock_param_out
      */
     private static function handleParamOut(
@@ -1352,9 +1363,9 @@ class FunctionLikeDocblockScanner
     }
 
     /**
-     * @param ?array<string, non-empty-array<string, Type\Union>> $template_types
+     * @param ?array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @return array<string, non-empty-array<string, Type\Union>>
+     * @return array<string, non-empty-array<string, Union>>
      */
     private static function handleTemplates(
         FunctionLikeStorage $storage,

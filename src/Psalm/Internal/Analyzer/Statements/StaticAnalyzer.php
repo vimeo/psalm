@@ -1,8 +1,10 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -105,7 +107,7 @@ class StaticAnalyzer
                             && $var_comment->type_end
                             && $var_comment->line_number
                         ) {
-                            $type_location = new CodeLocation\DocblockTypeLocation(
+                            $type_location = new DocblockTypeLocation(
                                 $statements_analyzer,
                                 $var_comment->type_start,
                                 $var_comment->type_end,

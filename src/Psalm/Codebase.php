@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm;
 
 use Exception;
@@ -15,8 +16,10 @@ use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -49,7 +52,17 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKindGroup;
+use Psalm\Type\Union;
 use ReflectionProperty;
 use ReflectionType;
 use UnexpectedValueException;
@@ -141,7 +154,7 @@ class Codebase
     private $progress;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     private static $stubbed_constants = [];
 
@@ -328,7 +341,7 @@ class Codebase
 
         self::$stubbed_constants = [];
 
-        $reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
+        $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
         $this->scanner = new Scanner(
             $this,
@@ -396,7 +409,7 @@ class Codebase
 
         $this->file_reference_provider->loadReferenceCache(false);
 
-        Internal\Analyzer\FunctionLikeAnalyzer::clearCache();
+        FunctionLikeAnalyzer::clearCache();
 
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -552,7 +565,7 @@ class Codebase
         }
     }
 
-    public static function getPsalmTypeFromReflection(?ReflectionType $type): Type\Union
+    public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
@@ -619,7 +632,7 @@ class Codebase
         return $locations;
     }
 
-    public function getClosureStorage(string $file_path, string $closure_id): Storage\FunctionStorage
+    public function getClosureStorage(string $file_path, string $closure_id): FunctionStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -633,18 +646,18 @@ class Codebase
         );
     }
 
-    public function addGlobalConstantType(string $const_id, Type\Union $type): void
+    public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
     }
 
-    public function getStubbedConstantType(string $const_id): ?Type\Union
+    public function getStubbedConstantType(string $const_id): ?Union
     {
         return self::$stubbed_constants[$const_id] ?? null;
     }
 
     /**
-     * @return array<string, Type\Union>
+     * @return array<string, Union>
      */
     public function getAllStubbedConstants(): array
     {
@@ -785,7 +798,7 @@ class Codebase
      *
      * @param non-empty-string $function_id
      *
-     * @return Storage\FunctionStorage|Storage\MethodStorage
+     * @return FunctionStorage|MethodStorage
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
@@ -824,7 +837,7 @@ class Codebase
         bool $is_used = true
     ): bool {
         return $this->methods->methodExists(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
             $code_location,
             null,
@@ -841,7 +854,7 @@ class Codebase
      */
     public function getMethodParams($method_id): array
     {
-        return $this->methods->getMethodParams(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -850,7 +863,7 @@ class Codebase
      */
     public function isVariadic($method_id): bool
     {
-        return $this->methods->isVariadic(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -858,10 +871,10 @@ class Codebase
      * @param  list<Arg> $call_args
      *
      */
-    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Type\Union
+    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
     {
         return $this->methods->getMethodReturnType(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             $self_class,
             null,
             $call_args
@@ -874,7 +887,7 @@ class Codebase
      */
     public function getMethodReturnsByRef($method_id): bool
     {
-        return $this->methods->getMethodReturnsByRef(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -887,7 +900,7 @@ class Codebase
         CodeLocation &$defined_location = null
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
-            Internal\MethodIdentifier::wrap($method_id),
+            MethodIdentifier::wrap($method_id),
             $defined_location
         );
     }
@@ -898,7 +911,7 @@ class Codebase
      */
     public function getDeclaringMethodId($method_id): ?string
     {
-        $new_method_id = $this->methods->getDeclaringMethodId(Internal\MethodIdentifier::wrap($method_id));
+        $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
 
         return $new_method_id ? (string) $new_method_id : null;
     }
@@ -911,7 +924,7 @@ class Codebase
      */
     public function getAppearingMethodId($method_id): ?string
     {
-        $new_method_id = $this->methods->getAppearingMethodId(Internal\MethodIdentifier::wrap($method_id));
+        $new_method_id = $this->methods->getAppearingMethodId(MethodIdentifier::wrap($method_id));
 
         return $new_method_id ? (string) $new_method_id : null;
     }
@@ -919,11 +932,11 @@ class Codebase
     /**
      * @param  string|MethodIdentifier $method_id
      *
-     * @return array<string, Internal\MethodIdentifier>
+     * @return array<string, MethodIdentifier>
      */
     public function getOverriddenMethodIds($method_id): array
     {
-        return $this->methods->getOverriddenMethodIds(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
     /**
@@ -932,7 +945,7 @@ class Codebase
      */
     public function getCasedMethodId($method_id): string
     {
-        return $this->methods->getCasedMethodId(Internal\MethodIdentifier::wrap($method_id));
+        return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
 
     public function invalidateInformationForFile(string $file_path): void
@@ -1124,7 +1137,7 @@ class Codebase
 
             $file_contents = $this->getFileContents($file_path);
 
-            return new CodeLocation\Raw(
+            return new Raw(
                 $file_contents,
                 $file_path,
                 $this->config->shortenFileName($file_path),
@@ -1475,7 +1488,7 @@ class Codebase
         return null;
     }
 
-    public function getTypeContextAtPosition(string $file_path, Position $position): ?Type\Union
+    public function getTypeContextAtPosition(string $file_path, Position $position): ?Union
     {
         $file_contents = $this->getFileContents($file_path);
         $offset = $position->toOffset($file_contents);
@@ -1510,7 +1523,7 @@ class Codebase
         $type = Type::parseString($type_string);
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TNamedObject) {
+            if ($atomic_type instanceof TNamedObject) {
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
@@ -1750,11 +1763,11 @@ class Codebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForType(Type\Union $type): array
+    public function getCompletionItemsForType(Union $type): array
     {
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TBool) {
+            if ($atomic_type instanceof TBool) {
                 $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
                 foreach ($bools as $property_name) {
                     $completion_items[] = new CompletionItem(
@@ -1767,7 +1780,7 @@ class Codebase
                         $property_name
                     );
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
+            } elseif ($atomic_type instanceof TLiteralString) {
                 $completion_items[] = new CompletionItem(
                     $atomic_type->value,
                     CompletionItemKind::VALUE,
@@ -1777,7 +1790,7 @@ class Codebase
                     null,
                     "'$atomic_type->value'"
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+            } elseif ($atomic_type instanceof TLiteralInt) {
                 $completion_items[] = new CompletionItem(
                     (string) $atomic_type->value,
                     CompletionItemKind::VALUE,
@@ -1787,7 +1800,7 @@ class Codebase
                     null,
                     (string) $atomic_type->value
                 );
-            } elseif ($atomic_type instanceof Type\Atomic\TClassConstant) {
+            } elseif ($atomic_type instanceof TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
                 $completion_items[] = new CompletionItem(
                     $const,
@@ -1812,7 +1825,7 @@ class Codebase
         $completion_items = [];
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($atomic_type instanceof TKeyedArray) {
                 foreach ($atomic_type->properties as $property_name => $property) {
                     $completion_items[] = new CompletionItem(
                         (string) $property_name,
@@ -1862,7 +1875,7 @@ class Codebase
      * Checks if type is a subtype of other
      *
      * Given two types, checks if `$input_type` is a subtype of `$container_type`.
-     * If you consider `Type\Union` as a set of types, this will tell you
+     * If you consider `Union` as a set of types, this will tell you
      * if `$input_type` is fully contained in `$container_type`,
      *
      * $input_type ⊆ $container_type
@@ -1871,8 +1884,8 @@ class Codebase
      * should be a subset of the function parameter type.
      */
     public function isTypeContainedByType(
-        Type\Union $input_type,
-        Type\Union $container_type
+        Union $input_type,
+        Union $container_type
     ): bool {
         return UnionTypeComparator::isContainedBy($this, $input_type, $container_type);
     }
@@ -1881,7 +1894,7 @@ class Codebase
      * Checks if type has any part that is a subtype of other
      *
      * Given two types, checks if *any part* of `$input_type` is a subtype of `$container_type`.
-     * If you consider `Type\Union` as a set of types, this will tell you if intersection
+     * If you consider `Union` as a set of types, this will tell you if intersection
      * of `$input_type` with `$container_type` is not empty.
      *
      * $input_type ∩ $container_type ≠ ∅ , e.g. they are not disjoint.
@@ -1891,8 +1904,8 @@ class Codebase
      * not a subtype of the required type.
      */
     public function canTypeBeContainedByType(
-        Type\Union $input_type,
-        Type\Union $container_type
+        Union $input_type,
+        Union $container_type
     ): bool {
         return UnionTypeComparator::canBeContainedBy($this, $input_type, $container_type);
     }
@@ -1909,9 +1922,9 @@ class Codebase
      * //  returns [Union(TInt), Union(TString)]
      * ```
      *
-     * @return array{Type\Union,Type\Union}
+     * @return array{Union, Union}
      */
-    public function getKeyValueParamsForTraversableObject(Type\Atomic $type): array
+    public function getKeyValueParamsForTraversableObject(Atomic $type): array
     {
         $key_type = null;
         $value_type = null;
@@ -1943,7 +1956,7 @@ class Codebase
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
-        Type\Union $expr_type,
+        Union $expr_type,
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null

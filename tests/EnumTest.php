@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -586,6 +587,22 @@ class EnumTest extends TestCase
                     enum Status { }
                     ',
                 'error_message' => 'InvalidAttribute',
+                [],
+                false,
+                '8.1',
+            ],
+            'deprecatedAttribute' => [
+                '<?php
+                    enum Foo {
+                        case A;
+
+                        #[Psalm\Deprecated]
+                        case B;
+                    }
+
+                    Foo::B;
+                    ',
+                'error_message' => 'DeprecatedConstant',
                 [],
                 false,
                 '8.1',

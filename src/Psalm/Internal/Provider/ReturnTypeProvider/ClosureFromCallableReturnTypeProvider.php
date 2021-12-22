@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -7,6 +8,8 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Union;
 
 class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
@@ -15,7 +18,7 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
         return ['Closure'];
     }
 
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
+    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
         $method_name_lowercase = $event->getMethodNameLowercase();
@@ -43,7 +46,7 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
                     );
 
                     if ($candidate_callable) {
-                        $closure_types[] = new Type\Atomic\TClosure(
+                        $closure_types[] = new TClosure(
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,

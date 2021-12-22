@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -23,6 +24,7 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -39,7 +41,7 @@ use function substr;
 class IfAnalyzer
 {
     /**
-     * @param  array<string,Type\Union> $pre_assignment_else_redefined_vars
+     * @param  array<string, Union> $pre_assignment_else_redefined_vars
      *
      * @return false|null
      */

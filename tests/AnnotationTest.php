@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -159,6 +160,77 @@ class AnnotationTest extends TestCase
                     $s = $i->offsetGet("a");
                     takesInt($s);
                 }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:5:');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+                /**
+                 * @method int test()
+                 * @method \DateTime modify($modify)
+                 */
+                class WTF extends \DateTime { }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLinesWithMultipleClasses(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:15:');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            class ParentClass
+            {
+                /**
+                 * @return $this
+                 */
+                public function execute()
+                {
+                    return $this;
+                }
+            }
+
+            /**
+             * @method self execute()
+             */
+            class BreakingThings extends ParentClass
+            {
+            }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testLessSpecificImplementedReturnTypeWithDescription(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:7:');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * test test test
+                 * test rambling text
+                 * test test text
+                 *
+                 * @method \DateTime modify($modify)
+                 */
+                class WTF extends \DateTime { }'
         );
 
         $this->analyzeFile('somefile.php', new Context());

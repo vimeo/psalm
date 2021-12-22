@@ -1,10 +1,17 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Union;
 
 use function count;
 use function reset;
@@ -19,7 +26,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_column'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -39,11 +46,11 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         ) {
             $input_array = $first_arg_type->getAtomicTypes()['array'];
             $row_type = null;
-            if ($input_array instanceof Type\Atomic\TKeyedArray) {
+            if ($input_array instanceof TKeyedArray) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
-            } elseif ($input_array instanceof Type\Atomic\TArray) {
+            } elseif ($input_array instanceof TArray) {
                 $row_type = $input_array->type_params[1];
-            } elseif ($input_array instanceof Type\Atomic\TList) {
+            } elseif ($input_array instanceof TList) {
                 $row_type = $input_array->type_param;
             }
 
@@ -64,9 +71,9 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
             }
 
-            $input_array_not_empty = $input_array instanceof Type\Atomic\TNonEmptyList ||
-                $input_array instanceof Type\Atomic\TNonEmptyArray ||
-                $input_array instanceof Type\Atomic\TKeyedArray;
+            $input_array_not_empty = $input_array instanceof TNonEmptyList ||
+                $input_array instanceof TNonEmptyArray ||
+                $input_array instanceof TKeyedArray;
         }
 
         $value_column_name = null;
@@ -98,7 +105,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $result_element_type = null;
         $have_at_least_one_res = false;
         // calculate results
-        if ($row_shape instanceof Type\Atomic\TKeyedArray) {
+        if ($row_shape instanceof TKeyedArray) {
             if ((null !== $value_column_name) && isset($row_shape->properties[$value_column_name])) {
                 $result_element_type = $row_shape->properties[$value_column_name];
                 // When the selected key is possibly_undefined, the resulting array can be empty
@@ -118,14 +125,14 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if (isset($call_args[2]) && (string)$third_arg_type !== 'null') {
             $type = $have_at_least_one_res ?
-                new Type\Atomic\TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
-                : new Type\Atomic\TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
+                new TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
+                : new TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
         } else {
             $type = $have_at_least_one_res ?
-                new Type\Atomic\TNonEmptyList($result_element_type ?? Type::getMixed())
-                : new Type\Atomic\TList($result_element_type ?? Type::getMixed());
+                new TNonEmptyList($result_element_type ?? Type::getMixed())
+                : new TList($result_element_type ?? Type::getMixed());
         }
 
-        return new Type\Union([$type]);
+        return new Union([$type]);
     }
 }

@@ -1,10 +1,12 @@
 <?php
+
 namespace Psalm;
 
 use Exception;
 use LogicException;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use UnexpectedValueException;
 
 use function explode;
@@ -148,7 +150,7 @@ class CodeLocation
         $this->selection_start = $this->file_start;
         $this->selection_end = $this->file_end + 1;
 
-        $project_analyzer = Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
         $codebase = $project_analyzer->getCodebase();
 

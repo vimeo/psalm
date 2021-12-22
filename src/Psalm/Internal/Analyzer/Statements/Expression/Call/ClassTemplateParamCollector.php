@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use Psalm\Codebase;
@@ -8,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -18,7 +20,7 @@ class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
-     * @return array<string, non-empty-array<string, Type\Union>>|null
+     * @return array<string, non-empty-array<string, Union>>|null
      * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress LessSpecificReturnStatement
      */
@@ -27,7 +29,7 @@ class ClassTemplateParamCollector
         ClassLikeStorage $class_storage,
         ClassLikeStorage $static_class_storage,
         ?string $method_name = null,
-        ?Type\Atomic $lhs_type_part = null,
+        ?Atomic $lhs_type_part = null,
         bool $self_call = false
     ): ?array {
         $static_fq_class_name = $static_class_storage->name;
@@ -140,7 +142,7 @@ class ClassTemplateParamCollector
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = new Type\Union(
+                        $class_template_params[$type_name][$candidate_class_storage->name] = new Union(
                             self::expandType(
                                 $codebase,
                                 $e[$candidate_class_storage->name][$type_name],
@@ -170,7 +172,7 @@ class ClassTemplateParamCollector
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
+            if ($type_extends_atomic instanceof TTemplateParam) {
                 if (isset(
                     $static_class_storage
                             ->template_types
@@ -215,7 +217,7 @@ class ClassTemplateParamCollector
                 }
             } else {
                 $output_type_extends = Type::combineUnionTypes(
-                    new Type\Union([$type_extends_atomic]),
+                    new Union([$type_extends_atomic]),
                     $output_type_extends
                 );
             }
@@ -224,12 +226,12 @@ class ClassTemplateParamCollector
     }
 
     /**
-     * @param array<string, array<string, Type\Union>> $e
-     * @return non-empty-list<Type\Atomic>
+     * @param array<string, array<string, Union>> $e
+     * @return non-empty-list<Atomic>
      */
     private static function expandType(
         Codebase $codebase,
-        Type\Union $input_type_extends,
+        Union $input_type_extends,
         array $e,
         string $static_fq_class_name,
         ?array $static_template_types
@@ -237,7 +239,7 @@ class ClassTemplateParamCollector
         $output_type_extends = [];
 
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam
+            if ($type_extends_atomic instanceof TTemplateParam
                 && ($static_fq_class_name !== $type_extends_atomic->defining_class
                     || !isset($static_template_types[$type_extends_atomic->param_name]))
                 && isset($e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name])

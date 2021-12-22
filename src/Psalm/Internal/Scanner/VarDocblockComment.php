@@ -1,7 +1,8 @@
 <?php
+
 namespace Psalm\Internal\Scanner;
 
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -9,7 +10,7 @@ use Psalm\Type;
 class VarDocblockComment
 {
     /**
-     * @var ?Type\Union
+     * @var ?Union
      */
     public $type;
 

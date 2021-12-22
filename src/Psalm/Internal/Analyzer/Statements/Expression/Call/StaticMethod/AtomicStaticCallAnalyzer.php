@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use Exception;
@@ -37,7 +38,20 @@ use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
@@ -52,7 +66,7 @@ class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         bool $ignore_nullable_issues,
         bool &$moved_call,
         bool &$has_mock,
@@ -86,7 +100,7 @@ class AtomicStaticCallAnalyzer
             }
 
             $intersection_types = $lhs_type_part->extra_types;
-        } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
+        } elseif ($lhs_type_part instanceof TClassString
             && $lhs_type_part->as_type
         ) {
             $fq_class_name = $lhs_type_part->as_type->value;
@@ -103,7 +117,7 @@ class AtomicStaticCallAnalyzer
             }
 
             $intersection_types = $lhs_type_part->as_type->extra_types;
-        } elseif ($lhs_type_part instanceof Type\Atomic\TDependentGetClass
+        } elseif ($lhs_type_part instanceof TDependentGetClass
             && !$lhs_type_part->as_type->hasObject()
         ) {
             $fq_class_name = 'object';
@@ -112,7 +126,7 @@ class AtomicStaticCallAnalyzer
                 && $lhs_type_part->as_type->isSingle()
             ) {
                 foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
-                    if ($typeof_type_atomic instanceof Type\Atomic\TNamedObject) {
+                    if ($typeof_type_atomic instanceof TNamedObject) {
                         $fq_class_name = $typeof_type_atomic->value;
                     }
                 }
@@ -121,7 +135,7 @@ class AtomicStaticCallAnalyzer
             if ($fq_class_name === 'object') {
                 return;
             }
-        } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
+        } elseif ($lhs_type_part instanceof TLiteralClassString) {
             $fq_class_name = $lhs_type_part->value;
 
             if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -134,7 +148,7 @@ class AtomicStaticCallAnalyzer
             )) {
                 return;
             }
-        } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParam
+        } elseif ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
             && !$lhs_type_part->as->hasObject()
         ) {
@@ -249,7 +263,7 @@ class AtomicStaticCallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         array $intersection_types,
         string $fq_class_name,
         bool &$moved_call,
@@ -366,17 +380,17 @@ class AtomicStaticCallAnalyzer
                     }
 
                     $mixin_candidates_no_generic = array_filter($mixin_candidates, function ($check): bool {
-                        return !($check instanceof Type\Atomic\TGenericObject);
+                        return !($check instanceof TGenericObject);
                     });
 
                     // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
                     // In that case, Union will be initialized with an empty array but
                     // replaced with non-empty types in the following loop.
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $mixin_candidate_type = new Type\Union($mixin_candidates_no_generic);
+                    $mixin_candidate_type = new Union($mixin_candidates_no_generic);
 
                     foreach ($mixin_candidates as $tGenericMixin) {
-                        if (!($tGenericMixin instanceof Type\Atomic\TGenericObject)) {
+                        if (!($tGenericMixin instanceof TGenericObject)) {
                             continue;
                         }
 
@@ -386,7 +400,7 @@ class AtomicStaticCallAnalyzer
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                             $codebase,
-                            new Type\Union([$lhs_type_part]),
+                            new Union([$lhs_type_part]),
                             $tGenericMixin,
                             $class_storage,
                             $mixin_declaring_class_storage
@@ -780,7 +794,7 @@ class AtomicStaticCallAnalyzer
             $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
 
             if ($method_storage) {
-                $return_type_candidate = new Type\Union([new Type\Atomic\TClosure(
+                $return_type_candidate = new Union([new TClosure(
                     'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
@@ -925,16 +939,16 @@ class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         bool $ignore_nullable_issues
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
-        if ($lhs_type_part instanceof Type\Atomic\TMixed
-            || $lhs_type_part instanceof Type\Atomic\TTemplateParam
-            || $lhs_type_part instanceof Type\Atomic\TClassString
-            || $lhs_type_part instanceof Type\Atomic\TObject
+        if ($lhs_type_part instanceof TMixed
+            || $lhs_type_part instanceof TTemplateParam
+            || $lhs_type_part instanceof TClassString
+            || $lhs_type_part instanceof TObject
         ) {
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
@@ -954,9 +968,9 @@ class AtomicStaticCallAnalyzer
             return;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TString) {
+        if ($lhs_type_part instanceof TString) {
             if ($config->allow_string_standin_for_class
-                && !$lhs_type_part instanceof Type\Atomic\TNumericString
+                && !$lhs_type_part instanceof TNumericString
             ) {
                 return;
             }
@@ -972,7 +986,7 @@ class AtomicStaticCallAnalyzer
             return;
         }
 
-        if ($lhs_type_part instanceof Type\Atomic\TNull
+        if ($lhs_type_part instanceof TNull
             && $ignore_nullable_issues
         ) {
             return;

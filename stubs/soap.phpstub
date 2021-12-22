@@ -189,7 +189,7 @@ class SoapClient  {
      /**
       * Returns last SOAP request
       * @link https://php.net/manual/en/soapclient.getlastrequest.php
-      * @return string The last SOAP request, as an XML string.
+      * @return string|null The last SOAP request, as an XML string.
       * @since 5.0.1
       */
      public function __getLastRequest () {}
@@ -197,7 +197,7 @@ class SoapClient  {
      /**
       * Returns last SOAP response
       * @link https://php.net/manual/en/soapclient.getlastresponse.php
-      * @return string The last SOAP response, as an XML string.
+      * @return string|null The last SOAP response, as an XML string.
       * @since 5.0.1
       */
      public function __getLastResponse () {}
@@ -205,7 +205,7 @@ class SoapClient  {
      /**
       * Returns the SOAP headers from the last request
       * @link https://php.net/manual/en/soapclient.getlastrequestheaders.php
-      * @return string The last SOAP request headers.
+      * @return string|null The last SOAP request headers.
       * @since 5.0.1
       */
      public function __getLastRequestHeaders () {}
@@ -213,7 +213,7 @@ class SoapClient  {
      /**
       * Returns the SOAP headers from the last response
       * @link https://php.net/manual/en/soapclient.getlastresponseheaders.php
-      * @return string The last SOAP response headers.
+      * @return string|null The last SOAP response headers.
       * @since 5.0.1
       */
      public function __getLastResponseHeaders () {}
@@ -221,7 +221,7 @@ class SoapClient  {
      /**
       * Returns list of available SOAP functions
       * @link https://php.net/manual/en/soapclient.getfunctions.php
-      * @return array The array of SOAP function prototypes, detailing the return type,
+      * @return array|null The array of SOAP function prototypes, detailing the return type,
       * the function name and type-hinted parameters.
       * @since 5.0.1
       */
@@ -230,7 +230,7 @@ class SoapClient  {
      /**
       * Returns a list of SOAP types
       * @link https://php.net/manual/en/soapclient.gettypes.php
-      * @return array The array of SOAP types, detailing all structures and types.
+      * @return array|null The array of SOAP types, detailing all structures and types.
       * @since 5.0.1
       */
      public function __getTypes () {}

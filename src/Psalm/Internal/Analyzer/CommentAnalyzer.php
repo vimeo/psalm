@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -13,7 +14,7 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -36,7 +37,7 @@ class CommentAnalyzer
     public const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
-     * @param  array<string, array<string, Type\Union>>|null   $template_type_map
+     * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -63,7 +64,7 @@ class CommentAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Type\Union>>|null   $template_type_map
+     * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
      * @return list<VarDocblockComment>

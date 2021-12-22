@@ -713,6 +713,10 @@ return [
       'old' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array'],
       'new' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array|null'],
     ],
+    'ldap_set_rebind_proc' => [
+      'old' => ['bool', 'ldap'=>'resource', 'callback'=>'callable'],
+      'new' => ['bool', 'ldap'=>'resource', 'callback'=>'?callable'],
+    ],
     'mb_check_encoding' => [
       'old' => ['bool', 'value='=>'array|string', 'encoding='=>'string'],
       'new' => ['bool', 'value='=>'array|string|null', 'encoding='=>'string|null'],
@@ -948,6 +952,10 @@ return [
     'mysqli_rollback' => [
       'old' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'string'],
       'new' => ['bool', 'mysql'=>'mysqli', 'flags='=>'int', 'name='=>'?string'],
+    ],
+    'number_format' => [
+      'old' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
+      'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'string', 'thousands_separator='=>'string'],
     ],
     'openssl_csr_export' => [
       'old' => ['bool', 'csr'=>'string|resource', '&w_output'=>'string', 'no_text='=>'bool'],
@@ -1591,6 +1599,7 @@ return [
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'ldap_sort' => ['bool', 'link_identifier'=>'resource', 'result_identifier'=>'resource', 'sortfilter'=>'string'],
+    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
     'SimpleXMLIterator::rewind' => ['void'],

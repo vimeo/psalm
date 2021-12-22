@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
@@ -9,6 +10,7 @@ use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Union;
 
 class MagicFunctionProvider implements
     FunctionExistenceProviderInterface,
@@ -37,7 +39,7 @@ class MagicFunctionProvider implements
         return [new FunctionLikeParameter('first', false, Type::getString())];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         return Type::getString();
     }

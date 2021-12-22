@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -12,6 +13,11 @@ class EnumCaseStorage
 
     /** @var CodeLocation */
     public $stmt_location;
+
+    /**
+     * @var bool
+     */
+    public $deprecated = false;
 
     /**
      * @param int|string|null  $value

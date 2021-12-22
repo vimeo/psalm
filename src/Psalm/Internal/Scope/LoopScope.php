@@ -1,8 +1,9 @@
 <?php
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -25,22 +26,22 @@ class LoopScope
     public $loop_parent_context;
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $redefined_loop_vars = [];
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $possibly_redefined_loop_vars = [];
 
     /**
-     * @var array<string, Type\Union>|null
+     * @var array<string, Union>|null
      */
     public $possibly_redefined_loop_parent_vars;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $possibly_defined_loop_parent_vars = [];
 

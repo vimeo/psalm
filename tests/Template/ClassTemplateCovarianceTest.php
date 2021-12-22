@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;

@@ -1,10 +1,14 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Union;
 
 class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -18,7 +22,7 @@ class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
         ];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -30,7 +34,7 @@ class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))
                 || !$call_arg_type->isInt()
             ) {
-                $value_type = new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFalse]);
+                $value_type = new Union([new TInt, new TFalse]);
 
                 $codebase = $statements_source->getCodebase();
 

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Test\Config\Plugin;
 
 use Psalm\Plugin\PluginEntryPointInterface;

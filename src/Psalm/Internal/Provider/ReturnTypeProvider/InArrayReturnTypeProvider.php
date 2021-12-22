@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -8,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Union;
 
 class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -19,7 +21,7 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['in_array'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $call_args = $event->getCallArgs();
         $bool = Type::getBool();

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
@@ -27,6 +28,11 @@ use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 
 use function array_map;
 use function count;
@@ -49,7 +55,7 @@ class ExistingAtomicStaticCallAnalyzer
         PhpParser\Node\Identifier $stmt_name,
         array $args,
         Context $context,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         MethodIdentifier $method_id,
         string $cased_method_id,
         ClassLikeStorage $class_storage,
@@ -159,7 +165,7 @@ class ExistingAtomicStaticCallAnalyzer
                     }
 
                     foreach ($extended_type->getAtomicTypes() as $t) {
-                        if ($t instanceof Type\Atomic\TTemplateParam
+                        if ($t instanceof TTemplateParam
                             && isset($found_generic_params[$t->param_name][$t->defining_class])
                         ) {
                             $found_generic_params[$type_key][$template_fq_class_name]
@@ -256,11 +262,11 @@ class ExistingAtomicStaticCallAnalyzer
                     || !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $context->vars_in_scope['$this']
-                            ?? new Type\Union([
-                                new Type\Atomic\TNamedObject($context->self)
+                            ?? new Union([
+                                new TNamedObject($context->self)
                             ]),
-                        new Type\Union([
-                            new Type\Atomic\TNamedObject($method_id->fq_class_name)
+                        new Union([
+                            new TNamedObject($method_id->fq_class_name)
                         ])
                     ))
             ) {
@@ -461,12 +467,12 @@ class ExistingAtomicStaticCallAnalyzer
         array $args,
         TemplateResult $template_result,
         ?string &$self_fq_class_name,
-        Type\Atomic $lhs_type_part,
+        Atomic $lhs_type_part,
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config
-    ): ?Type\Union {
+    ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
             $self_fq_class_name,
@@ -527,20 +533,20 @@ class ExistingAtomicStaticCallAnalyzer
 
             $context_final = false;
 
-            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
+            if ($lhs_type_part instanceof TTemplateParam) {
                 $static_type = $lhs_type_part;
-            } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
-                $static_type = new Type\Atomic\TTemplateParam(
+            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+                $static_type = new TTemplateParam(
                     $lhs_type_part->param_name,
                     $lhs_type_part->as_type
-                        ? new Type\Union([$lhs_type_part->as_type])
+                        ? new Union([$lhs_type_part->as_type])
                         : Type::getObject(),
                     $lhs_type_part->defining_class
                 );
             } elseif ($stmt->class instanceof PhpParser\Node\Name
                 && count($stmt->class->parts) === 1
                 && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
-                && $lhs_type_part instanceof Type\Atomic\TNamedObject
+                && $lhs_type_part instanceof TNamedObject
                 && $context->self
             ) {
                 $static_type = $context->self;

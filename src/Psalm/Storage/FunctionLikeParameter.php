@@ -1,9 +1,10 @@
 <?php
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 class FunctionLikeParameter
 {
@@ -20,17 +21,17 @@ class FunctionLikeParameter
     public $by_ref;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $type;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $out_type;
 
     /**
-     * @var Type\Union|null
+     * @var Union|null
      */
     public $signature_type;
 
@@ -50,7 +51,7 @@ class FunctionLikeParameter
     public $is_nullable;
 
     /**
-     * @var Type\Union|UnresolvedConstantComponent|null
+     * @var Union|UnresolvedConstantComponent|null
      */
     public $default_type;
 
@@ -110,12 +111,12 @@ class FunctionLikeParameter
     public $description;
 
     /**
-     * @param Type\Union|UnresolvedConstantComponent|null $default_type
+     * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
         string $name,
         bool $by_ref,
-        ?Type\Union $type = null,
+        ?Union $type = null,
         ?CodeLocation $location = null,
         ?CodeLocation $type_location = null,
         bool $is_optional = true,

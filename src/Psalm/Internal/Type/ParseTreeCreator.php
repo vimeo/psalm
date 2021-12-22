@@ -1,7 +1,27 @@
 <?php
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Type\ParseTree\CallableParamTree;
+use Psalm\Internal\Type\ParseTree\CallableTree;
+use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\ConditionalTree;
+use Psalm\Internal\Type\ParseTree\EncapsulationTree;
+use Psalm\Internal\Type\ParseTree\GenericTree;
+use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
+use Psalm\Internal\Type\ParseTree\IntersectionTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayPropertyTree;
+use Psalm\Internal\Type\ParseTree\KeyedArrayTree;
+use Psalm\Internal\Type\ParseTree\MethodParamTree;
+use Psalm\Internal\Type\ParseTree\MethodTree;
+use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
+use Psalm\Internal\Type\ParseTree\NullableTree;
+use Psalm\Internal\Type\ParseTree\Root;
+use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\TemplateIsTree;
+use Psalm\Internal\Type\ParseTree\UnionTree;
+use Psalm\Internal\Type\ParseTree\Value;
 
 use function array_pop;
 use function count;
@@ -37,7 +57,7 @@ class ParseTreeCreator
     {
         $this->type_tokens = $type_tokens;
         $this->type_token_count = count($type_tokens);
-        $this->parse_tree = new ParseTree\Root();
+        $this->parse_tree = new Root();
         $this->current_leaf = $this->parse_tree;
     }
 
@@ -71,7 +91,7 @@ class ParseTreeCreator
                         }
 
                         $this->current_leaf = $this->current_leaf->parent;
-                    } while (!$this->current_leaf instanceof ParseTree\GenericTree);
+                    } while (!$this->current_leaf instanceof GenericTree);
 
                     $this->current_leaf->terminated = true;
 
@@ -84,7 +104,7 @@ class ParseTreeCreator
                         }
 
                         $this->current_leaf = $this->current_leaf->parent;
-                    } while (!$this->current_leaf instanceof ParseTree\KeyedArrayTree);
+                    } while (!$this->current_leaf instanceof KeyedArrayTree);
 
                     $this->current_leaf->terminated = true;
 
@@ -135,9 +155,9 @@ class ParseTreeCreator
         $this->parse_tree->cleanParents();
 
         if ($this->current_leaf !== $this->parse_tree
-            && ($this->parse_tree instanceof ParseTree\GenericTree
-                || $this->parse_tree instanceof ParseTree\CallableTree
-                || $this->parse_tree instanceof ParseTree\KeyedArrayTree)
+            && ($this->parse_tree instanceof GenericTree
+                || $this->parse_tree instanceof CallableTree
+                || $this->parse_tree instanceof KeyedArrayTree)
         ) {
             throw new TypeParseTreeException(
                 'Unterminated bracket'
@@ -172,7 +192,7 @@ class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected token after space');
         }
 
-        $new_parent_leaf = new ParseTree\MethodParamTree(
+        $new_parent_leaf = new MethodParamTree(
             $current_token[0],
             $byref,
             $variadic,
@@ -218,7 +238,7 @@ class ParseTreeCreator
 
     private function handleOpenSquareBracket(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token [');
         }
 
@@ -244,13 +264,13 @@ class ParseTreeCreator
                 throw new TypeParseTreeException('Unexpected token [');
             }
 
-            $new_parent_leaf = new ParseTree\IndexedAccessTree($next_token[0], $current_parent);
+            $new_parent_leaf = new IndexedAccessTree($next_token[0], $current_parent);
         } else {
-            if ($this->current_leaf instanceof ParseTree\KeyedArrayPropertyTree) {
+            if ($this->current_leaf instanceof KeyedArrayPropertyTree) {
                 throw new TypeParseTreeException('Unexpected token [');
             }
 
-            $new_parent_leaf = new ParseTree\GenericTree('array', $current_parent);
+            $new_parent_leaf = new GenericTree('array', $current_parent);
         }
 
         $this->current_leaf->parent = $new_parent_leaf;
@@ -269,17 +289,17 @@ class ParseTreeCreator
 
     private function handleOpenRoundBracket(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Value) {
+        if ($this->current_leaf instanceof Value) {
             throw new TypeParseTreeException('Unrecognised token (');
         }
 
-        $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
+        $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
 
-        $new_leaf = new ParseTree\EncapsulationTree(
+        $new_leaf = new EncapsulationTree(
             $new_parent
         );
 
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             $this->current_leaf = $this->parse_tree = $new_leaf;
             return;
         }
@@ -297,7 +317,7 @@ class ParseTreeCreator
 
         if ($prev_token !== null
             && $prev_token[0] === '('
-            && $this->current_leaf instanceof ParseTree\CallableTree
+            && $this->current_leaf instanceof CallableTree
         ) {
             return;
         }
@@ -308,12 +328,12 @@ class ParseTreeCreator
             }
 
             $this->current_leaf = $this->current_leaf->parent;
-        } while (!$this->current_leaf instanceof ParseTree\EncapsulationTree
-            && !$this->current_leaf instanceof ParseTree\CallableTree
-            && !$this->current_leaf instanceof ParseTree\MethodTree);
+        } while (!$this->current_leaf instanceof EncapsulationTree
+            && !$this->current_leaf instanceof CallableTree
+            && !$this->current_leaf instanceof MethodTree);
 
-        if ($this->current_leaf instanceof ParseTree\EncapsulationTree
-            || $this->current_leaf instanceof ParseTree\CallableTree
+        if ($this->current_leaf instanceof EncapsulationTree
+            || $this->current_leaf instanceof CallableTree
         ) {
             $this->current_leaf->terminated = true;
         }
@@ -321,7 +341,7 @@ class ParseTreeCreator
 
     private function handleComma(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token ,');
         }
 
@@ -331,19 +351,19 @@ class ParseTreeCreator
 
         $context_node = $this->current_leaf;
 
-        if ($context_node instanceof ParseTree\GenericTree
-            || $context_node instanceof ParseTree\KeyedArrayTree
-            || $context_node instanceof ParseTree\CallableTree
-            || $context_node instanceof ParseTree\MethodTree
+        if ($context_node instanceof GenericTree
+            || $context_node instanceof KeyedArrayTree
+            || $context_node instanceof CallableTree
+            || $context_node instanceof MethodTree
         ) {
             $context_node = $context_node->parent;
         }
 
         while ($context_node
-            && !$context_node instanceof ParseTree\GenericTree
-            && !$context_node instanceof ParseTree\KeyedArrayTree
-            && !$context_node instanceof ParseTree\CallableTree
-            && !$context_node instanceof ParseTree\MethodTree
+            && !$context_node instanceof GenericTree
+            && !$context_node instanceof KeyedArrayTree
+            && !$context_node instanceof CallableTree
+            && !$context_node instanceof MethodTree
         ) {
             $context_node = $context_node->parent;
         }
@@ -366,21 +386,21 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($this->current_leaf instanceof ParseTree\MethodTree && $type_token[0] === '...') {
+        if ($this->current_leaf instanceof MethodTree && $type_token[0] === '...') {
             $this->createMethodParam($type_token, $this->current_leaf);
             return;
         }
 
         while ($current_parent
-            && !$current_parent instanceof ParseTree\CallableTree
-            && !$current_parent instanceof ParseTree\CallableParamTree
+            && !$current_parent instanceof CallableTree
+            && !$current_parent instanceof CallableParamTree
         ) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
         if (!$current_parent) {
-            if ($this->current_leaf instanceof ParseTree\CallableTree
+            if ($this->current_leaf instanceof CallableTree
                 && $type_token[0] === '...'
             ) {
                 $current_parent = $this->current_leaf;
@@ -389,11 +409,11 @@ class ParseTreeCreator
             }
         }
 
-        if ($current_parent instanceof ParseTree\CallableParamTree) {
+        if ($current_parent instanceof CallableParamTree) {
             throw new TypeParseTreeException('Cannot have variadic param with a default');
         }
 
-        $new_leaf = new ParseTree\CallableParamTree($current_parent);
+        $new_leaf = new CallableParamTree($current_parent);
         $new_leaf->has_default = $type_token[0] === '=';
         $new_leaf->variadic = $type_token[0] === '...';
 
@@ -410,14 +430,14 @@ class ParseTreeCreator
 
     private function handleColon(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token :');
         }
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($this->current_leaf instanceof ParseTree\CallableTree) {
-            $new_parent_leaf = new ParseTree\CallableWithReturnTypeTree($current_parent);
+        if ($this->current_leaf instanceof CallableTree) {
+            $new_parent_leaf = new CallableWithReturnTypeTree($current_parent);
             $this->current_leaf->parent = $new_parent_leaf;
             $new_parent_leaf->children = [$this->current_leaf];
 
@@ -432,8 +452,8 @@ class ParseTreeCreator
             return;
         }
 
-        if ($this->current_leaf instanceof ParseTree\MethodTree) {
-            $new_parent_leaf = new ParseTree\MethodWithReturnTypeTree($current_parent);
+        if ($this->current_leaf instanceof MethodTree) {
+            $new_parent_leaf = new MethodWithReturnTypeTree($current_parent);
             $this->current_leaf->parent = $new_parent_leaf;
             $new_parent_leaf->children = [$this->current_leaf];
 
@@ -448,19 +468,19 @@ class ParseTreeCreator
             return;
         }
 
-        if ($current_parent instanceof ParseTree\KeyedArrayPropertyTree) {
+        if ($current_parent instanceof KeyedArrayPropertyTree) {
             return;
         }
 
-        while (($current_parent instanceof ParseTree\UnionTree
-                || $current_parent instanceof ParseTree\CallableWithReturnTypeTree)
+        while (($current_parent instanceof UnionTree
+                || $current_parent instanceof CallableWithReturnTypeTree)
             && $this->current_leaf->parent
         ) {
             $this->current_leaf = $this->current_leaf->parent;
             $current_parent = $this->current_leaf->parent;
         }
 
-        if ($current_parent instanceof ParseTree\ConditionalTree) {
+        if ($current_parent instanceof ConditionalTree) {
             if (count($current_parent->children) > 1) {
                 throw new TypeParseTreeException('Cannot process colon in conditional twice');
             }
@@ -473,17 +493,17 @@ class ParseTreeCreator
             throw new TypeParseTreeException('Cannot process colon without parent');
         }
 
-        if (!$this->current_leaf instanceof ParseTree\Value) {
+        if (!$this->current_leaf instanceof Value) {
             throw new TypeParseTreeException('Unexpected LHS of property');
         }
 
-        if (!$current_parent instanceof ParseTree\KeyedArrayTree) {
+        if (!$current_parent instanceof KeyedArrayTree) {
             throw new TypeParseTreeException('Saw : outside of object-like array');
         }
 
         $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
 
-        $new_parent_leaf = new ParseTree\KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);
+        $new_parent_leaf = new KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);
         $new_parent_leaf->possibly_undefined = $prev_token !== null && $prev_token[0] === '?';
         $this->current_leaf->parent = $new_parent_leaf;
 
@@ -495,28 +515,28 @@ class ParseTreeCreator
 
     private function handleSpace(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected space');
         }
 
-        if ($this->current_leaf instanceof ParseTree\KeyedArrayTree) {
+        if ($this->current_leaf instanceof KeyedArrayTree) {
             return;
         }
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof ParseTree\CallableTree) {
+        if ($current_parent instanceof CallableTree) {
             return;
         }
 
-        while ($current_parent && !$current_parent instanceof ParseTree\MethodTree) {
+        while ($current_parent && !$current_parent instanceof MethodTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-        if (!$current_parent instanceof ParseTree\MethodTree || !$next_token) {
+        if (!$current_parent instanceof MethodTree || !$next_token) {
             throw new TypeParseTreeException('Unexpected space');
         }
 
@@ -530,26 +550,26 @@ class ParseTreeCreator
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
         if ($next_token === null || $next_token[0] !== ':') {
-            while (($this->current_leaf instanceof ParseTree\Value
-                    || $this->current_leaf instanceof ParseTree\UnionTree
-                    || ($this->current_leaf instanceof ParseTree\KeyedArrayTree
+            while (($this->current_leaf instanceof Value
+                    || $this->current_leaf instanceof UnionTree
+                    || ($this->current_leaf instanceof KeyedArrayTree
                         && $this->current_leaf->terminated)
-                    || ($this->current_leaf instanceof ParseTree\GenericTree
+                    || ($this->current_leaf instanceof GenericTree
                         && $this->current_leaf->terminated)
-                    || ($this->current_leaf instanceof ParseTree\EncapsulationTree
+                    || ($this->current_leaf instanceof EncapsulationTree
                         && $this->current_leaf->terminated)
-                    || ($this->current_leaf instanceof ParseTree\CallableTree
+                    || ($this->current_leaf instanceof CallableTree
                         && $this->current_leaf->terminated)
-                    || $this->current_leaf instanceof ParseTree\IntersectionTree)
+                    || $this->current_leaf instanceof IntersectionTree)
                 && $this->current_leaf->parent
             ) {
                 $this->current_leaf = $this->current_leaf->parent;
             }
 
-            if ($this->current_leaf instanceof ParseTree\TemplateIsTree && $this->current_leaf->parent) {
+            if ($this->current_leaf instanceof TemplateIsTree && $this->current_leaf->parent) {
                 $current_parent = $this->current_leaf->parent;
 
-                $new_leaf = new ParseTree\ConditionalTree(
+                $new_leaf = new ConditionalTree(
                     $this->current_leaf,
                     $this->current_leaf->parent
                 );
@@ -560,17 +580,17 @@ class ParseTreeCreator
                 $current_parent->children[] = $new_leaf;
                 $this->current_leaf = $new_leaf;
             } else {
-                $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
+                $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
 
                 if (!$next_token) {
                     throw new TypeParseTreeException('Unexpected token ?');
                 }
 
-                $new_leaf = new ParseTree\NullableTree(
+                $new_leaf = new NullableTree(
                     $new_parent
                 );
 
-                if ($this->current_leaf instanceof ParseTree\Root) {
+                if ($this->current_leaf instanceof Root) {
                     $this->current_leaf = $this->parse_tree = $new_leaf;
                     return;
                 }
@@ -586,43 +606,43 @@ class ParseTreeCreator
 
     private function handleBar(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token |');
         }
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof ParseTree\CallableWithReturnTypeTree) {
+        if ($current_parent instanceof CallableWithReturnTypeTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
-        if ($current_parent instanceof ParseTree\NullableTree) {
+        if ($current_parent instanceof NullableTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
-        if ($this->current_leaf instanceof ParseTree\UnionTree) {
+        if ($this->current_leaf instanceof UnionTree) {
             throw new TypeParseTreeException('Unexpected token |');
         }
 
-        if ($current_parent instanceof ParseTree\UnionTree) {
+        if ($current_parent instanceof UnionTree) {
             $this->current_leaf = $current_parent;
             return;
         }
 
-        if ($current_parent instanceof ParseTree\IntersectionTree) {
+        if ($current_parent instanceof IntersectionTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $this->current_leaf->parent;
         }
 
-        if ($current_parent instanceof ParseTree\TemplateIsTree) {
-            $new_parent_leaf = new ParseTree\UnionTree($this->current_leaf);
+        if ($current_parent instanceof TemplateIsTree) {
+            $new_parent_leaf = new UnionTree($this->current_leaf);
             $new_parent_leaf->children = [$this->current_leaf];
             $new_parent_leaf->parent = $current_parent;
             $this->current_leaf->parent = $new_parent_leaf;
         } else {
-            $new_parent_leaf = new ParseTree\UnionTree($current_parent);
+            $new_parent_leaf = new UnionTree($current_parent);
             $new_parent_leaf->children = [$this->current_leaf];
             $this->current_leaf->parent = $new_parent_leaf;
         }
@@ -639,7 +659,7 @@ class ParseTreeCreator
 
     private function handleAmpersand(): void
     {
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException(
                 'Unexpected &'
             );
@@ -647,17 +667,17 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof ParseTree\MethodTree) {
+        if ($current_parent instanceof MethodTree) {
             $this->createMethodParam($this->type_tokens[$this->t], $current_parent);
             return;
         }
 
-        if ($current_parent instanceof ParseTree\IntersectionTree) {
+        if ($current_parent instanceof IntersectionTree) {
             $this->current_leaf = $current_parent;
             return;
         }
 
-        $new_parent_leaf = new ParseTree\IntersectionTree($current_parent);
+        $new_parent_leaf = new IntersectionTree($current_parent);
         $new_parent_leaf->children = [$this->current_leaf];
         $this->current_leaf->parent = $new_parent_leaf;
 
@@ -686,14 +706,14 @@ class ParseTreeCreator
             if ($type_token[0] === 'as') {
                 $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-                if (!$this->current_leaf instanceof ParseTree\Value
-                    || !$current_parent instanceof ParseTree\GenericTree
+                if (!$this->current_leaf instanceof Value
+                    || !$current_parent instanceof GenericTree
                     || !$next_token
                 ) {
                     throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
                 }
 
-                $this->current_leaf = new ParseTree\TemplateAsTree(
+                $this->current_leaf = new TemplateAsTree(
                     $this->current_leaf->value,
                     $next_token[0],
                     $current_parent
@@ -701,8 +721,8 @@ class ParseTreeCreator
 
                 $current_parent->children[] = $this->current_leaf;
                 ++$this->t;
-            } elseif ($this->current_leaf instanceof ParseTree\Value) {
-                $this->current_leaf = new ParseTree\TemplateIsTree(
+            } elseif ($this->current_leaf instanceof Value) {
+                $this->current_leaf = new TemplateIsTree(
                     $this->current_leaf->value,
                     $current_parent
                 );
@@ -717,9 +737,9 @@ class ParseTreeCreator
     /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleValue(array $type_token): void
     {
-        $new_parent = !$this->current_leaf instanceof ParseTree\Root ? $this->current_leaf : null;
+        $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
 
-        if ($this->current_leaf instanceof ParseTree\MethodTree && $type_token[0][0] === '$') {
+        if ($this->current_leaf instanceof MethodTree && $type_token[0][0] === '$') {
             $this->createMethodParam($type_token, $this->current_leaf);
             return;
         }
@@ -728,7 +748,7 @@ class ParseTreeCreator
 
         switch ($next_token[0] ?? null) {
             case '<':
-                $new_leaf = new ParseTree\GenericTree(
+                $new_leaf = new GenericTree(
                     $type_token[0],
                     $new_parent
                 );
@@ -736,7 +756,7 @@ class ParseTreeCreator
                 break;
 
             case '{':
-                $new_leaf = new ParseTree\KeyedArrayTree(
+                $new_leaf = new KeyedArrayTree(
                     $type_token[0],
                     $new_parent
                 );
@@ -749,15 +769,15 @@ class ParseTreeCreator
                     ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'],
                     true
                 )) {
-                    $new_leaf = new ParseTree\CallableTree(
+                    $new_leaf = new CallableTree(
                         $type_token[0],
                         $new_parent
                     );
                 } elseif ($type_token[0] !== 'array'
                     && $type_token[0][0] !== '\\'
-                    && $this->current_leaf instanceof ParseTree\Root
+                    && $this->current_leaf instanceof Root
                 ) {
-                    $new_leaf = new ParseTree\MethodTree(
+                    $new_leaf = new MethodTree(
                         $type_token[0],
                         $new_parent
                     );
@@ -773,9 +793,12 @@ class ParseTreeCreator
             case '::':
                 $nexter_token = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
-                if ($this->current_leaf instanceof ParseTree\KeyedArrayTree) {
+                if ($this->current_leaf instanceof ParseTree\KeyedArrayTree
+                    && $nexter_token
+                    && strtolower($nexter_token[0]) !== 'class'
+                ) {
                     throw new TypeParseTreeException(
-                        'Unexpected :: in array key'
+                        ':: in array key is only allowed for ::class'
                     );
                 }
 
@@ -788,7 +811,7 @@ class ParseTreeCreator
                     );
                 }
 
-                $new_leaf = new ParseTree\Value(
+                $new_leaf = new Value(
                     $type_token[0] . '::' . $nexter_token[0],
                     $type_token[1],
                     $type_token[1] + 2 + strlen($nexter_token[0]),
@@ -805,7 +828,7 @@ class ParseTreeCreator
                     $type_token[0] = 'static';
                 }
 
-                $new_leaf = new ParseTree\Value(
+                $new_leaf = new Value(
                     $type_token[0],
                     $type_token[1],
                     $type_token[1] + strlen($type_token[0]),
@@ -815,7 +838,7 @@ class ParseTreeCreator
                 break;
         }
 
-        if ($this->current_leaf instanceof ParseTree\Root) {
+        if ($this->current_leaf instanceof Root) {
             $this->current_leaf = $this->parse_tree = $new_leaf;
             return;
         }

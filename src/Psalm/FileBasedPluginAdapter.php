@@ -1,8 +1,10 @@
 <?php
+
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\RegistrationInterface;
 use SimpleXMLElement;
 use UnexpectedValueException;
@@ -14,7 +16,7 @@ use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
-class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
+class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
     /** @var string */
     private $path;

@@ -1,7 +1,11 @@
 <?php
+
 namespace Psalm\Internal\Provider;
 
+use FilesystemIterator;
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
+use RecursiveIterator;
 use RecursiveIteratorIterator;
 use UnexpectedValueException;
 
@@ -12,6 +16,8 @@ use function filemtime;
 use function in_array;
 use function is_dir;
 use function strtolower;
+
+use const DIRECTORY_SEPARATOR;
 
 class FileProvider
 {
@@ -112,23 +118,37 @@ class FileProvider
 
     /**
      * @param array<string> $file_extensions
+     * @param null|callable(string):bool $directory_filter
      *
      * @return list<string>
      */
-    public function getFilesInDir(string $dir_path, array $file_extensions): array
+    public function getFilesInDir(string $dir_path, array $file_extensions, callable $directory_filter = null): array
     {
         $file_paths = [];
 
+        $iterator = new RecursiveDirectoryIterator(
+            $dir_path,
+            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS
+        );
+
+        if ($directory_filter !== null) {
+            $iterator = new RecursiveCallbackFilterIterator(
+                $iterator,
+                /** @param mixed $_ */
+                function (string $current, $_, RecursiveIterator $iterator) use ($directory_filter): bool {
+                    return !$iterator->hasChildren() || $directory_filter($current . DIRECTORY_SEPARATOR);
+                }
+            );
+        }
+
         /** @var RecursiveDirectoryIterator */
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_path));
+        $iterator = new RecursiveIteratorIterator($iterator);
         $iterator->rewind();
 
         while ($iterator->valid()) {
-            if (!$iterator->isDot()) {
-                $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions, true)) {
-                    $file_paths[] = (string)$iterator->getRealPath();
-                }
+            $extension = $iterator->getExtension();
+            if (in_array($extension, $file_extensions, true)) {
+                $file_paths[] = (string)$iterator->getRealPath();
             }
 
             $iterator->next();

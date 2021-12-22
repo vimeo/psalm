@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -9,7 +10,22 @@ use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Scanner\UnresolvedConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
+use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
+use Psalm\Internal\Scanner\UnresolvedConstant\KeyValuePair;
+use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseAnd;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use ReflectionClass;
 use ReflectionFunction;
@@ -49,35 +65,35 @@ class ExpressionResolver
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
-                return new UnresolvedConstant\UnresolvedAdditionOp($left, $right);
+                return new UnresolvedAdditionOp($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-                return new UnresolvedConstant\UnresolvedSubtractionOp($left, $right);
+                return new UnresolvedSubtractionOp($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-                return new UnresolvedConstant\UnresolvedMultiplicationOp($left, $right);
+                return new UnresolvedMultiplicationOp($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                return new UnresolvedConstant\UnresolvedDivisionOp($left, $right);
+                return new UnresolvedDivisionOp($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-                return new UnresolvedConstant\UnresolvedConcatOp($left, $right);
+                return new UnresolvedConcatOp($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-                return new UnresolvedConstant\UnresolvedBitwiseOr($left, $right);
+                return new UnresolvedBitwiseOr($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-                return new UnresolvedConstant\UnresolvedBitwiseXor($left, $right);
+                return new UnresolvedBitwiseXor($left, $right);
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-                return new UnresolvedConstant\UnresolvedBitwiseAnd($left, $right);
+                return new UnresolvedBitwiseAnd($left, $right);
             }
         }
 
@@ -112,36 +128,36 @@ class ExpressionResolver
             );
 
             if ($cond && $else && $if !== false) {
-                return new UnresolvedConstant\UnresolvedTernary($cond, $if, $else);
+                return new UnresolvedTernary($cond, $if, $else);
             }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             $part0_lc = strtolower($stmt->name->parts[0]);
             if ($part0_lc === 'false') {
-                return new UnresolvedConstant\ScalarValue(false);
+                return new ScalarValue(false);
             }
 
             if ($part0_lc === 'true') {
-                return new UnresolvedConstant\ScalarValue(true);
+                return new ScalarValue(true);
             }
 
             if ($part0_lc === 'null') {
-                return new UnresolvedConstant\ScalarValue(null);
+                return new ScalarValue(null);
             }
 
             if ($part0_lc === '__namespace__') {
-                return new UnresolvedConstant\ScalarValue($aliases->namespace);
+                return new ScalarValue($aliases->namespace);
             }
 
-            return new UnresolvedConstant\Constant(
+            return new Constant(
                 implode('\\', $stmt->name->parts),
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified
             );
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
-            return new UnresolvedConstant\ScalarValue($aliases->namespace);
+            return new ScalarValue($aliases->namespace);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->dim) {
@@ -160,7 +176,7 @@ class ExpressionResolver
             );
 
             if ($left && $right) {
-                return new UnresolvedConstant\ArrayOffsetFetch($left, $right);
+                return new ArrayOffsetFetch($left, $right);
             }
         }
 
@@ -185,7 +201,7 @@ class ExpressionResolver
                     }
                 }
 
-                return new UnresolvedConstant\ClassConstant($const_fq_class_name, $stmt->name->name);
+                return new ClassConstant($const_fq_class_name, $stmt->name->name);
             }
 
             return null;
@@ -195,7 +211,7 @@ class ExpressionResolver
             || $stmt instanceof PhpParser\Node\Scalar\LNumber
             || $stmt instanceof PhpParser\Node\Scalar\DNumber
         ) {
-            return new UnresolvedConstant\ScalarValue($stmt->value);
+            return new ScalarValue($stmt->value);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
@@ -210,8 +226,8 @@ class ExpressionResolver
                 return null;
             }
 
-            return new UnresolvedConstant\UnresolvedAdditionOp(
-                new UnresolvedConstant\ScalarValue(0),
+            return new UnresolvedAdditionOp(
+                new ScalarValue(0),
                 $right
             );
         }
@@ -228,8 +244,8 @@ class ExpressionResolver
                 return null;
             }
 
-            return new UnresolvedConstant\UnresolvedSubtractionOp(
-                new UnresolvedConstant\ScalarValue(0),
+            return new UnresolvedSubtractionOp(
+                new ScalarValue(0),
                 $right
             );
         }
@@ -269,13 +285,13 @@ class ExpressionResolver
                 }
 
                 if ($item->unpack) {
-                    $items[] = new UnresolvedConstant\ArraySpread($item_value_type);
+                    $items[] = new ArraySpread($item_value_type);
                 } else {
-                    $items[] = new UnresolvedConstant\KeyValuePair($item_key_type, $item_value_type);
+                    $items[] = new KeyValuePair($item_key_type, $item_value_type);
                 }
             }
 
-            return new UnresolvedConstant\ArrayValue($items);
+            return new ArrayValue($items);
         }
 
         return null;

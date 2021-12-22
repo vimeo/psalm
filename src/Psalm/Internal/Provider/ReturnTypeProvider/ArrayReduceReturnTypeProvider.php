@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -13,6 +14,10 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\Union;
 
 use function count;
 use function explode;
@@ -32,7 +37,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         return ['array_reduce'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -62,16 +67,16 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $array_arg_atomic_type = null;
 
         if (isset($array_arg_types['array'])
-            && ($array_arg_types['array'] instanceof Type\Atomic\TArray
-                || $array_arg_types['array'] instanceof Type\Atomic\TKeyedArray
-                || $array_arg_types['array'] instanceof Type\Atomic\TList)
+            && ($array_arg_types['array'] instanceof TArray
+                || $array_arg_types['array'] instanceof TKeyedArray
+                || $array_arg_types['array'] instanceof TList)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_atomic_type instanceof Type\Atomic\TKeyedArray) {
+            if ($array_arg_atomic_type instanceof TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
-            } elseif ($array_arg_atomic_type instanceof Type\Atomic\TList) {
-                $array_arg_atomic_type = new Type\Atomic\TArray([
+            } elseif ($array_arg_atomic_type instanceof TList) {
+                $array_arg_atomic_type = new TArray([
                     Type::getInt(),
                     clone $array_arg_atomic_type->type_param
                 ]);

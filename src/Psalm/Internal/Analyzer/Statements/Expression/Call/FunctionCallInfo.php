@@ -1,10 +1,11 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Type;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -32,7 +33,7 @@ class FunctionCallInfo
     public $in_call_map = false;
 
     /**
-     * @var array<string, Type\Union>
+     * @var array<string, Union>
      */
     public $defined_constants = [];
 

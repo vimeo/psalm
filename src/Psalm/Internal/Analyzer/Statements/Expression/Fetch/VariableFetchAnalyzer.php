@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -20,6 +21,10 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TList;
+use Psalm\Type\TaintKindGroup;
+use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
@@ -50,7 +55,7 @@ class VariableFetchAnalyzer
         PhpParser\Node\Expr\Variable $stmt,
         Context $context,
         bool $passed_by_reference = false,
-        ?Type\Union $by_ref_type = null,
+        ?Union $by_ref_type = null,
         bool $array_assignment = false,
         bool $from_global = false
     ): bool {
@@ -401,7 +406,7 @@ class VariableFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
-        Type\Union $stmt_type,
+        Union $stmt_type,
         Context $context
     ): void {
         $codebase = $statements_analyzer->getCodebase();
@@ -475,7 +480,7 @@ class VariableFetchAnalyzer
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
         string $var_name,
-        Type\Union $type,
+        Union $type,
         PhpParser\Node\Expr\Variable $stmt
     ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -493,7 +498,7 @@ class VariableFetchAnalyzer
                     $var_name,
                     null,
                     null,
-                    Type\TaintKindGroup::ALL_INPUT
+                    TaintKindGroup::ALL_INPUT
                 );
 
                 $statements_analyzer->data_flow_graph->addSource($server_taint_source);
@@ -517,7 +522,7 @@ class VariableFetchAnalyzer
         );
     }
 
-    public static function getGlobalType(string $var_id): Type\Union
+    public static function getGlobalType(string $var_id): Union
     {
         $config = Config::getInstance();
 
@@ -526,8 +531,8 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$argv') {
-            return new Type\Union([
-                new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
+            return new Union([
+                new TArray([Type::getInt(), Type::getString()]),
             ]);
         }
 
@@ -536,8 +541,8 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$http_response_header') {
-            return new Type\Union([
-                new Type\Atomic\TList(Type::getString())
+            return new Union([
+                new TList(Type::getString())
             ]);
         }
 

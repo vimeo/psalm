@@ -314,6 +314,7 @@ class DocumentationTest extends TestCase
                 case 'DuplicateEnumCase':
                 case 'DuplicateEnumCaseValue':
                 case 'NoEnumProperties':
+                case 'DeprecatedConstant':
                     $php_version = '8.1';
                     break;
             }

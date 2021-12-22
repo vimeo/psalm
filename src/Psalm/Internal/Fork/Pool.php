@@ -1,8 +1,10 @@
 <?php
+
 namespace Psalm\Internal\Fork;
 
 use Closure;
 use Exception;
+use Psalm\Config;
 use Throwable;
 
 use function array_fill_keys;
@@ -24,6 +26,8 @@ use function fread;
 use function fwrite;
 use function get_class;
 use function gettype;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function in_array;
 use function ini_get;
 use function pcntl_fork;
@@ -69,6 +73,9 @@ class Pool
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
 
+    /** @var Config */
+    private $config;
+
     /** @var int[] */
     private $child_pid_list = [];
 
@@ -88,6 +95,7 @@ class Pool
         . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
 
     /**
+     * @param Config $config
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
@@ -104,6 +112,7 @@ class Pool
      * @psalm-suppress MixedAssignment
      */
     public function __construct(
+        Config $config,
         array $process_task_data_iterator,
         Closure $startup_closure,
         Closure $task_closure,
@@ -112,6 +121,7 @@ class Pool
     ) {
         $pool_size = count($process_task_data_iterator);
         $this->task_done_closure = $task_done_closure;
+        $this->config = $config;
 
         assert(
             $pool_size > 1,
@@ -201,7 +211,12 @@ class Pool
                 $task_result = $task_closure($i, $task_data);
 
                 $task_done_message = new ForkTaskDoneMessage($task_result);
-                $serialized_message = $task_done_buffer . base64_encode(serialize($task_done_message)) . "\n";
+                if ($this->config->use_igbinary) {
+                    $encoded_message = base64_encode(igbinary_serialize($task_done_message));
+                } else {
+                    $encoded_message = base64_encode(serialize($task_done_message));
+                }
+                $serialized_message = $task_done_buffer . $encoded_message . "\n";
 
                 if (strlen($serialized_message) > 200) {
                     $bytes_written = @fwrite($write_stream, $serialized_message);
@@ -233,7 +248,12 @@ class Pool
             );
         }
 
-        $serialized_message = $task_done_buffer . base64_encode(serialize($process_done_message)) . "\n";
+        if ($this->config->use_igbinary) {
+            $encoded_message = base64_encode(igbinary_serialize($process_done_message));
+        } else {
+            $encoded_message = base64_encode(serialize($process_done_message));
+        }
+        $serialized_message = $task_done_buffer . $encoded_message . "\n";
 
         $bytes_to_write = strlen($serialized_message);
         $bytes_written = 0;
@@ -356,7 +376,11 @@ class Pool
                     $content[(int)$file] = array_pop($serialized_messages);
 
                     foreach ($serialized_messages as $serialized_message) {
-                        $message = unserialize(base64_decode($serialized_message, true));
+                        if ($this->config->use_igbinary) {
+                            $message = igbinary_unserialize(base64_decode($serialized_message, true));
+                        } else {
+                            $message = unserialize(base64_decode($serialized_message, true));
+                        }
 
                         if ($message instanceof ForkProcessDoneMessage) {
                             $terminationMessages[] = $message->data;

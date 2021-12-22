@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -66,12 +67,12 @@ class IncludeAnalyzer
         $context->inside_call = true;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            $context->inside_call = $was_inside_call;
+
             return false;
         }
 
-        if (!$was_inside_call) {
-            $context->inside_call = false;
-        }
+        $context->inside_call = $was_inside_call;
 
         $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 

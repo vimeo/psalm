@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Codebase;
 
 use Exception;
@@ -14,6 +15,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -416,7 +418,7 @@ class Reflection
         return null;
     }
 
-    public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Type\Union
+    public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
             return Type::getMixed();

@@ -1,10 +1,12 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -14,6 +16,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\TaintKind;
 
 class PrintAnalyzer
 {
@@ -40,17 +43,17 @@ class PrintAnalyzer
             );
 
             $print_param_sink->taints = [
-                Type\TaintKind::INPUT_HTML,
-                Type\TaintKind::INPUT_HAS_QUOTES,
-                Type\TaintKind::USER_SECRET,
-                Type\TaintKind::SYSTEM_SECRET
+                TaintKind::INPUT_HTML,
+                TaintKind::INPUT_HAS_QUOTES,
+                TaintKind::USER_SECRET,
+                TaintKind::SYSTEM_SECRET
             ];
 
             $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            if (Call\ArgumentAnalyzer::verifyType(
+            if (ArgumentAnalyzer::verifyType(
                 $statements_analyzer,
                 $stmt_expr_type,
                 Type::getString(),

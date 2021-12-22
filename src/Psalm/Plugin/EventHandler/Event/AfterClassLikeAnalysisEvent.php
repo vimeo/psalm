@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node;

@@ -23,7 +23,6 @@
     <file>src/</file>
     <file>tests/</file>
 
-    <exclude-pattern>src/Psalm/Internal/Visitor/SimpleNameResolver.php</exclude-pattern>
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
     <exclude-pattern>tests/fixtures/</exclude-pattern>
@@ -74,6 +73,44 @@
       ************************************************************************************************************** -->
 
     <!--
+        Handles enforcement and line spacing of declare(strict_types=1).
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsdeclarestricttypes-
+     -->
+    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+        <properties>
+            <property name="declareOnFirstLine" type="bool" value="false"/>
+            <property name="linesCountBeforeDeclare" type="int" value="1"/>
+            <property name="linesCountAfterDeclare" type="int" value="1"/>
+            <property name="spacesCountAroundEqualsSign" type="int" value="0"/>
+        </properties>
+
+        <exclude name="SlevomatCodingStandard.TypeHints.DeclareStrictTypes.DeclareStrictTypesMissing"/>
+    </rule>
+
+    <!--
+        Requires only one namespace in a file.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesrequireonenamespaceinfile
+     -->
+    <rule ref="SlevomatCodingStandard.Namespaces.RequireOneNamespaceInFile"/>
+
+    <!--
+        Enforces formatting of namespace.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesnamespacedeclaration-
+     -->
+    <rule ref="SlevomatCodingStandard.Namespaces.NamespaceDeclaration"/>
+
+    <!--
+        Enforces number of lines before and after namespace.
+        https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesnamespacespacing-
+     -->
+    <rule ref="SlevomatCodingStandard.Namespaces.NamespaceSpacing">
+        <properties>
+            <property name="linesCountBeforeNamespace" type="int" value="1"/>
+            <property name="linesCountAfterNamespace" type="int" value="1"/>
+        </properties>
+    </rule>
+
+    <!--
         Handle imports from namespaces.
         https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-
      -->
@@ -113,6 +150,7 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
+            <property name="psr12Compatible" type="bool" value="true"/>
             <property name="caseSensitive" value="true"/>
         </properties>
     </rule>

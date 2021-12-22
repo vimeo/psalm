@@ -1,7 +1,9 @@
 <?php
+
 namespace Psalm\Internal\FileManipulation;
 
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FileProvider;
@@ -110,7 +112,7 @@ class FileManipulationBuffer
         );
     }
 
-    public static function addVarAnnotationToRemove(CodeLocation\DocblockTypeLocation $code_location): void
+    public static function addVarAnnotationToRemove(DocblockTypeLocation $code_location): void
     {
         $bounds = $code_location->getSelectionBounds();
 

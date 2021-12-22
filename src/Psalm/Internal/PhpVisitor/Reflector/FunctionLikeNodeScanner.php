@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use LogicException;
@@ -42,6 +43,10 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
 use ReflectionFunction;
 use UnexpectedValueException;
 
@@ -92,7 +97,7 @@ class FunctionLikeNodeScanner
     private $classlike_storage;
 
     /**
-     * @var array<string, non-empty-array<string, Type\Union>>
+     * @var array<string, non-empty-array<string, Union>>
      */
     private $existing_function_template_types;
 
@@ -112,7 +117,7 @@ class FunctionLikeNodeScanner
     public $storage;
 
     /**
-     * @param array<string, non-empty-array<string, Type\Union>> $existing_function_template_types
+     * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
      */
     public function __construct(
@@ -723,7 +728,7 @@ class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
-                    $storage->return_type = new Type\Union([new Type\Atomic\TNever()]);
+                    $storage->return_type = new Union([new TNever()]);
                 }
 
                 $storage->attributes[] = $attribute;
@@ -774,8 +779,8 @@ class FunctionLikeNodeScanner
 
                 $assigned_properties[$property_name] =
                     $storage->params[$param_index]->is_variadic
-                        ? new Type\Union([
-                            new Type\Atomic\TArray([
+                        ? new Union([
+                            new TArray([
                                 Type::getInt(),
                                 $param_type,
                             ]),
@@ -829,7 +834,7 @@ class FunctionLikeNodeScanner
             );
 
             if ($is_nullable) {
-                $param_type->addType(new Type\Atomic\TNull);
+                $param_type->addType(new TNull);
             } else {
                 $is_nullable = $param_type->isNullable();
             }

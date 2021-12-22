@@ -1,23 +1,25 @@
 <?php
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 class ArrayCreationInfo
 {
     /**
-     * @var list<Type\Atomic>
+     * @var list<Atomic>
      */
     public $item_key_atomic_types = [];
 
     /**
-     * @var list<Type\Atomic>
+     * @var list<Atomic>
      */
     public $item_value_atomic_types = [];
 
     /**
-     * @var array<int|string, Type\Union>
+     * @var array<int|string, Union>
      */
     public $property_types = [];
 

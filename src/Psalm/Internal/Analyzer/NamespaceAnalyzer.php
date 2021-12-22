@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -7,6 +8,7 @@ use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
+use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 
@@ -42,7 +44,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
     /**
      * A lookup table for public namespace constants
      *
-     * @var array<string, array<string, Type\Union>>
+     * @var array<string, array<string, Union>>
      */
     protected static $public_namespace_constants = [];
 
@@ -122,13 +124,13 @@ class NamespaceAnalyzer extends SourceAnalyzer
         return $this->namespace_name;
     }
 
-    public function setConstType(string $const_name, Type\Union $const_type): void
+    public function setConstType(string $const_name, Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
     }
 
     /**
-     * @return array<string,Type\Union>
+     * @return array<string, Union>
      */
     public static function getConstantsForNamespace(string $namespace_name, int $visibility): array
     {

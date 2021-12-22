@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
@@ -7,6 +9,9 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -28,7 +33,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['min', 'max'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Type\Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $call_args = $event->getCallArgs();
         if (count($call_args) === 0) {
@@ -58,16 +63,16 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break;
                     }
 
-                    if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                    if ($atomic_type instanceof TLiteralInt) {
                         $min_bounds[] = $atomic_type->value;
                         $max_bounds[] = $atomic_type->value;
-                    } elseif ($atomic_type instanceof Type\Atomic\TIntRange) {
+                    } elseif ($atomic_type instanceof TIntRange) {
                         $min_bounds[] = $atomic_type->min_bound;
                         $max_bounds[] = $atomic_type->max_bound;
-                    } elseif ($atomic_type instanceof Type\Atomic\TPositiveInt) {
+                    } elseif ($atomic_type instanceof TPositiveInt) {
                         $min_bounds[] = 1;
                         $max_bounds[] = null;
-                    } elseif (get_class($atomic_type) === Type\Atomic\TInt::class) {
+                    } elseif (get_class($atomic_type) === TInt::class) {
                         $min_bounds[] = null;
                         $max_bounds[] = null;
                     } else {
@@ -108,7 +113,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return Type::getInt(false, $min_potential_int);
             }
 
-            return new Union([new Type\Atomic\TIntRange($min_potential_int, $max_potential_int)]);
+            return new Union([new TIntRange($min_potential_int, $max_potential_int)]);
         }
 
         //if we're dealing with non-int elements, just combine them all together
@@ -117,10 +122,10 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($array_arg_type = $nodeTypeProvider->getType($arg->value)) {
                 if ($array_arg_type->isSingle()) {
                     $atomic_type = $array_arg_type->getSingleAtomic();
-                    if ($atomic_type instanceof Type\Atomic\TPositiveInt) {
+                    if ($atomic_type instanceof TPositiveInt) {
                         //we replace TPositiveInt with a range for better combination
                         $array_arg_type->removeType('int');
-                        $array_arg_type->addType(new Type\Atomic\TIntRange(1, null));
+                        $array_arg_type->addType(new TIntRange(1, null));
                     }
                 }
 

@@ -15,7 +15,11 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
 
 class BitwiseNotAnalyzer
 {
@@ -29,7 +33,7 @@ class BitwiseNotAnalyzer
         }
 
         if (!($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr))) {
-            $statements_analyzer->node_data->setType($stmt, new Type\Union([new TInt(), new TString()]));
+            $statements_analyzer->node_data->setType($stmt, new Union([new TInt(), new TString()]));
         } elseif ($stmt_expr_type->isMixed()) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         } else {
@@ -39,17 +43,17 @@ class BitwiseNotAnalyzer
 
             foreach ($stmt_expr_type->getAtomicTypes() as $type_string => $type_part) {
                 if ($type_part instanceof TInt || $type_part instanceof TString) {
-                    if ($type_part instanceof Type\Atomic\TLiteralInt) {
+                    if ($type_part instanceof TLiteralInt) {
                         $type_part->value = ~$type_part->value;
-                    } elseif ($type_part instanceof Type\Atomic\TLiteralString) {
+                    } elseif ($type_part instanceof TLiteralString) {
                         $type_part->value = ~$type_part->value;
                     }
 
                     $acceptable_types[] = $type_part;
                     $has_valid_operand = true;
                 } elseif ($type_part instanceof TFloat) {
-                    $type_part = ($type_part instanceof Type\Atomic\TLiteralFloat) ?
-                        new Type\Atomic\TLiteralInt(~$type_part->value) :
+                    $type_part = ($type_part instanceof TLiteralFloat) ?
+                        new TLiteralInt(~$type_part->value) :
                         new TInt;
 
                     $stmt_expr_type->removeType($type_string);
@@ -84,7 +88,7 @@ class BitwiseNotAnalyzer
 
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             } else {
-                $statements_analyzer->node_data->setType($stmt, new Type\Union($acceptable_types));
+                $statements_analyzer->node_data->setType($stmt, new Union($acceptable_types));
             }
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Type;
 
 abstract class NodeVisitor

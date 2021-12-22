@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
