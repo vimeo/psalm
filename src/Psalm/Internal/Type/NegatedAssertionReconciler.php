@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
-use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -158,35 +157,29 @@ class NegatedAssertionReconciler extends Reconciler
 
             if (strpos($assertion, 'in-array-') === 0) {
                 $assertion = substr($assertion, 9);
-                $new_var_type = null;
-                try {
-                    $new_var_type = Type::parseString($assertion);
-                } catch (TypeParseTreeException $e) {
-                }
+                $new_var_type = Type::parseString($assertion);
 
-                if ($new_var_type) {
-                    $intersection = Type::intersectUnionTypes(
-                        $new_var_type,
-                        $existing_var_type,
-                        $statements_analyzer->getCodebase()
-                    );
+                $intersection = Type::intersectUnionTypes(
+                    $new_var_type,
+                    $existing_var_type,
+                    $statements_analyzer->getCodebase()
+                );
 
-                    if ($intersection === null) {
-                        if ($key && $code_location) {
-                            self::triggerIssueForImpossible(
-                                $existing_var_type,
-                                $existing_var_type->getId(),
-                                $key,
-                                '!' . $assertion,
-                                true,
-                                $negated,
-                                $code_location,
-                                $suppressed_issues
-                            );
-                        }
-
-                        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+                if ($intersection === null) {
+                    if ($key && $code_location) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $existing_var_type->getId(),
+                            $key,
+                            '!' . $assertion,
+                            true,
+                            $negated,
+                            $code_location,
+                            $suppressed_issues
+                        );
                     }
+
+                    $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
                 }
 
                 return $existing_var_type;

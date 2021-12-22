@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeCombiner;
@@ -1563,14 +1562,7 @@ class SimpleAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation
     ): Union {
-        try {
-            $new_var_type = Type::parseString($assertion);
-        } catch (TypeParseTreeException $e) {
-            // Not all assertions can be parsed as type, it's fine.
-            // One particular case is variable array key (e. g. $arr[$key]), which end up as in-array-$arr assertion
-
-            return $existing_var_type;
-        }
+        $new_var_type = Type::parseString($assertion);
 
         $intersection = Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase);
 
