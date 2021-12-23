@@ -13,7 +13,7 @@ function run {
 
   local -r phpunit_cmd='
 echo "::group::{}";
-vendor/bin/phpunit --log-junit build/phpunit/logs/{_}.xml --colors=always {};
+vendor/phpunit/phpunit/phpunit --log-junit build/phpunit/logs/{_}.xml --colors=always {};
 exit_code=$?;
 echo ::endgroup::;
 if [[ "$exit_code" -ne 0 ]]; then
