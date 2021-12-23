@@ -213,7 +213,7 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
+            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
             if ($psalm_internal) {
                 $info->psalm_internal = $psalm_internal;
             } else {

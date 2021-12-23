@@ -237,13 +237,13 @@ class CommentAnalyzer
         }
 
         if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
+            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
 
             if (!$psalm_internal) {
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
             }
 
-            $var_comment->psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
+            $var_comment->psalm_internal = $psalm_internal;
             $var_comment->internal = true;
         }
 

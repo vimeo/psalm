@@ -301,6 +301,17 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'psalmInternalMethodWithTrailingWhitespace' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static function barBar(): void {
+                                self::barBar();
+                            }
+                        }
+                    }',
+            ],
             'internalToClassMethodWithCallSameNamespace' => [
                 '<?php
                     namespace A\B {
@@ -459,6 +470,14 @@ class InternalAnnotationTest extends TestCase
                         class Bar extends \A\B\Foo {}
                     }',
             ],
+            'psalmInternalClassWithTrailingWhitespace' => [
+                '<?php
+                    namespace A\B {
+                        /** @psalm-internal A\B */
+                        class Foo {}
+                        class Bar extends Foo {}
+                    }',
+            ],
             'psalmInternalPropertyGet' => [
                 '<?php
                     namespace A\B {
@@ -495,6 +514,19 @@ class InternalAnnotationTest extends TestCase
                             public function batBat() : void {
                                 $a = new \A\B\Foo;
                                 $a->foo = 5;
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalPropertyWithTrailingWhitespace' => [
+                '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public int $foo = 0;
+
+                            public function barBar() : void {
+                                $this->foo = 42;
                             }
                         }
                     }',
