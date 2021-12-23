@@ -320,11 +320,17 @@ class SwitchCaseAnalyzer
             );
 
             if ($new_case_equality_expr) {
+                $was_inside_conditional = $case_context->inside_conditional;
+
+                $case_context->inside_conditional = true;
+
                 ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $new_case_equality_expr->getArgs()[1]->value,
                     $case_context
                 );
+
+                $case_context->inside_conditional = $was_inside_conditional;
 
                 $case_equality_expr = $new_case_equality_expr;
             }
