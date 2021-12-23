@@ -415,12 +415,6 @@ class Reconciler
                         && $key_parts[2][0] !== '\''
                         && !is_numeric($key_parts[2])
                     ) {
-                        if (isset($new_types[$key_parts[2]])) {
-                            $new_types[$key_parts[2]][] = ['=in-array-' . $key_parts[0]];
-                        } else {
-                            $new_types[$key_parts[2]] = [['=in-array-' . $key_parts[0]]];
-                        }
-
                         if ($key_parts[0][0] === '$') {
                             if (isset($new_types[$key_parts[0]])) {
                                 $new_types[$key_parts[0]][] = ['=has-array-key-' . $key_parts[2]];
