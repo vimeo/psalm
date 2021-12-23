@@ -62,7 +62,8 @@
     "config": {
         "allow-plugins": {
             "bamarni/composer-bin-plugin": true,
-            "composer/package-versions-deprecated": true
+            "composer/package-versions-deprecated": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
         },
         "optimize-autoloader": true,
         "sort-packages": true,
