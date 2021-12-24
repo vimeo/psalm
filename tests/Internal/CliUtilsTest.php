@@ -40,8 +40,7 @@ class CliUtilsTest extends TestCase
         ];
 
         yield 'specialCaseWhichWouldFail' => [
-            // ['--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', '--dry-run'],
-            ['/directory-does-not-exist/file-does-not-exist', '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', '--dry-run'],
+            ['--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', '--dry-run'],
             ['/directory-does-not-exist/file-does-not-exist', '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', '--dry-run'],
         ];
     }
@@ -83,10 +82,8 @@ class CliUtilsTest extends TestCase
             [$psalm, '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', $dummyProjectDir . '/Bar.php', $dummyProjectDir . '/Bat.php'],
         ];
 
-        // this happened because of realpath(Phar::running(false)) will return the same as realpath('.')
-        // when not called in the Phar context, I think this case can be ignored in the future
         yield 'withFpathToCurrentDir' => [
-            null, // ['.'],
+            [realpath('.')],
             [$psalm, '-f', '.'],
             ['.']
         ];

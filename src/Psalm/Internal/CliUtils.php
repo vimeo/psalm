@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Report;
 
+use function array_slice;
 use function assert;
 use function count;
 use function define;
@@ -186,7 +187,7 @@ final class CliUtils
     /**
      * @return list<string>
      */
-    public static function getArguments(): array
+    public static function getRawCliArguments(): array
     {
         global $argv;
 
@@ -194,6 +195,15 @@ final class CliUtils
             return [];
         }
 
+        return array_slice($argv, 1);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function getArguments(): array
+    {
+        $argv = self::getRawCliArguments();
         $filtered_input_paths = [];
 
         for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
@@ -227,14 +237,15 @@ final class CliUtils
      */
     public static function getPathsToCheck($f_paths): ?array
     {
-        global $argv;
-
         $paths_to_check = [];
 
         if ($f_paths) {
             $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
         } else {
-            $input_paths = $argv ?: null;
+            $input_paths = self::getRawCliArguments();
+            if (!$input_paths) {
+                return null;
+            }
         }
 
         if ($input_paths) {
@@ -243,18 +254,6 @@ final class CliUtils
             for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
                 /** @var string */
                 $input_path = $input_paths[$i];
-
-                $real_input_path = realpath($input_path);
-                if ($real_input_path === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
-                        . DIRECTORY_SEPARATOR . 'psalm')
-                    || $real_input_path === realpath(dirname(__DIR__, 5) . DIRECTORY_SEPARATOR . 'bin'
-                        . DIRECTORY_SEPARATOR . 'psalter')
-                    || $real_input_path === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalm')
-                    || $real_input_path === realpath(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'psalter')
-                    || $real_input_path === realpath(Phar::running(false))
-                ) {
-                    continue;
-                }
 
                 if ($input_path[0] === '-' && strlen($input_path) === 2) {
                     if ($input_path[1] === 'c' || $input_path[1] === 'f') {
