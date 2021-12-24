@@ -19,44 +19,29 @@ use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
-use Psalm\Type\Atomic\TEmptyNumeric;
-use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
-use Psalm\Type\Atomic\TNonEmptyMixed;
-use Psalm\Type\Atomic\TNonEmptyScalar;
-use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TPositiveInt;
-use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use UnexpectedValueException;
 
@@ -1020,57 +1005,9 @@ class Union implements TypeNode
     public function isAlwaysFalsy(): bool
     {
         foreach ($this->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TFalse) {
-                continue;
+            if (!$atomic_type->isFalsy()) {
+                return false;
             }
-
-            if ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TLiteralFloat && $atomic_type->value === 0.0) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TLiteralString &&
-                ($atomic_type->value === '' || $atomic_type->value === '0')
-            ) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TEmptyMixed) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TEmptyNumeric) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TEmptyScalar) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isAlwaysFalsy()) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TIntRange &&
-                $atomic_type->min_bound === 0 &&
-                $atomic_type->max_bound === 0
-            ) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TArray && $atomic_type->getId() === 'array<empty, empty>') {
-                continue;
-            }
-
-            //we can't be sure the type is always falsy
-            return false;
         }
 
         return true;
@@ -1088,100 +1025,9 @@ class Union implements TypeNode
         }
 
         foreach ($this->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTrue) {
-                continue;
+            if (!$atomic_type->isTruthy()) {
+                return false;
             }
-
-            if ($atomic_type instanceof TLiteralInt && $atomic_type->value !== 0) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TLiteralFloat && $atomic_type->value !== 0.0) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TLiteralString &&
-                ($atomic_type->value !== '' && $atomic_type->value !== '0')
-            ) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNonFalsyString) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TCallableString) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNonEmptyArray) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNonEmptyScalar) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNonEmptyList) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNonEmptyMixed) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TObject) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TNamedObject
-                && $atomic_type->value !== 'SimpleXMLElement'
-                && $atomic_type->value !== 'SimpleXMLIterator') {
-                continue;
-            }
-
-            if ($atomic_type instanceof TIntRange && !$atomic_type->contains(0)) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TPositiveInt) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TLiteralClassString) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TClassString) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TDependentGetClass) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TTraitString) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TResource) {
-                continue;
-            }
-
-            if ($atomic_type instanceof TKeyedArray) {
-                foreach ($atomic_type->properties as $property) {
-                    if ($property->possibly_undefined === false) {
-                        continue 2;
-                    }
-                }
-            }
-
-            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isAlwaysTruthy()) {
-                continue;
-            }
-
-            //we can't be sure the type is always truthy
-            return false;
         }
 
         return true;

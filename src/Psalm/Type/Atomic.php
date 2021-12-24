@@ -25,17 +25,23 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
@@ -650,5 +656,158 @@ abstract class Atomic implements TypeNode
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         return get_class($other_type) === get_class($this);
+    }
+
+    public function isTruthy(): bool
+    {
+        if ($this instanceof TTrue) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralInt && $this->value !== 0) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralFloat && $this->value !== 0.0) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralString &&
+            ($this->value !== '' && $this->value !== '0')
+        ) {
+            return true;
+        }
+
+        if ($this instanceof TNonFalsyString) {
+            return true;
+        }
+
+        if ($this instanceof TCallableString) {
+            return true;
+        }
+
+        if ($this instanceof TNonEmptyArray) {
+            return true;
+        }
+
+        if ($this instanceof TNonEmptyScalar) {
+            return true;
+        }
+
+        if ($this instanceof TNonEmptyList) {
+            return true;
+        }
+
+        if ($this instanceof TNonEmptyMixed) {
+            return true;
+        }
+
+        if ($this instanceof TObject) {
+            return true;
+        }
+
+        if ($this instanceof TNamedObject
+            && $this->value !== 'SimpleXMLElement'
+            && $this->value !== 'SimpleXMLIterator') {
+            return true;
+        }
+
+        if ($this instanceof TIntRange && !$this->contains(0)) {
+            return true;
+        }
+
+        if ($this instanceof TPositiveInt) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            return true;
+        }
+
+        if ($this instanceof TClassString) {
+            return true;
+        }
+
+        if ($this instanceof TDependentGetClass) {
+            return true;
+        }
+
+        if ($this instanceof TTraitString) {
+            return true;
+        }
+
+        if ($this instanceof TResource) {
+            return true;
+        }
+
+        if ($this instanceof TKeyedArray) {
+            foreach ($this->properties as $property) {
+                if ($property->possibly_undefined === false) {
+                    return true;
+                }
+            }
+        }
+
+        if ($this instanceof TTemplateParam && $this->as->isAlwaysTruthy()) {
+            return true;
+        }
+
+        //we can't be sure the type is always truthy
+        return false;
+    }
+
+    public function isFalsy(): bool
+    {
+        if ($this instanceof TFalse) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralInt && $this->value === 0) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralFloat && $this->value === 0.0) {
+            return true;
+        }
+
+        if ($this instanceof TLiteralString &&
+            ($this->value === '' || $this->value === '0')
+        ) {
+            return true;
+        }
+
+        if ($this instanceof TNull) {
+            return true;
+        }
+
+        if ($this instanceof TEmptyMixed) {
+            return true;
+        }
+
+        if ($this instanceof TEmptyNumeric) {
+            return true;
+        }
+
+        if ($this instanceof TEmptyScalar) {
+            return true;
+        }
+
+        if ($this instanceof TTemplateParam && $this->as->isAlwaysFalsy()) {
+            return true;
+        }
+
+        if ($this instanceof TIntRange &&
+            $this->min_bound === 0 &&
+            $this->max_bound === 0
+        ) {
+            return true;
+        }
+
+        if ($this instanceof TArray && $this->getId() === 'array<empty, empty>') {
+            return true;
+        }
+
+        //we can't be sure the type is always falsy
+        return false;
     }
 }
