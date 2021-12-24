@@ -9,6 +9,9 @@ use function realpath;
 
 class CliUtilsTest extends TestCase
 {
+    /**
+     * @var array<int, string>
+     */
     private $argv = [];
 
     protected function setUp(): void
@@ -23,9 +26,7 @@ class CliUtilsTest extends TestCase
         $argv = $this->argv;
     }
 
-    /**
-     * @return iterable<array<list<string>>>
-     */
+    /** @return iterable<string,array{list<string>,list<string>}> */
     public function provideGetArguments(): iterable
     {
         $psalter = __DIR__ . '/../../psalter';
@@ -48,20 +49,23 @@ class CliUtilsTest extends TestCase
     /**
      * @dataProvider provideGetArguments
      * @param list<string> $expected
-     * @param list<string> $input
+     * @param list<string> $_input
      */
-    public function testGetArgumentsWillReturnExpectedValue(array $expected, array $input): void
+    public function testGetArgumentsWillReturnExpectedValue(array $expected, array $_input): void
     {
         global $argv;
-        $argv = $input;
+        $argv = $_input;
         $result = CliUtils::getArguments();
         self::assertEquals($expected, $result);
     }
 
+    /** @return iterable<string,array{list<string>|null,list<string>,fpaths?:list<string>}> */
     public function provideGetPathsToCheck(): iterable
     {
         $psalm = __DIR__ . '/../../psalm';
-        $dummyProjectDir = realpath(__DIR__ . '/../fixtures/DummyProject');
+        $dummyProjectDir = (string)realpath(__DIR__ . '/../fixtures/DummyProject');
+        $currentDir = (string)realpath('.');
+
         yield 'withoutPaths' => [
             null,
             [$psalm, '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', '--dry-run'],
@@ -83,7 +87,7 @@ class CliUtilsTest extends TestCase
         ];
 
         yield 'withFpathToCurrentDir' => [
-            [realpath('.')],
+            [$currentDir],
             [$psalm, '-f', '.'],
             ['.']
         ];
@@ -98,12 +102,12 @@ class CliUtilsTest extends TestCase
     /**
      * @dataProvider provideGetPathsToCheck
      * @param list<string>|null $expected
-     * @param list<string> $input
+     * @param list<string> $_input
      */
-    public function testGetPathsToCheckWillReturnExpectedValue(?array $expected, array $input, array $fpaths = []): void
+    public function testGetPathsToCheckWillReturnExpectedValue(?array $expected, array $_input, array $fpaths = []): void
     {
         global $argv;
-        $argv = $input;
+        $argv = $_input;
         $result = CliUtils::getPathsToCheck($fpaths);
         self::assertEquals($expected, $result);
     }

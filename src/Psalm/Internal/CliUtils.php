@@ -248,68 +248,66 @@ final class CliUtils
             }
         }
 
-        if ($input_paths) {
-            $filtered_input_paths = [];
+        $filtered_input_paths = [];
 
-            for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
-                /** @var string */
-                $input_path = $input_paths[$i];
+        for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
+            /** @var string */
+            $input_path = $input_paths[$i];
 
-                if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                    if ($input_path[1] === 'c' || $input_path[1] === 'f') {
-                        ++$i;
-                    }
-                    continue;
+            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                    ++$i;
                 }
-
-                if ($input_path[0] === '-' && $input_path[2] === '=') {
-                    continue;
-                }
-
-                if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
-                    if (substr($input_path, 2) === 'config') {
-                        ++$i;
-                    }
-                    continue;
-                }
-
-                $filtered_input_paths[] = $input_path;
+                continue;
             }
 
-            if ($filtered_input_paths === ['-']) {
-                $meta = stream_get_meta_data(STDIN);
-                stream_set_blocking(STDIN, false);
-                if ($stdin = fgets(STDIN)) {
-                    $filtered_input_paths = preg_split('/\s+/', trim($stdin));
-                }
-                $blocked = $meta['blocked'];
-                stream_set_blocking(STDIN, $blocked);
+            if ($input_path[0] === '-' && $input_path[2] === '=') {
+                continue;
             }
 
-            foreach ($filtered_input_paths as $path_to_check) {
-                if ($path_to_check[0] === '-') {
-                    fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
-                    exit(1);
+            if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
+                if (substr($input_path, 2) === 'config') {
+                    ++$i;
                 }
-
-                if (!file_exists($path_to_check)) {
-                    fwrite(STDERR, 'Cannot locate ' . $path_to_check . PHP_EOL);
-                    exit(1);
-                }
-
-                $path_to_check = realpath($path_to_check);
-
-                if (!$path_to_check) {
-                    fwrite(STDERR, 'Error getting realpath for file' . PHP_EOL);
-                    exit(1);
-                }
-
-                $paths_to_check[] = $path_to_check;
+                continue;
             }
 
-            if (!$paths_to_check) {
-                $paths_to_check = null;
+            $filtered_input_paths[] = $input_path;
+        }
+
+        if ($filtered_input_paths === ['-']) {
+            $meta = stream_get_meta_data(STDIN);
+            stream_set_blocking(STDIN, false);
+            if ($stdin = fgets(STDIN)) {
+                $filtered_input_paths = preg_split('/\s+/', trim($stdin));
             }
+            $blocked = $meta['blocked'];
+            stream_set_blocking(STDIN, $blocked);
+        }
+
+        foreach ($filtered_input_paths as $path_to_check) {
+            if ($path_to_check[0] === '-') {
+                fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
+                exit(1);
+            }
+
+            if (!file_exists($path_to_check)) {
+                fwrite(STDERR, 'Cannot locate ' . $path_to_check . PHP_EOL);
+                exit(1);
+            }
+
+            $path_to_check = realpath($path_to_check);
+
+            if (!$path_to_check) {
+                fwrite(STDERR, 'Error getting realpath for file' . PHP_EOL);
+                exit(1);
+            }
+
+            $paths_to_check[] = $path_to_check;
+        }
+
+        if (!$paths_to_check) {
+            $paths_to_check = null;
         }
 
         return $paths_to_check;
