@@ -591,13 +591,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             //if any atomic in the union is either always falsy, we remove it. If not always truthy, we mark the check
             //as not redundant.
             $union = new Union([$existing_var_type_part]);
+            $union->possibly_undefined = $existing_var_type->possibly_undefined;
+            $union->possibly_undefined_from_try = $existing_var_type->possibly_undefined_from_try;
             if ($union->isAlwaysFalsy()) {
                 $did_remove_type = true;
                 $existing_var_type->removeType($existing_var_type_key);
-            } elseif ($existing_var_type->possibly_undefined
-                || $existing_var_type->possibly_undefined_from_try
-                || !$union->isAlwaysTruthy()
-            ) {
+            } elseif (!$union->isAlwaysTruthy()) {
                 $did_remove_type = true;
             }
         }
