@@ -7,6 +7,8 @@ use Psalm\Internal\CliUtils;
 
 use function realpath;
 
+use const DIRECTORY_SEPARATOR;
+
 class CliUtilsTest extends TestCase
 {
     /**
@@ -62,8 +64,13 @@ class CliUtilsTest extends TestCase
     /** @return iterable<string,array{list<string>|null,list<string>,fpaths?:list<string>}> */
     public function provideGetPathsToCheck(): iterable
     {
-        $psalm = __DIR__ . '/../../psalm';
-        $dummyProjectDir = (string)realpath(__DIR__ . '/../fixtures/DummyProject');
+        $psalm = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'psalm';
+        $dummyProjectDir = (string)realpath(
+            __DIR__
+            . DIRECTORY_SEPARATOR . '..'
+            . DIRECTORY_SEPARATOR. 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject'
+        );
         $currentDir = (string)realpath('.');
 
         yield 'withoutPaths' => [
@@ -77,13 +84,28 @@ class CliUtilsTest extends TestCase
         ];
 
         yield 'withPaths' => [
-            [$dummyProjectDir . '/Bar.php', $dummyProjectDir . '/Bat.php'],
-            [$psalm, $dummyProjectDir . '/Bar.php', $dummyProjectDir . '/Bat.php'],
+            [
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php',
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bat.php',
+            ],
+            [
+                $psalm,
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php',
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bat.php',
+            ],
         ];
 
         yield 'withPathsAndArgumentsMixed' => [
-            [$dummyProjectDir . '/Bar.php', $dummyProjectDir . '/Bat.php'],
-            [$psalm, '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php', $dummyProjectDir . '/Bar.php', $dummyProjectDir . '/Bat.php'],
+            [
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php',
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bat.php',
+            ],
+            [
+                $psalm,
+                '--plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier.php',
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php',
+                $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bat.php',
+            ],
         ];
 
         yield 'withFpathToCurrentDir' => [
