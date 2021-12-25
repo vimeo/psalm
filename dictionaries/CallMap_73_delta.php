@@ -42,7 +42,7 @@ return [
     'is_countable' => ['bool', 'value'=>'mixed'],
     'net_get_interfaces' => ['array<string,array<string,mixed>>|false'],
     'openssl_pkey_derive' => ['string|false', 'public_key'=>'mixed', 'private_key'=>'mixed', 'key_length='=>'?int'],
-    'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:?string,secure?:bool,httponly?:bool}'],
+    'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:?string,secure?:bool,httponly?:bool,samesite?:string}'],
     'setcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
     'setrawcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
     'socket_wsaprotocol_info_export' => ['string|false', 'socket'=>'resource', 'process_id'=>'int'],
