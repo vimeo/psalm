@@ -1026,6 +1026,7 @@ class AssertionReconciler extends Reconciler
                     foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
                         if ($atomic_key !== $assertion
                             && !($atomic_type instanceof TPositiveInt && $value > 0)
+                            && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
                         ) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
