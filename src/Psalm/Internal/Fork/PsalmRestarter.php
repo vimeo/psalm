@@ -62,6 +62,7 @@ class PsalmRestarter extends XdebugHandler
             file_put_contents($this->tmpIni, $content);
         }
 
+        /** @psalm-suppress PossiblyInvalidArgument */
         parent::restart($command);
     }
 }
