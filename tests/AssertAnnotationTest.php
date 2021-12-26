@@ -1710,6 +1710,7 @@ class AssertAnnotationTest extends TestCase
                     /**
                      * @psalm-template ExpectedType
                      * @psalm-param ExpectedType $expected
+                     * @psalm-param mixed $actual
                      * @psalm-assert =ExpectedType $actual
                      */
                     function assertSame($expected, $actual): void {
