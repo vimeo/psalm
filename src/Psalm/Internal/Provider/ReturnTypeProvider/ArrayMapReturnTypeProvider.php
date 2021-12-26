@@ -41,7 +41,6 @@ use function explode;
 use function in_array;
 use function mt_rand;
 use function reset;
-use function str_contains;
 use function strpos;
 use function substr;
 
@@ -505,7 +504,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     public static function cleanContext(Context $context, int $fake_var_discriminator): void
     {
         foreach ($context->vars_in_scope as $var_in_scope => $_) {
-            if (str_contains($var_in_scope, "__fake_{$fake_var_discriminator}_")) {
+            if (strpos($var_in_scope, "__fake_{$fake_var_discriminator}_") !== false) {
                 unset($context->vars_in_scope[$var_in_scope]);
             }
         }
