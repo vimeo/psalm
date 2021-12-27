@@ -1252,7 +1252,6 @@ class ClassLikes
                 $destination_parts = explode('\\', $new_fq_class_name);
 
                 $destination_class_name = array_pop($destination_parts);
-                $file_manipulations = [];
 
                 $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
