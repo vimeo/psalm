@@ -640,11 +640,9 @@ class ParseTreeCreator
             $new_parent_leaf = new UnionTree($this->current_leaf);
             $new_parent_leaf->children = [$this->current_leaf];
             $new_parent_leaf->parent = $current_parent;
-            $this->current_leaf->parent = $new_parent_leaf;
         } else {
             $new_parent_leaf = new UnionTree($current_parent);
             $new_parent_leaf->children = [$this->current_leaf];
-            $this->current_leaf->parent = $new_parent_leaf;
         }
 
         if ($current_parent) {
