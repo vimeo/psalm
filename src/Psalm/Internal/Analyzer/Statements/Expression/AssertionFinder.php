@@ -2652,23 +2652,17 @@ class AssertionFinder
                         )
                     );
 
-                if ($not_identical) {
-                    try {
-                        $assertion = $var_type->getAssertionString();
-                    } catch (UnexpectedValueException $e) {
-                        $assertion = null;
-                    }
+                try {
+                    $assertion = $var_type->getAssertionString();
+                } catch (UnexpectedValueException $e) {
+                    $assertion = null;
+                }
 
+                if ($not_identical) {
                     if ($assertion) {
                         $if_types[$var_name] = [['!=' . $assertion]];
                     }
                 } else {
-                    try {
-                        $assertion = $var_type->getAssertionString();
-                    } catch (UnexpectedValueException $e) {
-                        $assertion = null;
-                    }
-
                     if ($assertion) {
                         $if_types[$var_name] = [['!~' . $assertion]];
                     }
