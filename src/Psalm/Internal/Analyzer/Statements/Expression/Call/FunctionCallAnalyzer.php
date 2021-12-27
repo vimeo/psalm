@@ -677,7 +677,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
                     $function_call_info->function_exists = true;
                     $has_valid_function_call_type = true;
-                } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TTemplateParam) {
+                } elseif ($var_type_part instanceof TMixed) {
                     $has_valid_function_call_type = true;
 
                     IssueBuffer::maybeAdd(

@@ -15,7 +15,6 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type\Union;
-use RuntimeException;
 use Throwable;
 
 use function array_filter;
@@ -151,15 +150,7 @@ class TestCase extends BaseTestCase
      */
     protected function getTestName($withDataSet = true): string
     {
-        $name = parent::getName($withDataSet);
-        /**
-         * @psalm-suppress TypeDoesNotContainNull PHPUnit 8.2 made it non-nullable again
-         */
-        if (null === $name) {
-            throw new RuntimeException('anonymous test - shouldn\'t happen');
-        }
-
-        return $name;
+        return $this->getName($withDataSet);
     }
 
     /**

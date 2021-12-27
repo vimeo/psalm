@@ -87,22 +87,6 @@ class NonComparisonOpAnalyzer
             return;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-            if ($stmt_left_type->hasBool() || $stmt_right_type->hasBool()) {
-                $statements_analyzer->node_data->setType($stmt, Type::getInt());
-            }
-
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->left,
-                $stmt->right,
-                'xor'
-            );
-
-            return;
-        }
-
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor) {
             if ($stmt_left_type->hasBool() || $stmt_right_type->hasBool()) {
                 $statements_analyzer->node_data->setType($stmt, Type::getBool());
@@ -145,26 +129,6 @@ class NonComparisonOpAnalyzer
             );
 
             return;
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-            ArithmeticOpAnalyzer::analyze(
-                $statements_analyzer,
-                $statements_analyzer->node_data,
-                $stmt->left,
-                $stmt->right,
-                $stmt,
-                $result_type,
-                $context
-            );
-
-            BinaryOpAnalyzer::addDataFlow(
-                $statements_analyzer,
-                $stmt,
-                $stmt->left,
-                $stmt->right,
-                'or'
-            );
         }
     }
 }

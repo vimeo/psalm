@@ -53,7 +53,6 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -1050,28 +1049,7 @@ class TypeCombiner
 
                         $combination->strings = null;
                     } else {
-                        $has_non_literal_class_string = false;
-
-                        $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
-
-                        foreach ($combination->strings as $string_type) {
-                            if (!$string_type instanceof TLiteralClassString) {
-                                $has_non_literal_class_string = true;
-                                break;
-                            }
-                        }
-
-                        if ($has_non_literal_class_string ||
-                            !$type instanceof TClassString
-                        ) {
-                            $combination->value_types[$type_key] = new TString();
-                        } else {
-                            if (isset($shared_classlikes[$type->as]) && $type->as_type) {
-                                $combination->class_string_types[$type->as] = $type->as_type;
-                            } else {
-                                $combination->class_string_types['object'] = new TObject();
-                            }
-                        }
+                        $combination->value_types[$type_key] = new TString();
                     }
                 } else {
                     $combination->value_types[$type_key] = $type;
@@ -1079,13 +1057,6 @@ class TypeCombiner
             } elseif (get_class($combination->value_types['string']) !== TString::class) {
                 if (get_class($type) === TString::class) {
                     $combination->value_types['string'] = $type;
-                } elseif ($combination->value_types['string'] instanceof TTraitString
-                    && $type instanceof TClassString
-                ) {
-                    $combination->value_types['trait-string'] = $combination->value_types['string'];
-                    $combination->value_types['class-string'] = $type;
-
-                    unset($combination->value_types['string']);
                 } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                     if (get_class($type) === TNonEmptyString::class
                         && get_class($combination->value_types['string']) === TNumericString::class

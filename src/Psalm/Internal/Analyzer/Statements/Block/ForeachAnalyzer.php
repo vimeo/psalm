@@ -41,7 +41,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TDependentListKey;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
@@ -502,16 +501,11 @@ class ForeachAnalyzer
 
             $always_non_empty_array = false;
 
-            if ($iterator_atomic_type instanceof Scalar ||
-                $iterator_atomic_type instanceof TVoid
-            ) {
+            if ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
                 $value_type = Type::getMixed();
-            } elseif ($iterator_atomic_type instanceof TObject ||
-                $iterator_atomic_type instanceof TMixed ||
-                $iterator_atomic_type instanceof TEmpty
-            ) {
+            } elseif ($iterator_atomic_type instanceof TObject || $iterator_atomic_type instanceof TMixed) {
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
                 $key_type = Type::getMixed();

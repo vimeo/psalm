@@ -1214,11 +1214,7 @@ class AssignmentAnalyzer
                     && !$assign_value_type->hasArrayAccessInterface($codebase)
                 ) {
                     if ($assign_value_type->hasArray()) {
-                        if (($assign_value_atomic_type instanceof TFalse
-                                && $assign_value_type->ignore_falsable_issues)
-                            || ($assign_value_atomic_type instanceof TNull
-                                && $assign_value_type->ignore_nullable_issues)
-                        ) {
+                        if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
                             // do nothing
                         } elseif (IssueBuffer::accepts(
                             new PossiblyInvalidArrayAccess(
