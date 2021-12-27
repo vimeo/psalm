@@ -101,8 +101,10 @@ class DocblockParser
                 unset($lines[$k]);
             } else {
                 // Strip the leading *, if present.
-                $lines[$k] = str_replace("\t", ' ', $line[$k]);
-                $lines[$k] = preg_replace('/^ *\*/', '', $line[$k]);
+                $text = $lines[$k];
+                $text = str_replace("\t", ' ', $text);
+                $text = preg_replace('/^ *\*/', '', $text);
+                $lines[$k] = $text;
             }
 
             $line_offset += $original_line_length + 1;
