@@ -153,7 +153,6 @@ class BuildInfoCollector
         if (isset($this->env['APPVEYOR']) && $this->env['APPVEYOR'] && isset($this->env['APPVEYOR_BUILD_NUMBER'])) {
             $this->readEnv['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
             $this->readEnv['CI_JOB_ID'] = $this->env['APPVEYOR_JOB_NUMBER'];
-            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
             $this->readEnv['CI_PR_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'] ?? '';
             $this->env['CI_NAME'] = 'AppVeyor';
 
