@@ -1008,8 +1008,6 @@ class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-
-                        $combination->strings = null;
                     } elseif ($type instanceof TLowercaseString) {
                         $has_non_lowercase_string = false;
 
@@ -1025,8 +1023,6 @@ class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-
-                        $combination->strings = null;
                     } elseif ($type instanceof TNonEmptyString) {
                         $has_empty_string = false;
 
@@ -1042,12 +1038,8 @@ class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-
-                        $combination->strings = null;
                     } elseif ($type instanceof TNonspecificLiteralString) {
                         $combination->value_types['string'] = $type;
-
-                        $combination->strings = null;
                     } else {
                         $combination->value_types[$type_key] = new TString();
                     }
