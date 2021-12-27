@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Examples\Template;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm;
 use Psalm\CodeLocation;
@@ -12,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Node\Stmt\VirtualClass;
 use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Storage\MethodStorage;
@@ -48,7 +50,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                 $matches = [];
 
                 if (!preg_match($first_line_regex, $variables_from, $matches)) {
-                    throw new \InvalidArgumentException('Could not interpret doc comment correctly');
+                    throw new InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
                 /** @psalm-suppress ArgumentTypeCoercion */
@@ -167,7 +169,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $statements_source = new StatementsAnalyzer(
             $view_method_analyzer,
-            new \Psalm\Internal\Provider\NodeDataProvider()
+            new NodeDataProvider()
         );
 
         $statements_source->analyze($pseudo_method_stmts, $context);

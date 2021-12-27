@@ -2,6 +2,10 @@
 
 namespace Psalm\Internal\Stubs\Generator;
 
+use Psalm\Codebase;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -98,21 +102,25 @@ use Psalm\Node\VirtualParam;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+use UnexpectedValueException;
 use function dirname;
+use function is_int;
+use function rtrim;
+use function strpos;
 
 class StubsGenerator
 {
     public static function getAll(
-        \Psalm\Codebase $codebase,
-        \Psalm\Internal\Provider\ClassLikeStorageProvider $class_provider,
-        \Psalm\Internal\Provider\FileStorageProvider $file_provider
+        Codebase $codebase,
+        ClassLikeStorageProvider $class_provider,
+        FileStorageProvider $file_provider
     ): string {
         $namespaced_nodes = [];
 
         $psalm_base = dirname(__DIR__, 5);
 
         foreach ($class_provider->getAll() as $storage) {
-            if (\strpos($storage->name, 'Psalm\\') === 0) {
+            if (strpos($storage->name, 'Psalm\\') === 0) {
                 continue;
             }
 
@@ -146,13 +154,13 @@ class StubsGenerator
 
         foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
             if ($function_storage->location
-                && \strpos($function_storage->location->file_path, $psalm_base) === 0
+                && strpos($function_storage->location->file_path, $psalm_base) === 0
             ) {
                 continue;
             }
 
             if (!$function_storage->cased_name) {
-                throw new \UnexpectedValueException('very bad');
+                throw new UnexpectedValueException('very bad');
             }
 
             $fq_name = $function_storage->cased_name;
@@ -192,7 +200,7 @@ class StubsGenerator
         }
 
         foreach ($file_provider->getAll() as $file_storage) {
-            if (\strpos($file_storage->file_path, $psalm_base) === 0) {
+            if (strpos($file_storage->file_path, $psalm_base) === 0) {
                 continue;
             }
 
@@ -265,7 +273,7 @@ class StubsGenerator
     }
 
     private static function getFunctionNode(
-        \Psalm\Storage\FunctionLikeStorage $function_storage,
+        FunctionLikeStorage $function_storage,
         string $function_name,
         string $namespace_name
     ) : PhpParser\Node\Stmt\Function_ {
@@ -327,7 +335,7 @@ class StubsGenerator
                 'comments' => $docblock->tags
                     ? [
                         new PhpParser\Comment\Doc(
-                            \rtrim($docblock->render('        '))
+                            rtrim($docblock->render('        '))
                         )
                     ]
                     : []
@@ -338,7 +346,7 @@ class StubsGenerator
     /**
      * @return list<PhpParser\Node\Param>
      */
-    public static function getFunctionParamNodes(\Psalm\Storage\FunctionLikeStorage $method_storage): array
+    public static function getFunctionParamNodes(FunctionLikeStorage $method_storage): array
     {
         $param_nodes = [];
 
@@ -379,7 +387,7 @@ class StubsGenerator
                 $identifier_string = $atomic_type->toPhpString(null, [], null, 8, 0);
 
                 if ($identifier_string === null) {
-                    throw new \UnexpectedValueException(
+                    throw new UnexpectedValueException(
                         $atomic_type->getId() . ' could not be converted to an identifier'
                     );
                 }
@@ -447,7 +455,7 @@ class StubsGenerator
                 foreach ($atomic_type->properties as $property_name => $property_type) {
                     if ($atomic_type->is_list) {
                         $key_type = null;
-                    } elseif (\is_int($property_name)) {
+                    } elseif (is_int($property_name)) {
                         $key_type = new VirtualLNumber($property_name);
                     } else {
                         $key_type = new VirtualString($property_name);

@@ -6,6 +6,9 @@ use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
+use Psalm\Issue\InvalidClass;
+use Psalm\Issue\UndefinedMethod;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 
@@ -29,8 +32,8 @@ class StringChecker implements AfterExpressionAnalysisInterface
             ) {
                 $absolute_class = preg_split('/[:]/', $expr->value)[0];
 
-                if (\Psalm\IssueBuffer::accepts(
-                    new \Psalm\Issue\InvalidClass(
+                if (IssueBuffer::accepts(
+                    new InvalidClass(
                         'Use ::class constants when representing class names',
                         new CodeLocation($statements_source, $expr),
                         $absolute_class
@@ -54,8 +57,8 @@ class StringChecker implements AfterExpressionAnalysisInterface
             $appearing_method_id = $codebase->getAppearingMethodId($method_id);
 
             if (!$appearing_method_id) {
-                if (\Psalm\IssueBuffer::accepts(
-                    new \Psalm\Issue\UndefinedMethod(
+                if (IssueBuffer::accepts(
+                    new UndefinedMethod(
                         'Method ' . $method_id . ' does not exist',
                         new CodeLocation($statements_source, $expr),
                         $method_id

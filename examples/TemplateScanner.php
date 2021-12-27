@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Examples\Template;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm;
 use Psalm\Checker\CommentChecker;
@@ -45,7 +46,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
                 $matches = [];
 
                 if (!preg_match($first_line_regex, $variables_from, $matches)) {
-                    throw new \InvalidArgumentException('Could not interpret doc comment correctly');
+                    throw new InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
                 [$fq_class_name] = explode('::', $matches[1]);
