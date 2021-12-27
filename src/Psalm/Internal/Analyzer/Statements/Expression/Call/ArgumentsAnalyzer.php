@@ -231,6 +231,23 @@ class ArgumentsAnalyzer
                 );
             }
 
+            $inferred_arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if (null !== $inferred_arg_type && null !== $template_result && null !== $param && null !== $param->type) {
+                $codebase = $statements_analyzer->getCodebase();
+
+                TemplateStandinTypeReplacer::replace(
+                    clone $param->type,
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $inferred_arg_type,
+                    $argument_offset,
+                    $context->self,
+                    $context->calling_method_id ?: $context->calling_function_id
+                );
+            }
+
             if ($toggled_class_exists) {
                 $context->inside_class_exists = false;
             }
