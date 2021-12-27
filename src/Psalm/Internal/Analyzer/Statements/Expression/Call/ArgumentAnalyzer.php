@@ -658,7 +658,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param TKeyedArray|TArray|TList|TClassStringMap $unpacked_atomic_array
+     * @param TKeyedArray|TArray|TList|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
      * @psalm-suppress ComplexMethod
      */

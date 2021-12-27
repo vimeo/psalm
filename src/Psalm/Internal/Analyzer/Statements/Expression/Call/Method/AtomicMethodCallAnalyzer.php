@@ -60,7 +60,7 @@ use function strtolower;
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param  TNamedObject|TTemplateParam $static_type
+     * @param  TNamedObject|TTemplateParam|null $static_type
      *
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */

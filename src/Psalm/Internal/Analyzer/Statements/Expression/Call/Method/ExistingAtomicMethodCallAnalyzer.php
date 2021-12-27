@@ -48,7 +48,7 @@ use function strtolower;
 class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param  TNamedObject|TTemplateParam  $static_type
+     * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param  list<PhpParser\Node\Arg> $args
      */
     public static function analyze(

@@ -67,10 +67,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         }
     }
 
-    /**
-     * @param non-empty-string $function_id
-     * @param  FileManipulation[] $file_replacements
-     */
     public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();
