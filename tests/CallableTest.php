@@ -218,11 +218,7 @@ class CallableTest extends TestCase
                     function map(iterable $_collection, callable $_ab) { return []; }
 
                     /** @template T */
-                    final class Foo
-                    {
-                        /** @return Foo<int> */
-                        public function toInt() { throw new RuntimeException("???"); }
-                    }
+                    final class Foo { }
 
                     /** @var list<Foo<string>> */
                     $items = [];
