@@ -1061,9 +1061,7 @@ class TypeCombiner
                             }
                         }
 
-                        if ($has_non_literal_class_string ||
-                            !$type instanceof TClassString
-                        ) {
+                        if ($has_non_literal_class_string) {
                             $combination->value_types[$type_key] = new TString();
                         } else {
                             if (isset($shared_classlikes[$type->as]) && $type->as_type) {
@@ -1079,13 +1077,6 @@ class TypeCombiner
             } elseif (get_class($combination->value_types['string']) !== TString::class) {
                 if (get_class($type) === TString::class) {
                     $combination->value_types['string'] = $type;
-                } elseif ($combination->value_types['string'] instanceof TTraitString
-                    && $type instanceof TClassString
-                ) {
-                    $combination->value_types['trait-string'] = $combination->value_types['string'];
-                    $combination->value_types['class-string'] = $type;
-
-                    unset($combination->value_types['string']);
                 } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                     if (get_class($type) === TNonEmptyString::class
                         && get_class($combination->value_types['string']) === TNumericString::class

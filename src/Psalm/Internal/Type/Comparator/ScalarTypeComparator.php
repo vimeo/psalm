@@ -89,9 +89,7 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TNonspecificLiteralString
-            && ($input_type_part instanceof TLiteralString
-                || $input_type_part instanceof TNonspecificLiteralString
-                || $input_type_part instanceof TNonEmptyNonspecificLiteralString)
+            && ($input_type_part instanceof TLiteralString || $input_type_part instanceof TNonspecificLiteralString)
         ) {
             return true;
         }

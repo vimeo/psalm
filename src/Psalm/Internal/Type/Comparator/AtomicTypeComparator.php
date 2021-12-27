@@ -395,10 +395,6 @@ class AtomicTypeComparator
             }
 
             foreach ($input_type_part->as->getAtomicTypes() as $input_as_type_part) {
-                if ($input_as_type_part instanceof TNull && $container_type_part instanceof TNull) {
-                    continue;
-                }
-
                 if (self::isContainedBy(
                     $codebase,
                     $input_as_type_part,

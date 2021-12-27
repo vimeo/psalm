@@ -188,7 +188,6 @@ class ArrayAnalyzer
                 if (!$atomic_key_type instanceof TString
                     && !$atomic_key_type instanceof TInt
                     && !$atomic_key_type instanceof TArrayKey
-                    && !$atomic_key_type instanceof TMixed
                     && !$atomic_key_type instanceof TTemplateParam
                     && !(
                         $atomic_key_type instanceof TObjectWithProperties
