@@ -111,6 +111,42 @@ class CallableTest extends TestCase
                 'error_levels' => [],
                 '7.4',
             ],
+            'inferArgFromClassContextInGenericContext' => [
+                '<?php
+                    /**
+                     * @template A
+                     */
+                    final class ArrayList
+                    {
+                        /**
+                         * @template B
+                         * @param Closure(A): B $ab
+                         * @return ArrayList<B>
+                         */
+                        public function map(Closure $ab): ArrayList
+                        {
+                            throw new RuntimeException("???");
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param ArrayList<T> $list
+                     * @return ArrayList<array{T}>
+                     */
+                    function asTupled(ArrayList $list): ArrayList
+                    {
+                        return $list->map(function ($_a) {
+                            return [$_a];
+                        });
+                    }
+                    /** @var ArrayList<int> $a */
+                    $a = new ArrayList();
+                    $b = asTupled($a);',
+                'assertions' => [
+                    '$b' => 'ArrayList<array{int}>',
+                ],
+            ],
             'varReturnType' => [
                 '<?php
                     $add_one = function(int $a) : int {
@@ -1282,6 +1318,42 @@ class CallableTest extends TestCase
                     c("hii");',
                 'error_message' => 'InvalidArgument',
             ],
+            'mismatchParamTypeFromDocblock' => [
+                '<?php
+                    /**
+                     * @template A
+                     */
+                    final class ArrayList
+                    {
+                        /**
+                         * @template B
+                         * @param Closure(A): B $effect
+                         * @return ArrayList<B>
+                         */
+                        public function map(Closure $effect): ArrayList
+                        {
+                            throw new RuntimeException("???");
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template B
+                     *
+                     * @param ArrayList<T> $list
+                     * @return ArrayList<array{T}>
+                     */
+                    function genericContext(ArrayList $list): ArrayList
+                    {
+                        return $list->map(
+                            /** @param B $_a */
+                            function ($_a) {
+                                return [$_a];
+                            }
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ]
         ];
     }
 }
