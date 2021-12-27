@@ -227,7 +227,6 @@ class ParseTreeCreator
 
         if ($this->current_leaf !== $current_parent) {
             $new_parent_leaf->children = [$this->current_leaf];
-            $this->current_leaf->parent = $new_parent_leaf;
             array_pop($current_parent->children);
         }
 
@@ -419,8 +418,6 @@ class ParseTreeCreator
 
         if ($current_parent !== $this->current_leaf) {
             $new_leaf->children = [$this->current_leaf];
-            $this->current_leaf->parent = $new_leaf;
-
             array_pop($current_parent->children);
         }
         $current_parent->children[] = $new_leaf;
@@ -505,8 +502,6 @@ class ParseTreeCreator
 
         $new_parent_leaf = new KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);
         $new_parent_leaf->possibly_undefined = $prev_token !== null && $prev_token[0] === '?';
-        $this->current_leaf->parent = $new_parent_leaf;
-
         array_pop($current_parent->children);
         $current_parent->children[] = $new_parent_leaf;
 
@@ -573,8 +568,6 @@ class ParseTreeCreator
                     $this->current_leaf,
                     $this->current_leaf->parent
                 );
-
-                $this->current_leaf->parent = $new_leaf;
 
                 array_pop($current_parent->children);
                 $current_parent->children[] = $new_leaf;
@@ -677,7 +670,6 @@ class ParseTreeCreator
 
         $new_parent_leaf = new IntersectionTree($current_parent);
         $new_parent_leaf->children = [$this->current_leaf];
-        $this->current_leaf->parent = $new_parent_leaf;
 
         if ($current_parent) {
             array_pop($current_parent->children);
