@@ -15,7 +15,6 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type\Union;
-use RuntimeException;
 use Throwable;
 
 use function array_filter;
