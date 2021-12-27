@@ -40,6 +40,12 @@ class ClassConstantStorage
     public $deprecated = false;
 
     /**
+     * @var list<AttributeStorage>
+     * @psalm-suppress PossiblyUnusedProperty
+     */
+    public $attributes = [];
+
+    /**
      * @var ?string
      */
     public $description;

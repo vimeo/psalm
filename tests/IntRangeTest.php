@@ -669,6 +669,18 @@ class IntRangeTest extends TestCase
                     '$length===' => 'int<1, 7>',
                 ],
             ],
+            'literalEquality' => [
+                '<?php
+
+                    /** @var string $secret */
+                    $length = strlen($secret);
+                    if ($length > 16) {
+                        throw new exception("");
+                    }
+
+                    assert($length === 1);
+                    ',
+            ],
         ];
     }
 
