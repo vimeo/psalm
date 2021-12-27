@@ -34,7 +34,7 @@ uksort($new_local, fn($a, $b) => strtolower($a) <=> strtolower($b));
 
 foreach ($new_local as $name => $data) {
     if (!is_array($data)) {
-        throw new \UnexpectedValueException('bad data for ' . $name);
+        throw new UnexpectedValueException('bad data for ' . $name);
     }
     $return_type = array_shift($data);
     echo '\'' . str_replace("'", "\'", $name) . '\' => [\'' . str_replace("'", "\'", $return_type) . '\'';

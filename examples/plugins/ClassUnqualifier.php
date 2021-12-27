@@ -2,8 +2,10 @@
 namespace Psalm\Example\Plugin;
 
 use Psalm\FileManipulation;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\AfterClassLikeExistenceCheckInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
+use function strpos;
 use function strtolower;
 use function implode;
 use function array_map;
@@ -25,8 +27,8 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             return;
         }
 
-        if (\strpos($candidate_type, '\\' . $fq_class_name) !== false) {
-            $type_tokens = \Psalm\Internal\Type\TypeTokenizer::tokenize($candidate_type, false);
+        if (strpos($candidate_type, '\\' . $fq_class_name) !== false) {
+            $type_tokens = TypeTokenizer::tokenize($candidate_type, false);
 
             foreach ($type_tokens as &$type_token) {
                 if ($type_token[0] === ('\\' . $fq_class_name)

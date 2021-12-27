@@ -1,4 +1,7 @@
 #!/usr/bin/env php
 <?php
+
+use Psalm\Internal\Cli\Psalter;
+
 require_once __DIR__ . '/src/Psalm/Internal/Cli/Psalter.php';
-\Psalm\Internal\Cli\Psalter::run($argv);
+Psalter::run($argv);

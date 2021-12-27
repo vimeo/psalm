@@ -17,8 +17,6 @@ class EchoChecker implements AfterStatementAnalysisInterface
     /**
      * Called after a statement has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
-     *
      * @return null|false
      */
     public static function afterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool {

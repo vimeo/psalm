@@ -486,7 +486,7 @@ class UnionTypeComparator
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof TTypeAlias) {
-                array_push($atomic_types, $atomic_type);
+                $atomic_types[] = $atomic_type;
                 continue;
             }
             $expanded = TypeExpander::expandAtomic(
@@ -499,7 +499,7 @@ class UnionTypeComparator
                 true
             );
             if ($expanded instanceof Atomic) {
-                array_push($atomic_types, $expanded);
+                $atomic_types[] = $expanded;
                 continue;
             }
 

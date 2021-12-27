@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Example\Plugin;
 
+use Exception;
 use PhpParser;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
@@ -8,6 +9,8 @@ use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
+use Psalm\Issue\PluginIssue;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -49,7 +52,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
             }
 
             if ($function_storage->cased_name !== (string)$expr->name) {
-                if (\Psalm\IssueBuffer::accepts(
+                if (IssueBuffer::accepts(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
                         new CodeLocation($statements_source, $expr->name)
@@ -59,15 +62,11 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     // fall through
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // can throw if storage is missing
         }
     }
 
-    /**
-     * @param non-empty-string $function_id
-     * @param  FileManipulation[] $file_replacements
-     */
     public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();
@@ -93,7 +92,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
             $function_name_parts = explode('\\', $function_storage->cased_name);
 
             if (end($function_name_parts) !== end($expr->name->parts)) {
-                if (\Psalm\IssueBuffer::accepts(
+                if (IssueBuffer::accepts(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
                         new CodeLocation($statements_source, $expr->name)
@@ -103,12 +102,12 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     // fall through
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // can throw if storage is missing
         }
     }
 }
 
-class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue
+class IncorrectFunctionCasing extends PluginIssue
 {
 }
