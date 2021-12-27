@@ -10,7 +10,6 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -165,13 +164,20 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if (!$is_first_class_callable) {
+            $template_result = null;
+
+            if (isset($function_call_info->function_storage->template_types)) {
+                $template_result = new TemplateResult($function_call_info->function_storage->template_types ?: [], []);
+            }
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $function_call_info->function_params,
                 $function_call_info->function_id,
                 $function_call_info->allow_named_args,
-                $context
+                $context,
+                $template_result
             );
         }
 
