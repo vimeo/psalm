@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Cli;
 
-use Composer\Autoload\ClassLoader;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;

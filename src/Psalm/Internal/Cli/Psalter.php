@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Cli;
 
-use Composer\Autoload\ClassLoader;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
