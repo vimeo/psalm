@@ -199,6 +199,7 @@ class ExpressionIdentifier
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             && $stmt->name instanceof PhpParser\Node\Identifier
+            && !$stmt->isFirstClassCallable()
             && !$stmt->getArgs()
         ) {
             $config = Config::getInstance();

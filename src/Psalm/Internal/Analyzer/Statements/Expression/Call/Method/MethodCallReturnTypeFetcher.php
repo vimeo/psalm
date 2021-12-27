@@ -60,6 +60,22 @@ class MethodCallReturnTypeFetcher
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
+        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
+        $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
+
+        if ($stmt->isFirstClassCallable()) {
+            if ($method_storage) {
+                return new Union([new TClosure(
+                    'Closure',
+                    $method_storage->params,
+                    $method_storage->return_type,
+                    $method_storage->pure
+                )]);
+            }
+
+            return Type::getClosure();
+        }
+
         if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
@@ -98,8 +114,6 @@ class MethodCallReturnTypeFetcher
                 }
             }
         }
-
-        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
         if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
@@ -143,58 +157,22 @@ class MethodCallReturnTypeFetcher
         } else {
             $self_fq_class_name = $fq_class_name;
 
-            if ($stmt->isFirstClassCallable()) {
-                $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
+            $return_type_candidate = $codebase->methods->getMethodReturnType(
+                $method_id,
+                $self_fq_class_name,
+                $statements_analyzer,
+                $args
+            );
 
-                if ($method_storage) {
-                    $return_type_candidate = new Union([new TClosure(
-                        'Closure',
-                        $method_storage->params,
-                        $method_storage->return_type,
-                        $method_storage->pure
-                    )]);
-                } else {
-                    $return_type_candidate = Type::getClosure();
-                }
-            } else {
-                $return_type_candidate = $codebase->methods->getMethodReturnType(
-                    $method_id,
-                    $self_fq_class_name,
-                    $statements_analyzer,
-                    $args
-                );
+            if ($return_type_candidate) {
+                $return_type_candidate = clone $return_type_candidate;
 
-                if ($return_type_candidate) {
-                    $return_type_candidate = clone $return_type_candidate;
-
-                    if ($template_result->lower_bounds) {
-                        $return_type_candidate = TypeExpander::expandUnion(
-                            $codebase,
-                            $return_type_candidate,
-                            $fq_class_name,
-                            null,
-                            $class_storage->parent_class,
-                            true,
-                            false,
-                            $static_type instanceof TNamedObject
-                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                            true
-                        );
-                    }
-
-                    $return_type_candidate = self::replaceTemplateTypes(
-                        $return_type_candidate,
-                        $template_result,
-                        $method_id,
-                        count($stmt->getArgs()),
-                        $codebase
-                    );
-
+                if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
-                        $self_fq_class_name,
-                        $static_type,
+                        $fq_class_name,
+                        null,
                         $class_storage->parent_class,
                         true,
                         false,
@@ -202,36 +180,57 @@ class MethodCallReturnTypeFetcher
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true
                     );
-
-                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                        $method_id,
-                        $secondary_return_type_location
-                    );
-
-                    if ($secondary_return_type_location) {
-                        $return_type_location = $secondary_return_type_location;
-                    }
-
-                    $config = Config::getInstance();
-
-                    // only check the type locally if it's defined externally
-                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                        $return_type_candidate->check(
-                            $statements_analyzer,
-                            new CodeLocation($statements_analyzer, $stmt),
-                            $statements_analyzer->getSuppressedIssues(),
-                            $context->phantom_classes,
-                            true,
-                            false,
-                            false,
-                            $context->calling_method_id
-                        );
-                    }
-                } else {
-                    $result->returns_by_ref =
-                        $result->returns_by_ref
-                        || $codebase->methods->getMethodReturnsByRef($method_id);
                 }
+
+                $return_type_candidate = self::replaceTemplateTypes(
+                    $return_type_candidate,
+                    $template_result,
+                    $method_id,
+                    count($stmt->getArgs()),
+                    $codebase
+                );
+
+                $return_type_candidate = TypeExpander::expandUnion(
+                    $codebase,
+                    $return_type_candidate,
+                    $self_fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true
+                );
+
+                $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                    $method_id,
+                    $secondary_return_type_location
+                );
+
+                if ($secondary_return_type_location) {
+                    $return_type_location = $secondary_return_type_location;
+                }
+
+                $config = Config::getInstance();
+
+                // only check the type locally if it's defined externally
+                if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                    $return_type_candidate->check(
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer, $stmt),
+                        $statements_analyzer->getSuppressedIssues(),
+                        $context->phantom_classes,
+                        true,
+                        false,
+                        false,
+                        $context->calling_method_id
+                    );
+                }
+            } else {
+                $result->returns_by_ref =
+                    $result->returns_by_ref
+                    || $codebase->methods->getMethodReturnsByRef($method_id);
             }
         }
 

@@ -589,7 +589,7 @@ class ClosureTest extends TestCase
                 [],
                 '8.1'
             ],
-            'FirstClassCallable:InstanceMethod' => [
+            'FirstClassCallable:InstanceMethod:UserDefined' => [
                 '<?php
                     class Test {
                         public function __construct(private readonly string $string) {
@@ -605,6 +605,18 @@ class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:InstanceMethod:BuiltIn' => [
+                '<?php
+                    $queue = new \SplQueue;
+                    $closure = $queue->count(...);
+                    $count = $closure();
+                ',
+                'assertions' => [
+                    '$count' => 'int',
                 ],
                 [],
                 '8.1'
@@ -649,6 +661,70 @@ class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$closure' => 'pure-Closure(string):(0|positive-int)',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:MagicInstanceMethod' => [
+                '<?php
+                    /**
+                     * @method int length()
+                     */
+                    class Test {
+                        public function __construct(private readonly string $string) {
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return match ($name) {
+                                "length" => strlen($this->string),
+                                default => throw new \Error("Undefined method"),
+                            };
+                        }
+                    }
+                    $test = new Test("test");
+                    $closure = $test->length(...);
+                    $length = $closure();
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:MagicStaticMethod' => [
+                '<?php
+                    /**
+                     * @method static int length(string $length)
+                     */
+                    class Test {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return match ($name) {
+                                "length" => strlen((string) $args[0]),
+                                default => throw new \Error("Undefined method"),
+                            };
+                        }
+                    }
+                    $closure = Test::length(...);
+                    $length = $closure("test");
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:WithArrayMap' => [
+                '<?php
+                    $array = [1, 2, 3];
+                    $closure = fn (int $value): int => $value * $value;
+                    $result1 = array_map((new \SplQueue())->enqueue(...), $array);
+                    $result2 = array_map(strval(...), $array);
+                    $result3 = array_map($closure(...), $array);
+                ',
+                'assertions' => [
+                    '$result1' => 'array{null, null, null}',
+                    '$result2' => 'array{string, string, string}',
+                    '$result3' => 'array{int, int, int}',
                 ],
                 [],
                 '8.1'
@@ -1051,6 +1127,53 @@ class ClosureTest extends TestCase
                     takesClosure(5);',
                 'error_message' => 'InvalidArgument',
             ],
+            'FirstClassCallable:UndefinedMethod' => [
+                '<?php
+                    $queue = new \SplQueue;
+                    $closure = $queue->undefined(...);
+                    $count = $closure();
+                ',
+                'error_message' => 'UndefinedMethod',
+                [],
+                false,
+                '8.1'
+            ],
+            'FirstClassCallable:UndefinedMagicInstanceMethod' => [
+                '<?php
+                    class Test {
+                        public function __call(string $name, array $args): mixed {
+                            return match ($name) {
+                                default => throw new \Error("Undefined method"),
+                            };
+                        }
+                    }
+                    $test = new Test();
+                    $closure = $test->length(...);
+                    $length = $closure();
+                ',
+                'error_message' => 'UndefinedMagicMethod',
+                [],
+                false,
+                '8.1'
+            ],
+            'FirstClassCallable:UndefinedMagicStaticMethod' => [
+                '<?php
+                    class Test {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return match ($name) {
+                                default => throw new \Error("Undefined method"),
+                            };
+                        }
+                    }
+                    $closure = Test::length(...);
+                    $length = $closure();
+                ',
+                'error_message' => 'MixedAssignment',
+                [],
+                false,
+                '8.1'
+            ],
+
         ];
     }
 }

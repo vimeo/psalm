@@ -90,10 +90,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
         $config = $codebase->config;
 
+        $is_first_class_callable = $stmt->isFirstClassCallable();
+
         $real_stmt = $stmt;
 
         if ($function_name instanceof PhpParser\Node\Name
-            && !$stmt->isFirstClassCallable()
+            && !$is_first_class_callable
             && isset($stmt->getArgs()[0])
             && !$stmt->getArgs()[0]->unpack
         ) {
@@ -152,7 +154,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $is_first_class_callable = $stmt->isFirstClassCallable();
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name

@@ -17,7 +17,9 @@ use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -38,6 +40,21 @@ class MissingMethodCallHandler
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
+
+        if ($stmt->isFirstClassCallable()) {
+            if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[] = $method_id->__toString();
+                $result->return_type = self::createFirstClassCallableReturnType(
+                    $class_storage->pseudo_methods[$method_name_lc]
+                );
+            } else {
+                $result->non_existent_magic_method_ids[] = $method_id->__toString();
+                $result->return_type = self::createFirstClassCallableReturnType();
+            }
+
+            return null;
+        }
 
         if ($codebase->methods->return_type_provider->has($fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
@@ -220,6 +237,11 @@ class MissingMethodCallHandler
 
             $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
+            if ($stmt->isFirstClassCallable()) {
+                $result->return_type = self::createFirstClassCallableReturnType($pseudo_method_storage);
+                return;
+            }
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -277,6 +299,12 @@ class MissingMethodCallHandler
             return;
         }
 
+        if ($stmt->isFirstClassCallable()) {
+            $result->non_existent_class_method_ids[] = $method_id->__toString();
+            $result->return_type = self::createFirstClassCallableReturnType();
+            return;
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $stmt->getArgs(),
@@ -308,5 +336,19 @@ class MissingMethodCallHandler
                 $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
             }
         }
+    }
+
+    private static function createFirstClassCallableReturnType(?MethodStorage $method_storage = null): Union
+    {
+        if ($method_storage) {
+            return new Union([new TClosure(
+                'Closure',
+                $method_storage->params,
+                $method_storage->return_type,
+                $method_storage->pure
+            )]);
+        }
+
+        return Type::getClosure();
     }
 }
