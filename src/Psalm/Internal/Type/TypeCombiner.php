@@ -1061,15 +1061,7 @@ class TypeCombiner
                             }
                         }
 
-                        if ($has_non_literal_class_string) {
-                            $combination->value_types[$type_key] = new TString();
-                        } else {
-                            if (isset($shared_classlikes[$type->as]) && $type->as_type) {
-                                $combination->class_string_types[$type->as] = $type->as_type;
-                            } else {
-                                $combination->class_string_types['object'] = new TObject();
-                            }
-                        }
+                        $combination->value_types[$type_key] = new TString();
                     }
                 } else {
                     $combination->value_types[$type_key] = $type;
