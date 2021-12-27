@@ -657,7 +657,7 @@ class TemplateStandinTypeReplacer
                             if ($keyed_template instanceof TKeyedArray) {
                                 $key_type = $keyed_template->getGenericKeyType();
                             } elseif ($keyed_template instanceof TList) {
-                                $key_type = \Psalm\Type::getInt();
+                                $key_type = Type::getInt();
                             } else {
                                 $key_type = $keyed_template->type_params[0];
                             }
