@@ -213,13 +213,13 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = reset($parsed_docblock->tags['psalm-internal']);
-            if ($psalm_internal) {
-                $info->psalm_internal = $psalm_internal;
-            } else {
+            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
+
+            if (!$psalm_internal) {
                 throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
             }
 
+            $info->psalm_internal = $psalm_internal;
             $info->internal = true;
         }
 
