@@ -352,7 +352,12 @@ class ReturnTypeCollector
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             || $stmt instanceof PhpParser\Node\Expr\FuncCall
             || $stmt instanceof PhpParser\Node\Expr\StaticCall
-            || $stmt instanceof PhpParser\Node\Expr\New_) {
+            || $stmt instanceof PhpParser\Node\Expr\New_
+        ) {
+            if ($stmt->isFirstClassCallable()) {
+                return [];
+            }
+
             $yield_types = [];
 
             foreach ($stmt->getArgs() as $arg) {
