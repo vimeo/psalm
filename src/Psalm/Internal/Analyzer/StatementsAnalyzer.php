@@ -363,12 +363,6 @@ class StatementsAnalyzer extends SourceAnalyzer
             fwrite(STDERR, $statements_analyzer->getFilePath() . ':' . $stmt->getLine() . "\n");
         }
 
-        /*
-        if (isset($context->vars_in_scope['$array']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
-            var_dump($stmt->getLine(), $context->vars_in_scope['$array']);
-        }
-        */
-
         $new_issues = null;
         $traced_variables = [];
 
