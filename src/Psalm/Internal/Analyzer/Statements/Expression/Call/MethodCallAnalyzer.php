@@ -66,8 +66,6 @@ class MethodCallAnalyzer extends CallAnalyzer
             return false;
         }
 
-        $context->inside_call = $was_inside_call;
-
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             $context->inside_call = true;
 

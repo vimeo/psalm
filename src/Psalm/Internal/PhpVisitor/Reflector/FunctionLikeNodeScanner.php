@@ -811,8 +811,7 @@ class FunctionLikeNodeScanner
     ): FunctionLikeParameter {
         $param_type = null;
 
-        $is_nullable = $param->default !== null &&
-            $param->default instanceof PhpParser\Node\Expr\ConstFetch &&
+        $is_nullable = $param->default instanceof PhpParser\Node\Expr\ConstFetch &&
             strtolower($param->default->name->parts[0]) === 'null';
 
         $param_typehint = $param->type;

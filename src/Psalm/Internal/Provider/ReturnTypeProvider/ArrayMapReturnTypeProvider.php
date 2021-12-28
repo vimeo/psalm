@@ -424,13 +424,6 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_method_call_var__"] =
                             $lhs_instance_type ?: new Union([new TNamedObject($callable_fq_class_name)]);
-
-                        $fake_method_return_type = self::executeFakeCall(
-                            $statements_source,
-                            $fake_method_call,
-                            $context,
-                            $assertions
-                        );
                     } else {
                         $fake_method_call = new VirtualStaticCall(
                             new VirtualFullyQualified(
@@ -446,14 +439,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         );
 
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
-
-                        $fake_method_return_type = self::executeFakeCall(
-                            $statements_source,
-                            $fake_method_call,
-                            $context,
-                            $assertions
-                        );
                     }
+
+                    $fake_method_return_type = self::executeFakeCall(
+                        $statements_source,
+                        $fake_method_call,
+                        $context,
+                        $assertions
+                    );
 
                     $function_id_return_type = $fake_method_return_type ?? Type::getMixed();
                 } else {

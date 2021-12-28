@@ -672,8 +672,6 @@ class AtomicPropertyFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
-            $property_id = $lhs_type_part->value . '::$' . $prop_name;
-
             /*
              * If we have an explicit list of all allowed magic properties on the class, and we're
              * not in that list, fall through

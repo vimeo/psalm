@@ -55,8 +55,6 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
         ) {
             $filter_type_type = $second_arg_type->getSingleIntLiteral();
 
-            $filter_type = null;
-
             switch ($filter_type_type->value) {
                 case FILTER_VALIDATE_INT:
                     $filter_type = Type::getInt();

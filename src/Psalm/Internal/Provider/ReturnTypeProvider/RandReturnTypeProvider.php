@@ -61,7 +61,7 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             } elseif ($second_atomic_type instanceof TIntRange) {
                 $max_value = $second_atomic_type->max_bound;
             } elseif ($second_atomic_type instanceof TPositiveInt) {
-                $max_value = null;
+                // no max value, we keep null
             }
         }
 
