@@ -359,31 +359,6 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($context->has_returned
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-            && !($stmt instanceof PhpParser\Node\Stmt\Nop)
-            && !($stmt instanceof PhpParser\Node\Stmt\Function_)
-            && !($stmt instanceof PhpParser\Node\Stmt\Class_)
-            && !($stmt instanceof PhpParser\Node\Stmt\Interface_)
-            && !($stmt instanceof PhpParser\Node\Stmt\Trait_)
-            && !($stmt instanceof PhpParser\Node\Stmt\HaltCompiler)
-        ) {
-            if ($codebase->find_unused_variables) {
-                if (IssueBuffer::accepts(
-                    new UnevaluatedCode(
-                        'Expressions after return/throw/continue',
-                        new CodeLocation($statements_analyzer->source, $stmt)
-                    ),
-                    $statements_analyzer->source->getSuppressedIssues()
-                )) {
-                    return null;
-                }
-            }
-
-            return null;
-        }
-
         if ($statements_analyzer->getProjectAnalyzer()->debug_lines) {
             fwrite(STDERR, $statements_analyzer->getFilePath() . ':' . $stmt->getLine() . "\n");
         }
@@ -515,6 +490,31 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
         } else {
             $statements_analyzer->parsed_docblock = null;
+        }
+
+        if ($context->has_returned
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+            && !($stmt instanceof PhpParser\Node\Stmt\Nop)
+            && !($stmt instanceof PhpParser\Node\Stmt\Function_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Class_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Interface_)
+            && !($stmt instanceof PhpParser\Node\Stmt\Trait_)
+            && !($stmt instanceof PhpParser\Node\Stmt\HaltCompiler)
+        ) {
+            if ($codebase->find_unused_variables) {
+                if (IssueBuffer::accepts(
+                    new UnevaluatedCode(
+                        'Expressions after return/throw/continue',
+                        new CodeLocation($statements_analyzer->source, $stmt)
+                    ),
+                    $statements_analyzer->source->getSuppressedIssues()
+                )) {
+                    return null;
+                }
+            }
+
+            return null;
         }
 
         if ($stmt instanceof PhpParser\Node\Stmt\If_) {
