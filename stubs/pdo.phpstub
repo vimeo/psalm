@@ -12,7 +12,7 @@ class PDOStatement implements Traversable
      *
      * @template T
      * @param class-string<T> $class
-     * @param array $ctorArgs
+     * @param list<mixed> $ctorArgs
      * @return false|T
      */
     public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
