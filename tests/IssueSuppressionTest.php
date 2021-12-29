@@ -18,6 +18,12 @@ class IssueSuppressionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->project_analyzer->getCodebase()->find_unused_variables = true;
+    }
+
     public function testIssueSuppressedOnFunction(): void
     {
         $this->expectException(CodeException::class);
@@ -162,8 +168,6 @@ class IssueSuppressionTest extends TestCase
         $this->addFile(
             getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-suppress UncaughtThrowInGlobalScope */
-                throw new Exception();
 
                 if (rand(0, 1)) {
                     /** @psalm-suppress UncaughtThrowInGlobalScope */
@@ -173,7 +177,10 @@ class IssueSuppressionTest extends TestCase
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
                 if (rand(0, 1)) {
                     throw new Exception();
-                }'
+                }
+
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                throw new Exception();'
         );
 
         $context = new Context();
@@ -212,7 +219,7 @@ class IssueSuppressionTest extends TestCase
                     public string $bar = "baz";
                 }
 
-                $foo = new Foo();
+                $_foo = new Foo();
             '
         );
 
@@ -234,7 +241,7 @@ class IssueSuppressionTest extends TestCase
                     public string $bar = "baz";
                 }
 
-                $foo = new Foo();
+                $_foo = new Foo();
             '
         );
 
@@ -304,7 +311,7 @@ class IssueSuppressionTest extends TestCase
                          * @psalm-suppress TooManyArguments
                          * here
                          */
-                        strlen("a", "b");
+                        echo strlen("a", "b");
                     }',
             ],
             'suppressUndefinedFunction' => [
@@ -319,14 +326,14 @@ class IssueSuppressionTest extends TestCase
             'suppressAllStatementIssues' => [
                 '<?php
                     /** @psalm-suppress all */
-                    strlen(123, 456, 789);',
+                    echo strlen(123, 456, 789);',
             ],
             'suppressAllFunctionIssues' => [
                 '<?php
                     /** @psalm-suppress all */
                     function foo($a)
                     {
-                        strlen(123, 456, 789);
+                        echo strlen(123, 456, 789);
                     }',
             ],
             'possiblyNullSuppressedAtClassLevel' => [
@@ -388,6 +395,15 @@ class IssueSuppressionTest extends TestCase
                             return "foobar";
                         }
                     }
+                ',
+            ],
+            'suppressUnevaluatedCode' => [
+                '<?php
+                    die();
+                    /**
+                     * @psalm-suppress UnevaluatedCode
+                     */
+                    break;
                 ',
             ],
         ];
