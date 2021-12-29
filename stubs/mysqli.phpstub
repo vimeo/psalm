@@ -23,7 +23,7 @@ class mysqli_result implements Traversable
  * @psalm-taint-sink callable $class
  *
  * @template T of object
- * @template TValue of object
+ * @template TValue
  *
  * @param mysqli_result<TValue> $result
  * @param class-string<T> $class
