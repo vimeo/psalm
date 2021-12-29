@@ -2,7 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
-use PackageVersions\Versions;
+use Composer\InstalledVersions;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
@@ -29,7 +29,7 @@ final class Plugin
         $vendor_dir = CliUtils::getVendorDir($current_dir);
         CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
 
-        $app = new Application('psalm-plugin', Versions::getVersion('vimeo/psalm'));
+        $app = new Application('psalm-plugin', InstalledVersions::getVersion('vimeo/psalm') ?? 'UNKNOWN');
 
         $psalm_root = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR;
 

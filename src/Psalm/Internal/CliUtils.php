@@ -3,14 +3,13 @@
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
-use PackageVersions\Versions;
+use Composer\InstalledVersions;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
 use Psalm\Report;
 
 use function array_slice;
@@ -147,8 +146,8 @@ final class CliUtils
             exit(1);
         }
 
-        define('PSALM_VERSION', Versions::getVersion('vimeo/psalm'));
-        define('PHP_PARSER_VERSION', Versions::getVersion('nikic/php-parser'));
+        define('PSALM_VERSION', InstalledVersions::getVersion('vimeo/psalm'));
+        define('PHP_PARSER_VERSION', InstalledVersions::getVersion('nikic/php-parser'));
 
         return $first_autoloader;
     }
