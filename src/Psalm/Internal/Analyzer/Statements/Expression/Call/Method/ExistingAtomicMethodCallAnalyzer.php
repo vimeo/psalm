@@ -22,6 +22,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
@@ -270,6 +271,25 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
+            $class_type = new Union([$lhs_type_part]);
+
+            if ($method_storage->if_this_is_type
+                && !UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $class_type,
+                    $method_storage->if_this_is_type
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new IfThisIsMismatch(
+                        'Class type must be ' . $method_storage->if_this_is_type->getId()
+                        . ' current type ' . $class_type->getId(),
+                        new CodeLocation($source, $stmt->name)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+            }
+
             if ($method_storage->self_out_type && $lhs_var_id) {
                 $self_out_candidate = clone $method_storage->self_out_type;
 
