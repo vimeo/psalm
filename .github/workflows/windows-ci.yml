@@ -37,7 +37,7 @@ jobs:
     env:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
-      PARALLEL_PROCESSES: 5
+      PARALLEL_PROCESSES: 4
 
     steps:
       - name: Set git to use LF
