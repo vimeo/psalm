@@ -6,7 +6,6 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
-use Exception;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -285,8 +284,9 @@ class TextDocument
 
                 return new Success([]);
             }
-        } catch(UnexpectedValueException $e) {
-            error_log('completion not found at ' . $position->line . ':' . $position->character.', Reason: '.$e->getMessage());
+        } catch (UnexpectedValueException $e) {
+            error_log('completion errored at ' . $position->line . ':' . $position->character.
+                ', Reason: '.$e->getMessage());
             return new Success([]);
         }
 
