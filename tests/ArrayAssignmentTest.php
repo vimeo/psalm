@@ -2062,7 +2062,7 @@ class ArrayAssignmentTest extends TestCase
                     function foo(array $a) : array {
                         return array_values($a);
                     }',
-                'error_message' => 'RedundantCast',
+                'error_message' => 'RedundantFunctionCall',
             ],
             'assignToListWithUpdatedForeachKey' => [
                 '<?php
