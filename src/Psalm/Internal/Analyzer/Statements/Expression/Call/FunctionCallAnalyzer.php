@@ -1018,7 +1018,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             if ((!$function_call_info->in_call_map
                     && $function_call_info->function_storage
-                    && !$function_call_info->function_storage->pure)
+                    && !$function_call_info->function_storage->pure
+                    && !$function_call_info->function_storage->mutation_free)
                 || ($callmap_function_pure === false)
             ) {
                 if ($context->mutation_free || $context->external_mutation_free) {
