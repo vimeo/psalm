@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -1158,5 +1159,29 @@ class MagicPropertyTest extends TestCase
                 'error_message' => 'InvalidDocblock'
             ],
         ];
+    }
+
+    public function testSealAllMethodsWithoutFoo(): void
+    {
+        Config::getInstance()->seal_all_properties = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public function __get(string $name) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $result = $b->foo;
+              '
+        );
+
+        $error_message = 'UndefinedMagicPropertyFetch';
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
     }
 }
