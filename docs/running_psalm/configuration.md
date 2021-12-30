@@ -313,7 +313,7 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 >
 ```
 
-When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to false.
+When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to true if the [phpVersion][#phpVersion] is >= 8.2, false otherwise.
 
 #### runTaintAnalysis
 
