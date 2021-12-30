@@ -2121,6 +2121,65 @@ class AssertAnnotationTest extends TestCase
                 ',
                 'error_message' => 'PossiblyNullArgument',
             ],
+            'forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+
+                        public function nonMutationFree(): void
+                        {
+                            $this->bar = null;
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $fooRef = &$foo;
+
+                    if (assertBarNotNull($foo)) {
+                        $fooRef->nonMutationFree();
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $str): void {}
+                ',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'forgetAssertionAfterReferenceModification' => [
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $barRef = &$foo->bar;
+
+                    if (assertBarNotNull($foo)) {
+                        $barRef = null;
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $str): void {}
+                ',
+                'error_message' => 'PossiblyNullArgument',
+            ],
         ];
     }
 }
