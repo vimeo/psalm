@@ -71,7 +71,6 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
@@ -90,7 +89,6 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
@@ -112,7 +110,6 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            $this->server->verboseLog($file_path . ' is not in project');
             return;
         }
 
