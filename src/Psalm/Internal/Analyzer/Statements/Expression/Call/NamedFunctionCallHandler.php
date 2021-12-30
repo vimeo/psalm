@@ -18,8 +18,6 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
-use Psalm\Issue\RedundantCast;
-use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RedundantFunctionCall;
 use Psalm\Issue\RedundantFunctionCallGivenDocblockType;
 use Psalm\IssueBuffer;
