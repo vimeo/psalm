@@ -4119,14 +4119,6 @@ class AssertionFinder
                     $name
                 );
             }
-
-            if (!$property_definition->readonly) {
-                return sprintf(
-                    'Property %s of variable %s is not read-only/immutable so assertion cannot be applied',
-                    $property,
-                    $name
-                );
-            }
         }
 
         return null;
