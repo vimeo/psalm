@@ -11,9 +11,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -421,30 +418,6 @@ class MethodCallAnalyzer extends CallAnalyzer
             $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
             $context->vars_in_scope[$lhs_var_id] = $class_type;
-        }
-
-        if ($lhs_var_id) {
-            $method_id = MethodIdentifier::wrap($result->existent_method_ids[0]);
-            // TODO: When should a method have a storage?
-            if ($codebase->methods->hasStorage($method_id)) {
-                $storage = $codebase->methods->getStorage($method_id);
-                if ($storage->if_this_is_type
-                    && !UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $class_type,
-                        $storage->if_this_is_type
-                    )
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new IfThisIsMismatch(
-                            'Class is not ' . (string) $storage->if_this_is_type
-                            . ' as required by psalm-if-this-is',
-                            new CodeLocation($source, $stmt->name)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                }
-            }
         }
 
         return true;
