@@ -6,6 +6,7 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
+use Exception;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -276,13 +277,19 @@ class TextDocument
             return new Success([]);
         }
 
-        $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
+        try {
+            $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
 
-        if (!$completion_data && !$type_context) {
-            error_log('completion not found at ' . $position->line . ':' . $position->character);
+            if (!$completion_data && !$type_context) {
+                error_log('completion not found at ' . $position->line . ':' . $position->character);
 
+                return new Success([]);
+            }
+        } catch(UnexpectedValueException $e) {
+            error_log('completion not found at ' . $position->line . ':' . $position->character.', Reason: '.$e->getMessage());
             return new Success([]);
         }
+
 
         if ($completion_data) {
             [$recent_type, $gap, $offset] = $completion_data;
