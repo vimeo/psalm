@@ -238,7 +238,7 @@ class LanguageServer extends Dispatcher
                     $this->textDocument = new ServerTextDocument(
                         $this,
                         $codebase,
-                        $this->project_analyzer->onchange_line_limit
+                        $this->project_analyzer
                     );
                 }
 
@@ -246,7 +246,7 @@ class LanguageServer extends Dispatcher
                     $this->workspace = new ServerWorkspace(
                         $this,
                         $codebase,
-                        $this->project_analyzer->onchange_line_limit
+                        $this->project_analyzer
                     );
                 }
 
@@ -279,6 +279,8 @@ class LanguageServer extends Dispatcher
                 // Support "Hover"
                 $serverCapabilities->hoverProvider = true;
                 // Support "Completion"
+                $serverCapabilities->codeActionProvider = true;
+                // Support "Code Actions"
 
                 if ($this->project_analyzer->provide_completion) {
                     $serverCapabilities->completionProvider = new CompletionOptions();
