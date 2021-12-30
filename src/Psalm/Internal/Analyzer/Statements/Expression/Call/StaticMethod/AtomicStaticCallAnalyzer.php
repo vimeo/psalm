@@ -288,8 +288,6 @@ class AtomicStaticCallAnalyzer
             );
         }
 
-        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
-
         if ($intersection_types
             && !$codebase->methods->methodExists($method_id)
         ) {
@@ -345,6 +343,28 @@ class AtomicStaticCallAnalyzer
                 $fake_method_exists = true;
             }
         }
+
+        if ($stmt->isFirstClassCallable()) {
+            $method_storage = ($class_storage->methods[$method_name_lc] ??
+                ($class_storage->pseudo_static_methods[$method_name_lc] ?? null));
+
+            if ($method_storage) {
+                $return_type_candidate = new Union([new TClosure(
+                    'Closure',
+                    $method_storage->params,
+                    $method_storage->return_type,
+                    $method_storage->pure
+                )]);
+            } else {
+                $return_type_candidate = Type::getClosure();
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
+
+            return true;
+        }
+
+        $args = $stmt->getArgs();
 
         if (!$naive_method_exists
             && $class_storage->mixin_declaring_fqcln
@@ -789,25 +809,6 @@ class AtomicStaticCallAnalyzer
         }
 
         $has_existing_method = true;
-
-        if ($stmt->isFirstClassCallable()) {
-            $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
-
-            if ($method_storage) {
-                $return_type_candidate = new Union([new TClosure(
-                    'Closure',
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->pure
-                )]);
-            } else {
-                $return_type_candidate = Type::getClosure();
-            }
-
-            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-
-            return true;
-        }
 
         ExistingAtomicStaticCallAnalyzer::analyze(
             $statements_analyzer,

@@ -380,7 +380,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$result->existent_method_ids) {
-            return self::checkMethodArgs(
+            return $stmt->isFirstClassCallable() || self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 null,
