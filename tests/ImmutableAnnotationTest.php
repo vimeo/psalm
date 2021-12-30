@@ -541,8 +541,9 @@ class ImmutableAnnotationTest extends TestCase
 
                     /**
                      * @psalm-mutation-free
+                     * @return mixed
                      */
-                    function getDataItem(string $key): mixed {
+                    function getDataItem(string $key) {
                         return getData()[$key] ?? null;
                     }',
             ],
