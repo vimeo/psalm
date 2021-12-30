@@ -2336,7 +2336,7 @@ class AssertAnnotationTest extends TestCase
                     /** @param 1 $_arg */
                     function takesOne(int $_arg): void {}
                 ',
-                'error_message' => 'ImpureFunctionCall - src/somefile.php:10:40',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40',
             ],
         ];
     }
