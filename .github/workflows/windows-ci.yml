@@ -3,13 +3,41 @@ name: Run unit tests on Windows
 on: [push, pull_request]
 
 jobs:
+  chunk-matrix:
+    name: Generate Chunk Matrix
+
+    runs-on: ubuntu-latest
+    env:
+      CHUNK_COUNT: 8
+
+    outputs:
+      count: ${{ steps.chunk-matrix.outputs.count }}
+      chunks: ${{ steps.chunk-matrix.outputs.chunks }}
+
+    steps:
+      - id: chunk-matrix
+        name: Generates the Chunk Matrix
+        run: |
+          echo "::set-output name=count::$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')"
+          echo "::set-output name=chunks::$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')"
+
   tests:
-    name: "Unit Tests"
+    name: "Unit Tests - ${{ matrix.chunk }}"
 
     runs-on: windows-latest
+    needs:
+      - chunk-matrix
 
     strategy:
       fail-fast: false
+      matrix:
+        count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
+        chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
+
+    env:
+      CHUNK_COUNT: "${{ matrix.count }}"
+      CHUNK_NUMBER: "${{ matrix.chunk }}"
+      PARALLEL_PROCESSES: 5
 
     steps:
       - name: Set git to use LF
@@ -47,5 +75,8 @@ jobs:
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
+      - name: Generate test suits
+        run: php bin/generate_testsuites.php $env:CHUNK_COUNT
+
       - name: Run unit tests
-        run: vendor/bin/paratest --log-junit build/phpunit/phpunit.xml
+        run: vendor/bin/paratest --processes=$env:PARALLEL_PROCESSES --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
