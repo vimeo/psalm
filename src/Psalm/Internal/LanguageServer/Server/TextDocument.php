@@ -345,7 +345,7 @@ class TextDocument
         ], 0, $argument_location[1]));
     }
 
-        /**
+    /**
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
