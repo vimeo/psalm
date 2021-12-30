@@ -349,8 +349,9 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
+     *
      */
-    public function codeAction(TextDocumentIdentifier $textDocument, Range $range, $context): Promise
+    public function codeAction(TextDocumentIdentifier $textDocument, Range $range): Promise
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
         if (!$this->codebase->file_provider->isOpen($file_path)) {
@@ -383,14 +384,21 @@ class TextDocument
                 );
 
                 $indentation = '';
-                if (preg_match('/^(\s*)/', $issue->snippet, $indentation)) {
-                    $indentation = $indentation[1];
+                if (preg_match('/^(\s*)/', $issue->snippet, $matches)) {
+                    $indentation = $matches[1] ?? '';
                 }
 
                 //Suppress Ability
                 $fixers[] = [
                     'title' => "Suppress {$issue->type} for this line",
                     'kind' => 'quickfix',
+                    /**
+                    * There are bugs in how LanguageServer is declared https://github.com/felixfbecker/php-language-server-protocol
+                    *
+                    * See: https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
+                    *
+                    * @psalm-suppress InvalidArgument
+                    */
                     'edit' => new WorkspaceEdit(
                         [
                             $textDocument->uri => [
