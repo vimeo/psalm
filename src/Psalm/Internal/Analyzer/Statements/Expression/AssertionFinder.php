@@ -4106,18 +4106,26 @@ class AssertionFinder
 
         foreach ($type->getAtomicTypes() as $type) {
             if (!$type instanceof TNamedObject) {
-                return 'Variable ' . $name . ' is not an object so assertion cannot be applied';
+                return 'Variable ' . $name . ' is not an object so the assertion cannot be applied';
             }
 
             $class_definition = $class_provider->get($type->value);
             $property_definition = $class_definition->properties[$property] ?? null;
 
             if (!$property_definition instanceof PropertyStorage) {
-                return sprintf(
-                    'Property %s is not defined on variable %s so assertion cannot be applied',
-                    $property,
-                    $name
-                );
+                $magic_type = $class_definition->pseudo_property_get_types['$' . $property] ?? null;
+                if ($magic_type === null) {
+                    return sprintf(
+                        'Property %s is not defined on variable %s so the assertion cannot be applied',
+                        $property,
+                        $name
+                    );
+                }
+
+                $magic_getter = $class_definition->methods['__get'] ?? null;
+                if ($magic_getter === null || !$magic_getter->mutation_free) {
+                    return "{$class_definition->name}::__get is not mutation-free, so the assertion cannot be applied";
+                }
             }
         }
 

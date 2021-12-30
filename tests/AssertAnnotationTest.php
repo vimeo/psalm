@@ -83,7 +83,7 @@ class AssertAnnotationTest extends TestCase
                     requiresString($foo->bar);
                 }
 
-                function requiresString(string $str): void {}
+                function requiresString(string $_str): void {}
             '
         );
 
@@ -1822,7 +1822,103 @@ class AssertAnnotationTest extends TestCase
                         requiresString($foo->bar);
                     }
 
-                    function requiresString(string $str): void {}
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsToReferences' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    if (assertBarNotNull($foo)) {
+                        requiresString($bar->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsFromReferences' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    if (assertBarNotNull($bar)) {
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsToReferencesWithConditionalOperator' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    requiresString(assertBarNotNull($foo) ? $bar->bar : "bar");
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'assertionOnMagicProperty' => [
+                '<?php
+                    /**
+                     * @property ?string $b
+                     */
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function __get(string $key) {return "";}
+                        public function __set(string $key, string $value): void {}
+                    }
+
+                    $a = new A;
+
+                    /** @psalm-assert-if-true  string $arg->b */
+                    function assertString(A $arg): bool {return $arg->b !== null;}
+
+                    if (assertString($a)) {
+                        requiresString($a->b);
+                    }
+
+                    function requiresString(string $_str): void {}
                 ',
             ],
         ];
@@ -2117,11 +2213,11 @@ class AssertAnnotationTest extends TestCase
                         requiresString($foo->bar);
                     }
 
-                    function requiresString(string $str): void {}
+                    function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'PossiblyNullArgument',
             ],
-            'forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [
+            'SKIPPED-forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [ // See #7254
                 '<?php
                     class Foo
                     {
@@ -2149,11 +2245,11 @@ class AssertAnnotationTest extends TestCase
                         requiresString($foo->bar);
                     }
 
-                    function requiresString(string $str): void {}
+                    function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'PossiblyNullArgument',
             ],
-            'forgetAssertionAfterReferenceModification' => [
+            'SKIPPED-forgetAssertionAfterReferenceModification' => [ // See #7254
                 '<?php
                     class Foo
                     {
@@ -2176,9 +2272,71 @@ class AssertAnnotationTest extends TestCase
                         requiresString($foo->bar);
                     }
 
-                    function requiresString(string $str): void {}
+                    function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'assertionOnMagicPropertyWithoutMutationFreeGet' => [
+                '<?php
+                    /**
+                     * @property ?string $b
+                     */
+                    class A {
+                        public function __get(string $key) {return "";}
+                        public function __set(string $key, string $value): void {}
+                    }
+
+                    $a = new A;
+
+                    /** @psalm-assert-if-true  string $arg->b */
+                    function assertString(A $arg): bool {return $arg->b !== null;}
+
+                    if (assertString($a)) {
+                        requiresString($a->b);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+                'error_message' => 'A::__get is not mutation-free',
+            ],
+            'randomValueFromMagicGetterIsNotMutationFree' => [
+                '<?php
+                    /**
+                     * @property int<1, 10> $b
+                     */
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function __get(string $key)
+                        {
+                            if ($key === "b") {
+                                return random_int(1, 10);
+                            }
+
+                            return null;
+                        }
+
+                        public function __set(string $key, string $value): void
+                        {
+                            throw new \Exception("Setting not supported!");
+                        }
+                    }
+
+                    $a = new A;
+
+                    /** @psalm-assert-if-true =1 $arg->b */
+                    function assertBIsOne(A $arg): bool
+                    {
+                        return $arg->b === 1;
+                    }
+
+                    if (assertBIsOne($a)) {
+                        takesOne($a->b);
+                    }
+
+                    /** @param 1 $_arg */
+                    function takesOne(int $_arg): void {}
+                ',
+                'error_message' => 'ImpureFunctionCall - src/somefile.php:10:40',
             ],
         ];
     }

@@ -240,6 +240,8 @@ $b->s = "boo"; // disallowed
 ### `@psalm-mutation-free`
 
 Used to annotate a class method that does not mutate state, either internally or externally of the class's scope.
+This requires that the return value depend only on the instance's properties. For example, `random_int` is considered
+mutating here because it mutates the random number generator's internal state.
 
 ```php
 <?php
@@ -309,7 +311,7 @@ Used to annotate a class where every property is treated by consumers as `@psalm
 abstract class Foo
 {
     public string $baz;
-  
+
     abstract public function bar(): int;
 }
 
@@ -322,7 +324,7 @@ final class ChildClass extends Foo
     {
         $this->baz = $baz;
     }
-  
+
     public function bar(): int
     {
         return 0;
@@ -332,7 +334,7 @@ final class ChildClass extends Foo
 $anonymous = new /** @psalm-immutable */ class extends Foo
 {
     public string $baz = "B";
-  
+
     public function bar(): int
     {
         return 1;
@@ -393,9 +395,9 @@ class Counter {
   /**
    * @readonly
    * @psalm-allow-private-mutation
-   */  
+   */
   public int $count = 0;
-    
+
   public function increment() : void {
     $this->count++;
   }
@@ -417,9 +419,9 @@ This is a shorthand for the property annotations `@readonly` and `@psalm-allow-p
 class Counter {
   /**
    * @psalm-readonly-allow-private-mutation
-   */  
+   */
   public int $count = 0;
-    
+
   public function increment() : void {
     $this->count++;
   }
@@ -439,7 +441,7 @@ You can use this annotation to trace inferred type (applied to the *next* statem
 ```php
 <?php
 
-/** @psalm-trace $username */ 
+/** @psalm-trace $username */
 $username = $_GET['username']; // prints something like "test.php:4 $username: mixed"
 
 ```
