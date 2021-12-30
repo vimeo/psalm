@@ -835,7 +835,7 @@ class ArrayAssignmentTest extends TestCase
             'keyedIntOffsetArrayValues' => [
                 '<?php
                     $a = ["hello", 5];
-                    /** @psalm-suppress RedundantCast */
+                    /** @psalm-suppress RedundantFunctionCall */
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
