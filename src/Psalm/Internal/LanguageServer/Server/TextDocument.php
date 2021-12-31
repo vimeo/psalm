@@ -388,30 +388,35 @@ class TextDocument
                     $indentation = $matches[1] ?? '';
                 }
 
+
+                /**
+                 * Suppress Psalm because ther are bugs in how
+                 * LanguageServer's signature of WorkspaceEdit is declared:
+                 *
+                 * See:
+                 * https://github.com/felixfbecker/php-language-server-protocol
+                 * See:
+                 * https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
+                 *
+                 * @psalm-suppress InvalidArgument
+                 */
+                $edit = new WorkspaceEdit([
+                    $textDocument->uri => [
+                        new TextEdit(
+                            $snippetRange,
+                            "{$indentation}/**\n".
+                            "{$indentation} * @psalm-suppress {$issue->type}\n".
+                            "{$indentation} */\n".
+                            "{$issue->snippet}\n"
+                        )
+                    ]
+                ]);
+
                 //Suppress Ability
-                $fixers[] = [
+                $fixers["suppress.{$issue->type}"] = [
                     'title' => "Suppress {$issue->type} for this line",
                     'kind' => 'quickfix',
-                    /**
-                    * There are bugs in how LanguageServer is declared https://github.com/felixfbecker/php-language-server-protocol
-                    *
-                    * See: https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
-                    *
-                    * @psalm-suppress InvalidArgument
-                    */
-                    'edit' => new WorkspaceEdit(
-                        [
-                            $textDocument->uri => [
-                                new TextEdit(
-                                    $snippetRange,
-                                    "{$indentation}/**\n".
-                                    "{$indentation} * @psalm-suppress {$issue->type}\n".
-                                    "{$indentation} */\n".
-                                    "{$issue->snippet}\n"
-                                )
-                            ]
-                        ]
-                    )
+                    'edit' => $edit
                 ];
             }
         }
@@ -421,7 +426,7 @@ class TextDocument
         }
 
         return new Success(
-            $fixers
+            array_values($fixers)
         );
     }
 }
