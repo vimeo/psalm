@@ -24,6 +24,9 @@ use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidParamDefault;
@@ -64,6 +67,7 @@ use function count;
 use function end;
 use function in_array;
 use function is_string;
+use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
@@ -1808,10 +1812,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 } else {
                     $this_object_type = new TNamedObject($context->self);
                 }
-                
+
                 $this_object_type->was_static = !$storage->final;
 
-                $context->vars_in_scope['$this'] = new Union([$this_object_type]);
+                if ($this->storage instanceof MethodStorage && $this->storage->if_this_is_type) {
+                    $template_result = new TemplateResult($this->getTemplateTypeMap() ?? [], []);
+
+                    TemplateStandinTypeReplacer::replace(
+                        new Union([$this_object_type]),
+                        $template_result,
+                        $codebase,
+                        null,
+                        $this->storage->if_this_is_type
+                    );
+
+                    foreach ($context->vars_in_scope as $var_name => $var_type) {
+                        if (0 === mb_strpos($var_name, '$this->')) {
+                            TemplateInferredTypeReplacer::replace($var_type, $template_result, $codebase);
+                        }
+                    }
+
+                    $context->vars_in_scope['$this'] = $this->storage->if_this_is_type;
+                } else {
+                    $context->vars_in_scope['$this'] = new Union([$this_object_type]);
+                }
 
                 if ($codebase->taint_flow_graph
                     && $storage->specialize_call
