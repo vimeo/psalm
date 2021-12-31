@@ -20,7 +20,9 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -188,7 +190,30 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        try {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
+        } catch (UnexpectedValueException $e) {
+            $method_storage = null;
+        }
+
+        $method_template_params = [];
+
+        if ($method_storage && $method_storage->if_this_is_type) {
+            $method_template_result = new TemplateResult($method_storage->template_types ?: [], []);
+
+            TemplateStandinTypeReplacer::replace(
+                clone $method_storage->if_this_is_type,
+                $method_template_result,
+                $codebase,
+                null,
+                new Union([$lhs_type_part])
+            );
+
+            $method_template_params = $method_template_result->lower_bounds;
+        }
+
         $template_result = new TemplateResult([], $class_template_params ?: []);
+        $template_result->lower_bounds += $method_template_params;
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
@@ -264,30 +289,23 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        try {
-            $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
-        } catch (UnexpectedValueException $e) {
-            $method_storage = null;
-        }
-
         if ($method_storage) {
-            $class_type = new Union([$lhs_type_part]);
+            if ($method_storage->if_this_is_type) {
+                $class_type = new Union([$lhs_type_part]);
+                $if_this_is_type = clone $method_storage->if_this_is_type;
 
-            if ($method_storage->if_this_is_type
-                && !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $class_type,
-                    $method_storage->if_this_is_type
-                )
-            ) {
-                IssueBuffer::maybeAdd(
-                    new IfThisIsMismatch(
-                        'Class type must be ' . $method_storage->if_this_is_type->getId()
-                        . ' current type ' . $class_type->getId(),
-                        new CodeLocation($source, $stmt->name)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
+                TemplateInferredTypeReplacer::replace($if_this_is_type, $template_result, $codebase);
+
+                if (!UnionTypeComparator::isContainedBy($codebase, $class_type, $if_this_is_type)) {
+                    IssueBuffer::maybeAdd(
+                        new IfThisIsMismatch(
+                            'Class type must be ' . $method_storage->if_this_is_type->getId()
+                            . ' current type ' . $class_type->getId(),
+                            new CodeLocation($source, $stmt->name)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
             }
 
             if ($method_storage->self_out_type && $lhs_var_id) {
