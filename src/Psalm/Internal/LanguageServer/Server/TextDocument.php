@@ -28,6 +28,7 @@ use Psalm\IssueBuffer;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_values;
 use function count;
 use function error_log;
 use function preg_match;
