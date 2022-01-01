@@ -353,11 +353,13 @@ class Context
 
     /**
      * @var bool
+     * Set by @psalm-immutable
      */
     public $mutation_free = false;
 
     /**
      * @var bool
+     * Set by @psalm-external-mutation-free
      */
     public $external_mutation_free = false;
 
