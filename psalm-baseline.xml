@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@76bb8bc65567d2bc600fd4925c812589917b6ab1">
+<files psalm-version="dev-master@16a61a758e44158c19c779c8b0a1c2143e40d83e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -186,8 +186,7 @@
     </DeprecatedMethod>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="7">
-      <code>$result-&gt;existent_method_ids[0]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$result-&gt;invalid_method_call_types[0]</code>
       <code>$result-&gt;non_existent_class_method_ids[0]</code>
       <code>$result-&gt;non_existent_class_method_ids[0]</code>
@@ -399,13 +398,6 @@
       <code>new TEmpty()</code>
     </DeprecatedClass>
   </file>
-  <file src="src/Psalm/Internal/Type/NegatedAssertionReconciler.php">
-    <DeprecatedMethod occurrences="3">
-      <code>Type::getEmpty()</code>
-      <code>Type::getEmpty()</code>
-      <code>Type::getEmpty()</code>
-    </DeprecatedMethod>
-  </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
     <DeprecatedClass occurrences="2">
       <code>new TEmpty()</code>
@@ -432,7 +424,10 @@
       <code>new TEmpty</code>
       <code>new TEmpty</code>
     </DeprecatedClass>
-    <DeprecatedMethod occurrences="1">
+    <DeprecatedMethod occurrences="4">
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
+      <code>Type::getEmpty()</code>
       <code>Type::getEmpty()</code>
     </DeprecatedMethod>
   </file>
