@@ -811,6 +811,7 @@ class TypeExpander
                 );
 
                 $else_conditional_return_type = SimpleNegatedAssertionReconciler::reconcile(
+                    $codebase,
                     $assertion,
                     $else_conditional_return_type
                 );

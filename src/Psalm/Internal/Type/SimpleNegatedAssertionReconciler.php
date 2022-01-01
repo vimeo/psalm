@@ -3,7 +3,12 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\RedundantPropertyInitializationCheck;
+use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -57,6 +62,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
      * @param  0|1|2      $failed_reconciliation
      */
     public static function reconcile(
+        Codebase $codebase,
         string $assertion,
         Union $existing_var_type,
         ?string $key = null,
@@ -67,6 +73,108 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality = false,
         bool $inside_loop = false
     ): ?Union {
+        if ($assertion === 'isset') {
+            if ($existing_var_type->possibly_undefined) {
+                return Type::getEmpty();
+            }
+
+            if (!$existing_var_type->isNullable()
+                && $key
+                && strpos($key, '[') === false
+            ) {
+                foreach ($existing_var_type->getAtomicTypes() as $atomic) {
+                    if (!$existing_var_type->hasMixed()
+                        || $atomic instanceof TNonEmptyMixed
+                    ) {
+                        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+                        if ($code_location) {
+                            if ($existing_var_type->from_static_property) {
+                                IssueBuffer::maybeAdd(
+                                    new RedundantPropertyInitializationCheck(
+                                        'Static property ' . $key . ' with type '
+                                            . $existing_var_type
+                                            . ' has unexpected isset check — should it be nullable?',
+                                        $code_location
+                                    ),
+                                    $suppressed_issues
+                                );
+                            } elseif ($existing_var_type->from_property) {
+                                IssueBuffer::maybeAdd(
+                                    new RedundantPropertyInitializationCheck(
+                                        'Property ' . $key . ' with type '
+                                            . $existing_var_type . ' should already be set in the constructor',
+                                        $code_location
+                                    ),
+                                    $suppressed_issues
+                                );
+                            } elseif ($existing_var_type->from_docblock) {
+                                IssueBuffer::maybeAdd(
+                                    new DocblockTypeContradiction(
+                                        'Cannot resolve types for ' . $key . ' with docblock-defined type '
+                                            . $existing_var_type . ' and !isset assertion',
+                                        $code_location,
+                                        null
+                                    ),
+                                    $suppressed_issues
+                                );
+                            } else {
+                                IssueBuffer::maybeAdd(
+                                    new TypeDoesNotContainType(
+                                        'Cannot resolve types for ' . $key . ' with type '
+                                            . $existing_var_type . ' and !isset assertion',
+                                        $code_location,
+                                        null
+                                    ),
+                                    $suppressed_issues
+                                );
+                            }
+                        }
+
+                        return $existing_var_type->from_docblock
+                            ? Type::getNull()
+                            : Type::getEmpty();
+                    }
+                }
+            }
+
+            return Type::getNull();
+        }
+
+        if ($assertion === 'array-key-exists') {
+            return Type::getEmpty();
+        }
+
+        if (strpos($assertion, 'in-array-') === 0) {
+            $assertion = substr($assertion, 9);
+            $new_var_type = Type::parseString($assertion);
+
+            $intersection = Type::intersectUnionTypes(
+                $new_var_type,
+                $existing_var_type,
+                $codebase
+            );
+
+            if ($intersection === null) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $existing_var_type->getId(),
+                        $key,
+                        '!' . $assertion,
+                        true,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+
+                $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+            }
+
+            return $existing_var_type;
+        }
+
         if ($assertion === 'object' && !$existing_var_type->hasMixed()) {
             return self::reconcileObject(
                 $existing_var_type,
