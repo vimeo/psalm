@@ -81,61 +81,54 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             if (!$existing_var_type->isNullable()
                 && $key
                 && strpos($key, '[') === false
+                && (!$existing_var_type->hasMixed() || $existing_var_type->isAlwaysTruthy())
             ) {
-                foreach ($existing_var_type->getAtomicTypes() as $atomic) {
-                    if (!$existing_var_type->hasMixed()
-                        || $atomic instanceof TNonEmptyMixed
-                    ) {
-                        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
-
-                        if ($code_location) {
-                            if ($existing_var_type->from_static_property) {
-                                IssueBuffer::maybeAdd(
-                                    new RedundantPropertyInitializationCheck(
-                                        'Static property ' . $key . ' with type '
-                                            . $existing_var_type
-                                            . ' has unexpected isset check — should it be nullable?',
-                                        $code_location
-                                    ),
-                                    $suppressed_issues
-                                );
-                            } elseif ($existing_var_type->from_property) {
-                                IssueBuffer::maybeAdd(
-                                    new RedundantPropertyInitializationCheck(
-                                        'Property ' . $key . ' with type '
-                                            . $existing_var_type . ' should already be set in the constructor',
-                                        $code_location
-                                    ),
-                                    $suppressed_issues
-                                );
-                            } elseif ($existing_var_type->from_docblock) {
-                                IssueBuffer::maybeAdd(
-                                    new DocblockTypeContradiction(
-                                        'Cannot resolve types for ' . $key . ' with docblock-defined type '
-                                            . $existing_var_type . ' and !isset assertion',
-                                        $code_location,
-                                        null
-                                    ),
-                                    $suppressed_issues
-                                );
-                            } else {
-                                IssueBuffer::maybeAdd(
-                                    new TypeDoesNotContainType(
-                                        'Cannot resolve types for ' . $key . ' with type '
-                                            . $existing_var_type . ' and !isset assertion',
-                                        $code_location,
-                                        null
-                                    ),
-                                    $suppressed_issues
-                                );
-                            }
-                        }
-
-                        return $existing_var_type->from_docblock
-                            ? Type::getNull()
-                            : Type::getEmpty();
+                if ($code_location) {
+                    if ($existing_var_type->from_static_property) {
+                        IssueBuffer::maybeAdd(
+                            new RedundantPropertyInitializationCheck(
+                                'Static property ' . $key . ' with type '
+                                    . $existing_var_type
+                                    . ' has unexpected isset check — should it be nullable?',
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        );
+                    } elseif ($existing_var_type->from_property) {
+                        IssueBuffer::maybeAdd(
+                            new RedundantPropertyInitializationCheck(
+                                'Property ' . $key . ' with type '
+                                    . $existing_var_type . ' should already be set in the constructor',
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        );
+                    } elseif ($existing_var_type->from_docblock) {
+                        IssueBuffer::maybeAdd(
+                            new DocblockTypeContradiction(
+                                'Cannot resolve types for ' . $key . ' with docblock-defined type '
+                                    . $existing_var_type . ' and !isset assertion',
+                                $code_location,
+                                null
+                            ),
+                            $suppressed_issues
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new TypeDoesNotContainType(
+                                'Cannot resolve types for ' . $key . ' with type '
+                                    . $existing_var_type . ' and !isset assertion',
+                                $code_location,
+                                null
+                            ),
+                            $suppressed_issues
+                        );
                     }
                 }
+
+                return $existing_var_type->from_docblock
+                    ? Type::getNull()
+                    : Type::getEmpty();
             }
 
             return Type::getNull();
