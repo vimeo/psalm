@@ -190,6 +190,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
         try {
             $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
         } catch (UnexpectedValueException $e) {
@@ -239,8 +241,6 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ) === false) {
             return Type::getMixed();
         }
-
-        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,
