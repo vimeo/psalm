@@ -276,11 +276,16 @@ class TextDocument
             return new Success([]);
         }
 
-        $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
+        try {
+            $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
+        } catch (UnexpectedValueException $e) {
+            error_log('completion errored at ' . $position->line . ':' . $position->character.
+                ', Reason: '.$e->getMessage());
+            return new Success([]);
+        }
 
         if (!$completion_data && !$type_context) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
-
             return new Success([]);
         }
 
