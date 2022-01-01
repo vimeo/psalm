@@ -643,7 +643,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if (!$var_type_part->is_pure && $context->pure) {
+                    if (!$var_type_part->is_pure && ($context->pure || $context->mutation_free)) {
                         IssueBuffer::maybeAdd(
                             new ImpureFunctionCall(
                                 'Cannot call an impure function from a mutation-free context',

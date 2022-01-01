@@ -2991,7 +2991,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @psalm-template TResult
-                         * @psalm-param callable(self::READ_UNCOMMITTED): TResult $readUncommitted
+                         * @psalm-param pure-callable(self::READ_UNCOMMITTED): TResult $readUncommitted
                          * @psalm-return TResult
                          */
                         public function resolve(callable $readUncommitted) {
