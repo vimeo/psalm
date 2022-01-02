@@ -75,7 +75,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     ): ?Union {
         if ($assertion === 'isset') {
             if ($existing_var_type->possibly_undefined) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             if (!$existing_var_type->isNullable()
@@ -128,14 +128,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
                 return $existing_var_type->from_docblock
                     ? Type::getNull()
-                    : Type::getEmpty();
+                    : Type::getNever();
             }
 
             return Type::getNull();
         }
 
         if ($assertion === 'array-key-exists') {
-            return Type::getEmpty();
+            return Type::getNever();
         }
 
         if (strpos($assertion, 'in-array-') === 0) {
