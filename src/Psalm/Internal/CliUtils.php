@@ -147,6 +147,7 @@ final class CliUtils
             exit(1);
         }
 
+        $version = null;
         try {
             $version = InstalledVersions::getVersion('vimeo/psalm') ;
         } catch (OutOfBoundsException $e) {

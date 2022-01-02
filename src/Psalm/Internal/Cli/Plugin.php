@@ -30,6 +30,7 @@ final class Plugin
         $vendor_dir = CliUtils::getVendorDir($current_dir);
         CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
 
+        $version = null;
         try {
             $version = InstalledVersions::getVersion('vimeo/psalm') ;
         } catch (OutOfBoundsException $e) {
