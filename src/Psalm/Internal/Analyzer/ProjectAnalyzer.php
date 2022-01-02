@@ -1307,6 +1307,7 @@ class ProjectAnalyzer
 
         $this->codebase->php_major_version = $php_major_version;
         $this->codebase->php_minor_version = $php_minor_version;
+        $this->codebase->analysis_php_version_id = $php_major_version * 10000 + $php_minor_version * 100;
         $this->codebase->php_version_source = $source;
     }
 
