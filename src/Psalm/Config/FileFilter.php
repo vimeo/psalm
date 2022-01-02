@@ -267,8 +267,7 @@ class FileFilter
 
                 if (!$file_path && !$allow_missing_files) {
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                        $file_path
+                        'Could not resolve config path to ' . $prospective_file_path
                     );
                 }
 
