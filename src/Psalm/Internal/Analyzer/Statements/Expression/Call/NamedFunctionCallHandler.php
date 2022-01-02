@@ -18,8 +18,8 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
-use Psalm\Issue\RedundantCast;
-use Psalm\Issue\RedundantCastGivenDocblockType;
+use Psalm\Issue\RedundantFunctionCall;
+use Psalm\Issue\RedundantFunctionCallGivenDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
@@ -389,7 +389,7 @@ class NamedFunctionCallHandler
             return;
         }
 
-        if ($first_arg && $function_id === 'array_values') {
+        if ($first_arg && ($function_id === 'array_values' || $function_id === 'ksort')) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
@@ -401,16 +401,16 @@ class NamedFunctionCallHandler
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
-                        new RedundantCastGivenDocblockType(
-                            'The call to array_values is unnecessary given the list docblock type '.$first_arg_type,
+                        new RedundantFunctionCallGivenDocblockType(
+                            "The call to $function_id is unnecessary given the list docblock type $first_arg_type",
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
                 } else {
                     IssueBuffer::maybeAdd(
-                        new RedundantCast(
-                            'The call to array_values is unnecessary, '.$first_arg_type.' is already a list',
+                        new RedundantFunctionCall(
+                            "The call to $function_id is unnecessary, $first_arg_type is already a list",
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -430,7 +430,7 @@ class NamedFunctionCallHandler
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
-                        new RedundantCastGivenDocblockType(
+                        new RedundantFunctionCallGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),
@@ -438,7 +438,7 @@ class NamedFunctionCallHandler
                     );
                 } else {
                     IssueBuffer::maybeAdd(
-                        new RedundantCast(
+                        new RedundantFunctionCall(
                             'The call to strtolower is unnecessary',
                             new CodeLocation($statements_analyzer, $function_name)
                         ),

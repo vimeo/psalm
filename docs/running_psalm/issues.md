@@ -200,6 +200,8 @@
  - [RedundantCastGivenDocblockType](issues/RedundantCastGivenDocblockType.md)
  - [RedundantCondition](issues/RedundantCondition.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
+ - [RedundantFunctionCall](issues/RedundantFunctionCall.md)
+ - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
