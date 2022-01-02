@@ -54,7 +54,8 @@ class PsalmEndToEndTest extends TestCase
 
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
 
-        (new Process(['composer', 'install', '--no-plugins'], self::$tmpDir))->mustRun();
+        $process = new Process(['composer', 'install', '--no-plugins'], self::$tmpDir, null, null, 120);
+        $process->mustRun();
     }
 
     public static function tearDownAfterClass(): void
