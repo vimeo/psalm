@@ -92,6 +92,7 @@ use function substr_count;
 
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
+use const PHP_VERSION_ID;
 
 class Codebase
 {
@@ -306,13 +307,18 @@ class Codebase
 
     /**
      * @var int
+     * @deprecated Removed in Psalm 5, use Codebase::$analysis_php_version_id
      */
     public $php_major_version = PHP_MAJOR_VERSION;
 
     /**
      * @var int
+     * @deprecated Removed in Psalm 5, use Codebase::$analysis_php_version_id
      */
     public $php_minor_version = PHP_MINOR_VERSION;
+
+    /** @var int */
+    public $analysis_php_version_id = PHP_VERSION_ID;
 
     /** @var 'cli'|'config'|'composer'|'tests'|'runtime' */
     public $php_version_source = 'runtime';
