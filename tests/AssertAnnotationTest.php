@@ -2,6 +2,9 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -11,6 +14,82 @@ class AssertAnnotationTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testDontForgetAssertionAfterMutationFreeCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    public ?string $bar = null;
+
+                    /** @psalm-mutation-free */
+                    public function mutationFree(): void {}
+                }
+
+                /**
+                 * @psalm-assert-if-true !null $foo->bar
+                 */
+                function assertBarNotNull(Foo $foo): bool
+                {
+                    return $foo->bar !== null;
+                }
+
+                $foo = new Foo();
+
+                if (assertBarNotNull($foo)) {
+                    $foo->mutationFree();
+                    requiresString($foo->bar);
+                }
+
+                function requiresString(string $str): void {}
+            '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetAssertionAfterNonMutationFreeCall(): void
+    {
+        $this->expectExceptionMessage('PossiblyNullArgument');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    public ?string $bar = null;
+
+                    public function nonMutationFree(): void {}
+                }
+
+                /**
+                 * @psalm-assert-if-true !null $foo->bar
+                 */
+                function assertBarNotNull(Foo $foo): bool
+                {
+                    return $foo->bar !== null;
+                }
+
+                $foo = new Foo();
+
+                if (assertBarNotNull($foo)) {
+                    $foo->nonMutationFree();
+                    requiresString($foo->bar);
+                }
+
+                function requiresString(string $_str): void {}
+            '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
 
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
@@ -1719,6 +1798,129 @@ class AssertAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'dontForgetAssertionAfterIrrelevantNonMutationFreeCall' => [
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+
+                        public function nonMutationFree(): void {}
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+
+                    if (assertBarNotNull($foo)) {
+                        $foo->nonMutationFree();
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsToReferences' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    if (assertBarNotNull($foo)) {
+                        requiresString($bar->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsFromReferences' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    if (assertBarNotNull($bar)) {
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'SKIPPED-applyAssertionsToReferencesWithConditionalOperator' => [ // See #7254
+                '<?php
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $bar = &$foo;
+
+                    requiresString(assertBarNotNull($foo) ? $bar->bar : "bar");
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'assertionOnMagicProperty' => [
+                '<?php
+                    /**
+                     * @property ?string $b
+                     */
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function __get(string $key) {return "";}
+                        public function __set(string $key, string $value): void {}
+                    }
+
+                    $a = new A;
+
+                    /** @psalm-assert-if-true  string $arg->b */
+                    function assertString(A $arg): bool {return $arg->b !== null;}
+
+                    if (assertString($a)) {
+                        requiresString($a->b);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
         ];
     }
 
@@ -1984,66 +2186,157 @@ class AssertAnnotationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
-            'onPropertyOfMutableArgument' => [
+            'forgetAssertionAfterRelevantNonMutationFreeCall' => [
                 '<?php
-                    class Aclass {
-                        public ?string $b;
-                        public function __construct(?string $b) {
-                            $this->b = $b;
+                    class Foo
+                    {
+                        public ?string $bar = null;
+
+                        public function nonMutationFree(): void
+                        {
+                            $this->bar = null;
                         }
                     }
 
-                    /** @psalm-assert !null $item->b */
-                    function c(\Aclass $item): void {
-                        if (null === $item->b) {
-                            throw new \InvalidArgumentException("");
-                        }
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
                     }
 
-                    /** @var \Aclass $a */
-                    c($a);
-                    echo strlen($a->b);',
-                'error_message' => 'InvalidDocblock',
+                    $foo = new Foo();
+
+                    if (assertBarNotNull($foo)) {
+                        $foo->nonMutationFree();
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+                'error_message' => 'PossiblyNullArgument',
             ],
-            'ifTrueOnPropertyOfMutableArgument' => [
+            'SKIPPED-forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [ // See #7254
                 '<?php
-                    class Aclass {
-                        public ?string $b;
-                        public function __construct(?string $b) {
-                            $this->b = $b;
+                    class Foo
+                    {
+                        public ?string $bar = null;
+
+                        public function nonMutationFree(): void
+                        {
+                            $this->bar = null;
                         }
                     }
 
-                    /** @psalm-assert-if-true !null $item->b */
-                    function c(\Aclass $item): bool {
-                        return null !== $item->b;
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
                     }
 
-                    /** @var \Aclass $a */
-                    if (c($a)) {
-                        echo strlen($a->b);
-                    }',
-                'error_message' => 'InvalidDocblock',
+                    $foo = new Foo();
+                    $fooRef = &$foo;
+
+                    if (assertBarNotNull($foo)) {
+                        $fooRef->nonMutationFree();
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+                'error_message' => 'PossiblyNullArgument',
             ],
-            'ifFalseOnPropertyOfMutableArgument' => [
+            'SKIPPED-forgetAssertionAfterReferenceModification' => [ // See #7254
                 '<?php
-                    class Aclass {
-                        public ?string $b;
-                        public function __construct(?string $b) {
-                            $this->b = $b;
+                    class Foo
+                    {
+                        public ?string $bar = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $foo->bar
+                     */
+                    function assertBarNotNull(Foo $foo): bool
+                    {
+                        return $foo->bar !== null;
+                    }
+
+                    $foo = new Foo();
+                    $barRef = &$foo->bar;
+
+                    if (assertBarNotNull($foo)) {
+                        $barRef = null;
+                        requiresString($foo->bar);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'assertionOnMagicPropertyWithoutMutationFreeGet' => [
+                '<?php
+                    /**
+                     * @property ?string $b
+                     */
+                    class A {
+                        public function __get(string $key) {return "";}
+                        public function __set(string $key, string $value): void {}
+                    }
+
+                    $a = new A;
+
+                    /** @psalm-assert-if-true  string $arg->b */
+                    function assertString(A $arg): bool {return $arg->b !== null;}
+
+                    if (assertString($a)) {
+                        requiresString($a->b);
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+                'error_message' => 'A::__get is not mutation-free',
+            ],
+            'randomValueFromMagicGetterIsNotMutationFree' => [
+                '<?php
+                    /**
+                     * @property int<1, 10> $b
+                     */
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function __get(string $key)
+                        {
+                            if ($key === "b") {
+                                return random_int(1, 10);
+                            }
+
+                            return null;
+                        }
+
+                        public function __set(string $key, string $value): void
+                        {
+                            throw new \Exception("Setting not supported!");
                         }
                     }
 
-                    /** @psalm-assert-if-false !null $item->b */
-                    function c(\Aclass $item): bool {
-                        return null === $item->b;
+                    $a = new A;
+
+                    /** @psalm-assert-if-true =1 $arg->b */
+                    function assertBIsOne(A $arg): bool
+                    {
+                        return $arg->b === 1;
                     }
 
-                    /** @var \Aclass $a */
-                    if (!c($a)) {
-                        echo strlen($a->b);
-                    }',
-                'error_message' => 'InvalidDocblock',
+                    if (assertBIsOne($a)) {
+                        takesOne($a->b);
+                    }
+
+                    /** @param 1 $_arg */
+                    function takesOne(int $_arg): void {}
+                ',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40',
             ],
         ];
     }
