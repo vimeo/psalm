@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -536,8 +535,7 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TString
-            && ($input_type_part instanceof TNumericString
-                || $input_type_part instanceof THtmlEscapedString)
+            && $input_type_part instanceof TNumericString
         ) {
             if ($container_type_part instanceof TLiteralString) {
                 if (is_numeric($container_type_part->value) && $atomic_comparison_result) {
@@ -551,8 +549,7 @@ class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TString
-            && ($container_type_part instanceof TNumericString
-                || $container_type_part instanceof THtmlEscapedString)
+            && $container_type_part instanceof TNumericString
         ) {
             if ($input_type_part instanceof TLiteralString) {
                 return is_numeric($input_type_part->value);

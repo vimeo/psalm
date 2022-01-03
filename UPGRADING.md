@@ -36,7 +36,6 @@
     - `Psalm\Type\Atomic\TEnumCase`
     - `Psalm\Type\Atomic\TFalse`
     - `Psalm\Type\Atomic\TGenericObject`
-    - `Psalm\Type\Atomic\THtmlEscapedString`
     - `Psalm\Type\Atomic\TIntMask`
     - `Psalm\Type\Atomic\TIntMaskOf`
     - `Psalm\Type\Atomic\TIntRange`

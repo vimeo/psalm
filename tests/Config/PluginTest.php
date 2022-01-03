@@ -293,55 +293,6 @@ class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testEchoAnalyzerPluginWithEscapedString(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
-                    </plugins>
-                    <issueHandlers>
-                        <UndefinedGlobalVariable errorLevel="suppress" />
-                        <MixedArgument errorLevel="suppress" />
-                    </issueHandlers>
-                </psalm>'
-            )
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                /**
-                 * @param mixed $s
-                 * @return html-escaped-string
-                 */
-                function escapeHtml($s) : string {
-                    if (!is_scalar($s)) {
-                        throw new \UnexpectedValueException("bad value passed to escape");
-                    }
-                    /** @var html-escaped-string */
-                    return htmlentities((string) $s);
-                }
-            ?>
-            Some text
-            <?= escapeHtml($unsafe) ?>'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
     public function testFileAnalyzerPlugin(): void
     {
         require_once __DIR__ . '/Plugin/FilePlugin.php';
