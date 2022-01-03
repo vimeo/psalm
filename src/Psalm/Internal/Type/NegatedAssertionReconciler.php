@@ -77,7 +77,6 @@ class NegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
-
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($assertion === 'false' && isset($existing_var_atomic_types['bool'])) {

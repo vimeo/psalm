@@ -159,7 +159,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<array<int, string>>',
+                    '$foo' => 'non-empty-list<non-empty-list<string>>',
                 ],
             ],
             'implicit3dIntArrayCreation' => [
@@ -167,7 +167,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<array<int, string>>>',
+                    '$foo' => 'non-empty-list<list<non-empty-list<string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -175,7 +175,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<list<array<int, string>>>>',
+                    '$foo' => 'non-empty-list<list<list<non-empty-list<string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
@@ -1008,7 +1008,7 @@ class ArrayAssignmentTest extends TestCase
                     $b = (array) null;',
                 'assertions' => [
                     '$a' => 'array{0?: int, 1?: string}',
-                    '$b' => 'array<empty, empty>',
+                    '$b' => 'array<never, never>',
                 ],
             ],
             'getOnCoercedArray' => [
@@ -1124,7 +1124,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesList($a);',
                 'assertions' => [
-                    '$a' => 'array<empty, empty>'
+                    '$a' => 'array<never, never>'
                 ],
             ],
             'listCreatedInSingleStatementUsedAsArray' => [

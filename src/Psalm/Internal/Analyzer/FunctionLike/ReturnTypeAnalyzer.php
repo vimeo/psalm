@@ -237,12 +237,12 @@ class ReturnTypeAnalyzer
         }
 
         $number_of_types = count($inferred_return_type_parts);
-        // we filter TNever and TEmpty that have no bearing on the return type
+        // we filter TNever that have no bearing on the return type
         if ($number_of_types > 1) {
             $inferred_return_type_parts = array_filter(
                 $inferred_return_type_parts,
                 static function (Union $union_type): bool {
-                    return !($union_type->isNever() || $union_type->isEmpty());
+                    return !$union_type->isNever();
                 }
             );
         }
@@ -490,7 +490,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if ($inferred_return_type->hasMixed() || $inferred_return_type->isEmpty()) {
+            if ($inferred_return_type->hasMixed()) {
                 if (IssueBuffer::accepts(
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .

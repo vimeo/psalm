@@ -19,7 +19,6 @@ use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
@@ -35,6 +34,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -508,13 +508,15 @@ class SimpleAssertionReconciler extends Reconciler
 
             if (empty($existing_var_type->getAtomicTypes())) {
                 $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
-                return Type::getEmpty();
+                return Type::getNever();
             }
         }
 
-        if ($existing_var_type->hasType('empty')) {
-            $existing_var_type->removeType('empty');
-            $existing_var_type->addType(new TMixed($inside_loop));
+        if ($inside_loop) {
+            if ($existing_var_type->hasType('never')) {
+                $existing_var_type->removeType('never');
+                $existing_var_type->addType(new TMixed(true));
+            }
         }
 
         $existing_var_type->from_property = false;
@@ -550,7 +552,7 @@ class SimpleAssertionReconciler extends Reconciler
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || ($array_atomic_type->count < $min_count)
                 ) {
-                    if ($array_atomic_type->getId() === 'array<empty, empty>') {
+                    if ($array_atomic_type->getId() === 'array<never, never>') {
                         $existing_var_type->removeType('array');
                     } else {
                         $non_empty_array = new TNonEmptyArray(
@@ -723,7 +725,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getEmpty();
+        return Type::getNever();
     }
 
     /**
@@ -922,7 +924,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1020,7 +1022,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1099,7 +1101,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1174,7 +1176,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1266,7 +1268,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1359,7 +1361,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1416,7 +1418,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1777,7 +1779,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1872,7 +1874,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -1925,9 +1927,7 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                 }
 
-                if ($type->type_params[0]->isEmpty()
-                    || $type->type_params[1]->isEmpty()
-                ) {
+                if ($type->isEmptyArray()) {
                     //we allow an empty array to pass as a list. We keep the type as empty array though (more precise)
                     $array_types[] = $type;
                 }
@@ -1977,7 +1977,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         return $existing_var_type->from_docblock
             ? Type::getMixed()
-            : Type::getEmpty();
+            : Type::getNever();
     }
 
     /**
@@ -2265,7 +2265,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 2;
 
-            return Type::getEmpty();
+            return Type::getNever();
         }
 
         if (!$did_remove_type) {
@@ -2297,8 +2297,8 @@ class SimpleAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array');
             $existing_var_type->addType(new TArray(
                 [
-                    new Union([new TEmpty()]),
-                    new Union([new TEmpty()]),
+                    new Union([new TNever()]),
+                    new Union([new TNever()]),
                 ]
             ));
         }

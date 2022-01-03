@@ -23,13 +23,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
@@ -232,7 +232,7 @@ class Reconciler
 
                     /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
                     if (!$result_type_candidate->getAtomicTypes()) {
-                        $result_type_candidate->addType(new TEmpty);
+                        $result_type_candidate->addType(new TNever());
                     }
 
                     $orred_type = Type::combineUnionTypes(
@@ -249,7 +249,7 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
-            if (!$did_type_exist && $result_type->isEmpty()) {
+            if (!$did_type_exist && $result_type->isNever()) {
                 continue;
             }
 
@@ -654,7 +654,7 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
-                        } elseif ($existing_key_type_part instanceof TEmpty
+                        } elseif ($existing_key_type_part instanceof TNever
                             || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)
                         ) {
@@ -1018,7 +1018,7 @@ class Reconciler
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
                 if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
-                        && !$base_atomic_type->type_params[1]->isEmpty())
+                        && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
@@ -1035,7 +1035,7 @@ class Reconciler
                             null
                         );
 
-                        if (!$previous_key_type->isEmpty()) {
+                        if (!$previous_key_type->isNever()) {
                             $base_atomic_type->previous_key_type = $previous_key_type;
                         }
                         $base_atomic_type->previous_value_type = $previous_value_type;

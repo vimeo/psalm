@@ -1553,7 +1553,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         if ($suggested_type && !$suggested_type->isNull()) {
             $message .= ' - consider ' . str_replace(
-                ['<array-key, mixed>', '<empty, empty>'],
+                ['<array-key, mixed>', '<never, never>'],
                 '',
                 (string)$suggested_type
             );

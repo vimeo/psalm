@@ -178,7 +178,7 @@ class ReturnAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
 
-                    $stmt_type = Type::getEmpty();
+                    $stmt_type = Type::getNever();
                 }
 
                 if ($stmt_type->isVoid()) {

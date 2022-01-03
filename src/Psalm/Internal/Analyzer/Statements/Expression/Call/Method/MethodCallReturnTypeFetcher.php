@@ -588,7 +588,7 @@ class MethodCallReturnTypeFetcher
                     } else {
                         $template_result->lower_bounds[$template_type->param_name] = [
                             ($template_type->defining_class) => [
-                                new TemplateBound(Type::getEmpty())
+                                new TemplateBound(Type::getNever())
                             ]
                         ];
                     }

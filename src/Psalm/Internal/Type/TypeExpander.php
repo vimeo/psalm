@@ -14,7 +14,6 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
@@ -827,13 +826,12 @@ class TypeExpander
             );
 
             $number_of_types = count($all_conditional_return_types);
-            // we filter TNever and TEmpty that have no bearing on the return type
+            // we filter TNever that have no bearing on the return type
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
                     static function (Atomic $atomic_type): bool {
-                        return !($atomic_type instanceof TEmpty
-                            || $atomic_type instanceof TNever);
+                        return !$atomic_type instanceof TNever;
                     }
                 );
             }

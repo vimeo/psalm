@@ -547,7 +547,7 @@ class ArrayAnalyzer
                         && count($unpacked_atomic_type->type_params) === 2
                 )) {
                     /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
-                    if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
+                    if ($unpacked_atomic_type->type_params[1]->isNever()) {
                         continue;
                     }
                     $array_creation_info->can_create_objectlike = false;
@@ -579,7 +579,7 @@ class ArrayAnalyzer
                         )
                     );
                 } elseif ($unpacked_atomic_type instanceof TList) {
-                    if ($unpacked_atomic_type->type_param->isEmpty()) {
+                    if ($unpacked_atomic_type->type_param->isNever()) {
                         continue;
                     }
                     $array_creation_info->can_create_objectlike = false;

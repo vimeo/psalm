@@ -274,7 +274,7 @@ class EnumTest extends TestCase
                     $_z = Status::cases();
                 ',
                 'assertions' => [
-                    '$_z===' => 'array<empty, empty>',
+                    '$_z===' => 'array<never, never>',
                 ],
                 [],
                 '8.1',

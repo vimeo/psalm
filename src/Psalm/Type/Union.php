@@ -1048,11 +1048,6 @@ class Union implements TypeNode
             && ($single_type->value === 'Generator');
     }
 
-    public function isEmpty(): bool
-    {
-        return isset($this->types['empty']) && count($this->types) === 1;
-    }
-
     public function substitute(Union $old_type, ?Union $new_type = null): void
     {
         if ($this->hasMixed() && !$this->isEmptyMixed()) {

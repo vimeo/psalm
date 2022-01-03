@@ -91,4 +91,9 @@ class TArray extends Atomic
 
         return $this->toNamespacedString(null, [], null, false);
     }
+
+    public function isEmptyArray(): bool
+    {
+        return $this->type_params[1]->isNever();
+    }
 }

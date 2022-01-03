@@ -25,7 +25,6 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -33,6 +32,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -185,7 +185,7 @@ class ConstantTypeResolver
             $auto_key = 0;
 
             if (!$c->entries) {
-                return new TArray([Type::getEmpty(), Type::getEmpty()]);
+                return new TArray([Type::getNever(), Type::getNever()]);
             }
 
             $is_list = true;
@@ -199,7 +199,7 @@ class ConstantTypeResolver
                         $visited_constant_ids + [$c_id => true]
                     );
 
-                    if ($spread_array instanceof TArray && $spread_array->type_params[1]->isEmpty()) {
+                    if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
                         continue;
                     }
 
@@ -255,8 +255,8 @@ class ConstantTypeResolver
 
             if (empty($properties)) {
                 $resolved_type = new TArray([
-                    new Union([new TEmpty()]),
-                    new Union([new TEmpty()]),
+                    new Union([new TNever()]),
+                    new Union([new TNever()]),
                 ]);
             } else {
                 $resolved_type = new TKeyedArray($properties);

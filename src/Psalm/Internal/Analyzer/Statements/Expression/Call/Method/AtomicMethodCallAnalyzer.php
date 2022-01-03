@@ -27,12 +27,12 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -571,7 +571,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             case TTemplateParam::class:
             case TEmptyMixed::class:
-            case TEmpty::class:
+            case TNever::class:
             case TMixed::class:
             case TNonEmptyMixed::class:
             case TObject::class:

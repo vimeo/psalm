@@ -2506,7 +2506,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
                 [
-                    '$a' => 'ArrayCollection<empty, empty>'
+                    '$a' => 'ArrayCollection<never, never>'
                 ]
             ],
             'newGenericBecomesPropertyTypeValidArg' => [

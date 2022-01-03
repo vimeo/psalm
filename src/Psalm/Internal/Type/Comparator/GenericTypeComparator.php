@@ -94,7 +94,7 @@ class GenericTypeComparator
 
             $container_param = $container_type_part->type_params[$i];
 
-            if ($input_param->isEmpty()) {
+            if ($input_param->isNever()) {
                 if ($atomic_comparison_result) {
                     if (!$atomic_comparison_result->replacement_atomic_type) {
                         $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;

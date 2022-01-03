@@ -136,7 +136,7 @@ function array_flip(array $array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : TKey|null)
+ * @return (TArray is array<never, never> ? null : TKey|null)
  * @psalm-pure
  * @psalm-ignore-nullable-return
  */
@@ -150,7 +150,7 @@ function key($array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_first($array)
@@ -163,7 +163,7 @@ function array_key_first($array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? TKey : TKey|null))
  * @psalm-pure
  */
 function array_key_last($array)

@@ -75,9 +75,9 @@ class ArithmeticOpAnalyzer
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
-        if ($left_type && $left_type->isEmpty()) {
+        if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
-        } elseif ($right_type && $right_type->isEmpty()) {
+        } elseif ($right_type && $right_type->isNever()) {
             $right_type = $left_type;
         }
 
@@ -896,7 +896,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 % $operand2;
@@ -916,7 +916,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 / $operand2;
@@ -1269,9 +1269,11 @@ class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true, 0);
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
                 $new_result_type = Type::getInt(true, 1);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
             } else {
-                //technically could be a float(INF)...
-                $new_result_type = Type::getEmpty();
+                $new_result_type = new Union([new TFloat(), new TLiteralInt(0), new TLiteralInt(1)]);
+                $new_result_type->from_calculation = true;
             }
         } else {
             //$left_type_part may be a mix of positive, negative and 0
@@ -1305,7 +1307,7 @@ class ArithmeticOpAnalyzer
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
             //if the second operand is a literal, we can be pretty detailed
             if ($right_type_part->max_bound === 0) {
-                $new_result_type = Type::getEmpty();
+                $new_result_type = Type::getNever();
             } else {
                 if ($left_type_part->isPositiveOrZero()) {
                     if ($right_type_part->isPositive()) {

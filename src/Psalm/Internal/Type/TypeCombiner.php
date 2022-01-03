@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -78,8 +77,8 @@ class TypeCombiner
      *  - so `int + string = int|string`
      *  - so `array<int> + array<string> = array<int|string>`
      *  - and `array<int> + string = array<int>|string`
-     *  - and `array<empty> + array<empty> = array<empty>`
-     *  - and `array<string> + array<empty> = array<string>`
+     *  - and `array<never> + array<never> = array<never>`
+     *  - and `array<string> + array<never> = array<string>`
      *  - and `array + array<string> = array<mixed>`
      *
      * @param  non-empty-list<Atomic>    $types
@@ -336,20 +335,17 @@ class TypeCombiner
             $combination->value_types += $combination->named_object_types;
         }
 
-        $has_empty = (int) isset($combination->value_types['empty']);
-        $has_never = false;
+        $has_never = isset($combination->value_types['never']);
 
         foreach ($combination->value_types as $type) {
             if ($type instanceof TMixed
                 && $combination->mixed_from_loop_isset
-                && (count($combination->value_types) > (1 + $has_empty) || count($new_types) > $has_empty)
+                && (count($combination->value_types) > (1 + (int) $has_never) || count($new_types) > (int) $has_never)
             ) {
                 continue;
             }
 
-            if (($type instanceof TEmpty || $type instanceof TNever)
-                && (count($combination->value_types) > 1 || count($new_types))
-            ) {
+            if ($type instanceof TNever && (count($combination->value_types) > 1 || count($new_types))) {
                 $has_never = true;
                 continue;
             }
@@ -552,7 +548,7 @@ class TypeCombiner
                 $combination->array_always_filled = false;
             }
 
-            if (!$type->type_params[1]->isEmpty()) {
+            if (!$type->isEmptyArray()) {
                 $combination->all_arrays_lists = false;
                 $combination->all_arrays_class_string_maps = false;
             }
@@ -1330,11 +1326,11 @@ class TypeCombiner
         }
 
         if (!$combination->array_type_params
-            || $combination->array_type_params[1]->isEmpty()
+            || $combination->array_type_params[1]->isNever()
         ) {
             if (!$overwrite_empty_array
                 && ($combination->array_type_params
-                    && ($combination->array_type_params[1]->isEmpty()
+                    && ($combination->array_type_params[1]->isNever()
                         || $combination->array_type_params[1]->isMixed()))
             ) {
                 foreach ($combination->objectlike_entries as $objectlike_entry) {

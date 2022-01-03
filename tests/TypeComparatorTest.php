@@ -114,19 +114,19 @@ class TypeComparatorTest extends TestCase
             ],
             'listAcceptsEmptyArray' => [
                 'list',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayAcceptsEmptyArray' => [
                 'array',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed1AcceptsEmptyArray' => [
                 'array{foo?: string}',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
                 'array{foo?: string}&array<string, mixed>',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'Lowercase-stringAndCallable-string' => [
                 'lowercase-string',

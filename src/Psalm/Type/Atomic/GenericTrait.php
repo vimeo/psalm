@@ -99,7 +99,7 @@ trait GenericTrait
 
             $value_type = $this->type_params[1];
 
-            if ($value_type->isMixed() || $value_type->isEmpty()) {
+            if ($value_type->isMixed() || $value_type->isNever()) {
                 return $base_value;
             }
 

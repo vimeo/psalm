@@ -203,21 +203,27 @@ class IntRangeTest extends TestCase
                     $h = $d % $e;
                     $i = -3 % $a;
                     $j = -3 % $b;
+                    /** @psalm-suppress NoValue */
                     $k = -3 % $c;
                     $l = -3 % $d;
                     $m = 3 % $a;
                     $n = 3 % $b;
+                    /** @psalm-suppress NoValue */
                     $o = 3 % $c;
                     $p = 3 % $d;
+                    /** @psalm-suppress NoValue */
                     $q = $a % 0;
                     $r = $a % 3;
                     $s = $a % -3;
+                    /** @psalm-suppress NoValue */
                     $t = $b % 0;
                     $u = $b % 3;
                     $v = $b % -3;
+                    /** @psalm-suppress NoValue */
                     $w = $c % 0;
                     $x = $c % 3;
                     $y = $c % -3;
+                    /** @psalm-suppress NoValue */
                     $z = $d % 0;
                     $aa = $d % 3;
                     $ab = $d % -3;
@@ -228,22 +234,22 @@ class IntRangeTest extends TestCase
                     '$h===' => 'int<-4, 4>',
                     '$i===' => 'int<min, 0>',
                     '$j===' => 'int<min, 0>',
-                    '$k===' => 'empty',
+                    '$k===' => 'never',
                     '$l===' => 'int',
                     '$m===' => 'int<0, max>',
                     '$n===' => 'int<min, 0>',
-                    '$o===' => 'empty',
+                    '$o===' => 'never',
                     '$p===' => 'int',
-                    '$q===' => 'empty',
+                    '$q===' => 'never',
                     '$r===' => 'int<0, 2>',
                     '$s===' => 'int<-2, 0>',
-                    '$t===' => 'empty',
+                    '$t===' => 'never',
                     '$u===' => 'int<-2, 0>',
                     '$v===' => 'int<2, 0>',
-                    '$w===' => 'empty',
+                    '$w===' => 'never',
                     '$x===' => 'int<0, 2>',
                     '$y===' => 'int<-2, 0>',
-                    '$z===' => 'empty',
+                    '$z===' => 'never',
                     '$aa===' => 'int<-2, 2>',
                     '$ab===' => 'int<-2, 2>',
                 ]
@@ -285,9 +291,9 @@ class IntRangeTest extends TestCase
                 ',
                 'assertions' => [
                     '$e===' => '0',
-                    '$f===' => 'empty',
+                    '$f===' => 'float',
                     '$g===' => '1',
-                    '$h===' => 'empty',
+                    '$h===' => '0|1|float',
                     '$i===' => 'int',
                     '$j===' => 'float',
                     '$k===' => '-1',
@@ -304,7 +310,7 @@ class IntRangeTest extends TestCase
                     '$v===' => 'float',
                     '$w===' => '1',
                     '$x===' => '0',
-                    '$y===' => 'empty',
+                    '$y===' => 'float',
                     '$z===' => '1',
                     '$aa===' => 'int<1, max>',
                     '$ab===' => 'float',

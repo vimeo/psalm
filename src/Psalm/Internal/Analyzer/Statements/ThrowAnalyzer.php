@@ -85,7 +85,7 @@ class ThrowAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
-            $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
         }
 
         return true;

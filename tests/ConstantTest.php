@@ -303,7 +303,7 @@ class ConstantTest extends TestCase
                         public const ARR = [...parent::ARR];
                     }
 
-                    /** @param array<empty, empty> $arg */
+                    /** @param array<never, never> $arg */
                     function foo(array $arg): void {}
                     foo(C::ARR);
                 ',

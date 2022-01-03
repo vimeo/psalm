@@ -18,7 +18,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -31,6 +30,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -75,7 +75,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     ): ?Union {
         if ($assertion === 'isset') {
             if ($existing_var_type->possibly_undefined) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             if (!$existing_var_type->isNullable()
@@ -128,14 +128,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
                 return $existing_var_type->from_docblock
                     ? Type::getNull()
-                    : Type::getEmpty();
+                    : Type::getNever();
             }
 
             return Type::getNull();
         }
 
         if ($assertion === 'array-key-exists') {
-            return Type::getEmpty();
+            return Type::getNever();
         }
 
         if (strpos($assertion, 'in-array-') === 0) {
@@ -483,14 +483,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
 
                 $existing_var_type->removeType('array');
-            } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
+            } elseif ($array_atomic_type->getId() !== 'array<never, never>') {
                 $did_remove_type = true;
 
                 if (!$min_count) {
                     $existing_var_type->addType(new TArray(
                         [
-                            new Union([new TEmpty]),
-                            new Union([new TEmpty]),
+                            new Union([new TNever()]),
+                            new Union([new TNever()]),
                         ]
                     ));
                 }
@@ -714,7 +714,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 2;
 
-            return Type::getEmpty();
+            return Type::getNever();
         }
 
         if (!$did_remove_type) {

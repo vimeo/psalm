@@ -516,7 +516,7 @@ class NewAnalyzer extends CallAnalyzer
                         );
                     } else {
                         if ($fq_class_name === 'SplObjectStorage') {
-                            $generic_param_type = Type::getEmpty();
+                            $generic_param_type = Type::getNever();
                         } else {
                             $generic_param_type = clone array_values($base_type)[0];
                         }

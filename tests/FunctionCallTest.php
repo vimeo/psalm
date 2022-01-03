@@ -188,7 +188,7 @@ class FunctionCallTest extends TestCase
                         exit;
                     }',
                     'assertions' => [
-                        '$a' => 'array<empty, empty>',
+                        '$a' => 'array<never, never>',
                     ],
             ],
             'byRefAfterCallable' => [
@@ -1166,7 +1166,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     /**
                      * @psalm-pure
-                     * @param array<empty, empty> $x
+                     * @param array<never, never> $x
                      * @return 0
                      */
                     function example($x) : int {

@@ -27,15 +27,13 @@ The classes are as follows:
 
 `TNull` - denotes the `null` type
 
-`TNever` - denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or terminating (like the builtin `exit()`).
+`TNever` - denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or terminating (like the builtin `exit()`). Also used for union types that can have no possible types (impossible intersections for example).  Empty arrays `[]` have the type `array<never, never>`.
 
 `TMixed` - denotes the `mixed` type, used when you don’t know the type of an expression.
 
 `TNonEmptyMixed `- as above, but not empty. Generated for `$x` inside the `if` statement `if ($x) {...}` when `$x` is `mixed` outside.
 
 `TEmptyMixed` - as above, but empty. Generated for `$x` inside the `if` statement `if (!$x) {...}` when `$x` is `mixed` outside.
-
-`TEmpty` - denotes the `empty` type, used to describe a type corresponding to no value whatsoever. Empty arrays `[]` have the type `array<empty, empty>`.
 
 `TIterable` - denotes the [`iterable` type](https://www.php.net/manual/en/language.types.iterable.php) (which can also result from an `is_iterable` check).
 

@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -306,16 +305,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @deprecated will be removed in Psalm 5. See getNever to retrieve a TNever that replaces TEmpty
-     */
-    public static function getEmpty(): Union
-    {
-        $type = new TEmpty();
-
-        return new Union([$type]);
-    }
-
     public static function getNever(): Union
     {
         $type = new TNever();
@@ -378,8 +367,8 @@ abstract class Type
     {
         $array_type = new TArray(
             [
-                new Union([new TEmpty]),
-                new Union([new TEmpty]),
+                new Union([new TNever()]),
+                new Union([new TNever()]),
             ]
         );
 

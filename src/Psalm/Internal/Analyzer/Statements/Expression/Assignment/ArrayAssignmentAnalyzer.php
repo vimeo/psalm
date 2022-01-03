@@ -739,7 +739,7 @@ class ArrayAssignmentAnalyzer
                 return;
             }
 
-            if ($child_stmt_var_type->isEmpty()) {
+            if ($child_stmt_var_type->isNever()) {
                 $child_stmt_var_type = Type::getEmptyArray();
                 $statements_analyzer->node_data->setType($child_stmt->var, $child_stmt_var_type);
             }

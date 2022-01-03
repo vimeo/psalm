@@ -109,10 +109,10 @@ class TypeCombinationTest extends TestCase
                     'null',
                 ],
             ],
-            'mixedOrEmpty' => [
+            'mixedOrNever' => [
                 'mixed',
                 [
-                    'empty',
+                    'never',
                     'mixed',
                 ],
             ],
@@ -124,10 +124,10 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'mixedOrEmptyArray' => [
-                'array<empty, empty>|mixed',
+                'array<never, never>|mixed',
                 [
                     'mixed',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'falseTrueToBool' => [
@@ -197,16 +197,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'emptyArrays' => [
-                'array<empty, empty>',
+                'array<never, never>',
                 [
-                    'array<empty,empty>',
-                    'array<empty,empty>',
+                    'array<never, never>',
+                    'array<never, never>',
                 ],
             ],
             'arrayStringOrEmptyArray' => [
                 'array<array-key, string>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<string>',
                 ],
             ],
@@ -227,7 +227,7 @@ class TypeCombinationTest extends TestCase
             'arrayMixedOrEmpty' => [
                 'array<array-key, mixed>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<mixed>',
                 ],
             ],
@@ -309,16 +309,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayObjectAndParamsWithEmptyArray' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
                     'ArrayObject<int, string>',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'emptyArrayWithArrayObjectAndParams' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
-                    'array<empty, empty>',
+                    'array<never, never>',
                     'ArrayObject<int, string>',
                 ],
             ],
