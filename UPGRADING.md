@@ -120,4 +120,8 @@
    `Psalm\Codebase::$analysis_php_version_id`.
  - [BC] Property `Psalm\Codebase::$php_minor_version` was removed, use
    `Psalm\Codebase::$analysis_php_version_id`.
-
+ - [BC] Class `Psalm\Type\Atomic\TEmpty` was removed
+ - [BC] Method `Psalm\Type\Union::isEmpty()` was removed
+ - [BC] Property `Psalm\Config::$allow_phpstorm_generics` was removed
+ - [BC] Property `Psalm\Config::$exit_functions` was removed
+ - [BC] Method `Psalm\Type::getEmpty()` was removed
