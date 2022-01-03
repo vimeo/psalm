@@ -38,15 +38,6 @@ abstract class CodeIssue
         $this->message = $message;
     }
 
-    /**
-     * @deprecated going to be removed in Psalm 5
-     * @psalm-suppress PossiblyUnusedMethod
-     */
-    public function getLocation(): CodeLocation
-    {
-        return $this->code_location;
-    }
-
     public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
@@ -67,24 +58,6 @@ abstract class CodeIssue
     public function getFilePath(): string
     {
         return $this->code_location->file_path;
-    }
-
-    /**
-     * @deprecated going to be removed in Psalm 5
-     * @psalm-suppress PossiblyUnusedMethod for convenience
-     */
-    public function getFileName(): string
-    {
-        return $this->code_location->file_name;
-    }
-
-    /**
-     * @deprecated going to be removed in Psalm 5
-     * @psalm-suppress PossiblyUnusedMethod
-     */
-    public function getMessage(): string
-    {
-        return $this->message;
     }
 
     public static function getIssueType(): string
