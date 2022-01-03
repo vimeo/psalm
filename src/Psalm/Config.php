@@ -5,6 +5,7 @@ namespace Psalm;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
+use DOMAttr;
 use DOMDocument;
 use DomElement;
 use InvalidArgumentException;
@@ -762,6 +763,58 @@ class Config
         return $offset;
     }
 
+    private static function processDeprecatedAttribute(
+        DOMAttr $attribute,
+        string $file_contents,
+        self $config,
+        string $config_path
+    ): void {
+        $line = $attribute->getLineNo();
+        assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
+
+        $offset = self::lineNumberToByteOffset($file_contents, $line);
+        $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
+        $attribute_end = $attribute_start + strlen($attribute->name) - 1;
+
+        $config->config_issues[] = new ConfigIssue(
+            'Attribute "' . $attribute->name . '" is deprecated '
+            . 'and is going to be removed in the next major version',
+            new Raw(
+                $file_contents,
+                $config_path,
+                basename($config_path),
+                $attribute_start,
+                $attribute_end
+            )
+        );
+    }
+
+    private static function processDeprecatedElement(
+        DomElement $deprecated_element_xml,
+        string $file_contents,
+        self $config,
+        string $config_path
+    ): void {
+        $line = $deprecated_element_xml->getLineNo();
+        assert($line > 0);
+
+        $offset = self::lineNumberToByteOffset($file_contents, $line);
+        $element_start = strpos($file_contents, $deprecated_element_xml->localName, $offset) ?: 0;
+        $element_end = $element_start + strlen($deprecated_element_xml->localName) - 1;
+
+        $config->config_issues[] = new ConfigIssue(
+            'Element "' . $deprecated_element_xml->localName . '" is deprecated '
+            . 'and is going to be removed in the next major version',
+            new Raw(
+                $file_contents,
+                $config_path,
+                basename($config_path),
+                $element_start,
+                $element_end
+            )
+        );
+    }
+
     private static function processConfigDeprecations(
         self $config,
         DOMDocument $dom_document,
@@ -770,15 +823,11 @@ class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 5
-        $deprecated_attributes = [
-            'allowCoercionFromStringToClassConst',
-            'allowPhpStormGenerics',
-        ];
+        // Attributes to be removed in Psalm 6
+        $deprecated_attributes = [];
 
-        $deprecated_elements = [
-            'exitFunctions',
-        ];
+        /** @var list<string> */
+        $deprecated_elements = [];
 
         $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
         assert($psalm_element_item !== null);
@@ -786,24 +835,7 @@ class Config
 
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
-                $line = $attribute->getLineNo();
-                assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
-
-                $offset = self::lineNumberToByteOffset($file_contents, $line);
-                $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
-                $attribute_end = $attribute_start + strlen($attribute->name) - 1;
-
-                $config->config_issues[] = new ConfigIssue(
-                    'Attribute "' . $attribute->name . '" is deprecated '
-                    . 'and is going to be removed in the next major version',
-                    new Raw(
-                        $file_contents,
-                        $config_path,
-                        basename($config_path),
-                        $attribute_start,
-                        $attribute_end
-                    )
-                );
+                self::processDeprecatedAttribute($attribute, $file_contents, $config, $config_path);
             }
         }
 
@@ -814,25 +846,7 @@ class Config
             );
             if ($deprecated_elements_xml->length) {
                 $deprecated_element_xml = $deprecated_elements_xml->item(0);
-                assert($deprecated_element_xml !== null);
-                $line = $deprecated_element_xml->getLineNo();
-                assert($line > 0);
-
-                $offset = self::lineNumberToByteOffset($file_contents, $line);
-                $element_start = strpos($file_contents, $deprecated_element, $offset) ?: 0;
-                $element_end = $element_start + strlen($deprecated_element) - 1;
-
-                $config->config_issues[] = new ConfigIssue(
-                    'Element "' . $deprecated_element . '" is deprecated '
-                    . 'and is going to be removed in the next major version',
-                    new Raw(
-                        $file_contents,
-                        $config_path,
-                        basename($config_path),
-                        $element_start,
-                        $element_end
-                    )
-                );
+                self::processDeprecatedElement($deprecated_element_xml, $file_contents, $config, $config_path);
             }
         }
     }
