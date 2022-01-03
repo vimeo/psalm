@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Special type, specifically for consumption by plugins.
+ * @deprecated going to be removed in Psalm 5. Use taints instead.
  */
 class THtmlEscapedString extends TString
 {
