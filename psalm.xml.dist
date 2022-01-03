@@ -62,17 +62,6 @@
                 <directory name="tests" />
             </errorLevel>
         </DeprecatedMethod>
-        <DeprecatedClass>
-            <errorLevel type="suppress">
-                <referencedClass name="Psalm\Plugin\Hook\*" />
-            </errorLevel>
-        </DeprecatedClass>
-
-        <DeprecatedInterface>
-            <errorLevel type="suppress">
-                <referencedClass name="Psalm\Plugin\Hook\*" />
-            </errorLevel>
-        </DeprecatedInterface>
 
         <UnusedParam>
             <errorLevel type="suppress">
@@ -92,7 +81,6 @@
                 <directory name="src/Psalm/Internal/Fork" />
                 <directory name="src/Psalm/Node" />
                 <file name="src/Psalm/Plugin/Shepherd.php" />
-                <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
         </UnusedClass>
 
