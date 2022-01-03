@@ -14,6 +14,8 @@ use function array_map;
  * Visitor cloning all nodes and linking to the original nodes using an attribute.
  *
  * This visitor is required to perform format-preserving pretty prints.
+ *
+ * @internal
  */
 class CloningVisitor extends NodeVisitorAbstract
 {

@@ -30,6 +30,9 @@ use function array_shift;
 use function array_values;
 use function strpos;
 
+/**
+ * @internal
+ */
 class TemplateInferredTypeReplacer
 {
     /**

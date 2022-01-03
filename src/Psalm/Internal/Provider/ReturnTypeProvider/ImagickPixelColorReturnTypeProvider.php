@@ -14,6 +14,9 @@ use Psalm\Type\Union;
 use function assert;
 use function in_array;
 
+/**
+ * @internal
+ */
 class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

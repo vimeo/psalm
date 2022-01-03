@@ -67,6 +67,8 @@ use function substr;
  * This class receives a known type and an assertion (probably coming from AssertionFinder). The goal is to refine
  * the known type using the assertion. For example: old type is `int` assertion is `>5` result is `int<6, max>`.
  * Complex reconciliation takes part in AssertionReconciler if this class couldn't handle the reconciliation
+ *
+ * @internal
  */
 class SimpleAssertionReconciler extends Reconciler
 {

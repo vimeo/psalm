@@ -6,6 +6,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 abstract class UnresolvedBinaryOp extends UnresolvedConstantComponent
 {

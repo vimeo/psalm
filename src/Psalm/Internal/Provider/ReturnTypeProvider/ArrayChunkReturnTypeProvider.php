@@ -15,6 +15,9 @@ use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

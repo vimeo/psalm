@@ -16,6 +16,8 @@ use function Amp\call;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {

@@ -52,6 +52,9 @@ require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 
+/**
+ * @internal
+ */
 final class LanguageServer
 {
     /** @param array<int,string> $argv */

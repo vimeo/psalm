@@ -84,6 +84,9 @@ use function usort;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
+/**
+ * @internal
+ */
 class ClassLikeNodeScanner
 {
     /**

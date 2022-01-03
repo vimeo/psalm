@@ -5,6 +5,9 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TypeComparisonResult
 {
     /**

@@ -15,6 +15,9 @@ use function strlen;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 abstract class DataFlowGraph
 {
     /** @var array<string, array<string, Path>> */

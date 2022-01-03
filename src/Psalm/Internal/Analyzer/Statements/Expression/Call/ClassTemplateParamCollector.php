@@ -16,6 +16,9 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 
+/**
+ * @internal
+ */
 class ClassTemplateParamCollector
 {
     /**

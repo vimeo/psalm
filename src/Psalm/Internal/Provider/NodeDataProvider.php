@@ -16,6 +16,9 @@ use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 use SplObjectStorage;
 
+/**
+ * @internal
+ */
 class NodeDataProvider implements NodeTypeProvider
 {
     /** @var SplObjectStorage<Node, Union> */

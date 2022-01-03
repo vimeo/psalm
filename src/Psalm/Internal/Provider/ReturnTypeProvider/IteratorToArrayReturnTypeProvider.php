@@ -20,6 +20,9 @@ use function array_merge;
 use function array_shift;
 use function assert;
 
+/**
+ * @internal
+ */
 class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

@@ -42,6 +42,8 @@ use const PHP_INT_MAX;
 
 /**
  * This class takes a statement and return its type by analyzing each part of the statement if necessary
+ *
+ * @internal
  */
 class SimpleTypeInferer
 {

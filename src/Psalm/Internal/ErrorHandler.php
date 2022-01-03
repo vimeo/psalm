@@ -16,6 +16,9 @@ use const E_ALL;
 use const E_STRICT;
 use const STDERR;
 
+/**
+ * @internal
+ */
 final class ErrorHandler
 {
     /** @var bool */

@@ -4,6 +4,9 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class AssignedProperty
 {
     /**

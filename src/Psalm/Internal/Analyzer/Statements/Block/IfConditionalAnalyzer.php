@@ -28,6 +28,9 @@ use function array_merge;
 use function array_values;
 use function count;
 
+/**
+ * @internal
+ */
 class IfConditionalAnalyzer
 {
     public static function analyze(

@@ -18,6 +18,9 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\IssueBuffer;
 
+/**
+ * @internal
+ */
 abstract class RuntimeCaches
 {
     public static function clearAll(): void

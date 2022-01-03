@@ -18,6 +18,9 @@ use function in_array;
 use function mt_rand;
 use function substr;
 
+/**
+ * @internal
+ */
 class Algebra
 {
     /**

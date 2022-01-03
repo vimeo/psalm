@@ -33,6 +33,9 @@ use function mt_rand;
 use function reset;
 use function spl_object_id;
 
+/**
+ * @internal
+ */
 class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

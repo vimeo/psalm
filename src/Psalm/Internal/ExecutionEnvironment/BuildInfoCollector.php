@@ -16,6 +16,8 @@ use function strtotime;
  * Environment variables collector for CI environment.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ *
+ * @internal
  */
 class BuildInfoCollector
 {

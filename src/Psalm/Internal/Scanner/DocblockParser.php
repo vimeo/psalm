@@ -19,6 +19,8 @@ use const PREG_OFFSET_CAPTURE;
 
 /**
  * This class will parse Docblocks in order to extract known tags from them
+ *
+ * @internal
  */
 class DocblockParser
 {

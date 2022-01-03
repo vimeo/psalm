@@ -20,6 +20,9 @@ use Psalm\Type\Union;
 use function is_subclass_of;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class MethodReturnTypeProvider
 {
     /**

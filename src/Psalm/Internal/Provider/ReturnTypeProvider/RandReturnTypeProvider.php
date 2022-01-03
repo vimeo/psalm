@@ -14,6 +14,9 @@ use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

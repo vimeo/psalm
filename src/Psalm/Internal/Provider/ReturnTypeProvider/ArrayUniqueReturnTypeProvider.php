@@ -13,6 +13,9 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

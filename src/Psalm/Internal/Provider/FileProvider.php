@@ -19,6 +19,9 @@ use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
 
+/**
+ * @internal
+ */
 class FileProvider
 {
     /**

@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

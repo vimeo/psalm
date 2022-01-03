@@ -6,6 +6,8 @@ use Psalm\Internal\Type\TypeAlias;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class InlineTypeAlias implements TypeAlias
 {

@@ -55,6 +55,9 @@ use function max;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class SimpleNegatedAssertionReconciler extends Reconciler
 {
     /**

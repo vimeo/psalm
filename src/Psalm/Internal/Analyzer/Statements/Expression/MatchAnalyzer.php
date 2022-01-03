@@ -40,6 +40,9 @@ use function in_array;
 use function spl_object_id;
 use function substr;
 
+/**
+ * @internal
+ */
 class MatchAnalyzer
 {
     public static function analyze(

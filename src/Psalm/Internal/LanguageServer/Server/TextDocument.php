@@ -36,6 +36,8 @@ use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {

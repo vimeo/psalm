@@ -16,6 +16,9 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class MagicConstAnalyzer
 {
     public static function analyze(

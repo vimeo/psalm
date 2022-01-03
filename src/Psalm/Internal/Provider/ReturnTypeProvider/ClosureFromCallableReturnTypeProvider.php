@@ -11,6 +11,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

@@ -12,6 +12,9 @@ use Psalm\Type\Union;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInterface
 {
     public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union

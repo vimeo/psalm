@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class BitwiseNotAnalyzer
 {
     public static function analyze(

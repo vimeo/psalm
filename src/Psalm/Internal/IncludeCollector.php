@@ -17,6 +17,8 @@ use const PREG_GREP_INVERT;
  * Used to execute code that may cause file inclusions, and report what files have been included
  * NOTE: dependencies of this class should be kept at minimum, as it's used before autoloader is
  * registered.
+ *
+ * @internal
  */
 final class IncludeCollector
 {

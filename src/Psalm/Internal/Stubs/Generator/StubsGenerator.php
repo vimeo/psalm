@@ -107,6 +107,9 @@ use function is_int;
 use function rtrim;
 use function strpos;
 
+/**
+ * @internal
+ */
 class StubsGenerator
 {
     public static function getAll(

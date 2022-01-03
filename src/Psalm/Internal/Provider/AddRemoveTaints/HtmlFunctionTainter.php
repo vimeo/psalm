@@ -13,6 +13,9 @@ use function strtolower;
 
 use const ENT_QUOTES;
 
+/**
+ * @internal
+ */
 class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**

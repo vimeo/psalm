@@ -11,6 +11,9 @@ use function array_key_exists;
 use function array_search;
 use function strpos;
 
+/**
+ * @internal
+ */
 class PluginList
 {
     /** @var null|ConfigFile */

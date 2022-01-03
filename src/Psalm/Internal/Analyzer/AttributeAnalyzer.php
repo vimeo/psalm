@@ -21,6 +21,9 @@ use Psalm\Type\Union;
 
 use function reset;
 
+/**
+ * @internal
+ */
 class AttributeAnalyzer
 {
     /**

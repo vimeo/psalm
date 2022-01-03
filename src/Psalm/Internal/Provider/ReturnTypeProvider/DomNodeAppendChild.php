@@ -8,6 +8,9 @@ use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

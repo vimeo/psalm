@@ -24,6 +24,9 @@ use function count;
 use function is_string;
 use function max;
 
+/**
+ * @internal
+ */
 class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

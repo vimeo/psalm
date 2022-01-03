@@ -25,6 +25,9 @@ use UnexpectedValueException;
 use function array_slice;
 use function rtrim;
 
+/**
+ * @internal
+ */
 class ClassLikeStubGenerator
 {
     /**

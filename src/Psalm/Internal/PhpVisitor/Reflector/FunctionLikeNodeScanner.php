@@ -64,6 +64,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class FunctionLikeNodeScanner
 {
     /**

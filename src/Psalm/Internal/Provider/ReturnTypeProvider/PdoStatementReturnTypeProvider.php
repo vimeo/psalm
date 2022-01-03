@@ -17,6 +17,9 @@ use Psalm\Type\Union;
 
 use function class_exists;
 
+/**
+ * @internal
+ */
 class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

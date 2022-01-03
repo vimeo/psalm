@@ -20,6 +20,9 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 
+/**
+ * @internal
+ */
 class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

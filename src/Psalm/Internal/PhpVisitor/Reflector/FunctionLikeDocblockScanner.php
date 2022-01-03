@@ -54,6 +54,9 @@ use function strtolower;
 use function substr;
 use function trim;
 
+/**
+ * @internal
+ */
 class FunctionLikeDocblockScanner
 {
     /**

@@ -49,6 +49,9 @@ use function array_values;
 use function count;
 use function get_class;
 
+/**
+ * @internal
+ */
 class CastAnalyzer
 {
     public static function analyze(

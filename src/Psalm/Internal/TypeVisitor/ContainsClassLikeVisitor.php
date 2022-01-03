@@ -10,6 +10,9 @@ use Psalm\Type\TypeNode;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ContainsClassLikeVisitor extends NodeVisitor
 {
     /**

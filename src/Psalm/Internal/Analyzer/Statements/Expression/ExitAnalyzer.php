@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ExitAnalyzer
 {
     public static function analyze(

@@ -6,6 +6,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class UnresolvedTernary extends UnresolvedConstantComponent
 {

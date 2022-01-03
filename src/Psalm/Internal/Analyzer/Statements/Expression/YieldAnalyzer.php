@@ -22,6 +22,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 
+/**
+ * @internal
+ */
 class YieldAnalyzer
 {
     public static function analyze(

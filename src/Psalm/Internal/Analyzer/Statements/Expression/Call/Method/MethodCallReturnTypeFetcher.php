@@ -34,6 +34,9 @@ use function count;
 use function in_array;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class MethodCallReturnTypeFetcher
 {
     /**

@@ -18,6 +18,8 @@ use function trim;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php
+ *
+ * @internal
  */
 class ProtocolStreamReader implements ProtocolReader
 {
