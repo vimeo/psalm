@@ -16145,7 +16145,7 @@ return [
     'ui\window::setTitle' => ['', 'title'=>'string'],
     'uksort' => ['bool', '&rw_array'=>'array', 'callback'=>'callable(mixed,mixed):int'],
     'umask' => ['int', 'mask='=>'int'],
-    'uniqid' => ['string', 'prefix='=>'string', 'more_entropy='=>'bool'],
+    'uniqid' => ['non-empty-string', 'prefix='=>'string', 'more_entropy='=>'bool'],
     'unixtojd' => ['int', 'timestamp='=>'int'],
     'unlink' => ['bool', 'filename'=>'string', 'context='=>'resource'],
     'unpack' => ['array', 'format'=>'string', 'string'=>'string'],

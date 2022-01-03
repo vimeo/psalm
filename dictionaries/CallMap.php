@@ -15115,7 +15115,7 @@ return [
 'UnexpectedValueException::getPrevious' => ['Throwable|UnexpectedValueException|null'],
 'UnexpectedValueException::getTrace' => ['list<array<string,mixed>>'],
 'UnexpectedValueException::getTraceAsString' => ['string'],
-'uniqid' => ['string', 'prefix='=>'string', 'more_entropy='=>'bool'],
+'uniqid' => ['non-empty-string', 'prefix='=>'string', 'more_entropy='=>'bool'],
 'unixtojd' => ['int', 'timestamp='=>'int'],
 'unlink' => ['bool', 'filename'=>'string', 'context='=>'resource'],
 'unpack' => ['array|false', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
