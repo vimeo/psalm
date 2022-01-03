@@ -789,7 +789,7 @@ abstract class Atomic implements TypeNode
             return true;
         }
 
-        if ($this instanceof TArray && $this->getId() === 'array<empty, empty>') {
+        if ($this instanceof TArray && $this->getId() === 'array<never, never>') {
             return true;
         }
 
