@@ -134,17 +134,6 @@ If true we force strict typing on numerical and string operations (see https://g
 ```
 Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
 
-#### allowPhpStormGenerics
-
-```xml
-<psalm
-  allowPhpStormGenerics="[bool]"
->
-```
-Allows you to specify whether or not to use the typed iterator docblock format supported by PHP Storm e.g. `ArrayIterator|string[]`, which Psalm transforms to `ArrayIterator<string>`. Defaults to `false`.
-
-This flag is deprecated and will be removed in Psalm 5
-
 #### allowStringToStandInForClass
 
 ```xml
