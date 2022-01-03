@@ -31,8 +31,6 @@ class ReturnTypeCollector
      * @return list<Union>               a list of return types
      *
      * @psalm-suppress ComplexMethod to be refactored
-     *
-     * TODO: This would probably benefit from using the list of exit_functions
      */
     public static function getReturnTypes(
         Codebase $codebase,

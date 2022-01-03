@@ -312,7 +312,6 @@ class ElseIfAnalyzer
         $final_actions = ScopeAnalyzer::getControlActions(
             $elseif->stmts,
             $statements_analyzer->node_data,
-            $codebase->config->exit_functions,
             []
         );
         // has a return/throw at end

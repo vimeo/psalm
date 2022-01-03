@@ -85,7 +85,6 @@ class IfElseAnalyzer
             $final_actions = ScopeAnalyzer::getControlActions(
                 $stmt->stmts,
                 null,
-                $codebase->config->exit_functions,
                 []
             );
 

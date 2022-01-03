@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -73,8 +72,6 @@ class SwitchAnalyzer
 
         $case_action_map = [];
 
-        $config = Config::getInstance();
-
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
@@ -82,7 +79,6 @@ class SwitchAnalyzer
             $case_actions = $case_action_map[$i] = ScopeAnalyzer::getControlActions(
                 $case->stmts,
                 $statements_analyzer->node_data,
-                $config->exit_functions,
                 ['switch']
             );
 

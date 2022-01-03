@@ -4,7 +4,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
@@ -96,7 +95,6 @@ class LoopAnalyzer
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmts,
             $statements_analyzer->node_data,
-            Config::getInstance()->exit_functions,
             []
         );
 

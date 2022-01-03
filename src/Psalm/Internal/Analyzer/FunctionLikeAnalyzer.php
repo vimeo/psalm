@@ -533,7 +533,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $final_actions = ScopeAnalyzer::getControlActions(
             $this->function->getStmts() ?: [],
             null,
-            $codebase->config->exit_functions,
             []
         );
 

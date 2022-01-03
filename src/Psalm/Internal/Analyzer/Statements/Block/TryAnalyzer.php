@@ -52,7 +52,6 @@ class TryAnalyzer
             $catch_actions[$i] = ScopeAnalyzer::getControlActions(
                 $catch->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions,
                 []
             );
             $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
@@ -105,7 +104,6 @@ class TryAnalyzer
         $try_block_control_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
-            $codebase->config->exit_functions,
             []
         );
 
@@ -359,7 +357,6 @@ class TryAnalyzer
             $catch_actions[$i] = ScopeAnalyzer::getControlActions(
                 $catch->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions,
                 []
             );
 

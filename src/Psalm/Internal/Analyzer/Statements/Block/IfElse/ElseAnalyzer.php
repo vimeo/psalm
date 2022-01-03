@@ -154,7 +154,6 @@ class ElseAnalyzer
             ? ScopeAnalyzer::getControlActions(
                 $else->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions,
                 []
             )
             : [ScopeAnalyzer::ACTION_NONE];

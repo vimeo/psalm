@@ -16,14 +16,6 @@
             <xs:element name="mockClasses" type="MockClassesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
-            <xs:element name="exitFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1">
-                <xs:annotation>
-                    <!-- note: for PHPStorm to mark the attribute as deprecated the doc entry has to be *single line* and start with the word `deprecated` -->
-                    <xs:documentation xml:lang="en">
-                        Deprecated. Replaced by documenting never as a return type. It is going to be removed in Psalm 5.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:element>
             <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
