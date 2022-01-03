@@ -50,7 +50,7 @@ class TIntMaskOf extends TInt
             . '>';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

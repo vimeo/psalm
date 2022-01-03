@@ -22,7 +22,7 @@ class TDependentGetType extends TString
         $this->typeof = $typeof;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

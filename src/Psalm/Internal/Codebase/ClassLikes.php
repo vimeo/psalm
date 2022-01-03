@@ -806,7 +806,10 @@ class ClassLikes
             throw new UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
+        $file_statements = $this->statements_provider->getStatementsForFile(
+            $storage->location->file_path,
+            ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id
+        );
 
         $trait_finder = new TraitFinder($fq_trait_name);
 

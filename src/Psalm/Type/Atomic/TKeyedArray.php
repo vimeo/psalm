@@ -213,13 +213,12 @@ class TKeyedArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): string {
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

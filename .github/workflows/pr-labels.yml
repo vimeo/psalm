@@ -10,4 +10,4 @@ jobs:
         with:
           mode: minimum
           count: 1
-          labels: "release:typo, release:fix, release:feature, release:deprecation, release:internal, release:docs"
+          labels: "release:typo, release:fix, release:feature, release:deprecation, release:internal, release:docs, release:removed"

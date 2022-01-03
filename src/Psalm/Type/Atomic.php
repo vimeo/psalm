@@ -9,7 +9,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TAssertionFalsy;
@@ -113,15 +112,15 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
-     * @param array{int,int}|null $php_version contains php version when the type comes from signature
+     * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function create(
         string $value,
-        ?array $php_version = null,
-        array $template_type_map = [],
-        array $type_aliases = []
+        ?int   $analysis_php_version_id = null,
+        array  $template_type_map = [],
+        array  $type_aliases = []
     ): Atomic {
         switch ($value) {
             case 'int':
@@ -137,10 +136,7 @@ abstract class Atomic implements TypeNode
                 return new TBool();
 
             case 'void':
-                if ($php_version === null
-                    || ($php_version[0] > 7)
-                    || ($php_version[0] === 7 && $php_version[1] >= 1)
-                ) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70100) {
                     return new TVoid();
                 }
 
@@ -150,20 +146,14 @@ abstract class Atomic implements TypeNode
                 return new TArrayKey();
 
             case 'iterable':
-                if ($php_version === null
-                    || ($php_version[0] > 7)
-                    || ($php_version[0] === 7 && $php_version[1] >= 1)
-                ) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70100) {
                     return new TIterable();
                 }
 
                 break;
 
             case 'never':
-                if ($php_version === null
-                    || ($php_version[0] > 8)
-                    || ($php_version[0] === 8 && $php_version[1] >= 1)
-                ) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80100) {
                     return new TNever();
                 }
 
@@ -175,10 +165,7 @@ abstract class Atomic implements TypeNode
                 return new TNever();
 
             case 'object':
-                if ($php_version === null
-                    || ($php_version[0] > 7)
-                    || ($php_version[0] === 7 && $php_version[1] >= 2)
-                ) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70200) {
                     return new TObject();
                 }
 
@@ -221,7 +208,7 @@ abstract class Atomic implements TypeNode
                 return new TNonEmptyLowercaseString();
 
             case 'resource':
-                return $php_version !== null ? new TNamedObject($value) : new TResource();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TResource();
 
             case 'resource (closed)':
             case 'closed-resource':
@@ -231,33 +218,33 @@ abstract class Atomic implements TypeNode
                 return new TPositiveInt();
 
             case 'numeric':
-                return $php_version !== null ? new TNamedObject($value) : new TNumeric();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();
 
             case 'true':
-                return $php_version !== null ? new TNamedObject($value) : new TTrue();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TTrue();
 
             case 'false':
-                if ($php_version === null || $php_version[0] >= 8) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
                     return new TFalse();
                 }
 
                 return new TNamedObject($value);
 
             case 'empty':
-                return $php_version !== null ? new TNamedObject($value) : new TEmpty();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TEmpty();
 
             case 'scalar':
-                return $php_version !== null ? new TNamedObject($value) : new TScalar();
+                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                if ($php_version === null || $php_version[0] >= 8) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
                     return new TNull();
                 }
 
                 return new TNamedObject($value);
 
             case 'mixed':
-                if ($php_version === null || $php_version[0] >= 8) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
                     return new TMixed();
                 }
 
@@ -625,11 +612,10 @@ abstract class Atomic implements TypeNode
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string;
 
-    abstract public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool;
+    abstract public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool;
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,

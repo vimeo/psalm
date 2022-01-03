@@ -942,7 +942,7 @@ class ReturnTypeAnalyzer
         }
 
         $allow_native_type = !$docblock_only
-            && $codebase->php_major_version >= 7
+            && $codebase->analysis_php_version_id >= 70000
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
@@ -955,8 +955,7 @@ class ReturnTypeAnalyzer
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $codebase->php_major_version,
-                    $codebase->php_minor_version
+                    $codebase->analysis_php_version_id
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),
@@ -970,7 +969,7 @@ class ReturnTypeAnalyzer
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_return_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version),
+            $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null
         );
     }

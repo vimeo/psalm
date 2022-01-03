@@ -237,7 +237,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
 
             if ($classlike_storage
-                && $this->codebase->php_major_version >= 8
+                && $this->codebase->analysis_php_version_id >= 80000
                 && $node instanceof PhpParser\Node\Stmt\ClassMethod
                 && strtolower($node->name->name) === '__tostring'
             ) {

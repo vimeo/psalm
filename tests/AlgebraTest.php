@@ -85,7 +85,7 @@ class AlgebraTest extends TestCase
 
         $has_errors = false;
 
-        $dnf_stmt = StatementsProvider::parseStatements($dnf, '7.4', $has_errors)[0];
+        $dnf_stmt = StatementsProvider::parseStatements($dnf, 70400, $has_errors)[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $dnf_stmt);
 

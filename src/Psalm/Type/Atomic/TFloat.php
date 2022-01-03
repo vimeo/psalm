@@ -24,9 +24,8 @@ class TFloat extends Scalar
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version >= 7 ? 'float' : null;
+        return $analysis_php_version_id >= 70000 ? 'float' : null;
     }
 }

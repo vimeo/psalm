@@ -57,7 +57,7 @@ class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
@@ -69,16 +69,11 @@ class TGenericObject extends TNamedObject
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
         $intersection = strrpos($result, '&');
-        if ($intersection === false || (
-                ($php_major_version === 8 && $php_minor_version >= 1) ||
-                ($php_major_version >= 9)
-            )
-        ) {
+        if ($intersection === false || $analysis_php_version_id >= 80100) {
             return $result;
         }
         return substr($result, $intersection+1);
