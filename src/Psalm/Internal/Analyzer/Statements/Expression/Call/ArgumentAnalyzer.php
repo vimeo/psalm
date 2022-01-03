@@ -983,7 +983,7 @@ class ArgumentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } else {
+            } elseif ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
                 IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .

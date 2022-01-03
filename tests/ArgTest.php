@@ -160,9 +160,9 @@ class ArgTest extends TestCase
                     function foo($b) : void {}
                     foo(null);',
             ],
-            'allowArrayIntScalarForArrayStringWithScalarIgnored' => [
+            'allowArrayIntScalarForArrayStringWithArgumentTypeCoercionIgnored' => [
                 '<?php
-                    /** @param array<int|string> $arr */
+                    /** @param array<array-key> $arr */
                     function foo(array $arr) : void {
                     }
 
@@ -171,10 +171,10 @@ class ArgTest extends TestCase
                       return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     foo(bar());',
             ],
-            'allowArrayScalarForArrayStringWithScalarIgnored' => [
+            'allowArrayScalarForArrayStringWithArgumentTypeCoercionIgnored' => [
                 '<?php declare(strict_types=1);
                     /** @param array<string> $arr */
                     function foo(array $arr) : void {}
@@ -184,7 +184,7 @@ class ArgTest extends TestCase
                         return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     foo(bar());',
             ],
             'unpackObjectlikeListArgs' => [

@@ -3822,7 +3822,7 @@ class ClassTemplateTest extends TestCase
 
                     takesStringCollection($collection);
                     takesIntCollection($collection);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'argumentExpectsFleshOutTIndexedAccess' => [
                 '<?php

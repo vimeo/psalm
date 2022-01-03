@@ -722,7 +722,7 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'namespacedRequireFunction' => [
                 'files' => [

@@ -1702,7 +1702,7 @@ class AnnotationTest extends TestCase
 
                     $a = 1;
                     foo($a);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall2' => [
                 '<?php
@@ -1711,7 +1711,7 @@ class AnnotationTest extends TestCase
 
                     $b = 2;
                     foo($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall3' => [
                 '<?php
@@ -1720,7 +1720,7 @@ class AnnotationTest extends TestCase
 
                     $c = 3;
                     foo($c);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'identifyReturnType' => [
                 '<?php
