@@ -155,3 +155,6 @@
  - [BC] Method `Psalm\Issue\CodeIssue::getFileName()` was removed
  - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
  - [BC] Method `Psalm\DocComment::parse()` was removed
+ - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
+
+
