@@ -2,12 +2,7 @@
 
 namespace Psalm\Internal\Analyzer;
 
-use Psalm\Codebase;
-use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
-use Psalm\Internal\Type\Comparator\TypeComparisonResult;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -19,56 +14,6 @@ use function array_unique;
  */
 class TypeAnalyzer
 {
-    /**
-     * Does the input param type match the given param type
-     *
-     * @deprecated in favour of UnionTypeComparator, going to be removed in Psalm 5
-     * @psalm-suppress PossiblyUnusedMethod
-     */
-    public static function isContainedBy(
-        Codebase $codebase,
-        Union $input_type,
-        Union $container_type,
-        bool $ignore_null = false,
-        bool $ignore_false = false,
-        ?TypeComparisonResult $union_comparison_result = null,
-        bool $allow_interface_equality = false
-    ): bool {
-        return UnionTypeComparator::isContainedBy(
-            $codebase,
-            $input_type,
-            $container_type,
-            $ignore_null,
-            $ignore_false,
-            $union_comparison_result,
-            $allow_interface_equality
-        );
-    }
-
-    /**
-     * Does the input param atomic type match the given param atomic type
-     *
-     * @deprecated in favour of AtomicTypeComparator, going to be removed in Psalm 5
-     * @psalm-suppress PossiblyUnusedMethod
-     */
-    public static function isAtomicContainedBy(
-        Codebase $codebase,
-        Atomic $input_type_part,
-        Atomic $container_type_part,
-        bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true,
-        ?TypeComparisonResult $atomic_comparison_result = null
-    ): bool {
-        return AtomicTypeComparator::isContainedBy(
-            $codebase,
-            $input_type_part,
-            $container_type_part,
-            $allow_interface_equality,
-            $allow_float_int_equality,
-            $atomic_comparison_result
-        );
-    }
-
     /**
      * Takes two arrays of types and merges them
      *
