@@ -25,6 +25,11 @@
         <directory name="src"/>
         <directory name="tests"/>
         <directory name="examples"/>
+        <file name="psalm"/>
+        <file name="psalm-language-server"/>
+        <file name="psalm-plugin"/>
+        <file name="psalm-refactor"/>
+        <file name="psalter"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>

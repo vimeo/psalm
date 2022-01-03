@@ -82,7 +82,6 @@
             "Psalm\\": "src/Psalm/"
         },
         "files": [
-            "src/functions.php",
             "src/spl_object_id.php"
         ]
     },

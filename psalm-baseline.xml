@@ -367,31 +367,6 @@
       <code>$type[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/psalm-language-server.php">
-    <InternalMethod occurrences="1">
-      <code>LanguageServer::run($argv)</code>
-    </InternalMethod>
-  </file>
-  <file src="src/psalm-refactor.php">
-    <InternalMethod occurrences="1">
-      <code>Refactor::run($argv)</code>
-    </InternalMethod>
-  </file>
-  <file src="src/psalm.php">
-    <InternalMethod occurrences="1">
-      <code>Psalm::run($argv)</code>
-    </InternalMethod>
-  </file>
-  <file src="src/psalm_plugin.php">
-    <InternalMethod occurrences="1">
-      <code>Plugin::run()</code>
-    </InternalMethod>
-  </file>
-  <file src="src/psalter.php">
-    <InternalMethod occurrences="1">
-      <code>Psalter::run($argv)</code>
-    </InternalMethod>
-  </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset occurrences="1">
       <code>$subNodes['expr']</code>
