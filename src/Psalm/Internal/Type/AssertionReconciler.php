@@ -1266,15 +1266,13 @@ class AssertionReconciler extends Reconciler
     ): Union {
         $value = (int) substr($assertion, $bracket_pos + 1, -1);
 
-        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
-
         $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
         if ($compatible_int_type !== null) {
             return $compatible_int_type;
         }
 
         $has_int = false;
-
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TInt) {
                 $has_int = true;
@@ -1299,11 +1297,26 @@ class AssertionReconciler extends Reconciler
                 );
 
                 if ($expanded instanceof Atomic) {
+                    $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+                    if ($compatible_int_type !== null) {
+                        return $compatible_int_type;
+                    }
+
                     if ($expanded instanceof TInt) {
                         $has_int = true;
                     }
                 } else {
                     foreach ($expanded as $expanded_type) {
+                        $compatible_int_type = self::getCompatibleIntType(
+                            $existing_var_type,
+                            $value,
+                            $is_loose_equality
+                        );
+
+                        if ($compatible_int_type !== null) {
+                            return $compatible_int_type;
+                        }
+
                         if ($expanded_type instanceof TInt) {
                             $has_int = true;
                         }
