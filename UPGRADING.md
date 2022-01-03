@@ -127,3 +127,28 @@
  - [BC] Property `Psalm\Config::$allow_phpstorm_generics` was removed
  - [BC] Property `Psalm\Config::$exit_functions` was removed
  - [BC] Method `Psalm\Type::getEmpty()` was removed
+ - [BC] Legacy hook interfaces have been removed:
+   -  `Psalm\Plugin\Hook\MethodReturnTypeProviderInterface`
+   -  `Psalm\Plugin\Hook\BeforeFileAnalysisInterface`
+   -  `Psalm\Plugin\Hook\AfterFileAnalysisInterface`
+   -  `Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface`
+   -  `Psalm\Plugin\Hook\AfterClassLikeVisitInterface`
+   -  `Psalm\Plugin\Hook\StringInterpreterInterface`
+   -  `Psalm\Plugin\Hook\AfterExpressionAnalysisInterface`
+   -  `Psalm\Plugin\Hook\AfterEveryFunctionCallAnalysisInterface`
+   -  `Psalm\Plugin\Hook\PropertyExistenceProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterFunctionLikeAnalysisInterface`
+   -  `Psalm\Plugin\Hook\FunctionParamsProviderInterface`
+   -  `Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface`
+   -  `Psalm\Plugin\Hook\FunctionExistenceProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterAnalysisInterface`
+   -  `Psalm\Plugin\Hook\MethodVisibilityProviderInterface`
+   -  `Psalm\Plugin\Hook\MethodParamsProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterClassLikeExistenceCheckInterface`
+   -  `Psalm\Plugin\Hook\PropertyTypeProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface`
+   -  `Psalm\Plugin\Hook\MethodExistenceProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterCodebasePopulatedInterface`
+   -  `Psalm\Plugin\Hook\AfterClassLikeAnalysisInterface`
+   -  `Psalm\Plugin\Hook\PropertyVisibilityProviderInterface`
+   -  `Psalm\Plugin\Hook\AfterStatementAnalysisInterface`
