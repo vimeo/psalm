@@ -4,7 +4,6 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use PhpParser;
-use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
@@ -41,7 +40,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\VersionCompareReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface as LegacyFunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
@@ -61,24 +59,9 @@ class FunctionReturnTypeProvider
      */
     private static $handlers = [];
 
-    /**
-     * @var array<
-     *   lowercase-string,
-     *   array<Closure(
-     *     StatementsSource,
-     *     non-empty-string,
-     *     list<Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ): ?Union>
-     * >
-     */
-    private static $legacy_handlers = [];
-
     public function __construct()
     {
         self::$handlers = [];
-        self::$legacy_handlers = [];
 
         $this->registerClass(ArrayChunkReturnTypeProvider::class);
         $this->registerClass(ArrayColumnReturnTypeProvider::class);
@@ -119,13 +102,7 @@ class FunctionReturnTypeProvider
      */
     public function registerClass(string $class): void
     {
-        if (is_subclass_of($class, LegacyFunctionReturnTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
-
-            foreach ($class::getFunctionIds() as $function_id) {
-                $this->registerLegacyClosure($function_id, $callable);
-            }
-        } elseif (is_subclass_of($class, FunctionReturnTypeProviderInterface::class, true)) {
+        if (is_subclass_of($class, FunctionReturnTypeProviderInterface::class, true)) {
             $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
 
             foreach ($class::getFunctionIds() as $function_id) {
@@ -143,25 +120,9 @@ class FunctionReturnTypeProvider
         self::$handlers[$function_id][] = $c;
     }
 
-    /**
-     * @param lowercase-string $function_id
-     * @param Closure(
-     *     StatementsSource,
-     *     non-empty-string,
-     *     list<Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ): ?Union $c
-     */
-    public function registerLegacyClosure(string $function_id, Closure $c): void
-    {
-        self::$legacy_handlers[$function_id][] = $c;
-    }
-
     public function has(string $function_id): bool
     {
-        return isset(self::$handlers[strtolower($function_id)]) ||
-            isset(self::$legacy_handlers[strtolower($function_id)]);
+        return isset(self::$handlers[strtolower($function_id)]);
     }
 
     /**
@@ -174,20 +135,6 @@ class FunctionReturnTypeProvider
         Context $context,
         CodeLocation $code_location
     ): ?Union {
-        foreach (self::$legacy_handlers[strtolower($function_id)] ?? [] as $function_handler) {
-            $return_type = $function_handler(
-                $statements_source,
-                $function_id,
-                $stmt->getArgs(),
-                $context,
-                $code_location
-            );
-
-            if ($return_type) {
-                return $return_type;
-            }
-        }
-
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionReturnTypeProviderEvent(
                 $statements_source,

@@ -635,9 +635,7 @@ class IssueBuffer
         }
 
 
-        if ($codebase->config->eventDispatcher->after_analysis
-            || $codebase->config->eventDispatcher->legacy_after_analysis
-        ) {
+        if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
             $build_info = (new BuildInfoCollector(self::$server))->collect();
 

@@ -13,7 +13,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\SimpleXmlElementAsXml;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface as LegacyMethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
@@ -33,28 +32,9 @@ class MethodReturnTypeProvider
      */
     private static $handlers = [];
 
-    /**
-     * @var array<
-     *   lowercase-string,
-     *   array<Closure(
-     *     StatementsSource,
-     *     string,
-     *     lowercase-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation,
-     *     ?array<Union>=,
-     *     ?string=,
-     *     ?lowercase-string=
-     *   ): ?Union>
-     * >
-     */
-    private static $legacy_handlers = [];
-
     public function __construct()
     {
         self::$handlers = [];
-        self::$legacy_handlers = [];
 
         $this->registerClass(DomNodeAppendChild::class);
         $this->registerClass(ImagickPixelColorReturnTypeProvider::class);
@@ -68,13 +48,7 @@ class MethodReturnTypeProvider
      */
     public function registerClass(string $class): void
     {
-        if (is_subclass_of($class, LegacyMethodReturnTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getMethodReturnType']);
-
-            foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-                $this->registerLegacyClosure($fq_classlike_name, $callable);
-            }
-        } elseif (is_subclass_of($class, MethodReturnTypeProviderInterface::class, true)) {
+        if (is_subclass_of($class, MethodReturnTypeProviderInterface::class, true)) {
             $callable = Closure::fromCallable([$class, 'getMethodReturnType']);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
@@ -91,29 +65,9 @@ class MethodReturnTypeProvider
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
-    /**
-     * @param Closure(
-     *     StatementsSource,
-     *     string,
-     *     lowercase-string,
-     *     list<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation,
-     *     ?array<Union>=,
-     *     ?string=,
-     *     ?lowercase-string=
-     *   ): ?Union $c
-     *
-     */
-    public function registerLegacyClosure(string $fq_classlike_name, Closure $c): void
-    {
-        self::$legacy_handlers[strtolower($fq_classlike_name)][] = $c;
-    }
-
     public function has(string $fq_classlike_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]) ||
-            isset(self::$legacy_handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
     /**
@@ -131,24 +85,6 @@ class MethodReturnTypeProvider
         ?string $called_fq_classlike_name = null,
         ?string $called_method_name = null
     ): ?Union {
-        foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
-            $result = $class_handler(
-                $statements_source,
-                $fq_classlike_name,
-                strtolower($method_name),
-                $stmt->getArgs(),
-                $context,
-                $code_location,
-                $template_type_parameters,
-                $called_fq_classlike_name,
-                $called_method_name ? strtolower($called_method_name) : null
-            );
-
-            if ($result) {
-                return $result;
-            }
-        }
-
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $event = new MethodReturnTypeProviderEvent(
                 $statements_source,
