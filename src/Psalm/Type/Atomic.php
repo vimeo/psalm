@@ -32,7 +32,6 @@ use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
@@ -268,9 +267,6 @@ abstract class Atomic implements TypeNode
 
             case 'numeric-string':
                 return new TNumericString();
-
-            case 'html-escaped-string':
-                return new THtmlEscapedString();
 
             case 'literal-string':
                 return new TNonspecificLiteralString();

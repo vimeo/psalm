@@ -36,7 +36,6 @@
     - `Psalm\Type\Atomic\TEnumCase`
     - `Psalm\Type\Atomic\TFalse`
     - `Psalm\Type\Atomic\TGenericObject`
-    - `Psalm\Type\Atomic\THtmlEscapedString`
     - `Psalm\Type\Atomic\TIntMask`
     - `Psalm\Type\Atomic\TIntMaskOf`
     - `Psalm\Type\Atomic\TIntRange`
@@ -156,3 +155,6 @@
  - [BC] Method `Psalm\Issue\CodeIssue::getFileName()` was removed
  - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
  - [BC] Method `Psalm\DocComment::parse()` was removed
+ - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
+
+

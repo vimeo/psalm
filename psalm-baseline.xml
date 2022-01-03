@@ -353,9 +353,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
-    <DeprecatedClass occurrences="2">
-      <code>new THtmlEscapedString()</code>
-    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>array_keys($template_type_map[$value])[0]</code>
     </PossiblyUndefinedIntArrayOffset>

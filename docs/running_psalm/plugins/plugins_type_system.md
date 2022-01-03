@@ -139,7 +139,7 @@ if (true === $first) {
 
 `TCallableString` - denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
 
-`THtmlEscapedString`, `TSqlSelectString` - these are special types, specifically for consumption by plugins.
+`TSqlSelectString` - this is a special type, specifically for consumption by plugins.
 
 `TLowercaseString` - denotes a string where every character is lowercased. (which can also result from a `strtolower` call).
 
