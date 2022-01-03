@@ -34,7 +34,7 @@ class NegatedAssertionReconciler extends Reconciler
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  string[]   $suppressed_issues
-     * @param  0|1|2      $failed_reconciliation
+     * @param  Reconciler::RECONCILIATION_*      $failed_reconciliation
      */
     public static function reconcile(
         StatementsAnalyzer $statements_analyzer,
