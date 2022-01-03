@@ -20,6 +20,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
@@ -189,6 +190,7 @@ class AssertionReconciler extends Reconciler
 
             if ($bracket_pos) {
                 return self::handleLiteralEquality(
+                    $statements_analyzer,
                     $assertion,
                     $bracket_pos,
                     $is_loose_equality,
@@ -958,18 +960,19 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param  string[]   $suppressed_issues
+     * @param  string[]          $suppressed_issues
      */
     private static function handleLiteralEquality(
-        string $assertion,
-        int $bracket_pos,
-        bool $is_loose_equality,
-        Union $existing_var_type,
-        string $old_var_type_string,
-        ?string $var_id,
-        bool $negated,
-        ?CodeLocation $code_location,
-        array $suppressed_issues
+        StatementsAnalyzer $statements_analyzer,
+        string             $assertion,
+        int                $bracket_pos,
+        bool               $is_loose_equality,
+        Union              $existing_var_type,
+        string             $old_var_type_string,
+        ?string            $var_id,
+        bool               $negated,
+        ?CodeLocation      $code_location,
+        array              $suppressed_issues
     ): Union {
         $value = substr($assertion, $bracket_pos + 1, -1);
 
@@ -978,129 +981,18 @@ class AssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($scalar_type === 'int') {
-            $value = (int) $value;
-
-            if ($existing_var_type->hasMixed()
-                || $existing_var_type->hasScalar()
-                || $existing_var_type->hasNumeric()
-                || $existing_var_type->hasArrayKey()
-            ) {
-                if ($is_loose_equality) {
-                    return $existing_var_type;
-                }
-
-                return new Union([new TLiteralInt($value)]);
-            }
-
-            $has_int = false;
-
-            foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
-                if ($existing_var_atomic_type instanceof TInt) {
-                    $has_int = true;
-                } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
-                    if ($existing_var_atomic_type->as->hasMixed()
-                        || $existing_var_atomic_type->as->hasScalar()
-                        || $existing_var_atomic_type->as->hasNumeric()
-                        || $existing_var_atomic_type->as->hasArrayKey()
-                    ) {
-                        if ($is_loose_equality) {
-                            return $existing_var_type;
-                        }
-
-                        return new Union([new TLiteralInt($value)]);
-                    }
-
-                    if ($existing_var_atomic_type->as->hasInt()) {
-                        $has_int = true;
-                    }
-                }
-            }
-
-            if ($has_int) {
-                $existing_int_types = $existing_var_type->getLiteralInts();
-
-                if ($existing_int_types) {
-                    $can_be_equal = false;
-                    $did_remove_type = false;
-
-                    foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
-                        if ($atomic_key !== $assertion
-                            && !($atomic_type instanceof TPositiveInt && $value > 0)
-                            && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
-                        ) {
-                            $existing_var_type->removeType($atomic_key);
-                            $did_remove_type = true;
-                        } else {
-                            $can_be_equal = true;
-                        }
-                    }
-
-                    if ($var_id
-                        && $code_location
-                        && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                    ) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $var_id,
-                            $assertion,
-                            $can_be_equal,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
-                } else {
-                    $existing_var_type = new Union([new TLiteralInt($value)]);
-                }
-            } elseif ($var_id && $code_location && !$is_loose_equality) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    false,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
-                );
-            } elseif ($is_loose_equality && $existing_var_type->hasFloat()) {
-                // convert floats to ints
-                $existing_float_types = $existing_var_type->getLiteralFloats();
-
-                if ($existing_float_types) {
-                    $can_be_equal = false;
-                    $did_remove_type = false;
-
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if (strpos($atomic_key, 'float(') === 0) {
-                            $atomic_key = 'int(' . substr($atomic_key, 6);
-                        }
-                        if ($atomic_key !== $assertion) {
-                            $existing_var_type->removeType($atomic_key);
-                            $did_remove_type = true;
-                        } else {
-                            $can_be_equal = true;
-                        }
-                    }
-
-                    if ($var_id
-                        && $code_location
-                        && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                    ) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $var_id,
-                            $assertion,
-                            $can_be_equal,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
-                }
-            }
+            return self::handleLiteralEqualityWithInt(
+                $statements_analyzer,
+                $assertion,
+                $bracket_pos,
+                $is_loose_equality,
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
         } elseif ($scalar_type === 'string'
             || $scalar_type === 'class-string'
             || $scalar_type === 'interface-string'
@@ -1143,6 +1035,7 @@ class AssertionReconciler extends Reconciler
                         $existing_var_atomic_type = clone $existing_var_atomic_type;
 
                         $existing_var_atomic_type->as = self::handleLiteralEquality(
+                            $statements_analyzer,
                             $assertion,
                             $bracket_pos,
                             false,
@@ -1357,6 +1250,175 @@ class AssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    private static function handleLiteralEqualityWithInt(
+        StatementsAnalyzer $statements_analyzer,
+        string             $assertion,
+        int                $bracket_pos,
+        bool               $is_loose_equality,
+        Union              $existing_var_type,
+        string             $old_var_type_string,
+        ?string            $var_id,
+        bool               $negated,
+        ?CodeLocation      $code_location,
+        array              $suppressed_issues
+    ): Union {
+        $value = (int) substr($assertion, $bracket_pos + 1, -1);
+
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
+        $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+        if ($compatible_int_type !== null) {
+            return $compatible_int_type;
+        }
+
+        $has_int = false;
+
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TInt) {
+                $has_int = true;
+            } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
+                $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+                if ($compatible_int_type !== null) {
+                    return $compatible_int_type;
+                }
+
+                if ($existing_var_atomic_type->as->hasInt()) {
+                    $has_int = true;
+                }
+            } elseif ($existing_var_atomic_type instanceof TClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_atomic_type,
+                    $existing_var_atomic_type->fq_classlike_name,
+                    $existing_var_atomic_type->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    if ($expanded instanceof TInt) {
+                        $has_int = true;
+                    }
+                } else {
+                    foreach ($expanded as $expanded_type) {
+                        if ($expanded_type instanceof TInt) {
+                            $has_int = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($has_int) {
+            $existing_int_types = $existing_var_type->getLiteralInts();
+
+            if ($existing_int_types) {
+                $can_be_equal = false;
+                $did_remove_type = false;
+
+                foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
+                    if ($atomic_key !== $assertion
+                        && !($atomic_type instanceof TPositiveInt && $value > 0)
+                        && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
+                    ) {
+                        $existing_var_type->removeType($atomic_key);
+                        $did_remove_type = true;
+                    } else {
+                        $can_be_equal = true;
+                    }
+                }
+
+                if ($var_id
+                    && $code_location
+                    && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+                ) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $var_id,
+                        $assertion,
+                        $can_be_equal,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            } else {
+                $existing_var_type = new Union([new TLiteralInt($value)]);
+            }
+        } elseif ($var_id && $code_location && !$is_loose_equality) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                $assertion,
+                false,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+        } elseif ($is_loose_equality && $existing_var_type->hasFloat()) {
+            // convert floats to ints
+            $existing_float_types = $existing_var_type->getLiteralFloats();
+
+            if ($existing_float_types) {
+                $can_be_equal = false;
+                $did_remove_type = false;
+
+                foreach ($existing_var_atomic_types as $atomic_key => $_) {
+                    if (strpos($atomic_key, 'float(') === 0) {
+                        $atomic_key = 'int(' . substr($atomic_key, 6);
+                    }
+                    if ($atomic_key !== $assertion) {
+                        $existing_var_type->removeType($atomic_key);
+                        $did_remove_type = true;
+                    } else {
+                        $can_be_equal = true;
+                    }
+                }
+
+                if ($var_id
+                    && $code_location
+                    && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+                ) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $var_id,
+                        $assertion,
+                        $can_be_equal,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
+        }
+
+        return $existing_var_type;
+    }
+
+    private static function getCompatibleIntType(
+        Union $existing_var_type,
+        int $value,
+        bool $is_loose_equality
+    ): ?Union {
+        if ($existing_var_type->hasMixed()
+            || $existing_var_type->hasScalar()
+            || $existing_var_type->hasNumeric()
+            || $existing_var_type->hasArrayKey()
+        ) {
+            if ($is_loose_equality) {
+                return $existing_var_type;
+            }
+
+            return new Union([new TLiteralInt($value)]);
+        }
+
+        return null;
     }
 
     /**
