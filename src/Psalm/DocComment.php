@@ -7,24 +7,14 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
-use function array_filter;
 use function explode;
-use function implode;
 use function in_array;
-use function min;
 use function preg_match;
-use function preg_match_all;
-use function preg_replace;
-use function rtrim;
-use function str_repeat;
-use function str_replace;
 use function strlen;
 use function strpos;
 use function strspn;
 use function substr;
 use function trim;
-
-use const PREG_SET_ORDER;
 
 class DocComment
 {
@@ -44,140 +34,6 @@ class DocComment
         'require-extends', 'require-implements', 'param-out', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out'
     ];
-
-    /**
-     * Parse a docblock comment into its parts.
-     *
-     * Taken from advanced api docmaker, which was taken from
-     * https://github.com/facebook/libphutil/blob/master/src/parser/docblock/PhutilDocblockParser.php
-     *
-     * @return array Array of the main comment and specials
-     *
-     * @psalm-return array{description:string, specials:array<string, array<int, string>>}
-     * @psalm-suppress PossiblyUnusedMethod
-     *
-     * @deprecated use parsePreservingLength instead, going to be removed in Psalm 5
-     *
-     * @psalm-pure
-     */
-    public static function parse(string $docblock, ?int $line_number = null, bool $preserve_format = false): array
-    {
-        // Strip off comments.
-        $docblock = trim($docblock);
-        $docblock = preg_replace('@^/\*\*@', '', $docblock);
-        $docblock = preg_replace('@\*/$@', '', $docblock);
-        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock);
-
-        // Normalize multi-line @specials.
-        $lines = explode("\n", $docblock);
-
-        $line_map = [];
-
-        $last = false;
-        foreach ($lines as $k => $line) {
-            if (preg_match('/^\s?@\w/i', $line)) {
-                $last = $k;
-            } elseif (preg_match('/^\s*$/', $line)) {
-                $last = false;
-            } elseif ($last !== false) {
-                $old_last_line = $lines[$last];
-                $lines[$last] = rtrim($old_last_line)
-                    . ($preserve_format || trim($old_last_line) === '@return' ? "\n" . $line : ' ' . trim($line));
-
-                if ($line_number) {
-                    $old_line_number = $line_map[$old_last_line];
-                    unset($line_map[$old_last_line]);
-                    $line_map[$lines[$last]] = $old_line_number;
-                }
-
-                unset($lines[$k]);
-            }
-
-            if ($line_number) {
-                $line_map[$line] = $line_number++;
-            }
-        }
-
-        $special = [];
-
-        if ($preserve_format) {
-            foreach ($lines as $m => $line) {
-                if (preg_match('/^\s?@([\w\-:]+)[\t ]*(.*)$/sm', $line, $matches)) {
-                    [$full_match, $type, $data] = $matches;
-
-                    $docblock = str_replace($full_match, '', $docblock);
-
-                    if (empty($special[$type])) {
-                        $special[$type] = [];
-                    }
-
-                    $line_number = $line_map && isset($line_map[$full_match]) ? $line_map[$full_match] : $m;
-
-                    $special[$type][$line_number] = rtrim($data);
-                }
-            }
-        } else {
-            $docblock = implode("\n", $lines);
-
-            // Parse @specials.
-            if (preg_match_all('/^\s?@([\w\-:]+)[\t ]*([^\n]*)/m', $docblock, $matches, PREG_SET_ORDER)) {
-                $docblock = preg_replace('/^\s?@([\w\-:]+)\s*([^\n]*)/m', '', $docblock);
-                foreach ($matches as $m => $match) {
-                    [$_, $type, $data] = $match;
-
-                    if (empty($special[$type])) {
-                        $special[$type] = [];
-                    }
-
-                    $line_number = $line_map && isset($line_map[$_]) ? $line_map[$_] : $m;
-
-                    $special[$type][$line_number] = $data;
-                }
-            }
-        }
-
-        $docblock = str_replace("\t", '  ', $docblock);
-
-        // Smush the whole docblock to the left edge.
-        $min_indent = 80;
-        $indent = 0;
-        foreach (array_filter(explode("\n", $docblock)) as $line) {
-            for ($ii = 0, $iiMax = strlen($line); $ii < $iiMax; ++$ii) {
-                if ($line[$ii] !== ' ') {
-                    break;
-                }
-                ++$indent;
-            }
-
-            $min_indent = min($indent, $min_indent);
-        }
-
-        $docblock = preg_replace('/^' . str_repeat(' ', $min_indent) . '/m', '', $docblock);
-        $docblock = rtrim($docblock);
-
-        // Trim any empty lines off the front, but leave the indent level if there
-        // is one.
-        $docblock = preg_replace('/^\s*\n/', '', $docblock);
-
-        foreach ($special as $special_key => $_) {
-            if (strpos($special_key, 'psalm-') === 0) {
-                $special_key = substr($special_key, 6);
-
-                if (!in_array(
-                    $special_key,
-                    self::PSALM_ANNOTATIONS,
-                    true
-                )) {
-                    throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
-                }
-            }
-        }
-
-        return [
-            'description' => $docblock,
-            'specials' => $special,
-        ];
-    }
 
     /**
      * Parse a docblock comment into its parts.
