@@ -114,6 +114,8 @@
     - `Psalm\Type\Atomic\TValueOfClassConstant`
     - `Psalm\Type\Atomic\TVoid`
     - `Psalm\Type\Union`
+ - While not a BC break per se, all classes / interfaces / traits / enums under
+   `Psalm\Internal` namespace are now marked `@internal`.
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
