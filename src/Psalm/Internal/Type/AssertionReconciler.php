@@ -1252,6 +1252,9 @@ class AssertionReconciler extends Reconciler
         return $existing_var_type;
     }
 
+    /**
+     * @param  string[]          $suppressed_issues
+     */
     private static function handleLiteralEqualityWithInt(
         StatementsAnalyzer $statements_analyzer,
         string             $assertion,
