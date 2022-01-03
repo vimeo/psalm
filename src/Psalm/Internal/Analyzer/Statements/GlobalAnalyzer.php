@@ -15,6 +15,9 @@ use Psalm\IssueBuffer;
 
 use function is_string;
 
+/**
+ * @internal
+ */
 class GlobalAnalyzer
 {
     public static function analyze(

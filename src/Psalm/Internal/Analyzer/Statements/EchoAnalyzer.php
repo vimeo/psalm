@@ -19,6 +19,9 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
+/**
+ * @internal
+ */
 class EchoAnalyzer
 {
     public static function analyze(

@@ -19,6 +19,9 @@ use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class UnsetAnalyzer
 {
     public static function analyze(

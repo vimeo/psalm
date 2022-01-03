@@ -23,6 +23,9 @@ use UnexpectedValueException;
 
 use function is_string;
 
+/**
+ * @internal
+ */
 class StaticAnalyzer
 {
     public static function analyze(

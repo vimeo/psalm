@@ -19,6 +19,9 @@ use stdClass;
 use function reset;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

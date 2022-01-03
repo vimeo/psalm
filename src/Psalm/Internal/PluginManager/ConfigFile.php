@@ -12,6 +12,9 @@ use function file_put_contents;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class ConfigFile
 {
     /** @var string */

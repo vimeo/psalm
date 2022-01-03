@@ -10,6 +10,9 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

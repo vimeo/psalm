@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class YieldFromAnalyzer
 {
     public static function analyze(

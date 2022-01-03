@@ -9,6 +9,9 @@ use PhpParser\Node\Expr;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 
+/**
+ * @internal
+ */
 class ConditionCloningVisitor extends NodeVisitorAbstract
 {
     private $type_provider;

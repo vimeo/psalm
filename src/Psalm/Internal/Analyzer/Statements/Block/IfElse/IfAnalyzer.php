@@ -38,6 +38,9 @@ use function in_array;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class IfAnalyzer
 {
     /**

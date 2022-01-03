@@ -39,6 +39,9 @@ use function md5;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class TypeChecker extends NodeVisitor
 {
     /**

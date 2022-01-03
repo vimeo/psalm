@@ -16,6 +16,9 @@ use UnexpectedValueException;
 use function implode;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class TypeHintResolver
 {
     /**

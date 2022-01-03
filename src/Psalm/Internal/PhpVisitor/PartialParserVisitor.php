@@ -25,6 +25,8 @@ use const PREG_SET_ORDER;
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
+ *
+ * @internal
  */
 class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {

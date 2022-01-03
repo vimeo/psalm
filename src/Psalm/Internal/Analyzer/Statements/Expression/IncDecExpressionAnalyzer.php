@@ -17,6 +17,9 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class IncDecExpressionAnalyzer
 {
     /**

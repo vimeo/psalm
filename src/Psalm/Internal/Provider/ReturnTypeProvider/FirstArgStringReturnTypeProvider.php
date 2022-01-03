@@ -9,6 +9,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

@@ -18,6 +18,9 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
+/**
+ * @internal
+ */
 class PrintAnalyzer
 {
     public static function analyze(

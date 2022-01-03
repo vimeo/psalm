@@ -41,6 +41,9 @@ use function sort;
 use function strlen;
 use function substr;
 
+/**
+ * @internal
+ */
 class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */

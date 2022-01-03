@@ -8,6 +8,9 @@ use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class FromDocblockSetter extends NodeVisitor
 {
     /**

@@ -11,6 +11,9 @@ use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InternalMethod;
 use Psalm\IssueBuffer;
 
+/**
+ * @internal
+ */
 class MethodCallProhibitionAnalyzer
 {
     /**

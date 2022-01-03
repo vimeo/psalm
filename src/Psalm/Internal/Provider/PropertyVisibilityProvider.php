@@ -13,6 +13,9 @@ use Psalm\StatementsSource;
 use function is_subclass_of;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class PropertyVisibilityProvider
 {
     /**

@@ -6,6 +6,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArrayCreationInfo
 {
     /**

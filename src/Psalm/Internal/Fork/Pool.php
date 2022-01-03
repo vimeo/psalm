@@ -67,6 +67,8 @@ use const STREAM_SOCK_STREAM;
  *
  * Fork off to n-processes and divide up tasks between
  * each process.
+ *
+ * @internal
  */
 class Pool
 {

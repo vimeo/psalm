@@ -5,6 +5,9 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class AtomicMethodCallAnalysisResult
 {
     /**

@@ -19,6 +19,9 @@ use function spl_object_id;
 use function strlen;
 use function substr;
 
+/**
+ * @internal
+ */
 class FormulaGenerator
 {
      /**

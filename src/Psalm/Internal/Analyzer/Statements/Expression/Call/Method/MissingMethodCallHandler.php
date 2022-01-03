@@ -25,6 +25,9 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_merge;
 
+/**
+ * @internal
+ */
 class MissingMethodCallHandler
 {
     public static function handleMagicMethod(

@@ -8,6 +8,8 @@ use function strtolower;
 
 /**
  * @psalm-consistent-constructor
+ *
+ * @internal
  */
 class DataFlowNode
 {

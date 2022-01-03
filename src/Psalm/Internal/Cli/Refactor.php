@@ -56,6 +56,9 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 
+/**
+ * @internal
+ */
 final class Refactor
 {
     /** @param array<int,string> $argv */

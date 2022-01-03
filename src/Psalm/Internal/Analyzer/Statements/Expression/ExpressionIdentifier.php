@@ -14,6 +14,9 @@ use function in_array;
 use function is_string;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ExpressionIdentifier
 {
     public static function getVarId(

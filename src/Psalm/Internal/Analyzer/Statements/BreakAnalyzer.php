@@ -10,6 +10,9 @@ use Psalm\Type;
 
 use function end;
 
+/**
+ * @internal
+ */
 class BreakAnalyzer
 {
     public static function analyze(

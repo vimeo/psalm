@@ -18,10 +18,12 @@ use function unserialize;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * @psalm-import-type  FileMapType from Analyzer
+ * @psalm-import-type FileMapType from Analyzer
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @internal
  */
 class FileReferenceCacheProvider
 {

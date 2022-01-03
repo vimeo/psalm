@@ -12,6 +12,9 @@ use function urlencode;
 
 use const DIRECTORY_SEPARATOR;
 
+/**
+ * @internal
+ */
 class PluginListFactory
 {
     /** @var string */

@@ -50,6 +50,9 @@ use function is_string;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class AssertionReconciler extends Reconciler
 {
     /**

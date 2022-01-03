@@ -23,6 +23,9 @@ use function in_array;
 use function max;
 use function min;
 
+/**
+ * @internal
+ */
 class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

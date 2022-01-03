@@ -46,6 +46,7 @@
     <plugins>
         <plugin filename="examples/plugins/FunctionCasingChecker.php"/>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+        <plugin filename="examples/plugins/InternalChecker.php"/>
     </plugins>
 
     <issueHandlers>

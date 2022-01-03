@@ -5,6 +5,9 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\Internal\MethodIdentifier;
 
+/**
+ * @internal
+ */
 class AtomicCallContext
 {
     /** @var MethodIdentifier */

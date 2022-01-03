@@ -11,6 +11,9 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
 
+/**
+ * @internal
+ */
 class ContainsLiteralVisitor extends NodeVisitor
 {
     /**

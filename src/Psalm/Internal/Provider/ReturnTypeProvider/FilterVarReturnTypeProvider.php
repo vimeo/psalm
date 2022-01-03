@@ -27,6 +27,9 @@ use const FILTER_VALIDATE_MAC;
 use const FILTER_VALIDATE_REGEXP;
 use const FILTER_VALIDATE_URL;
 
+/**
+ * @internal
+ */
 class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

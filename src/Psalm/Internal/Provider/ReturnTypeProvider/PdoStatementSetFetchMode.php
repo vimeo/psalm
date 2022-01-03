@@ -10,6 +10,9 @@ use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
     public static function getClassLikeNames(): array

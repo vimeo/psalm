@@ -10,6 +10,9 @@ use function abs;
 use function array_merge;
 use function count;
 
+/**
+ * @internal
+ */
 class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */

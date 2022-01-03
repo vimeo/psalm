@@ -44,6 +44,9 @@ use function reset;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

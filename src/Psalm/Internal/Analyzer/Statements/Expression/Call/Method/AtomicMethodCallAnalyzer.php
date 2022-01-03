@@ -56,6 +56,8 @@ use function strtolower;
  * methods.
  *
  * The happy path (i.e 99% of method calls) is handled in ExistingAtomicMethodCallAnalyzer
+ *
+ * @internal
  */
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {

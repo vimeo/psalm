@@ -13,6 +13,9 @@ use Psalm\Type;
 
 use function end;
 
+/**
+ * @internal
+ */
 class ContinueAnalyzer
 {
     public static function analyze(

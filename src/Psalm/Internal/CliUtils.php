@@ -48,6 +48,9 @@ use const PHP_EOL;
 use const STDERR;
 use const STDIN;
 
+/**
+ * @internal
+ */
 final class CliUtils
 {
     public static function requireAutoloaders(

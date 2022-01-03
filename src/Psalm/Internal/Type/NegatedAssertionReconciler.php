@@ -29,6 +29,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @internal
+ */
 class NegatedAssertionReconciler extends Reconciler
 {
     /**

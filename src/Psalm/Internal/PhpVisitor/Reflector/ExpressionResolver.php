@@ -37,6 +37,9 @@ use function implode;
 use function interface_exists;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ExpressionResolver
 {
     public static function getUnresolvedClassConstExpr(

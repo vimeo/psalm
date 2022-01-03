@@ -11,6 +11,9 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class EmptyAnalyzer
 {
     public static function analyze(

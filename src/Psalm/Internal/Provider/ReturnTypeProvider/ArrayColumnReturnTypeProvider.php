@@ -16,6 +16,9 @@ use Psalm\Type\Union;
 use function count;
 use function reset;
 
+/**
+ * @internal
+ */
 class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

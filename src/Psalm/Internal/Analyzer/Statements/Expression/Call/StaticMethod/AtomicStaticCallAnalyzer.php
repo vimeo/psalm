@@ -60,6 +60,9 @@ use function count;
 use function in_array;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class AtomicStaticCallAnalyzer
 {
     public static function analyze(

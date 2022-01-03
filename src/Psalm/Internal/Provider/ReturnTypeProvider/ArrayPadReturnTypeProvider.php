@@ -16,6 +16,9 @@ use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

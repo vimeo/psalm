@@ -17,6 +17,9 @@ use function array_pop;
 use function end;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class MethodVisibilityAnalyzer
 {
     /**

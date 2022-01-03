@@ -20,6 +20,8 @@ use function array_map;
  * parameters — given a parameter type `callable(): T2` and an argument typed as
  * `callable(): string`, `string` will be added as a _lower_ bound for the template
  * param `T2`.
+ *
+ * @internal
  */
 class TemplateResult
 {

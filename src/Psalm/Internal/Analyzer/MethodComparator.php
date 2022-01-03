@@ -39,6 +39,9 @@ use function in_array;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class MethodComparator
 {
     /**

@@ -6,6 +6,8 @@ use PhpParser;
 
 /**
  * Shifts all nodes in a given AST by a set amount
+ *
+ * @internal
  */
 class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {

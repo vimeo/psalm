@@ -38,6 +38,9 @@ use function preg_match;
 use function preg_quote;
 use function spl_object_id;
 
+/**
+ * @internal
+ */
 class ElseIfAnalyzer
 {
     /**

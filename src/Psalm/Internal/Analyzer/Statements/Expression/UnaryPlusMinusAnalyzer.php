@@ -20,6 +20,9 @@ use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class UnaryPlusMinusAnalyzer
 {
     /**

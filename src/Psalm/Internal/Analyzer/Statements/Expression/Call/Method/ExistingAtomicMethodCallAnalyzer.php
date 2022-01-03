@@ -48,6 +48,9 @@ use function explode;
 use function in_array;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**

@@ -45,6 +45,9 @@ use function strpos;
 use function substr;
 use function usort;
 
+/**
+ * @internal
+ */
 class TemplateStandinTypeReplacer
 {
     /**

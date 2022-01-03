@@ -53,6 +53,9 @@ use function array_merge;
 use function count;
 use function is_subclass_of;
 
+/**
+ * @internal
+ */
 class EventDispatcher
 {
     /**

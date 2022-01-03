@@ -23,6 +23,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_merge;
 use function array_pop;
 
+/**
+ * @internal
+ */
 class CloneAnalyzer
 {
     public static function analyze(

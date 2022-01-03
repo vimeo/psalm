@@ -6,6 +6,9 @@ use function microtime;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class FakeFileProvider extends FileProvider
 {
     /**
