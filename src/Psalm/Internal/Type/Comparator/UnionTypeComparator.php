@@ -362,7 +362,7 @@ class UnionTypeComparator
             return false;
         }
 
-        foreach ($container_type->getAtomicTypes() as $container_type_part) {
+        foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
             if ($container_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -371,7 +371,7 @@ class UnionTypeComparator
                 continue;
             }
 
-            foreach ($input_type->getAtomicTypes() as $input_type_part) {
+            foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,
@@ -411,8 +411,8 @@ class UnionTypeComparator
             return true;
         }
 
-        foreach ($type1->getAtomicTypes() as $type1_part) {
-            foreach ($type2->getAtomicTypes() as $type2_part) {
+        foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
+            foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
                 //special cases for TIntRange because it can contain a part of the other type.
                 //For exemple int<0,1> and positive-int can be identical but none contain the other
                 if (($type1_part instanceof TIntRange && $type2_part instanceof TPositiveInt)) {
