@@ -84,27 +84,6 @@ class UnionTypeComparator
                 continue;
             }
 
-            if ($input_type_part instanceof TClassConstant) {
-                $expanded = TypeExpander::expandAtomic(
-                    $codebase,
-                    $input_type_part,
-                    $input_type_part->fq_classlike_name,
-                    $input_type_part->fq_classlike_name,
-                    null,
-                    true,
-                    true
-                );
-
-                if ($expanded instanceof Atomic) {
-                    if (!$expanded instanceof TClassConstant) {
-                        $input_atomic_types[] = $expanded;
-                        continue;
-                    }
-                } else {
-                    $input_atomic_types = array_merge($expanded, $input_atomic_types);
-                    continue;
-                }
-            }
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -485,21 +464,30 @@ class UnionTypeComparator
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TTypeAlias) {
+            if (!$atomic_type instanceof TTypeAlias && !$atomic_type instanceof TClassConstant) {
                 $atomic_types[] = $atomic_type;
                 continue;
             }
+
+            if ($atomic_type instanceof TTypeAlias) {
+                $fq_classlike_name = $atomic_type->declaring_fq_classlike_name;
+            } else {
+                $fq_classlike_name = $atomic_type->fq_classlike_name;
+            }
+
             $expanded = TypeExpander::expandAtomic(
                 $codebase,
                 $atomic_type,
-                $atomic_type->declaring_fq_classlike_name,
-                $atomic_type->declaring_fq_classlike_name,
+                $fq_classlike_name,
+                $fq_classlike_name,
                 null,
                 true,
                 true
             );
             if ($expanded instanceof Atomic) {
-                $atomic_types[] = $expanded;
+                if (!$expanded instanceof TTypeAlias && !$expanded instanceof TClassConstant) {
+                    $atomic_types[] = $expanded;
+                }
                 continue;
             }
 
