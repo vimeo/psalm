@@ -152,3 +152,6 @@
    -  `Psalm\Plugin\Hook\AfterClassLikeAnalysisInterface`
    -  `Psalm\Plugin\Hook\PropertyVisibilityProviderInterface`
    -  `Psalm\Plugin\Hook\AfterStatementAnalysisInterface`
+ - [BC] Method `Psalm\Issue\CodeIssue::getLocation()` was removed
+ - [BC] Method `Psalm\Issue\CodeIssue::getFileName()` was removed
+ - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
