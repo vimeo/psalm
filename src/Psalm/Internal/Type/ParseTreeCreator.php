@@ -751,6 +751,13 @@ class ParseTreeCreator
                     $new_parent
                 );
                 ++$this->t;
+
+                $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+
+                if ($nexter_token !== null && $nexter_token[0] === '}') {
+                    $new_leaf->terminated = true;
+                    ++$this->t;
+                }
                 break;
 
             case '(':
