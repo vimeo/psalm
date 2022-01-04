@@ -112,63 +112,63 @@ final class Psalter
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalter [options] [file...]
+            Usage:
+                psalter [options] [file...]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    --debug, --debug-by-line, --debug-emitted-issues
-        Debug information
+                --debug, --debug-by-line, --debug-emitted-issues
+                    Debug information
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -m, --monochrome
-        Enable monochrome output
+                -m, --monochrome
+                    Enable monochrome output
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --plugin=PATH
-        Executes a plugin, an alternative to using the Psalm config
+                --plugin=PATH
+                    Executes a plugin, an alternative to using the Psalm config
 
-    --dry-run
-        Shows a diff of all the changes, without making them
+                --dry-run
+                    Shows a diff of all the changes, without making them
 
-    --safe-types
-        Only update PHP types when the new type information comes from other PHP types,
-        as opposed to type information that just comes from docblocks
+                --safe-types
+                    Only update PHP types when the new type information comes from other PHP types,
+                    as opposed to type information that just comes from docblocks
 
-    --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
+                --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
-    --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
-        use --issues=all
+                --issues=IssueType1,IssueType2
+                    If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as
+                    possible, use --issues=all
 
-    --list-supported-issues
-        Display the list of issues that psalter knows how to fix
+                --list-supported-issues
+                    Display the list of issues that psalter knows how to fix
 
-    --find-unused-code
-        Include unused code as a candidate for removal
+                --find-unused-code
+                    Include unused code as a candidate for removal
 
-    --threads=INT
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                --threads=INT
+                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
-    --codeowner=[codeowner]
-        You can specify a GitHub code ownership group, and only that owner's code will be updated.
+                --codeowner=[codeowner]
+                    You can specify a GitHub code ownership group, and only that owner's code will be updated.
 
-    --allow-backwards-incompatible-changes=BOOL
-        Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+                --allow-backwards-incompatible-changes=BOOL
+                    Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
 
-    --add-newline-between-docblock-annotations=BOOL
-        Whether to add or not add a new line between docblock annotations. Defaults to true.
+                --add-newline-between-docblock-annotations=BOOL
+                    Whether to add or not add a new line between docblock annotations. Defaults to true.
 
-    --no-cache
-        Runs Psalm without using cache
+                --no-cache
+                    Runs Psalm without using cache
 
-HELP;
+            HELP;
 
             exit;
         }
