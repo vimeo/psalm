@@ -1999,12 +1999,12 @@ class Codebase
 
     public function getMinorAnalysisPhpVersion(): int
     {
-        return self::transformPhpVersionId($this->analysis_php_version_id % 10000, 100);
+        return self::transformPhpVersionId($this->analysis_php_version_id % 10_000, 100);
     }
 
     public function getMajorAnalysisPhpVersion(): int
     {
-        return self::transformPhpVersionId($this->analysis_php_version_id, 10000);
+        return self::transformPhpVersionId($this->analysis_php_version_id, 10_000);
     }
 
     public static function transformPhpVersionId(int $php_version_id, int $div): int

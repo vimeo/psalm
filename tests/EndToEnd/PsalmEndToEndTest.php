@@ -152,7 +152,7 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalmDiff(): void
     {
-        if (PHP_VERSION_ID < 70400) {
+        if (PHP_VERSION_ID < 7_04_00) {
             $this->markTestSkipped('Only works on 7.4+');
         }
 

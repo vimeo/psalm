@@ -1353,10 +1353,10 @@ class ConfigTest extends TestCase
     {
         return [
             'regular' => [0, null], // flags, expected exception code
-            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1622727271],
-            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1622727281],
-            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1622727272],
-            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1622727282],
+            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1_622_727_271],
+            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1_622_727_281],
+            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1_622_727_272],
+            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1_622_727_282],
         ];
     }
 

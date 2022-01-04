@@ -475,7 +475,7 @@ final class Psalm
             ini_set('display_errors', 'stderr');
             ini_set('display_startup_errors', '1');
 
-            $memoryLimit = (8 * 1024 * 1024 * 1024);
+            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
 
             if (array_key_exists('memory-limit', $options)) {
                 $memoryLimit = $options['memory-limit'];

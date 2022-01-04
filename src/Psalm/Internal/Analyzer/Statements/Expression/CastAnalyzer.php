@@ -264,7 +264,7 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_
-            && $statements_analyzer->getCodebase()->analysis_php_version_id <= 70400
+            && $statements_analyzer->getCodebase()->analysis_php_version_id <= 7_04_00
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;

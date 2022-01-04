@@ -99,7 +99,7 @@ class Algebra
 
         //65536 seems to be a significant threshold, when put at 65537, the code https://psalm.dev/r/216f362ea6 goes
         //from seconds in analysis to many minutes
-        if ($clause_count > 65536) {
+        if ($clause_count > 65_536) {
             return [];
         }
 
@@ -443,7 +443,7 @@ class Algebra
 
                         ++$complexity;
 
-                        if ($complexity > 20000) {
+                        if ($complexity > 20_000) {
                             throw new ComplicatedExpressionException();
                         }
                     }
@@ -469,7 +469,7 @@ class Algebra
         array $right_clauses,
         int $conditional_object_id
     ): array {
-        if (count($left_clauses) > 60000 || count($right_clauses) > 60000) {
+        if (count($left_clauses) > 60_000 || count($right_clauses) > 60_000) {
             return [];
         }
 
@@ -601,7 +601,7 @@ class Algebra
         );
 
         if (!$clauses) {
-            $cond_id = mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 
@@ -616,14 +616,14 @@ class Algebra
         $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
         if (!$impossible_clauses) {
-            $cond_id = mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 
         $negated = self::simplifyCNF($impossible_clauses);
 
         if (!$negated) {
-            $cond_id = mt_rand(0, 100000000);
+            $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 

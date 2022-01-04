@@ -386,7 +386,7 @@ class StubsGenerator
                 || $atomic_type instanceof TArray
                 || $atomic_type instanceof TIterable
             ) {
-                $identifier_string = $atomic_type->toPhpString(null, [], null, 80000);
+                $identifier_string = $atomic_type->toPhpString(null, [], null, 8_00_00);
 
                 if ($identifier_string === null) {
                     throw new UnexpectedValueException(

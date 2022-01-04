@@ -85,7 +85,7 @@ class AlgebraTest extends TestCase
 
         $has_errors = false;
 
-        $dnf_stmt = StatementsProvider::parseStatements($dnf, 70400, $has_errors)[0];
+        $dnf_stmt = StatementsProvider::parseStatements($dnf, 7_04_00, $has_errors)[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $dnf_stmt);
 
@@ -101,7 +101,7 @@ class AlgebraTest extends TestCase
             $statements_analyzer
         );
 
-        $this->assertCount(6561, $dnf_clauses);
+        $this->assertCount(6_561, $dnf_clauses);
 
         $simplified_dnf_clauses = Algebra::simplifyCNF($dnf_clauses);
 

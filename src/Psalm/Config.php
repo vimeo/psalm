@@ -522,7 +522,7 @@ class Config
     /**
      * @var int
      */
-    public $max_string_length = 1000;
+    public $max_string_length = 1_000;
 
     /** @var ?IncludeCollector */
     private $include_collector;
@@ -1865,7 +1865,7 @@ class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 80000 && $codebase->analysis_php_version_id >= 80000) {
+        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -1875,7 +1875,7 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID < 80100 && $codebase->analysis_php_version_id >= 80100) {
+        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -1926,12 +1926,12 @@ class Config
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
 
-        if (PHP_VERSION_ID >= 80000 && $codebase->analysis_php_version_id >= 80000) {
+        if (PHP_VERSION_ID >= 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID >= 80100 && $codebase->analysis_php_version_id >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }

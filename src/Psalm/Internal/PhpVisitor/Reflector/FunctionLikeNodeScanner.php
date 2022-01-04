@@ -1077,7 +1077,7 @@ class FunctionLikeNodeScanner
             if ($method_name_lc === strtolower($class_name)
                 && !isset($classlike_storage->methods['__construct'])
                 && strpos($fq_classlike_name, '\\') === false
-                && $this->codebase->analysis_php_version_id <= 70400
+                && $this->codebase->analysis_php_version_id <= 7_04_00
             ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $fq_classlike_name,

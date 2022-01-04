@@ -341,7 +341,7 @@ class ElseIfAnalyzer
 
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
 
-            if ($reasonable_clause_count && $reasonable_clause_count < 20000 && $elseif_clauses) {
+            if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses) {
                 $if_scope->reasonable_clauses = Algebra::combineOredClauses(
                     $if_scope->reasonable_clauses,
                     $elseif_clauses,

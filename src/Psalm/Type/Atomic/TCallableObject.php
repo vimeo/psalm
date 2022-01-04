@@ -26,7 +26,7 @@ class TCallableObject extends TObject
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 72000 ? 'object' : null;
+        return $analysis_php_version_id >= 7_20_00 ? 'object' : null;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

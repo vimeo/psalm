@@ -9,7 +9,7 @@ use function strlen;
 
 class DefaultProgress extends LongProgress
 {
-    private const TOO_MANY_FILES = 1500;
+    private const TOO_MANY_FILES = 1_500;
 
     // Update the progress bar at most once per 0.1 seconds.
     // This reduces flickering and reduces the amount of time spent writing to STDERR and updating the terminal.

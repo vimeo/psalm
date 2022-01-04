@@ -121,16 +121,16 @@ class TNamedObject extends Atomic
         int $analysis_php_version_id
     ): ?string {
         if ($this->value === 'static') {
-            return $analysis_php_version_id >= 80000 ? 'static' : null;
+            return $analysis_php_version_id >= 8_00_00 ? 'static' : null;
         }
 
         if ($this->was_static && $this->value === $this_class) {
-            return $analysis_php_version_id >= 80000 ? 'static' : 'self';
+            return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
         $intersection = strrpos($result, '&');
-        if ($intersection === false || $analysis_php_version_id >= 80100) {
+        if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
             return $result;
         }
         return substr($result, $intersection+1);
@@ -138,7 +138,7 @@ class TNamedObject extends Atomic
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return ($this->value !== 'static' && $this->was_static === false) || $analysis_php_version_id >= 80000;
+        return ($this->value !== 'static' && $this->was_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
     public function replaceTemplateTypesWithArgTypes(

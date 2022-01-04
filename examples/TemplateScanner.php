@@ -25,7 +25,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
     ): void {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
-            70400,
+            7_04_00,
             $progress
         );
 

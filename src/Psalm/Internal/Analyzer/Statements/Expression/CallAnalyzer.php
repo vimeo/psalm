@@ -831,8 +831,8 @@ class CallAnalyzer
                     );
 
                     $assert_clauses = FormulaGenerator::getFormula(
-                        mt_rand(0, 1000000),
-                        mt_rand(0, 1000000),
+                        mt_rand(0, 1_000_000),
+                        mt_rand(0, 1_000_000),
                         $conditional,
                         $context->self,
                         $statements_analyzer,

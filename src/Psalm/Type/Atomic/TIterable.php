@@ -91,7 +91,7 @@ class TIterable extends Atomic
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 70100 ? 'iterable' : null;
+        return $analysis_php_version_id >= 7_01_00 ? 'iterable' : null;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

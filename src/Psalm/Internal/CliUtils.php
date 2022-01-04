@@ -456,13 +456,13 @@ final class CliUtils
             $limit = (int)$matches[1];
             switch (strtoupper($matches[2] ?? '')) {
                 case 'G':
-                    $limit *= 1024 * 1024 * 1024;
+                    $limit *= 1_024 * 1_024 * 1_024;
                     break;
                 case 'M':
-                    $limit *= 1024 * 1024;
+                    $limit *= 1_024 * 1_024;
                     break;
                 case 'K':
-                    $limit *= 1024;
+                    $limit *= 1_024;
                     break;
             }
         }

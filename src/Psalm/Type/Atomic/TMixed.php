@@ -36,12 +36,12 @@ class TMixed extends Atomic
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 80000 ? 'mixed' : null;
+        return $analysis_php_version_id >= 8_00_00 ? 'mixed' : null;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return $analysis_php_version_id >= 80000;
+        return $analysis_php_version_id >= 8_00_00;
     }
 
     public function getAssertionString(bool $exact = false): string

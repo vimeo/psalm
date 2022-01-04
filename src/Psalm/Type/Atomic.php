@@ -135,7 +135,7 @@ abstract class Atomic implements TypeNode
                 return new TBool();
 
             case 'void':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70100) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_01_00) {
                     return new TVoid();
                 }
 
@@ -145,14 +145,14 @@ abstract class Atomic implements TypeNode
                 return new TArrayKey();
 
             case 'iterable':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70100) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_01_00) {
                     return new TIterable();
                 }
 
                 break;
 
             case 'never':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80100) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_01_00) {
                     return new TNever();
                 }
 
@@ -164,7 +164,7 @@ abstract class Atomic implements TypeNode
                 return new TNever();
 
             case 'object':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 70200) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_02_00) {
                     return new TObject();
                 }
 
@@ -223,7 +223,7 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TTrue();
 
             case 'false':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
                     return new TFalse();
                 }
 
@@ -236,14 +236,14 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
                     return new TNull();
                 }
 
                 return new TNamedObject($value);
 
             case 'mixed':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 80000) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
                     return new TMixed();
                 }
 
