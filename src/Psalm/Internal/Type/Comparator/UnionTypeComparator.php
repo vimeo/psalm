@@ -84,27 +84,6 @@ class UnionTypeComparator
                 continue;
             }
 
-            if ($input_type_part instanceof TClassConstant) {
-                $expanded = TypeExpander::expandAtomic(
-                    $codebase,
-                    $input_type_part,
-                    $input_type_part->fq_classlike_name,
-                    $input_type_part->fq_classlike_name,
-                    null,
-                    true,
-                    true
-                );
-
-                if ($expanded instanceof Atomic) {
-                    if (!$expanded instanceof TClassConstant) {
-                        $input_atomic_types[] = $expanded;
-                        continue;
-                    }
-                } else {
-                    $input_atomic_types = array_merge($expanded, $input_atomic_types);
-                    continue;
-                }
-            }
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -383,7 +362,7 @@ class UnionTypeComparator
             return false;
         }
 
-        foreach ($container_type->getAtomicTypes() as $container_type_part) {
+        foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
             if ($container_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -392,7 +371,7 @@ class UnionTypeComparator
                 continue;
             }
 
-            foreach ($input_type->getAtomicTypes() as $input_type_part) {
+            foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,
@@ -432,8 +411,8 @@ class UnionTypeComparator
             return true;
         }
 
-        foreach ($type1->getAtomicTypes() as $type1_part) {
-            foreach ($type2->getAtomicTypes() as $type2_part) {
+        foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
+            foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
                 //special cases for TIntRange because it can contain a part of the other type.
                 //For exemple int<0,1> and positive-int can be identical but none contain the other
                 if (($type1_part instanceof TIntRange && $type2_part instanceof TPositiveInt)) {
@@ -485,21 +464,30 @@ class UnionTypeComparator
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TTypeAlias) {
+            if (!$atomic_type instanceof TTypeAlias && !$atomic_type instanceof TClassConstant) {
                 $atomic_types[] = $atomic_type;
                 continue;
             }
+
+            if ($atomic_type instanceof TTypeAlias) {
+                $fq_classlike_name = $atomic_type->declaring_fq_classlike_name;
+            } else {
+                $fq_classlike_name = $atomic_type->fq_classlike_name;
+            }
+
             $expanded = TypeExpander::expandAtomic(
                 $codebase,
                 $atomic_type,
-                $atomic_type->declaring_fq_classlike_name,
-                $atomic_type->declaring_fq_classlike_name,
+                $fq_classlike_name,
+                $fq_classlike_name,
                 null,
                 true,
                 true
             );
             if ($expanded instanceof Atomic) {
-                $atomic_types[] = $expanded;
+                if (!$expanded instanceof TTypeAlias && !$expanded instanceof TClassConstant) {
+                    $atomic_types[] = $expanded;
+                }
                 continue;
             }
 
