@@ -1307,15 +1307,41 @@ class AssertionReconciler extends Reconciler
             return $compatible_int_type;
         }
 
-        $has_int = false;
-        $literal_ints = [];
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
-            if ($existing_var_atomic_type instanceof TLiteralInt) {
-                $has_int = true;
-                $literal_ints[] = $existing_var_atomic_type->value;
-            } elseif ($existing_var_atomic_type instanceof TInt) {
-                $has_int = true;
-            } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
+            if ($existing_var_atomic_type instanceof TPositiveInt && $value > 0) {
+                return new Union([new TLiteralInt($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TIntRange && $existing_var_atomic_type->contains($value)) {
+                return new Union([new TLiteralInt($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TLiteralInt && $existing_var_atomic_type->value === $value) {
+                //if we're here, we check that we add at least another type in the union, otherwise it's redundant
+
+                if ($existing_var_type->isSingleIntLiteral()) {
+                    if ($var_id && $code_location) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $var_id,
+                            $assertion,
+                            true,
+                            $negated,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                    return $existing_var_type;
+                }
+                return new Union([new TLiteralInt($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TInt) {
+                return new Union([new TLiteralInt($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TTemplateParam) {
                 $compatible_int_type = self::getCompatibleIntType(
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
@@ -1327,43 +1353,31 @@ class AssertionReconciler extends Reconciler
                 }
 
                 if ($existing_var_atomic_type->as->hasInt()) {
-                    $has_int = true;
+                    return new Union([new TLiteralInt($value)]);
+                }
+            }
+
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralFloat
+                && (int)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+
+            //here we'll accept any type that *could* possibly be valid on loose equality and return the original type
+            if ($is_loose_equality) {
+                if ($existing_var_atomic_type instanceof TString) {
+                    return $existing_var_type;
+                }
+
+                if ($existing_var_atomic_type instanceof TFloat) {
+                    return $existing_var_type;
                 }
             }
         }
 
-        if ($has_int) {
-            $can_be_equal = false;
-            $did_remove_type = false;
-
-            foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
-                if ($atomic_key !== $value
-                    && !($atomic_type instanceof TPositiveInt && $value > 0)
-                    && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
-                ) {
-                    $existing_var_type->removeType($atomic_key);
-                    $did_remove_type = true;
-                } else {
-                    $can_be_equal = true;
-                }
-            }
-
-            if ($var_id
-                && $code_location
-                && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-            ) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    $can_be_equal,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
-                );
-            }
-        } elseif ($var_id && $code_location && !$is_loose_equality) {
+        //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
+        if ($var_id && $code_location) {
             self::triggerIssueForImpossible(
                 $existing_var_type,
                 $old_var_type_string,
@@ -1374,45 +1388,9 @@ class AssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues
             );
-        } elseif ($is_loose_equality && $existing_var_type->hasFloat()) {
-            // convert floats to ints
-            $existing_float_types = $existing_var_type->getLiteralFloats();
-
-            if ($existing_float_types) {
-                $can_be_equal = false;
-                $did_remove_type = false;
-
-                foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                    if (strpos($atomic_key, 'float(') === 0) {
-                        $atomic_key = 'int(' . substr($atomic_key, 6);
-                    }
-                    if ($atomic_key !== $assertion) {
-                        $existing_var_type->removeType($atomic_key);
-                        $did_remove_type = true;
-                    } else {
-                        $can_be_equal = true;
-                    }
-                }
-
-                if ($var_id
-                    && $code_location
-                    && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $var_id,
-                        $assertion,
-                        $can_be_equal,
-                        $negated,
-                        $code_location,
-                        $suppressed_issues
-                    );
-                }
-            }
         }
 
-        return $existing_var_type;
+        return Type::getNever();
     }
 
     /**
