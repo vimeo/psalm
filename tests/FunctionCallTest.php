@@ -673,6 +673,19 @@ class FunctionCallTest extends TestCase
                     '$fragment' => 'false|null|string',
                 ],
             ],
+            'parseUrlDefaultComponent' => [
+                '<?php
+                    $component = -1;
+                    $url = "foo";
+                    $a = parse_url($url, -1);
+                    $b = parse_url($url, -42);
+                    $c = parse_url($url, $component);',
+                'assertions' => [
+                    '$a' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$b' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$c' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                ],
+            ],
             'triggerUserError' => [
                 '<?php
                     function mightLeave() : string {
