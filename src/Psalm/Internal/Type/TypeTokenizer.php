@@ -54,7 +54,6 @@ class TypeTokenizer
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
-        'mysql-escaped-string' => true, // deprecated, should be removed in Psalm 5
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
