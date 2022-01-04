@@ -15,8 +15,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function count;
-
 use const PHP_URL_FRAGMENT;
 use const PHP_URL_HOST;
 use const PHP_URL_PASS;
