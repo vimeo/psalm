@@ -1006,7 +1006,7 @@ class ConditionalTest extends TestCase
                     atan($a);
                     atan($b);',
             ],
-            'PHP71-removeNonCallable' => [
+            'removeNonCallable' => [
                 '<?php
                     $f = rand(0, 1) ? "strlen" : 1.1;
                     if (is_callable($f)) {

@@ -330,7 +330,7 @@ class ClosureTest extends TestCase
                         }
                     }',
             ],
-            'PHP71-mirrorCallableParams' => [
+            'mirrorCallableParams' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -357,7 +357,7 @@ class ClosureTest extends TestCase
                         [1, 2, 3]
                     );',
             ],
-            'PHP71-closureFromCallableInvokableNamedClass' => [
+            'closureFromCallableInvokableNamedClass' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -373,7 +373,7 @@ class ClosureTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
             ],
-            'PHP71-closureFromCallableInvokableAnonymousClass' => [
+            'closureFromCallableInvokableAnonymousClass' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -389,7 +389,7 @@ class ClosureTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable($anonInvokable));',
             ],
-            'PHP71-publicCallableFromInside' => [
+            'publicCallableFromInside' => [
                 '<?php
                     class Base  {
                         public function publicMethod() : void {}
@@ -401,7 +401,7 @@ class ClosureTest extends TestCase
                         }
                     }',
             ],
-            'PHP71-protectedCallableFromInside' => [
+            'protectedCallableFromInside' => [
                 '<?php
                     class Base  {
                         protected function protectedMethod() : void {}
@@ -413,7 +413,7 @@ class ClosureTest extends TestCase
                         }
                     }',
             ],
-            'PHP71-closureFromCallableNamedFunction' => [
+            'closureFromCallableNamedFunction' => [
                 '<?php
                     $closure = Closure::fromCallable("strlen");
                 ',
@@ -965,7 +965,7 @@ class ClosureTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'PHP71-closureFromCallableInvokableNamedClassWrongArgs' => [
+            'closureFromCallableInvokableNamedClassWrongArgs' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -999,7 +999,7 @@ class ClosureTest extends TestCase
                     };',
                 'error_message' => 'DuplicateParam',
             ],
-            'PHP71-privateCallable' => [
+            'privateCallable' => [
                 '<?php
                     class Base  {
                         private function privateMethod() : void {}
