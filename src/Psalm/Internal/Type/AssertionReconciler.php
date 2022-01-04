@@ -386,7 +386,6 @@ class AssertionReconciler extends Reconciler
                 if ($existing_var_type_part instanceof TNamedObject
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
-                    $new_type_part->addIntersectionType($existing_var_type_part);
                     $acceptable_atomic_types[] = clone $existing_var_type_part;
                 } else {
                     if (AtomicTypeComparator::isContainedBy(
