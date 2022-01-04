@@ -20,6 +20,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
@@ -36,7 +37,9 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
@@ -44,6 +47,7 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function array_merge;
+use function array_push;
 use function count;
 use function explode;
 use function get_class;
@@ -978,15 +982,37 @@ class AssertionReconciler extends Reconciler
 
         $scalar_type = substr($assertion, 0, $bracket_pos);
 
-        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+        $existing_var_atomic_types = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TClassConstant) {
+                $expanded = TypeExpander::expandAtomic(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_atomic_type,
+                    $existing_var_atomic_type->fq_classlike_name,
+                    $existing_var_atomic_type->fq_classlike_name,
+                    null,
+                    true,
+                    true
+                );
+
+                if ($expanded instanceof Atomic) {
+                    $existing_var_atomic_types[] = $expanded;
+                } else {
+                    array_push($existing_var_atomic_types, ...$expanded);
+                }
+            } else {
+                $existing_var_atomic_types[] = $existing_var_atomic_type;
+            }
+        }
 
         if ($scalar_type === 'int') {
             return self::handleLiteralEqualityWithInt(
-                $statements_analyzer,
                 $assertion,
                 $bracket_pos,
                 $is_loose_equality,
                 $existing_var_type,
+                $existing_var_atomic_types,
                 $old_var_type_string,
                 $var_id,
                 $negated,
@@ -1253,14 +1279,15 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param  string[]          $suppressed_issues
+     * @param list<Atomic> $existing_var_atomic_types
+     * @param string[]     $suppressed_issues
      */
     private static function handleLiteralEqualityWithInt(
-        StatementsAnalyzer $statements_analyzer,
         string             $assertion,
         int                $bracket_pos,
         bool               $is_loose_equality,
         Union              $existing_var_type,
+        array              $existing_var_atomic_types,
         string             $old_var_type_string,
         ?string            $var_id,
         bool               $negated,
@@ -1269,18 +1296,32 @@ class AssertionReconciler extends Reconciler
     ): Union {
         $value = (int) substr($assertion, $bracket_pos + 1, -1);
 
-        $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+        $compatible_int_type = self::getCompatibleIntType(
+            $existing_var_type,
+            $existing_var_atomic_types,
+            $value,
+            $is_loose_equality
+        );
+
         if ($compatible_int_type !== null) {
             return $compatible_int_type;
         }
 
         $has_int = false;
-        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+        $literal_ints = [];
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
-            if ($existing_var_atomic_type instanceof TInt) {
+            if ($existing_var_atomic_type instanceof TLiteralInt) {
+                $has_int = true;
+                $literal_ints[] = $existing_var_atomic_type->value;
+            } elseif ($existing_var_atomic_type instanceof TInt) {
                 $has_int = true;
             } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
-                $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+                $compatible_int_type = self::getCompatibleIntType(
+                    $existing_var_type,
+                    $existing_var_atomic_type->as->getAtomicTypes(),
+                    $value,
+                    $is_loose_equality
+                );
                 if ($compatible_int_type !== null) {
                     return $compatible_int_type;
                 }
@@ -1288,82 +1329,39 @@ class AssertionReconciler extends Reconciler
                 if ($existing_var_atomic_type->as->hasInt()) {
                     $has_int = true;
                 }
-            } elseif ($existing_var_atomic_type instanceof TClassConstant) {
-                $expanded = TypeExpander::expandAtomic(
-                    $statements_analyzer->getCodebase(),
-                    $existing_var_atomic_type,
-                    $existing_var_atomic_type->fq_classlike_name,
-                    $existing_var_atomic_type->fq_classlike_name,
-                    null,
-                    true,
-                    true
-                );
-
-                if ($expanded instanceof Atomic) {
-                    $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
-                    if ($compatible_int_type !== null) {
-                        return $compatible_int_type;
-                    }
-
-                    if ($expanded instanceof TInt) {
-                        $has_int = true;
-                    }
-                } else {
-                    foreach ($expanded as $expanded_type) {
-                        $compatible_int_type = self::getCompatibleIntType(
-                            $existing_var_type,
-                            $value,
-                            $is_loose_equality
-                        );
-
-                        if ($compatible_int_type !== null) {
-                            return $compatible_int_type;
-                        }
-
-                        if ($expanded_type instanceof TInt) {
-                            $has_int = true;
-                        }
-                    }
-                }
             }
         }
 
         if ($has_int) {
-            $existing_int_types = $existing_var_type->getLiteralInts();
+            $can_be_equal = false;
+            $did_remove_type = false;
 
-            if ($existing_int_types) {
-                $can_be_equal = false;
-                $did_remove_type = false;
-
-                foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
-                    if ($atomic_key !== $assertion
-                        && !($atomic_type instanceof TPositiveInt && $value > 0)
-                        && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
-                    ) {
-                        $existing_var_type->removeType($atomic_key);
-                        $did_remove_type = true;
-                    } else {
-                        $can_be_equal = true;
-                    }
-                }
-
-                if ($var_id
-                    && $code_location
-                    && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+            foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
+                if ($atomic_key !== $value
+                    && !($atomic_type instanceof TPositiveInt && $value > 0)
+                    && !($atomic_type instanceof TIntRange && $atomic_type->contains($value))
                 ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $var_id,
-                        $assertion,
-                        $can_be_equal,
-                        $negated,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    $existing_var_type->removeType($atomic_key);
+                    $did_remove_type = true;
+                } else {
+                    $can_be_equal = true;
                 }
-            } else {
-                $existing_var_type = new Union([new TLiteralInt($value)]);
+            }
+
+            if ($var_id
+                && $code_location
+                && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $assertion,
+                    $can_be_equal,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         } elseif ($var_id && $code_location && !$is_loose_equality) {
             self::triggerIssueForImpossible(
@@ -1417,21 +1415,27 @@ class AssertionReconciler extends Reconciler
         return $existing_var_type;
     }
 
+    /**
+     * @param list<Atomic> $existing_var_atomic_types
+     */
     private static function getCompatibleIntType(
         Union $existing_var_type,
+        array $existing_var_atomic_types,
         int $value,
         bool $is_loose_equality
     ): ?Union {
-        if ($existing_var_type->hasMixed()
-            || $existing_var_type->hasScalar()
-            || $existing_var_type->hasNumeric()
-            || $existing_var_type->hasArrayKey()
-        ) {
-            if ($is_loose_equality) {
-                return $existing_var_type;
-            }
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TMixed
+                || $existing_var_atomic_type instanceof TScalar
+                || $existing_var_atomic_type instanceof TNumeric
+                || $existing_var_atomic_type instanceof TArrayKey
+            ) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
 
-            return new Union([new TLiteralInt($value)]);
+                return new Union([new TLiteralInt($value)]);
+            }
         }
 
         return null;
