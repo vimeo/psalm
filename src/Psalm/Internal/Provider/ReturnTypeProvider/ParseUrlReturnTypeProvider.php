@@ -112,7 +112,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                     if ($component_type->isSingleIntLiteral()) {
                         $component_type_type = $component_type->getSingleIntLiteral();
-                        $is_default_component = $component_type_type->value <= 1;
+                        $is_default_component = $component_type_type->value <= -1;
                     }
                 }
             }
