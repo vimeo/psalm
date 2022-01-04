@@ -15,8 +15,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function count;
-
 use const PHP_URL_FRAGMENT;
 use const PHP_URL_HOST;
 use const PHP_URL_PASS;
@@ -44,7 +42,8 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getMixed();
         }
 
-        if (count($call_args) > 1) {
+        if (isset($call_args[1])) {
+            $is_default_component = false;
             if ($component_type = $statements_source->node_data->getType($call_args[1]->value)) {
                 if (!$component_type->hasMixed()) {
                     $codebase = $statements_source->getCodebase();
@@ -110,22 +109,29 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         return $nullable_falsable_int;
                     }
+
+                    if ($component_type->isSingleIntLiteral()) {
+                        $component_type_type = $component_type->getSingleIntLiteral();
+                        $is_default_component = $component_type_type->value <= -1;
+                    }
                 }
             }
 
-            $nullable_string_or_int = new Union([
-                new TString,
-                new TInt,
-                new TNull,
-            ]);
+            if (!$is_default_component) {
+                $nullable_string_or_int = new Union([
+                    new TString,
+                    new TInt,
+                    new TNull,
+                ]);
 
-            $codebase = $statements_source->getCodebase();
+                $codebase = $statements_source->getCodebase();
 
-            if ($codebase->config->ignore_internal_nullable_issues) {
-                $nullable_string_or_int->ignore_nullable_issues = true;
+                if ($codebase->config->ignore_internal_nullable_issues) {
+                    $nullable_string_or_int->ignore_nullable_issues = true;
+                }
+
+                return $nullable_string_or_int;
             }
-
-            return $nullable_string_or_int;
         }
 
         $component_types = [
