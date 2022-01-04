@@ -39,19 +39,7 @@ trait ValidCodeAnalysisTestTrait
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP71-') !== false) {
-            if (version_compare(PHP_VERSION, '7.1.0', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.1.');
-            }
-        } elseif (strpos($test_name, 'PHP72-') !== false) {
-            if (version_compare(PHP_VERSION, '7.2.0', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.2.');
-            }
-        } elseif (strpos($test_name, 'PHP73-') !== false) {
-            if (version_compare(PHP_VERSION, '7.3.0', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.3.');
-            }
-        } elseif (strpos($test_name, 'PHP80-') !== false) {
+        if (strpos($test_name, 'PHP80-') !== false) {
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }

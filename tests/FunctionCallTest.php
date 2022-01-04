@@ -1032,7 +1032,7 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ],
             ],
-            'PHP73-hrtime' => [
+            'hrtime' => [
                 '<?php
                     $a = hrtime(true);
                     $b = hrtime();
@@ -1046,7 +1046,7 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array{0: int, 1: int}',
                 ],
             ],
-            'PHP73-hrtimeCanBeFloat' => [
+            'hrtimeCanBeFloat' => [
                 '<?php
                     $a = hrtime(true);
 
@@ -1239,7 +1239,7 @@ class FunctionCallTest extends TestCase
                     /** @psalm-suppress TooFewArguments */
                     min(0);',
             ],
-            'PHP73-allowIsCountableToInformType' => [
+            'allowIsCountableToInformType' => [
                 '<?php
                     function getObject() : iterable{
                        return [];
@@ -1345,7 +1345,7 @@ class FunctionCallTest extends TestCase
                     '$matches===' => 'array<array-key, array{string, int}>',
                 ],
             ],
-            'PHP72-pregMatchWithFlagUnmatchedAsNull' => [
+            'pregMatchWithFlagUnmatchedAsNull' => [
                 '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
@@ -1353,7 +1353,7 @@ class FunctionCallTest extends TestCase
                     '$matches===' => 'array<array-key, null|string>',
                 ],
             ],
-            'PHP72-pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
+            'pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
                 '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
@@ -1399,7 +1399,7 @@ class FunctionCallTest extends TestCase
                         return compact("a", "b", "c");
                     }',
             ],
-            'PHP73-setCookiePhp73' => [
+            'setCookiePhp73' => [
                 '<?php
                     setcookie(
                         "name",
