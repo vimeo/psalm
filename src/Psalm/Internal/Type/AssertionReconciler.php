@@ -482,7 +482,7 @@ class AssertionReconciler extends Reconciler
                 && !$new_type_has_interface
                 && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
                     || ($key !== '$this'
-                        && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString())))
+                        && strpos($original_assertion, 'isa-') !== 0))
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $existing_var_type,
