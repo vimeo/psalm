@@ -662,7 +662,7 @@ abstract class Type
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
-        bool &$intersection_performed,
+        bool &$intersection_performed
     ): ?Atomic {
         $intersection_atomic = null;
         $wider_type = null;

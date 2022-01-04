@@ -634,7 +634,7 @@ class AssertionReconciler extends Reconciler
         Codebase $codebase,
         array $template_type_map,
         bool &$has_local_match,
-        bool &$any_scalar_type_match_found,
+        bool &$any_scalar_type_match_found
     ): ?Atomic {
         if ($existing_type_part instanceof TFloat
             && $new_type_part instanceof TInt
