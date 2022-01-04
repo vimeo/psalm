@@ -80,10 +80,7 @@
     "autoload": {
         "psr-4": {
             "Psalm\\": "src/Psalm/"
-        },
-        "files": [
-            "src/spl_object_id.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
