@@ -473,30 +473,6 @@ class AssertionReconciler extends Reconciler
         } elseif (!$new_type->hasMixed()) {
             $has_match = true;
 
-            if ($key
-                && $code_location
-                && $new_type->getId() === $existing_var_type->getId()
-                //even if two objects are the same, equality is not guaranteed
-                // example: (ErrorException and TypeError are both Throwable but not equal)
-                && !$new_type->hasNamedObjectType()
-                && !$is_equality
-                && !($original_assertion === 'loaded-class-string' && $old_var_type_string === 'class-string')
-                && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
-                    || ($key !== '$this'
-                        && !($existing_var_type->hasLiteralClassString() && $new_type->hasLiteralClassString())))
-            ) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $key,
-                    $original_assertion,
-                    true,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
-                );
-            }
-
             $any_scalar_type_match_found = false;
 
             if ($code_location
