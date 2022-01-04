@@ -176,39 +176,37 @@ class NegatedAssertionReconciler extends Reconciler
 
             // if there wasn't a direct hit, go deeper, eliminating subtypes
             if (!$existing_var_type->removeType($assertion)) {
-                foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
-                    if (!$existing_var_type_part->isObjectType() || strpos($assertion, '-')) {
-                        continue;
-                    }
-
+                if (!strpos($assertion, '-')) {
                     $assertion_type = Type::parseString($assertion, null, $template_type_map);
 
-                    if (!$assertion_type->isSingle()) {
-                        continue;
-                    }
+                    if ($assertion_type->isSingle()) {
+                        $new_type_part = $assertion_type->getSingleAtomic();
 
-                    $new_type_part = $assertion_type->getSingleAtomic();
+                        if ($new_type_part instanceof TNamedObject) {
+                            foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
+                                if (!$existing_var_type_part->isObjectType()) {
+                                    continue;
+                                }
 
-                    if (!$new_type_part instanceof TNamedObject) {
-                        continue;
-                    }
-
-                    if (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_type_part,
-                        false,
-                        false
-                    )) {
-                        $existing_var_type->removeType($part_name);
-                    } elseif (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $new_type_part,
-                        $existing_var_type_part,
-                        false,
-                        false
-                    )) {
-                        $existing_var_type->different = true;
+                                if (AtomicTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $existing_var_type_part,
+                                    $new_type_part,
+                                    false,
+                                    false
+                                )) {
+                                    $existing_var_type->removeType($part_name);
+                                } elseif (AtomicTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $new_type_part,
+                                    $existing_var_type_part,
+                                    false,
+                                    false
+                                )) {
+                                    $existing_var_type->different = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
