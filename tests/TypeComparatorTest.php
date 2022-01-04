@@ -73,7 +73,6 @@ class TypeComparatorTest extends TestCase
             $basic_generic_types,
             [
                 'open-resource' => true, // unverifiable
-                'mysql-escaped-string' => true, // deprecated
                 'non-empty-countable' => true, // bit weird, maybe a bug?
             ]
         );
