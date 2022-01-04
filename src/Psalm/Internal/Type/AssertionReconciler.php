@@ -1025,116 +1025,20 @@ class AssertionReconciler extends Reconciler
             || $scalar_type === 'callable-string'
             || $scalar_type === 'trait-string'
         ) {
-            if ($existing_var_type->hasMixed()
-                || $existing_var_type->hasScalar()
-                || $existing_var_type->hasArrayKey()
-            ) {
-                if ($is_loose_equality) {
-                    return $existing_var_type;
-                }
-
-                if ($scalar_type === 'class-string'
-                    || $scalar_type === 'interface-string'
-                    || $scalar_type === 'trait-string'
-                ) {
-                    return new Union([new TLiteralClassString($value)]);
-                }
-
-                return new Union([new TLiteralString($value)]);
-            }
-
-            $has_string = false;
-
-            foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
-                if ($existing_var_atomic_type instanceof TString) {
-                    $has_string = true;
-                } elseif ($existing_var_atomic_type instanceof TTemplateParam) {
-                    if ($existing_var_atomic_type->as->hasMixed()
-                        || $existing_var_atomic_type->as->hasString()
-                        || $existing_var_atomic_type->as->hasScalar()
-                        || $existing_var_atomic_type->as->hasArrayKey()
-                    ) {
-                        if ($is_loose_equality) {
-                            return $existing_var_type;
-                        }
-
-                        $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                        $existing_var_atomic_type->as = self::handleLiteralEquality(
-                            $statements_analyzer,
-                            $assertion,
-                            $bracket_pos,
-                            false,
-                            $existing_var_atomic_type->as,
-                            $old_var_type_string,
-                            $var_id,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-
-                        return new Union([$existing_var_atomic_type]);
-                    }
-
-                    if ($existing_var_atomic_type->as->hasString()) {
-                        $has_string = true;
-                    }
-                }
-            }
-
-            if ($has_string) {
-                $existing_string_types = $existing_var_type->getLiteralStrings();
-
-                if ($existing_string_types) {
-                    $can_be_equal = false;
-                    $did_remove_type = false;
-
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($atomic_key !== $assertion) {
-                            $existing_var_type->removeType($atomic_key);
-                            $did_remove_type = true;
-                        } else {
-                            $can_be_equal = true;
-                        }
-                    }
-
-                    if ($var_id
-                        && $code_location
-                        && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                    ) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $var_id,
-                            $assertion,
-                            $can_be_equal,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
-                } else {
-                    if ($scalar_type === 'class-string'
-                        || $scalar_type === 'interface-string'
-                        || $scalar_type === 'trait-string'
-                    ) {
-                        $existing_var_type = new Union([new TLiteralClassString($value)]);
-                    } else {
-                        $existing_var_type = new Union([new TLiteralString($value)]);
-                    }
-                }
-            } elseif ($var_id && $code_location && !$is_loose_equality) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    false,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
-                );
-            }
+            return self::handleLiteralEqualityWithString(
+                $statements_analyzer,
+                $assertion,
+                $scalar_type,
+                $bracket_pos,
+                $is_loose_equality,
+                $existing_var_type,
+                $existing_var_atomic_types,
+                $old_var_type_string,
+                $var_id,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
         } elseif ($scalar_type === 'float') {
             $value = (float) $value;
 
@@ -1395,6 +1299,138 @@ class AssertionReconciler extends Reconciler
 
     /**
      * @param list<Atomic> $existing_var_atomic_types
+     * @param string[]     $suppressed_issues
+     */
+    private static function handleLiteralEqualityWithString(
+        StatementsAnalyzer $statements_analyzer,
+        string             $assertion,
+        string             $scalar_type,
+        int                $bracket_pos,
+        bool               $is_loose_equality,
+        Union              $existing_var_type,
+        array              $existing_var_atomic_types,
+        string             $old_var_type_string,
+        ?string            $var_id,
+        bool               $negated,
+        ?CodeLocation      $code_location,
+        array              $suppressed_issues
+    ): Union {
+        $value = substr($assertion, $bracket_pos + 1, -1);
+
+        $compatible_string_type = self::getCompatibleStringType(
+            $existing_var_type,
+            $existing_var_atomic_types,
+            $value,
+            $scalar_type,
+            $is_loose_equality
+        );
+
+        if ($compatible_string_type !== null) {
+            return $compatible_string_type;
+        }
+
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TLiteralString && $existing_var_atomic_type->value === $value) {
+                //if we're here, we check that we add at least another type in the union, otherwise it's redundant
+
+                if ($existing_var_type->isSingleStringLiteral()) {
+                    if ($var_id && $code_location) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $var_id,
+                            $assertion,
+                            true,
+                            $negated,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                    return $existing_var_type;
+                }
+
+                if ($scalar_type === 'class-string'
+                    || $scalar_type === 'interface-string'
+                    || $scalar_type === 'trait-string'
+                ) {
+                    return new Union([new TLiteralClassString($value)]);
+                }
+
+                return new Union([new TLiteralString($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TString) {
+                if ($scalar_type === 'class-string'
+                    || $scalar_type === 'interface-string'
+                    || $scalar_type === 'trait-string'
+                ) {
+                    return new Union([new TLiteralClassString($value)]);
+                }
+
+                return new Union([new TLiteralString($value)]);
+            }
+
+            if ($existing_var_atomic_type instanceof TTemplateParam) {
+                $compatible_string_type = self::getCompatibleStringType(
+                    $existing_var_type,
+                    $existing_var_atomic_type->as->getAtomicTypes(),
+                    $value,
+                    $scalar_type,
+                    $is_loose_equality
+                );
+                if ($compatible_string_type !== null) {
+                    return $compatible_string_type;
+                }
+
+                if ($existing_var_atomic_type->as->hasString()) {
+                    if ($scalar_type === 'class-string'
+                        || $scalar_type === 'interface-string'
+                        || $scalar_type === 'trait-string'
+                    ) {
+                        return new Union([new TLiteralClassString($value)]);
+                    }
+
+                    return new Union([new TLiteralString($value)]);
+                }
+
+                $existing_var_atomic_type = clone $existing_var_atomic_type;
+
+                $existing_var_atomic_type->as = self::handleLiteralEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $bracket_pos,
+                    false,
+                    $existing_var_atomic_type->as,
+                    $old_var_type_string,
+                    $var_id,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+
+                return new Union([$existing_var_atomic_type]);
+            }
+        }
+
+        //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
+        if ($var_id && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                $assertion,
+                false,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+        }
+
+        return Type::getNever();
+    }
+
+    /**
+     * @param list<Atomic> $existing_var_atomic_types
      */
     private static function getCompatibleIntType(
         Union $existing_var_type,
@@ -1413,6 +1449,39 @@ class AssertionReconciler extends Reconciler
                 }
 
                 return new Union([new TLiteralInt($value)]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Atomic> $existing_var_atomic_types
+     */
+    private static function getCompatibleStringType(
+        Union $existing_var_type,
+        array $existing_var_atomic_types,
+        string $value,
+        string $scalar_type,
+        bool $is_loose_equality
+    ): ?Union {
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TMixed
+                || $existing_var_atomic_type instanceof TScalar
+                || $existing_var_atomic_type instanceof TArrayKey
+            ) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
+                if ($scalar_type === 'class-string'
+                    || $scalar_type === 'interface-string'
+                    || $scalar_type === 'trait-string'
+                ) {
+                    return new Union([new TLiteralClassString($value)]);
+                }
+
+                return new Union([new TLiteralString($value)]);
             }
         }
 
