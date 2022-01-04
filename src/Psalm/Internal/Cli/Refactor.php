@@ -122,37 +122,37 @@ final class Refactor
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalm-refactor [options] [symbol1] into [symbol2]
+            Usage:
+                psalm-refactor [options] [symbol1] into [symbol2]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    --debug, --debug-by-line, --debug-emitted-issues
-        Debug information
+                --debug, --debug-by-line, --debug-emitted-issues
+                    Debug information
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --threads=auto
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-        By default
+                --threads=auto
+                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                    By default
 
-    --move "[Identifier]" --into "[Class]"
-        Moves the specified item into the class. More than one item can be moved into a class
-        by passing a comma-separated list of values e.g.
+                --move "[Identifier]" --into "[Class]"
+                    Moves the specified item into the class. More than one item can be moved into a class
+                    by passing a comma-separated list of values e.g.
 
-        --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
+                    --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
 
-    --rename "[Identifier]" --to "[NewIdentifier]"
-        Renames a specified item (e.g. method) and updates all references to it that Psalm can
-        identify.
+                --rename "[Identifier]" --to "[NewIdentifier]"
+                    Renames a specified item (e.g. method) and updates all references to it that Psalm can
+                    identify.
 
-HELP;
+            HELP;
 
             exit;
         }
