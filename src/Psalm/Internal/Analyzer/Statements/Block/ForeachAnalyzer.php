@@ -279,7 +279,7 @@ class ForeachAnalyzer
         }
 
         if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_type = $key_type ?? Type::getMixed();
+            $key_type ??= Type::getMixed();
 
             AssignmentAnalyzer::analyze(
                 $statements_analyzer,
@@ -292,7 +292,7 @@ class ForeachAnalyzer
             );
         }
 
-        $value_type = $value_type ?? Type::getMixed();
+        $value_type ??= Type::getMixed();
 
         if ($stmt->byRef) {
             $value_type->by_ref = true;
