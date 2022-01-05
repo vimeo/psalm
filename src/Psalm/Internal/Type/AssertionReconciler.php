@@ -1042,98 +1042,20 @@ class AssertionReconciler extends Reconciler
                 $suppressed_issues
             );
         } elseif ($scalar_type === 'float') {
-            $value = (float) $value;
-
-            if ($existing_var_type->hasMixed() || $existing_var_type->hasScalar() || $existing_var_type->hasNumeric()) {
-                if ($is_loose_equality) {
-                    return $existing_var_type;
-                }
-
-                return new Union([new TLiteralFloat($value)]);
-            }
-
-            if ($existing_var_type->hasFloat()) {
-                $existing_float_types = $existing_var_type->getLiteralFloats();
-
-                if ($existing_float_types) {
-                    $can_be_equal = false;
-                    $did_remove_type = false;
-
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($atomic_key !== $assertion) {
-                            $existing_var_type->removeType($atomic_key);
-                            $did_remove_type = true;
-                        } else {
-                            $can_be_equal = true;
-                        }
-                    }
-
-                    if ($var_id
-                        && $code_location
-                        && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                    ) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $var_id,
-                            $assertion,
-                            $can_be_equal,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
-                } else {
-                    $existing_var_type = new Union([new TLiteralFloat($value)]);
-                }
-            } elseif ($var_id && $code_location && !$is_loose_equality) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    false,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
-                );
-            } elseif ($is_loose_equality && $existing_var_type->hasInt()) {
-                // convert ints to floats
-                $existing_float_types = $existing_var_type->getLiteralInts();
-
-                if ($existing_float_types) {
-                    $can_be_equal = false;
-                    $did_remove_type = false;
-
-                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if (strpos($atomic_key, 'int(') === 0) {
-                            $atomic_key = 'float(' . substr($atomic_key, 4);
-                        }
-                        if ($atomic_key !== $assertion) {
-                            $existing_var_type->removeType($atomic_key);
-                            $did_remove_type = true;
-                        } else {
-                            $can_be_equal = true;
-                        }
-                    }
-
-                    if ($var_id
-                        && $code_location
-                        && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
-                    ) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $var_id,
-                            $assertion,
-                            $can_be_equal,
-                            $negated,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
-                }
-            }
+            return self::handleLiteralEqualityWithFloat(
+                $statements_analyzer,
+                $assertion,
+                $scalar_type,
+                $bracket_pos,
+                $is_loose_equality,
+                $existing_var_type,
+                $existing_var_atomic_types,
+                $old_var_type_string,
+                $var_id,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
         } elseif ($scalar_type === 'enum') {
             [$fq_enum_name, $case_name] = explode('::', $value);
 
@@ -1503,6 +1425,150 @@ class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @param string[]     $suppressed_issues
+     */
+    private static function handleLiteralEqualityWithFloat(
+        StatementsAnalyzer $statements_analyzer,
+        string             $assertion,
+        string             $scalar_type,
+        int                $bracket_pos,
+        bool               $is_loose_equality,
+        Union              $existing_var_type,
+        array              $existing_var_atomic_types,
+        string             $old_var_type_string,
+        ?string            $var_id,
+        bool               $negated,
+        ?CodeLocation      $code_location,
+        array              $suppressed_issues
+    ): Union {
+        $value = (float)substr($assertion, $bracket_pos + 1, -1);
+
+        // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
+        $literal_asserted_type = new Union([new TLiteralFloat($value)]);
+        $literal_asserted_type->from_docblock = $existing_var_type->from_docblock;
+
+        $compatible_float_type = self::getCompatibleFloatType(
+            $existing_var_type,
+            $existing_var_atomic_types,
+            $value,
+            $is_loose_equality
+        );
+
+        if ($compatible_float_type !== null) {
+            return $compatible_float_type;
+        }
+
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TLiteralFloat && $existing_var_atomic_type->value === $value) {
+                //if we're here, we check that we had at least another type in the union, otherwise it's redundant
+
+                if ($existing_var_type->isSingleFloatLiteral()) {
+                    if ($var_id && $code_location) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $var_id,
+                            $assertion,
+                            true,
+                            $negated,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                    return $existing_var_type;
+                }
+
+                return $literal_asserted_type;
+            }
+
+            if ($existing_var_atomic_type instanceof TFloat && !$existing_var_atomic_type instanceof TLiteralFloat) {
+                return $literal_asserted_type;
+            }
+
+            if ($existing_var_atomic_type instanceof TTemplateParam) {
+                $compatible_float_type = self::getCompatibleFloatType(
+                    $existing_var_type,
+                    $existing_var_atomic_type->as->getAtomicTypes(),
+                    $value,
+                    $is_loose_equality
+                );
+                if ($compatible_float_type !== null) {
+                    return $compatible_float_type;
+                }
+
+                if ($existing_var_atomic_type->as->hasFloat()) {
+                    return $literal_asserted_type;
+                }
+
+                $existing_var_atomic_type = clone $existing_var_atomic_type;
+
+                $existing_var_atomic_type->as = self::handleLiteralEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $bracket_pos,
+                    false,
+                    $existing_var_atomic_type->as,
+                    $old_var_type_string,
+                    $var_id,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+
+                return new Union([$existing_var_atomic_type]);
+            }
+
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralInt
+                && (float)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralString
+                && (float)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+        }
+
+        //here we'll accept non-literal type that *could* match on loose equality and return the original type
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($is_loose_equality) {
+                if ($existing_var_atomic_type instanceof TInt
+                    && !$existing_var_atomic_type instanceof TLiteralInt
+                ) {
+                    return $existing_var_type;
+                }
+
+                if ($existing_var_atomic_type instanceof TFloat
+                    && !$existing_var_atomic_type instanceof TLiteralFloat
+                ) {
+                    return $existing_var_type;
+                }
+            }
+        }
+
+        //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
+        if ($var_id && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                $assertion,
+                false,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+        }
+
+        return Type::getNever();
+    }
+
+    /**
+     * @param array<string, Atomic> $existing_var_atomic_types
      */
     private static function getCompatibleIntType(
         Union $existing_var_type,
@@ -1558,6 +1624,33 @@ class AssertionReconciler extends Reconciler
                 }
 
                 $asserted_type = new Union([new TLiteralString($value)]);
+                $asserted_type->from_docblock = $existing_var_type->from_docblock;
+                return $asserted_type;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, Atomic> $existing_var_atomic_types
+     */
+    private static function getCompatibleFloatType(
+        Union $existing_var_type,
+        array $existing_var_atomic_types,
+        int $value,
+        bool $is_loose_equality
+    ): ?Union {
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TMixed
+                || $existing_var_atomic_type instanceof TScalar
+                || $existing_var_atomic_type instanceof TNumeric
+            ) {
+                if ($is_loose_equality) {
+                    return $existing_var_type;
+                }
+
+                $asserted_type = new Union([new TLiteralFloat($value)]);
                 $asserted_type->from_docblock = $existing_var_type->from_docblock;
                 return $asserted_type;
             }
