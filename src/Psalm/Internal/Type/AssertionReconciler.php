@@ -1288,6 +1288,16 @@ class AssertionReconciler extends Reconciler
                 return new Union([$existing_var_atomic_type]);
             }
 
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralString
+                && (int)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+        }
+
+        //here we'll accept non-literal type that *could* match on loose equality and return the original type
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             //here we'll accept non-literal type that *could* match on loose equality and return the original type
             if ($is_loose_equality) {
                 if ($existing_var_atomic_type instanceof TString
@@ -1441,6 +1451,23 @@ class AssertionReconciler extends Reconciler
                 return new Union([$existing_var_atomic_type]);
             }
 
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralInt
+                && (string)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+
+            if ($is_loose_equality
+                && $existing_var_atomic_type instanceof TLiteralFloat
+                && (string)$existing_var_atomic_type->value === $value
+            ) {
+                return new Union([$existing_var_atomic_type]);
+            }
+        }
+
+        //here we'll accept non-literal type that *could* match on loose equality and return the original type
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             //here we'll accept non-literal type that *could* match on loose equality and return the original type
             if ($is_loose_equality) {
                 if ($existing_var_atomic_type instanceof TInt
