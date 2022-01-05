@@ -508,7 +508,6 @@ class AssertionReconciler extends Reconciler
                 $codebase,
                 $existing_var_type,
                 $new_type,
-                $template_type_map,
                 $any_scalar_type_match_found
             );
 
@@ -586,7 +585,6 @@ class AssertionReconciler extends Reconciler
         Codebase $codebase,
         Union $existing_type,
         Union $new_type,
-        array $template_type_map,
         bool &$any_scalar_type_match_found = false
     ): ?Union {
         $matching_atomic_types = [];
@@ -599,7 +597,6 @@ class AssertionReconciler extends Reconciler
                     $existing_type_part,
                     $new_type_part,
                     $codebase,
-                    $template_type_map,
                     $any_scalar_type_match_found
                 );
 
@@ -617,14 +614,10 @@ class AssertionReconciler extends Reconciler
         return null;
     }
 
-    /**
-     * @param array<string, array<string, Union>> $template_type_map
-     */
     private static function filterAtomicWithAnother(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
-        array $template_type_map,
         bool &$any_scalar_type_match_found
     ): ?Atomic {
         if ($type_1_atomic instanceof TFloat
@@ -654,7 +647,6 @@ class AssertionReconciler extends Reconciler
                 $type_1_atomic,
                 $type_2_atomic,
                 $codebase,
-                $template_type_map,
                 $atomic_comparison_results->type_coerced ?? false
             );
         }
@@ -675,7 +667,6 @@ class AssertionReconciler extends Reconciler
                 $type_2_atomic,
                 $type_1_atomic,
                 $codebase,
-                $template_type_map,
                 $atomic_comparison_results->type_coerced ?? false
             );
         }
@@ -704,7 +695,6 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_1_atomic->type_param,
                     $type_2_value,
-                    $template_type_map,
                     $any_scalar_type_match_found
                 );
 
@@ -730,7 +720,6 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_2_atomic->type_param,
                     $type_1_value,
-                    $template_type_map,
                     $any_scalar_type_match_found
                 );
 
@@ -778,20 +767,11 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_1_param,
                     $type_2_param,
-                    $template_type_map,
                     $any_scalar_type_match_found
                 );
 
                 if ($type_2_param === null) {
                     return null;
-                }
-
-                if ($template_type_map) {
-                    TemplateInferredTypeReplacer::replace(
-                        $type_2_param,
-                        new TemplateResult([], $template_type_map),
-                        $codebase
-                    );
                 }
 
                 if ($type_1_atomic->type_params[$i]->getId() !== $type_2_param_id) {
@@ -816,20 +796,11 @@ class AssertionReconciler extends Reconciler
                 $codebase,
                 $type_1_param,
                 $type_2_param,
-                $template_type_map,
                 $any_scalar_type_match_found
             );
 
             if ($type_2_param === null) {
                 return null;
-            }
-
-            if ($template_type_map) {
-                TemplateInferredTypeReplacer::replace(
-                    $type_2_param,
-                    new TemplateResult([], $template_type_map),
-                    $codebase
-                );
             }
 
             if ($type_1_atomic->type_param->getId() !== $type_2_param->getId()) {
@@ -851,20 +822,11 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_1_param,
                     $type_2_param,
-                    $template_type_map,
                     $any_scalar_type_match_found
                 );
 
                 if ($type_2_param === null) {
                     return null;
-                }
-
-                if ($template_type_map) {
-                    TemplateInferredTypeReplacer::replace(
-                        $type_2_param,
-                        new TemplateResult([], $template_type_map),
-                        $codebase
-                    );
                 }
 
                 if ($type_1_atomic->properties[$property_key]->getId() !== $type_2_param->getId()) {
@@ -910,14 +872,10 @@ class AssertionReconciler extends Reconciler
         return $matching_atomic_type;
     }
 
-    /**
-     * @param array<string, array<string, Union>> $template_type_map
-     */
     private static function refineContainedAtomicWithAnother(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
-        array $template_type_map,
         bool $type_coerced
     ): ?Atomic {
         if ($type_coerced
@@ -937,8 +895,7 @@ class AssertionReconciler extends Reconciler
             $type_1_as = self::filterTypeWithAnother(
                 $codebase,
                 $type_1_atomic->as,
-                new Union([$type_2_atomic]),
-                $template_type_map
+                new Union([$type_2_atomic])
             );
 
             if ($type_1_as === null) {
