@@ -1636,7 +1636,7 @@ class AssertionReconciler extends Reconciler
     private static function getCompatibleFloatType(
         Union $existing_var_type,
         array $existing_var_atomic_types,
-        int $value,
+        float $value,
         bool $is_loose_equality
     ): ?Union {
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
