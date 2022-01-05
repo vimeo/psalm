@@ -190,6 +190,10 @@
         </properties>
     </rule>
 
+    <!--
+        Requires using a underscore separator for long numbers.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardnumbersrequirenumericliteralseparator
+    -->
     <rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator">
         <properties>
             <property name="enable" value="true"/>
@@ -197,4 +201,19 @@
         </properties>
     </rule>
 
+    <!--
+        Requires use of null coalesce operator when possible.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardcontrolstructuresrequirenullcoalesceoperator-
+    -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.RequireNullCoalesceOperator" />
+
+    <!--
+        Requires use of null coalesce equal operator when possible.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardcontrolstructuresrequirenullcoalesceequaloperator-
+    -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.RequireNullCoalesceEqualOperator">
+        <properties>
+            <property name="enable" value="true"/>
+        </properties>
+    </rule>
 </ruleset>
