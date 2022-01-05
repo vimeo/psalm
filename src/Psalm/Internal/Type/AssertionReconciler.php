@@ -1010,6 +1010,7 @@ class AssertionReconciler extends Reconciler
 
         if ($scalar_type === 'int') {
             return self::handleLiteralEqualityWithInt(
+                $statements_analyzer,
                 $assertion,
                 $bracket_pos,
                 $is_loose_equality,
@@ -1189,6 +1190,7 @@ class AssertionReconciler extends Reconciler
      * @param string[]     $suppressed_issues
      */
     private static function handleLiteralEqualityWithInt(
+        StatementsAnalyzer $statements_analyzer,
         string             $assertion,
         int                $bracket_pos,
         bool               $is_loose_equality,
@@ -1262,9 +1264,22 @@ class AssertionReconciler extends Reconciler
                     return $compatible_int_type;
                 }
 
-                if ($existing_var_atomic_type->as->hasInt()) {
-                    return $literal_asserted_type;
-                }
+                $existing_var_atomic_type = clone $existing_var_atomic_type;
+
+                $existing_var_atomic_type->as = self::handleLiteralEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $bracket_pos,
+                    false,
+                    $existing_var_atomic_type->as,
+                    $old_var_type_string,
+                    $var_id,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+
+                return new Union([$existing_var_atomic_type]);
             }
 
             if ($is_loose_equality
