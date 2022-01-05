@@ -1024,7 +1024,7 @@ class AssignmentAnalyzer
                     $by_ref_out_type->parent_nodes += $existing_type->parent_nodes;
                 }
 
-                if ($existing_type->getId() !== 'array<never, never>') {
+                if (!$existing_type->isEmptyArray()) {
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))

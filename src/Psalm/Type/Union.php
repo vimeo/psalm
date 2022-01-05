@@ -1598,4 +1598,12 @@ class Union implements TypeNode
     {
         return reset($this->types);
     }
+
+    public function isEmptyArray(): bool
+    {
+        return count($this->types) === 1
+            && isset($this->types['array'])
+            && $this->types['array'] instanceof TArray
+            && $this->types['array']->isEmptyArray();
+    }
 }
