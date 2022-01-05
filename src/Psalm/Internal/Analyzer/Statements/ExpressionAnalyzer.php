@@ -473,17 +473,17 @@ class ExpressionAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $analysis_php_version_id = $codebase->analysis_php_version_id;
 
-        if ($stmt instanceof PhpParser\Node\Expr\Match_ && $analysis_php_version_id >= 80000) {
+        if ($stmt instanceof PhpParser\Node\Expr\Match_ && $analysis_php_version_id >= 8_00_00) {
             return MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $analysis_php_version_id >= 80000) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $analysis_php_version_id >= 8_00_00) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if (($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
                 || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
-            && $analysis_php_version_id >= 80000
+            && $analysis_php_version_id >= 8_00_00
         ) {
             return NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }

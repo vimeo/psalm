@@ -28,7 +28,7 @@ class TAnonymousClassInstance extends TNamedObject
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 70200 ? ($this->extends ?? 'object') : null;
+        return $analysis_php_version_id >= 7_02_00 ? ($this->extends ?? 'object') : null;
     }
 
     /**

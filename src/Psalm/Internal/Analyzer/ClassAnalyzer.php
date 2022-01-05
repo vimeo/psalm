@@ -1608,7 +1608,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
 
         $allow_native_type = !$docblock_only
-            && $codebase->analysis_php_version_id >= 70400
+            && $codebase->analysis_php_version_id >= 7_04_00
             && $codebase->allow_backwards_incompatible_changes;
 
         $manipulator->setType(

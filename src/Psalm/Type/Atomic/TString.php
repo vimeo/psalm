@@ -16,7 +16,7 @@ class TString extends Scalar
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 70000 ? 'string' : null;
+        return $analysis_php_version_id >= 7_00_00 ? 'string' : null;
     }
 
     public function __toString(): string

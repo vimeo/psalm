@@ -726,7 +726,7 @@ class IssueBuffer
 
             if ($start_time) {
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
+                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -753,7 +753,7 @@ class IssueBuffer
                             break;
                         }
 
-                        echo $function_id . ': ' . round(1000 * $time, 2) . 'ms per node' . "\n";
+                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
                     }
 
                     echo "\n";

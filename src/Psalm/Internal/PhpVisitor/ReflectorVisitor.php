@@ -237,7 +237,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
 
             if ($classlike_storage
-                && $this->codebase->analysis_php_version_id >= 80000
+                && $this->codebase->analysis_php_version_id >= 8_00_00
                 && $node instanceof PhpParser\Node\Stmt\ClassMethod
                 && strtolower($node->name->name) === '__tostring'
             ) {
@@ -247,7 +247,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $classlike_storage->class_implements['stringable'] = 'Stringable';
                 }
 
-                if (PHP_VERSION_ID >= 80000) {
+                if (PHP_VERSION_ID >= 8_00_00) {
                     $this->codebase->scanner->queueClassLikeForScanning('Stringable');
                 }
             }

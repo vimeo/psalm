@@ -486,7 +486,7 @@ class ArgumentAnalyzer
 
                     if ($function_param->is_variadic) {
                         $arg_type = $unpacked_atomic_array->getGenericValueType();
-                    } elseif ($codebase->analysis_php_version_id >= 80000
+                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
@@ -552,7 +552,9 @@ class ArgumentAnalyzer
 
                             continue;
                         }
-                        if (($codebase->analysis_php_version_id < 80000 || !$allow_named_args) && !$key_type->isInt()) {
+                        if (($codebase->analysis_php_version_id < 8_00_00 || !$allow_named_args)
+                            && !$key_type->isInt()
+                        ) {
                             $invalid_string_key = true;
 
                             continue;
@@ -578,7 +580,7 @@ class ArgumentAnalyzer
                             'Method ' . $cased_method_id
                                 . ' called with unpacked iterable ' . $arg_type->getId()
                                 . ' with invalid key (must be '
-                                . ($codebase->analysis_php_version_id < 80000 ? 'int' : 'int|string') . ')',
+                                . ($codebase->analysis_php_version_id < 8_00_00 ? 'int' : 'int|string') . ')',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
@@ -586,7 +588,7 @@ class ArgumentAnalyzer
                     );
                 }
                 if ($invalid_string_key) {
-                    if ($codebase->analysis_php_version_id < 80000) {
+                    if ($codebase->analysis_php_version_id < 8_00_00) {
                         IssueBuffer::maybeAdd(
                             new $issue_type(
                                 'String keys not supported in unpacked arguments',

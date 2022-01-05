@@ -190,4 +190,11 @@
         </properties>
     </rule>
 
+    <rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator">
+        <properties>
+            <property name="enable" value="true"/>
+            <property name="minDigitsBeforeDecimalPoint" value="5"/>
+        </properties>
+    </rule>
+
 </ruleset>

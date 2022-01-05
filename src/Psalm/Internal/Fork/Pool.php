@@ -266,7 +266,7 @@ class Pool
 
             if ($bytes_written < $bytes_to_write) {
                 // wait a bit
-                usleep(500000);
+                usleep(500_000);
             }
         }
 
@@ -368,7 +368,7 @@ class Pool
 
             // For each stream that was ready, read the content.
             foreach ($needs_read as $file) {
-                $buffer = fread($file, 1024);
+                $buffer = fread($file, 1_024);
                 if ($buffer !== false) {
                     $content[(int)$file] .= $buffer;
                 }

@@ -940,7 +940,7 @@ class ReturnTypeAnalyzer
         }
 
         $allow_native_type = !$docblock_only
-            && $codebase->analysis_php_version_id >= 70000
+            && $codebase->analysis_php_version_id >= 7_00_00
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final

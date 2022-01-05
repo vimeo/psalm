@@ -180,7 +180,7 @@ class StatementsProvider
 
             if ($existing_statements
                 && $existing_file_contents
-                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5000
+                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
             ) {
                 $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
 
@@ -433,8 +433,8 @@ class StatementsProvider
         ];
 
         if (!self::$lexer) {
-            $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10000);
-            $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10000, 100);
+            $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
+            $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
             self::$lexer = new PhpParser\Lexer\Emulative([
                 'usedAttributes' => $attributes,
                 'phpVersion' => $major_version . '.' . $minor_version,

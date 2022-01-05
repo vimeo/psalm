@@ -28,7 +28,7 @@ class TObject extends Atomic
         ?string $this_class,
         int $analysis_php_version_id
     ): ?string {
-        return $analysis_php_version_id >= 70200 ? $this->getKey() : null;
+        return $analysis_php_version_id >= 7_02_00 ? $this->getKey() : null;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

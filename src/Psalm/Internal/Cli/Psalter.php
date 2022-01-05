@@ -424,8 +424,8 @@ final class Psalter
     {
         $memLimit = CliUtils::getMemoryLimitInBytes();
         // Magic number is 4096M in bytes
-        if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
-            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+        if ($memLimit > 0 && $memLimit < 8 * 1_024 * 1_024 * 1_024) {
+            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
         }
     }
 

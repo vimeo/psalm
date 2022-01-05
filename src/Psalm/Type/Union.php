@@ -516,11 +516,11 @@ class Union implements TypeNode
         int     $analysis_php_version_id
     ): ?string {
         if (!$this->isSingleAndMaybeNullable()) {
-            if ($analysis_php_version_id < 80000) {
+            if ($analysis_php_version_id < 8_00_00) {
                 return null;
             }
-        } elseif ($analysis_php_version_id < 70000
-            || (isset($this->types['null']) && $analysis_php_version_id < 70100)
+        } elseif ($analysis_php_version_id < 7_00_00
+            || (isset($this->types['null']) && $analysis_php_version_id < 7_01_00)
         ) {
             return null;
         }
@@ -569,7 +569,7 @@ class Union implements TypeNode
             return implode('|', array_unique($php_types));
         }
 
-        if ($analysis_php_version_id < 80000) {
+        if ($analysis_php_version_id < 8_00_00) {
             return ($nullable ? '?' : '') . implode('|', array_unique($php_types));
         }
         if ($nullable) {
@@ -580,7 +580,7 @@ class Union implements TypeNode
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 80000) {
+        if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00) {
             return false;
         }
 
