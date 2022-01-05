@@ -47,7 +47,6 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function array_merge;
-use function array_push;
 use function count;
 use function explode;
 use function get_class;
