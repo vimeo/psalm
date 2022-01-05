@@ -1938,9 +1938,10 @@ class AssertAnnotationTest extends TestCase
                         /**
                          * @template T
                          * @param T      $expected
+                         * @param mixed $actual
                          * @psalm-assert =T $actual
                          */
-                        public function assertSame(mixed $expected, mixed $actual): void
+                        public function assertSame($expected, $actual): void
                         {
                             return;
                         }
