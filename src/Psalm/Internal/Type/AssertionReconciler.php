@@ -1229,7 +1229,7 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($existing_var_atomic_type instanceof TLiteralInt && $existing_var_atomic_type->value === $value) {
-                //if we're here, we check that we add at least another type in the union, otherwise it's redundant
+                //if we're here, we check that we had at least another type in the union, otherwise it's redundant
 
                 if ($existing_var_type->isSingleIntLiteral()) {
                     if ($var_id && $code_location) {
@@ -1362,7 +1362,7 @@ class AssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TLiteralString && $existing_var_atomic_type->value === $value) {
-                //if we're here, we check that we add at least another type in the union, otherwise it's redundant
+                //if we're here, we check that we had at least another type in the union, otherwise it's redundant
 
                 if ($existing_var_type->isSingleStringLiteral()) {
                     if ($var_id && $code_location) {
