@@ -1916,7 +1916,7 @@ class AssertAnnotationTest extends TestCase
                                 $uniqueObjects[] = $object;
                             }
 
-                            return array_values($uniqueObjects);
+                            return $uniqueObjects;
                         }
                     }
                 ',
