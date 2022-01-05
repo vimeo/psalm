@@ -1921,6 +1921,32 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
             ],
+            'assertWithEmptyStringOnKeyedArray' => [
+                '<?php
+                    class A
+                    {
+                        function test(): void
+                        {
+                            $a = ["" => ""];
+
+                            /** @var array<string, mixed> $b */
+                            $b = [];
+
+                            $this->assertSame($a, $b);
+                        }
+
+                        /**
+                         * @template T
+                         * @param T      $expected
+                         * @psalm-assert =T $actual
+                         */
+                        public function assertSame(mixed $expected, mixed $actual): void
+                        {
+                            return;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
