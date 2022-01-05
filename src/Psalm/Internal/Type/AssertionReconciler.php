@@ -1270,13 +1270,17 @@ class AssertionReconciler extends Reconciler
                 return new Union([$existing_var_atomic_type]);
             }
 
-            //here we'll accept any type that *could* possibly be valid on loose equality and return the original type
+            //here we'll accept non-literal type that *could* match on loose equality and return the original type
             if ($is_loose_equality) {
-                if ($existing_var_atomic_type instanceof TString) {
+                if ($existing_var_atomic_type instanceof TString
+                    && !$existing_var_atomic_type instanceof TLiteralString
+                ) {
                     return $existing_var_type;
                 }
 
-                if ($existing_var_atomic_type instanceof TFloat) {
+                if ($existing_var_atomic_type instanceof TFloat
+                    && !$existing_var_atomic_type instanceof TLiteralFloat
+                ) {
                     return $existing_var_type;
                 }
             }
@@ -1413,13 +1417,17 @@ class AssertionReconciler extends Reconciler
                 return new Union([$existing_var_atomic_type]);
             }
 
-            //here we'll accept any type that *could* possibly be valid on loose equality and return the original type
+            //here we'll accept non-literal type that *could* match on loose equality and return the original type
             if ($is_loose_equality) {
-                if ($existing_var_atomic_type instanceof TInt) {
+                if ($existing_var_atomic_type instanceof TInt
+                    && !$existing_var_atomic_type instanceof TLiteralInt
+                ) {
                     return $existing_var_type;
                 }
 
-                if ($existing_var_atomic_type instanceof TFloat) {
+                if ($existing_var_atomic_type instanceof TFloat
+                    && !$existing_var_atomic_type instanceof TLiteralFloat
+                ) {
                     return $existing_var_type;
                 }
             }
