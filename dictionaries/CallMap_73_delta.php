@@ -7,7 +7,7 @@
  * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.2
  * The 'removed' section contains the signatures that were removed in php 7.3.
  * The 'changed' section contains functions for which the signature has changed for php 7.3.
- *     Each function in the 'changed' section has an 'old' and a 'new' section, 
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
  *     representing the function as it was in PHP 7.2 and in PHP 7.3, respectively
  *
  * @see CallMap.php
@@ -42,7 +42,7 @@ return [
     'is_countable' => ['bool', 'value'=>'mixed'],
     'net_get_interfaces' => ['array<string,array<string,mixed>>|false'],
     'openssl_pkey_derive' => ['string|false', 'public_key'=>'mixed', 'private_key'=>'mixed', 'key_length='=>'?int'],
-    'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:?string,secure?:bool,httponly?:bool,samesite?:string}'],
+    'session_set_cookie_params\'1' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:string,secure?:bool,httponly?:bool,samesite?:string}'],
     'setcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
     'setrawcookie\'1' => ['bool', 'name'=>'string', 'value='=>'string', 'options='=>'array'],
     'socket_wsaprotocol_info_export' => ['string|false', 'socket'=>'resource', 'process_id'=>'int'],

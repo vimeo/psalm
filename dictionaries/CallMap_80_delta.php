@@ -1133,6 +1133,10 @@ return [
       'old' => ['bool', 'lifetime'=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
       'new' => ['bool', 'lifetime'=>'int', 'path='=>'?string', 'domain='=>'?string', 'secure='=>'?bool', 'httponly='=>'?bool'],
     ],
+    'session_set_cookie_params\'1' => [
+        'old' => ['bool', 'options'=>'array{lifetime?:int,path?:string,domain?:string,secure?:bool,httponly?:bool,samesite?:string}'],
+        'new' => ['bool', 'options'=>'array{lifetime?:int,path?:?string,domain?:?string,secure?:?bool,httponly?:?bool,samesite?:string}'],
+    ],
     'socket_accept' => [
       'old' => ['resource|false', 'socket'=>'resource'],
       'new' => ['Socket|false', 'socket'=>'Socket'],
