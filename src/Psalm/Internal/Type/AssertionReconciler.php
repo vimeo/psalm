@@ -644,7 +644,7 @@ class AssertionReconciler extends Reconciler
             $codebase,
             $type_2_atomic,
             $type_1_atomic,
-            true, // this probably should be false, but a few tests currently fail if it's not true
+            !($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject),
             false,
             $atomic_comparison_results
         );
@@ -665,7 +665,7 @@ class AssertionReconciler extends Reconciler
             $codebase,
             $type_1_atomic,
             $type_2_atomic,
-            false,
+            !($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject),
             false,
             $atomic_comparison_results
         );
