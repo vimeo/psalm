@@ -554,7 +554,7 @@ class SimpleAssertionReconciler extends Reconciler
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || ($array_atomic_type->count < $min_count)
                 ) {
-                    if ($array_atomic_type->getId() === 'array<never, never>') {
+                    if (!$array_atomic_type->isEmptyArray()) {
                         $existing_var_type->removeType('array');
                     } else {
                         $non_empty_array = new TNonEmptyArray(
