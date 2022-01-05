@@ -506,7 +506,7 @@ class AssertionReconciler extends Reconciler
                 );
             }
 
-            $new_type = self::filterTypeWithAnother(
+            $intersection_type = self::filterTypeWithAnother(
                 $codebase,
                 $existing_var_type,
                 $new_type,
@@ -570,6 +570,10 @@ class AssertionReconciler extends Reconciler
 
                 $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             }
+
+            if ($intersection_type) {
+                $new_type = $intersection_type;
+            }
         }
 
         return $new_type;
@@ -588,7 +592,7 @@ class AssertionReconciler extends Reconciler
         array $template_type_map,
         bool &$has_match = false,
         bool &$any_scalar_type_match_found = false
-    ): Union {
+    ): ?Union {
         $matching_atomic_types = [];
 
         $new_type = clone $new_type;
@@ -622,38 +626,38 @@ class AssertionReconciler extends Reconciler
             return new Union($matching_atomic_types);
         }
 
-        return $new_type;
+        return null;
     }
 
     /**
      * @param array<string, array<string, Union>> $template_type_map
      */
     private static function filterAtomicWithAnother(
-        Atomic $existing_type_part,
-        Atomic $new_type_part,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
         Codebase $codebase,
         array $template_type_map,
         bool &$has_local_match,
         bool &$any_scalar_type_match_found
     ): ?Atomic {
-        if ($existing_type_part instanceof TFloat
-            && $new_type_part instanceof TInt
+        if ($type_1_atomic instanceof TFloat
+            && $type_2_atomic instanceof TInt
         ) {
             $any_scalar_type_match_found = true;
-            return $new_type_part;
+            return $type_2_atomic;
+        }
+
+        if ($type_1_atomic instanceof TNamedObject) {
+            $type_1_atomic->was_static = false;
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
 
-        if ($existing_type_part instanceof TNamedObject) {
-            $existing_type_part->was_static = false;
-        }
-
         $atomic_contained_by = AtomicTypeComparator::isContainedBy(
             $codebase,
-            $new_type_part,
-            $existing_type_part,
-            true,
+            $type_2_atomic,
+            $type_1_atomic,
+            true, // this probably should be false, but a few tests currently fail if it's not true
             false,
             $atomic_comparison_results
         );
@@ -661,81 +665,108 @@ class AssertionReconciler extends Reconciler
         if ($atomic_contained_by) {
             $has_local_match = true;
 
-            if ($atomic_comparison_results->type_coerced
-                && get_class($new_type_part) === TNamedObject::class
-                && $existing_type_part instanceof TGenericObject
-            ) {
-                // this is a hack - it's not actually rigorous, as the params may be different
-                return new TGenericObject(
-                    $new_type_part->value,
-                    $existing_type_part->type_params
-                );
-            } elseif ($new_type_part instanceof TNamedObject
-                && $existing_type_part instanceof TTemplateParam
-                && $existing_type_part->as->hasObjectType()
-            ) {
-                $existing_type_part = clone $existing_type_part;
-                $existing_type_part->as = self::filterTypeWithAnother(
-                    $codebase,
-                    $existing_type_part->as,
-                    new Union([$new_type_part]),
-                    $template_type_map
-                );
-
-                return $existing_type_part;
-            } else {
-                return clone $new_type_part;
-            }
+            return self::refineContainedAtomicWithAnother(
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $template_type_map,
+                $atomic_comparison_results->type_coerced ?? false
+            );
         }
 
-        if (AtomicTypeComparator::isContainedBy(
+        $atomic_comparison_results = new TypeComparisonResult();
+
+        $atomic_contained_by = AtomicTypeComparator::isContainedBy(
             $codebase,
-            $existing_type_part,
-            $new_type_part,
+            $type_1_atomic,
+            $type_2_atomic,
             false,
             false,
-            null
-        )) {
+            $atomic_comparison_results
+        );
+
+        if ($atomic_contained_by) {
             $has_local_match = true;
 
-            return $existing_type_part;
+            return self::refineContainedAtomicWithAnother(
+                $type_2_atomic,
+                $type_1_atomic,
+                $codebase,
+                $template_type_map,
+                $atomic_comparison_results->type_coerced ?? false
+            );
         }
 
         $matching_atomic_type = null;
 
-        if ($existing_type_part instanceof TNamedObject
-            && $new_type_part instanceof TNamedObject
-            && ($codebase->interfaceExists($existing_type_part->value)
-                || $codebase->interfaceExists($new_type_part->value))
+        if ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+            && ($codebase->interfaceExists($type_1_atomic->value)
+                || $codebase->interfaceExists($type_2_atomic->value))
         ) {
-            $matching_atomic_type = clone $new_type_part;
-            $matching_atomic_type->extra_types[$existing_type_part->getKey()] = $existing_type_part;
+            $matching_atomic_type = clone $type_2_atomic;
+            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
             $has_local_match = true;
 
             return $matching_atomic_type;
         }
 
-        if ($new_type_part instanceof TKeyedArray
-            && $existing_type_part instanceof TList
+        if ($type_2_atomic instanceof TKeyedArray
+            && $type_1_atomic instanceof TList
         ) {
-            $new_type_key = $new_type_part->getGenericKeyType();
-            $new_type_value = $new_type_part->getGenericValueType();
+            $type_2_key = $type_2_atomic->getGenericKeyType();
+            $type_2_value = $type_2_atomic->getGenericValueType();
 
-            if (!$new_type_key->hasString()) {
+            if (!$type_2_key->hasString()) {
                 $has_param_match = false;
 
-                $new_type_value = self::filterTypeWithAnother(
+                $type_2_value = self::filterTypeWithAnother(
                     $codebase,
-                    $existing_type_part->type_param,
-                    $new_type_value,
+                    $type_1_atomic->type_param,
+                    $type_2_value,
                     $template_type_map,
                     $has_param_match,
                     $any_scalar_type_match_found
                 );
 
-                $hybrid_type_part = new TKeyedArray($new_type_part->properties);
+                if ($type_2_value === null) {
+                    return null;
+                }
+
+                $hybrid_type_part = new TKeyedArray($type_2_atomic->properties);
                 $hybrid_type_part->previous_key_type = Type::getInt();
-                $hybrid_type_part->previous_value_type = $new_type_value;
+                $hybrid_type_part->previous_value_type = $type_2_value;
+                $hybrid_type_part->is_list = true;
+
+                $has_local_match = true;
+
+                return $hybrid_type_part;
+            }
+        } elseif ($type_1_atomic instanceof TKeyedArray
+            && $type_2_atomic instanceof TList
+        ) {
+            $type_1_key = $type_1_atomic->getGenericKeyType();
+            $type_1_value = $type_1_atomic->getGenericValueType();
+
+            if (!$type_1_key->hasString()) {
+                $has_param_match = false;
+
+                $type_1_value = self::filterTypeWithAnother(
+                    $codebase,
+                    $type_2_atomic->type_param,
+                    $type_1_value,
+                    $template_type_map,
+                    $has_param_match,
+                    $any_scalar_type_match_found
+                );
+
+                if ($type_1_value === null) {
+                    return null;
+                }
+
+                $hybrid_type_part = new TKeyedArray($type_1_atomic->properties);
+                $hybrid_type_part->previous_key_type = Type::getInt();
+                $hybrid_type_part->previous_value_type = $type_1_value;
                 $hybrid_type_part->is_list = true;
 
                 $has_local_match = true;
@@ -744,60 +775,64 @@ class AssertionReconciler extends Reconciler
             }
         }
 
-        if ($new_type_part instanceof TTemplateParam
-            && $existing_type_part instanceof TTemplateParam
-            && $new_type_part->param_name !== $existing_type_part->param_name
-            && $new_type_part->as->hasObject()
-            && $existing_type_part->as->hasObject()
+        if ($type_2_atomic instanceof TTemplateParam
+            && $type_1_atomic instanceof TTemplateParam
+            && $type_2_atomic->param_name !== $type_1_atomic->param_name
+            && $type_2_atomic->as->hasObject()
+            && $type_1_atomic->as->hasObject()
         ) {
-            $matching_atomic_type = clone $new_type_part;
+            $matching_atomic_type = clone $type_2_atomic;
 
-            $matching_atomic_type->extra_types[$existing_type_part->getKey()] = $existing_type_part;
+            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
             $has_local_match = true;
 
             return $matching_atomic_type;
         }
 
         //we filter both types of standard iterables
-        if (($new_type_part instanceof TGenericObject
-                || $new_type_part instanceof TArray
-                || $new_type_part instanceof TIterable)
-            && ($existing_type_part instanceof TGenericObject
-                || $existing_type_part instanceof TArray
-                || $existing_type_part instanceof TIterable)
-            && count($new_type_part->type_params) === count($existing_type_part->type_params)
+        if (($type_2_atomic instanceof TGenericObject
+                || $type_2_atomic instanceof TArray
+                || $type_2_atomic instanceof TIterable)
+            && ($type_1_atomic instanceof TGenericObject
+                || $type_1_atomic instanceof TArray
+                || $type_1_atomic instanceof TIterable)
+            && count($type_2_atomic->type_params) === count($type_1_atomic->type_params)
         ) {
             $has_any_param_match = false;
 
-            foreach ($new_type_part->type_params as $i => $new_param) {
-                $existing_param = $existing_type_part->type_params[$i];
+            foreach ($type_2_atomic->type_params as $i => $type_2_param) {
+                $type_1_param = $type_1_atomic->type_params[$i];
 
                 $has_param_match = true;
 
-                $new_param_id = $new_param->getId();
+                $type_2_param_id = $type_2_param->getId();
 
-                $new_param = self::filterTypeWithAnother(
+                $type_2_param = self::filterTypeWithAnother(
                     $codebase,
-                    $existing_param,
-                    $new_param,
+                    $type_1_param,
+                    $type_2_param,
                     $template_type_map,
                     $has_param_match,
                     $any_scalar_type_match_found
                 );
 
+                if ($type_2_param === null) {
+                    return null;
+                }
+
                 if ($template_type_map) {
                     TemplateInferredTypeReplacer::replace(
-                        $new_param,
+                        $type_2_param,
                         new TemplateResult([], $template_type_map),
                         $codebase
                     );
                 }
 
                 if ($has_param_match
-                    && $existing_type_part->type_params[$i]->getId() !== $new_param_id
+                    && $type_1_atomic->type_params[$i]->getId() !== $type_2_param_id
                 ) {
                     /** @psalm-suppress PropertyTypeCoercion */
-                    $existing_type_part->type_params[$i] = $new_param;
+                    $type_1_atomic->type_params[$i] = $type_2_param;
 
                     if (!$has_local_match) {
                         $has_any_param_match = true;
@@ -807,44 +842,48 @@ class AssertionReconciler extends Reconciler
 
             if ($has_any_param_match) {
                 $has_local_match = true;
-                $matching_atomic_type = $existing_type_part;
+                $matching_atomic_type = $type_1_atomic;
                 $atomic_comparison_results->type_coerced = true;
             }
         }
 
         //we filter the second part of a list with the second part of standard iterables
-        if (($new_type_part instanceof TArray
-                || $new_type_part instanceof TIterable)
-            && $existing_type_part instanceof TList
+        if (($type_2_atomic instanceof TArray
+                || $type_2_atomic instanceof TIterable)
+            && $type_1_atomic instanceof TList
         ) {
             $has_any_param_match = false;
 
-            $new_param = $new_type_part->type_params[1];
-            $existing_param = $existing_type_part->type_param;
+            $type_2_param = $type_2_atomic->type_params[1];
+            $type_1_param = $type_1_atomic->type_param;
 
             $has_param_match = true;
 
-            $new_param = self::filterTypeWithAnother(
+            $type_2_param = self::filterTypeWithAnother(
                 $codebase,
-                $existing_param,
-                $new_param,
+                $type_1_param,
+                $type_2_param,
                 $template_type_map,
                 $has_param_match,
                 $any_scalar_type_match_found
             );
 
+            if ($type_2_param === null) {
+                return null;
+            }
+
             if ($template_type_map) {
                 TemplateInferredTypeReplacer::replace(
-                    $new_param,
+                    $type_2_param,
                     new TemplateResult([], $template_type_map),
                     $codebase
                 );
             }
 
             if ($has_param_match
-                && $existing_type_part->type_param->getId() !== $new_param->getId()
+                && $type_1_atomic->type_param->getId() !== $type_2_param->getId()
             ) {
-                $existing_type_part->type_param = $new_param;
+                $type_1_atomic->type_param = $type_2_param;
 
                 if (!$has_local_match) {
                     $has_any_param_match = true;
@@ -853,43 +892,47 @@ class AssertionReconciler extends Reconciler
 
             if ($has_any_param_match) {
                 $has_local_match = true;
-                $matching_atomic_type = $existing_type_part;
+                $matching_atomic_type = $type_1_atomic;
                 $atomic_comparison_results->type_coerced = true;
             }
         }
 
         //we filter each property of a Keyed Array with the second part of standard iterables
-        if (($new_type_part instanceof TArray
-                || $new_type_part instanceof TIterable)
-            && $existing_type_part instanceof TKeyedArray
+        if (($type_2_atomic instanceof TArray
+                || $type_2_atomic instanceof TIterable)
+            && $type_1_atomic instanceof TKeyedArray
         ) {
             $has_any_param_match = false;
 
-            $new_param = $new_type_part->type_params[1];
-            foreach ($existing_type_part->properties as $property_key => $existing_param) {
+            $type_2_param = $type_2_atomic->type_params[1];
+            foreach ($type_1_atomic->properties as $property_key => $type_1_param) {
                 $has_param_match = true;
 
-                $new_param = self::filterTypeWithAnother(
+                $type_2_param = self::filterTypeWithAnother(
                     $codebase,
-                    $existing_param,
-                    $new_param,
+                    $type_1_param,
+                    $type_2_param,
                     $template_type_map,
                     $has_param_match,
                     $any_scalar_type_match_found
                 );
 
+                if ($type_2_param === null) {
+                    return null;
+                }
+
                 if ($template_type_map) {
                     TemplateInferredTypeReplacer::replace(
-                        $new_param,
+                        $type_2_param,
                         new TemplateResult([], $template_type_map),
                         $codebase
                     );
                 }
 
                 if ($has_param_match
-                    && $existing_type_part->properties[$property_key]->getId() !== $new_param->getId()
+                    && $type_1_atomic->properties[$property_key]->getId() !== $type_2_param->getId()
                 ) {
-                    $existing_type_part->properties[$property_key] = $new_param;
+                    $type_1_atomic->properties[$property_key] = $type_2_param;
 
                     if (!$has_local_match) {
                         $has_any_param_match = true;
@@ -899,31 +942,31 @@ class AssertionReconciler extends Reconciler
 
             if ($has_any_param_match) {
                 $has_local_match = true;
-                $matching_atomic_type = $existing_type_part;
+                $matching_atomic_type = $type_1_atomic;
                 $atomic_comparison_results->type_coerced = true;
             }
         }
 
         //These partial match wouldn't have been handled by AtomicTypeComparator
         $new_range = null;
-        if ($new_type_part instanceof TIntRange && $existing_type_part instanceof TPositiveInt) {
+        if ($type_2_atomic instanceof TIntRange && $type_1_atomic instanceof TPositiveInt) {
             $new_range = TIntRange::intersectIntRanges(
-                TIntRange::convertToIntRange($existing_type_part),
-                $new_type_part
+                TIntRange::convertToIntRange($type_1_atomic),
+                $type_2_atomic
             );
-        } elseif ($existing_type_part instanceof TIntRange
-            && $new_type_part instanceof TPositiveInt
+        } elseif ($type_1_atomic instanceof TIntRange
+            && $type_2_atomic instanceof TPositiveInt
         ) {
             $new_range = TIntRange::intersectIntRanges(
-                $existing_type_part,
-                TIntRange::convertToIntRange($new_type_part)
+                $type_1_atomic,
+                TIntRange::convertToIntRange($type_2_atomic)
             );
-        } elseif ($new_type_part instanceof TIntRange
-            && $existing_type_part instanceof TIntRange
+        } elseif ($type_2_atomic instanceof TIntRange
+            && $type_1_atomic instanceof TIntRange
         ) {
             $new_range = TIntRange::intersectIntRanges(
-                $existing_type_part,
-                $new_type_part
+                $type_1_atomic,
+                $type_2_atomic
             );
         }
 
@@ -937,6 +980,49 @@ class AssertionReconciler extends Reconciler
         }
 
         return $matching_atomic_type;
+    }
+
+    /**
+     * @param array<string, array<string, Union>> $template_type_map
+     */
+    private static function refineContainedAtomicWithAnother(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        array $template_type_map,
+        bool $type_coerced
+    ): ?Atomic {
+        if ($type_coerced
+            && get_class($type_2_atomic) === TNamedObject::class
+            && $type_1_atomic instanceof TGenericObject
+        ) {
+            // this is a hack - it's not actually rigorous, as the params may be different
+            return new TGenericObject(
+                $type_2_atomic->value,
+                $type_1_atomic->type_params
+            );
+        } elseif ($type_2_atomic instanceof TNamedObject
+            && $type_1_atomic instanceof TTemplateParam
+            && $type_1_atomic->as->hasObjectType()
+        ) {
+            $type_1_atomic = clone $type_1_atomic;
+            $type_1_as = self::filterTypeWithAnother(
+                $codebase,
+                $type_1_atomic->as,
+                new Union([$type_2_atomic]),
+                $template_type_map
+            );
+
+            if ($type_1_as === null) {
+                return null;
+            }
+
+            $type_1_atomic->as = $type_1_as;
+
+            return $type_1_atomic;
+        } else {
+            return clone $type_2_atomic;
+        }
     }
 
     /**
