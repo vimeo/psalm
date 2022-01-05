@@ -1490,14 +1490,6 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'UndefinedDocblockClass',
             ],
-            'preventBadTKeyedArrayFormat' => [
-                '<?php
-                    /**
-                     * @param array{} $arr
-                     */
-                    function bar(array $arr): void {}',
-                'error_message' => 'InvalidDocblock',
-            ],
             'noPhpStormAnnotationsThankYou' => [
                 '<?php
                     /** @param ArrayIterator|string[] $i */

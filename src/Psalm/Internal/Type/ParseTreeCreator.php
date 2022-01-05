@@ -757,7 +757,10 @@ class ParseTreeCreator
                 if ($nexter_token !== null && $nexter_token[0] === '}') {
                     $new_leaf->terminated = true;
                     ++$this->t;
+                } elseif ($nexter_token === null) {
+                    throw new TypeParseTreeException('Unclosed bracket in keyed array');
                 }
+
                 break;
 
             case '(':
