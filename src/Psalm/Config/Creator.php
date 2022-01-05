@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
+use JsonException;
 use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Internal\Analyzer\IssueData;
@@ -32,6 +33,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
+use const JSON_THROW_ON_ERROR;
 
 class Creator
 {
@@ -184,8 +186,19 @@ class Creator
                     'Problem during config autodiscovery - could not find composer.json during initialization.'
                 );
             }
-
-            if (!$composer_json = json_decode(file_get_contents($composer_json_location), true)) {
+            try {
+                $composer_json = json_decode(
+                    file_get_contents($composer_json_location),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                );
+            } catch (JsonException $e) {
+                throw new ConfigCreationException(
+                    'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage()
+                );
+            }
+            if (!$composer_json) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
 

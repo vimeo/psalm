@@ -19,6 +19,8 @@ use function sort;
 use function strpos;
 use function substr;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * @internal
  *
@@ -110,7 +112,7 @@ class Clause
                 sort($possibilities[$i]);
             }
 
-            $this->hash = md5((string) json_encode($possibilities));
+            $this->hash = md5(json_encode($possibilities, JSON_THROW_ON_ERROR));
         }
     }
 

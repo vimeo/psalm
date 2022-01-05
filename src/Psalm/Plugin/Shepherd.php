@@ -29,6 +29,7 @@ use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
+use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const STDERR;
@@ -76,7 +77,7 @@ class Shepherd implements AfterAnalysisInterface
                 'level' => Config::getInstance()->level
             ];
 
-            $payload = json_encode($data);
+            $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
             $base_address = $codebase->config->shepherd_host;
 

@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Provider;
 
+use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
@@ -31,6 +32,7 @@ use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 use const E_USER_ERROR;
+use const JSON_THROW_ON_ERROR;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -193,7 +195,14 @@ class ParserCacheProvider
                     return [];
                 }
 
-                $hashes_decoded = json_decode($hashes_encoded, true);
+                try {
+                    $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    error_log('Failed to parse hashes: ' . $e->getMessage());
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
 
                 if (!is_array($hashes_decoded)) {
                     error_log('Unexpected value ' . gettype($hashes_decoded));
@@ -281,7 +290,7 @@ class ParserCacheProvider
 
         file_put_contents(
             $file_hashes_path,
-            json_encode($file_content_hashes)
+            json_encode($file_content_hashes, JSON_THROW_ON_ERROR)
         );
     }
 

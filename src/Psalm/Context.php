@@ -27,6 +27,8 @@ use function preg_replace;
 use function strpos;
 use function strtolower;
 
+use const JSON_THROW_ON_ERROR;
+
 class Context
 {
     /**
@@ -770,7 +772,7 @@ class Context
             $summary[$k] = $v->getId();
         }
 
-        return json_encode($summary);
+        return json_encode($summary, JSON_THROW_ON_ERROR);
     }
 
     public function defineGlobals(): void

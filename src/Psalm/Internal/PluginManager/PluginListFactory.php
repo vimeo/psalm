@@ -11,6 +11,7 @@ use function rtrim;
 use function urlencode;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * @internal
@@ -71,7 +72,8 @@ class PluginListFactory
                 'packages' => [],
                 'packages-dev' => [],
             ];
-            $composer_lock_filenames[] = 'data:application/json,' . urlencode(json_encode($stub_composer_lock));
+            $composer_lock_filenames[] = 'data:application/json,'
+                . urlencode(json_encode($stub_composer_lock, JSON_THROW_ON_ERROR));
         }
 
         return $composer_lock_filenames;
