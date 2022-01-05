@@ -997,12 +997,14 @@ class AssertionReconciler extends Reconciler
                 );
 
                 if ($expanded instanceof Atomic) {
-                    $existing_var_atomic_types[] = $expanded;
+                    $existing_var_atomic_types[$expanded->getKey()] = $expanded;
                 } else {
-                    array_push($existing_var_atomic_types, ...$expanded);
+                    foreach ($expanded as $atomic_type) {
+                        $existing_var_atomic_types[$atomic_type->getKey()] = $atomic_type;
+                    }
                 }
             } else {
-                $existing_var_atomic_types[] = $existing_var_atomic_type;
+                $existing_var_atomic_types[$existing_var_atomic_type->getKey()] = $existing_var_atomic_type;
             }
         }
 
