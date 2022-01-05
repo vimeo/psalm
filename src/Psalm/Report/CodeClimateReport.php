@@ -27,21 +27,37 @@ class CodeClimateReport extends Report
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
         $issues_data = array_map(
-            fn(IssueData $issue): array => [
-                'type' => 'issue',
-                'check_name' => $issue->type,
-                'description' => $issue->message,
-                'categories' => [$issue->type],
-                'severity' => $this->convertSeverity($issue->severity),
-                'fingerprint' => $this->calculateFingerprint($issue),
-                'location' => [
-                    'path' => $issue->file_name,
-                    'lines' => [
-                        'begin' => $issue->line_from,
-                        'end' => $issue->line_to,
+            fn(IssueData $issue): array =>
+                /**
+                 * map fields to new structure.
+                 * Expected fields:
+                 * - type
+                 * - check_name
+                 * - description*
+                 * - content
+                 * - categories[]
+                 * - severity
+                 * - fingerprint*
+                 * - location.path*
+                 * - location.lines.begin*
+                 *
+                 * Fields with * are the one used by Gitlab for Code Quality
+                 */
+                [
+                    'type' => 'issue',
+                    'check_name' => $issue->type,
+                    'description' => $issue->message,
+                    'categories' => [$issue->type],
+                    'severity' => $this->convertSeverity($issue->severity),
+                    'fingerprint' => $this->calculateFingerprint($issue),
+                    'location' => [
+                        'path' => $issue->file_name,
+                        'lines' => [
+                            'begin' => $issue->line_from,
+                            'end' => $issue->line_to,
+                        ],
                     ],
                 ],
-            ],
             $this->issues_data
         );
 
