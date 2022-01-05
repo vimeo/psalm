@@ -1045,7 +1045,6 @@ class AssertionReconciler extends Reconciler
             return self::handleLiteralEqualityWithFloat(
                 $statements_analyzer,
                 $assertion,
-                $scalar_type,
                 $bracket_pos,
                 $is_loose_equality,
                 $existing_var_type,
@@ -1430,7 +1429,6 @@ class AssertionReconciler extends Reconciler
     private static function handleLiteralEqualityWithFloat(
         StatementsAnalyzer $statements_analyzer,
         string             $assertion,
-        string             $scalar_type,
         int                $bracket_pos,
         bool               $is_loose_equality,
         Union              $existing_var_type,
