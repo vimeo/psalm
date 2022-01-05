@@ -1540,8 +1540,8 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                if ($existing_var_atomic_type instanceof TFloat
-                    && !$existing_var_atomic_type instanceof TLiteralFloat
+                if ($existing_var_atomic_type instanceof TString
+                    && !$existing_var_atomic_type instanceof TLiteralString
                 ) {
                     return $existing_var_type;
                 }
