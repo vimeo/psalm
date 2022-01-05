@@ -41,6 +41,8 @@ use function sort;
 use function strlen;
 use function substr;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * @internal
  */
@@ -468,8 +470,8 @@ class TaintFlowGraph extends DataFlowGraph
             $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
 
             $key = $to_id .
-                ' ' . json_encode($new_destination->specialized_calls) .
-                ' ' . json_encode($new_destination->taints);
+                ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .
+                ' ' . json_encode($new_destination->taints, JSON_THROW_ON_ERROR);
             $new_sources[$key] = $new_destination;
         }
 

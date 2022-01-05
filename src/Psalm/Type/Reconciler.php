@@ -57,6 +57,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+use const JSON_THROW_ON_ERROR;
+
 class Reconciler
 {
     public const RECONCILIATION_OK = 0;
@@ -190,11 +192,11 @@ class Reconciler
                             $nested_negated = !$negated;
 
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = json_decode(substr($new_type_part_part, 2), true);
+                            $data = json_decode(substr($new_type_part_part, 2), true, 512, JSON_THROW_ON_ERROR);
                         } else {
                             $nested_negated = $negated;
                             /** @var array<string, array<int, array<int, string>>> */
-                            $data = json_decode(substr($new_type_part_part, 1), true);
+                            $data = json_decode(substr($new_type_part_part, 1), true, 512, JSON_THROW_ON_ERROR);
                         }
 
                         $existing_types = self::reconcileKeyedTypes(

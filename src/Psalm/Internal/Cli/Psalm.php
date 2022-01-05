@@ -73,6 +73,7 @@ use function substr;
 use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_OS;
@@ -742,7 +743,10 @@ final class Psalm
             $expected_references
         );
 
-        $type_map_string = json_encode(['files' => $name_file_map, 'references' => $reference_dictionary]);
+        $type_map_string = json_encode(
+            ['files' => $name_file_map, 'references' => $reference_dictionary],
+            JSON_THROW_ON_ERROR
+        );
 
         $providers->file_provider->setContents(
             $type_map_location,

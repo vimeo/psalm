@@ -4,6 +4,7 @@ namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
 use Composer\InstalledVersions;
+use JsonException;
 use OutOfBoundsException;
 use Phar;
 use Psalm\Config;
@@ -44,6 +45,7 @@ use function substr_replace;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const STDERR;
 use const STDIN;
@@ -172,8 +174,17 @@ final class CliUtils
         if (!file_exists($composer_json_path)) {
             return 'vendor';
         }
+        try {
+            $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            fwrite(
+                STDERR,
+                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n"
+            );
+            exit(1);
+        }
 
-        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+        if (!$composer_json) {
             fwrite(
                 STDERR,
                 'Invalid composer.json at ' . $composer_json_path . "\n"

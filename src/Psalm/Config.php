@@ -9,6 +9,7 @@ use DOMAttr;
 use DOMDocument;
 use DomElement;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use OutOfBoundsException;
 use Psalm\CodeLocation\Raw;
@@ -102,6 +103,7 @@ use function version_compare;
 use const DIRECTORY_SEPARATOR;
 use const E_USER_ERROR;
 use const GLOB_NOSORT;
+use const JSON_THROW_ON_ERROR;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
@@ -2256,7 +2258,13 @@ class Config
         $composer_json_path = Composer::getJsonFilePath($this->base_dir);
 
         if (file_exists($composer_json_path)) {
-            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            try {
+                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $composer_json = null;
+            }
+
+            if (!$composer_json) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
             $php_version = $composer_json['require']['php'] ?? null;

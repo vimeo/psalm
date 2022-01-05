@@ -71,6 +71,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * @internal
  * This class transform conditions in code into "assertions" that will be reconciled with the type already known of a
@@ -149,7 +151,7 @@ class AssertionFinder
 
             if ($var_name) {
                 if ($candidate_if_types) {
-                    $if_types[$var_name] = [['@' . json_encode($candidate_if_types[0])]];
+                    $if_types[$var_name] = [['@' . json_encode($candidate_if_types[0], JSON_THROW_ON_ERROR)]];
                 } else {
                     $if_types[$var_name] = [['!falsy']];
                 }

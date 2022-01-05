@@ -12,6 +12,8 @@ use function str_replace;
 use function strpos;
 use function strtotime;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * Environment variables collector for CI environment.
  *
@@ -284,7 +286,7 @@ class BuildInfoCollector
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
-                $event_data = json_decode($event_json, true);
+                $event_data = json_decode($event_json, true, 512, JSON_THROW_ON_ERROR);
 
                 if (isset($event_data['head_commit'])) {
                     /**
