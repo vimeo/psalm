@@ -486,7 +486,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
 
                 $existing_var_type->removeType('array');
-            } elseif (!$array_atomic_type->isEmptyArray()) {
+            } elseif (!($array_atomic_type instanceof TArray && $array_atomic_type->isEmptyArray())) {
                 $did_remove_type = true;
 
                 if (!$min_count) {
