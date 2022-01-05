@@ -1412,6 +1412,17 @@ class AssertionReconciler extends Reconciler
 
                 return new Union([$existing_var_atomic_type]);
             }
+
+            //here we'll accept any type that *could* possibly be valid on loose equality and return the original type
+            if ($is_loose_equality) {
+                if ($existing_var_atomic_type instanceof TInt) {
+                    return $existing_var_type;
+                }
+
+                if ($existing_var_atomic_type instanceof TFloat) {
+                    return $existing_var_type;
+                }
+            }
         }
 
         //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
