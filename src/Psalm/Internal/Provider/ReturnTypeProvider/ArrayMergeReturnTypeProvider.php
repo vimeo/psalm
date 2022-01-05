@@ -246,7 +246,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 ]);
             }
 
-            $inner_key_type = $inner_key_type ?? Type::getArrayKey();
+            $inner_key_type ??= Type::getArrayKey();
 
             if ($any_nonempty) {
                 return new Union([

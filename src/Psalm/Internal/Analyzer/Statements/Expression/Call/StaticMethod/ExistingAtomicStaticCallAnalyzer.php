@@ -419,7 +419,7 @@ class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $return_type_candidate = $return_type_candidate ?? Type::getMixed();
+        $return_type_candidate ??= Type::getMixed();
 
         StaticCallAnalyzer::taintReturnType(
             $statements_analyzer,
