@@ -186,9 +186,7 @@ class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                function (string $file_name): bool {
-                    return !file_exists($file_name);
-                }
+                fn(string $file_name): bool => !file_exists($file_name)
             );
         }
 

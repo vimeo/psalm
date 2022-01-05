@@ -596,9 +596,7 @@ class Union implements TypeNode
 
         return !array_filter(
             $types,
-            function ($atomic_type) use ($analysis_php_version_id) {
-                return !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id);
-            }
+            fn($atomic_type) => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id)
         );
     }
 
@@ -687,9 +685,7 @@ class Union implements TypeNode
             && count(
                 array_filter(
                     $this->types,
-                    function ($type): bool {
-                        return $type instanceof TTemplateParamClass;
-                    }
+                    fn($type): bool => $type instanceof TTemplateParamClass
                 )
             ) === 1;
     }
@@ -698,9 +694,7 @@ class Union implements TypeNode
     {
         return (bool)array_filter(
             $this->types,
-            function ($type) use ($codebase) {
-                return $type->hasArrayAccessInterface($codebase);
-            }
+            fn($type) => $type->hasArrayAccessInterface($codebase)
         );
     }
 
@@ -716,9 +710,7 @@ class Union implements TypeNode
     {
         return array_filter(
             $this->types,
-            function ($type): bool {
-                return $type instanceof TCallable;
-            }
+            fn($type): bool => $type instanceof TCallable
         );
     }
 
@@ -729,9 +721,7 @@ class Union implements TypeNode
     {
         return array_filter(
             $this->types,
-            function ($type): bool {
-                return $type instanceof TClosure;
-            }
+            fn($type): bool => $type instanceof TClosure
         );
     }
 
@@ -861,9 +851,7 @@ class Union implements TypeNode
     public function hasInt(): bool
     {
         return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
-            || array_filter($this->types, function (Atomic $type) {
-                return $type instanceof TIntRange;
-            });
+            || array_filter($this->types, fn(Atomic $type) => $type instanceof TIntRange);
     }
 
     public function hasPositiveInt(): bool
@@ -913,18 +901,14 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type): bool {
-                return $type instanceof TTemplateParam
-                    || ($type instanceof TNamedObject
-                        && $type->extra_types
-                        && array_filter(
-                            $type->extra_types,
-                            function ($t): bool {
-                                return $t instanceof TTemplateParam;
-                            }
-                        )
-                    );
-            }
+            fn(Atomic $type): bool => $type instanceof TTemplateParam
+                || ($type instanceof TNamedObject
+                    && $type->extra_types
+                    && array_filter(
+                        $type->extra_types,
+                        fn($t): bool => $t instanceof TTemplateParam
+                    )
+                )
         );
     }
 
@@ -932,9 +916,7 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type): bool {
-                return $type instanceof TConditional;
-            }
+            fn(Atomic $type): bool => $type instanceof TConditional
         );
     }
 
@@ -942,21 +924,17 @@ class Union implements TypeNode
     {
         return (bool) array_filter(
             $this->types,
-            function (Atomic $type): bool {
-                return $type instanceof TTemplateParam
-                    || ($type instanceof TNamedObject
-                        && ($type->was_static
-                            || ($type->extra_types
-                                && array_filter(
-                                    $type->extra_types,
-                                    function ($t): bool {
-                                        return $t instanceof TTemplateParam;
-                                    }
-                                )
+            fn(Atomic $type): bool => $type instanceof TTemplateParam
+                || ($type instanceof TNamedObject
+                    && ($type->was_static
+                        || ($type->extra_types
+                            && array_filter(
+                                $type->extra_types,
+                                fn($t): bool => $t instanceof TTemplateParam
                             )
                         )
-                    );
-            }
+                    )
+                )
         );
     }
 
@@ -1185,13 +1163,11 @@ class Union implements TypeNode
         return count(
             array_filter(
                 $this->types,
-                function ($type) use ($check_templates): bool {
-                    return $type instanceof TInt
-                        || ($check_templates
-                            && $type instanceof TTemplateParam
-                            && $type->as->isInt()
-                        );
-                }
+                fn($type): bool => $type instanceof TInt
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isInt()
+                    )
             )
         ) === count($this->types);
     }
@@ -1216,13 +1192,11 @@ class Union implements TypeNode
         return count(
             array_filter(
                 $this->types,
-                function ($type) use ($check_templates): bool {
-                    return $type instanceof TString
-                        || ($check_templates
-                            && $type instanceof TTemplateParam
-                            && $type->as->isString()
-                        );
-                }
+                fn($type): bool => $type instanceof TString
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isString()
+                    )
             )
         ) === count($this->types);
     }

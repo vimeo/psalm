@@ -147,9 +147,7 @@ class ArrayFunctionArgumentsAnalyzer
 
         $unpacked_args = array_filter(
             $args,
-            function ($arg) {
-                return $arg->unpack;
-            }
+            fn($arg) => $arg->unpack
         );
 
         if ($method_id === 'array_push' && !$unpacked_args) {

@@ -2080,13 +2080,12 @@ class Config
 
         if (file_exists($vendor_autoload_files_path)) {
             $this->include_collector->runAndCollect(
-                function () use ($vendor_autoload_files_path) {
+                fn(): array =>
                     /**
                      * @psalm-suppress UnresolvableInclude
                      * @var string[]
                      */
-                    return require $vendor_autoload_files_path;
-                }
+                    require $vendor_autoload_files_path
             );
         }
 

@@ -347,9 +347,7 @@ class DocumentationTest extends TestCase
 
         $duplicate_shortcodes = array_filter(
             $all_shortcodes,
-            function ($issues): bool {
-                return count($issues) > 1;
-            }
+            fn($issues): bool => count($issues) > 1
         );
 
         $this->assertEquals(

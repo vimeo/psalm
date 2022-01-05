@@ -464,9 +464,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
                         array_map(
-                            function ($assertion) use ($generic_params, $codebase) {
-                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                            },
+                            fn($assertion) => $assertion->getUntemplatedCopy($generic_params, null, $codebase),
                             $method_storage->if_true_assertions
                         )
                     );
@@ -476,9 +474,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
                         array_map(
-                            function ($assertion) use ($generic_params, $codebase) {
-                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                            },
+                            fn($assertion) => $assertion->getUntemplatedCopy($generic_params, null, $codebase),
                             $method_storage->if_false_assertions
                         )
                     );
@@ -500,17 +496,13 @@ class NewAnalyzer extends CallAnalyzer
                             $template_name,
                             $storage->template_extended_params,
                             array_map(
-                                function ($type_map) use ($codebase) {
-                                    return array_map(
-                                        function ($bounds) use ($codebase) {
-                                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                                $bounds,
-                                                $codebase
-                                            );
-                                        },
-                                        $type_map
-                                    );
-                                },
+                                fn($type_map) => array_map(
+                                    fn($bounds) => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                        $bounds,
+                                        $codebase
+                                    ),
+                                    $type_map
+                                ),
                                 $template_result->lower_bounds
                             )
                         );
@@ -555,9 +547,7 @@ class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 array_values(
                     array_map(
-                        function ($map) {
-                            return clone reset($map);
-                        },
+                        fn($map) => clone reset($map),
                         $storage->template_types
                     )
                 )

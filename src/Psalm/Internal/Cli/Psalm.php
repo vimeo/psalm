@@ -217,9 +217,8 @@ final class Psalm
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
@@ -501,18 +500,16 @@ final class Psalm
 
         $args = array_values(array_filter(
             $args,
-            function (string $arg): bool {
-                return $arg !== '--ansi'
-                    && $arg !== '--no-ansi'
-                    && $arg !== '-i'
-                    && $arg !== '--init'
-                    && $arg !== '--debug'
-                    && $arg !== '--debug-by-line'
-                    && $arg !== '--debug-emitted-issues'
-                    && strpos($arg, '--disable-extension=') !== 0
-                    && strpos($arg, '--root=') !== 0
-                    && strpos($arg, '--r=') !== 0;
-            }
+            fn(string $arg): bool => $arg !== '--ansi'
+                && $arg !== '--no-ansi'
+                && $arg !== '-i'
+                && $arg !== '--init'
+                && $arg !== '--debug'
+                && $arg !== '--debug-by-line'
+                && $arg !== '--debug-emitted-issues'
+                && strpos($arg, '--disable-extension=') !== 0
+                && strpos($arg, '--root=') !== 0
+                && strpos($arg, '--r=') !== 0
         ));
 
         $init_level = null;
@@ -1073,9 +1070,7 @@ final class Psalm
         if ($flow_graph !== null && $dump_taint_graph !== null) {
             file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
                 implode("\n\t", array_map(
-                    function (array $edges) {
-                        return '"'.implode('" -> "', $edges).'"';
-                    },
+                    fn(array $edges) => '"'.implode('" -> "', $edges).'"',
                     $flow_graph->summarizeEdges()
                 )) .
                 "\n}\n");

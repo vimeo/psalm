@@ -496,9 +496,7 @@ class TypeParser
         $potential_values = array_unique($potential_values);
 
         return array_map(
-            function ($int) {
-                return new TLiteralInt($int);
-            },
+            fn($int) => new TLiteralInt($int),
             array_values($potential_values)
         );
     }

@@ -892,17 +892,13 @@ class CallAnalyzer
 
         if ($type_assertions) {
             $template_type_map = array_map(
-                function ($type_map) use ($codebase) {
-                    return array_map(
-                        function ($bounds) use ($codebase) {
-                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                $bounds,
-                                $codebase
-                            );
-                        },
-                        $type_map
-                    );
-                },
+                fn($type_map) => array_map(
+                    fn($bounds) => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $bounds,
+                        $codebase
+                    ),
+                    $type_map
+                ),
                 $inferred_lower_bounds
             );
 
@@ -1106,9 +1102,7 @@ class CallAnalyzer
                 if (count($lower_bounds) > 1) {
                     $bounds_with_equality = array_filter(
                         $lower_bounds,
-                        function ($lower_bound) {
-                            return (bool)$lower_bound->equality_bound_classlike;
-                        }
+                        fn($lower_bound) => (bool)$lower_bound->equality_bound_classlike
                     );
 
                     if (!$bounds_with_equality) {
@@ -1117,9 +1111,7 @@ class CallAnalyzer
 
                     $equality_types = array_unique(
                         array_map(
-                            function ($bound_with_equality) {
-                                return $bound_with_equality->type->getId();
-                            },
+                            fn($bound_with_equality) => $bound_with_equality->type->getId(),
                             $bounds_with_equality
                         )
                     );

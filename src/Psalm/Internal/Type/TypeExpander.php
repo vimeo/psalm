@@ -255,10 +255,8 @@ class TypeExpander
                     if ($const_name_part) {
                         $matching_constants = array_filter(
                             $matching_constants,
-                            function ($constant_name) use ($const_name_part): bool {
-                                return $constant_name !== $const_name_part
-                                    && strpos($constant_name, $const_name_part) === 0;
-                            }
+                            fn($constant_name): bool => $constant_name !== $const_name_part
+                                && strpos($constant_name, $const_name_part) === 0
                         );
                     }
                 } else {
@@ -609,18 +607,14 @@ class TypeExpander
             if ($container_class_storage->template_types
                 && array_filter(
                     $container_class_storage->template_types,
-                    function ($type_map) {
-                        return !reset($type_map)->hasMixed();
-                    }
+                    fn($type_map) => !reset($type_map)->hasMixed()
                 )
             ) {
                 $return_type = new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
-                            function ($type_map) {
-                                return clone reset($type_map);
-                            },
+                            fn($type_map) => clone reset($type_map),
                             $container_class_storage->template_types
                         )
                     )
@@ -830,9 +824,7 @@ class TypeExpander
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type): bool {
-                        return !$atomic_type instanceof TNever;
-                    }
+                    static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TNever
                 );
             }
 
@@ -841,9 +833,7 @@ class TypeExpander
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type): bool {
-                        return !$atomic_type instanceof TVoid;
-                    }
+                    static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TVoid
                 );
 
                 if (count($all_conditional_return_types) !== $number_of_types) {

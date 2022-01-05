@@ -406,9 +406,7 @@ class FileFilter
     private static function isRegularExpression(string $string): bool
     {
         set_error_handler(
-            function (): bool {
-                return false;
-            },
+            fn(): bool => false,
             E_WARNING
         );
         $is_regexp = preg_match($string, '') !== false;

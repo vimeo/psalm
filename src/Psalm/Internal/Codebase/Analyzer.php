@@ -283,9 +283,7 @@ class Analyzer
 
         $this->files_to_analyze = array_filter(
             $this->files_to_analyze,
-            function (string $file_path): bool {
-                return $this->file_provider->fileExists($file_path);
-            }
+            fn(string $file_path): bool => $this->file_provider->fileExists($file_path)
         );
 
         $this->doAnalysis($project_analyzer, $pool_size);

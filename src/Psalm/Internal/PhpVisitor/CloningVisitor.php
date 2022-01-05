@@ -29,9 +29,7 @@ class CloningVisitor extends NodeVisitorAbstract
                     /**
                      * @return Comment
                      */
-                    function (Comment $c): Comment {
-                        return clone $c;
-                    },
+                    fn(Comment $c): Comment => clone $c,
                     $cs
                 )
             );

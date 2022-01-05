@@ -792,9 +792,7 @@ class ConfigTest extends TestCase
                  *
                  * @return string
                  */
-                function ($issue_name): string {
-                    return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
-                },
+                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
                 IssueHandler::getAllIssueTypes()
             )
         );

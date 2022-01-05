@@ -429,9 +429,7 @@ class ClassLikeNodeScanner
 
                 usort(
                     $docblock_info->templates,
-                    function (array $l, array $r): int {
-                        return $l[4] > $r[4] ? 1 : -1;
-                    }
+                    fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1
                 );
 
                 foreach ($docblock_info->templates as $i => $template_map) {

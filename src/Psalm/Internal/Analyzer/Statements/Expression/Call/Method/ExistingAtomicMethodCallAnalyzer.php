@@ -418,17 +418,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use (
-                            $class_template_params,
+                        fn(Assertion $assertion): Assertion => $assertion->getUntemplatedCopy(
+                            $class_template_params ?: [],
                             $lhs_var_id,
                             $codebase
-                        ): Assertion {
-                            return $assertion->getUntemplatedCopy(
-                                $class_template_params ?: [],
-                                $lhs_var_id,
-                                $codebase
-                            );
-                        },
+                        ),
                         $method_storage->if_true_assertions
                     )
                 );
@@ -438,17 +432,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use (
-                            $class_template_params,
+                        fn(Assertion $assertion): Assertion => $assertion->getUntemplatedCopy(
+                            $class_template_params ?: [],
                             $lhs_var_id,
                             $codebase
-                        ): Assertion {
-                            return $assertion->getUntemplatedCopy(
-                                $class_template_params ?: [],
-                                $lhs_var_id,
-                                $codebase
-                            );
-                        },
+                        ),
                         $method_storage->if_false_assertions
                     )
                 );

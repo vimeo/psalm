@@ -77,9 +77,7 @@ class TypeComparatorTest extends TestCase
             ]
         );
         return array_map(
-            function ($type) {
-                return [$type];
-            },
+            fn($type) => [$type],
             array_keys($basic_types)
         );
     }

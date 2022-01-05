@@ -38,19 +38,12 @@ trait HasIntersectionTrait
                  *
                  * @return string
                  */
-                function (Atomic $extra_type) use (
+                fn(Atomic $extra_type): string => $extra_type->toNamespacedString(
                     $namespace,
                     $aliased_classes,
                     $this_class,
                     $use_phpdoc_format
-                ): string {
-                    return $extra_type->toNamespacedString(
-                        $namespace,
-                        $aliased_classes,
-                        $this_class,
-                        $use_phpdoc_format
-                    );
-                },
+                ),
                 $this->extra_types
             )
         );

@@ -62,9 +62,7 @@ class TObjectWithProperties extends TObject
                 /**
                  * @param  string|int $name
                  */
-                function ($name, Union $type): string {
-                    return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
-                },
+                fn($name, Union $type): string => $name . ($type->possibly_undefined ? '?' : '') . ':' . $type,
                 array_keys($this->properties),
                 $this->properties
             )
@@ -73,9 +71,7 @@ class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
-                function (string $name): string {
-                    return $name . '()';
-                },
+                fn(string $name): string => $name . '()',
                 array_keys($this->methods)
             )
         );
@@ -100,9 +96,7 @@ class TObjectWithProperties extends TObject
                 /**
                  * @param  string|int $name
                  */
-                function ($name, Union $type): string {
-                    return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
-                },
+                fn($name, Union $type): string => $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId(),
                 array_keys($this->properties),
                 $this->properties
             )
@@ -111,9 +105,7 @@ class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
-                function (string $name): string {
-                    return $name . '()';
-                },
+                fn(string $name): string => $name . '()',
                 array_keys($this->methods)
             )
         );
@@ -145,22 +137,16 @@ class TObjectWithProperties extends TObject
                         /**
                          * @param  string|int $name
                          */
-                        function (
-                            $name,
-                            Union $type
-                        ) use (
-                            $namespace,
-                            $aliased_classes,
-                            $this_class,
-                            $use_phpdoc_format
-                        ): string {
-                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->toNamespacedString(
+                        fn($name, Union $type): string =>
+                            $name .
+                            ($type->possibly_undefined ? '?' : '')
+                            . ':'
+                            . $type->toNamespacedString(
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,
                                 $use_phpdoc_format
-                            );
-                        },
+                            ),
                         array_keys($this->properties),
                         $this->properties
                     )

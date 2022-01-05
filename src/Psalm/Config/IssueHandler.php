@@ -149,26 +149,22 @@ class IssueHandler
     {
         return array_filter(
             array_map(
-                function (string $file_name): string {
-                    return substr($file_name, 0, -4);
-                },
+                fn(string $file_name): string => substr($file_name, 0, -4),
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
-            function (string $issue_name): bool {
-                return $issue_name !== ''
-                    && $issue_name !== 'MethodIssue'
-                    && $issue_name !== 'PropertyIssue'
-                    && $issue_name !== 'FunctionIssue'
-                    && $issue_name !== 'ArgumentIssue'
-                    && $issue_name !== 'VariableIssue'
-                    && $issue_name !== 'ClassIssue'
-                    && $issue_name !== 'CodeIssue'
-                    && $issue_name !== 'PsalmInternalError'
-                    && $issue_name !== 'ParseError'
-                    && $issue_name !== 'PluginIssue'
-                    && $issue_name !== 'MixedIssue'
-                    && $issue_name !== 'MixedIssueTrait';
-            }
+            fn(string $issue_name): bool => $issue_name !== ''
+                && $issue_name !== 'MethodIssue'
+                && $issue_name !== 'PropertyIssue'
+                && $issue_name !== 'FunctionIssue'
+                && $issue_name !== 'ArgumentIssue'
+                && $issue_name !== 'VariableIssue'
+                && $issue_name !== 'ClassIssue'
+                && $issue_name !== 'CodeIssue'
+                && $issue_name !== 'PsalmInternalError'
+                && $issue_name !== 'ParseError'
+                && $issue_name !== 'PluginIssue'
+                && $issue_name !== 'MixedIssue'
+                && $issue_name !== 'MixedIssueTrait'
         );
     }
 }

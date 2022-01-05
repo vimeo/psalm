@@ -358,17 +358,13 @@ class ArgumentsAnalyzer
 
         $replace_template_result = new TemplateResult(
             array_map(
-                function ($template_map) use ($codebase) {
-                    return array_map(
-                        function ($lower_bounds) use ($codebase) {
-                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                $lower_bounds,
-                                $codebase
-                            );
-                        },
-                        $template_map
-                    );
-                },
+                fn($template_map) => array_map(
+                    fn($lower_bounds) => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $lower_bounds,
+                        $codebase
+                    ),
+                    $template_map
+                ),
                 $template_result->lower_bounds
             ),
             []
