@@ -1185,7 +1185,7 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param list<Atomic> $existing_var_atomic_types
+     * @param array<string, Atomic> $existing_var_atomic_types
      * @param string[]     $suppressed_issues
      */
     private static function handleLiteralEqualityWithInt(
@@ -1243,7 +1243,7 @@ class AssertionReconciler extends Reconciler
                 return new Union([new TLiteralInt($value)]);
             }
 
-            if ($existing_var_atomic_type instanceof TInt) {
+            if (get_class($existing_var_atomic_type) === TInt::class) {
                 return new Union([new TLiteralInt($value)]);
             }
 
@@ -1300,7 +1300,7 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param list<Atomic> $existing_var_atomic_types
+     * @param array<string, Atomic> $existing_var_atomic_types
      * @param string[]     $suppressed_issues
      */
     private static function handleLiteralEqualityWithString(
@@ -1432,7 +1432,7 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param list<Atomic> $existing_var_atomic_types
+     * @param array<string, Atomic> $existing_var_atomic_types
      */
     private static function getCompatibleIntType(
         Union $existing_var_type,
@@ -1458,7 +1458,7 @@ class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @param list<Atomic> $existing_var_atomic_types
+     * @param array<string, Atomic> $existing_var_atomic_types
      */
     private static function getCompatibleStringType(
         Union $existing_var_type,
