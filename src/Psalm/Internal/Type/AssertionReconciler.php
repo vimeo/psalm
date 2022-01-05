@@ -1202,6 +1202,10 @@ class AssertionReconciler extends Reconciler
     ): Union {
         $value = (int) substr($assertion, $bracket_pos + 1, -1);
 
+        // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
+        $literal_asserted_type = new Union([new TLiteralInt($value)]);
+        $literal_asserted_type->from_docblock = $existing_var_type->from_docblock;
+
         $compatible_int_type = self::getCompatibleIntType(
             $existing_var_type,
             $existing_var_atomic_types,
@@ -1215,11 +1219,11 @@ class AssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TPositiveInt && $value > 0) {
-                return new Union([new TLiteralInt($value)]);
+                return $literal_asserted_type;
             }
 
             if ($existing_var_atomic_type instanceof TIntRange && $existing_var_atomic_type->contains($value)) {
-                return new Union([new TLiteralInt($value)]);
+                return $literal_asserted_type;
             }
 
             if ($existing_var_atomic_type instanceof TLiteralInt && $existing_var_atomic_type->value === $value) {
@@ -1240,11 +1244,11 @@ class AssertionReconciler extends Reconciler
                     }
                     return $existing_var_type;
                 }
-                return new Union([new TLiteralInt($value)]);
+                return $literal_asserted_type;
             }
 
             if ($existing_var_atomic_type instanceof TInt && !$existing_var_atomic_type instanceof TLiteralInt) {
-                return new Union([new TLiteralInt($value)]);
+                return $literal_asserted_type;
             }
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
@@ -1259,7 +1263,7 @@ class AssertionReconciler extends Reconciler
                 }
 
                 if ($existing_var_atomic_type->as->hasInt()) {
-                    return new Union([new TLiteralInt($value)]);
+                    return $literal_asserted_type;
                 }
             }
 
@@ -1323,6 +1327,12 @@ class AssertionReconciler extends Reconciler
     ): Union {
         $value = substr($assertion, $bracket_pos + 1, -1);
 
+        // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
+        $literal_asserted_type_string = new Union([new TLiteralString($value)]);
+        $literal_asserted_type_string->from_docblock = $existing_var_type->from_docblock;
+        $literal_asserted_type_classstring = new Union([new TLiteralClassString($value)]);
+        $literal_asserted_type_classstring->from_docblock = $existing_var_type->from_docblock;
+
         $compatible_string_type = self::getCompatibleStringType(
             $existing_var_type,
             $existing_var_atomic_types,
@@ -1359,10 +1369,10 @@ class AssertionReconciler extends Reconciler
                     || $scalar_type === 'interface-string'
                     || $scalar_type === 'trait-string'
                 ) {
-                    return new Union([new TLiteralClassString($value)]);
+                    return $literal_asserted_type_classstring;
                 }
 
-                return new Union([new TLiteralString($value)]);
+                return $literal_asserted_type_string;
             }
 
             if ($existing_var_atomic_type instanceof TString && !$existing_var_atomic_type instanceof TLiteralString) {
@@ -1370,10 +1380,10 @@ class AssertionReconciler extends Reconciler
                     || $scalar_type === 'interface-string'
                     || $scalar_type === 'trait-string'
                 ) {
-                    return new Union([new TLiteralClassString($value)]);
+                    return $literal_asserted_type_classstring;
                 }
 
-                return new Union([new TLiteralString($value)]);
+                return $literal_asserted_type_string;
             }
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
@@ -1393,10 +1403,10 @@ class AssertionReconciler extends Reconciler
                         || $scalar_type === 'interface-string'
                         || $scalar_type === 'trait-string'
                     ) {
-                        return new Union([new TLiteralClassString($value)]);
+                        return $literal_asserted_type_classstring;
                     }
 
-                    return new Union([new TLiteralString($value)]);
+                    return $literal_asserted_type_string;
                 }
 
                 $existing_var_atomic_type = clone $existing_var_atomic_type;
@@ -1469,7 +1479,9 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                return new Union([new TLiteralInt($value)]);
+                $asserted_type = new Union([new TLiteralInt($value)]);
+                $asserted_type->from_docblock = $existing_var_type->from_docblock;
+                return $asserted_type;
             }
         }
 
@@ -1499,10 +1511,14 @@ class AssertionReconciler extends Reconciler
                     || $scalar_type === 'interface-string'
                     || $scalar_type === 'trait-string'
                 ) {
-                    return new Union([new TLiteralClassString($value)]);
+                    $asserted_type = new Union([new TLiteralClassString($value)]);
+                    $asserted_type->from_docblock = $existing_var_type->from_docblock;
+                    return $asserted_type;
                 }
 
-                return new Union([new TLiteralString($value)]);
+                $asserted_type = new Union([new TLiteralString($value)]);
+                $asserted_type->from_docblock = $existing_var_type->from_docblock;
+                return $asserted_type;
             }
         }
 
