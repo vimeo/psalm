@@ -143,51 +143,51 @@ final class LanguageServer
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalm-language-server [options]
+            Usage:
+                psalm-language-server [options]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    -v, --version
-        Display the Psalm version
+                -v, --version
+                    Display the Psalm version
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --find-dead-code
-        Look for dead code
+                --find-dead-code
+                    Look for dead code
 
-    --clear-cache
-        Clears all cache files that the language server uses for this specific project
+                --clear-cache
+                    Clears all cache files that the language server uses for this specific project
 
-    --use-ini-defaults
-        Use PHP-provided ini defaults for memory and error display
+                --use-ini-defaults
+                    Use PHP-provided ini defaults for memory and error display
 
-    --tcp=url
-        Use TCP mode (by default Psalm uses STDIO)
+                --tcp=url
+                    Use TCP mode (by default Psalm uses STDIO)
 
-    --tcp-server
-        Use TCP in server mode (default is client)
+                --tcp-server
+                    Use TCP in server mode (default is client)
 
-    --disable-on-change[=line-number-threshold]
-        If added, the language server will not respond to onChange events.
-        You can also specify a line count over which Psalm will not run on-change events.
+                --disable-on-change[=line-number-threshold]
+                    If added, the language server will not respond to onChange events.
+                    You can also specify a line count over which Psalm will not run on-change events.
 
-    --enable-autocomplete[=BOOL]
-        Enables or disables autocomplete on methods and properties. Default is true.
+                --enable-autocomplete[=BOOL]
+                    Enables or disables autocomplete on methods and properties. Default is true.
 
-    --use-extended-diagnostic-codes
-        Enables sending help uri links with the code in diagnostic messages.
+                --use-extended-diagnostic-codes
+                    Enables sending help uri links with the code in diagnostic messages.
 
-    --verbose
-        Will send log messages to the client with information.
+                --verbose
+                    Will send log messages to the client with information.
 
-HELP;
+            HELP;
 
             exit;
         }

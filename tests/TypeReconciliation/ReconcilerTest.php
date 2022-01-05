@@ -146,6 +146,7 @@ class ReconcilerTest extends TestCase
             'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
             'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
             'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', 'SomeInterface', 'SomeClass|SomeInterface'],
+            'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', 'SomeClass', 'SomeClass|SomeInterface'],
             'stringToNumericStringWithInt' => ['numeric-string', '~int', 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', '~float', 'string'],
             'filterKeyedArrayWithIterable' => ['array{some: string}', 'iterable<string>', 'array{some: mixed}'],

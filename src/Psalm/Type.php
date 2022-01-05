@@ -585,91 +585,13 @@ abstract class Type
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
-                        $intersection_atomic = null;
-                        $wider_type = null;
-                        if ($type_1_atomic instanceof TNamedObject
-                            && $type_2_atomic instanceof TNamedObject
-                        ) {
-                            if (($type_1_atomic->value === $type_2_atomic->value
-                                && get_class($type_1_atomic) === TNamedObject::class
-                                && get_class($type_2_atomic) !== TNamedObject::class)
-                            ) {
-                                $intersection_atomic = clone $type_2_atomic;
-                                $wider_type = $type_1_atomic;
-                                $intersection_performed = true;
-                            } elseif (($type_1_atomic->value === $type_2_atomic->value
-                                && get_class($type_2_atomic) === TNamedObject::class
-                                && get_class($type_1_atomic) !== TNamedObject::class)
-                            ) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                                $intersection_performed = true;
-                            }
-                        }
+                        $intersection_atomic = self::intersectAtomicTypes(
+                            $type_1_atomic,
+                            $type_2_atomic,
+                            $codebase,
+                            $intersection_performed
+                        );
 
-                        if (null === $intersection_atomic) {
-                            if (AtomicTypeComparator::isContainedBy(
-                                $codebase,
-                                $type_2_atomic,
-                                $type_1_atomic
-                            )) {
-                                $intersection_atomic = clone $type_2_atomic;
-                                $wider_type = $type_1_atomic;
-                                $intersection_performed = true;
-                            } elseif (AtomicTypeComparator::isContainedBy(
-                                $codebase,
-                                $type_1_atomic,
-                                $type_2_atomic
-                            )) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                                $intersection_performed = true;
-                            }
-                        }
-
-                        if (static::mayHaveIntersection($type_1_atomic)
-                            && static::mayHaveIntersection($type_2_atomic)
-                        ) {
-                            if ($intersection_atomic === null && $wider_type === null) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                            }
-                            if ($intersection_atomic === null || $wider_type === null) {
-                                throw new LogicException(
-                                    '$intersection_atomic and $wider_type should be both set or null.'
-                                    .' Check the preceding code for errors.'
-                                    .' Did you forget to assign one of the variables?'
-                                );
-                            }
-                            if (!static::mayHaveIntersection($intersection_atomic)
-                                || !static::mayHaveIntersection($wider_type)
-                            ) {
-                                throw new LogicException(
-                                    '$intersection_atomic and $wider_type should be both support intersection.'
-                                    .' Check the preceding code for errors.'
-                                );
-                            }
-                            if (!$intersection_atomic->extra_types) {
-                                $intersection_atomic->extra_types = [];
-                            }
-
-                            $intersection_performed = true;
-
-                            $wider_type_clone = clone $wider_type;
-
-                            $wider_type_clone->extra_types = [];
-
-                            $intersection_atomic->extra_types[$wider_type_clone->getKey()] = $wider_type_clone;
-
-                            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
-
-                            if ($wider_type_intersection_types !== null) {
-                                foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
-                                        = clone $wider_type_intersection_type;
-                                }
-                            }
-                        }
                         if (null !== $intersection_atomic) {
                             if (null === $combined_type) {
                                 $combined_type = new Union([$intersection_atomic]);
@@ -734,6 +656,101 @@ abstract class Type
         }
 
         return $combined_type;
+    }
+
+    private static function intersectAtomicTypes(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$intersection_performed
+    ): ?Atomic {
+        $intersection_atomic = null;
+        $wider_type = null;
+        if ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+        ) {
+            if (($type_1_atomic->value === $type_2_atomic->value
+                && get_class($type_1_atomic) === TNamedObject::class
+                && get_class($type_2_atomic) !== TNamedObject::class)
+            ) {
+                $intersection_atomic = clone $type_2_atomic;
+                $wider_type = $type_1_atomic;
+                $intersection_performed = true;
+            } elseif (($type_1_atomic->value === $type_2_atomic->value
+                && get_class($type_2_atomic) === TNamedObject::class
+                && get_class($type_1_atomic) !== TNamedObject::class)
+            ) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+                $intersection_performed = true;
+            }
+        }
+
+        if (null === $intersection_atomic) {
+            if (AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $type_2_atomic,
+                $type_1_atomic
+            )) {
+                $intersection_atomic = clone $type_2_atomic;
+                $wider_type = $type_1_atomic;
+                $intersection_performed = true;
+            } elseif (AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic
+            )) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+                $intersection_performed = true;
+            }
+        }
+
+        if (static::mayHaveIntersection($type_1_atomic)
+            && static::mayHaveIntersection($type_2_atomic)
+        ) {
+            if ($intersection_atomic === null && $wider_type === null) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+            }
+            if ($intersection_atomic === null || $wider_type === null) {
+                throw new LogicException(
+                    '$intersection_atomic and $wider_type should be both set or null.'
+                    .' Check the preceding code for errors.'
+                    .' Did you forget to assign one of the variables?'
+                );
+            }
+            if (!static::mayHaveIntersection($intersection_atomic)
+                || !static::mayHaveIntersection($wider_type)
+            ) {
+                throw new LogicException(
+                    '$intersection_atomic and $wider_type should be both support intersection.'
+                    .' Check the preceding code for errors.'
+                );
+            }
+            if (!$intersection_atomic->extra_types) {
+                $intersection_atomic->extra_types = [];
+            }
+
+            $intersection_performed = true;
+
+            $wider_type_clone = clone $wider_type;
+
+            $wider_type_clone->extra_types = [];
+
+            $intersection_atomic->extra_types[$wider_type_clone->getKey()] = $wider_type_clone;
+
+            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
+
+            if ($wider_type_intersection_types !== null) {
+                foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
+                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
+                        = clone $wider_type_intersection_type;
+                }
+            }
+        }
+
+        return $intersection_atomic;
     }
 
     /**

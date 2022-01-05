@@ -24,8 +24,6 @@ use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
 
-use const PHP_VERSION_ID;
-
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
  * process as if invoked by a real user.
@@ -152,10 +150,6 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalmDiff(): void
     {
-        if (PHP_VERSION_ID < 7_04_00) {
-            $this->markTestSkipped('Only works on 7.4+');
-        }
-
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 
         $this->runPsalmInit(1);
