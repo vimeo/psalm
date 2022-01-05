@@ -1243,7 +1243,7 @@ class AssertionReconciler extends Reconciler
                 return new Union([new TLiteralInt($value)]);
             }
 
-            if (get_class($existing_var_atomic_type) === TInt::class) {
+            if ($existing_var_atomic_type instanceof TInt && !$existing_var_atomic_type instanceof TLiteralInt) {
                 return new Union([new TLiteralInt($value)]);
             }
 
