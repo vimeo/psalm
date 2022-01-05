@@ -471,8 +471,6 @@ class AssertionReconciler extends Reconciler
                 return new Union($acceptable_atomic_types);
             }
         } elseif (!$new_type->hasMixed()) {
-            $has_match = true;
-
             $any_scalar_type_match_found = false;
 
             if ($code_location
@@ -511,12 +509,11 @@ class AssertionReconciler extends Reconciler
                 $existing_var_type,
                 $new_type,
                 $template_type_map,
-                $has_match,
                 $any_scalar_type_match_found
             );
 
             if ($code_location
-                && !$has_match
+                && !$intersection_type
                 && (!$is_loose_equality || !$any_scalar_type_match_found)
             ) {
                 if ($assertion === 'null') {
@@ -590,7 +587,6 @@ class AssertionReconciler extends Reconciler
         Union $existing_type,
         Union $new_type,
         array $template_type_map,
-        bool &$has_match = false,
         bool &$any_scalar_type_match_found = false
     ): ?Union {
         $matching_atomic_types = [];
@@ -598,26 +594,18 @@ class AssertionReconciler extends Reconciler
         $new_type = clone $new_type;
 
         foreach ($new_type->getAtomicTypes() as $new_type_part) {
-            $has_local_match = false;
-
             foreach ($existing_type->getAtomicTypes() as $existing_type_part) {
                 $matching_atomic_type = self::filterAtomicWithAnother(
                     $existing_type_part,
                     $new_type_part,
                     $codebase,
                     $template_type_map,
-                    $has_local_match,
                     $any_scalar_type_match_found
                 );
 
                 if ($matching_atomic_type) {
                     $matching_atomic_types[] = $matching_atomic_type;
                 }
-            }
-
-            if (!$has_local_match) {
-                $has_match = false;
-                break;
             }
         }
 
@@ -637,7 +625,6 @@ class AssertionReconciler extends Reconciler
         Atomic $type_2_atomic,
         Codebase $codebase,
         array $template_type_map,
-        bool &$has_local_match,
         bool &$any_scalar_type_match_found
     ): ?Atomic {
         if ($type_1_atomic instanceof TFloat
@@ -663,8 +650,6 @@ class AssertionReconciler extends Reconciler
         );
 
         if ($atomic_contained_by) {
-            $has_local_match = true;
-
             return self::refineContainedAtomicWithAnother(
                 $type_1_atomic,
                 $type_2_atomic,
@@ -686,8 +671,6 @@ class AssertionReconciler extends Reconciler
         );
 
         if ($atomic_contained_by) {
-            $has_local_match = true;
-
             return self::refineContainedAtomicWithAnother(
                 $type_2_atomic,
                 $type_1_atomic,
@@ -706,7 +689,6 @@ class AssertionReconciler extends Reconciler
         ) {
             $matching_atomic_type = clone $type_2_atomic;
             $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-            $has_local_match = true;
 
             return $matching_atomic_type;
         }
@@ -718,14 +700,11 @@ class AssertionReconciler extends Reconciler
             $type_2_value = $type_2_atomic->getGenericValueType();
 
             if (!$type_2_key->hasString()) {
-                $has_param_match = false;
-
                 $type_2_value = self::filterTypeWithAnother(
                     $codebase,
                     $type_1_atomic->type_param,
                     $type_2_value,
                     $template_type_map,
-                    $has_param_match,
                     $any_scalar_type_match_found
                 );
 
@@ -738,8 +717,6 @@ class AssertionReconciler extends Reconciler
                 $hybrid_type_part->previous_value_type = $type_2_value;
                 $hybrid_type_part->is_list = true;
 
-                $has_local_match = true;
-
                 return $hybrid_type_part;
             }
         } elseif ($type_1_atomic instanceof TKeyedArray
@@ -749,14 +726,11 @@ class AssertionReconciler extends Reconciler
             $type_1_value = $type_1_atomic->getGenericValueType();
 
             if (!$type_1_key->hasString()) {
-                $has_param_match = false;
-
                 $type_1_value = self::filterTypeWithAnother(
                     $codebase,
                     $type_2_atomic->type_param,
                     $type_1_value,
                     $template_type_map,
-                    $has_param_match,
                     $any_scalar_type_match_found
                 );
 
@@ -768,8 +742,6 @@ class AssertionReconciler extends Reconciler
                 $hybrid_type_part->previous_key_type = Type::getInt();
                 $hybrid_type_part->previous_value_type = $type_1_value;
                 $hybrid_type_part->is_list = true;
-
-                $has_local_match = true;
 
                 return $hybrid_type_part;
             }
@@ -784,7 +756,6 @@ class AssertionReconciler extends Reconciler
             $matching_atomic_type = clone $type_2_atomic;
 
             $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-            $has_local_match = true;
 
             return $matching_atomic_type;
         }
@@ -798,12 +769,8 @@ class AssertionReconciler extends Reconciler
                 || $type_1_atomic instanceof TIterable)
             && count($type_2_atomic->type_params) === count($type_1_atomic->type_params)
         ) {
-            $has_any_param_match = false;
-
             foreach ($type_2_atomic->type_params as $i => $type_2_param) {
                 $type_1_param = $type_1_atomic->type_params[$i];
-
-                $has_param_match = true;
 
                 $type_2_param_id = $type_2_param->getId();
 
@@ -812,7 +779,6 @@ class AssertionReconciler extends Reconciler
                     $type_1_param,
                     $type_2_param,
                     $template_type_map,
-                    $has_param_match,
                     $any_scalar_type_match_found
                 );
 
@@ -828,23 +794,14 @@ class AssertionReconciler extends Reconciler
                     );
                 }
 
-                if ($has_param_match
-                    && $type_1_atomic->type_params[$i]->getId() !== $type_2_param_id
-                ) {
+                if ($type_1_atomic->type_params[$i]->getId() !== $type_2_param_id) {
                     /** @psalm-suppress PropertyTypeCoercion */
                     $type_1_atomic->type_params[$i] = $type_2_param;
-
-                    if (!$has_local_match) {
-                        $has_any_param_match = true;
-                    }
                 }
             }
 
-            if ($has_any_param_match) {
-                $has_local_match = true;
-                $matching_atomic_type = $type_1_atomic;
-                $atomic_comparison_results->type_coerced = true;
-            }
+            $matching_atomic_type = $type_1_atomic;
+            $atomic_comparison_results->type_coerced = true;
         }
 
         //we filter the second part of a list with the second part of standard iterables
@@ -852,19 +809,14 @@ class AssertionReconciler extends Reconciler
                 || $type_2_atomic instanceof TIterable)
             && $type_1_atomic instanceof TList
         ) {
-            $has_any_param_match = false;
-
             $type_2_param = $type_2_atomic->type_params[1];
             $type_1_param = $type_1_atomic->type_param;
-
-            $has_param_match = true;
 
             $type_2_param = self::filterTypeWithAnother(
                 $codebase,
                 $type_1_param,
                 $type_2_param,
                 $template_type_map,
-                $has_param_match,
                 $any_scalar_type_match_found
             );
 
@@ -880,21 +832,12 @@ class AssertionReconciler extends Reconciler
                 );
             }
 
-            if ($has_param_match
-                && $type_1_atomic->type_param->getId() !== $type_2_param->getId()
-            ) {
+            if ($type_1_atomic->type_param->getId() !== $type_2_param->getId()) {
                 $type_1_atomic->type_param = $type_2_param;
-
-                if (!$has_local_match) {
-                    $has_any_param_match = true;
-                }
             }
 
-            if ($has_any_param_match) {
-                $has_local_match = true;
-                $matching_atomic_type = $type_1_atomic;
-                $atomic_comparison_results->type_coerced = true;
-            }
+            $matching_atomic_type = $type_1_atomic;
+            $atomic_comparison_results->type_coerced = true;
         }
 
         //we filter each property of a Keyed Array with the second part of standard iterables
@@ -902,18 +845,13 @@ class AssertionReconciler extends Reconciler
                 || $type_2_atomic instanceof TIterable)
             && $type_1_atomic instanceof TKeyedArray
         ) {
-            $has_any_param_match = false;
-
             $type_2_param = $type_2_atomic->type_params[1];
             foreach ($type_1_atomic->properties as $property_key => $type_1_param) {
-                $has_param_match = true;
-
                 $type_2_param = self::filterTypeWithAnother(
                     $codebase,
                     $type_1_param,
                     $type_2_param,
                     $template_type_map,
-                    $has_param_match,
                     $any_scalar_type_match_found
                 );
 
@@ -929,22 +867,13 @@ class AssertionReconciler extends Reconciler
                     );
                 }
 
-                if ($has_param_match
-                    && $type_1_atomic->properties[$property_key]->getId() !== $type_2_param->getId()
-                ) {
+                if ($type_1_atomic->properties[$property_key]->getId() !== $type_2_param->getId()) {
                     $type_1_atomic->properties[$property_key] = $type_2_param;
-
-                    if (!$has_local_match) {
-                        $has_any_param_match = true;
-                    }
                 }
             }
 
-            if ($has_any_param_match) {
-                $has_local_match = true;
-                $matching_atomic_type = $type_1_atomic;
-                $atomic_comparison_results->type_coerced = true;
-            }
+            $matching_atomic_type = $type_1_atomic;
+            $atomic_comparison_results->type_coerced = true;
         }
 
         //These partial match wouldn't have been handled by AtomicTypeComparator
@@ -971,7 +900,6 @@ class AssertionReconciler extends Reconciler
         }
 
         if ($new_range !== null) {
-            $has_local_match = true;
             $matching_atomic_type = $new_range;
         }
 
