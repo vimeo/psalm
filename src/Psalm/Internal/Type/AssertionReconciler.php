@@ -1361,7 +1361,7 @@ class AssertionReconciler extends Reconciler
                 return new Union([new TLiteralString($value)]);
             }
 
-            if ($existing_var_atomic_type instanceof TString) {
+            if ($existing_var_atomic_type instanceof TString && !$existing_var_atomic_type instanceof TLiteralString) {
                 if ($scalar_type === 'class-string'
                     || $scalar_type === 'interface-string'
                     || $scalar_type === 'trait-string'
