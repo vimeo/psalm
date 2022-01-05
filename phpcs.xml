@@ -216,4 +216,10 @@
             <property name="enable" value="true"/>
         </properties>
     </rule>
+
+    <!--
+        Enforces using short form of list syntax, [...] instead of list(...).
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardphpshortlist-
+    -->
+    <rule ref="SlevomatCodingStandard.PHP.ShortList"/>
 </ruleset>
