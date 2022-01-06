@@ -103,7 +103,7 @@ class ReflectionMethod implements Reflector
     public function isStatic(): bool {}
 }
 
-class ReflectionClassConstant
+class ReflectionClassConstant implements Reflector
 {
     /**
      * @since 8.0
@@ -117,7 +117,7 @@ class ReflectionClassConstant
 /**
  * @psalm-immutable
  */
-class ReflectionParameter {
+class ReflectionParameter implements Reflector {
     /**
      * @psalm-assert-if-true ReflectionType $this->getType()
      */

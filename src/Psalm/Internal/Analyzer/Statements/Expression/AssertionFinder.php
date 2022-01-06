@@ -3558,7 +3558,7 @@ class AssertionFinder
                         // - The array may have one of the types but not the others.
                         //
                         // NOTE: the negation of the negation is the original assertion.
-                        if ($value_type->getId() !== '' && !$value_type->isMixed()) {
+                        if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
                             $assertions[] = 'in-array-' . $value_type->getId();
                         }
                     } else {
