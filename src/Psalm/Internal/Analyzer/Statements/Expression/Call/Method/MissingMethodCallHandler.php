@@ -175,14 +175,12 @@ class MissingMethodCallHandler
             /**
              * @return PhpParser\Node\Expr\ArrayItem
              */
-            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                return new VirtualArrayItem(
-                    $arg->value,
-                    null,
-                    false,
-                    $arg->getAttributes()
-                );
-            },
+            fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                $arg->value,
+                null,
+                false,
+                $arg->getAttributes()
+            ),
             $stmt->getArgs()
         );
 

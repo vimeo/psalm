@@ -431,9 +431,7 @@ class Reflection
             $type = implode(
                 '|',
                 array_map(
-                    function (ReflectionNamedType $reflection) {
-                        return $reflection->getName();
-                    },
+                    fn(ReflectionNamedType $reflection) => $reflection->getName(),
                     $reflection_type->getTypes()
                 )
             );

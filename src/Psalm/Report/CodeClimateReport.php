@@ -27,7 +27,7 @@ class CodeClimateReport extends Report
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
         $issues_data = array_map(
-            function (IssueData $issue): array {
+            fn(IssueData $issue): array =>
                 /**
                  * map fields to new structure.
                  * Expected fields:
@@ -43,7 +43,7 @@ class CodeClimateReport extends Report
                  *
                  * Fields with * are the one used by Gitlab for Code Quality
                  */
-                return [
+                [
                     'type' => 'issue',
                     'check_name' => $issue->type,
                     'description' => $issue->message,
@@ -57,8 +57,7 @@ class CodeClimateReport extends Report
                             'end' => $issue->line_to,
                         ],
                     ],
-                ];
-            },
+                ],
             $this->issues_data
         );
 

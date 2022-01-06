@@ -90,9 +90,7 @@ abstract class Report
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(
                 $issues_data,
-                function ($issue_data): bool {
-                    return $issue_data->severity !== Config::REPORT_INFO;
-                }
+                fn($issue_data): bool => $issue_data->severity !== Config::REPORT_INFO
             );
         } else {
             $this->issues_data = $issues_data;

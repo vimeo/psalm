@@ -183,9 +183,7 @@ class TestCase extends BaseTestCase
 
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
-        $isZeroOrString = /** @param mixed $key */ function ($key): bool {
-            return $key === 0 || is_string($key);
-        };
+        $isZeroOrString = /** @param mixed $key */ fn($key): bool => $key === 0 || is_string($key);
         $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }

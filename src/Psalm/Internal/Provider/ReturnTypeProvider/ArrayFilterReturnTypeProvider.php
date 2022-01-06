@@ -111,9 +111,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         },
                         $first_arg_array->properties
                     ),
-                    static function ($keyed_type) {
-                        return !$keyed_type->isNever();
-                    }
+                    static fn($keyed_type) => !$keyed_type->isNever()
                 );
 
                 if (!$new_properties) {

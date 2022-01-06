@@ -2309,9 +2309,7 @@ class TaintTest extends TestCase
         $this->analyzeFile($filePath, new Context(), false);
 
         $actualIssueTypes = array_map(
-            function (IssueData $issue): string {
-                return $issue->type . '{ ' . trim($issue->snippet) . ' }';
-            },
+            fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
             IssueBuffer::getIssuesDataForFile($filePath)
         );
         self::assertSame($expectedIssuesTypes, $actualIssueTypes);

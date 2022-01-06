@@ -222,4 +222,15 @@
         https://github.com/slevomat/coding-standard/#slevomatcodingstandardphpshortlist-
     -->
     <rule ref="SlevomatCodingStandard.PHP.ShortList"/>
+
+    <!-- 
+        Requires arrow functions.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardfunctionsrequirearrowfunction-
+    -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireArrowFunction">
+        <properties>
+            <property name="enabled" value="true"/>
+            <property name="allowNested" value="true"/>
+        </properties>
+    </rule>
 </ruleset>

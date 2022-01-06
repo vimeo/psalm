@@ -153,9 +153,7 @@ class ElseIfAnalyzer
             $elseif_context_clauses = array_values(
                 array_filter(
                     $elseif_context_clauses,
-                    function ($c) use ($reconciled_expression_clauses): bool {
-                        return !in_array($c->hash, $reconciled_expression_clauses);
-                    }
+                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
         }
@@ -167,9 +165,7 @@ class ElseIfAnalyzer
         try {
             if (array_filter(
                 $entry_clauses,
-                function ($clause): bool {
-                    return (bool)$clause->possibilities;
-                }
+                fn($clause): bool => (bool)$clause->possibilities
             )) {
                 $omit_keys = array_reduce(
                     $entry_clauses,
@@ -177,9 +173,7 @@ class ElseIfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    function (array $carry, Clause $clause): array {
-                        return array_merge($carry, array_keys($clause->possibilities));
-                    },
+                    fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
                     []
                 );
 

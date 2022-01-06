@@ -87,9 +87,7 @@ class Assertion
                             return [implode(
                                 '',
                                 array_map(
-                                    function ($f) {
-                                        return $f[0];
-                                    },
+                                    fn($f) => $f[0],
                                     $rule_tokens
                                 )
                             )];

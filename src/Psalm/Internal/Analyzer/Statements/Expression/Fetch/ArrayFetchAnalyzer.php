@@ -1575,9 +1575,7 @@ class ArrayFetchAnalyzer
                             $formatted_keys = implode(
                                 ', ',
                                 array_map(
-                                    function ($key) {
-                                        return is_int($key) ? $key : '\'' . $key . '\'';
-                                    },
+                                    fn($key) => is_int($key) ? $key : '\'' . $key . '\'',
                                     $object_like_keys
                                 )
                             );

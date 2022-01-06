@@ -217,16 +217,12 @@ class StatementsProvider
                     );
 
                 $unchanged_members = array_map(
-                    function (int $_): bool {
-                        return true;
-                    },
+                    fn(int $_): bool => true,
                     array_flip($unchanged_members)
                 );
 
                 $unchanged_signature_members = array_map(
-                    function (int $_): bool {
-                        return true;
-                    },
+                    fn(int $_): bool => true,
                     array_flip($unchanged_signature_members)
                 );
 
@@ -249,9 +245,7 @@ class StatementsProvider
                      *
                      * @return bool
                      */
-                    function ($_): bool {
-                        return true;
-                    },
+                    fn($_): bool => true,
                     array_flip($changed_members)
                 );
 

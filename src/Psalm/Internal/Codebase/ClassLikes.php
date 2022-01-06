@@ -1604,29 +1604,23 @@ class ClassLikes
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return array_filter(
                 $storage->constants,
-                function ($constant) {
-                    return $constant->type
-                        && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-                }
+                fn($constant) => $constant->type
+                    && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
             );
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_filter(
                 $storage->constants,
-                function ($constant) {
-                    return $constant->type
-                        && ($constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                            || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED);
-                }
+                fn($constant) => $constant->type
+                    && ($constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED)
             );
         }
 
         return array_filter(
             $storage->constants,
-            function ($constant) {
-                return $constant->type !== null;
-            }
+            fn($constant) => $constant->type !== null
         );
     }
 

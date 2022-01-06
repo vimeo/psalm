@@ -48,9 +48,7 @@ class ErrorBaseline
                 /**
                  * @param array{o:int, s:array<int, string>} $existingIssue
                  */
-                function (int $carry, array $existingIssue): int {
-                    return $carry + $existingIssue['o'];
-                },
+                fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
                 0
             );
         }
@@ -260,9 +258,7 @@ class ErrorBaseline
                     ('php:' . PHP_VERSION),
                 ],
                 array_map(
-                    function (string $extension): string {
-                        return $extension . ':' . phpversion($extension);
-                    },
+                    fn(string $extension): string => $extension . ':' . phpversion($extension),
                     $extensions
                 )
             )));
@@ -299,21 +295,18 @@ class ErrorBaseline
             /**
              * @param string[] $matches
              */
-            function (array $matches): string {
-                return
-                    '<files' .
-                    "\n  " .
-                    $matches[1] .
-                    "\n" .
-                    '  php-version="' .
-                    "\n    " .
-                    str_replace('&#10;&#9;', "\n    ", $matches[2]).
-                    "\n" .
-                    '  "' .
-                    "\n" .
-                    $matches[3] .
-                    "\n";
-            },
+            fn(array $matches): string => '<files' .
+            "\n  " .
+            $matches[1] .
+            "\n" .
+            '  php-version="' .
+            "\n    " .
+            str_replace('&#10;&#9;', "\n    ", $matches[2]).
+            "\n" .
+            '  "' .
+            "\n" .
+            $matches[3] .
+            "\n",
             $baselineDoc->saveXML()
         );
 

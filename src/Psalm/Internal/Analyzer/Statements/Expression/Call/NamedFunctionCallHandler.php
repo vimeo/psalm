@@ -367,9 +367,7 @@ class NamedFunctionCallHandler
 
             foreach ($anded_assertions as $assertions) {
                 $referenced_var_ids = array_map(
-                    function (array $_): bool {
-                        return true;
-                    },
+                    fn(array $_): bool => true,
                     $assertions
                 );
 

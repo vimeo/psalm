@@ -76,11 +76,9 @@ class IfConditionalAnalyzer
                     $entry_clauses = array_values(
                         array_filter(
                             $entry_clauses,
-                            function (Clause $c) use ($changed_var_ids): bool {
-                                return count($c->possibilities) > 1
-                                    || $c->wedge
-                                    || !isset($changed_var_ids[array_keys($c->possibilities)[0]]);
-                            }
+                            fn(Clause $c): bool => count($c->possibilities) > 1
+                                || $c->wedge
+                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
                         )
                     );
                 }
@@ -209,9 +207,7 @@ class IfConditionalAnalyzer
              *
              * @return true
              */
-            function (Union $_): bool {
-                return true;
-            },
+            fn(Union $_): bool => true,
             array_diff_key(
                 $if_conditional_context->vars_in_scope,
                 $pre_condition_vars_in_scope,

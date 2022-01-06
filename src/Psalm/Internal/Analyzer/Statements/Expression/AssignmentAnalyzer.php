@@ -739,16 +739,12 @@ class AssignmentAnalyzer
 
         $unspecialized_parent_nodes = array_filter(
             $parent_nodes,
-            function ($parent_node) {
-                return !$parent_node->specialization_key;
-            }
+            fn($parent_node) => !$parent_node->specialization_key
         );
 
         $specialized_parent_nodes = array_filter(
             $parent_nodes,
-            function ($parent_node) {
-                return (bool) $parent_node->specialization_key;
-            }
+            fn($parent_node) => (bool) $parent_node->specialization_key
         );
 
         $new_parent_nodes = [];

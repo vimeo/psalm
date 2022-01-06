@@ -898,11 +898,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
                 $stmt = array_filter(
                     $stmts,
-                    function ($stmt) use ($property_name): bool {
-                        return $stmt instanceof PhpParser\Node\Stmt\Property
-                            && isset($stmt->props[0]->name->name)
-                            && $stmt->props[0]->name->name === $property_name;
-                    }
+                    fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
+                        && isset($stmt->props[0]->name->name)
+                        && $stmt->props[0]->name->name === $property_name
                 );
 
                 $suppressed = [];
@@ -1948,9 +1946,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $overridden_method_ids = array_map(
-            function ($method_id) {
-                return $method_id->__toString();
-            },
+            fn($method_id) => $method_id->__toString(),
             $overridden_method_ids
         );
 

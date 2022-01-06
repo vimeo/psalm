@@ -24,18 +24,14 @@ class XmlReport extends Report
 
                         if (null !== $issue_data['taint_trace']) {
                             $issue_data['taint_trace'] = array_map(
-                                function ($trace): array {
-                                    return (array) $trace;
-                                },
+                                fn($trace): array => (array) $trace,
                                 $issue_data['taint_trace']
                             );
                         }
 
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(
-                                function (DataFlowNodeData $reference): array {
-                                    return (array) $reference;
-                                },
+                                fn(DataFlowNodeData $reference): array => (array) $reference,
                                 $issue_data['other_references']
                             );
                         }

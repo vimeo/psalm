@@ -402,9 +402,10 @@ class AtomicStaticCallAnalyzer
                         $mixin_candidates[] = clone $mixin_candidate;
                     }
 
-                    $mixin_candidates_no_generic = array_filter($mixin_candidates, function ($check): bool {
-                        return !($check instanceof TGenericObject);
-                    });
+                    $mixin_candidates_no_generic = array_filter(
+                        $mixin_candidates,
+                        fn($check): bool => !($check instanceof TGenericObject)
+                    );
 
                     // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
                     // In that case, Union will be initialized with an empty array but
@@ -615,14 +616,12 @@ class AtomicStaticCallAnalyzer
                 }
 
                 $array_values = array_map(
-                    function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                        return new VirtualArrayItem(
-                            $arg->value,
-                            null,
-                            false,
-                            $arg->getAttributes()
-                        );
-                    },
+                    fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                        $arg->value,
+                        null,
+                        false,
+                        $arg->getAttributes()
+                    ),
                     $args
                 );
 

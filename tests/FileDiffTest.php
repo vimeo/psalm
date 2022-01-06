@@ -65,9 +65,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr): array {
-                return [$arr[2], $arr[3]];
-            },
+            fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3]
         );
 
@@ -141,9 +139,7 @@ class FileDiffTest extends TestCase
              *
              * @return array{0: int, 1: int}
              */
-            function (array $arr): array {
-                return [$arr[2], $arr[3]];
-            },
+            fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3]
         );
 

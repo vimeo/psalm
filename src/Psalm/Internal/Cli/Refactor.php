@@ -182,9 +182,8 @@ final class Refactor
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
         // If Xdebug is enabled, restart without it

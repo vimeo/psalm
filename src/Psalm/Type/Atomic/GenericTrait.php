@@ -58,9 +58,7 @@ trait GenericTrait
                 $extra_types = '&' . implode(
                     '&',
                     array_map(
-                        function ($type) {
-                            return $type->getId(true);
-                        },
+                        fn($type) => $type->getId(true),
                         $this->extra_types
                     )
                 );
@@ -147,9 +145,8 @@ trait GenericTrait
                     /**
                      * @return string
                      */
-                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class): string {
-                        return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
-                    },
+                    fn(Atomic $extra_type): string =>
+                        $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false),
                     $this->extra_types
                 )
             );
@@ -163,9 +160,8 @@ trait GenericTrait
                         /**
                          * @return string
                          */
-                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
-                            return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
-                        },
+                        fn(Union $type_param): string =>
+                            $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
                         $type_params
                     )
                 ) .

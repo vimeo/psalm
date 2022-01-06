@@ -264,12 +264,10 @@ class MatchAnalyzer
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
                     $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
-                        function ($type) {
-                            return $type instanceof TLiteralInt
-                                || $type instanceof TLiteralString
-                                || $type instanceof TLiteralFloat
-                                || $type instanceof TEnumCase;
-                        }
+                        fn($type) => $type instanceof TLiteralInt
+                            || $type instanceof TLiteralString
+                            || $type instanceof TLiteralFloat
+                            || $type instanceof TEnumCase
                     );
 
                     if ($array_literal_types) {
@@ -314,9 +312,8 @@ class MatchAnalyzer
         }
 
         $array_items = array_map(
-            function ($cond): PhpParser\Node\Expr\ArrayItem {
-                return new VirtualArrayItem($cond, null, false, $cond->getAttributes());
-            },
+            fn($cond): PhpParser\Node\Expr\ArrayItem =>
+                new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds
         );
 

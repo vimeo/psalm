@@ -200,9 +200,7 @@ class Algebra
                     $clause_var_possibilities = array_values(
                         array_filter(
                             $clause_b->possibilities[$clause_var],
-                            function (string $possible_type) use ($negated_clause_type): bool {
-                                return $possible_type !== $negated_clause_type;
-                            }
+                            fn(string $possible_type): bool => $possible_type !== $negated_clause_type
                         )
                     );
 
@@ -307,9 +305,7 @@ class Algebra
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,
-                        function (string $possible_type): bool {
-                            return $possible_type[0] !== '!';
-                        }
+                        fn(string $possible_type): bool => $possible_type[0] !== '!'
                     );
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
@@ -595,9 +591,7 @@ class Algebra
     {
         $clauses = array_filter(
             $clauses,
-            function ($clause) {
-                return $clause->reconcilable;
-            }
+            fn($clause) => $clause->reconcilable
         );
 
         if (!$clauses) {

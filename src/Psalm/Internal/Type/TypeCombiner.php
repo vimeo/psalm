@@ -1127,9 +1127,7 @@ class TypeCombiner
 
                 $all_nonnegative = !array_filter(
                     $combination->ints,
-                    function ($int): bool {
-                        return $int->value < 0;
-                    }
+                    fn($int): bool => $int->value < 0
                 );
 
                 if (isset($combination->value_types['int'])) {
@@ -1167,9 +1165,7 @@ class TypeCombiner
                 if ($combination->ints) {
                     $all_nonnegative = !array_filter(
                         $combination->ints,
-                        function ($int): bool {
-                            return $int->value < 0;
-                        }
+                        fn($int): bool => $int->value < 0
                     );
 
                     if ($all_nonnegative) {
@@ -1345,9 +1341,7 @@ class TypeCombiner
             ) {
                 $combination->objectlike_entries = array_filter(
                     $combination->objectlike_entries,
-                    function (Union $type): bool {
-                        return !$type->possibly_undefined;
-                    }
+                    fn(Union $type): bool => !$type->possibly_undefined
                 );
             }
 

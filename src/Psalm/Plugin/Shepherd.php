@@ -64,9 +64,7 @@ class Shepherd implements AfterAnalysisInterface
         if ($build_info) {
             $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
-                static function (IssueData $i): bool {
-                    return $i->severity === 'error';
-                }
+                static fn(IssueData $i): bool => $i->severity === 'error'
             );
 
             $data = [

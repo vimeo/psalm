@@ -129,9 +129,7 @@ class TernaryAnalyzer
             $ternary_clauses = array_values(
                 array_filter(
                     $ternary_clauses,
-                    function ($c) use ($reconciled_expression_clauses): bool {
-                        return !in_array($c->hash, $reconciled_expression_clauses);
-                    }
+                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
         }

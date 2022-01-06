@@ -197,9 +197,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         /**
                         * @return Union
                         */
-                        function (Union $_) use ($mapping_return_type): Union {
-                            return clone $mapping_return_type;
-                        },
+                        fn(Union $_): Union => clone $mapping_return_type,
                         $array_arg_atomic_type->properties
                     )
                 );

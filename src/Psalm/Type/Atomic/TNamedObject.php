@@ -69,9 +69,7 @@ class TNamedObject extends Atomic
             return $this->value . '&' . implode(
                 '&',
                 array_map(
-                    function ($type) {
-                        return $type->getId(true);
-                    },
+                    fn($type) => $type->getId(true),
                     $this->extra_types
                 )
             );
