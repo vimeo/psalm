@@ -893,6 +893,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testEmptyArrayShape(): void
+    {
+        $this->assertSame(
+            'array<never, never>',
+            (string)Type::parseString('array{}')
+        );
+    }
+
     public function testSingleLiteralInt(): void
     {
         $this->assertSame(
