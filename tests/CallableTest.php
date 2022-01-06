@@ -316,6 +316,15 @@ class CallableTest extends TestCase
                     $c2 = new C();
                     $c2();',
             ],
+            'invokeMethodExists' => [
+                '<?php
+                    function call(object $obj): void {
+                        if (!method_exists($obj, "__invoke")) {
+                            return;
+                        }
+                        $obj();
+                    }',
+            ],
             'correctParamType' => [
                 '<?php
                     $take_string = function(string $s): string { return $s; };
