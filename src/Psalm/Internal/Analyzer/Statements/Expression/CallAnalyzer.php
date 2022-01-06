@@ -815,10 +815,10 @@ class CallAnalyzer
                     }
                 } else {
                     if (isset($type_assertions[$assertion_var_id])) {
-                        $type_assertions[$assertion_var_id] = array_merge(
-                            $type_assertions[$assertion_var_id],
-                            $assertion->rule
-                        );
+                        $type_assertions[$assertion_var_id] = [
+                            ...$type_assertions[$assertion_var_id],
+                            ...$assertion->rule
+                        ];
                     } else {
                         $type_assertions[$assertion_var_id] = $assertion->rule;
                     }
@@ -850,7 +850,7 @@ class CallAnalyzer
                 }
 
                 $simplified_clauses = Algebra::simplifyCNF(
-                    array_merge($context->clauses, $assert_clauses)
+                    [...$context->clauses, ...$assert_clauses]
                 );
 
                 $assert_type_assertions = Algebra::getTruthsFromFormula(
@@ -871,7 +871,7 @@ class CallAnalyzer
                 );
 
                 $simplified_clauses = Algebra::simplifyCNF(
-                    array_merge($context->clauses, $assert_clauses)
+                    [...$context->clauses, ...$assert_clauses]
                 );
 
                 $assert_type_assertions = Algebra::getTruthsFromFormula(

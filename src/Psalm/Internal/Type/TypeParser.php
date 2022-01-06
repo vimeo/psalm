@@ -68,7 +68,6 @@ use Psalm\Type\Union;
 use function array_key_exists;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_unique;
@@ -489,7 +488,7 @@ class TypeParser
                 }
             }
 
-            $potential_values = array_merge($new_values, $potential_values);
+            $potential_values = [...$new_values, ...$potential_values];
         }
 
         array_unshift($potential_values, 0);

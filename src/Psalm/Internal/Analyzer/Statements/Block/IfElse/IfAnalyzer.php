@@ -177,7 +177,7 @@ class IfAnalyzer
                     );
 
                     $outer_context->clauses = Algebra::simplifyCNF(
-                        array_merge($outer_context->clauses, $if_scope->negated_clauses)
+                        [...$outer_context->clauses, ...$if_scope->negated_clauses]
                     );
                 }
             }
@@ -203,7 +203,7 @@ class IfAnalyzer
             }
 
             if ($extra_vars_to_update) {
-                $vars_to_update = array_unique(array_merge($extra_vars_to_update, $vars_to_update));
+                $vars_to_update = array_unique([...$extra_vars_to_update, ...$vars_to_update]);
             }
 
             //update $if_context vars to include the pre-assignment else vars
@@ -427,10 +427,10 @@ class IfAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
-            return array_merge(
-                self::getDefinitelyEvaluatedOredExpressions($stmt->left),
-                self::getDefinitelyEvaluatedOredExpressions($stmt->right)
-            );
+            return [
+                ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),
+                ...self::getDefinitelyEvaluatedOredExpressions($stmt->right)
+            ];
         }
 
         return [$stmt];

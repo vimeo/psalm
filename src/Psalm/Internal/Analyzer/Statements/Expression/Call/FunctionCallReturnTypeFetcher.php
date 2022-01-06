@@ -648,7 +648,7 @@ class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($removed_taints, $conditionally_removed_taints)
+                [...$removed_taints, ...$conditionally_removed_taints]
             );
 
             $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;

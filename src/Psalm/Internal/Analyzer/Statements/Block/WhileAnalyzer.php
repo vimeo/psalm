@@ -128,10 +128,7 @@ class WhileAnalyzer
         PhpParser\Node\Expr $expr
     ): array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            return array_merge(
-                self::getAndExpressions($expr->left),
-                self::getAndExpressions($expr->right)
-            );
+            return [...self::getAndExpressions($expr->left), ...self::getAndExpressions($expr->right)];
         }
 
         return [$expr];

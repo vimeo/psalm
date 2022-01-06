@@ -247,16 +247,13 @@ class ClassTemplateParamCollector
                     || !isset($static_template_types[$type_extends_atomic->param_name]))
                 && isset($e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name])
             ) {
-                $output_type_extends = array_merge(
-                    $output_type_extends,
-                    self::expandType(
-                        $codebase,
-                        $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
-                        $e,
-                        $static_fq_class_name,
-                        $static_template_types
-                    )
-                );
+                $output_type_extends = [...$output_type_extends, ...self::expandType(
+                    $codebase,
+                    $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
+                    $e,
+                    $static_fq_class_name,
+                    $static_template_types
+                )];
             } elseif ($type_extends_atomic instanceof TClassConstant) {
                 $expanded = TypeExpander::expandAtomic(
                     $codebase,

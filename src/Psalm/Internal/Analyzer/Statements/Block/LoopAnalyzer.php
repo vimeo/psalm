@@ -215,17 +215,14 @@ class LoopAnalyzer
                 $inner_do_context = clone $inner_context;
 
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                    $always_assigned_before_loop_body_vars = array_merge(
-                        self::applyPreConditionToLoopContext(
-                            $statements_analyzer,
-                            $pre_condition,
-                            $pre_condition_clauses[$condition_offset],
-                            $inner_context,
-                            $loop_scope->loop_parent_context,
-                            $is_do
-                        ),
-                        $always_assigned_before_loop_body_vars
-                    );
+                    $always_assigned_before_loop_body_vars = [...self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $inner_context,
+                        $loop_scope->loop_parent_context,
+                        $is_do
+                    ), ...$always_assigned_before_loop_body_vars];
                 }
             }
 
@@ -650,7 +647,7 @@ class LoopAnalyzer
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
         $loop_context->clauses = Algebra::simplifyCNF(
-            array_merge($outer_context->clauses, $pre_condition_clauses)
+            [...$outer_context->clauses, ...$pre_condition_clauses]
         );
 
         $active_while_types = [];

@@ -342,7 +342,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($conditionally_removed_taints, $removed_taints)
+                [...$conditionally_removed_taints, ...$removed_taints]
             );
 
             $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;

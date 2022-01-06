@@ -91,7 +91,7 @@ class TypeExpander
             );
 
             if (is_array($parts)) {
-                $new_return_type_parts = array_merge($new_return_type_parts, $parts);
+                $new_return_type_parts = [...$new_return_type_parts, ...$parts];
                 $has_array_output = true;
             } else {
                 $new_return_type_parts[] = $parts;
@@ -245,10 +245,10 @@ class TypeExpander
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
                 if (strpos($return_type->const_name, '*') !== false) {
-                    $matching_constants = array_merge(
-                        array_keys($class_storage->constants),
-                        array_keys($class_storage->enum_cases)
-                    );
+                    $matching_constants = [
+                        ...array_keys($class_storage->constants),
+                        ...array_keys($class_storage->enum_cases)
+                    ];
 
                     $const_name_part = substr($return_type->const_name, 0, -1);
 
@@ -331,10 +331,10 @@ class TypeExpander
                             );
 
                             if (is_array($recursively_fleshed_out_type)) {
-                                $recursively_fleshed_out_types = array_merge(
-                                    $recursively_fleshed_out_type,
-                                    $recursively_fleshed_out_types
-                                );
+                                $recursively_fleshed_out_types = [
+                                    ...$recursively_fleshed_out_type,
+                                    ...$recursively_fleshed_out_types
+                                ];
                             } else {
                                 $recursively_fleshed_out_types[] = $recursively_fleshed_out_type;
                             }
@@ -749,10 +749,7 @@ class TypeExpander
 
                 $candidate_types = is_array($candidate) ? $candidate : [$candidate];
 
-                $if_conditional_return_types = array_merge(
-                    $if_conditional_return_types,
-                    $candidate_types
-                );
+                $if_conditional_return_types = [...$if_conditional_return_types, ...$candidate_types];
             }
 
             $else_conditional_return_types = [];
@@ -773,10 +770,7 @@ class TypeExpander
 
                 $candidate_types = is_array($candidate) ? $candidate : [$candidate];
 
-                $else_conditional_return_types = array_merge(
-                    $else_conditional_return_types,
-                    $candidate_types
-                );
+                $else_conditional_return_types = [...$else_conditional_return_types, ...$candidate_types];
             }
 
             if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
@@ -814,10 +808,7 @@ class TypeExpander
                 }
             }
 
-            $all_conditional_return_types = array_merge(
-                $if_conditional_return_types,
-                $else_conditional_return_types
-            );
+            $all_conditional_return_types = [...$if_conditional_return_types, ...$else_conditional_return_types];
 
             $number_of_types = count($all_conditional_return_types);
             // we filter TNever that have no bearing on the return type

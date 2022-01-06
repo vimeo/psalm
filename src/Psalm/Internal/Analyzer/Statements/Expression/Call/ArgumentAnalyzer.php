@@ -60,7 +60,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function explode;
 use function in_array;
@@ -741,10 +740,10 @@ class ArgumentAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                 foreach ($input_type->parent_nodes as $parent_node) {
-                    $origin_locations = array_merge(
-                        $origin_locations,
-                        $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                    );
+                    $origin_locations = [
+                        ...$origin_locations,
+                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                    ];
                 }
             }
 
@@ -962,10 +961,10 @@ class ArgumentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($input_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 

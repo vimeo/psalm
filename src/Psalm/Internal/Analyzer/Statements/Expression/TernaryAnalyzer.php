@@ -121,7 +121,7 @@ class TernaryAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $ternary_clauses = array_merge($context->clauses, $if_clauses);
+        $ternary_clauses = [...$context->clauses, ...$if_clauses];
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
@@ -140,7 +140,7 @@ class TernaryAnalyzer
 
         $negated_if_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $negated_clauses)
+                [...$context->clauses, ...$negated_clauses]
             )
         );
 
@@ -185,10 +185,7 @@ class TernaryAnalyzer
         }
 
         $t_else_context->clauses = Algebra::simplifyCNF(
-            array_merge(
-                $t_else_context->clauses,
-                $negated_clauses
-            )
+            [...$t_else_context->clauses, ...$negated_clauses]
         );
 
         if ($negated_if_types) {

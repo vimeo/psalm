@@ -615,7 +615,7 @@ class ProjectAnalyzer
             && $this->project_cache_provider->canDiffFiles()
         ) {
             $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
-            $diff_files = array_merge($deleted_files, $this->getDiffFiles());
+            $diff_files = [...$deleted_files, ...$this->getDiffFiles()];
         }
 
         $this->progress->write($this->generatePHPVersionMessage());

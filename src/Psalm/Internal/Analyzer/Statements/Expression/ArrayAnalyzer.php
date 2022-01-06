@@ -570,14 +570,14 @@ class ArrayAnalyzer
                         $array_creation_info->item_key_atomic_types[] = new TInt();
                     }
 
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values(
+                    $array_creation_info->item_value_atomic_types = [
+                        ...$array_creation_info->item_value_atomic_types,
+                        ...array_values(
                             isset($unpacked_atomic_type->type_params[1])
                                 ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
                                 : [new TMixed()]
                         )
-                    );
+                    ];
                 } elseif ($unpacked_atomic_type instanceof TList) {
                     if ($unpacked_atomic_type->type_param->isNever()) {
                         continue;

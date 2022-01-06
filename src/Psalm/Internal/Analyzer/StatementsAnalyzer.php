@@ -63,7 +63,6 @@ use function array_change_key_case;
 use function array_column;
 use function array_combine;
 use function array_keys;
-use function array_merge;
 use function array_search;
 use function count;
 use function fwrite;
@@ -378,7 +377,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         PREG_SPLIT_NO_EMPTY
                     );
                     if ($possible_traced_variable_names) {
-                        $traced_variables = array_merge($traced_variables, $possible_traced_variable_names);
+                        $traced_variables = [...$traced_variables, ...$possible_traced_variable_names];
                     }
                 }
             }

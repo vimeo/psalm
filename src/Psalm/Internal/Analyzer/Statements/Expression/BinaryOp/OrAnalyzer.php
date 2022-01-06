@@ -180,10 +180,7 @@ class OrAnalyzer
         }
 
         $clauses_for_right_analysis = Algebra::simplifyCNF(
-            array_merge(
-                $context->clauses,
-                $negated_left_clauses
-            )
+            [...$context->clauses, ...$negated_left_clauses]
         );
 
         $active_negated_type_assertions = [];
@@ -235,23 +232,17 @@ class OrAnalyzer
         if ($changed_var_ids) {
             $partitioned_clauses = Context::removeReconciledClauses($right_context->clauses, $changed_var_ids);
             $right_context->clauses = $partitioned_clauses[0];
-            $right_context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+            $right_context->reconciled_expression_clauses = [...$context->reconciled_expression_clauses, ...array_map(
+                fn($c) => $c->hash,
+                $partitioned_clauses[1]
+            )];
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
             $context->clauses = $partitioned_clauses[0];
-            $context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+            $context->reconciled_expression_clauses = [...$context->reconciled_expression_clauses, ...array_map(
+                fn($c) => $c->hash,
+                $partitioned_clauses[1]
+            )];
         }
 
         $right_context->if_context = null;
@@ -291,7 +282,7 @@ class OrAnalyzer
         )[0];
 
         $combined_right_clauses = Algebra::simplifyCNF(
-            array_merge($clauses_for_right_analysis, $right_clauses)
+            [...$clauses_for_right_analysis, ...$right_clauses]
         );
 
         $active_right_type_assertions = [];

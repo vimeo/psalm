@@ -189,7 +189,7 @@ class TaintFlowGraph extends DataFlowGraph
                 return [];
             }
 
-            return array_merge($this->getIssueTrace($previous_source), [$node]);
+            return [...$this->getIssueTrace($previous_source), ...[$node]];
         }
 
         return [$node];
@@ -467,7 +467,7 @@ class TaintFlowGraph extends DataFlowGraph
             $new_destination->previous = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
-            $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
+            $new_destination->path_types = [...$generated_source->path_types, ...[$path_type]];
 
             $key = $to_id .
                 ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .

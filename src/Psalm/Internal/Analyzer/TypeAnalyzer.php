@@ -6,7 +6,6 @@ use Psalm\Type;
 use Psalm\Type\Union;
 
 use function array_keys;
-use function array_merge;
 use function array_unique;
 
 /**
@@ -24,7 +23,7 @@ class TypeAnalyzer
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types): array
     {
-        $keys = array_merge(array_keys($new_types), array_keys($existing_types));
+        $keys = [...array_keys($new_types), ...array_keys($existing_types)];
         $keys = array_unique($keys);
 
         $result_types = [];
