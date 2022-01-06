@@ -94,6 +94,16 @@ class ScopeAnalyzer
                 ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
+                    $stmt_return_type = null;
+                    if ($nodes && $stmt->expr) {
+                        $stmt_return_type = $nodes->getType($stmt->expr);
+                    }
+
+                    // don't consider a return if the expression never returns (e.g. a throw inside a short closure)
+                    if ($stmt_return_type && ($stmt_return_type->isNever() || $stmt_return_type->isEmpty())) {
+                        return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                    }
+
                     return array_values(array_unique(array_merge($control_actions, [self::ACTION_RETURN])));
                 }
 
