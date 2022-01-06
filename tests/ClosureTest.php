@@ -729,6 +729,12 @@ class ClosureTest extends TestCase
                 [],
                 '8.1'
             ],
+            'FirstClassCallable:array_map' => [
+                '<?php call_user_func(array_map(...), intval(...), ["1"]);',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
         ];
     }
 
@@ -1171,9 +1177,8 @@ class ClosureTest extends TestCase
                 'error_message' => 'MixedAssignment',
                 [],
                 false,
-                '8.1'
+                '8.1',
             ],
-
         ];
     }
 }
