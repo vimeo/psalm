@@ -892,6 +892,13 @@ class Reconciler
             $assertion = substr($assertion, 1);
         }
 
+        $operator = substr($assertion, 0, 1);
+        if ($operator === '>') {
+            $assertion = '>= '.substr($assertion, 1);
+        } elseif ($operator === '<') {
+            $assertion = '<= '.substr($assertion, 1);
+        }
+
         if ($negated) {
             $redundant = !$redundant;
             $not = !$not;

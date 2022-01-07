@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -73,6 +74,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality = false,
         bool $inside_loop = false
     ): ?Union {
+        $old_var_type_string = $existing_var_type->getId();
+
         if ($assertion === 'isset') {
             if ($existing_var_type->possibly_undefined) {
                 return Type::getEmpty();
@@ -352,16 +355,26 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         if ($assertion[0] === '>') {
             return self::reconcileSuperiorTo(
                 $existing_var_type,
-                substr($assertion, 1),
-                $inside_loop
+                $assertion,
+                $inside_loop,
+                $old_var_type_string,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues
             );
         }
 
         if ($assertion[0] === '<') {
             return self::reconcileInferiorTo(
                 $existing_var_type,
-                substr($assertion, 1),
-                $inside_loop
+                $assertion,
+                $inside_loop,
+                $old_var_type_string,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues
             );
         }
 
@@ -1601,27 +1614,45 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         return Type::getMixed();
     }
 
-    private static function reconcileSuperiorTo(Union $existing_var_type, string $assertion, bool $inside_loop): Union
-    {
-        $assertion_value = (int)$assertion - 1;
+    /**
+     * @param string[] $suppressed_issues
+     */
+    private static function reconcileSuperiorTo(
+        Union         $existing_var_type,
+        string        $assertion,
+        bool          $inside_loop,
+        string        $old_var_type_string,
+        ?string       $var_id,
+        bool          $negated,
+        ?CodeLocation $code_location,
+        array         $suppressed_issues
+    ): Union {
+        $assertion_value = (int)substr($assertion, 1) - 1;
+
+        $did_remove_type = false;
+
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {
                 continue;
             }
 
             if ($atomic_type instanceof TIntRange) {
-                $existing_var_type->removeType($atomic_type->getKey());
-                if ($atomic_type->max_bound === null) {
-                    $atomic_type->max_bound = $assertion_value;
-                } else {
-                    $atomic_type->max_bound = TIntRange::getNewLowestBound(
-                        $assertion_value,
-                        $atomic_type->max_bound
-                    );
+                if ($atomic_type->contains($assertion_value)) {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->max_bound === null) {
+                        $atomic_type->max_bound = $assertion_value;
+                    } else {
+                        $atomic_type->max_bound = TIntRange::getNewLowestBound(
+                            $assertion_value,
+                            $atomic_type->max_bound
+                        );
+                    }
+                    $existing_var_type->addType($atomic_type);
                 }
-                $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof TLiteralInt) {
                 if ($atomic_type->value > $assertion_value) {
+                    $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
                 } /*elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
@@ -1633,37 +1664,90 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     }
                 }*/
             } elseif ($atomic_type instanceof TPositiveInt) {
+                $did_remove_type = true;
                 $existing_var_type->removeType($atomic_type->getKey());
                 if ($assertion_value >= 1) {
                     $existing_var_type->addType(new TIntRange(1, $assertion_value));
                 }
             } elseif ($atomic_type instanceof TInt) {
+                $did_remove_type = true;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange(null, $assertion_value));
+            } else {
+                // we assume that other types may have been removed (empty strings? numeric strings?)
+                //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
+                $did_remove_type = true;
             }
+        }
+
+        if (!$inside_loop && !$did_remove_type && $var_id && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                '!'.$assertion,
+                true,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+        }
+
+        if ($existing_var_type->isUnionEmpty()) {
+            if ($var_id && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    '!'.$assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+            $existing_var_type->addType(new TNever());
         }
 
         return $existing_var_type;
     }
 
-    private static function reconcileInferiorTo(Union $existing_var_type, string $assertion, bool $inside_loop): Union
-    {
-        $assertion_value = (int)$assertion + 1;
+    /**
+     * @param string[] $suppressed_issues
+     */
+    private static function reconcileInferiorTo(
+        Union         $existing_var_type,
+        string        $assertion,
+        bool          $inside_loop,
+        string        $old_var_type_string,
+        ?string       $var_id,
+        bool          $negated,
+        ?CodeLocation $code_location,
+        array         $suppressed_issues
+    ): Union {
+        $assertion_value = (int)substr($assertion, 1) + 1;
+
+        $did_remove_type = false;
+
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {
                 continue;
             }
 
             if ($atomic_type instanceof TIntRange) {
-                $existing_var_type->removeType($atomic_type->getKey());
-                if ($atomic_type->min_bound === null) {
-                    $atomic_type->min_bound = $assertion_value;
-                } else {
-                    $atomic_type->min_bound = max($atomic_type->min_bound, $assertion_value);
+                if ($atomic_type->contains($assertion_value)) {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType($atomic_type->getKey());
+                    if ($atomic_type->min_bound === null) {
+                        $atomic_type->min_bound = $assertion_value;
+                    } else {
+                        $atomic_type->min_bound = max($atomic_type->min_bound, $assertion_value);
+                    }
+                    $existing_var_type->addType($atomic_type);
                 }
-                $existing_var_type->addType($atomic_type);
             } elseif ($atomic_type instanceof TLiteralInt) {
                 if ($atomic_type->value < $assertion_value) {
+                    $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
                 } /* elseif ($inside_loop) {
                     //when inside a loop, allow the range to extends the type
@@ -1676,13 +1760,48 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 }*/
             } elseif ($atomic_type instanceof TPositiveInt) {
                 if ($assertion_value > 1) {
+                    $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
                     $existing_var_type->addType(new TIntRange($assertion_value, null));
                 }
             } elseif ($atomic_type instanceof TInt) {
+                $did_remove_type = true;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange($assertion_value, null));
+            } else {
+                // we assume that other types may have been removed (empty strings? numeric strings?)
+                //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
+                $did_remove_type = true;
             }
+        }
+
+        if (!$inside_loop && !$did_remove_type && $var_id && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $var_id,
+                '!'.$assertion,
+                true,
+                $negated,
+                $code_location,
+                $suppressed_issues
+            );
+        }
+
+        if ($existing_var_type->isUnionEmpty()) {
+            if ($var_id && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    '!'.$assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+            $existing_var_type->addType(new TNever());
         }
 
         return $existing_var_type;
