@@ -537,11 +537,20 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorByRefAnnotation' => [
                 'code' => '<?php
-                    /** @param string &...$s */
+                    /**
+                     * @param string &...$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function foo(&...$s) : void {}
-                    /** @param string ...&$s */
+                    /**
+                     * @param string ...&$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function bar(&...$s) : void {}
-                    /** @param string[] &$s */
+                    /**
+                     * @param string[] &$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function bat(&...$s) : void {}
 
                     $a = "hello";
@@ -1684,7 +1693,10 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorByRefAnnotationBadCall1' => [
                 'code' => '<?php
-                    /** @param string &...$s */
+                    /**
+                     * @param string &...$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function foo(&...$s) : void {}
 
                     $a = 1;
@@ -1693,7 +1705,10 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorByRefAnnotationBadCall2' => [
                 'code' => '<?php
-                    /** @param string ...&$s */
+                    /**
+                     * @param string ...&$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function foo(&...$s) : void {}
 
                     $b = 2;
@@ -1702,7 +1717,10 @@ class AnnotationTest extends TestCase
             ],
             'spreadOperatorByRefAnnotationBadCall3' => [
                 'code' => '<?php
-                    /** @param string[] &$s */
+                    /**
+                     * @param string[] &$s
+                     * @psalm-suppress UnusedParam
+                     */
                     function foo(&...$s) : void {}
 
                     $c = 3;

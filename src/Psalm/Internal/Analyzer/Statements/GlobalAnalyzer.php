@@ -8,10 +8,12 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+use RuntimeException;
 
 use function is_string;
 
@@ -61,6 +63,7 @@ class GlobalAnalyzer
 
                         $context->byref_constraints[$var_id] = new ReferenceConstraint();
                     }
+
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var)
@@ -68,7 +71,17 @@ class GlobalAnalyzer
                     $context->vars_in_scope[$var_id]->parent_nodes = [
                         $assignment_node->id => $assignment_node,
                     ];
-                    $context->vars_from_global[$var_id] = true;
+                    $context->references_to_external_scope[$var_id] = true;
+
+                    if (isset($context->references_in_scope[$var_id])) {
+                        // Global shadows existing reference
+                        $reference_count = &$context->referenced_counts[$context->references_in_scope[$var_id]];
+                        if ($reference_count < 1) {
+                            throw new RuntimeException("Incorrect referenced count found");
+                        }
+                        --$reference_count;
+                        unset($context->references_in_scope[$var_id]);
+                    }
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),
@@ -79,6 +92,20 @@ class GlobalAnalyzer
                         $var,
                         $var_id
                     );
+
+                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                        if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                            // TODO get global CodeLocation so that global variable can be marked as unused if it is
+                            // unused inside the function. Marking it as a referenced global causes it to be marked
+                            // used if it's used as a global in any function, even if it's unused in that function.
+                            $global_context->referenced_globals[$var_id] = true;
+                            // $statements_analyzer->data_flow_graph->addPath(
+                            //     $assignment_node,
+                            //     $global_node,
+                            //     'byref-assignment'
+                            // );
+                        }
+                    }
                 }
             }
         }

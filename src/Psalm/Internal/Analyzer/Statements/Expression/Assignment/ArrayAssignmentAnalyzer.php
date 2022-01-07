@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use InvalidArgumentException;
 use PhpParser;
+use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -46,6 +47,7 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function reset;
 use function strlen;
 
 /**
@@ -690,6 +692,10 @@ class ArrayAssignmentAnalyzer
 
         $child_stmt = null;
 
+        if (!empty($child_stmts)) {
+            $root_var = reset($child_stmts)->var;
+        }
+
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
         while ($child_stmts) {
@@ -814,6 +820,23 @@ class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $array_var_id;
+        }
+
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            && $root_var_id !== null
+            && isset($context->references_to_external_scope[$root_var_id])
+            && isset($root_var) && $root_var instanceof Variable && is_string($root_var->name)
+            && $root_var_id === '$' . $root_var->name
+        ) {
+            // Array is a reference to an external scope, mark it as used
+            $statements_analyzer->data_flow_graph->addPath(
+                DataFlowNode::getForAssignment(
+                    $root_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $root_var)
+                ),
+                new DataFlowNode('variable-use', 'variable use', null),
+                'variable-use'
+            );
         }
 
         if ($root_var_id

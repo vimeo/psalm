@@ -65,6 +65,10 @@ use function strtolower;
  */
 class ExpressionAnalyzer
 {
+    /**
+     * @param bool $assigned_to_reference This is set to true when the expression being analyzed
+     *                                    here is being assigned to another variable by reference.
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -72,7 +76,8 @@ class ExpressionAnalyzer
         bool $array_assignment = false,
         ?Context $global_context = null,
         bool $from_stmt = false,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
+        bool $assigned_to_reference = false
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -83,7 +88,8 @@ class ExpressionAnalyzer
             $array_assignment,
             $global_context,
             $from_stmt,
-            $template_result
+            $template_result,
+            $assigned_to_reference,
         ) === false) {
             return false;
         }
@@ -140,6 +146,10 @@ class ExpressionAnalyzer
         return true;
     }
 
+    /**
+     * @param bool $assigned_to_reference This is set to true when the expression being analyzed
+     *                                    here is being assigned to another variable by reference.
+     */
     private static function handleExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -147,7 +157,8 @@ class ExpressionAnalyzer
         bool $array_assignment,
         ?Context $global_context,
         bool $from_stmt,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
+        bool $assigned_to_reference = false
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return VariableFetchAnalyzer::analyze(
@@ -156,7 +167,9 @@ class ExpressionAnalyzer
                 $context,
                 false,
                 null,
-                $array_assignment
+                $array_assignment,
+                false,
+                $assigned_to_reference
             );
         }
 

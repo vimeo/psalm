@@ -297,7 +297,7 @@ class IfElseAnalyzer
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
-                            unset($if_context->vars_in_scope[$var_id]);
+                            $if_context->removePossibleReference($var_id);
                         }
                     }
                 }

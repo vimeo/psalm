@@ -159,6 +159,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 if ($use->byRef) {
                     $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                    $use_context->references_to_external_scope[$use_var_id] = true;
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;

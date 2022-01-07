@@ -338,7 +338,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
 
-            'removeUnusedVarAssignByRef' => [
+            'SKIPPED-removeUnusedVarAssignByRefToSubsequentlyUsedVariable' => [
                 'input' => '<?php
                     function foo() : void {
                         $a = 5;
@@ -348,8 +348,21 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'output' => '<?php
                     function foo() : void {
                         $a = 5;
-                        $b = &$a;
                         echo $a;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+
+            'removeUnusedVarAssignByRef' => [
+                'input' => '<?php
+                    function foo() : void {
+                        $a = 5;
+                        $b = &$a;
+                    }',
+                'output' => '<?php
+                    function foo() : void {
                     }',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['UnusedVariable'],
@@ -366,7 +379,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'output' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
-                        $b = &$a[1];
+                        $a[1];
                         print_r($a);
                     }',
                 'php_version' => '7.1',
@@ -384,7 +397,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'output' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
-                        $b = & $a[1];
+                        $a[1];
                         print_r($a);
                     }',
                 'php_version' => '7.1',

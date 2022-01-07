@@ -131,9 +131,9 @@ class StatementsAnalyzer extends SourceAnalyzer
     private $unused_var_locations = [];
 
     /**
-     * @var ?array<string, bool>
+     * @var array<string, true>
      */
-    public $byref_uses;
+    public $byref_uses = [];
 
     /**
      * @var ParsedDocblock|null
@@ -214,7 +214,6 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
-            //var_dump($this->data_flow_graph);
             $this->checkUnreferencedVars($stmts, $context);
         }
 
@@ -790,7 +789,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
             if (!isset($this->byref_uses[$var_id])
-                && !isset($context->vars_from_global[$var_id])
+                && !isset($context->referenced_globals[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
@@ -955,7 +954,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<string, bool> $byref_uses
+     * @param array<string, true> $byref_uses
      */
     public function setByRefUses(array $byref_uses): void
     {

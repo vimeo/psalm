@@ -255,7 +255,7 @@ class ElseIfAnalyzer
                             && !array_key_exists($var_id, $newly_reconciled_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
-                            unset($elseif_context->vars_in_scope[$var_id]);
+                            $elseif_context->removePossibleReference($var_id);
                         }
                     }
                 }
@@ -433,6 +433,12 @@ class ElseIfAnalyzer
         } catch (ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];
         }
+
+        // Track references set in the elseif to make sure they aren't reused later
+        $outer_context->updateReferencesPossiblyFromConfusingScope(
+            $elseif_context,
+            $statements_analyzer
+        );
 
         return null;
     }

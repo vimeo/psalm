@@ -204,7 +204,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation,
                 $is_equality,
                 null
             );
@@ -218,7 +217,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation,
                 $is_equality,
                 $assertion->count
             );
@@ -510,7 +508,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation,
         bool $is_equality,
         ?int $min_count
     ): Union {

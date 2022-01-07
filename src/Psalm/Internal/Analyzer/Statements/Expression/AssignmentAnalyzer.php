@@ -49,6 +49,7 @@ use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
+use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBitwiseAnd;
@@ -78,6 +79,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -852,20 +854,7 @@ class AssignmentAnalyzer
         PhpParser\Node\Expr\AssignRef $stmt,
         Context $context
     ): bool {
-        $assignment_type = self::analyze(
-            $statements_analyzer,
-            $stmt->var,
-            $stmt->expr,
-            null,
-            $context,
-            $stmt->getDocComment()
-        );
-
-        if ($assignment_type === false) {
-            return false;
-        }
-
-        $assignment_type->by_ref = true;
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, false, null, true);
 
         $lhs_var_id = ExpressionIdentifier::getArrayVarId(
             $stmt->var,
@@ -879,47 +868,86 @@ class AssignmentAnalyzer
             $statements_analyzer
         );
 
-        if ($lhs_var_id) {
-            $context->vars_in_scope[$lhs_var_id] = $assignment_type;
-            $context->hasVariable($lhs_var_id);
-            $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint();
+        $doc_comment = $stmt->getDocComment();
+        if ($doc_comment) {
+            try {
+                $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $doc_comment,
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getAliases(),
+                );
+            } catch (IncorrectDocblockException $e) {
+                IssueBuffer::maybeAdd(
+                    new MissingDocblockType(
+                        $e->getMessage(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    )
+                );
+            } catch (DocblockParseException $e) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        $e->getMessage(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    )
+                );
+            }
+            if (!empty($var_comments)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        "Docblock type cannot be used for reference assignment",
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    )
+                );
+            }
+        }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-                foreach ($context->vars_in_scope[$lhs_var_id]->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
-                        'variable-use'
-                    );
+        if ($lhs_var_id === null || $rhs_var_id === null) {
+            return false;
+        }
+
+        if (isset($context->references_in_scope[$lhs_var_id])) {
+            // Decrement old referenced variable's reference count
+            $reference_count = &$context->referenced_counts[$context->references_in_scope[$lhs_var_id]];
+            if ($reference_count < 1) {
+                throw new RuntimeException("Incorrect referenced count found");
+            }
+            --$reference_count;
+
+            // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
+            $old_type = $context->vars_in_scope[$lhs_var_id];
+            foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
+                if (strpos($old_parent_node_id, "$lhs_var_id-") === 0) {
+                    unset($old_type->parent_nodes[$old_parent_node_id]);
                 }
             }
         }
+        // When assigning an existing reference as a reference it removes the
+        // old reference, so it's no longer potentially from a confusing scope.
+        unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
 
-        if ($rhs_var_id) {
-            if (!isset($context->vars_in_scope[$rhs_var_id])) {
-                $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
-            }
-
-            $context->byref_constraints[$rhs_var_id] = new ReferenceConstraint();
+        $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
+        $context->hasVariable($lhs_var_id);
+        $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
+        $context->referenced_counts[$rhs_var_id] = ($context->referenced_counts[$rhs_var_id] ?? 0) + 1;
+        if (strpos($rhs_var_id, '[') !== false) {
+            // Reference to array item, we always consider array items to be an external scope for references
+            // TODO handle differently so it's detected as unused if the array is unused?
+            $context->references_to_external_scope[$lhs_var_id] = true;
+        }
+        if (strpos($rhs_var_id, '->') !== false) {
+            // Reference to object property, we always consider object properties to be an external scope for references
+            // TODO handle differently so it's detected as unused if the object is unused?
+            $context->references_to_external_scope[$lhs_var_id] = true;
         }
 
-        if ($statements_analyzer->data_flow_graph
-            && $lhs_var_id
-            && $rhs_var_id
-            && isset($context->vars_in_scope[$rhs_var_id])
-        ) {
-            $rhs_type = $context->vars_in_scope[$rhs_var_id];
+        $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+        $statements_analyzer->registerVariableAssignment(
+            $lhs_var_id,
+            $lhs_location
+        );
 
-            $data_flow_graph = $statements_analyzer->data_flow_graph;
-
-            $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-
-            $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
-
-            foreach ($rhs_type->parent_nodes as $byref_destination_node) {
-                $data_flow_graph->addPath($lhs_node, $byref_destination_node, '=');
-            }
-        }
+        $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
+        $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
 
         return true;
     }
@@ -1600,6 +1628,7 @@ class AssignmentAnalyzer
     ): void {
         if (is_string($assign_var->name)) {
             if ($var_id) {
+                $original_type = $context->vars_in_scope[$var_id] ?? null;
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -1636,28 +1665,48 @@ class AssignmentAnalyzer
                     $assign_value_type->by_ref = true;
                 }
 
-                if ($assign_value_type->by_ref) {
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                        && $assign_value_type->parent_nodes
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                    && $assign_value_type->parent_nodes
+                ) {
+                    if (isset($context->references_to_external_scope[$var_id])
+                        || isset($context->references_in_scope[$var_id])
+                        || isset($context->referenced_counts[$var_id]) && $context->referenced_counts[$var_id] > 0
                     ) {
                         $location = new CodeLocation($statements_analyzer, $assign_var);
-
-                        $byref_node = DataFlowNode::getForAssignment($var_id, $location);
-
-                        foreach ($assign_value_type->parent_nodes as $parent_node) {
+                        $assignment_node = DataFlowNode::getForAssignment($var_id, $location);
+                        $parent_nodes = $assign_value_type->parent_nodes;
+                        if ($original_type !== null) {
+                            $parent_nodes += $original_type->parent_nodes;
+                        }
+                        foreach ($parent_nodes as $parent_node) {
                             $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
+                                $assignment_node,
+                                '&=' // Normal assignment to reference/referenced variable
+                            );
+                        }
+
+                        if (isset($context->references_to_external_scope[$var_id])) {
+                            // Mark reference to an external scope as used when a value is assigned to it
+                            $statements_analyzer->data_flow_graph->addPath(
+                                $assignment_node,
                                 new DataFlowNode('variable-use', 'variable use', null),
                                 'variable-use'
                             );
-
-                            $statements_analyzer->data_flow_graph->addPath(
-                                $byref_node,
-                                $parent_node,
-                                'byref-assignment'
-                            );
                         }
                     }
+                }
+
+                if (isset($context->references_possibly_from_confusing_scope[$var_id])) {
+                    IssueBuffer::maybeAdd(
+                        new ReferenceReusedFromConfusingScope(
+                            "$var_id is possibly a reference defined at"
+                                . " {$context->references_possibly_from_confusing_scope[$var_id]->getShortSummary()}."
+                                . " Reusing this variable may cause the referenced value to change.",
+                            new CodeLocation($statements_analyzer, $assign_var)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
                 }
 
                 if ($assign_value_type->getId() === 'bool'

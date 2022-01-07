@@ -97,7 +97,7 @@ class ElseAnalyzer
                     if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
                         && !array_key_exists($var_id, $changed_var_ids)
                     ) {
-                        unset($else_context->vars_in_scope[$var_id]);
+                        $else_context->removePossibleReference($var_id);
                     }
                 }
             }
@@ -242,6 +242,12 @@ class ElseAnalyzer
         if ($outer_context->collect_exceptions) {
             $outer_context->mergeExceptions($else_context);
         }
+
+        // Track references set in the else to make sure they aren't reused later
+        $outer_context->updateReferencesPossiblyFromConfusingScope(
+            $else_context,
+            $statements_analyzer
+        );
 
         return null;
     }

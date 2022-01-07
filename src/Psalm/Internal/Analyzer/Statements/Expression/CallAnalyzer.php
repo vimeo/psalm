@@ -227,8 +227,7 @@ class CallAnalyzer
                         if ($type->initialized) {
                             $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
 
-                            unset($context->vars_in_scope[$var_id]);
-                            unset($context->vars_possibly_in_scope[$var_id]);
+                            $context->remove($var_id, false);
                         }
                     } elseif ($var_id !== '$this') {
                         $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];

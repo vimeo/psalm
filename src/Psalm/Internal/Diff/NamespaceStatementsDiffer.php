@@ -34,8 +34,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,
-                string $b_code,
-                bool &$body_change = false
+                string $b_code
             ): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
