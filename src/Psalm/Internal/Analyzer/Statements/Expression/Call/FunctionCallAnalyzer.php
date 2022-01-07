@@ -52,6 +52,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
@@ -688,10 +689,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     );
                 } elseif ($var_type_part instanceof TCallableObject
                     || $var_type_part instanceof TCallableString
+                    || ($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')
+                    || ($var_type_part instanceof TObjectWithProperties && isset($var_type_part->methods['__invoke']))
                 ) {
-                    // this is fine
-                    $has_valid_function_call_type = true;
-                } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')) {
                     // this is fine
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TString

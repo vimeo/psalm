@@ -429,7 +429,7 @@ class TKeyedArray extends Atomic
      */
     private function escapeAndQuote($name)
     {
-        if (is_string($name) && preg_match('/[^a-zA-Z0-9_]/', $name)) {
+        if (is_string($name) && ($name === '' || preg_match('/[^a-zA-Z0-9_]/', $name))) {
             $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
         }
 

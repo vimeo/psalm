@@ -128,6 +128,10 @@ class ExpressionScanner
             }
         }
 
+        if ($node->isFirstClassCallable()) {
+            return;
+        }
+
         if ($function_id === 'define') {
             $first_arg_value = isset($node->getArgs()[0]) ? $node->getArgs()[0]->value : null;
             $second_arg_value = isset($node->getArgs()[1]) ? $node->getArgs()[1]->value : null;
