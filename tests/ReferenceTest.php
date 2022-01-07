@@ -33,6 +33,42 @@ class ReferenceTest extends TestCase
                     '$c===' => '4',
                 ],
             ],
+            'changingReferencedVariableChangesReference' => [
+                'code' => '<?php
+                    $a = 1;
+                    $b = &$a;
+                    $a = 2;
+                ',
+                'assertions' => [
+                    '$a===' => '2',
+                    '$b===' => '2',
+                ],
+            ],
+            'unsetReference' => [
+                'code' => '<?php
+                    $a = 1;
+                    $b = &$a;
+                    $b = 2;
+                    unset($b);
+                    $b = 3;
+                ',
+                'assertions' => [
+                    '$a===' => '2',
+                    '$b===' => '3',
+                ],
+            ],
+            'recursiveReference' => [
+                'code' => '<?php
+                    $a = 1;
+                    $b = &$a;
+                    $a = &$b;
+                    $b = 2;
+                ',
+                'assertions' => [
+                    '$a===' => '2',
+                    '$b===' => '2',
+                ],
+            ],
             'SKIPPED-referenceToArrayItemChangesArrayType' => [
                 'code' => '<?php
                     /** @var list<int> */
