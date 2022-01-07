@@ -70,11 +70,6 @@ class Context
 
     /**
      * A set of globals that are referenced somewhere.
-     * Ideally this shouldn't be needed and GlobalAnalyzer should add an edge to the
-     * DataFlowGraph pointing from the global to its use in another scope, but since that's
-     * difficult this is used as a workaround to always mark referenced globals as used.
-     *
-     * @internal May be removed if GlobalAnalyzer is improved.
      *
      * @var array<string, true>
      */

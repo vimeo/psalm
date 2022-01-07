@@ -95,15 +95,7 @@ class GlobalAnalyzer
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         if ($global_context !== null && $global_context->hasVariable($var_id)) {
-                            // TODO get global CodeLocation so that global variable can be marked as unused if it is
-                            // unused inside the function. Marking it as a referenced global causes it to be marked
-                            // used if it's used as a global in any function, even if it's unused in that function.
                             $global_context->referenced_globals[$var_id] = true;
-                            // $statements_analyzer->data_flow_graph->addPath(
-                            //     $assignment_node,
-                            //     $global_node,
-                            //     'byref-assignment'
-                            // );
                         }
                     }
                 }
