@@ -495,7 +495,7 @@ class Context
 
     /**
      * Updates the list of possible references from a confusing scope,
-     * such as a reference created in an if and then later reused.
+     * such as a reference created in an if that might later be reused.
      */
     public function updateReferencesPossiblyFromConfusingScope(
         Context $confusing_scope_context,

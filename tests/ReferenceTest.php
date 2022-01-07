@@ -106,11 +106,11 @@ class ReferenceTest extends TestCase
                         $b = 1;
                         $a = &$b;
                         global $a;
+                        takesString($a);
                     }
+
+                    function takesString(string $str): void {}
                 ',
-                'assertions' => [
-                    '$a' => 'string',
-                ],
             ],
             'unsetPreventsReferenceConfusion' => [
                 'code' => '<?php
@@ -269,38 +269,6 @@ class ReferenceTest extends TestCase
                     $b = &$a;
                 ',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - Docblock type cannot be used for reference assignment',
-            ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignment' => [
-                'code' => '<?php
-                    class Foo
-                    {
-                        /** @var list<int> */
-                        public array $arr = [];
-
-                        public function __construct()
-                        {
-                            assert(isset($this->arr[0]));
-                            $int = &$this->arr[0];
-                            $int = (string) $int;
-                        }
-                    }
-                ',
-                'error_message' => 'ReferenceConstraintViolation',
-            ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [
-                'code' => '<?php
-                    class Foo
-                    {
-                        /** @var list<int> */
-                        public array $arr = [];
-
-                        public function __construct()
-                        {
-                            $int = &$this->arr[0]; // If $this->arr[0] isn\'t set, this will set it to null.
-                        }
-                    }
-                ',
-                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'unsetOnlyPreventsReferenceConfusionAfterCall' => [
                 'code' => '<?php
