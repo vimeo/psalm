@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Cli;
 
-use Composer\InstalledVersions;
 use OutOfBoundsException;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
@@ -32,7 +31,9 @@ final class Plugin
 
         $version = null;
         try {
-            $version = InstalledVersions::getVersion('vimeo/psalm') ;
+            // we ignore the FQN because of a hack in scoper.inc that needs full path
+            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
+            $version = \Composer\InstalledVersions::getVersion('vimeo/psalm') ;
         } catch (OutOfBoundsException $e) {
         }
 
