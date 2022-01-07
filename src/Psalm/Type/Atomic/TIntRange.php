@@ -86,6 +86,22 @@ class TIntRange extends TInt
             ($this->min_bound <= $i && $this->max_bound >= $i);
     }
 
+    /**
+     * Returns true if every part of the Range is lesser than the given value
+     */
+    public function isLesserThan(int $i): bool
+    {
+        return $this->max_bound !== null && $this->max_bound < $i;
+    }
+
+    /**
+     * Returns true if every part of the Range is greater than the given value
+     */
+    public function isGreaterThan(int $i): bool
+    {
+        return $this->min_bound !== null && $this->min_bound > $i;
+    }
+
     public static function getNewLowestBound(?int $bound1, ?int $bound2): ?int
     {
         if ($bound1 === null || $bound2 === null) {

@@ -1653,6 +1653,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
+                    // if the range contains the assertion, the range must be adapted
                     $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
                     if ($atomic_type->min_bound === null) {
@@ -1664,6 +1665,12 @@ class SimpleAssertionReconciler extends Reconciler
                         );
                     }
                     $existing_var_type->addType($atomic_type);
+                } elseif ($atomic_type->isLesserThan($assertion_value)) {
+                    // if the range is lesser than the assertion, the type must be removed
+                    $did_remove_type = true;
+                    $existing_var_type->removeType($atomic_type->getKey());
+                } elseif ($atomic_type->isGreaterThan($assertion_value)) {
+                    // if the range is greater than the assertion, the check is redundant
                 }
             } elseif ($atomic_type instanceof TLiteralInt) {
                 if ($atomic_type->value < $assertion_value) {
@@ -1751,6 +1758,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
+                    // if the range contains the assertion, the range must be adapted
                     $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
                     if ($atomic_type->max_bound === null) {
@@ -1759,6 +1767,12 @@ class SimpleAssertionReconciler extends Reconciler
                         $atomic_type->max_bound = min($atomic_type->max_bound, $assertion_value);
                     }
                     $existing_var_type->addType($atomic_type);
+                } elseif ($atomic_type->isLesserThan($assertion_value)) {
+                    // if the range is lesser than the assertion, the check is redundant
+                } elseif ($atomic_type->isGreaterThan($assertion_value)) {
+                    // if the range is greater than the assertion, the type must be removed
+                    $did_remove_type = true;
+                    $existing_var_type->removeType($atomic_type->getKey());
                 }
             } elseif ($atomic_type instanceof TLiteralInt) {
                 if ($atomic_type->value > $assertion_value) {
