@@ -1605,4 +1605,9 @@ class Union implements TypeNode
     {
         return reset($this->types);
     }
+
+    public function isUnionEmpty(): bool
+    {
+        return $this->types === [];
+    }
 }
