@@ -3,7 +3,6 @@
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
-use Composer\InstalledVersions;
 use OutOfBoundsException;
 use Phar;
 use Psalm\Config;
@@ -149,12 +148,16 @@ final class CliUtils
 
         $version = null;
         try {
-            $version = InstalledVersions::getVersion('vimeo/psalm') ;
+            // we ignore the FQN because of a hack in scoper.inc that needs full path
+            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
+            $version = \Composer\InstalledVersions::getVersion('vimeo/psalm') ;
         } catch (OutOfBoundsException $e) {
         }
 
         define('PSALM_VERSION', $version ?? 'UNKNOWN');
-        define('PHP_PARSER_VERSION', InstalledVersions::getVersion('nikic/php-parser'));
+        // we ignore the FQN because of a hack in scoper.inc that needs full path
+        // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
+        define('PHP_PARSER_VERSION', \Composer\InstalledVersions::getVersion('nikic/php-parser'));
 
         return $first_autoloader;
     }
