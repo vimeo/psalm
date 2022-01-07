@@ -504,7 +504,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         if (!$existing_var_type->hasMixed()
             && !$is_equality
-            && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
+            && (!$did_remove_type || $existing_var_type->isUnionEmpty())
             && $key
             && $code_location
         ) {
@@ -519,7 +519,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $suppressed_issues
             );
 
-            if (empty($existing_var_type->getAtomicTypes())) {
+            if ($existing_var_type->isUnionEmpty()) {
                 $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
                 return Type::getEmpty();
             }
@@ -605,7 +605,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             if (!$is_equality
                 && !$existing_var_type->hasMixed()
-                && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
+                && (!$did_remove_type || $existing_var_type->isUnionEmpty())
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
@@ -2375,7 +2375,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
+        if ($did_remove_type && $existing_var_type->isUnionEmpty()) {
             //every type was removed, this is an impossible assertion
             if ($code_location && $key && !$recursive_check) {
                 self::triggerIssueForImpossible(
@@ -2519,8 +2519,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        /** @psalm-suppress RedundantCondition safety check in case we removed something that shouldn't be removed */
-        assert($existing_var_type->getAtomicTypes() !== []);
+        assert(!$existing_var_type->isUnionEmpty());
         return $existing_var_type;
     }
 

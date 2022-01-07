@@ -170,7 +170,7 @@ class Reconciler
                     $has_object_array_access
                 );
 
-            if ($result_type && empty($result_type->getAtomicTypes())) {
+            if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
@@ -230,8 +230,7 @@ class Reconciler
                         $negated
                     );
 
-                    /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
-                    if (!$result_type_candidate->getAtomicTypes()) {
+                    if ($result_type_candidate->isUnionEmpty()) {
                         $result_type_candidate->addType(new TEmpty);
                     }
 
@@ -1103,8 +1102,7 @@ class Reconciler
             }
         }
 
-        /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
-        if (!$key_type->getAtomicTypes()) {
+        if ($key_type->isUnionEmpty()) {
             // this should ideally prompt some sort of error
             $key_type->addType(new TArrayKey());
         }

@@ -328,8 +328,7 @@ class ArrayFetchAnalyzer
             $stmt_type->possibly_undefined = false;
         }
 
-        /** @psalm-suppress RedundantCondition can be empty after removing above */
-        if ($context->inside_isset && $dim_var_id && $new_offset_type && $new_offset_type->getAtomicTypes()) {
+        if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
 
