@@ -496,9 +496,9 @@ class Context
         Context $confusing_scope_context,
         StatementsAnalyzer $statements_analyzer
     ): void {
-        foreach ($confusing_scope_context->references_in_scope + $confusing_scope_context->references_to_external_scope
-            as $reference_id => $_
-        ) {
+        $references = $confusing_scope_context->references_in_scope
+            + $confusing_scope_context->references_to_external_scope;
+        foreach ($references as $reference_id => $_) {
             if (!isset($this->references_in_scope[$reference_id])
                 && !isset($this->references_to_external_scope[$reference_id])
                 && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
