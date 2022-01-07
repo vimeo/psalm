@@ -85,8 +85,7 @@ class TemplateStandinTypeReplacer
                 }
             }
 
-            /** @psalm-suppress RedundantCondition can be empty after removing above */
-            if ($new_input_type->getAtomicTypes()) {
+            if (!$new_input_type->isUnionEmpty()) {
                 $input_type = $new_input_type;
             }
         }

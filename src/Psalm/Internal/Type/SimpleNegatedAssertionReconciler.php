@@ -520,7 +520,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             if (!$is_equality
                 && !$existing_var_type->hasMixed()
-                && (!$did_remove_type || empty($existing_var_type->getAtomicTypes()))
+                && (!$did_remove_type || $existing_var_type->isUnionEmpty())
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
@@ -578,7 +578,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -597,8 +597,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        /** @psalm-suppress RedundantCondition can be empty after removing above */
-        if ($existing_var_type->getAtomicTypes()) {
+        if (!$existing_var_type->isUnionEmpty()) {
             return $existing_var_type;
         }
 
@@ -645,7 +644,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -664,8 +663,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        /** @psalm-suppress RedundantCondition can be empty after removing above */
-        if ($existing_var_type->getAtomicTypes()) {
+        if (!$existing_var_type->isUnionEmpty()) {
             return $existing_var_type;
         }
 
@@ -710,7 +708,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if ($did_remove_type && $existing_var_type->getAtomicTypes() === []) {
+        if ($did_remove_type && $existing_var_type->isUnionEmpty()) {
             //every type was removed, this is an impossible assertion
             if ($code_location && $key && !$is_empty_assertion && !$recursive_check) {
                 self::triggerIssueForImpossible(
@@ -865,8 +863,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        /** @psalm-suppress RedundantCondition safety check in case we removed something that shouldn't be removed */
-        assert($existing_var_type->getAtomicTypes() !== []);
+        assert(!$existing_var_type->isUnionEmpty());
         return $existing_var_type;
     }
 
@@ -1585,7 +1582,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$did_remove_type || empty($existing_var_type->getAtomicTypes())) {
+        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1604,8 +1601,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        /** @psalm-suppress RedundantCondition can be empty after removing above */
-        if ($existing_var_type->getAtomicTypes()) {
+        if (!$existing_var_type->isUnionEmpty()) {
             return $existing_var_type;
         }
 
