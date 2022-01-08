@@ -2070,7 +2070,7 @@ class FunctionTemplateTest extends TestCase
                     function returnsTemplatedIntersection(object $t) {
                         return $t;
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'returnIntersectionWhenTemplateIsExpectedBackward' => [
                 '<?php
@@ -2084,7 +2084,7 @@ class FunctionTemplateTest extends TestCase
                     function returnsTemplatedIntersection(object $t) {
                         return $t;
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'bottomTypeInClosureShouldClash' => [
                 '<?php

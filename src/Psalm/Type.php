@@ -704,6 +704,13 @@ abstract class Type
                 $wider_type = $type_2_atomic;
                 $intersection_performed = true;
             }
+
+            if ($intersection_atomic
+                && !self::hasIntersection($type_1_atomic)
+                && !self::hasIntersection($type_2_atomic)
+            ) {
+                return $intersection_atomic;
+            }
         }
 
         if (static::mayHaveIntersection($type_1_atomic)
@@ -762,5 +769,14 @@ abstract class Type
             || $type instanceof TNamedObject
             || $type instanceof TTemplateParam
             || $type instanceof TObjectWithProperties;
+    }
+
+    private static function hasIntersection(Atomic $type): bool
+    {
+        return ($type instanceof TIterable
+                || $type instanceof TNamedObject
+                || $type instanceof TTemplateParam
+                || $type instanceof TObjectWithProperties
+            ) && $type->extra_types;
     }
 }
