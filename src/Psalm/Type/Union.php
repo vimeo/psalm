@@ -1580,4 +1580,9 @@ class Union implements TypeNode
             && $this->types['array'] instanceof TArray
             && $this->types['array']->isEmptyArray();
     }
+
+    public function isUnionEmpty(): bool
+    {
+        return $this->types === [];
+    }
 }

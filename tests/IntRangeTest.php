@@ -708,6 +708,36 @@ class IntRangeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'assertOutOfRange' => [
+                '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a === 0);
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'assertRedundantInferior' => [
+                '<?php
+                    /**
+                     * @param int<min, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 10);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertImpossibleInferior' => [
+                '<?php
+                    /**
+                     * @param int<5, max> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 4);
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
         ];
     }
 }

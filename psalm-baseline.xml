@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master">
+<files psalm-version="4.9999999.9999999.9999999-dev">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -220,6 +220,13 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$stmt-&gt;props[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
+    <DocblockTypeContradiction occurrences="3">
+      <code>$type &lt; 1</code>
+      <code>$type &lt; 1 || $type &gt; 4</code>
+      <code>$type &gt; 4</code>
+    </DocblockTypeContradiction>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/Message.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">

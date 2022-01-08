@@ -11,6 +11,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
@@ -32,6 +33,7 @@ use function in_array;
 use function is_array;
 use function preg_match;
 use function realpath;
+use function set_error_handler;
 use function sprintf;
 use function symlink;
 use function uniqid;
@@ -46,6 +48,9 @@ class ConfigTest extends TestCase
 
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
+
+    /** @var callable(int, string, string=, int=, array=):bool|null */
+    protected $original_error_handler = null;
 
     public static function setUpBeforeClass(): void
     {
@@ -64,6 +69,8 @@ class ConfigTest extends TestCase
     {
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
+        $this->original_error_handler = set_error_handler(null);
+        set_error_handler($this->original_error_handler);
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -1029,6 +1036,8 @@ class ConfigTest extends TestCase
 
     public function tearDown(): void
     {
+        set_error_handler($this->original_error_handler);
+
         parent::tearDown();
 
         if ($this->getName() === 'testTemplatedFiles') {
@@ -1479,5 +1488,59 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
         $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
         $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
+    }
+
+    public function testConfigFileWithXIncludeWithoutFallbackShouldThrowException(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessageMatches('/and no fallback was found/');
+        ErrorHandler::install();
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm xmlns:xi="http://www.w3.org/2001/XInclude">
+                <projectFiles>
+                    <directory name="src" />
+                    <directory name="tests" />
+                </projectFiles>
+
+                <issueHandlers>
+                    <xi:include href="zz.xml" />
+                </issueHandlers>
+            </psalm>'
+        );
+    }
+
+    public function testConfigFileWithXIncludeWithFallback(): void
+    {
+        ErrorHandler::install();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+            <psalm xmlns:xi="http://www.w3.org/2001/XInclude">
+                <projectFiles>
+                    <directory name="src" />
+                    <directory name="tests" />
+                </projectFiles>
+
+                <issueHandlers>
+                    <xi:include href="zz.xml">
+                        <xi:fallback>
+                            <MixedAssignment>
+                                <errorLevel type="suppress">
+                                    <file name="src/Psalm/Type.php" />
+                                </errorLevel>
+                            </MixedAssignment>
+                        </xi:fallback>
+                    </xi:include>
+                </issueHandlers>
+            </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
     }
 }

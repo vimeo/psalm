@@ -159,8 +159,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $key_type->addType(new TInt);
             }
 
-            /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
-            if (!$inner_type->getAtomicTypes()) {
+            if ($inner_type->isUnionEmpty()) {
                 return Type::getEmptyArray();
             }
 
@@ -319,8 +318,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             ]);
         }
 
-        /** @psalm-suppress TypeDoesNotContainType can be empty after removing above */
-        if (!$inner_type->getAtomicTypes()) {
+        if ($inner_type->isUnionEmpty()) {
             return Type::getEmptyArray();
         }
 

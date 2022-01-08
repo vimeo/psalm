@@ -107,6 +107,7 @@ use const JSON_THROW_ON_ERROR;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
+use const LIBXML_NOWARNING;
 use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
@@ -682,7 +683,7 @@ class Config
         chdir($base_dir);
 
         $dom_document->loadXML($file_contents, LIBXML_NONET);
-        $dom_document->xinclude(LIBXML_NONET);
+        $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
         chdir($oldpwd);
         return $dom_document;

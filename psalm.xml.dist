@@ -62,6 +62,12 @@
             </errorLevel>
         </DeprecatedMethod>
 
+        <DeprecatedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="PackageVersions\Versions"/>
+            </errorLevel>
+        </DeprecatedClass>
+
         <UnusedParam>
             <errorLevel type="suppress">
                 <directory name="examples"/>

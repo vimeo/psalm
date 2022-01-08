@@ -323,7 +323,7 @@ class PureAnnotationTest extends TestCase
                         if ($sum > 9000) {
                             throw MyException::hello();
                         }
-                        if ($sum > 90001) {
+                        if ($sum > 900) {
                             throw new MyException();
                         }
                         return $sum;

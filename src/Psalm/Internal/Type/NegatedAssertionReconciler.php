@@ -240,7 +240,7 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (empty($existing_var_type->getAtomicTypes())) {
+        if ($existing_var_type->isUnionEmpty()) {
             if ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
