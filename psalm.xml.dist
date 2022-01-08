@@ -58,6 +58,7 @@
         </DeprecatedMethod>
         <DeprecatedClass>
             <errorLevel type="suppress">
+                <referencedClass name="PackageVersions\Versions"/>
                 <referencedClass name="Psalm\Plugin\Hook\*" />
             </errorLevel>
         </DeprecatedClass>
