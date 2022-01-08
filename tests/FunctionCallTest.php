@@ -1054,9 +1054,9 @@ class FunctionCallTest extends TestCase
                     $d = hrtime(false);',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'array{0: int, 1: int}',
-                    '$c' => 'array{0: int, 1: int}|int',
-                    '$d' => 'array{0: int, 1: int}',
+                    '$b' => 'array{int, int}',
+                    '$c' => 'array{int, int}|int',
+                    '$d' => 'array{int, int}',
                 ],
             ],
             'PHP73-hrtimeCanBeFloat' => [
