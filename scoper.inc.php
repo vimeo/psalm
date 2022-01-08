@@ -28,13 +28,6 @@ return [
             );
         },
         function ($filePath, $prefix, $contents) {
-            return str_replace(
-                '\\'.$prefix.'\Composer\InstalledVersions',
-                '\Composer\InstalledVersions',
-                $contents
-            );
-        },
-        function ($filePath, $prefix, $contents) {
             if (strpos($filePath, 'src/Psalm') === 0) {
                 return str_replace(
                     [' \\PhpParser\\'],
