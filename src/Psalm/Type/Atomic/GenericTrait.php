@@ -64,7 +64,7 @@ trait GenericTrait
                 );
             }
 
-            if ($this->was_static) {
+            if ($this->is_static) {
                 $extra_types .= '&static';
             }
         }

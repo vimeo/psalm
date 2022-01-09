@@ -27,7 +27,7 @@ class TNamedObject extends Atomic
     /**
      * @var bool
      */
-    public $was_static = false;
+    public $is_static = false;
 
     /**
      * Whether or not this type can represent a child of the class named in $value
@@ -38,14 +38,14 @@ class TNamedObject extends Atomic
     /**
      * @param string $value the name of the object
      */
-    public function __construct(string $value, bool $was_static = false, bool $definite_class = false)
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
         $this->value = $value;
-        $this->was_static = $was_static;
+        $this->is_static = $is_static;
         $this->definite_class = $definite_class;
     }
 
@@ -75,7 +75,7 @@ class TNamedObject extends Atomic
             );
         }
 
-        return $this->was_static ? $this->value . '&static' : $this->value;
+        return $this->is_static ? $this->value . '&static' : $this->value;
     }
 
     /**
@@ -105,7 +105,7 @@ class TNamedObject extends Atomic
             $aliased_classes,
             $this_class,
             true,
-            $this->was_static
+            $this->is_static
         ) . $intersection_types;
     }
 
@@ -122,7 +122,7 @@ class TNamedObject extends Atomic
             return $analysis_php_version_id >= 8_00_00 ? 'static' : null;
         }
 
-        if ($this->was_static && $this->value === $this_class) {
+        if ($this->is_static && $this->value === $this_class) {
             return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
@@ -136,7 +136,7 @@ class TNamedObject extends Atomic
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return ($this->value !== 'static' && $this->was_static === false) || $analysis_php_version_id >= 8_00_00;
+        return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
     public function replaceTemplateTypesWithArgTypes(

@@ -301,8 +301,8 @@ class AtomicTypeComparator
 
             if ($container_type_part instanceof TNamedObject
                 && $input_type_part instanceof TNamedObject
-                && $container_type_part->was_static
-                && !$input_type_part->was_static
+                && $container_type_part->is_static
+                && !$input_type_part->is_static
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
@@ -596,8 +596,8 @@ class AtomicTypeComparator
 
         if ($container_type_part instanceof TNamedObject
             && $input_type_part instanceof TNamedObject
-            && $container_type_part->was_static
-            && !$input_type_part->was_static
+            && $container_type_part->is_static
+            && !$input_type_part->is_static
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

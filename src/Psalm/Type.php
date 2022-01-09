@@ -127,10 +127,10 @@ abstract class Type
         array $aliased_classes,
         ?string $this_class,
         bool $allow_self = false,
-        bool $was_static = false
+        bool $is_static = false
     ): string {
         if ($allow_self && $value === $this_class) {
-            if ($was_static) {
+            if ($is_static) {
                 return 'static';
             }
             return 'self';

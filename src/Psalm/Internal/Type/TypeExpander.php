@@ -641,9 +641,9 @@ class TypeExpander
             }
 
             if (!$final && $return_type instanceof TNamedObject) {
-                $return_type->was_static = true;
+                $return_type->is_static = true;
             }
-        } elseif ($return_type->was_static
+        } elseif ($return_type->is_static
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
         ) {
@@ -661,9 +661,9 @@ class TypeExpander
                     $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
                 }
             }
-        } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
+        } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
             $return_type->value = $static_class_type;
-            $return_type->was_static = false;
+            $return_type->is_static = false;
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type->value = $self_class;
         } elseif ($parent_class && $return_type_lc === 'parent') {

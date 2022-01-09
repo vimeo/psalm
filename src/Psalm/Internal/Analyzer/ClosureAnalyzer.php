@@ -95,7 +95,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
             } elseif ($context->self) {
                 $this_atomic = new TNamedObject($context->self);
-                $this_atomic->was_static = true;
+                $this_atomic->is_static = true;
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }

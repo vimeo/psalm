@@ -45,7 +45,7 @@ class ObjectComparator
             } elseif ($intersection_container_type instanceof TTemplateParam) {
                 $intersection_container_type_lower = null;
             } else {
-                $container_was_static = $intersection_container_type->was_static;
+                $container_was_static = $intersection_container_type->is_static;
 
                 $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
@@ -203,7 +203,7 @@ class ObjectComparator
 
             if ($intersection_container_type instanceof TNamedObject) {
                 // this is extra check is redundant since we're comparing to a template as type
-                $intersection_container_type->was_static = false;
+                $intersection_container_type->is_static = false;
             }
 
             return UnionTypeComparator::isContainedBy(
@@ -224,7 +224,7 @@ class ObjectComparator
         } elseif ($intersection_input_type instanceof TObjectWithProperties) {
             $intersection_input_type_lower = 'object';
         } else {
-            $input_was_static = $intersection_input_type->was_static;
+            $input_was_static = $intersection_input_type->is_static;
 
             $intersection_input_type_lower = strtolower(
                 $codebase->classlikes->getUnAliasedName(

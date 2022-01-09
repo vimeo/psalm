@@ -15,9 +15,9 @@ class TAnonymousClassInstance extends TNamedObject
     /**
      * @param string $value the name of the object
      */
-    public function __construct(string $value, bool $was_static = false, ?string $extends = null)
+    public function __construct(string $value, bool $is_static = false, ?string $extends = null)
     {
-        parent::__construct($value, $was_static);
+        parent::__construct($value, $is_static);
 
         $this->extends = $extends;
     }
