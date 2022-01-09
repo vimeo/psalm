@@ -628,7 +628,7 @@ class AssertionReconciler extends Reconciler
         }
 
         if ($type_1_atomic instanceof TNamedObject) {
-            $type_1_atomic->was_static = false;
+            $type_1_atomic->is_static = false;
         }
 
         $atomic_comparison_results = new TypeComparisonResult();

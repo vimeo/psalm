@@ -1811,7 +1811,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this_object_type = new TNamedObject($context->self);
                 }
 
-                $this_object_type->was_static = !$storage->final;
+                $this_object_type->is_static = !$storage->final;
 
                 if ($this->storage instanceof MethodStorage && $this->storage->if_this_is_type) {
                     $template_result = new TemplateResult($this->getTemplateTypeMap() ?? [], []);

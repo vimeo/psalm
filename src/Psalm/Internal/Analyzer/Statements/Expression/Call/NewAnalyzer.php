@@ -526,7 +526,7 @@ class NewAnalyzer extends CallAnalyzer
                     $generic_param_types
                 );
 
-                $result_atomic_type->was_static = $from_static;
+                $result_atomic_type->is_static = $from_static;
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
@@ -553,7 +553,7 @@ class NewAnalyzer extends CallAnalyzer
                 )
             );
 
-            $result_atomic_type->was_static = $from_static;
+            $result_atomic_type->is_static = $from_static;
 
             $statements_analyzer->node_data->setType(
                 $stmt,

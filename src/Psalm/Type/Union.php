@@ -763,11 +763,11 @@ class Union implements TypeNode
         return false;
     }
 
-    public function isFormerStaticObject(): bool
+    public function isStaticObject(): bool
     {
         foreach ($this->types as $type) {
             if (!$type instanceof TNamedObject
-                || !$type->was_static
+                || !$type->is_static
             ) {
                 return false;
             }
@@ -776,11 +776,11 @@ class Union implements TypeNode
         return true;
     }
 
-    public function hasFormerStaticObject(): bool
+    public function hasStaticObject(): bool
     {
         foreach ($this->types as $type) {
             if ($type instanceof TNamedObject
-                && $type->was_static
+                && $type->is_static
             ) {
                 return true;
             }
@@ -926,7 +926,7 @@ class Union implements TypeNode
             $this->types,
             fn(Atomic $type): bool => $type instanceof TTemplateParam
                 || ($type instanceof TNamedObject
-                    && ($type->was_static
+                    && ($type->is_static
                         || ($type->extra_types
                             && array_filter(
                                 $type->extra_types,

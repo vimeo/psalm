@@ -270,7 +270,7 @@ class TypeCombiner
             $generic_object = new TGenericObject($generic_type, $generic_type_params);
 
             if ($combination->object_static[$generic_type] ?? false) {
-                $generic_object->was_static = true;
+                $generic_object->is_static = true;
             }
 
             /** @psalm-suppress PropertyTypeCoercion */
@@ -513,11 +513,11 @@ class TypeCombiner
 
         if ($type instanceof TNamedObject) {
             if (array_key_exists($type->value, $combination->object_static)) {
-                if ($combination->object_static[$type->value] && !$type->was_static) {
+                if ($combination->object_static[$type->value] && !$type->is_static) {
                     $combination->object_static[$type->value] = false;
                 }
             } else {
-                $combination->object_static[$type->value] = $type->was_static;
+                $combination->object_static[$type->value] = $type->is_static;
             }
         }
 

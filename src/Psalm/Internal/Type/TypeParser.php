@@ -1084,7 +1084,7 @@ class TypeParser
             if ($intersect_static
                 && $first_type instanceof TNamedObject
             ) {
-                $first_type->was_static = true;
+                $first_type->is_static = true;
             }
 
             if ($keyed_intersection_types) {
