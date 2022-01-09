@@ -233,7 +233,7 @@ class Reconciler
                     );
 
                     if ($result_type_candidate->isUnionEmpty()) {
-                        $result_type_candidate->addType(new TEmpty);
+                        $result_type_candidate->addType(new TNever);
                     }
 
                     $orred_type = Type::combineUnionTypes(
