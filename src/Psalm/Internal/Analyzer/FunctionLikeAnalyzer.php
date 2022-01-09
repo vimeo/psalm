@@ -464,6 +464,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->track_mutations = true;
         }
 
+        if ($this->function instanceof ArrowFunction && $storage->return_type && $storage->return_type->isNever()) {
+            // ArrowFunction perform a return implicitly so if the return type is never, we have to suppress the error
+            // note: the never can only come from phpdoc. PHP will refuse short closures with never in signature
+            $statements_analyzer->addSuppressedIssues(['NoValue']);
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
         if ($codebase->alter_code
