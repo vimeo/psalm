@@ -115,6 +115,12 @@
     - `Psalm\Type\Union`
  - While not a BC break per se, all classes / interfaces / traits / enums under
    `Psalm\Internal` namespace are now marked `@internal`.
+ - [BC] Parameter 1 of `Psalm\Type\Atomic\TNamedObject::__construct()` changed name from `was_static` to `is_static`
+ - [BC] Parameter 1 of `Psalm\Type\Atomic\TAnonymousClassInstance::__construct()` changed name from `was_static` to `is_static`
+ - [BC] Parameter 5 of `Psalm\Type::getStringFromFQCLN()` changed name from `was_static` to `is_static`
+ - [BC] Property `Psalm\Type\Atomic\TNamedObject::$was_static` was renamed to `$is_static`
+ - [BC] Method `Psalm\Type\Union::isFormerStaticObject()` was renamed to `isStaticObject()`
+ - [BC] Method `Psalm\Type\Union::hasFormerStaticObject()` was renamed to `hasStaticObject()`
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
@@ -156,5 +162,3 @@
  - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
  - [BC] Method `Psalm\DocComment::parse()` was removed
  - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
-
-
