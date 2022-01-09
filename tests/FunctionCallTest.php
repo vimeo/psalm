@@ -2160,7 +2160,7 @@ class FunctionCallTest extends TestCase
             'tooFewArgsAccurateCount' => [
                 '<?php
                     preg_match(\'/adsf/\');',
-                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting 2 but saw 1',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
             ],
             'compactUndefinedVariable' => [
                 '<?php
