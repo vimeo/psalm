@@ -647,20 +647,8 @@ class TypeExpander
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
         ) {
-            $return_type = clone $return_type;
             $cloned_static = clone $static_class_type;
-            $extra_static = $cloned_static->extra_types ?: [];
-            $cloned_static->extra_types = null;
-
-            if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
-            }
-
-            foreach ($extra_static as $extra_static_type) {
-                if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
-                }
-            }
+            $return_type = $cloned_static;
         } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
             $return_type->value = $static_class_type;
             $return_type->was_static = false;

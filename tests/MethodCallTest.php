@@ -1004,6 +1004,54 @@ class MethodCallTest extends TestCase
                 [],
                 '8.0'
             ],
+            'staticReturnOnlyTheChildClass' => [
+                '<?php
+                    class Base
+                    {
+                        public function withFoo(object $foo): static
+                        {
+                            return $this;
+                        }
+
+                        public function withBar(string $bar): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    class Concrete extends Base
+                    {
+                        public function withFoo(mixed $foo): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    $concrete = new Concrete();
+                    $a = $concrete->withBar("bar");
+                    $b = $a->withFoo("bar");',
+                'assertions' => [
+                    '$a' => 'Concrete',
+                    '$b' => 'Concrete',
+                ],
+                [],
+                '8.0'
+            ],
+            'dontGoNutsWithReflectionOnThis' => [
+                '<?php
+
+                    class A
+                    {
+                        public function B(): void
+                        {
+                            (new ReflectionClass($this))->getName();
+                        }
+                    }
+                    ',
+                [],
+                [],
+                '8.0'
+            ],
         ];
     }
 
