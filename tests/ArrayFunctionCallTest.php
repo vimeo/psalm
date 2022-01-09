@@ -2121,7 +2121,7 @@ class ArrayFunctionCallTest extends TestCase
                         return $a;
                     }',
             ],
-            'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
+            'keepClassStringInOffsetThroughArrayMerge' => [
                 '<?php
 
                     class A {
