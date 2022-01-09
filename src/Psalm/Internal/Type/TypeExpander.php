@@ -5,7 +5,11 @@ namespace Psalm\Internal\Type;
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Internal\Type\SimpleAssertionReconciler;
+use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -23,10 +27,12 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfArray;
@@ -300,6 +306,56 @@ class TypeExpander
             }
 
             return [$return_type];
+        }
+
+        if ($return_type instanceof TPropertiesOf) {
+            if ($return_type->fq_classlike_name === 'self' && $self_class) {
+                $return_type->fq_classlike_name = $self_class;
+            }
+
+            if ($return_type->fq_classlike_name === 'static' && $self_class) {
+                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
+            }
+
+            if (!$codebase->classExists($return_type->fq_classlike_name)) {
+                return $return_type;
+            }
+
+            // Get and merge all properties from parent classes
+            $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
+            $properties_types = $class_storage->properties;
+            foreach ($class_storage->parent_classes as $parent_class) {
+                if (!$codebase->classOrInterfaceExists($parent_class)) {
+                    continue;
+                }
+                $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+                $properties_types = array_merge(
+                    $properties_types,
+                    $parent_class_storage->properties
+                );
+            }
+
+            // Filter properties if configured
+            if ($return_type->visibility_filter !== null) {
+                $properties_types = array_filter(
+                    $properties_types,
+                    function (PropertyStorage $property) use ($return_type): bool {
+                        return $property->visibility === $return_type->visibility_filter;
+                    }
+                );
+            }
+
+            // Return property names as literal string
+            $properties = array_map(
+                function (string $property_name): TLiteralString {
+                    return new TLiteralString($property_name);
+                },
+                array_keys($properties_types)
+            );
+            if (empty($properties)) {
+                return $return_type;
+            }
+            return $properties;
         }
 
         if ($return_type instanceof TTypeAlias) {
