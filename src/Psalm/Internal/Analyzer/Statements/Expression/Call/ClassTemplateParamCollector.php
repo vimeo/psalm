@@ -268,12 +268,8 @@ class ClassTemplateParamCollector
                     true
                 );
 
-                if ($expanded instanceof Atomic) {
-                    $output_type_extends[] = $expanded;
-                } else {
-                    foreach ($expanded as $type) {
-                        $output_type_extends[] = $type;
-                    }
+                foreach ($expanded as $type) {
+                    $output_type_extends[] = $type;
                 }
             } else {
                 $output_type_extends[] = $type_extends_atomic;

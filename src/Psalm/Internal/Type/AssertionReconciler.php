@@ -1250,30 +1250,19 @@ class AssertionReconciler extends Reconciler
                     true
                 );
 
-                if ($expanded instanceof Atomic) {
-                    $compatible_int_type = self::getCompatibleIntType($existing_var_type, $value, $is_loose_equality);
+                foreach ($expanded as $expanded_type) {
+                    $compatible_int_type = self::getCompatibleIntType(
+                        $existing_var_type,
+                        $value,
+                        $is_loose_equality
+                    );
+
                     if ($compatible_int_type !== null) {
                         return $compatible_int_type;
                     }
 
-                    if ($expanded instanceof TInt) {
+                    if ($expanded_type instanceof TInt) {
                         $has_int = true;
-                    }
-                } else {
-                    foreach ($expanded as $expanded_type) {
-                        $compatible_int_type = self::getCompatibleIntType(
-                            $existing_var_type,
-                            $value,
-                            $is_loose_equality
-                        );
-
-                        if ($compatible_int_type !== null) {
-                            return $compatible_int_type;
-                        }
-
-                        if ($expanded_type instanceof TInt) {
-                            $has_int = true;
-                        }
                     }
                 }
             }

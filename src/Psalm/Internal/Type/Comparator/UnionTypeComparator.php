@@ -484,12 +484,6 @@ class UnionTypeComparator
                 true,
                 true
             );
-            if ($expanded instanceof Atomic) {
-                if (!$expanded instanceof TTypeAlias && !$expanded instanceof TClassConstant) {
-                    $atomic_types[] = $expanded;
-                }
-                continue;
-            }
 
             array_push($atomic_types, ...$expanded);
         }

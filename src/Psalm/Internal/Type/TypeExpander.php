@@ -42,7 +42,6 @@ use function array_merge;
 use function array_values;
 use function count;
 use function get_class;
-use function is_array;
 use function is_string;
 use function reset;
 use function strpos;
@@ -74,7 +73,7 @@ class TypeExpander
 
         $new_return_type_parts = [];
 
-        $has_array_output = false;
+        $had_split_values = false;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::expandAtomic(
@@ -90,15 +89,14 @@ class TypeExpander
                 $expand_templates
             );
 
-            if (is_array($parts)) {
-                $new_return_type_parts = array_merge($new_return_type_parts, $parts);
-                $has_array_output = true;
-            } else {
-                $new_return_type_parts[] = $parts;
+            if ($return_type_part instanceof TTypeAlias || count($parts) > 1) {
+                $had_split_values = true;
             }
+            
+            $new_return_type_parts = array_merge($new_return_type_parts, $parts);
         }
 
-        if ($has_array_output) {
+        if ($had_split_values) {
             $fleshed_out_type = TypeCombiner::combine(
                 $new_return_type_parts,
                 $codebase
@@ -125,7 +123,7 @@ class TypeExpander
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *
-     * @return Atomic|non-empty-list<Atomic>
+     * @return non-empty-list<Atomic>
      */
     public static function expandAtomic(
         Codebase $codebase,
@@ -138,7 +136,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false
-    ) {
+    ): array {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
@@ -239,7 +237,7 @@ class TypeExpander
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
-                    return new TLiteralClassString($return_type->fq_classlike_name);
+                    return [new TLiteralClassString($return_type->fq_classlike_name)];
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
@@ -293,7 +291,7 @@ class TypeExpander
                 }
             }
 
-            return $return_type;
+            return [$return_type];
         }
 
         if ($return_type instanceof TTypeAlias) {
@@ -317,7 +315,7 @@ class TypeExpander
                         $recursively_fleshed_out_types = [];
 
                         foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                            $recursively_fleshed_out_type = self::expandAtomic(
+                            $more_recursively_fleshed_out_types = self::expandAtomic(
                                 $codebase,
                                 $replacement_atomic_type,
                                 $self_class,
@@ -330,14 +328,10 @@ class TypeExpander
                                 $expand_templates
                             );
 
-                            if (is_array($recursively_fleshed_out_type)) {
-                                $recursively_fleshed_out_types = array_merge(
-                                    $recursively_fleshed_out_type,
-                                    $recursively_fleshed_out_types
-                                );
-                            } else {
-                                $recursively_fleshed_out_types[] = $recursively_fleshed_out_type;
-                            }
+                            $recursively_fleshed_out_types = array_merge(
+                                $more_recursively_fleshed_out_types,
+                                $recursively_fleshed_out_types
+                            );
                         }
 
                         return $recursively_fleshed_out_types;
@@ -345,7 +339,7 @@ class TypeExpander
                 }
             }
 
-            return $return_type;
+            return [$return_type];
         }
 
         if ($return_type instanceof TKeyOfClassConstant
@@ -385,12 +379,12 @@ class TypeExpander
                 }
             }
 
-            return $return_type;
+            return [$return_type];
         }
 
         if ($return_type instanceof TIntMask) {
             if (!$evaluate_class_constants) {
-                return new TInt();
+                return [new TInt()];
             }
 
             $potential_ints = [];
@@ -409,12 +403,10 @@ class TypeExpander
                     $expand_templates
                 );
 
-                if (is_array($new_value_type)) {
-                    $new_value_type = reset($new_value_type);
-                }
+                $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return new TInt();
+                    return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
@@ -425,7 +417,7 @@ class TypeExpander
 
         if ($return_type instanceof TIntMaskOf) {
             if (!$evaluate_class_constants) {
-                return new TInt();
+                return [new TInt()];
             }
 
             $value_type = $return_type->value;
@@ -443,15 +435,11 @@ class TypeExpander
                 $expand_templates
             );
 
-            if (!is_array($new_value_types)) {
-                return new TInt();
-            }
-
             $potential_ints = [];
 
             foreach ($new_value_types as $new_value_type) {
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return new TInt();
+                    return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
@@ -578,7 +566,7 @@ class TypeExpander
             );
         }
 
-        return $return_type;
+        return [$return_type];
     }
 
     /**
@@ -678,7 +666,7 @@ class TypeExpander
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *
-     * @return Atomic|non-empty-list<Atomic>
+     * @return non-empty-list<Atomic>
      */
     private static function expandConditional(
         Codebase $codebase,
@@ -691,7 +679,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false
-    ) {
+    ): array {
         $new_as_type = self::expandUnion(
             $codebase,
             $return_type->as_type,
@@ -725,8 +713,8 @@ class TypeExpander
                         $expand_templates
                     );
 
-                    if (!is_array($candidate)) {
-                        $assertion = $candidate->getAssertionString();
+                    if (count($candidate) === 1) {
+                        $assertion = $candidate[0]->getAssertionString();
                     }
                 }
             }
@@ -734,7 +722,7 @@ class TypeExpander
             $if_conditional_return_types = [];
 
             foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
-                $candidate = self::expandAtomic(
+                $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,
                     $self_class,
@@ -747,8 +735,6 @@ class TypeExpander
                     $expand_templates
                 );
 
-                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
-
                 $if_conditional_return_types = array_merge(
                     $if_conditional_return_types,
                     $candidate_types
@@ -758,7 +744,7 @@ class TypeExpander
             $else_conditional_return_types = [];
 
             foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
-                $candidate = self::expandAtomic(
+                $candidate_types = self::expandAtomic(
                     $codebase,
                     $else_atomic_type,
                     $self_class,
@@ -770,8 +756,6 @@ class TypeExpander
                     $expand_generic,
                     $expand_templates
                 );
-
-                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
 
                 $else_conditional_return_types = array_merge(
                     $else_conditional_return_types,
@@ -892,6 +876,6 @@ class TypeExpander
             $expand_templates
         );
 
-        return $return_type;
+        return [$return_type];
     }
 }

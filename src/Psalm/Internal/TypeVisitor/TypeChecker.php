@@ -34,7 +34,6 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
-use function is_array;
 use function md5;
 use function strpos;
 use function strtolower;
@@ -324,7 +323,7 @@ class TypeChecker extends NodeVisitor
 
         $const_name = $atomic->const_name;
         if (strpos($const_name, '*') !== false) {
-            $expanded = TypeExpander::expandAtomic(
+            TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
                 $fq_classlike_name,
@@ -334,7 +333,7 @@ class TypeChecker extends NodeVisitor
                 true
             );
 
-            $is_defined = is_array($expanded) && count($expanded) > 0;
+            $is_defined = true;
         } else {
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
