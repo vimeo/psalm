@@ -105,7 +105,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreProjectDirectory(): void
@@ -129,7 +129,7 @@ class ConfigTest extends TestCase
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreMissingProjectDirectory(): void
@@ -152,8 +152,8 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('does/not/exist/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__.'/../../').'/does/not/exist/FileAnalyzer.php'));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreSymlinkedProjectDirectory(): void
@@ -199,7 +199,7 @@ class ConfigTest extends TestCase
 
         $this->assertTrue($config->isInProjectDirs(realpath('tests/AnnotationTest.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('tests/fixtures/symlinktest/a/ignoreme.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
 
         $regex = '/^unlink\([^\)]+\): (?:Permission denied|No such file or directory)$/';
         $last_error = error_get_last();
@@ -247,7 +247,7 @@ class ConfigTest extends TestCase
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreWildcardFiles(): void
@@ -272,7 +272,7 @@ class ConfigTest extends TestCase
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreWildcardFilesInWildcardFolder(): void
@@ -328,7 +328,6 @@ class ConfigTest extends TestCase
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
     }
 
     public function testIssueHandler(): void
@@ -352,7 +351,7 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
