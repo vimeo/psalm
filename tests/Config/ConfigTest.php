@@ -356,6 +356,34 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
+    public function testMultipleIssueHandlers(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType errorLevel="suppress" />
+                    </issueHandlers>
+                    <issueHandlers>
+                        <UndefinedClass errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('UndefinedClass', realpath(__FILE__)));
+    }
+
     public function testIssueHandlerWithCustomErrorLevels(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
