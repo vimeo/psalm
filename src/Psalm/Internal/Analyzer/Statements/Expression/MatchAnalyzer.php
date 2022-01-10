@@ -253,6 +253,7 @@ class MatchAnalyzer
                     $reconcilable_types,
                     [],
                     $context->vars_in_scope,
+                    $context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,

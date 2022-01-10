@@ -945,6 +945,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $assert_type_assertions,
                 $assert_type_assertions,
                 $context->vars_in_scope,
+                $context->references_in_scope,
                 $changed_var_ids,
                 array_map(
                     fn($_): bool => true,

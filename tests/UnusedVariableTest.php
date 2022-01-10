@@ -2470,7 +2470,7 @@ class UnusedVariableTest extends TestCase
                             if (++$i > 10) {
                                 break;
                             } else {}
-                        }  
+                        }
                     }',
             ],
             'referenceUseUsesReferencedVariable' => [
@@ -2512,6 +2512,29 @@ class UnusedVariableTest extends TestCase
                     foreach ([[1, 2], [3, 4]] as [&$a, $_]) {
                         $a += 1;
                     }
+                ',
+            ],
+            'arrayWithReferenceIsUsed' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> */
+                    $arr = [1];
+                    $arr[1] = &$arr[0];
+
+                    takesArray($arr);
+
+                    function takesArray(array $_arr): void {}
+                ',
+            ],
+            'arrayWithVariableOffsetAssignedToReferenceUsesVariableOffset' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> */
+                    $arr = [1];
+                    $int = 1;
+                    $arr[$int] = &$arr[0];
+
+                    takesArray($arr);
+
+                    function takesArray(array $_arr): void {}
                 ',
             ],
         ];

@@ -78,6 +78,7 @@ class ElseAnalyzer
                 $else_types,
                 [],
                 $else_context->vars_in_scope,
+                $else_context->references_in_scope,
                 $changed_var_ids,
                 [],
                 $statements_analyzer,

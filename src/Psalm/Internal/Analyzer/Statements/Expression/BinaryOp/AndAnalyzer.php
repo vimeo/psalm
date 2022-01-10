@@ -138,6 +138,7 @@ class AndAnalyzer
                 $left_type_assertions,
                 $active_left_assertions,
                 $context->vars_in_scope,
+                $context->references_in_scope,
                 $changed_var_ids,
                 $left_referenced_var_ids,
                 $statements_analyzer,

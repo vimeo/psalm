@@ -3241,6 +3241,27 @@ class ConditionalTest extends TestCase
                     ',
                 'error_message' => 'RedundantCondition',
             ],
+            'impossibleConditionWithReference' => [
+                'code' => '<?php
+                    /** @param mixed $foo */
+                    function foobar($foo): bool
+                    {
+                        $bar = &$foo;
+                        return is_string($foo) && $bar === true;
+                    }
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'redundantConditionWithReference' => [
+                'code' => '<?php
+                    function foobar(string $foo): bool
+                    {
+                        $bar = &$foo;
+                        return is_string($foo) && is_string($bar);
+                    }
+                ',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

@@ -286,6 +286,7 @@ class IfAnalyzer
             $if_scope->negated_types,
             [],
             $post_if_context->vars_in_scope,
+            $post_if_context->references_in_scope,
             $newly_reconciled_var_ids,
             [],
             $statements_analyzer,

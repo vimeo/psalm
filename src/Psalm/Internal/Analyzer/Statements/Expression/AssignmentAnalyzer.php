@@ -3,6 +3,9 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
@@ -947,7 +950,34 @@ class AssignmentAnalyzer
         );
 
         $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
+
         $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
+
+        if (($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
+            && $stmt->var->var instanceof Variable
+            && is_string($stmt->var->var->name)
+        ) {
+            // If left-hand-side is an array offset or object property, add an edge to the root
+            // variable, so if the root variable is used, the offset/property is also marked as used.
+            $root_var_id = "$" . $stmt->var->var->name;
+            foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $root_parent) {
+                $statements_analyzer->data_flow_graph->addPath(
+                    $lhs_node,
+                    $root_parent,
+                    $stmt->var instanceof ArrayDimFetch
+                        ? "offset-assignment-as-reference"
+                        : "property-assignment-as-reference"
+                );
+            }
+        }
+
+        if ($stmt->var instanceof ArrayDimFetch) {
+            // Analyze offset so that variables in the offset get marked as used
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_general_use = true;
+            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var->dim, $context);
+            $context->inside_general_use = $was_inside_general_use;
+        }
 
         return true;
     }

@@ -399,6 +399,7 @@ class NamedFunctionCallHandler
                     $assertions,
                     $assertions,
                     $context->vars_in_scope,
+                    $context->references_in_scope,
                     $changed_vars,
                     $referenced_var_ids,
                     $statements_analyzer,

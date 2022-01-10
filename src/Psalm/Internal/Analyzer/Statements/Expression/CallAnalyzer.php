@@ -885,6 +885,7 @@ class CallAnalyzer
                 $type_assertions,
                 $type_assertions,
                 $context->vars_in_scope,
+                $context->references_in_scope,
                 $changed_var_ids,
                 $asserted_keys,
                 $statements_analyzer,
