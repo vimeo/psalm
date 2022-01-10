@@ -1420,6 +1420,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this,
             $return_type,
             $fq_class_name,
+            $fq_class_name,
             $return_type_location,
             [],
             $did_explicitly_return,
