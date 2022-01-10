@@ -103,6 +103,11 @@ class LanguageServer extends Dispatcher
      */
     protected $onchange_paths_to_analyze = [];
 
+    /**
+     * @var array<string, list<IssueData>>
+     */
+    protected $current_issues = [];
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -365,6 +370,7 @@ class LanguageServer extends Dispatcher
     public function emitIssues(array $uris): void
     {
         $data = IssueBuffer::clear();
+        $this->current_issues = $data;
 
         foreach ($uris as $file_path => $uri) {
             $diagnostics = array_map(
@@ -559,5 +565,15 @@ class LanguageServer extends Dispatcher
         }
 
         return $filepath;
+    }
+
+    /**
+     * Get the value of current_issues
+     *
+     * @return array<string, list<IssueData>>
+     */
+    public function getCurrentIssues(): array
+    {
+        return $this->current_issues;
     }
 }
