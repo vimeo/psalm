@@ -188,7 +188,7 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="tests" />
                         <ignoreFiles>
-                            <directory name="tests/fixtures/symlinktest/ignored" />
+                            <directory name="tests/fixtures/symlinktest/ignored" resolveSymlinks="true" />
                         </ignoreFiles>
                     </projectFiles>
                 </psalm>'
