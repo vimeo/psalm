@@ -676,7 +676,7 @@ class AtomicPropertyFetchAnalyzer
              * If we have an explicit list of all allowed magic properties on the class, and we're
              * not in that list, fall through
              */
-            if (!$codebase->shouldSealAllProperties($class_storage) && !$override_property_visibility) {
+            if (!($class_storage->sealed_properties || $codebase->config->seal_all_properties) && !$override_property_visibility) {
                 return false;
             }
 
