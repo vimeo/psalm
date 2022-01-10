@@ -305,6 +305,16 @@ This defaults to `false`.
 
 When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to false.
 
+#### sealAllProperties
+
+```xml
+<psalm
+  sealAllProperties="[bool]"
+>
+```
+
+When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to false.
+
 #### runTaintAnalysis
 
 ```xml

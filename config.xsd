@@ -95,6 +95,7 @@
         <xs:attribute name="usePhpDocPropertiesWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="false" />
         <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
+        <xs:attribute name="sealAllProperties" type="xs:boolean" default="false" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
