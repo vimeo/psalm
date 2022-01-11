@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "getpsalm.psalm-vscode-plugin",
+        "obliviousharmony.vscode-php-codesniffer"
+    ]
+}
