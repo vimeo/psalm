@@ -15,7 +15,6 @@ use Amp\Promise;
 use Amp\Success;
 use Generator;
 use InvalidArgumentException;
-use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\DiagnosticSeverity;
@@ -30,6 +29,8 @@ use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\LanguageServerProtocol\ClientCapabilities;
+use Psalm\Internal\LanguageServer\LanguageServerProtocol\ClientInfo;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
 use Psalm\IssueBuffer;
@@ -38,6 +39,7 @@ use Throwable;
 use function Amp\asyncCoroutine;
 use function Amp\call;
 use function array_combine;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_shift;
@@ -203,23 +205,39 @@ class LanguageServer extends Dispatcher
      * The initialize request is sent as the first request from the client to the server.
      *
      * @param ClientCapabilities $capabilities The capabilities provided by the client (editor)
-     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
      * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
+     * @param ClientInfo|null $clientInfo Information about the client
+     * @param string|null $locale  The locale the client is currently showing the user interface
+     * in. This must not necessarily be the locale of the operating
+     * system.
+     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
+     * @param mixed $initializationOptions
+     * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
+     * @param array|null $workspaceFolders The workspace folders configured in the client when
+     * the server starts. This property is only available if the client supports workspace folders.
+     * It can be `null` if the client supports workspace folders but none are
+     * configured.
      * @psalm-return Promise<InitializeResult>
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function initialize(
         ClientCapabilities $capabilities,
+        ?int $processId = null,
+        ?ClientInfo $clientInfo = null,
+        ?string $locale = null,
         ?string $rootPath = null,
-        ?int $processId = null
+        $initializationOptions = null,
+        ?string $trace = null
+        //?array $workspaceFolders = null
     ): Promise {
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
+            function () use ($capabilities) {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');
+                $this->client->setCapabilities($capabilities);
 
                 // Eventually, this might block on something. Leave it as a generator.
                 /** @psalm-suppress TypeDoesNotContainType */
@@ -313,6 +331,7 @@ class LanguageServer extends Dispatcher
      */
     public function initialized(): void
     {
+        $this->client->refreshConfiguration();
         $this->clientStatus('running');
     }
 
@@ -427,7 +446,18 @@ class LanguageServer extends Dispatcher
 
                     return $diagnostic;
                 },
-                $data[$file_path] ?? []
+                array_filter(
+                    $data[$file_path] ?? [],
+                    function (IssueData $issue_data) {
+                        if ($issue_data->severity === Config::REPORT_INFO &&
+                            $this->client->getConfiguration()->hideWarnings()
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                )
             );
 
             $this->client->textDocument->publishDiagnostics($uri, $diagnostics);
