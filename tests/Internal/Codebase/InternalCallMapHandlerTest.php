@@ -8,7 +8,7 @@ use Psalm\Tests\TestCase;
 class InternalCallMapHandlerTest extends TestCase
 {
     /**
-     * @covers InternalCallMapHandler::getCallMap
+     * @covers \Psalm\Internal\Codebase\InternalCallMapHandler::getCallMap
      */
     public function testGetcallmapReturnsAValidCallmap(): void
     {
