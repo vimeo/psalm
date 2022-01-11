@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -25,6 +26,7 @@ use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\LiteralKeyUnshapedArray;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
@@ -83,6 +85,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -512,6 +515,15 @@ class ArrayFetchAnalyzer
             }
         }
 
+        if (!$in_assignment) {
+            self::validateArrayOffset(
+                $statements_analyzer,
+                $stmt,
+                $array_type,
+                $offset_type
+            );
+        }
+        
         if ($offset_type->isNullable() && !$context->inside_isset) {
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
@@ -863,6 +875,47 @@ class ArrayFetchAnalyzer
         return $array_access_type;
     }
 
+    public static function validateArrayOffset(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $stmt,
+        Type\Union $array_type,
+        Type\Union $offset_type
+    ): void {
+        $all_arrays_shaped = true;
+        $exact_keys = null;
+        foreach ($array_type->getAtomicTypes() as $t) {
+            if ($t instanceof TKeyedArray) {
+                $new = [];
+                foreach ($t->properties as $key => $type) {
+                    if (!$type->possibly_undefined) {
+                        $new[$key] = true;
+                    }
+                }
+                if ($exact_keys === null) {
+                    $exact_keys = $new;
+                } else {
+                    $exact_keys = array_intersect_key($exact_keys, $new);
+                }
+            } else {
+                $all_arrays_shaped = false;
+                $exact_keys = [];
+                break;
+            }
+        }
+        $literal_offsets = array_keys($offset_type->getLiteralStrings());
+        if ($literal_offsets && !$all_arrays_shaped) {
+            if (IssueBuffer::accepts(
+                new LiteralKeyUnshapedArray(
+                    'Literal offset ' . implode('|', $literal_offsets) . ' was used on unshaped array '.$array_type,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+    }
+    
     private static function checkLiteralIntArrayOffset(
         Union $offset_type,
         Union $expected_offset_type,

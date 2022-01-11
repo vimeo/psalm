@@ -130,6 +130,7 @@ These issues are treated as errors at level 2 and below.
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidStringClass](issues/InvalidStringClass.md)
+ - [LiteralKeyUnshapedArray](issues/LiteralKeyUnshapedArray.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
