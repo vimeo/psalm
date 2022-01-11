@@ -17,6 +17,8 @@ use RuntimeException;
 
 use function array_keys;
 use function array_search;
+use function array_shift;
+use function assert;
 use function count;
 use function in_array;
 use function is_int;
@@ -572,11 +574,31 @@ class Context
     }
 
     /**
-     * Remove a variable from the context which might be a reference to another variable.
-     * Leaves the variable as possibly-in-scope, unlike remove().
+     * Remove a variable from the context which might be a reference to another variable, or
+     * referenced by another variable. Leaves the variable as possibly-in-scope, unlike remove().
      */
     public function removePossibleReference(string $remove_var_id): void
     {
+        if (isset($this->referenced_counts[$remove_var_id]) && $this->referenced_counts[$remove_var_id] > 0) {
+            // If a referenced variable goes out of scope, we need to update the references.
+            // All of the references to this variable are still references to the same value,
+            // so we pick the first one and make the rest of the references point to it.
+            $references = [];
+            foreach ($this->references_in_scope as $reference => $referenced) {
+                if ($referenced === $remove_var_id) {
+                    $references[] = $reference;
+                    unset($this->references_in_scope[$reference]);
+                }
+            }
+            assert(!empty($references));
+            $first_reference = array_shift($references);
+            if (!empty($references)) {
+                $this->referenced_counts[$first_reference] = count($references);
+                foreach ($references as $reference) {
+                    $this->references_in_scope[$reference] = $first_reference;
+                }
+            }
+        }
         if (isset($this->references_in_scope[$remove_var_id])) {
             $reference_count = &$this->referenced_counts[$this->references_in_scope[$remove_var_id]];
             if ($reference_count < 1) {
@@ -587,6 +609,7 @@ class Context
         unset(
             $this->vars_in_scope[$remove_var_id],
             $this->referenced_var_ids[$remove_var_id],
+            $this->referenced_counts[$remove_var_id],
             $this->references_in_scope[$remove_var_id],
             $this->references_to_external_scope[$remove_var_id],
         );
