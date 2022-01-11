@@ -61,7 +61,7 @@ class TemplateStandinTypeReplacer
     public static function replace(
         Union $union_type,
         TemplateResult $template_result,
-        ?Codebase $codebase,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
         ?int $input_arg_offset = null,
@@ -90,6 +90,8 @@ class TemplateStandinTypeReplacer
 
             if (!$new_input_type->isUnionEmpty()) {
                 $input_type = $new_input_type;
+            } else {
+                return $union_type;
             }
         }
 
@@ -157,7 +159,7 @@ class TemplateStandinTypeReplacer
         Atomic $atomic_type,
         string $key,
         TemplateResult $template_result,
-        ?Codebase $codebase,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         ?Union $input_type,
         ?int $input_arg_offset,
@@ -316,7 +318,7 @@ class TemplateStandinTypeReplacer
 
         $matching_atomic_types = [];
 
-        if ($input_type && $codebase && !$input_type->hasMixed()) {
+        if ($input_type && !$input_type->hasMixed()) {
             $matching_atomic_types = self::findMatchingAtomicTypesForTemplate(
                 $atomic_type,
                 $key,
@@ -539,7 +541,7 @@ class TemplateStandinTypeReplacer
         ?string $calling_class,
         ?string $calling_function,
         TemplateResult $template_result,
-        ?Codebase $codebase,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         bool $replace,
         bool $add_lower_bound,
@@ -610,15 +612,13 @@ class TemplateStandinTypeReplacer
                     $atomic_types[] = clone $as_atomic_type;
                 }
             } else {
-                if ($codebase) {
-                    $replacement_type = TypeExpander::expandUnion(
-                        $codebase,
-                        $replacement_type,
-                        $calling_class,
-                        $calling_class,
-                        null
-                    );
-                }
+                $replacement_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $replacement_type,
+                    $calling_class,
+                    $calling_class,
+                    null
+                );
 
                 if ($depth < 10) {
                     $replacement_type = self::replace(
@@ -697,15 +697,13 @@ class TemplateStandinTypeReplacer
 
             $matching_input_keys = [];
 
-            if ($codebase) {
-                $atomic_type->as = TypeExpander::expandUnion(
-                    $codebase,
-                    $atomic_type->as,
-                    $calling_class,
-                    $calling_class,
-                    null
-                );
-            }
+            $atomic_type->as = TypeExpander::expandUnion(
+                $codebase,
+                $atomic_type->as,
+                $calling_class,
+                $calling_class,
+                null
+            );
 
             $atomic_type->as = self::replace(
                 $atomic_type->as,
@@ -726,7 +724,6 @@ class TemplateStandinTypeReplacer
                 && !$template_result->readonly
                 && (
                     $atomic_type->as->isMixed()
-                    || !$codebase
                     || UnionTypeComparator::canBeContainedBy(
                         $codebase,
                         $input_type,
@@ -820,15 +817,14 @@ class TemplateStandinTypeReplacer
         if ($add_lower_bound && $input_type && !$template_result->readonly) {
             $matching_input_keys = [];
 
-            if ($codebase
-                && UnionTypeComparator::canBeContainedBy(
-                    $codebase,
-                    $input_type,
-                    $replacement_type,
-                    false,
-                    false,
-                    $matching_input_keys
-                )
+            if (UnionTypeComparator::canBeContainedBy(
+                $codebase,
+                $input_type,
+                $replacement_type,
+                false,
+                false,
+                $matching_input_keys
+            )
             ) {
                 $generic_param = clone $input_type;
 
@@ -893,7 +889,7 @@ class TemplateStandinTypeReplacer
         ?string $calling_class,
         ?string $calling_function,
         TemplateResult $template_result,
-        ?Codebase $codebase,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
         bool $replace,
         bool $add_lower_bound,

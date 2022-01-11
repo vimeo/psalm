@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function array_map;
 use function array_values;
@@ -185,7 +184,7 @@ trait GenericTrait
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -205,7 +204,6 @@ trait GenericTrait
 
         if ($input_type instanceof TGenericObject
             && ($this instanceof TGenericObject || $this instanceof TIterable)
-            && $codebase
         ) {
             $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
@@ -229,10 +227,8 @@ trait GenericTrait
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
-                } elseif ($offset === 1) {
-                    $input_type_param = $input_type->getGenericValueType();
                 } else {
-                    throw new UnexpectedValueException('Not expecting offset of ' . $offset);
+                    $input_type_param = $input_type->getGenericValueType();
                 }
             } elseif ($input_type instanceof TNamedObject
                 && isset($input_object_type_params[$offset])
@@ -240,7 +236,6 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
-            /** @psalm-suppress PropertyTypeCoercion */
             $atomic->type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,

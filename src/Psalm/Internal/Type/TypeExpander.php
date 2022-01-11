@@ -448,6 +448,21 @@ class TypeExpander
             return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
+        if ($return_type instanceof TConditional) {
+            return self::expandConditional(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates
+            );
+        }
+
         if ($return_type instanceof TArray
             || $return_type instanceof TGenericObject
             || $return_type instanceof TIterable
@@ -549,21 +564,6 @@ class TypeExpander
                     $expand_templates
                 );
             }
-        }
-
-        if ($return_type instanceof TConditional) {
-            return self::expandConditional(
-                $codebase,
-                $return_type,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic,
-                $expand_templates
-            );
         }
 
         return [$return_type];

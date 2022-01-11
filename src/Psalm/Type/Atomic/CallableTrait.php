@@ -185,7 +185,7 @@ trait CallableTrait
 
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
