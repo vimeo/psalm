@@ -43,7 +43,7 @@ class LanguageClient
      *
      * @var ClientCapabilities|null
      */
-    private ?ClientCapabilities $capabilities = null;
+    private ClientCapabilities $capabilities;
 
     /**
      * The Client Configuration
