@@ -3,5 +3,6 @@
   "psalm.psalmScriptPath": "psalm-language-server",
   "phpCodeSniffer.executable": "vendor/bin/phpcs",
   "phpCodeSniffer.standard": "Custom",
-  "phpCodeSniffer.standardCustom": "phpcs.xml"
+  "phpCodeSniffer.standardCustom": "phpcs.xml",
+  "editor.rulers": [120]
 }
