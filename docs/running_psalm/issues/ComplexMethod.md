@@ -1,3 +1,3 @@
 # ComplexMethod
 
-Emitted when a method is too complicated for Psalm to analyze. Consider splitting it up to allow Psalm to analyze it.
+Emitted when a method is too complicated. Complicated methods should be split up.
