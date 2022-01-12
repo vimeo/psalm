@@ -6,6 +6,7 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
+use InvalidArgumentException;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -367,7 +368,7 @@ class TextDocument
 
         try {
             $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException | InvalidArgumentException $e) {
             error_log('codeAction errored on file ' . $file_path. ', Reason: '.$e->getMessage());
             return new Success(null);
         }
