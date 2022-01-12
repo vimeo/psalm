@@ -43,14 +43,14 @@ class LanguageClient
      *
      * @var ClientCapabilities|null
      */
-    private ClientCapabilities $capabilities;
+    private $capabilities;
 
     /**
      * The Client Configuration
      *
      * @var ClientConfiguration
      */
-    private ClientConfiguration $configuration;
+    private $configuration;
 
     public function __construct(ProtocolReader $reader, ProtocolWriter $writer)
     {
