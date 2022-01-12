@@ -18,26 +18,35 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_shift;
 use function count;
 use function dirname;
 use function explode;
+use function file;
 use function file_exists;
 use function file_get_contents;
 use function glob;
 use function implode;
 use function in_array;
+use function preg_match;
 use function preg_quote;
+use function scandir;
 use function sort;
 use function str_replace;
+use function strlen;
 use function strpos;
 use function substr;
 use function trim;
+use function usort;
 use function var_export;
 
 use const DIRECTORY_SEPARATOR;
+use const FILE_IGNORE_NEW_LINES;
+use const FILE_SKIP_EMPTY_LINES;
 use const LIBXML_NONET;
 
 class DocumentationTest extends TestCase
@@ -90,7 +99,7 @@ class DocumentationTest extends TestCase
      */
     private static function getCodeBlocksFromDocs(): array
     {
-        $issues_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
+        $issues_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
 
         if (!file_exists($issues_dir)) {
             throw new UnexpectedValueException('docs not found');
@@ -421,5 +430,53 @@ class DocumentationTest extends TestCase
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
             }
         };
+    }
+
+    /**
+     * Tests that issues.md contains the expected links to issue documentation.
+     * issues.md can be generated automatically with bin/generate_documentation_issues_list.php.
+     */
+    public function testIssuesIndex(): void
+    {
+        $docs_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "docs" . DIRECTORY_SEPARATOR . "running_psalm" . DIRECTORY_SEPARATOR;
+        $issues_index = "{$docs_dir}issues.md";
+        $issues_dir = "{$docs_dir}issues";
+
+        if (!file_exists($issues_dir)) {
+            throw new UnexpectedValueException("Issues documentation not found");
+        }
+
+        if (!file_exists($issues_index)) {
+            throw new UnexpectedValueException("Issues index not found");
+        }
+
+        $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
+        array_shift($issues_index_contents); // Remove title
+
+        $issues_index_list = array_map(function (string $issues_line) {
+            preg_match('/^ - \[([^\]]*)\]\(issues\/\1\.md\)$/', $issues_line, $matches);
+            $this->assertCount(2, $matches, "Invalid format in issues index: $issues_line");
+            return $matches[1];
+        }, $issues_index_contents);
+
+        $issue_files = array_filter(array_map(function (string $issue_file) {
+            if ($issue_file === "." || $issue_file === "..") {
+                return false;
+            }
+            $this->assertStringEndsWith(".md", $issue_file, "Invalid file in issues documentation: $issue_file");
+            return substr($issue_file, 0, strlen($issue_file) - 3);
+        }, scandir($issues_dir)));
+
+        $unlisted_issues = array_diff($issue_files, $issues_index_list);
+        $this->assertEmpty($unlisted_issues, "Issue documentation missing from issues.md: " . implode(", ", $unlisted_issues));
+
+        $missing_documentation = array_diff($issues_index_list, $issue_files);
+        $this->assertEmpty($missing_documentation, "issues.md has link to non-existent documentation for: " . implode(", ", $missing_documentation));
+
+        $sorted = $issues_index_list;
+        usort($sorted, "strcasecmp");
+        for ($i = 0; $i < count($sorted); ++$i) {
+            $this->assertEquals($sorted[$i], $issues_index_list[$i], "issues.md out of order, expected {$sorted[$i]} before {$issues_index_list[$i]}");
+        }
     }
 }
