@@ -99,7 +99,7 @@ class DocumentationTest extends TestCase
      */
     private static function getCodeBlocksFromDocs(): array
     {
-        $issues_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
+        $issues_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'running_psalm' . DIRECTORY_SEPARATOR . 'issues';
 
         if (!file_exists($issues_dir)) {
             throw new UnexpectedValueException('docs not found');
@@ -432,9 +432,13 @@ class DocumentationTest extends TestCase
         };
     }
 
+    /**
+     * Tests that issues.md contains the expected links to issue documentation.
+     * issues.md can be generated automatically with bin/generate_documentation_issues_list.php.
+     */
     public function testIssuesIndex(): void
     {
-        $docs_dir = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . "docs" . DIRECTORY_SEPARATOR . "running_psalm" . DIRECTORY_SEPARATOR;
+        $docs_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "docs" . DIRECTORY_SEPARATOR . "running_psalm" . DIRECTORY_SEPARATOR;
         $issues_index = "{$docs_dir}issues.md";
         $issues_dir = "{$docs_dir}issues";
 
@@ -445,8 +449,6 @@ class DocumentationTest extends TestCase
         if (!file_exists($issues_index)) {
             throw new UnexpectedValueException("Issues index not found");
         }
-
-        $issue_files = scandir($issues_dir);
 
         $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
         array_shift($issues_index_contents); // Remove title
@@ -463,7 +465,7 @@ class DocumentationTest extends TestCase
             }
             $this->assertStringEndsWith(".md", $issue_file, "Invalid file in issues documentation: $issue_file");
             return substr($issue_file, 0, strlen($issue_file) - 3);
-        }, $issue_files));
+        }, scandir($issues_dir)));
 
         $unlisted_issues = array_diff($issue_files, $issues_index_list);
         $this->assertEmpty($unlisted_issues, "Issue documentation missing from issues.md: " . implode(", ", $unlisted_issues));
