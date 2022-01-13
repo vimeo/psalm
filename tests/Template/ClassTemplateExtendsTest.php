@@ -3482,7 +3482,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'implementInterfaceWithMethodOwnTemplateParams' => [
@@ -3525,7 +3525,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'staticShouldBeBoundInCall' => [
@@ -3798,7 +3798,7 @@ class ClassTemplateExtendsTest extends TestCase
                         public function zip(): C2;
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'extendsWithArrayDifferentObject' => [
@@ -3835,7 +3835,7 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     interface D2 extends D1 {}',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'allowNestedInterfaceDefinitions' => [
@@ -4212,7 +4212,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'inheritInterfacesManyTimes' => [
@@ -4404,7 +4404,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'extendTemplatedClassString' => [
@@ -4550,7 +4550,7 @@ class ClassTemplateExtendsTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

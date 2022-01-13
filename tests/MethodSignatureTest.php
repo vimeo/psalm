@@ -740,7 +740,7 @@ class MethodSignatureTest extends TestCase
                         use FooTrait;
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'allowOverridingThrowable' => [
@@ -778,7 +778,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.1'
             ],
             'consistentConstructor' => [
@@ -809,7 +809,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'suppressDocblockFinal' => [
@@ -850,7 +850,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'extendStaticReturnTypeInFinal' => [
@@ -884,7 +884,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'notExtendedStaticReturntypeInFinal' => [
@@ -941,7 +941,7 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1487,8 +1487,7 @@ class MethodSignatureTest extends TestCase
                         use FooTrait;
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.3'
             ],
             'inconsistentConstructorExplicitParentConstructorArgCount' => [

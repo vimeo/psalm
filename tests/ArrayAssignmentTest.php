@@ -1249,7 +1249,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$x===' => 'array{a: 1, b: 2}',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'listPropertyAssignmentAfterIsset' => [
@@ -1661,7 +1661,7 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'unpackTypedTraversableWithStringKeysIntoArray' => [
@@ -1676,7 +1676,7 @@ class ArrayAssignmentTest extends TestCase
                         return [...$data];
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'unpackArrayWithArrayKeyIntoArray' => [
@@ -1691,7 +1691,7 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'unpackArrayWithTwoTypesNotObjectLike' => [
@@ -1713,7 +1713,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$_a' => 'non-empty-list<int>',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'nullableDestructuring' => [
@@ -1732,14 +1732,14 @@ class ArrayAssignmentTest extends TestCase
                     '$_foo' => 'null|string',
                     '$_bar' => 'null|string',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

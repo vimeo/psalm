@@ -262,7 +262,7 @@ class ArgTest extends TestCase
                     $args = ["name" => "hello", "age" => 5];
                     takesArguments(...$args);',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'useNamedVariadicArguments' => [
@@ -271,7 +271,7 @@ class ArgTest extends TestCase
 
                     takesArguments(age: 5);',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'useUnpackedNamedVariadicArguments' => [
@@ -280,7 +280,7 @@ class ArgTest extends TestCase
 
                     takesArguments(...["age" => 5]);',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'variadicArgsOptional' => [
@@ -292,7 +292,7 @@ class ArgTest extends TestCase
                 'code' => '<?php declare(strict_types=1);
                     mkdir("/var/test/123", recursive: true);',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'variadicArgumentWithNoNamedArgumentsIsList' => [
@@ -313,7 +313,7 @@ class ArgTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -437,8 +437,7 @@ class ArgTest extends TestCase
                         return new CustomerData(...$input);
                     }',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'noNamedArgsMethod' => [
@@ -490,8 +489,7 @@ class ArgTest extends TestCase
                         return new User(...$data);
                     }',
                 'error_message' => 'MixedArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
@@ -512,8 +510,7 @@ class ArgTest extends TestCase
                         return new User(...$data);
                     }',
                 'error_message' => 'TooFewArguments',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'wrongTypeVariadicArguments' => [
@@ -522,8 +519,7 @@ class ArgTest extends TestCase
 
                     takesArguments(age: "abc");',
                 'error_message' => 'InvalidScalarArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'byrefVarSetsPossible' => [
@@ -551,8 +547,7 @@ class ArgTest extends TestCase
 
                     test(param: 1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'overwriteOrderedNamedParam' => [
@@ -563,8 +558,7 @@ class ArgTest extends TestCase
 
                     test(1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'overwriteOrderedWithUnpackedNamedParam' => [
@@ -575,8 +569,7 @@ class ArgTest extends TestCase
 
                     test(1, ...["param" => 2]);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'variadicArgumentIsNotList' => [
@@ -620,8 +613,7 @@ class ArgTest extends TestCase
                     foo(arg2: 0, arg1: 1);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'noNamedArgumentsUnpackIterable' => [
@@ -637,8 +629,7 @@ class ArgTest extends TestCase
                     foo(...$test);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'variadicArgumentWithNoNamedArgumentsPreventsPassingArrayWithStringKey' => [

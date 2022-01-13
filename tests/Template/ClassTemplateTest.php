@@ -2903,7 +2903,7 @@ class ClassTemplateTest extends TestCase
                         if (is_int($ret)) {}
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'templateWithLateResolvedType' => [
@@ -3584,7 +3584,7 @@ class ClassTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -4156,8 +4156,7 @@ class ClassTemplateTest extends TestCase
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
                 'error_message' => 'InvalidScalarArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'bindClosureParamAccurately' => [

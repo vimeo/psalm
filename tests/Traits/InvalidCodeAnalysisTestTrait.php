@@ -21,7 +21,7 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
@@ -35,7 +35,6 @@ trait InvalidCodeAnalysisTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        bool $strict_mode = false,
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
@@ -49,10 +48,6 @@ trait InvalidCodeAnalysisTestTrait
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $code = str_replace("\n", "\r\n", $code);
-        }
-
-        if ($strict_mode) {
-            Config::getInstance()->strict_binary_operands = true;
         }
 
         foreach ($error_levels as $error_level_key => $error_level) {

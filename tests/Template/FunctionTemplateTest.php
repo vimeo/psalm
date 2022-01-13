@@ -1324,7 +1324,7 @@ class FunctionTemplateTest extends TestCase
                         $a = partial($fn, $arg);
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'mixedDoesntSwallowNull' => [
@@ -1484,7 +1484,7 @@ class FunctionTemplateTest extends TestCase
                         return notNull($s);
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'templateChildClass' => [
@@ -1607,7 +1607,7 @@ class FunctionTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -171,7 +171,7 @@ class InArrayTest extends TestCase
                         throw new Exception();
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'in_arrayNullOrString' => [
@@ -185,7 +185,7 @@ class InArrayTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'in_array-mixed-twice' => [
@@ -197,7 +197,7 @@ class InArrayTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'in_array-string-twice' => [
@@ -213,7 +213,7 @@ class InArrayTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'in_array-keyed-array-string-twice' => [
@@ -225,14 +225,14 @@ class InArrayTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

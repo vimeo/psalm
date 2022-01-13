@@ -1197,7 +1197,7 @@ class ConstantTest extends TestCase
                 'assertions' => [
                     '$c===' => 'enum(E::Z)'
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'classConstWithParamOut' => [
@@ -1234,7 +1234,7 @@ class ConstantTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1497,8 +1497,7 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateConstant',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'enumCaseDuplicatesConstant' => [
@@ -1509,8 +1508,7 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateConstant',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];

@@ -31,7 +31,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'defaultAboveCase' => [
@@ -44,7 +44,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'allMatchedNoRedundantCondition' => [
@@ -57,7 +57,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'getClassWithMethod' => [
@@ -79,14 +79,14 @@ class MatchTest extends TestCase
                         };
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -103,8 +103,7 @@ class MatchTest extends TestCase
                         A::class => $a->barBar(),
                     };',
                 'error_message' => 'UndefinedMethod',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'getClassMissingClass' => [
@@ -118,8 +117,7 @@ class MatchTest extends TestCase
                         C::class => 5,
                     };',
                 'error_message' => 'UndefinedClass',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'allMatchedDefaultImpossible' => [
@@ -133,8 +131,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'allMatchedAnotherImpossible' => [
@@ -148,8 +145,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'notAllEnumsMet' => [
@@ -163,8 +159,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'notAllConstEnumsMet' => [
@@ -185,8 +180,7 @@ class MatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'paradoxWithDuplicateValue' => [
@@ -198,8 +192,7 @@ class MatchTest extends TestCase
                         };
                     };',
                 'error_message' => 'ParadoxicalCondition',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'noCrashWithEmptyMatch' => [
@@ -210,8 +203,7 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'exitIsLikeThrow' => [
@@ -227,8 +219,7 @@ class MatchTest extends TestCase
                         $a === "aaa";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'matchTrueImpossible' => [
@@ -239,8 +230,7 @@ class MatchTest extends TestCase
                         $foo instanceof \Exception => 1,
                     };',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
         ];

@@ -816,7 +816,7 @@ class ValueTest extends TestCase
                         return "";
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'returnFromUnionLiteralNegated' => [
@@ -836,7 +836,7 @@ class ValueTest extends TestCase
                         return $file;
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'inArrayInsideLoop' => [
@@ -869,7 +869,7 @@ class ValueTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'zeroIsNonEmptyString' => [

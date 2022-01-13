@@ -1095,7 +1095,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'narrowedTypeAfterIdenticalCheckWithOtherType' => [
@@ -1163,7 +1163,7 @@ class TypeAlgebraTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1416,8 +1416,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'NullReference',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];

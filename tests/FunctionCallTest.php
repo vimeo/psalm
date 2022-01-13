@@ -937,7 +937,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$h' => 'resource',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.1',
             ],
             'hashInit71' => [
@@ -946,7 +946,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$h' => 'resource',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.1',
             ],
             'hashInit72' => [
@@ -955,7 +955,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$h' => 'HashContext|false',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.2',
             ],
             'hashInit73' => [
@@ -964,7 +964,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$h' => 'HashContext|false',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.3',
             ],
             'hashInit80' => [
@@ -973,7 +973,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$h' => 'HashContext',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'nullableByRef' => [
@@ -1573,7 +1573,7 @@ class FunctionCallTest extends TestCase
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'pregSplit' => [
@@ -1614,7 +1614,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'getTypeDoubleThenInt' => [
@@ -1630,7 +1630,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'maxWithFloats' => [
@@ -1692,7 +1692,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$s' => 'list<mixed>',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'array_is_list_on_empty_array' => [
@@ -1703,7 +1703,7 @@ class FunctionCallTest extends TestCase
                     }
                     ',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'possiblyUndefinedArrayDestructurationOnOptionalArg' => [
@@ -1756,7 +1756,7 @@ class FunctionCallTest extends TestCase
                     '$a===' => 'lowercase-string',
                     '$b===' => 'lowercase-string',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'count_charsProducesArrayOrString' => [
@@ -1774,7 +1774,7 @@ class FunctionCallTest extends TestCase
                     '$d===' => 'string',
                     '$e===' => 'string',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'number_formatNamedArgument' => [
@@ -1782,14 +1782,14 @@ class FunctionCallTest extends TestCase
                     echo number_format(10.363, 1, thousands_separator: " ");
                 ',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -2281,8 +2281,7 @@ class FunctionCallTest extends TestCase
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
                 'error_message' => 'RedundantCondition',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'maxCallWithArray' => [

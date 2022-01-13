@@ -2328,7 +2328,7 @@ class PropertyTypeTest extends TestCase
                         return $name;
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'dynamicPropertyFetch' => [
@@ -2352,7 +2352,7 @@ class PropertyTypeTest extends TestCase
                         return $bar?->a ?? "default";
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'possiblyNullOnFunctionCallCoalesced' => [
@@ -2468,14 +2468,14 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

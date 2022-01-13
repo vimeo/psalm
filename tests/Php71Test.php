@@ -273,7 +273,7 @@ class Php71Test extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -337,8 +337,7 @@ class Php71Test extends TestCase
 
                     }',
                 'error_message' => 'ReservedWord',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.0',
             ],
             'objectDoesntWorkIn71' => [
@@ -347,8 +346,7 @@ class Php71Test extends TestCase
                         return new stdClass();
                     }',
                 'error_message' => 'ReservedWord',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.0',
             ],
             'arrayDestructuringInvalidList' => [

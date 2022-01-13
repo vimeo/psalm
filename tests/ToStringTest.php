@@ -170,7 +170,7 @@ class ToStringTest extends TestCase
 
                     takesFoo(new FooImplementer());',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'implicitStringable' => [
@@ -185,7 +185,7 @@ class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'toStringNever' => [
@@ -211,7 +211,7 @@ class ToStringTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -251,8 +251,7 @@ class ToStringTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidToString',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'implicitCastWithStrictTypes' => [
@@ -321,20 +320,6 @@ class ToStringTest extends TestCase
                         takesString($i);
                     }',
                 'error_message' => 'ImplicitToStringCast',
-            ],
-            'implicitConcatenation' => [
-                'code' => '<?php
-                    interface I {
-                        public function __toString();
-                    }
-
-                    function takesI(I $i): void
-                    {
-                        $a = $i . "hello";
-                    }',
-                'error_message' => 'ImplicitToStringCast',
-                [],
-                true,
             ],
             'resourceCannotBeCoercedToString' => [
                 'code' => '<?php
@@ -427,8 +412,7 @@ class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'error_message' => 'InvalidArgument',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
             'implicitCastInArray' => [

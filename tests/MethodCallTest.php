@@ -813,7 +813,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'pdoQueryTwoArgs' => [
@@ -1001,14 +1001,14 @@ class MethodCallTest extends TestCase
                     }
                     fooOrNull()?->getBar()->doBaz();',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1533,8 +1533,7 @@ class MethodCallTest extends TestCase
                     $a = fooOrNull()?->getBar();
                     $a->doBaz();',
                 'error_message' => 'PossiblyNullReference',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];

@@ -201,6 +201,64 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testDifferingNumericTypesAdditionInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 5 + 4.1;'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithNumberInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = "hi" . 5;'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testImplicitStringConcatenation(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        public function __toString();
+                    }
+
+                    function takesI(I $i): void
+                    {
+                        $a = $i . "hello";
+                    }'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImplicitToStringCast');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
@@ -790,7 +848,7 @@ class BinaryOperationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -800,19 +858,10 @@ class BinaryOperationTest extends TestCase
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
             ],
-            'differingNumericTypesAdditionInStrictMode' => [
+            'addArrayToNumber' => [
                 'code' => '<?php
-                    $a = 5 + 4.1;',
+                    $a = [1] + 1;',
                 'error_message' => 'InvalidOperand',
-                'ignored_issues' => [],
-                'strict_mode' => true,
-            ],
-            'concatenationWithNumberInStrictMode' => [
-                'code' => '<?php
-                    $a = "hi" . 5;',
-                'error_message' => 'InvalidOperand',
-                'ignored_issues' => [],
-                'strict_mode' => true,
             ],
             'concatenateNegativeIntRightSideIsNotNumeric' => [
                 'code' => '<?php
@@ -828,13 +877,6 @@ class BinaryOperationTest extends TestCase
                     foo(foo("123") . foo("-456"));
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
-            ],
-            'addArrayToNumber' => [
-                'code' => '<?php
-                    $a = [1] + 1;',
-                'error_message' => 'InvalidOperand',
-                'ignored_issues' => [],
-                'strict_mode' => true,
             ],
             'additionWithClassInWeakMode' => [
                 'code' => '<?php

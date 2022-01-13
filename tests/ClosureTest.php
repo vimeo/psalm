@@ -528,7 +528,7 @@ class ClosureTest extends TestCase
                     function returnsBool() { return true; }
                     $a = fn() : bool => /** @var bool */ returnsBool();',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'rememberParentAssertions' => [
@@ -574,7 +574,7 @@ class ClosureTest extends TestCase
                     '$closure' => 'pure-Closure(mixed):bool',
                     '$result' => 'bool',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:NamedFunction:strlen' => [
@@ -586,7 +586,7 @@ class ClosureTest extends TestCase
                     '$closure' => 'pure-Closure(string):(0|positive-int)',
                     '$result' => 'int|positive-int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -606,7 +606,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:InstanceMethod:BuiltIn' => [
@@ -618,7 +618,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$count' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:StaticMethod' => [
@@ -634,7 +634,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:InvokableObject' => [
@@ -651,7 +651,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:FromClosure' => [
@@ -662,7 +662,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$closure' => 'pure-Closure(string):(0|positive-int)',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:MagicInstanceMethod' => [
@@ -688,7 +688,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:MagicStaticMethod' => [
@@ -710,7 +710,7 @@ class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:WithArrayMap' => [
@@ -726,20 +726,20 @@ class ClosureTest extends TestCase
                     '$result2' => 'array{string, string, string}',
                     '$result3' => 'array{int, int, int}',
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:array_map' => [
                 'code' => '<?php call_user_func(array_map(...), intval(...), ["1"]);',
                 'assertions' => [],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1070,8 +1070,7 @@ class ClosureTest extends TestCase
                         return fn (int $i) => "";
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
             'detectImplicitVoidReturn' => [
@@ -1095,8 +1094,7 @@ class ClosureTest extends TestCase
                     fn(): string => "$a";
                 ',
                 'error_message' => 'UndefinedVariable',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'undefinedVariableInStringCast' => [
@@ -1104,8 +1102,7 @@ class ClosureTest extends TestCase
                     fn(): string => (string) $a;
                 ',
                 'error_message' => 'UndefinedVariable',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'forbidTemplateAnnotationOnClosure' => [
@@ -1121,8 +1118,7 @@ class ClosureTest extends TestCase
                     fn(): bool => false;
                 ',
                 'error_message' => 'InvalidDocblock',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'closureInvalidArg' => [
@@ -1140,8 +1136,7 @@ class ClosureTest extends TestCase
                     $count = $closure();
                 ',
                 'error_message' => 'UndefinedMethod',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:UndefinedMagicInstanceMethod' => [
@@ -1158,8 +1153,7 @@ class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'UndefinedMagicMethod',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:UndefinedMagicStaticMethod' => [
@@ -1175,8 +1169,7 @@ class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'MixedAssignment',
-                [],
-                false,
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];

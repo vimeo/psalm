@@ -885,7 +885,7 @@ class ConditionalReturnTypeTest extends TestCase
                     '$something' => 'int',
                     '$somethingElse' => 'string'
                 ],
-                [],
+                'ignored_issues' => [],
                 'php_version' => '7.2'
             ]
         ];
