@@ -3,11 +3,15 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
+use PDOException;
 
-class ExceptionCodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface
+use function is_a;
+
+class ExceptionCodeReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
-    public static function getClassLikeNames() : array
+    public static function getClassLikeNames(): array
     {
         return ['Throwable'];
     }
@@ -25,7 +29,7 @@ class ExceptionCodeReturnTypeProvider implements \Psalm\Plugin\EventHandler\Meth
             return null;
         }
 
-        if (is_a($fqcn, \PDOException::class, true)) {
+        if (is_a($fqcn, PDOException::class, true)) {
             return Type::parseString('string');
         }
 

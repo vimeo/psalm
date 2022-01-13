@@ -3,7 +3,6 @@
 namespace Psalm\Tests\ReturnTypeProvider;
 
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class ExceptionCodeTest extends TestCase
@@ -14,7 +13,7 @@ class ExceptionCodeTest extends TestCase
     {
         yield 'RuntimeException' => [
             '<?php
-                function f(\RuntimeException $e) {
+                function f(\RuntimeException $e): int {
                     $code = $e->getCode();
                     return $code;
                 }
@@ -23,7 +22,7 @@ class ExceptionCodeTest extends TestCase
         ];
         yield 'LogicException' => [
             '<?php
-                function f(\LogicException $e) {
+                function f(\LogicException $e): int {
                     $code = $e->getCode();
                     return $code;
                 }
@@ -32,7 +31,7 @@ class ExceptionCodeTest extends TestCase
         ];
         yield 'PDOException' => [
             '<?php
-                function f(\PDOException $e) {
+                function f(\PDOException $e): string {
                     $code = $e->getCode();
                     return $code;
                 }
@@ -41,6 +40,7 @@ class ExceptionCodeTest extends TestCase
         ];
         yield 'Exception' => [
             '<?php
+                /** @return int|string */
                 function f(\Exception $e) {
                     $code = $e->getCode();
                     return $code;
@@ -50,6 +50,7 @@ class ExceptionCodeTest extends TestCase
         ];
         yield 'Throwable' => [
             '<?php
+                /** @return int|string */
                 function f(\Throwable $e) {
                     $code = $e->getCode();
                     return $code;
