@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
+use Exception;
+use PDOException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -27,6 +29,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -89,6 +92,16 @@ class MethodCallReturnTypeFetcher
 
             if ($return_type_candidate) {
                 return $return_type_candidate;
+            }
+        }
+
+        if ($premixin_method_id->method_name === 'getcode'
+            && $premixin_method_id->fq_class_name !== Exception::class
+            && in_array(Throwable::class, $class_storage->class_implements)) {
+            if ($premixin_method_id->fq_class_name === PDOException::class) {
+                return Type::getString();
+            } else {
+                return Type::getInt();
             }
         }
 
