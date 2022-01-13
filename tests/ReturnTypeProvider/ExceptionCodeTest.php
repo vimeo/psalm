@@ -14,47 +14,38 @@ class ExceptionCodeTest extends TestCase
         yield 'RuntimeException' => [
             '<?php
                 function f(\RuntimeException $e): int {
-                    $code = $e->getCode();
-                    return $code;
+                    return $e->getCode();
                 }
             ',
-            ['$code' => 'int'],
+            [],
         ];
         yield 'LogicException' => [
             '<?php
                 function f(\LogicException $e): int {
-                    $code = $e->getCode();
-                    return $code;
+                    return $e->getCode();
                 }
             ',
-            ['$code' => 'int'],
+            [],
         ];
         yield 'PDOException' => [
             '<?php
                 function f(\PDOException $e): string {
-                    $code = $e->getCode();
-                    return $code;
+                    return $e->getCode();
                 }
             ',
-            ['$code' => 'string'],
+            [],
         ];
         yield 'Exception' => [
             '<?php
-                /** @return int|string */
-                function f(\Exception $e) {
-                    $code = $e->getCode();
-                    return $code;
-                }
+                /** @var \Throwable $e */
+                $code = $e->getCode();
             ',
             ['$code' => 'int|string'],
         ];
         yield 'Throwable' => [
             '<?php
-                /** @return int|string */
-                function f(\Throwable $e) {
-                    $code = $e->getCode();
-                    return $code;
-                }
+                /** @var \Exception $e */
+                $code = $e->getCode();
             ',
             ['$code' => 'int|string'],
         ];
