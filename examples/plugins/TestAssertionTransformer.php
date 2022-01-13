@@ -46,49 +46,11 @@ class TestAssertionTransformer implements AfterExpressionAnalysisInterface
                 }
             }
 
-            if ($code_block && $assertion_array) {
-                $new_calls = [];
-
-                if ($assertion_array->value instanceof PhpParser\Node\Expr\Array_) {
-                    foreach ($assertion_array->value->items as $assertion_item) {
-                        if (!$assertion_item) {
-                            continue;
-                        }
-
-                        if ($assertion_item->key instanceof PhpParser\Node\Scalar\String_
-                            && $assertion_item->value instanceof PhpParser\Node\Scalar\String_
-                        ) {
-                            $key = $assertion_item->key->value;
-
-                            if (substr($key, -3) === '===') {
-                                $function_name = 'assert_exact';
-                                $key = substr($key, 0, -3);
-                            } else {
-                                $function_name = 'assert';
-                            }
-                            
-                            $new_calls[] = '\\Psalm\\' . $function_name . '("' . $key
-                                . '", "' . $assertion_item->value->value . '");';
-                        }
-                    }
-                }
-
-                if (!$new_calls) {
-                    return null;
-                }
-
-
+            if ($code_block) {
                 $file_replacements[] = new FileManipulation(
-                    $code_block->getAttribute('endFilePos'),
-                    $code_block->getAttribute('endFilePos'),
-                    "\n\n                    "
-                        . implode("\n                    ", $new_calls)
-                );
-                
-                $file_replacements[] = new FileManipulation(
-                    $assertion_array->getAttribute('startFilePos'),
-                    $assertion_array->getAttribute('endFilePos'),
-                    ''
+                    $code_block->getAttribute('startFilePos'),
+                    $code_block->getAttribute('startFilePos'),
+                    '\'code\' => '
                 );
 
                 $event->setFileReplacements($file_replacements);
