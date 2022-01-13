@@ -838,18 +838,22 @@ class TemplateStandinTypeReplacer
                     }
                 }
 
-                if (isset($template_result->upper_bounds[$param_name_key][$atomic_type->defining_class])) {
+                $upper_bound = $template_result->upper_bounds
+                    [$param_name_key]
+                    [$atomic_type->defining_class] ?? null;
+
+                if ($upper_bound) {
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type,
+                        $upper_bound->type,
                         $generic_param
                     ) || !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $generic_param,
-                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
+                        $upper_bound->type
                     )) {
                         $intersection_type = Type::intersectUnionTypes(
-                            $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type,
+                            $upper_bound->type,
                             $generic_param,
                             $codebase
                         );
@@ -858,15 +862,12 @@ class TemplateStandinTypeReplacer
                     }
 
                     if ($intersection_type) {
-                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
-                            = $intersection_type;
+                        $upper_bound->type = $intersection_type;
                     } else {
-                        $template_result->upper_bounds_unintersectable_types[]
-                            = $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type;
+                        $template_result->upper_bounds_unintersectable_types[] = $upper_bound->type;
                         $template_result->upper_bounds_unintersectable_types[] = $generic_param;
 
-                        $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class]->type
-                            = Type::getMixed();
+                        $upper_bound->type = Type::getMixed();
                     }
                 } else {
                     $template_result->upper_bounds[$param_name_key][$atomic_type->defining_class] = new TemplateBound(
