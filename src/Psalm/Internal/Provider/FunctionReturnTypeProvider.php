@@ -23,6 +23,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayValuesReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ExceptionCodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ExplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
@@ -109,6 +110,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(TriggerErrorReturnTypeProvider::class);
         $this->registerClass(RandReturnTypeProvider::class);
         $this->registerClass(InArrayReturnTypeProvider::class);
+        $this->registerClass(ExceptionCodeReturnTypeProvider::class);
     }
 
     /**
