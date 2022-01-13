@@ -3580,6 +3580,46 @@ class ClassTemplateTest extends TestCase
                         foo($a, $b);
                     }'
             ],
+            'templateOnDocblockMethod' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @method T get()
+                     * @method void set(T $value)
+                     */
+                    class Container
+                    {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    class A {}
+                    function foo(A $a): void {}
+
+                    /** @var Container<A> $container */
+                    $container = new Container();
+                    $container->set(new A());
+                    foo($container->get());
+                '
+            ],
+            'templateOnDocblockMethodOnInterface' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @method T get()
+                     * @method void set(T $value)
+                     */
+                    interface Container
+                    {
+                    }
+
+                    class A {}
+                    function foo(A $a): void {}
+
+                    /** @var Container<A> $container */
+                    $container->set(new A());
+                    foo($container->get());
+                '
+            ],
         ];
     }
 
@@ -4338,6 +4378,26 @@ class ClassTemplateTest extends TestCase
                     function foo(Collection $c, object $d): void {
                         $c->add($d);
                     }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'invalidTemplateArgumentOnDocblockMethod' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @method void set(T $value)
+                     */
+                    class Container
+                    {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    class A {}
+                    class B {}
+
+                    /** @var Container<A> $container */
+                    $container = new Container();
+                    $container->set(new B());
+                ',
                 'error_message' => 'InvalidArgument',
             ],
         ];
