@@ -110,9 +110,9 @@ class TryCatchTest extends TestCase
 
                     if (!$foo) {}',
                 'assertions' => [],
-                'error_message' => [
-                    'UndefinedGlobalVariable' => Config::REPORT_INFO,
-                    'MixedMethodCall' => Config::REPORT_INFO,
+                'ignored_issues' => [
+                    'UndefinedGlobalVariable',
+                    'MixedMethodCall',
                 ],
             ],
             'issetAfterTryCatchWithoutAssignmentInCatch' => [
