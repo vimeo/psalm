@@ -5,9 +5,6 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
-use PDOException;
-
-use function is_a;
 
 class ExceptionCodeReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
@@ -29,7 +26,7 @@ class ExceptionCodeReturnTypeProvider implements MethodReturnTypeProviderInterfa
             return null;
         }
 
-        if (is_a($fqcn, PDOException::class, true)) {
+        if ($fqcn === 'PDOException') {
             return Type::parseString('string');
         }
 
