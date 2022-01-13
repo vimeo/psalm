@@ -311,13 +311,13 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'privateArgs' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private function foo(): void {}
                     }
@@ -326,7 +326,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'nullableSubclassParam' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(string $s): ?string {
                             return rand(0, 1) ? $s : null;
@@ -342,7 +342,7 @@ class MethodSignatureTest extends TestCase
                     echo (new B)->foo(null);',
             ],
             'nullableSubclassParamWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(string $s): string {
                             return $s;
@@ -358,7 +358,7 @@ class MethodSignatureTest extends TestCase
                     echo (new B)->foo();',
             ],
             'allowSubclassesForNonInheritedMethodParams' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                       public function bar(): void {}
@@ -373,7 +373,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'allowNoReturnInSubclassWithNullableReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return ?int */
                         public function foo() {
@@ -386,7 +386,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'selfReturnShouldBeParent' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return self */
                         public function foo() {
@@ -401,7 +401,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'staticReturnShouldBeStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return static */
                         public static function foo() {
@@ -423,7 +423,7 @@ class MethodSignatureTest extends TestCase
                 ],
             ],
             'allowSomeCovariance' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                         public function test(string $s) : ?string;
                         public function testIterable(array $a) : ?iterable;
@@ -439,7 +439,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'allowVoidToNullConversion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return ?string */
                         public function foo() {
@@ -468,7 +468,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'allowNoChildClassPropertyWhenMixed' => [
-                '<?php
+                'code' => '<?php
                     class A implements Serializable {
                         /** @var int */
                         private $id = 1;
@@ -490,7 +490,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'clashWithCallMapClass' => [
-                '<?php
+                'code' => '<?php
                     class HaruDestination {}
                     class AClass
                     {
@@ -501,7 +501,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'classWithTraitExtendsNonAbstractWithMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -515,7 +515,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'inheritsSplClasses' => [
-                '<?php
+                'code' => '<?php
                     namespace App;
 
                     use SplObserver;
@@ -544,7 +544,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'noMixedIssueWhenInheritParamTypes' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /**
                        * @param string $bar
@@ -562,7 +562,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'inheritDocumentedSelf' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @param self $f
@@ -577,7 +577,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'allowInterfaceImplementation' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @return static */
                         public function foo() {
@@ -593,7 +593,7 @@ class MethodSignatureTest extends TestCase
                     class C extends A implements I {}',
             ],
             'enforceParameterInheritanceWithInheritDocAndParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -624,7 +624,7 @@ class MethodSignatureTest extends TestCase
                     (new Z())->boo(new A());',
             ],
             'allowMixedExtensionOfIteratorAggregate' => [
-                '<?php
+                'code' => '<?php
                     class C implements IteratorAggregate {
                         public function getIterator(): Iterator {
                             return new ArrayIterator([]);
@@ -632,7 +632,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'allowExtraVariadic' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function f(string $a, int $b): void;
                     }
@@ -648,7 +648,7 @@ class MethodSignatureTest extends TestCase
                     (new C)->f("b", 3, 0.5, 0.8);',
             ],
             'allowLessSpecificDocblockTypeOnParent' => [
-                '<?php
+                'code' => '<?php
                     abstract class Foo {
                         /**
                          * @return array|string
@@ -663,12 +663,12 @@ class MethodSignatureTest extends TestCase
                     }
 
                     $a = (new Bar)->getTargets();',
-                [
+                'assertions' => [
                     '$a' => 'string',
                 ],
             ],
             'parentIsKnown' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function returnSelf() : self {
                             return $this;
@@ -683,7 +683,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'returnStaticParent' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @return static
@@ -705,7 +705,7 @@ class MethodSignatureTest extends TestCase
                     }',
             ],
             'selfInTraitAbstractIsFine' => [
-                '<?php
+                'code' => '<?php
                     trait SomeTrait {
                         abstract public function a(self $b): self;
                     }
@@ -719,7 +719,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'allowMatchIn74' => [
-                '<?php
+                'code' => '<?php
                     trait FooTrait {
                         /**
                          * @return static
@@ -739,12 +739,12 @@ class MethodSignatureTest extends TestCase
                     class FooClass implements FooInterface {
                         use FooTrait;
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'allowOverridingThrowable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-immutable
                      */
@@ -763,7 +763,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'allowExecptionToStringWithNoType' => [
-                '<?php
+                'code' => '<?php
                     class E extends Exception {
                         public function __toString() {
                             return "hello";
@@ -771,18 +771,18 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'allowExecptionToStringIn71' => [
-                '<?php
+                'code' => '<?php
                     class E extends Exception {
                         public function __toString() : string {
                             return "hello";
                         }
                     }',
-                [],
-                [],
-                '7.1'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.1'
             ],
             'consistentConstructor' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -797,7 +797,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'allowStaticInheritance' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function method(): static {
                             return $this;
@@ -808,12 +808,12 @@ class MethodSignatureTest extends TestCase
                             return $this;
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'suppressDocblockFinal' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @final
                      */
@@ -832,7 +832,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'inheritParamTypeWhenSignatureReturnTypeChanged' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(string $s) {}
                     }
@@ -849,12 +849,12 @@ class MethodSignatureTest extends TestCase
                             return new AChild($data);
                         }
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'extendStaticReturnTypeInFinal' => [
-                '<?php
+                'code' => '<?php
                     final class B extends A
                     {
                         public static function doCretate1(): self
@@ -883,12 +883,12 @@ class MethodSignatureTest extends TestCase
                             return new static();
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'notExtendedStaticReturntypeInFinal' => [
-                '<?php
+                'code' => '<?php
                     final class X
                     {
                         public static function create(): static
@@ -898,7 +898,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'callParentMethodFromTrait' => [
-                '<?php
+                'code' => '<?php
                     class MyParentClass
                     {
                         /** @return static */
@@ -922,7 +922,7 @@ class MethodSignatureTest extends TestCase
                     }'
             ],
             'MixedParamInImplementation' => [
-                '<?php
+                'code' => '<?php
                     interface I
                     {
                         /**
@@ -941,13 +941,13 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'oneParam' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @param array $i
@@ -963,7 +963,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'Argument 1 of C::foo has wrong name $c, expecting $i as defined by I::foo',
             ],
             'moreArguments' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a, bool $b): void {
 
@@ -978,7 +978,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'Method B::fooFoo has more required parameters than parent method A::fooFoo',
             ],
             'fewerArguments' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a, bool $b): void {
 
@@ -993,7 +993,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'Method B::fooFoo has fewer parameters than parent method A::fooFoo',
             ],
             'differentArgumentTypes' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a, bool $b): void {
 
@@ -1009,7 +1009,7 @@ class MethodSignatureTest extends TestCase
                     'by A::fooFoo',
             ],
             'differentArgumentNames' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a, bool $b): void {
 
@@ -1024,7 +1024,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ParamNameMismatch',
             ],
             'nonNullableSubclassParam' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(?string $s): string {
                             return $s ?: "hello";
@@ -1039,13 +1039,13 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'null|string\' as',
             ],
             'misplacedRequiredParam' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $bar = null, int $bat): void {}
                     foo();',
                 'error_message' => 'TooFewArguments',
             ],
             'clasginByRef' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       public function foo(string $a): void {
                         echo $a;
@@ -1059,7 +1059,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'disallowSubclassesForNonInheritedMethodParams' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                       public function bar(): void {}
@@ -1081,7 +1081,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
             'preventVoidToNullConversionSignature' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(): ?string {
                             return rand(0, 1) ? "hello" : null;
@@ -1096,7 +1096,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractExtendsNonAbstractWithMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -1107,7 +1107,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'traitReturnTypeMismatch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -1122,7 +1122,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1140,7 +1140,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
             'traitMoreParams' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -1155,7 +1155,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentParamType' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1171,7 +1171,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
             'mustOmitReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public function __construct(): void
@@ -1181,7 +1181,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMustOmitReturnType',
             ],
             'requireParam' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         function foo(bool $b = false): void;
                     }
@@ -1192,7 +1192,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27 - Method C::foo has more required',
             ],
             'inheritParamTypes' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /**
                        * @param string $bar
@@ -1213,7 +1213,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'interfaceHasFewerConstructorArgs' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public function __construct();
                     }
@@ -1224,7 +1224,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
             'enforceParameterInheritanceWithInheritDoc' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -1246,7 +1246,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'enforceParameterInheritanceWithCapitalizedInheritDoc' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -1268,7 +1268,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'warnAboutMismatchingClassParamDoc' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1281,7 +1281,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MismatchingDocblockParamType',
             ],
             'warnAboutMismatchingInterfaceParamDoc' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1294,7 +1294,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MismatchingDocblockParamType',
             ],
             'interfaceInsertDocblockTypes' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class Bar {}
 
@@ -1311,7 +1311,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'classInsertDocblockTypesFromParent' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class Bar {}
 
@@ -1330,7 +1330,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'preventInterfaceOverload' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function f(float ...$rest): void;
                     }
@@ -1343,10 +1343,10 @@ class MethodSignatureTest extends TestCase
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                ['MoreSpecificImplementedParamType'],
+                'ignored_issues' => ['MoreSpecificImplementedParamType'],
             ],
             'preventOneOfUnionMoreSpecific' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @param string|int $s */
                         public function foo($s) : void {}
@@ -1359,7 +1359,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
             'preventImplementingSerializableWithWrongDocblockType' => [
-                '<?php
+                'code' => '<?php
                     class Foo implements \Serializable {
                         /** @param int $serialized */
                         public function unserialize($serialized) {}
@@ -1368,7 +1368,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
             'returnsParentWithNoParent' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function f(): parent {}
                     }
@@ -1376,18 +1376,18 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidParent',
             ],
             'returnsParentWithNoParentAndInvalidParentSuppressed' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function f(): parent {
                         }
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                ['InvalidParent'],
+                'ignored_issues' => ['InvalidParent'],
             ],
             // not sure how to handle it
             'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function f(): parent {
                             return false;
@@ -1395,10 +1395,10 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                ['InvalidParent'],
+                'ignored_issues' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
-                '<?php
+                'code' => '<?php
                     trait T2 {
                         abstract public function test(int $x) : void;
                     }
@@ -1413,7 +1413,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'regularMethodMismatchFromChildUse' => [
-                '<?php
+                'code' => '<?php
                     trait T3 {
                         abstract public function test(int $x) : void;
                     }
@@ -1428,7 +1428,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'traitMethodAccessLevel' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -1444,7 +1444,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'TraitMethodSignatureMismatch',
             ],
             'abstractClassReturnMismatch' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         function foo(): array;
                     }
@@ -1455,7 +1455,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractClassParamMismatch' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         function foo(int $s): void;
                     }
@@ -1466,7 +1466,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'preventTraitMatchIn73' => [
-                '<?php
+                'code' => '<?php
                     trait FooTrait {
                         /**
                          * @return static
@@ -1487,12 +1487,11 @@ class MethodSignatureTest extends TestCase
                         use FooTrait;
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                [],
-                false,
-                '7.3'
+                'ignored_issues' => [],
+                'php_version' => '7.3'
             ],
             'inconsistentConstructorExplicitParentConstructorArgCount' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -1511,7 +1510,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
             'inconsistentConstructorExplicitParentConstructorType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -1530,7 +1529,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
             'inconsistentConstructorImplicitParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -1546,7 +1545,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
             'inheritDocblockReturnFromInterface' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /** @return ?string */
                         function foo();
@@ -1558,7 +1557,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'disableNamedArgumentsInDescendant' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public function bar(string ...$_args): void;
                     }

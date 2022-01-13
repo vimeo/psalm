@@ -5,36 +5,36 @@ namespace Psalm\Tests\FileManipulation;
 class PureAnnotationAdditionTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'addPureAnnotationToFunction' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $s): string {
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @psalm-pure
                      */
                     function foo(string $s): string {
                         return $s;
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'addPureAnnotationToFunctionWithExistingDocblock' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @return string
                      */
                     function foo(string $s) {
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string
                      *
@@ -43,27 +43,27 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                     function foo(string $s) {
                         return $s;
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddPureAnnotationToImpureFunction' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $s): string {
                         echo $s;
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(string $s): string {
                         echo $s;
                         return $s;
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddPureAnnotationToMutationFreeMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public string $foo = "hello";
 
@@ -71,7 +71,7 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->foo;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public string $foo = "hello";
 
@@ -79,46 +79,46 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->foo;
                         }
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddPureAnnotationToFunctionWithImpureCall' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $s): string {
                         if (file_exists($s)) {
                             return "";
                         }
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(string $s): string {
                         if (file_exists($s)) {
                             return "";
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddPureAnnotationToFunctionWithImpureClosure' => [
-                '<?php
+                'input' => '<?php
                     /** @param list<string> $arr */
                     function foo(array $arr): array {
                         return array_map($arr, function ($s) { echo $s; return $s;});
                     }',
-                '<?php
+                'output' => '<?php
                     /** @param list<string> $arr */
                     function foo(array $arr): array {
                         return array_map($arr, function ($s) { echo $s; return $s;});
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddWhenReferencingThis' => [
-                '<?php
+                'input' => '<?php
                     abstract class A {
                         public int $a = 5;
 
@@ -128,7 +128,7 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     class B extends A {}',
-                '<?php
+                'output' => '<?php
                     abstract class A {
                         public int $a = 5;
 
@@ -138,12 +138,12 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     class B extends A {}',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddInChildMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public int $a = 5;
 
@@ -157,7 +157,7 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $string;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public int $a = 5;
 
@@ -171,12 +171,12 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $string;
                         }
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
             'doAddInOtherMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public int $a = 5;
 
@@ -190,7 +190,7 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $string;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public int $a = 5;
 
@@ -207,9 +207,9 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                             return $string;
                         }
                     }',
-                '7.4',
-                ['MissingPureAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
             ],
         ];
     }

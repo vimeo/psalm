@@ -28,19 +28,15 @@ abstract class FileManipulationTestCase extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      *
-     * @param string $input_code
-     * @param string $output_code
-     * @param string $php_version
      * @param string[] $issues_to_fix
-     * @param bool $safe_types
      *
      */
     public function testValidCode(
-        $input_code,
-        $output_code,
-        $php_version,
+        string $input_code,
+        string $output_code,
+        string $php_version,
         array $issues_to_fix,
-        $safe_types,
+        bool $safe_types,
         bool $allow_backwards_incompatible_changes = true
     ): void {
         $test_name = $this->getTestName();
@@ -100,7 +96,7 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     abstract public function providerValidCodeParse(): array;
 }

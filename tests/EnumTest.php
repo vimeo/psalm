@@ -11,13 +11,13 @@ class EnumTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'example' => [
-                '<?php
+                'code' => '<?php
                     interface Colourful {
                         public function color(): string;
                     }
@@ -51,12 +51,12 @@ class EnumTest extends TestCase
                     deal(Suit::Spades);
 
                     Suit::Diamonds->shape();',
-                [],
-                [],
-                '8.1'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'enumValue' => [
-                '<?php
+                'code' => '<?php
                     enum Suit: string {
                         case Hearts = "h";
                         case Diamonds = "d";
@@ -65,12 +65,12 @@ class EnumTest extends TestCase
                     }
 
                     if (Suit::Hearts->value === "h") {}',
-                [],
-                [],
-                '8.1'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'enumCases' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -84,12 +84,12 @@ class EnumTest extends TestCase
                             Suit::Clubs, Suit::Spades => "Black",
                         };
                     }',
-                [],
-                [],
-                '8.1'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'literalExpressionAsCaseValue' => [
-                '<?php
+                'code' => '<?php
                     enum Mask: int {
                         case One = 1 << 0;
                         case Two = 1 << 1;
@@ -100,11 +100,11 @@ class EnumTest extends TestCase
                     // xxx: we should be able to do better when we reference a case explicitly, like above
                     '$z===' => '1|2',
                 ],
-                [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'namePropertyFromOutside' => [
-                '<?php
+                'code' => '<?php
                     enum Status
                     {
                         case DRAFT;
@@ -116,11 +116,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$a===' => '"DRAFT"',
                 ],
-                [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'namePropertyFromInside' => [
-                '<?php
+                'code' => '<?php
                     enum Status
                     {
                         case DRAFT;
@@ -137,11 +137,11 @@ class EnumTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'valuePropertyFromInside' => [
-                '<?php
+                'code' => '<?php
                     enum Status: string
                     {
                         case DRAFT = "draft";
@@ -158,11 +158,11 @@ class EnumTest extends TestCase
 
                 ',
                 'assertions' => [],
-                [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'wildcardEnumAsParam' => [
-                '<?php
+                'code' => '<?php
                     enum A {
                         case C_1;
                         case C_2;
@@ -178,11 +178,11 @@ class EnumTest extends TestCase
                     A::foo(A::C_2);
                     A::foo(A::C_3);',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'wildcardEnumAsReturn' => [
-                '<?php
+                'code' => '<?php
                     enum E {
                         const A = 1;
                         case B;
@@ -193,11 +193,11 @@ class EnumTest extends TestCase
                         return E::B;
                     }',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'wildcardConstantsOnEnum' => [
-                '<?php
+                'code' => '<?php
                     enum A {
                         const C_1 = 1;
                         const C_2 = 2;
@@ -213,11 +213,11 @@ class EnumTest extends TestCase
                     A::foo(A::C_2);
                     A::foo(A::C_3);',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'constantOfAVariableEnumClassString' => [
-                '<?php
+                'code' => '<?php
                     enum A { const C = 3; }
                     $e = A::class;
                     $_z = $e::C;
@@ -225,11 +225,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => '3',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'constantOfAVariableEnumInstance' => [
-                '<?php
+                'code' => '<?php
                     enum A {
                         const C = 3;
                         case AA;
@@ -240,11 +240,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => '3',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'EnumCaseInAttribute' => [
-                '<?php
+                'code' => '<?php
                     class CreateController {
                         #[Param(paramType: ParamType::FLAG)]
                         public function actionGet(): void {}
@@ -265,22 +265,22 @@ class EnumTest extends TestCase
                         case PARAM;
                     }',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'casesOnEnumWithNoCasesReturnEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {}
                     $_z = Status::cases();
                 ',
                 'assertions' => [
                     '$_z===' => 'array<never, never>',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumFromReturnsInstanceOfThatEnum' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -291,11 +291,11 @@ class EnumTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumTryFromReturnsInstanceOfThatEnum' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -306,11 +306,11 @@ class EnumTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumFromReturnsSpecificCase' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -321,11 +321,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => 'enum(Status::Closed)',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumTryFromReturnsSpecificCase' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -336,11 +336,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => 'enum(Status::Closed)|null',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumFromReturnsUnionOfCases' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -352,11 +352,11 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => 'enum(Status::Closed)|enum(Status::Open)',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumTryFromReturnsUnionOfCases' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int {
                         case Open = 1;
                         case Closed = 2;
@@ -368,20 +368,20 @@ class EnumTest extends TestCase
                 'assertions' => [
                     '$_z===' => 'enum(Status::Closed)|enum(Status::Open)|null',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'enumValueIsNot' => [
-                '<?php
+                'code' => '<?php
                     enum Suit: string {
                         case Hearts = "h";
                         case Diamonds = "d";
@@ -391,12 +391,11 @@ class EnumTest extends TestCase
 
                     if (Suit::Hearts->value === "a") {}',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'enumValueNotBacked' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -406,12 +405,11 @@ class EnumTest extends TestCase
 
                     echo Suit::Hearts->value;',
                 'error_message' => 'UndefinedPropertyFetch',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'badSuit' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -423,12 +421,11 @@ class EnumTest extends TestCase
                         if ($s === Suit::Clu) {}
                     }',
                 'error_message' => 'UndefinedConstant',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'cantCompareToSuitTwice' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -444,12 +441,11 @@ class EnumTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'insufficientMatches' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -464,12 +460,11 @@ class EnumTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'insufficientMatchesForCases' => [
-                '<?php
+                'code' => '<?php
                     enum Suit {
                         case Hearts;
                         case Diamonds;
@@ -484,21 +479,19 @@ class EnumTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'invalidBackingType' => [
-                '<?php
+                'code' => '<?php
                     enum Status: array {}
                 ',
                 'error_message' => 'InvalidEnumBackingType',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'duplicateValues' => [
-                '<?php
+                'code' => '<?php
                     enum Status: string
                     {
                         case Foo = "foo";
@@ -507,12 +500,11 @@ class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateEnumCaseValue',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'duplicateCases' => [
-                '<?php
+                'code' => '<?php
                     enum Status
                     {
                         case Foo;
@@ -520,79 +512,72 @@ class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateEnumCase',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'caseWithAValueOfANonBackedEnum' => [
-                '<?php
+                'code' => '<?php
                     enum Status
                     {
                         case Foo = 1;
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'caseWithoutAValueOfABackedEnum' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int
                     {
                         case Foo;
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'caseTypeMismatch' => [
-                '<?php
+                'code' => '<?php
                     enum Status: int
                     {
                         case Foo = "one";
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'propsOnEnum' => [
-                '<?php
+                'code' => '<?php
                     enum Status {
                         public $prop;
                     }
                 ',
                 'error_message' => 'NoEnumProperties',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'enumInstantiation' => [
-                '<?php
+                'code' => '<?php
                     enum Status {}
                     new Status;
                 ',
                 'error_message' => 'UndefinedClass',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'enumsAsAttributes' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute(Attribute::TARGET_CLASS)]
                     enum Status { }
                     ',
                 'error_message' => 'InvalidAttribute',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'deprecatedAttribute' => [
-                '<?php
+                'code' => '<?php
                     enum Foo {
                         case A;
 
@@ -603,9 +588,8 @@ class EnumTest extends TestCase
                     Foo::B;
                     ',
                 'error_message' => 'DeprecatedConstant',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

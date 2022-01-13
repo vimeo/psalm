@@ -12,7 +12,7 @@ class ArraySliceTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'arraySliceWithTemplatedArrayParameter' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @template T as string[]
                  * @param T $a

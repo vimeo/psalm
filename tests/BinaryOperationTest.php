@@ -201,28 +201,86 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testDifferingNumericTypesAdditionInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 5 + 4.1;'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithNumberInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = "hi" . 5;'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testImplicitStringConcatenation(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        public function __toString();
+                    }
+
+                    function takesI(I $i): void
+                    {
+                        $a = $i . "hello";
+                    }'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImplicitToStringCast');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'regularAddition' => [
-                '<?php
+                'code' => '<?php
                     $a = 5 + 4;',
                 'assertions' => [
                     '$a' => 'int',
                 ],
             ],
             'differingNumericTypesAdditionInWeakMode' => [
-                '<?php
+                'code' => '<?php
                     $a = 5 + 4.1;',
                 'assertions' => [
                     '$a' => 'float',
                 ],
             ],
             'modulo' => [
-                '<?php
+                'code' => '<?php
                     $a = 25 % 2;
                     $b = 25.4 % 2;
                     $c = 25 % 2.5;
@@ -237,7 +295,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'numericAddition' => [
-                '<?php
+                'code' => '<?php
                     $a = "5";
 
                     if (is_numeric($a)) {
@@ -245,22 +303,22 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'concatenation' => [
-                '<?php
+                'code' => '<?php
                     $a = "Hey " . "Jude,";',
             ],
             'concatenationWithNumberInWeakMode' => [
-                '<?php
+                'code' => '<?php
                     $a = "hi" . 5;',
             ],
             'concatenationWithTwoLiteralInt' => [
-                '<?php
+                'code' => '<?php
                     $a = 7 . 5;',
                 'assertions' => [
                     '$a' => 'string',//will contain "75"
                 ]
             ],
             'concatenationWithTwoInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param positive-int|0 $b
                      * @return numeric-string
@@ -270,7 +328,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'concatenateUnion' => [
-                '<?php
+                'code' => '<?php
                     $arr = ["foobar" => false, "foobaz" => true, "barbaz" => true];
                     $foo = random_int(0, 1) ? "foo" : "bar";
                     $foo .= "baz";
@@ -279,7 +337,7 @@ class BinaryOperationTest extends TestCase
                 'assertions' => ['$val' => 'true'],
             ],
             'concatenateLiteralIntAndString' => [
-                '<?php
+                'code' => '<?php
                     $arr = ["foobar" => false, "foo123" => true];
                     $foo = "foo";
                     $foo .= 123;
@@ -288,7 +346,7 @@ class BinaryOperationTest extends TestCase
                 'assertions' => ['$val' => 'true'],
             ],
             'concatenateNonEmptyResultsInNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-lowercase-string $arg */
                     function foobar($arg): string
                     {
@@ -302,7 +360,7 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'concatenateEmptyWithNonemptyCast' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         /** @psalm-return non-empty-lowercase-string */
@@ -323,7 +381,7 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param numeric-string $bar
                      * @return int
@@ -337,7 +395,7 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'castToIntPreserveNarrowerIntType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param positive-int $i
                      * @return positive-int
@@ -349,7 +407,7 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'concatenateFloatWithInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param numeric-string $bar
                      * @return numeric-string
@@ -363,7 +421,7 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'concatenateIntIsLowercase' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-lowercase-string $bar
                      * @return non-empty-lowercase-string
@@ -381,15 +439,15 @@ class BinaryOperationTest extends TestCase
                 ',
             ],
             'possiblyInvalidAdditionOnBothSides' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : int {
                         return strpos($s, "a") + strpos($s, "b");
                     }',
                 'assertions' => [],
-                'error_levels' => ['PossiblyFalseOperand'],
+                'ignored_issues' => ['PossiblyFalseOperand'],
             ],
             'bitwiseoperations' => [
-                '<?php
+                'code' => '<?php
                     $a = 4 & 5;
                     $b = 2 | 3;
                     $c = 4 ^ 3;
@@ -406,7 +464,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'ComplexLiteralBitwise' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return 7
                      */
@@ -415,7 +473,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'booleanXor' => [
-                '<?php
+                'code' => '<?php
                     $a = 4 ^ 1;
                     $b = 3 ^ 1;
                     $c = (true xor false);
@@ -428,17 +486,17 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'ternaryAssignment' => [
-                '<?php
+                'code' => '<?php
                     rand(0, 1) ? $a = 1 : $a = 2;
                     echo $a;',
             ],
             'assignmentInRHS' => [
-                '<?php
+                'code' => '<?php
                     $name = rand(0, 1) ? "hello" : null;
                     if ($name !== null || ($name = rand(0, 1) ? "hello" : null) !== null) {}',
             ],
             'floatIncrement' => [
-                '<?php
+                'code' => '<?php
                     $a = 1.1;
                     $a++;
                     $b = 1.1;
@@ -449,14 +507,14 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'exponent' => [
-                '<?php
+                'code' => '<?php
                     $b = 4 ** 5;',
                 'assertions' => [
                     '$b' => 'int',
                 ],
             ],
             'bitwiseNot' => [
-                '<?php
+                'code' => '<?php
                     $a = ~4;
                     $b = ~4.0;
                     $c = ~4.4;
@@ -469,7 +527,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'stringIncrementSuppressed' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     /** @psalm-suppress StringIncrement */
                     $a++;',
@@ -478,7 +536,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'stringIncrementWithCheck' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress StringIncrement */
                     for($a = "a"; $a != "z"; $a++){
                         if($a === "b"){
@@ -490,17 +548,17 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'nullCoalescingAssignment' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $s): string {
                         $s ??= "Hello";
                         return $s;
                     }',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'nullCoalescingArrayAssignment' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<string> $arr
                      */
@@ -512,11 +570,11 @@ class BinaryOperationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'addArrays' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{host?:string} $opts
                      * @return array{host:string|int}
@@ -526,7 +584,7 @@ class BinaryOperationTest extends TestCase
                     }'
             ],
             'addIntToZero' => [
-                '<?php
+                'code' => '<?php
                     $tick = 0;
 
                     test($tick + 1);
@@ -541,7 +599,7 @@ class BinaryOperationTest extends TestCase
                     function test(int $tickedTimes): void {}'
             ],
             'numericPlusIntegerIsIntOrFloat' => [
-                '<?php
+                'code' => '<?php
                     /** @param numeric-string $s */
                     function foo(string $s) : void {
                         $s = $s + 1;
@@ -549,7 +607,7 @@ class BinaryOperationTest extends TestCase
                     }'
             ],
             'interpolatedStringNotEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param non-empty-string $i
                      */
@@ -563,7 +621,7 @@ class BinaryOperationTest extends TestCase
                     }'
             ],
             'spaceshipOpIsLiteralUnionType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param -1|0|1 $i
                      */
@@ -580,7 +638,7 @@ class BinaryOperationTest extends TestCase
                      }'
             ],
             'notAlwaysPositiveBitOperations' => [
-                '<?php
+                'code' => '<?php
 
                     $a = 1;
                     $b = 1;
@@ -607,21 +665,21 @@ class BinaryOperationTest extends TestCase
                     }'
             ],
             'IntOverflowMul' => [
-                '<?php
+                'code' => '<?php
                     $a = (1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024);',
                 'assertions' => [
                     '$a' => 'float'
                 ],
             ],
             'IntOverflowPow' => [
-                '<?php
+                'code' => '<?php
                     $a = 2 ** 80;',
                 'assertions' => [
                     '$a' => 'float'
                 ],
             ],
             'IntOverflowPlus' => [
-                '<?php
+                'code' => '<?php
                     $a = 2**62 - 1 + 2**62;
                     $b = 2**62 + 2**62 - 1; // plus results in a float',
                 'assertions' => [
@@ -630,21 +688,21 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'IntOverflowPowSub' => [
-                '<?php
+                'code' => '<?php
                     $a = 2 ** 63;',
                 'assertions' => [
                     '$a' => 'float'
                 ],
             ],
             'IntOverflowSub' => [
-                '<?php
+                'code' => '<?php
                     $a = (1 << 63) - (1 << 20);',
                 'assertions' => [
                     '$a' => 'float'
                 ],
             ],
             'literalConcatCreatesLiteral' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s1
                      * @param  literal-string $s2
@@ -655,7 +713,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'literalConcatCreatesLiteral2' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s1
                      * @return literal-string
@@ -665,7 +723,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'encapsedStringIncludingLiterals' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s1
                      * @param  literal-string $s2
@@ -676,7 +734,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'encapsedStringIncludingLiterals2' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s1
                      * @return literal-string
@@ -687,7 +745,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'literalIntConcatCreatesLiteral' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s1
                      * @param  literal-int $s2
@@ -698,7 +756,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'literalIntConcatCreatesLiteral2' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-int $s1
                      * @return literal-string
@@ -708,7 +766,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'numericWithInt' => [
-                '<?php
+                'code' => '<?php
                     /** @return numeric */
                     function getNumeric(){
                         return 1;
@@ -728,7 +786,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'encapsedStringWithIntIncludingLiterals' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-int $s1
                      * @param  literal-int $s2
@@ -739,7 +797,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'encapsedStringWithIntIncludingLiterals2' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-int $s1
                      * @return literal-string
@@ -750,7 +808,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'NumericStringIncrement' => [
-                '<?php
+                'code' => '<?php
                     function scope(array $a): int|float {
                         $offset = array_search("foo", $a);
                         if(is_numeric($offset)){
@@ -762,7 +820,7 @@ class BinaryOperationTest extends TestCase
                     }',
             ],
             'NumericStringIncrementLiteral' => [
-                '<?php
+                'code' => '<?php
                     $a = "123";
                     $b = "123";
                     $a++;
@@ -774,7 +832,7 @@ class BinaryOperationTest extends TestCase
                 ],
             ],
             'coalesceFilterOutNullEvenWithTernary' => [
-                '<?php
+                'code' => '<?php
 
                     interface FooInterface
                     {
@@ -790,32 +848,23 @@ class BinaryOperationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'badAddition' => [
-                '<?php
+                'code' => '<?php
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
             ],
-            'differingNumericTypesAdditionInStrictMode' => [
-                '<?php
-                    $a = 5 + 4.1;',
+            'addArrayToNumber' => [
+                'code' => '<?php
+                    $a = [1] + 1;',
                 'error_message' => 'InvalidOperand',
-                'error_levels' => [],
-                'strict_mode' => true,
-            ],
-            'concatenationWithNumberInStrictMode' => [
-                '<?php
-                    $a = "hi" . 5;',
-                'error_message' => 'InvalidOperand',
-                'error_levels' => [],
-                'strict_mode' => true,
             ],
             'concatenateNegativeIntRightSideIsNotNumeric' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param numeric-string $bar
                      * @return int
@@ -829,86 +878,79 @@ class BinaryOperationTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
-            'addArrayToNumber' => [
-                '<?php
-                    $a = [1] + 1;',
-                'error_message' => 'InvalidOperand',
-                'error_levels' => [],
-                'strict_mode' => true,
-            ],
             'additionWithClassInWeakMode' => [
-                '<?php
+                'code' => '<?php
                     $a = "hi" + (new stdClass);',
                 'error_message' => 'InvalidOperand',
             ],
             'possiblyInvalidOperand' => [
-                '<?php
+                'code' => '<?php
                     $b = rand(0, 1) ? [] : 4;
                     echo $b + 5;',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
             'possiblyInvalidConcat' => [
-                '<?php
+                'code' => '<?php
                     $b = rand(0, 1) ? [] : "hello";
                     echo $b . "goodbye";',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
             'invalidGMPOperation' => [
-                '<?php
+                'code' => '<?php
                     $a = gmp_init(2);
                     $b = "a" + $a;',
                 'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot add GMP to non-numeric type',
             ],
             'stringIncrement' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     $a++;',
                 'error_message' => 'StringIncrement',
             ],
             'falseIncrement' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
                     $a++;',
                 'error_message' => 'FalseOperand',
             ],
             'trueIncrement' => [
-                '<?php
+                'code' => '<?php
                     $a = true;
                     $a++;',
                 'error_message' => 'InvalidOperand',
             ],
             'possiblyDivByZero' => [
-                '<?php
+                'code' => '<?php
                     $a = 5 / (rand(0, 1) ? 2 : null);',
                 'error_message' => 'PossiblyNullOperand',
             ],
             'invalidExponent' => [
-                '<?php
+                'code' => '<?php
                     $a = "x" ^ 1;',
                 'error_message' => 'InvalidOperand',
             ],
             'invalidBitwiseOr' => [
-                '<?php
+                'code' => '<?php
                     $a = "x" | new stdClass;',
                 'error_message' => 'InvalidOperand',
             ],
             'invalidBitwiseNot' => [
-                '<?php
+                'code' => '<?php
                     $a = ~new stdClass;',
                 'error_message' => 'InvalidOperand',
             ],
             'possiblyInvalidBitwiseNot' => [
-                '<?php
+                'code' => '<?php
                     $a = ~(rand(0, 1) ? 2 : null);',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
             'invalidBooleanBitwiseNot' => [
-                '<?php
+                'code' => '<?php
                     $a = ~true;',
                 'error_message' => 'InvalidOperand',
             ],
             'substrImpossible' => [
-                '<?php
+                'code' => '<?php
                     class HelloWorld
                     {
                         public function sayHello(string $s): void
@@ -919,7 +961,7 @@ class BinaryOperationTest extends TestCase
                     'error_message' => 'TypeDoesNotContainType',
             ],
             'literalConcatWithStringCreatesString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s2
                      * @return literal-string
@@ -930,7 +972,7 @@ class BinaryOperationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'encapsedConcatWithStringCreatesString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  literal-string $s2
                      * @return literal-string

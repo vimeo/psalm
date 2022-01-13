@@ -22,13 +22,13 @@ class UnresolvableIncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{0:string,expectedExceptionLine:int}>
+     * @return array<string,array{code:string,expectedExceptionLine:int}>
      */
     public function providerUnresolvableInclude(): array
     {
         return [
             'basic' => [
-                '<?php
+                'code' => '<?php
                     function requireFile(string $s) : void {
                         require_once($s);
                     }
@@ -51,13 +51,13 @@ class UnresolvableIncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{0:string}>
+     * @return array<string,array{code:string}>
      */
     public function providerNoUnresolvableInclude(): array
     {
         return [
             'github_issue_908_file_exists' => [
-                '<?php
+                'code' => '<?php
                     function requireFile(string $s) : void {
                         if (file_exists($s)) {
                             require_once($s);
@@ -66,7 +66,7 @@ class UnresolvableIncludeTest extends TestCase
                 '
             ],
             'github_issue_4788_is_file' => [
-                '<?php
+                'code' => '<?php
                     function requireFile(string $s) : void {
                         if (is_file($s)) {
                             require_once($s);

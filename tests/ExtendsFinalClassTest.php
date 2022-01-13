@@ -11,13 +11,13 @@ class ExtendsFinalClassTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'suppressingIssueWhenUsedWithKeyword' => [
-                '<?php
+                'code' => '<?php
 
                 final class A {}
 
@@ -27,7 +27,7 @@ class ExtendsFinalClassTest extends TestCase
                 class B extends A {}'
             ],
             'suppressingIssueWhenUsedWithAnnotation' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @final
@@ -43,13 +43,13 @@ class ExtendsFinalClassTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidExtendsFinalClass' => [
-                '<?php
+                'code' => '<?php
 
                 final class A {}
 
@@ -59,7 +59,7 @@ class ExtendsFinalClassTest extends TestCase
             ],
 
             'invalidExtendsAnnotatedFinalClass' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @final
@@ -72,7 +72,7 @@ class ExtendsFinalClassTest extends TestCase
             ],
 
             'invalidExtendsFinalClassAndOtherAnnotation' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @something-else-no-final annotation

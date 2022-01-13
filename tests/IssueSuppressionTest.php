@@ -251,13 +251,13 @@ class IssueSuppressionTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'undefinedClassSimple' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @psalm-suppress UndefinedClass
@@ -270,7 +270,7 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'multipleIssues' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @psalm-suppress UndefinedClass, MixedMethodCall,MissingReturnType because reasons
@@ -281,7 +281,7 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'undefinedClassOneLine' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function b(): void {
                             /**
@@ -292,20 +292,20 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'undefinedClassOneLineInFile' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress UndefinedClass
                      */
                     new B();',
             ],
             'excludeIssue' => [
-                '<?php
+                'code' => '<?php
                     fooFoo();',
                 'assertions' => [],
-                'error_levels' => ['UndefinedFunction'],
+                'ignored_issues' => ['UndefinedFunction'],
             ],
             'suppressWithNewlineAfterComment' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         /**
                          * @psalm-suppress TooManyArguments
@@ -315,7 +315,7 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'suppressUndefinedFunction' => [
-                '<?php
+                'code' => '<?php
                     function verify_return_type(): DateTime {
                         /** @psalm-suppress UndefinedFunction */
                         unknown_function_call();
@@ -324,12 +324,12 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'suppressAllStatementIssues' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress all */
                     echo strlen(123, 456, 789);',
             ],
             'suppressAllFunctionIssues' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress all */
                     function foo($a)
                     {
@@ -337,7 +337,7 @@ class IssueSuppressionTest extends TestCase
                     }',
             ],
             'possiblyNullSuppressedAtClassLevel' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress PossiblyNullReference */
                     class C {
                         private ?DateTime $mightBeNull = null;
@@ -349,7 +349,7 @@ class IssueSuppressionTest extends TestCase
                 ',
             ],
             'methodSignatureMismatchSuppressedAtClassLevel' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         /**
                          * @psalm-suppress MissingParamType
@@ -370,7 +370,7 @@ class IssueSuppressionTest extends TestCase
                 ',
             ],
             'missingPropertyTypeAtPropertyLevel' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @psalm-suppress MissingPropertyType
@@ -380,7 +380,7 @@ class IssueSuppressionTest extends TestCase
                 ',
             ],
             'suppressUnusedSuppression' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @psalm-suppress UnusedPsalmSuppress, MissingPropertyType
@@ -398,7 +398,7 @@ class IssueSuppressionTest extends TestCase
                 ',
             ],
             'suppressUnevaluatedCode' => [
-                '<?php
+                'code' => '<?php
                     die();
                     /**
                      * @psalm-suppress UnevaluatedCode
@@ -410,13 +410,13 @@ class IssueSuppressionTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedClassOneLineWithLineAfter' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function b() {
                             /**
@@ -429,7 +429,7 @@ class IssueSuppressionTest extends TestCase
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33 - Class, interface or enum named C',
             ],
             'undefinedClassOneLineInFileAfter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress UndefinedClass
                      */
@@ -438,13 +438,13 @@ class IssueSuppressionTest extends TestCase
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class, interface or enum named C',
             ],
             'missingParamTypeShouldntPreventUndefinedClassError' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingParamType */
                     function foo($s = Foo::BAR) : void {}',
                 'error_message' => 'UndefinedClass',
             ],
             'suppressUnusedSuppressionByItselfIsNotSuppressed' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @psalm-suppress UnusedPsalmSuppress

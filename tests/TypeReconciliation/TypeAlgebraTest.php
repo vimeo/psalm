@@ -12,13 +12,13 @@ class TypeAlgebraTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'twoVarLogicSimple' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s): void {}
 
                     function foo(?string $a, ?string $b): void {
@@ -34,7 +34,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'threeVarLogic' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s): void {}
 
                     function foo(?string $a, ?string $b, ?string $c): void {
@@ -52,7 +52,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedSimple' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) return "bad";
                         if (!$a) return $b;
@@ -60,7 +60,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedWithAllPathsReturning' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) {
                             return "bad";
@@ -74,7 +74,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedWithAssignmentBeforeReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) {
                             $a = 5;
@@ -90,7 +90,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'invertedTwoVarLogicNotNested' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if ($a || $b) {
                             // do nothing
@@ -103,7 +103,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'invertedTwoVarLogicNotNestedWithAssignmentBeforeReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if ($a || $b) {
                             // do nothing
@@ -117,7 +117,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedWithElseifAndNoNegations' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if ($a) {
                             // do nothing
@@ -132,7 +132,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'threeVarLogicNotNestedWithNoRedefinitionsWithClasses' => [
-                '<?php
+                'code' => '<?php
                     function foo(?stdClass $a, ?stdClass $b, ?stdClass $c): stdClass {
                         if ($a) {
                             // do nothing
@@ -152,7 +152,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'threeVarLogicNotNestedWithNoRedefinitionsWithStrings' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
@@ -170,7 +170,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'threeVarLogicNotNestedAndOrWithNoRedefinitions' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
@@ -186,7 +186,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b): string {
                         if ($a) {
                             // do nothing here
@@ -201,7 +201,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'nestedReassignment' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a): void {
                         if ($a === null) {
                             $a = "blah-blah";
@@ -215,7 +215,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -233,7 +233,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'differentValueChecks' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a): void {
                         if ($a === "foo") {
                             // do something
@@ -243,7 +243,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'byRefAssignment' => [
-                '<?php
+                'code' => '<?php
                     function foo(): void {
                         preg_match("/hello/", "hello molly", $matches);
 
@@ -259,7 +259,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'orConditionalAfterAndConditional' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b): void {
                         if ($a && $b) {
                             echo "a";
@@ -269,7 +269,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'issetOnOneStringAfterAnother' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $arr */
                     function foo(array $arr): void {
                         $a = "a";
@@ -288,7 +288,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'issetArrayCreation' => [
-                '<?php
+                'code' => '<?php
                     $arr = [];
 
                     foreach ([0, 1, 2, 3] as $i) {
@@ -302,7 +302,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'moreConvolutedArrayCreation' => [
-                '<?php
+                'code' => '<?php
                     function fetchRow() : array {
                         return ["c" => "UK"];
                     }
@@ -319,10 +319,10 @@ class TypeAlgebraTest extends TestCase
                         $arr[$row["c"]] = 1;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedArrayOffset'],
+                'ignored_issues' => ['MixedArrayOffset'],
             ],
             'moreConvolutedNestedArrayCreation' => [
-                '<?php
+                'code' => '<?php
                     function fetchRow() : array {
                         return ["c" => "UK"];
                     }
@@ -339,10 +339,10 @@ class TypeAlgebraTest extends TestCase
                         $arr[$row["c"]]["foo"] = 1;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedArrayOffset'],
+                'ignored_issues' => ['MixedArrayOffset'],
             ],
             'noParadoxInLoop' => [
-                '<?php
+                'code' => '<?php
                     function paradox2(): void {
                         $condition = rand() % 2 > 0;
 
@@ -355,7 +355,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'noParadoxInListAssignment' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a): void {
                         if (!$a) {
                             list($a) = explode(":", "a:b");
@@ -365,7 +365,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'noParadoxAfterAssignment' => [
-                '<?php
+                'code' => '<?php
                     function get_bool(): bool {
                         return rand() % 2 > 0;
                     }
@@ -383,7 +383,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'noParadoxAfterArrayAppending' => [
-                '<?php
+                'code' => '<?php
                     /** @return array|false */
                     function array_append(array $errors) {
                         if ($errors) {
@@ -399,7 +399,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'noParadoxInCatch' => [
-                '<?php
+                'code' => '<?php
                     function maybe_returns_array(): ?array {
                         if (rand() % 2 > 0) {
                             return ["key" => "value"];
@@ -422,7 +422,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'lotsaTruthyStatements' => [
-                '<?php
+                'code' => '<?php
                     class A {
                        /**
                         * @var ?string
@@ -444,7 +444,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'lotsaFalsyStatements' => [
-                '<?php
+                'code' => '<?php
                     class A {
                        /**
                         * @var ?string
@@ -466,7 +466,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'ifGetClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                       public function foo(): void {}
@@ -479,7 +479,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'ifNotEqualsGetClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                       public function foo(): void {}
@@ -494,7 +494,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'nestedCheckWithSingleVarPerLevel' => [
-                '<?php
+                'code' => '<?php
                     function foo(?stdClass $a, ?stdClass $b): void {
                         if ($a) {
                             if ($b) {}
@@ -502,7 +502,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'nestedCheckWithTwoVarsPerLevel' => [
-                '<?php
+                'code' => '<?php
                     function foo(?stdClass $a, ?stdClass $b, ?stdClass $c, ?stdClass $d): void {
                         if ($a && $b) {
                             if ($c && $d) {}
@@ -510,7 +510,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'nestedCheckWithReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo(?stdClass $a, ?stdClass $b): void {
                         if ($a === null) {
                             return;
@@ -522,7 +522,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'propertyFetchAfterNotNullCheck' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -538,7 +538,7 @@ class TypeAlgebraTest extends TestCase
                     if ($a->foo === "somestring") {}',
             ],
             'noParadoxForGetopt' => [
-                '<?php
+                'code' => '<?php
                     $options = getopt("t:");
 
                     try {
@@ -548,7 +548,7 @@ class TypeAlgebraTest extends TestCase
                     } catch (Exception $e) {}',
             ],
             'instanceofInOr' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -564,7 +564,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'instanceofInOrNegated' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -580,7 +580,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'instanceofInBothOrs' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -596,7 +596,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'instanceofInBothOrsWithSecondVar' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -613,7 +613,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'explosionOfCNF' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -631,7 +631,7 @@ class TypeAlgebraTest extends TestCase
                     if ($a1 || (($a4 && $a5) || ($a7 && $a8))) {}',
             ],
             'instanceofInCNFOr' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -648,7 +648,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'reconcileNestedOrsInElse' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -663,7 +663,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'getClassComparison' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function bar() : void {}
                     }
@@ -682,7 +682,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'callWithNonNullInTernary' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(?int $a, ?int $b): void {
                         if ($a === null && $b === null) {
                             throw new \LogicException();
@@ -694,7 +694,7 @@ class TypeAlgebraTest extends TestCase
                     function takesInt(int $c) : void {}',
             ],
             'callWithNonNullInIf' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(?int $a, ?int $b): void {
                         if ($a === null && $b === null) {
                             throw new \LogicException();
@@ -710,7 +710,7 @@ class TypeAlgebraTest extends TestCase
                     function takesInt(int $c) : void {}',
             ],
             'callWithNonNullInIfWithCallInElseif' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(?int $a, ?int $b): void {
                         if ($a === null && $b === null) {
                             throw new \LogicException();
@@ -726,7 +726,7 @@ class TypeAlgebraTest extends TestCase
                     function takesInt(int $c) : void {}',
             ],
             'typeSimplification' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -739,7 +739,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'instanceofNoRedundant' => [
-                '<?php
+                'code' => '<?php
                     function logic(Foo $a, Foo $b) : void {
                         if ((!$a instanceof Bat || !$b instanceof Bat)
                             && (!$a instanceof Bat || !$b instanceof Bar)
@@ -757,19 +757,19 @@ class TypeAlgebraTest extends TestCase
                     class Bat extends Foo {}',
             ],
             'explicitValuesInOrIf' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? "a" : "b";
 
                     if (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) {}',
             ],
             'explicitValuesInOrTernary' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? "a" : "b";
 
                     $a = (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) ? 1 : 0;',
             ],
             'boolComparison' => [
-                '<?php
+                'code' => '<?php
                     $a = (bool) rand(0, 1);
 
                     if (rand(0, 1)) {
@@ -781,14 +781,14 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'stringConcatenationTrackedValid' => [
-                '<?php
+                'code' => '<?php
                     $x = "a";
                     $x = "_" . $x;
                     $array = [$x => 2];
                     echo $array["_a"];',
             ],
             'noMemoryIssueWithLongConditional' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(int $c) : string {
                         if (!($c >= 0x5be && $c <= 0x10b7f)) {
@@ -844,11 +844,11 @@ class TypeAlgebraTest extends TestCase
 
                         return "LTR";
                     }',
-                [],
-                'error_levels' => ['MixedInferredReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'grandParentInstanceofConfusion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends B {}
@@ -864,7 +864,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'invertEquation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $width
                      * @param mixed $height
@@ -880,7 +880,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'invertLogic' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -893,7 +893,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'allowAssertionInElseif' => [
-                '<?php
+                'code' => '<?php
                 class X {
                     public bool $a = false;
                     public bool $b = false;
@@ -912,7 +912,7 @@ class TypeAlgebraTest extends TestCase
                 }'
             ],
             'twoVarChangeInElseOnly' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function takesA(A $a) : void {}
 
@@ -938,7 +938,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'twoVarChangeInElseif' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function takesA(A $a) : void {}
 
@@ -962,7 +962,7 @@ class TypeAlgebraTest extends TestCase
                     }',
             ],
             'testSimplishThing' => [
-                '<?php
+                'code' => '<?php
                     function foo(
                         bool $a,
                         bool $b,
@@ -983,19 +983,19 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'fineCheck' => [
-                '<?php
+                'code' => '<?php
                     function foo(bool $b, bool $c) : void {
                         if ((!$b || rand(0, 1)) && (!$c || rand(0, 1))) {}
                     }'
             ],
             'noParadoxInTernary' => [
-                '<?php
+                'code' => '<?php
                     function foo(?bool $b) : string {
                         return $b ? "a" : ($b === null ? "foo" : "b");
                     }',
             ],
             'cancelOutSameStatement' => [
-                '<?php
+                'code' => '<?php
                     function edit(?string $a, ?string $b): string {
                         if ((!$a && !$b) || ($a && !$b)) {
                             return "";
@@ -1005,7 +1005,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'cancelOutDifferentStatement' => [
-                '<?php
+                'code' => '<?php
                     function edit(?string $a, ?string $b): string {
                         if (!$a && !$b) {
                             return "";
@@ -1019,7 +1019,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'moreChecks' => [
-                '<?php
+                'code' => '<?php
                     class B {}
                     class C {}
 
@@ -1040,7 +1040,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'dependentType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function isValid() : bool {
                             return (bool) rand(0, 1);
@@ -1058,14 +1058,14 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'assignSameName' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $value): string {
                         $value = "yes" === $value;
                         return !$value ? "foo" : "bar";
                     }'
             ],
             'dependentTypeUsedAfterCall' => [
-                '<?php
+                'code' => '<?php
                     function a(string $_b): void {}
 
                     function foo(?string $c): string {
@@ -1083,7 +1083,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'notNullAfterSuccessfulNullsafeMethodCall' => [
-                '<?php
+                'code' => '<?php
                     interface X {
                         public function a(): bool;
                         public function b(): string;
@@ -1094,12 +1094,12 @@ class TypeAlgebraTest extends TestCase
                             echo $x->b();
                         }
                     }',
-                [],
-                [],
-                '8.1',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'narrowedTypeAfterIdenticalCheckWithOtherType' => [
-                '<?php
+                'code' => '<?php
                     function a(int $a, ?int $b = null): void
                     {
                         if ($a === $b) {
@@ -1108,7 +1108,7 @@ class TypeAlgebraTest extends TestCase
                     }'
             ],
             'ThrowableInstanceOfThrowableMayBeFalse' => [
-                '<?php
+                'code' => '<?php
 
                     final class Handler
                     {
@@ -1144,7 +1144,7 @@ class TypeAlgebraTest extends TestCase
                     $h->shouldReport(new RuntimeException());'
             ],
             'ThrowableInstanceOfThrowableMayBeTrue' => [
-                '<?php
+                'code' => '<?php
 
                     class Mapper
                     {
@@ -1163,13 +1163,13 @@ class TypeAlgebraTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'threeVarLogicWithChange' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s): void {}
 
                     function foo(?string $a, ?string $b, ?string $c): void {
@@ -1190,7 +1190,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'threeVarLogicWithException' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s): void {}
 
                     function foo(?string $a, ?string $b, ?string $c): void {
@@ -1213,7 +1213,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'invertedTwoVarLogicNotNestedWithVarChange' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if ($a !== null || $b !== null) {
                             $b = null;
@@ -1227,7 +1227,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if (rand(0, 1)) {
                             // do nothing
@@ -1243,7 +1243,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
             ],
             'threeVarLogicWithElseifAndAnd' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
@@ -1260,7 +1260,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $a, ?string $b): string {
                         if ($a) {
                             $a = "";
@@ -1276,7 +1276,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'repeatedIfStatements' => [
-                '<?php
+                'code' => '<?php
                     /** @return string|null */
                     function foo(?string $a) {
                         if ($a) {
@@ -1290,7 +1290,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'repeatedConditionals' => [
-                '<?php
+                'code' => '<?php
                     function foo(?object $a): void {
                         if ($a) {
                             // do something
@@ -1301,7 +1301,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'repeatedAndConditional' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b): void {
                         if ($a && $b) {
                             echo "a";
@@ -1312,7 +1312,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'ParadoxicalCondition',
             ],
             'andConditionalAfterOrConditional' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b): void {
                         if ($a || $b) {
                             echo "a";
@@ -1323,7 +1323,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'repeatedVarFromOrConditional' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b): void {
                         if ($a || $b) {
                             echo "a";
@@ -1334,14 +1334,14 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'typeDoesntEqualType' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     $b = 5;
                     if ($a !== $b) {}',
                 'error_message' => 'RedundantCondition',
             ],
             'stringConcatenationTrackedInvalid' => [
-                '<?php
+                'code' => '<?php
                     $x = "a";
                     $x = "_" . $x;
                     $array = [$x => 2];
@@ -1349,7 +1349,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
             ],
             'redundantTwoVarInElseif' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     $from = rand(0, 1) ? new A() : null;
@@ -1361,14 +1361,14 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'paradoxInTernary' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $input) : string {
                         return $input === "a" ? "bar" : ($input === "a" ? "foo" : "b");
                     }',
                 'error_message' => 'ParadoxicalCondition',
             ],
             'mismatchingChecks' => [
-                '<?php
+                'code' => '<?php
                     function doesntFindBug(?string $old, ?string $new): void {
                         if (empty($old) && empty($new)) {
                             return;
@@ -1381,7 +1381,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'dependentTypeInvalidated' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function isValid() : bool {
                             return (bool) rand(0, 1);
@@ -1404,7 +1404,7 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'stillNullAfterNullsafeMethodCall' => [
-                '<?php
+                'code' => '<?php
                     interface X {
                         public function a(): bool;
                         public function b(): string;
@@ -1416,9 +1416,8 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'NullReference',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -11,13 +11,13 @@ class PureCallableTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'varCallableParamReturnType' => [
-                '<?php
+                'code' => '<?php
                     $add_one =
                         /**
                          * @psalm-pure
@@ -36,7 +36,7 @@ class PureCallableTest extends TestCase
                     bar($add_one);',
             ],
             'callableToClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return pure-callable
                      */
@@ -51,7 +51,7 @@ class PureCallableTest extends TestCase
                     }',
             ],
             'callableToClosureArrow' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return pure-callable
                      */
@@ -63,11 +63,11 @@ class PureCallableTest extends TestCase
                             fn(string $a): string => $a . "blah";
                     }',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'callableWithNonInvokable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -82,7 +82,7 @@ class PureCallableTest extends TestCase
                     passes("asd");',
             ],
             'callableWithInvokableUnion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -97,7 +97,7 @@ class PureCallableTest extends TestCase
                     fails("asd");',
             ],
             'callableWithInvokable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -118,7 +118,7 @@ class PureCallableTest extends TestCase
                     fails("asd");',
             ],
             'allowVoidCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param pure-callable():void $p
                      */
@@ -131,7 +131,7 @@ class PureCallableTest extends TestCase
                     );',
             ],
             'callableProperties' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @psalm-var pure-callable():bool */
                         private $callable;
@@ -154,13 +154,13 @@ class PureCallableTest extends TestCase
                     }',
             ],
             'nullableReturnTypeShorthand' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     /** @param pure-callable(mixed):?A $a */
                     function foo(callable $a): void {}',
             ],
             'callablesCanBeObjects' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param pure-callable $c
                      */
@@ -171,7 +171,7 @@ class PureCallableTest extends TestCase
                     }',
             ],
             'goodCallableArgs' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param pure-callable(string,string):int $_p
                      */
@@ -189,14 +189,14 @@ class PureCallableTest extends TestCase
                     f([C::class, "m"]);',
             ],
             'callableWithSpaces' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param pure-callable(string, string) : int $p
                      */
                     function f(callable $p): void {}',
             ],
             'varCallableInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     /**
@@ -207,7 +207,7 @@ class PureCallableTest extends TestCase
                     }',
             ],
             'pureCallableArgument' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param array<int, int> $values
                      * @psalm-param pure-callable(int):int $num_func
@@ -238,13 +238,13 @@ class PureCallableTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'impureCallableArgument' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param array<int, int> $values
                      * @psalm-param pure-callable(int):int $num_func
@@ -273,7 +273,7 @@ class PureCallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'impureCallableReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @return pure-callable():int

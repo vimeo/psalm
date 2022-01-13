@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class ParamNameMismatchTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'fixMismatchingParamName74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -24,7 +24,7 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             echo $str;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -37,12 +37,12 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             echo $str_new;
                         }
                     }',
-                '7.1',
-                ['ParamNameMismatch'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['ParamNameMismatch'],
+                'safe_types' => true,
             ],
             'fixIfNewNameAlreadyExists74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -52,7 +52,7 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             $str_new = $string;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -62,12 +62,12 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             $str_new = $str;
                         }
                     }',
-                '7.1',
-                ['ParamNameMismatch'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['ParamNameMismatch'],
+                'safe_types' => true,
             ],
             'noFixIfNewNameAndOldNameAlreadyExists74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -78,7 +78,7 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             $str_new = $string;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo(string $str, bool $b = false) : void {}
                     }
@@ -89,12 +89,12 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                             $str_new = $string;
                         }
                     }',
-                '7.1',
-                ['ParamNameMismatch'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['ParamNameMismatch'],
+                'safe_types' => true,
             ],
             'fixMismatchingParamNameWithDocblockType74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @param string $str
@@ -108,7 +108,7 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                          */
                         public function foo($string, bool $b = false) : void {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @param string $str
@@ -122,9 +122,9 @@ class ParamNameMismatchTest extends FileManipulationTestCase
                          */
                         public function foo($str, bool $b = false) : void {}
                     }',
-                '7.1',
-                ['ParamNameMismatch'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['ParamNameMismatch'],
+                'safe_types' => true,
             ],
         ];
     }

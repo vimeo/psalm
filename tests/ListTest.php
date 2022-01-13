@@ -13,13 +13,13 @@ class ListTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'simpleVars' => [
-                '<?php
+                'code' => '<?php
                     list($a, $b) = ["a", "b"];',
                 'assertions' => [
                     '$a' => 'string',
@@ -27,7 +27,7 @@ class ListTest extends TestCase
                 ],
             ],
             'simpleVarsWithSeparateTypes' => [
-                '<?php
+                'code' => '<?php
                     list($a, $b) = ["a", 2];',
                 'assertions' => [
                     '$a' => 'string',
@@ -35,7 +35,7 @@ class ListTest extends TestCase
                 ],
             ],
             'simpleVarsWithSeparateTypesInVar' => [
-                '<?php
+                'code' => '<?php
                     $bar = ["a", 2];
                     list($a, $b) = $bar;',
                 'assertions' => [
@@ -44,7 +44,7 @@ class ListTest extends TestCase
                 ],
             ],
             'thisVar' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $a = "";
@@ -61,7 +61,7 @@ class ListTest extends TestCase
                     }',
             ],
             'mixedNestedAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingReturnType */
                     function getMixed() {}
 
@@ -77,7 +77,7 @@ class ListTest extends TestCase
                 ],
             ],
             'explicitLiteralKey' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<int> $a */
                     function takesList($a): void {}
 
@@ -88,13 +88,13 @@ class ListTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'thisVarWithBadType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a = 0;
@@ -112,7 +112,7 @@ class ListTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'explicitVariableKey' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<int> $a */
                     function takesList($a): void {}
 

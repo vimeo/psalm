@@ -13,13 +13,13 @@ class TraitTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'accessiblePrivateMethodFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         private function fooFoo(): void {
                         }
@@ -34,7 +34,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessibleProtectedMethodFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         protected function fooFoo(): void {
                         }
@@ -49,7 +49,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessiblePublicMethodFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                         }
@@ -64,7 +64,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessiblePrivatePropertyFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @var string */
                         private $fooFoo = "";
@@ -80,7 +80,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessibleProtectedPropertyFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @var string */
                         protected $fooFoo = "";
@@ -96,7 +96,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessiblePublicPropertyFromTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @var string */
                         public $fooFoo = "";
@@ -112,7 +112,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessibleProtectedMethodFromInheritedTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         protected function fooFoo(): void {
                         }
@@ -129,7 +129,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'accessiblePublicMethodFromInheritedTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                         }
@@ -146,7 +146,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'staticClassMethodFromWithinTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                             self::barBar();
@@ -162,7 +162,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'redefinedTraitMethodWithoutAlias' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                         }
@@ -178,7 +178,7 @@ class TraitTest extends TestCase
                     (new B)->fooFoo("hello");',
             ],
             'redefinedTraitMethodWithAlias' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                         }
@@ -195,7 +195,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'traitSelf' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function g(): self
                         {
@@ -213,7 +213,7 @@ class TraitTest extends TestCase
                 ],
             ],
             'parentTraitSelf' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function g(): self
                         {
@@ -238,7 +238,7 @@ class TraitTest extends TestCase
                 ],
             ],
             'directStaticCall' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @return void */
                         public static function foo() {}
@@ -253,7 +253,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'abstractTraitMethod' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @return void */
                         abstract public function foo();
@@ -269,7 +269,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'instanceOfTraitUser' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       public function f(): void {
                         if ($this instanceof A) { }
@@ -285,7 +285,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'getClassTraitUser' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function f(): void {
                             if (get_class($this) === B::class) {
@@ -305,7 +305,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'staticClassTraitUser' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function f(): void {
                             if (static::class === B::class) {
@@ -325,7 +325,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'isAClassTraitUserStringClass' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function f(): void {
                             if (is_a(static::class, B::class, true)) { }
@@ -343,7 +343,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'isAClassTraitUserClassConstant' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function f(): void {
                             if (is_a(static::class, B::class, true)) { }
@@ -361,7 +361,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'useTraitInClassWithAbstractMethod' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       abstract public function foo(): void;
                     }
@@ -371,7 +371,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'useTraitInSubclassWithAbstractMethod' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       abstract public function foo(): void;
                     }
@@ -385,7 +385,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'useTraitInSubclassWithAbstractMethodInParent' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       public function foo(): void {}
                     }
@@ -399,7 +399,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'differentMethodReturnTypes' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public static function getSelf(): self {
                             return new self();
@@ -419,7 +419,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'parentRefInTraitShouldNotFail' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       public function foo(): void {
                         parent::foo();
@@ -433,7 +433,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'namespacedTraitLookup' => [
-                '<?php
+                'code' => '<?php
                     namespace Classes {
                       use Traits\T;
 
@@ -459,7 +459,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'useAndMap' => [
-                '<?php
+                'code' => '<?php
                     class C
                     {
                         use T2;
@@ -480,7 +480,7 @@ class TraitTest extends TestCase
                     trait T2 { }',
             ],
             'mapAndUse' => [
-                '<?php
+                'code' => '<?php
                     class C
                     {
                         use T1 {
@@ -500,7 +500,7 @@ class TraitTest extends TestCase
                     trait T2 { }',
             ],
             'moreArgsInDefined' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         abstract public function foo() : void;
 
@@ -518,7 +518,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'aliasedMethodInternalCallNoReplacement' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function foo() : int {
                             return $this->bar();
@@ -540,7 +540,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'aliasedMethodInternalCallWithLocalDefinition' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function bar() : int {
                             return 3;
@@ -562,7 +562,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'allMethodsReplaced' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         protected function foo() : void {}
 
@@ -582,7 +582,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'aliasedPrivateMethodInternalCallWithLocalDefinition' => [
-                '<?php
+                'code' => '<?php
                     trait T1 {
                         use T2;
 
@@ -606,7 +606,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'traitClassConst' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         public function foo(): string {
                             return B::class;
@@ -620,7 +620,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'noRedundantConditionForTraitStatic' => [
-                '<?php
+                'code' => '<?php
                     trait Foo {
                         public function bar() : array {
                             $type = static::class;
@@ -653,7 +653,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'nonMemoizedAssertions' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function compare(O $other) : void {
                             if ($other instanceof self) {
@@ -687,7 +687,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'manyTraitAliases' => [
-                '<?php
+                'code' => '<?php
                     trait Foo {
                         public static function staticMethod():void {}
                         public function nonstatic():void {}
@@ -723,7 +723,7 @@ class TraitTest extends TestCase
                     $b->bad();',
             ],
             'inheritedProtectedTraitMethodAccess' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         private function bar() : void {}
                     }
@@ -741,7 +741,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'inheritedPublicTraitMethodAccess' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         private function bar() : void {}
                     }
@@ -755,7 +755,7 @@ class TraitTest extends TestCase
                     (new A)->bar();',
             ],
             'allowImplementMethodMadePublicInClass' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function boo() : void;
                     }
@@ -769,7 +769,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'allowImplementMethodMadePublicInParent' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function boo() : void;
                     }
@@ -785,7 +785,7 @@ class TraitTest extends TestCase
                     class BChild extends B implements I {}',
             ],
             'allowTraitParentDefinition' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class C extends A
@@ -806,14 +806,14 @@ class TraitTest extends TestCase
                     }',
             ],
             'noCrashOnUndefinedIgnoredTrait' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UndefinedTrait */
                     class C {
                         use UnknownTrait;
                     }',
             ],
             'reconcileStaticTraitProperties' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /**
                          * @var string|null
@@ -833,7 +833,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'covariantAbstractReturn' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @return iterable */
                         abstract public function bar();
@@ -847,7 +847,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'traitSelfParam' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function bar(self $object): self {
                             return $this;
@@ -862,7 +862,7 @@ class TraitTest extends TestCase
                     $f2 = (new Foo())->bar($f1);',
             ],
             'traitSelfDocblockReturn' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @return self */
                         public function getSelf() {
@@ -875,7 +875,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'abstractThisMethod' => [
-                '<?php
+                'code' => '<?php
                     trait ATrait {
                         /** @return $this */
                         abstract public function bar();
@@ -891,7 +891,7 @@ class TraitTest extends TestCase
                     }'
             ],
             'classAliasedTrait' => [
-                '<?php
+                'code' => '<?php
                     trait FeatureV1 {}
 
                     class_alias(FeatureV1::class, Feature::class);
@@ -901,7 +901,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'renameMethodNoCrash' => [
-                '<?php
+                'code' => '<?php
 
                     trait HelloTrait {
                         protected function sayHello() : string {
@@ -926,7 +926,7 @@ class TraitTest extends TestCase
                     }',
             ],
             'instanceofStaticInsideTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /**
                          * @param mixed $instance
@@ -942,7 +942,7 @@ class TraitTest extends TestCase
                     }'
             ],
             'propertyNotDefinedInTrait' => [
-                '<?php
+                'code' => '<?php
                     class A1 {
                         use A2;
 
@@ -962,7 +962,7 @@ class TraitTest extends TestCase
                     }'
             ],
             'staticNotBoundInFinal' => [
-                '<?php
+                'code' => '<?php
                     trait Foo {
                         /**
                          * @return static
@@ -978,7 +978,7 @@ class TraitTest extends TestCase
                     }'
             ],
             'staticReturnWithFinal' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         /** @return static */
                         public function instance() {
@@ -994,13 +994,13 @@ class TraitTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'inaccessiblePrivateMethodFromInheritedTrait' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         private function fooFoo(): void {
                         }
@@ -1018,14 +1018,14 @@ class TraitTest extends TestCase
                 'error_message' => 'InaccessibleMethod',
             ],
             'undefinedTrait' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         use A;
                     }',
                 'error_message' => 'UndefinedTrait',
             ],
             'missingPropertyType' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public $foo = null;
                     }
@@ -1040,7 +1040,7 @@ class TraitTest extends TestCase
                     'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInit' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public $foo;
                     }
@@ -1055,7 +1055,7 @@ class TraitTest extends TestCase
                     'declared type - consider int',
             ],
             'missingPropertyTypeWithConstructorInitAndNull' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public $foo;
                     }
@@ -1074,7 +1074,7 @@ class TraitTest extends TestCase
                     'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public $foo = null;
                     }
@@ -1089,7 +1089,7 @@ class TraitTest extends TestCase
                     'declared type - consider int|null',
             ],
             'redefinedTraitMethodInSubclass' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function fooFoo(): void {
                         }
@@ -1106,7 +1106,7 @@ class TraitTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'missingTraitPropertyType' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public $foo = 5;
                     }
@@ -1117,7 +1117,7 @@ class TraitTest extends TestCase
                 'error_message' => 'MissingPropertyType',
             ],
             'nestedTraitWithBadReturnType' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         public function foo() : string {
                             return 5;
@@ -1134,7 +1134,7 @@ class TraitTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'replaceTraitMethod' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         protected function foo() : void {}
 
@@ -1151,7 +1151,7 @@ class TraitTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'traitMethodMadePrivate' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function foo() : void {
                             echo "here";
@@ -1176,7 +1176,7 @@ class TraitTest extends TestCase
                 'error_message' => 'InaccessibleMethod',
             ],
             'preventTraitPropertyType' => [
-                '<?php
+                'code' => '<?php
                     trait T {}
 
                     class X {

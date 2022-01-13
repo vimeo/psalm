@@ -11,13 +11,13 @@ class Php70Test extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'functionTypeHints' => [
-                '<?php
+                'code' => '<?php
                     function indexof(string $haystack, string $needle): int
                     {
                         $pos = strpos($haystack, $needle);
@@ -35,7 +35,7 @@ class Php70Test extends TestCase
                 ],
             ],
             'methodTypeHints' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public static function indexof(string $haystack, string $needle): int
                         {
@@ -55,7 +55,7 @@ class Php70Test extends TestCase
                 ],
             ],
             'nullCoalesce' => [
-                '<?php
+                'code' => '<?php
                     /** @var int $i */
                     $i = 0;
                     $arr = ["hello", "goodbye"];
@@ -65,7 +65,7 @@ class Php70Test extends TestCase
                 ],
             ],
             'nullCoalesceWithNullableOnLeft' => [
-                '<?php
+                'code' => '<?php
                     /** @return ?string */
                     function foo() {
                         return rand(0, 10) > 5 ? "hello" : null;
@@ -76,7 +76,7 @@ class Php70Test extends TestCase
                 ],
             ],
             'nullCoalesceWithReference' => [
-                '<?php
+                'code' => '<?php
                     $var = 0;
                     ($a =& $var) ?? "hello";',
                 'assertions' => [
@@ -84,14 +84,14 @@ class Php70Test extends TestCase
                 ],
             ],
             'spaceship' => [
-                '<?php
+                'code' => '<?php
                     $a = 1 <=> 1;',
                 'assertions' => [
                     '$a' => 'int',
                 ],
             ],
             'defineArray' => [
-                '<?php
+                'code' => '<?php
                     define("ANIMALS", [
                         "dog",
                         "cat",
@@ -104,7 +104,7 @@ class Php70Test extends TestCase
                 ],
             ],
             'anonymousClassLogger' => [
-                '<?php
+                'code' => '<?php
                     interface Logger {
                         /** @return void */
                         public function log(string $msg);
@@ -129,7 +129,7 @@ class Php70Test extends TestCase
                     });',
             ],
             'anonymousClassFunctionReturnType' => [
-                '<?php
+                'code' => '<?php
                     $class = new class {
                         public function f(): int {
                             return 42;
@@ -143,11 +143,11 @@ class Php70Test extends TestCase
                     $x = g($class->f());',
             ],
             'anonymousClassStatement' => [
-                '<?php
+                'code' => '<?php
                     new class {};',
             ],
             'anonymousClassTwoFunctions' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
 
                     class A
@@ -164,7 +164,7 @@ class Php70Test extends TestCase
                     }',
             ],
             'anonymousClassExtendsWithThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -176,14 +176,14 @@ class Php70Test extends TestCase
                     };',
             ],
             'returnAnonymousClass' => [
-                '<?php
+                'code' => '<?php
                     /** @return object */
                     function getNewAnonymousClass() {
                         return new class {};
                     }',
             ],
             'returnAnonymousClassInClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return object */
                         public function getNewAnonymousClass() {
@@ -192,7 +192,7 @@ class Php70Test extends TestCase
                     }',
             ],
             'multipleUse' => [
-                '<?php
+                'code' => '<?php
                     namespace Name\Space {
                         class A {
 
@@ -217,13 +217,13 @@ class Php70Test extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'anonymousClassWithBadStatement' => [
-                '<?php
+                'code' => '<?php
                     $foo = new class {
                         public function a() {
                             new B();
@@ -232,7 +232,7 @@ class Php70Test extends TestCase
                 'error_message' => 'UndefinedClass',
             ],
             'anonymousClassWithInvalidFunctionReturnType' => [
-                '<?php
+                'code' => '<?php
                     $foo = new class {
                         public function a(): string {
                             return 5;

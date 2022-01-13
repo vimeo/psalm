@@ -11,13 +11,13 @@ class Php71Test extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nullableReturnType' => [
-                '<?php
+                'code' => '<?php
                     function a(): ?string
                     {
                         return rand(0, 10) ? "elePHPant" : null;
@@ -29,7 +29,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'nullableReturnTypeInDocblock' => [
-                '<?php
+                'code' => '<?php
                     /** @return ?string */
                     function a() {
                         return rand(0, 10) ? "elePHPant" : null;
@@ -41,7 +41,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'nullableArgument' => [
-                '<?php
+                'code' => '<?php
                     function test(?string $name): ?string
                     {
                         return $name;
@@ -51,7 +51,7 @@ class Php71Test extends TestCase
                     test(null);',
             ],
             'protectedClassConst' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         protected const IS_PROTECTED = 1;
@@ -65,7 +65,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'privateClassConst' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         private const IS_PRIVATE = 1;
@@ -76,7 +76,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'publicClassConstFetch' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public const IS_PUBLIC = 1;
@@ -95,7 +95,7 @@ class Php71Test extends TestCase
                     echo A::IS_ALSO_PUBLIC;',
             ],
             'arrayDestructuringList' => [
-                '<?php
+                'code' => '<?php
                     $data = [
                         [1, "Tom"],
                         [2, "Fred"],
@@ -114,7 +114,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'arrayDestructuringInForeach' => [
-                '<?php
+                'code' => '<?php
                     $data = [
                         [1, "Tom"],
                         [2, "Fred"],
@@ -127,7 +127,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'arrayDestructuringWithKeys' => [
-                '<?php
+                'code' => '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
@@ -146,7 +146,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'arrayListDestructuringInForeachWithKeys' => [
-                '<?php
+                'code' => '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
@@ -163,7 +163,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'arrayDestructuringInForeachWithKeys' => [
-                '<?php
+                'code' => '<?php
                     $data = [
                         ["id" => 1, "name" => "Tom"],
                         ["id" => 2, "name" => "Fred"],
@@ -180,7 +180,7 @@ class Php71Test extends TestCase
                 ],
             ],
             'iterableArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  iterable<int, int> $iter
                      */
@@ -196,7 +196,7 @@ class Php71Test extends TestCase
                     iterator(new SplFixedArray(5));',
             ],
             'traversableObject' => [
-                '<?php
+                'code' => '<?php
                     class IteratorObj implements Iterator {
                         function rewind(): void {}
                         /** @return mixed */
@@ -212,7 +212,7 @@ class Php71Test extends TestCase
                     foo(new IteratorObj);',
             ],
             'iterableIsArrayOrTraversable' => [
-                '<?php
+                'code' => '<?php
                     function castToArray(iterable $arr): array {
                         if ($arr instanceof \Traversable) {
                             return iterator_to_array($arr, false);
@@ -230,7 +230,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'substituteIterable' => [
-                '<?php
+                'code' => '<?php
                     function foo(iterable $i): array {
                       if (!is_array($i)) {
                         $i = iterator_to_array($i, false);
@@ -240,7 +240,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'iterator_to_arrayMixedKey' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey
                      * @template TValue
@@ -253,7 +253,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'noReservedWordInDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param Closure():(resource|false) $op
                      * @return resource|false
@@ -263,7 +263,7 @@ class Php71Test extends TestCase
                     }',
             ],
             'arrayDestructuringOnArrayObject' => [
-                '<?php
+                'code' => '<?php
                     $var = new ArrayObject([0 => "first", "dos" => "second"]);
                     [0 => $first, "dos" => $second] = $var;
                     echo $first;
@@ -273,13 +273,13 @@ class Php71Test extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidPrivateClassConstFetch' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         private const IS_PRIVATE = 1;
@@ -289,7 +289,7 @@ class Php71Test extends TestCase
                 'error_message' => 'InaccessibleClassConstant',
             ],
             'invalidPrivateClassConstFetchFromSubclass' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         private const IS_PRIVATE = 1;
@@ -304,7 +304,7 @@ class Php71Test extends TestCase
                 'error_message' => 'InaccessibleClassConstant',
             ],
             'invalidProtectedClassConstFetch' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         protected const IS_PROTECTED = 1;
@@ -314,7 +314,7 @@ class Php71Test extends TestCase
                 'error_message' => 'InaccessibleClassConstant',
             ],
             'invalidIterableArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  iterable<string> $iter
                      */
@@ -332,34 +332,32 @@ class Php71Test extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'voidDoesntWorkIn70' => [
-                '<?php
+                'code' => '<?php
                     function foo(): void {
 
                     }',
                 'error_message' => 'ReservedWord',
-                [],
-                false,
-                '7.0',
+                'ignored_issues' => [],
+                'php_version' => '7.0',
             ],
             'objectDoesntWorkIn71' => [
-                '<?php
+                'code' => '<?php
                     function foo(): object {
                         return new stdClass();
                     }',
                 'error_message' => 'ReservedWord',
-                [],
-                false,
-                '7.0',
+                'ignored_issues' => [],
+                'php_version' => '7.0',
             ],
             'arrayDestructuringInvalidList' => [
-                '<?php
+                'code' => '<?php
                     $a = 42;
 
                     list($id1, $name1) = $a;',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'arrayDestructuringInvalidArray' => [
-                '<?php
+                'code' => '<?php
                     $a = 42;
 
                     [$id2, $name2] = $a;',

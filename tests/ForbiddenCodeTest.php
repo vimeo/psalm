@@ -20,33 +20,33 @@ class ForbiddenCodeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'varDump' => [
-                '<?php
+                'code' => '<?php
                     var_dump("hello");',
                 'error_message' => 'ForbiddenCode',
             ],
             'varDumpCased' => [
-                '<?php
+                'code' => '<?php
                     vAr_dUMp("hello");',
                 'error_message' => 'ForbiddenCode',
             ],
             'execTicks' => [
-                '<?php
+                'code' => '<?php
                     `rm -rf`;',
                 'error_message' => 'ForbiddenCode',
             ],
             'exec' => [
-                '<?php
+                'code' => '<?php
                     shell_exec("rm -rf");',
                 'error_message' => 'ForbiddenCode',
             ],
             'execCased' => [
-                '<?php
+                'code' => '<?php
                     sHeLl_EXeC("rm -rf");',
                 'error_message' => 'ForbiddenCode',
             ],
@@ -54,20 +54,20 @@ class ForbiddenCodeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'execWithSuppression' => [
-                '<?php
+                'code' => '<?php
                     @exec("pwd 2>&1", $output, $returnValue);
                     if ($returnValue === 0) {
                         echo "success";
                     }',
             ],
             'execWithoutSuppression' => [
-                '<?php
+                'code' => '<?php
                     exec("pwd 2>&1", $output, $returnValue);
                     if ($returnValue === 0) {
                         echo "success";

@@ -75,13 +75,13 @@ class PropertyMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -96,7 +96,7 @@ class PropertyMoveTest extends TestCase
                             foreach (A::$foo as $f) {}
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -113,12 +113,12 @@ class PropertyMoveTest extends TestCase
                         /** @var ArrayObject<int, int> */
                         public static $fooBar;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::$foo' => 'Ns\B::$fooBar',
                 ],
             ],
             'renameInstanceProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -130,7 +130,7 @@ class PropertyMoveTest extends TestCase
                         echo $a->foo;
                         $a->foo = 10;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -142,12 +142,12 @@ class PropertyMoveTest extends TestCase
                         echo $a->fooBar;
                         $a->fooBar = 10;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::$foo' => 'Ns\A::$fooBar',
                 ],
             ],
             'renameStaticProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -159,7 +159,7 @@ class PropertyMoveTest extends TestCase
                         echo A::$foo;
                         A::$foo = 10;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -171,12 +171,12 @@ class PropertyMoveTest extends TestCase
                         echo A::$fooBar;
                         A::$fooBar = 10;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::$foo' => 'Ns\A::$fooBar',
                 ],
             ],
             'moveStaticProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -192,7 +192,7 @@ class PropertyMoveTest extends TestCase
                         echo A::$foo;
                         A::$foo = 10;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -210,7 +210,7 @@ class PropertyMoveTest extends TestCase
                         echo B::$fooBar;
                         B::$fooBar = 10;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::$foo' => 'Ns\B::$fooBar',
                 ],
             ],

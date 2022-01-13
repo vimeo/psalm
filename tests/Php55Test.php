@@ -9,13 +9,13 @@ class Php55Test extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'finally' => [
-                '<?php
+                'code' => '<?php
                     try {
                     }
                     catch (\Exception $e) {
@@ -24,7 +24,7 @@ class Php55Test extends TestCase
                     }',
             ],
             'foreachList' => [
-                '<?php
+                'code' => '<?php
                     $array = [
                         [1, 2],
                         [3, 4],
@@ -35,7 +35,7 @@ class Php55Test extends TestCase
                     }',
             ],
             'arrayStringDereferencing' => [
-                '<?php
+                'code' => '<?php
                     $a = [1, 2, 3][0];
                     $b = "PHP"[0];',
                 'assertions' => [
@@ -44,7 +44,7 @@ class Php55Test extends TestCase
                 ],
             ],
             'classString' => [
-                '<?php
+                'code' => '<?php
                     class ClassName {}
 
                     $a = ClassName::class;',

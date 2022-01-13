@@ -12,13 +12,13 @@ class FunctionClassStringTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'callStaticMethodOnTemplatedClassName' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param class-string<T> $class
@@ -27,10 +27,10 @@ class FunctionClassStringTemplateTest extends TestCase
                         $class::bar($args);
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
             'returnTemplatedClassClassName' => [
-                '<?php
+                'code' => '<?php
                     class I {
                         /**
                          * @template T as Foo
@@ -60,7 +60,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 ],
             ],
             'upcastIterableToTraversable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as iterable
                      * @param class-string<T> $class
@@ -71,10 +71,10 @@ class FunctionClassStringTemplateTest extends TestCase
                         foreach ($a as $b) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'upcastGenericIterableToGenericTraversable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as iterable<int>
                      * @param T::class $class
@@ -85,10 +85,10 @@ class FunctionClassStringTemplateTest extends TestCase
                         foreach ($a as $b) {}
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
             ],
             'understandTemplatedCalculationInOtherFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as Exception
                      * @param T::class $type
@@ -109,7 +109,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'objectReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      *
@@ -126,7 +126,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     echo Foo(DateTime::class)->format("c");',
             ],
             'templatedClassStringParamAsClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -166,7 +166,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'templatedClassStringParamAsObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -196,7 +196,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'templatedClassStringParamMoreSpecific' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -233,7 +233,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'templateFilterArrayWithIntersection' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @template S as object
@@ -257,12 +257,12 @@ class FunctionClassStringTemplateTest extends TestCase
                     /** @var array<A> */
                     $x = [];
                     $y = filter($x, B::class);',
-                [
+                'assertions' => [
                     '$y' => 'array<array-key, A&B>',
                 ],
             ],
             'templateFilterWithIntersection' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @template S as object
@@ -285,12 +285,12 @@ class FunctionClassStringTemplateTest extends TestCase
                     $x = null;
 
                     $y = filter($x, B::class);',
-                [
+                'assertions' => [
                     '$y' => 'A&B',
                 ],
             ],
             'unionTOrClassStringTPassedClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template T of object
                      * @psalm-param T|class-string<T> $someType
@@ -314,7 +314,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     getObject(C::class)->sayHello();',
             ],
             'unionTOrClassStringTPassedObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template T of object
                      * @psalm-param T|class-string<T> $someType
@@ -338,7 +338,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     getObject(new C())->sayHello();',
             ],
             'dontModifyByRefTemplatedArray' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -373,7 +373,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'unionClassStringTWithTReturnsObjectWhenCoerced' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @param T|class-string<T> $s
@@ -395,7 +395,7 @@ class FunctionClassStringTemplateTest extends TestCase
             ],
 
             'allowTemplatedIntersectionFirst' => [
-                '<?php
+                'code' => '<?php
                     class MockObject
                     {
                         public function checkExpectations() : void
@@ -433,7 +433,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     mock(A::class)->foo();',
             ],
             'allowTemplatedIntersectionFirstTemplatedMock' => [
-                '<?php
+                'code' => '<?php
                     class MockObject
                     {
                         public function checkExpectations() : void
@@ -471,7 +471,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     mock(A::class)->foo();',
             ],
             'allowTemplatedIntersectionSecond' => [
-                '<?php
+                'code' => '<?php
                     class MockObject
                     {
                         public function checkExpectations() : void
@@ -516,7 +516,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     mock(A::class)->foo();',
             ],
             'returnClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param T::class $s
@@ -537,7 +537,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     bar(foo(A::class));',
             ],
             'templateAsUnionClassStringPassingValidClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -562,7 +562,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     f(B::class);',
             ],
             'compareToExactClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      */
@@ -591,7 +591,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'compareGetClassTypeString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param class-string<T> $typeName
@@ -607,7 +607,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'instanceofTemplatedClassStringOnMixed' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
 
                     /**
@@ -625,7 +625,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'instanceofTemplatedClassStringOnObjectType' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
 
                     /**
@@ -642,7 +642,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'templateFromDifferentClassStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -664,12 +664,12 @@ class FunctionClassStringTemplateTest extends TestCase
                     }
 
                     $b_or_c = test(B::class, C::class);',
-                [
+                'assertions' => [
                     '$b_or_c' => 'B|C',
                 ]
             ],
             'allowComparisonWithoutCrash' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      *
@@ -681,7 +681,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     }',
             ],
             'refineByArrayFilterIntersection' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param array<Bar> $bars
@@ -704,13 +704,13 @@ class FunctionClassStringTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'copyScopedClassInFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template Throwable as DOMNode
                      *
@@ -722,7 +722,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'ReservedWord',
             ],
             'copyScopedClassInNamespacedFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class Bar {}
@@ -738,7 +738,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'ReservedWord',
             ],
             'constrainTemplateTypeWhenClassStringUsed' => [
-                '<?php
+                'code' => '<?php
                     class GenericObjectFactory {
                        /**
                         * @psalm-template T
@@ -753,7 +753,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'forbidLossOfInformationWhenCoercing' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as iterable<int>
                      * @param T::class $class
@@ -766,7 +766,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'templateAsUnionClassStringPassingInvalidClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -793,7 +793,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'bindToClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TClass as object
                      *
@@ -813,7 +813,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 'error_message' => 'Closure(object):void'
             ],
             'preventClassStringInPlaceOfTemplatedClassString' => [
-                '<?php
+                'code' => '<?php
                     class ImageFile {}
                     class MusicFile {}
 

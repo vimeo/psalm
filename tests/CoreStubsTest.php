@@ -9,12 +9,12 @@ class CoreStubsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         yield 'RecursiveArrayIterator::CHILD_ARRAYS_ONLY (#6464)' => [
-            '<?php
+            'code' => '<?php
 
             new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);'
         ];

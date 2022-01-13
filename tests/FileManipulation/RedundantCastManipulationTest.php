@@ -5,42 +5,42 @@ namespace Psalm\Tests\FileManipulation;
 class RedundantCastManipulationTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'RemoveRedundantCast' => [
-                '<?php
+                'input' => '<?php
                     $test = 1;
                     (int)$test;
                 ',
-                '<?php
+                'output' => '<?php
                     $test = 1;
                     $test;
                 ',
-                '5.6',
-                ['RedundantCast'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
             ],
             'RemoveRedundantCastGivenDocblockType' => [
-                '<?php
+                'input' => '<?php
                     /** @param int $test */
                     function a($test){
                         (int)$test;
                     }
 
                 ',
-                '<?php
+                'output' => '<?php
                     /** @param int $test */
                     function a($test){
                         $test;
                     }
 
                 ',
-                '5.6',
-                ['RedundantCastGivenDocblockType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['RedundantCastGivenDocblockType'],
+                'safe_types' => true,
             ],
         ];
     }
