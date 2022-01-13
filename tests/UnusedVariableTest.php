@@ -99,7 +99,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string,ignored_issues?:array<string>}>
+     * @return array<string, array{code:string,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): array
     {

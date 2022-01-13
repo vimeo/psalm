@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
-use function is_int;
 use function method_exists;
 use function preg_quote;
 use function str_replace;
@@ -21,7 +20,7 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
@@ -29,7 +28,7 @@ trait InvalidCodeAnalysisTestTrait
      * @dataProvider providerInvalidCodeParse
      * @small
      *
-     * @param array<int|string, string> $error_levels
+     * @param list<string> $error_levels
      */
     public function testInvalidCode(
         string $code,
@@ -50,13 +49,9 @@ trait InvalidCodeAnalysisTestTrait
             $code = str_replace("\n", "\r\n", $code);
         }
 
-        foreach ($error_levels as $error_level_key => $error_level) {
-            if (is_int($error_level_key)) {
-                $issue_name = $error_level;
-                $error_level = Config::REPORT_SUPPRESS;
-            } else {
-                $issue_name = $error_level_key;
-            }
+        foreach ($error_levels as $error_level) {
+            $issue_name = $error_level;
+            $error_level = Config::REPORT_SUPPRESS;
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }

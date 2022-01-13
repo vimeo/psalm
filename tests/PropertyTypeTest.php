@@ -346,7 +346,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -808,6 +808,7 @@ class PropertyTypeTest extends TestCase
                         public function foo(): void;
                     }
 
+                    /** @psalm-suppress PropertyNotSetInConstructor */
                     abstract class A implements I {
                         /** @var string */
                         public $bar;
@@ -822,10 +823,6 @@ class PropertyTypeTest extends TestCase
                             $this->bar = "hello";
                         }
                     }',
-                'assertions' => [],
-                'ignored_issues' => [
-                    'PropertyNotSetInConstructor' => Config::REPORT_INFO,
-                ],
             ],
             'callsPrivateParentMethodThenUsesParentInitializedProperty' => [
                 'code' => '<?php
@@ -2475,7 +2472,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

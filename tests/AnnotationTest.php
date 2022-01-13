@@ -147,7 +147,7 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -193,7 +193,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIs' => [
                 'code' => '<?php
@@ -209,7 +209,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'goodDocblock' => [
                 'code' => '<?php
@@ -297,7 +297,7 @@ class AnnotationTest extends TestCase
 
                     $a[0]->getMessage();',
                 'assertions' => [],
-                'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
+                'ignored_issues' => ['EmptyArrayAccess', 'MixedMethodCall'],
             ],
             'psalmIgnoreVarDocblock' => [
                 'code' => '<?php
@@ -309,7 +309,7 @@ class AnnotationTest extends TestCase
 
                     $a[0]->getMessage();',
                 'assertions' => [],
-                'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
+                'ignored_issues' => ['EmptyArrayAccess', 'MixedMethodCall'],
             ],
             'mixedDocblockParamTypeDefinedInParent' => [
                 'code' => '<?php
@@ -751,10 +751,7 @@ class AnnotationTest extends TestCase
                     function fooBar() {
                     }',
                 'assertions' => [],
-                'ignored_issues' => [
-                    'InvalidDocblock' => Config::REPORT_INFO,
-                    'MissingReturnType' => Config::REPORT_INFO,
-                ],
+                'ignored_issues' => ['InvalidDocblock', 'MissingReturnType'],
             ],
             'objectWithPropertiesAnnotation' => [
                 'code' => '<?php
@@ -1249,7 +1246,7 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1368,9 +1365,7 @@ class AnnotationTest extends TestCase
                     function fooBar() {
                     }',
                 'error_message' => 'MissingReturnType',
-                'ignored_issues' => [
-                    'InvalidDocblock' => Config::REPORT_INFO,
-                ],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'invalidDocblockReturn' => [
                 'code' => '<?php

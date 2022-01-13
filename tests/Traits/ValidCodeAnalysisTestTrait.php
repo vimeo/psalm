@@ -5,7 +5,6 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 
-use function is_int;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -19,7 +18,7 @@ use const PHP_VERSION;
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     abstract public function providerValidCodeParse(): iterable;
 
@@ -28,7 +27,7 @@ trait ValidCodeAnalysisTestTrait
      *
      * @param string $code
      * @param array<string, string> $assertions
-     * @param array<string|int, string> $error_levels
+     * @param list<string> $error_levels
      *
      * @small
      */
@@ -47,13 +46,9 @@ trait ValidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        foreach ($error_levels as $error_level_key => $error_level) {
-            if (is_int($error_level_key)) {
-                $issue_name = $error_level;
-                $error_level = Config::REPORT_SUPPRESS;
-            } else {
-                $issue_name = $error_level_key;
-            }
+        foreach ($error_levels as $error_level) {
+            $issue_name = $error_level;
+            $error_level = Config::REPORT_SUPPRESS;
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
