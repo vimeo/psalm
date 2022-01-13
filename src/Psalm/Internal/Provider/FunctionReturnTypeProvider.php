@@ -110,7 +110,6 @@ class FunctionReturnTypeProvider
         $this->registerClass(TriggerErrorReturnTypeProvider::class);
         $this->registerClass(RandReturnTypeProvider::class);
         $this->registerClass(InArrayReturnTypeProvider::class);
-        $this->registerClass(ExceptionCodeReturnTypeProvider::class);
     }
 
     /**

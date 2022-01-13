@@ -16,7 +16,7 @@ class ExceptionCodeReturnTypeProvider implements MethodReturnTypeProviderInterfa
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Type\Union
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
-        $fqcn = $event->getCalledFqClasslikeName();
+        $fqcn = $event->getFqClasslikeName();
 
         if ($method_name_lowercase !== 'getcode') {
             return null;

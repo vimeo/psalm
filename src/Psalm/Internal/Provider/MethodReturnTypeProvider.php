@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\ReturnTypeProvider\ClosureFromCallableReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
+use Psalm\Internal\Provider\ReturnTypeProvider\ExceptionCodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\SimpleXmlElementAsXml;
@@ -58,6 +59,7 @@ class MethodReturnTypeProvider
         $this->registerClass(SimpleXmlElementAsXml::class);
         $this->registerClass(PdoStatementReturnTypeProvider::class);
         $this->registerClass(ClosureFromCallableReturnTypeProvider::class);
+        $this->registerClass(ExceptionCodeReturnTypeProvider::class);
     }
 
     /**
