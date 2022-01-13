@@ -40,7 +40,7 @@ class ExtensionRequirementTest extends TestCase
     {
         return [
             'extendsBaseClass' => [
-                '<?php
+                'code' => '<?php
                     use ExtensionRequirements\Base\MyBaseClass;
                     use ExtensionRequirements\Trait\ImposesExtensionRequirements;
 
@@ -56,7 +56,7 @@ class ExtensionRequirementTest extends TestCase
     {
         return [
             'extendsBaseClass' => [
-                '<?php
+                'code' => '<?php
                     use ExtensionRequirements\Trait\ImposesExtensionRequirements;
 
                     class Invalid {

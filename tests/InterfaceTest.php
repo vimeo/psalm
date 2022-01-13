@@ -13,13 +13,13 @@ class InterfaceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'extendsAndImplements' => [
-                '<?php
+                'code' => '<?php
                     interface A
                     {
                         /**
@@ -79,7 +79,7 @@ class InterfaceTest extends TestCase
                 ],
             ],
             'isExtendedInterface' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     class B implements A {}
 
@@ -92,7 +92,7 @@ class InterfaceTest extends TestCase
                     qux(new B());',
             ],
             'isDoubleExtendedInterface' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B extends A {}
                     class C implements B {}
@@ -107,7 +107,7 @@ class InterfaceTest extends TestCase
                     qux(new C());',
             ],
             'extendsWithMethod' => [
-                '<?php
+                'code' => '<?php
                     interface A
                     {
                         /**
@@ -127,7 +127,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'correctInterfaceMethodSignature' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo(int $a): void;
                     }
@@ -139,7 +139,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfaceMethodImplementedInParent' => [
-                '<?php
+                'code' => '<?php
                     interface MyInterface {
                         public function fooFoo(int $a): void;
                     }
@@ -153,7 +153,7 @@ class InterfaceTest extends TestCase
                     class C extends B implements MyInterface { }',
             ],
             'interfaceMethodSignatureInTrait' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo(int $a, int $b): void;
                     }
@@ -168,7 +168,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'delayedInterface' => [
-                '<?php
+                'code' => '<?php
                     // fails in PHP, whatcha gonna do
                     $c = new C;
 
@@ -179,7 +179,7 @@ class InterfaceTest extends TestCase
                     class C extends A implements B { }',
             ],
             'typeDoesNotContainType' => [
-                '<?php
+                'code' => '<?php
                     interface A { }
                     interface B {
                         function foo() : void;
@@ -191,7 +191,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'abstractInterfaceImplements' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function fnc() : void;
                     }
@@ -199,7 +199,7 @@ class InterfaceTest extends TestCase
                     abstract class A implements I {}',
             ],
             'abstractInterfaceImplementsButCallMethod' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function foo() : void;
                     }
@@ -211,7 +211,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'implementsPartialInterfaceMethods' => [
-                '<?php
+                'code' => '<?php
                     namespace Bat;
 
                     interface I  {
@@ -229,10 +229,10 @@ class InterfaceTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MissingReturnType'],
+                'ignored_issues' => ['MissingReturnType'],
             ],
             'interfaceConstants' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                         const A = 5;
                         const B = "two";
@@ -262,7 +262,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfaceExtendsReturnType' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B extends A {}
 
@@ -271,7 +271,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfaceInstanceofReturningInitial' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B {}
 
@@ -290,7 +290,7 @@ class InterfaceTest extends TestCase
                     foo(new C);',
             ],
             'interfaceInstanceofAndReturn' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B {}
 
@@ -306,11 +306,11 @@ class InterfaceTest extends TestCase
                     foo(new C);',
             ],
             'extendIteratorIterator' => [
-                '<?php
+                'code' => '<?php
                     class SomeIterator extends IteratorIterator {}',
             ],
             'SKIPPED-suppressMismatch' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return int
@@ -330,7 +330,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'implementStaticReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     interface I {
                       /** @return A */
@@ -345,7 +345,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'implementThisReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     interface I {
                       /** @return A */
@@ -360,7 +360,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'inheritMultipleInterfacesWithDocblocks' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                       /** @return string */
                       public function foo();
@@ -379,7 +379,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfaceReturnType' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /** @return string|null */
                         public function blah();
@@ -394,7 +394,7 @@ class InterfaceTest extends TestCase
                     $blah = (new B())->blah();',
             ],
             'interfaceExtendsTraversible' => [
-                '<?php
+                'code' => '<?php
                     interface Collection extends Countable, IteratorAggregate, ArrayAccess {}
 
                     function takesCollection(Collection $c): void {
@@ -404,7 +404,7 @@ class InterfaceTest extends TestCase
                     function takesIterable(iterable $i): void {}',
             ],
             'interfaceInstanceofInterfaceOrClass' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     class B extends Exception {}
 
@@ -428,7 +428,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'filterIteratorExtension' => [
-                '<?php
+                'code' => '<?php
                     interface I2 extends Iterator {}
 
                     class DedupeIterator extends FilterIterator {
@@ -442,7 +442,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfacInstanceMayContainOtherInterfaceInstance' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {}
                     interface I2 {}
                     class C implements I1,I2 {}
@@ -463,7 +463,7 @@ class InterfaceTest extends TestCase
                     f($o, $o);',
             ],
             'interfacePropertyIntersection' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $a;
@@ -481,7 +481,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfacePropertyIntersectionMockPropertyAccess' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         private $a;
@@ -498,7 +498,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'interfacePropertyIntersectionMockMethodAccess' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private function foo() : void {}
                     }
@@ -519,7 +519,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'docblockParamInheritance' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /** @param string[] $f */
                         function foo(array $f) : void {}
@@ -550,7 +550,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'allowStaticCallOnInterfaceMethod' => [
-                '<?php
+                'code' => '<?php
                     interface IFoo {
                         public static function doFoo() : void;
                     }
@@ -560,7 +560,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'SKIPPED-inheritSystemInterface' => [
-                '<?php
+                'code' => '<?php
                     interface I extends \RecursiveIterator {}
 
                     function f(I $c): void {
@@ -568,7 +568,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'intersectMixedTypes' => [
-                '<?php
+                'code' => '<?php
                     interface IFoo {
                         function foo() : string;
                     }
@@ -588,7 +588,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'intersectionObjectTypes' => [
-                '<?php
+                'code' => '<?php
 
                     class C {}
 
@@ -611,7 +611,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'noTypeCoercionWhenIntersectionMatches' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {}
                     interface I2 {}
                     class A implements I1 {}
@@ -625,7 +625,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'intersectIterators' => [
-                '<?php
+                'code' => '<?php
                     class A {} function takesA(A $p): void {}
                     class B {} function takesB(B $p): void {}
 
@@ -646,7 +646,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'inheritDocFromObviousInterface' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                         /**
                          * @param string $type
@@ -666,7 +666,7 @@ class InterfaceTest extends TestCase
                     }',
             ],
             'correctClassCasing' => [
-                '<?php
+                'code' => '<?php
                     interface F {
                         /** @return static */
                         public function m(): self;
@@ -693,7 +693,7 @@ class InterfaceTest extends TestCase
                     }'
             ],
             'dontModifyAfterUnnecessaryAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     interface I {}
 
@@ -708,7 +708,7 @@ class InterfaceTest extends TestCase
                     }'
             ],
             'interfaceAssertionOnClassInterfaceUnion' => [
-                '<?php
+                'code' => '<?php
                     class SomeClass {}
 
                     interface SomeInterface {
@@ -725,18 +725,18 @@ class InterfaceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidInterface' => [
-                '<?php
+                'code' => '<?php
                     class C2 implements A { }',
                 'error_message' => 'UndefinedClass',
             ],
             'noInterfacePropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     interface A { }
 
                     function fooFoo(A $a): void {
@@ -747,7 +747,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'NoInterfaceProperties',
             ],
             'noInterfacePropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     interface A { }
 
                     function fooFoo(A $a): void {
@@ -756,7 +756,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'NoInterfaceProperties',
             ],
             'unimplementedInterfaceMethod' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo() : void;
                     }
@@ -765,7 +765,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
             'mismatchingInterfaceMethodSignature' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo(int $a): void;
                     }
@@ -778,7 +778,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingInterfaceMethodSignatureInTrait' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo(int $a, int $b): void;
                     }
@@ -794,7 +794,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingInterfaceMethodSignatureInImplementer' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function fooFoo(int $a, int $b): void;
                     }
@@ -813,7 +813,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingReturnTypes' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                       public function foo(): string;
                     }
@@ -828,7 +828,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'mismatchingDocblockReturnTypes' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                       /** @return string */
                       public function foo();
@@ -846,7 +846,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'ImplementedReturnTypeMismatch',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function foo() : void;
                     }
@@ -859,7 +859,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'abstractInterfaceImplementsWithSubclass' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function fnc() : void;
                     }
@@ -870,7 +870,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
             'lessSpecificReturnStatement' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B extends A {}
 
@@ -880,7 +880,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'interfaceInstanceofAndTwoReturns' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B {}
 
@@ -898,7 +898,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'deprecatedInterface' => [
-                '<?php
+                'code' => '<?php
                     /** @deprecated */
                     interface Container {}
 
@@ -906,7 +906,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'DeprecatedInterface',
             ],
             'inheritMultipleInterfacesWithConflictingDocblocks' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {
                         /** @return string */
                         public function foo();
@@ -923,13 +923,13 @@ class InterfaceTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'interfaceInstantiation' => [
-                '<?php
+                'code' => '<?php
                     interface myInterface{}
                     new myInterface();',
                 'error_message' => 'InterfaceInstantiation',
             ],
             'nonStaticInterfaceMethod' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public static function m(): void;
                     }
@@ -939,7 +939,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'staticInterfaceCall' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public static function doFoo();
                     }
@@ -948,21 +948,21 @@ class InterfaceTest extends TestCase
                 'error_message' => 'UndefinedClass',
             ],
             'missingReturnType' => [
-                '<?php
+                'code' => '<?php
                     interface foo {
                         public function withoutAnyReturnType();
                     }',
                 'error_message' => 'MissingReturnType'
             ],
             'missingParamType' => [
-                '<?php
+                'code' => '<?php
                     interface foo {
                         public function withoutAnyReturnType($s) : void;
                     }',
                 'error_message' => 'MissingParamType'
             ],
             'reconcileAfterClassInstanceof' => [
-                '<?php
+                'code' => '<?php
                     interface Base {}
 
                     class E implements Base {
@@ -979,7 +979,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31',
             ],
             'reconcileAfterInterfaceInstanceof' => [
-                '<?php
+                'code' => '<?php
                     interface Base {}
 
                     interface E extends Base {

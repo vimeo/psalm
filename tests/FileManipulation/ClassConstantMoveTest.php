@@ -75,13 +75,13 @@ class ClassConstantMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleClassConstant' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -96,7 +96,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -113,12 +113,12 @@ class ClassConstantMoveTest extends TestCase
 
                         const FOO_BAR = 15;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::FOO' => 'Ns\B::FOO_BAR',
                 ],
             ],
             'renameSimpleClassConstant' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -133,7 +133,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -148,7 +148,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO_BAR;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::FOO' => 'Ns\A::FOO_BAR',
                 ],
             ],

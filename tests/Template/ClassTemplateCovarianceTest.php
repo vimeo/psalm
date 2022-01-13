@@ -12,13 +12,13 @@ class ClassTemplateCovarianceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'allowBoundedType' => [
-                '<?php
+                'code' => '<?php
                     class Base {}
                     class Child extends Base {}
 
@@ -40,7 +40,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
             ],
             'allowMoreSpecificArray' => [
-                '<?php
+                'code' => '<?php
                     /** @template-covariant T */
                     class Foo {
                         /** @param \Closure():T $closure */
@@ -57,7 +57,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }'
             ],
             'allowPassingToCovariantCollectionWithoutExtends' => [
-                '<?php
+                'code' => '<?php
                     abstract class Animal {
                         abstract public function getSound() : string;
                     }
@@ -106,7 +106,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
             ],
             'allowPassingToCovariantCollectionWithExtends' => [
-                '<?php
+                'code' => '<?php
                     abstract class Animal {
                         abstract public function getSound() : string;
                     }
@@ -154,7 +154,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     getSounds(new HardwiredDogCollection([new Dog]));',
             ],
             'butWithCatInstead' => [
-                '<?php
+                'code' => '<?php
                     /** @template-covariant T as object **/
                     interface Viewable
                     {
@@ -191,7 +191,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     getView(new Cat());'
             ],
             'allowExtendingInterfaceWithExtraParam' => [
-                '<?php
+                'code' => '<?php
                     usesElementInterfaceCollection(new Collection([ new Element ]));
 
                     /**
@@ -218,7 +218,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     function usesElementInterfaceCollection(CollectionInterface $col) :void {}'
             ],
             'extendsCovariantCoreClassWithSameParamCount' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -249,7 +249,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }'
             ],
             'extendsCovariantCoreClassWithSubstitutedParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template-implements IteratorAggregate<int,TValue>
@@ -279,7 +279,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }'
             ],
             'allowImmutableCovariance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-immutable
                      */
@@ -341,7 +341,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     covariant($misc);',
             ],
             'allowCovariantReferenceToMapToCovariant' => [
-                '<?php
+                'code' => '<?php
                     /** @template-covariant T */
                     class CovariantReference
                     {
@@ -383,7 +383,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }'
             ],
             'allowCovariantReturnOnArrays' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T
                      */
@@ -402,7 +402,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
             ],
             'allowIteratorCovariance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T
                      */
@@ -431,7 +431,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
             ],
             'extendWithArrayTemplate' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T1
                      */
@@ -454,7 +454,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     }',
             ],
             'extendsArrayWithCovariant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T1
                      */
@@ -476,12 +476,12 @@ class ClassTemplateCovarianceTest extends TestCase
                          */
                         public function getNested(): IChildCollection;
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '7.4',
+                'php_version' => '7.4',
             ],
             'extendsTKeyedArrayWithCovariant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T1
                      */
@@ -503,12 +503,12 @@ class ClassTemplateCovarianceTest extends TestCase
                          */
                         public function getNested(): IChildCollection;
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '7.4',
+                'php_version' => '7.4',
             ],
             'noNeedForCovarianceWithFunctionTemplate' => [
-                '<?php
+                'code' => '<?php
                     class SomeParent {}
                     class TypeA extends SomeParent {}
                     class TypeB extends SomeParent {}
@@ -535,13 +535,13 @@ class ClassTemplateCovarianceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'preventCovariantParamUsage' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T
                      */
@@ -554,7 +554,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 'error_message' => 'InvalidTemplateParam',
             ],
             'preventExtendingWithCovariance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -574,7 +574,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 'error_message' => 'InvalidTemplateParam',
             ],
             'expectsTemplatedObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @template-implements ArrayAccess<int,T>
@@ -632,7 +632,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'preventGeneratorVariance' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         function a(): void {}
                     }
@@ -659,7 +659,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'preventCovariantParamMappingToInvariant' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     class InvariantReference
                     {
@@ -702,7 +702,7 @@ class ClassTemplateCovarianceTest extends TestCase
                 'error_message' => 'InvalidTemplateParam'
             ],
             'preventExtendingCoreWithCovariantParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant TValue
                      * @template-extends \ArrayObject<int,TValue>

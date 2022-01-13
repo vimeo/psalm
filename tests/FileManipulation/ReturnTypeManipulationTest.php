@@ -5,17 +5,17 @@ namespace Psalm\Tests\FileManipulation;
 class ReturnTypeManipulationTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'addMissingClosureStringReturnType56' => [
-                '<?php
+                'input' => '<?php
                     $a = function() {
                         return "hello";
                     };',
-                '<?php
+                'output' => '<?php
                     $a = /**
                      * @return string
                      *
@@ -24,30 +24,30 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function() {
                         return "hello";
                     };',
-                '5.6',
-                ['MissingClosureReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingClosureReturnType'],
+                'safe_types' => true,
             ],
             'addMissingVoidReturnTypeClosureUse71' => [
-                '<?php
+                'input' => '<?php
                     $a = "foo";
                     $b = function() use ($a) {};',
-                '<?php
+                'output' => '<?php
                     $a = "foo";
                     $b = function() use ($a): void {};',
-                '7.1',
-                ['MissingClosureReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingClosureReturnType'],
+                'safe_types' => false,
             ],
             'fixInvalidIntReturnType56' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @return int
                      */
                     function foo() {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string
                      *
@@ -56,48 +56,48 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo() {
                         return "hello";
                     }',
-                '5.6',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnType70' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @return int
                      */
                     function foo(): int {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @psalm-return \'hello\'
                      */
                     function foo(): string {
                         return "hello";
                     }',
-                '7.0',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeJustInTypehint70' => [
-                '<?php
+                'input' => '<?php
                     function foo(): int {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): string {
                         return "hello";
                     }',
-                '7.0',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidStringReturnTypeThatIsNotPhpCompatible70' => [
-                '<?php
+                'input' => '<?php
                     function foo(): string {
                         return rand(0, 1) ? "hello" : false;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return false|string
                      *
@@ -106,16 +106,16 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo() {
                         return rand(0, 1) ? "hello" : false;
                     }',
-                '7.0',
-                ['InvalidFalsableReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidFalsableReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
-                '<?php
+                'input' => '<?php
                     function foo(): string {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|string
                      *
@@ -124,56 +124,56 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '7.0',
-                ['InvalidNullableReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidNullableReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeJustInTypehintWithComment70' => [
-                '<?php
+                'input' => '<?php
                     function foo() /** cool : beans */ : int /** cool : beans */ {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() /** cool : beans */ : string /** cool : beans */ {
                         return "hello";
                     }',
-                '7.0',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeJustInTypehintWithSingleLineComment70' => [
-                '<?php
+                'input' => '<?php
                     function foo() // hello
                     : int {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() // hello
                     : string {
                         return "hello";
                     }',
-                '7.0',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'fixMismatchingDocblockReturnType70' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @return int
                      */
                     function foo(): string {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): string {
                         return "hello";
                     }',
-                '7.0',
-                ['MismatchingDocblockReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockReturnType'],
+                'safe_types' => true,
             ],
             'preserveFormat' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * Here is a paragraph
                      *
@@ -188,7 +188,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo(): int {
                       return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * Here is a paragraph
                      *
@@ -204,12 +204,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo(): string {
                       return "hello";
                     }',
-                '7.0',
-                ['InvalidReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => true,
             ],
             'addLessSpecificArrayReturnType71' => [
-                '<?php
+                'input' => '<?php
                     namespace A\B {
                         class C {}
                     }
@@ -223,7 +223,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace A\B {
                         class C {}
                     }
@@ -242,12 +242,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.1',
-                ['LessSpecificReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => true,
             ],
             'fixLessSpecificClosureReturnType' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $name) : string {
                         return $name . " hello";
                     }
@@ -257,7 +257,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return foo($name);
                         };
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(string $name) : string {
                         return $name . " hello";
                     }
@@ -270,12 +270,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return foo($name);
                         };
                     }',
-                '7.1',
-                ['LessSpecificReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
             ],
             'fixLessSpecificReturnTypePreserveNotes' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo;
 
                     /**
@@ -284,7 +284,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo() {
                         return new \stdClass();
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo;
 
                     /**
@@ -293,12 +293,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function foo() {
                         return new \stdClass();
                     }',
-                '5.6',
-                ['LessSpecificReturnType'],
-                false,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
             ],
             'fixInvalidReturnTypePreserveNotes' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo;
 
                     class A {
@@ -309,7 +309,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return new \stdClass();
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo;
 
                     class A {
@@ -320,12 +320,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return new \stdClass();
                         }
                     }',
-                '5.6',
-                ['InvalidReturnType'],
-                false,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
             ],
             'fixInvalidNullableReturnTypePreserveNotes' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo;
 
                     class A {
@@ -336,7 +336,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return "hello";
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo;
 
                     class A {
@@ -349,12 +349,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return "hello";
                         }
                     }',
-                '7.1',
-                ['LessSpecificReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
             ],
             'fixLessSpecificReturnType' => [
-                '<?php
+                'input' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -366,7 +366,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return new C;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -378,12 +378,12 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return new C;
                         }
                     }',
-                '7.1',
-                ['LessSpecificReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeJustInPhpDoc' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @return int
@@ -398,7 +398,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                          */
                         protected function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return int
@@ -413,79 +413,79 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                          */
                         protected function foo() {}
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
             ],
             'fixInvalidIntReturnTypeJustInPhpDocWhenDisallowingBackwardsIncompatibleChanges' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @return int
                          */
                         protected function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return void
                          */
                         protected function foo() {}
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => false,
             ],
             'fixInvalidIntReturnTypeInFinalMethodWhenDisallowingBackwardsIncompatibleChanges' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @return int
                          */
                         protected final function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         protected final function foo(): void {}
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => false,
             ],
             'fixInvalidIntReturnTypeInFinalClassWhenDisallowingBackwardsIncompatibleChanges' => [
-                '<?php
+                'input' => '<?php
                     final class A {
                         /**
                          * @return int
                          */
                         protected function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     final class A {
                         protected function foo(): void {}
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => false,
             ],
             'fixInvalidIntReturnTypeInFunctionWhenDisallowingBackwardsIncompatibleChanges' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @return int
                      */
                     function foo() {}',
-                '<?php
+                'output' => '<?php
                     function foo(): void {}',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => false,
             ],
             'dontReplaceValidReturnTypePreventingBackwardsIncompatibility' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @return int[]|null
@@ -494,7 +494,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return ["hello"];
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return string[]
@@ -505,13 +505,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return ["hello"];
                         }
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => false,
             ],
             'dontReplaceValidReturnTypeAllowBackwardsIncompatibility' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /**
                          * @return int[]|null
@@ -520,7 +520,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return ["hello"];
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return string[]
@@ -531,13 +531,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return ["hello"];
                         }
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'dontAlterForLessSpecificReturnTypeWhenInheritDocPresent' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /** @return A */
                         public function getMe() {
@@ -551,7 +551,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return static
@@ -567,13 +567,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '7.3',
-                ['LessSpecificReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'dontOOM' => [
-                '<?php
+                'input' => '<?php
                     class FC {
                         public function __invoke() : void {}
                     }
@@ -586,7 +586,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         }
                         $cb();
                     }',
-                '<?php
+                'output' => '<?php
                     class FC {
                         public function __invoke() : void {}
                     }
@@ -599,13 +599,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         }
                         $cb();
                     }',
-                '7.3',
-                ['InvalidReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'tryCatchReturn' => [
-                '<?php
+                'input' => '<?php
                     function scope(){
                         try{
                             return func();
@@ -618,7 +618,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function func(): stdClass{
                         return new stdClass();
                     }',
-                '<?php
+                'output' => '<?php
                     function scope(): ?stdClass{
                         try{
                             return func();
@@ -631,13 +631,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     function func(): stdClass{
                         return new stdClass();
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'switchReturn' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @param string $a
                      */
@@ -647,7 +647,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                                 return [];
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @param string $a
                      *
@@ -659,13 +659,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                                 return [];
                         }
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'GenericObjectInSignature' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @template T
                      */
@@ -686,7 +686,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return $a;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @template T
                      */
@@ -710,103 +710,103 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             return $a;
                         }
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'OrFalseInReturn' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         /** @var false|array $a */
                         $a = false;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function a(): array|false {
                         /** @var false|array $a */
                         $a = false;
                         return $a;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'OrFalseNullInReturn' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         /** @var array|false|null $a */
                         $a = false;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function a(): array|false|null {
                         /** @var array|false|null $a */
                         $a = false;
                         return $a;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'NullUnionReturn8' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         /** @var int|string|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function a(): int|string|null {
                         /** @var int|string|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'NullableReturn8' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         /** @var int|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function a(): int|null {
                         /** @var int|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'NullableReturn7' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         /** @var int|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function a(): ?int {
                         /** @var int|null $a */
                         $a = 0;
                         return $a;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'ForeignStatic' => [
-                '<?php
+                'input' => '<?php
                     class a {
                         public function g(): static { return $this; }
                     }
@@ -817,7 +817,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         public function b() { return (new b)->g(); }
                     }
                 ',
-                '<?php
+                'output' => '<?php
                     class a {
                         public function g(): static { return $this; }
                     }
@@ -828,13 +828,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         public function b(): b { return (new b)->g(); }
                     }
                 ',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'ForeignStaticIntersection' => [
-                '<?php
+                'input' => '<?php
                     class a {
                         public function g(): static { return $this; }
                     }
@@ -845,7 +845,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         public function b() { return (new b)->g(); }
                     }
                 ',
-                '<?php
+                'output' => '<?php
                     class a {
                         public function g(): static { return $this; }
                     }
@@ -856,25 +856,25 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         public function b(): a&b { return (new b)->g(); }
                     }
                 ',
-                '8.1',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'ArrowFunction' => [
-                '<?php
+                'input' => '<?php
                     fn () => 0;
                 ',
-                '<?php
+                'output' => '<?php
                     fn (): int => 0;
                 ',
-                '8.0',
-                ['MissingClosureReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingClosureReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'Intersection80' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @template T
                      */
@@ -891,7 +891,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         return $a;
                     }
                 ',
-                '<?php
+                'output' => '<?php
                     /**
                      * @template T
                      */
@@ -913,13 +913,13 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         return $a;
                     }
                 ',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'Intersection81' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @template T
                      */
@@ -936,7 +936,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         return $a;
                     }
                 ',
-                '<?php
+                'output' => '<?php
                     /**
                      * @template T
                      */
@@ -956,10 +956,10 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         return $a;
                     }
                 ',
-                '8.1',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ]
         ];
     }

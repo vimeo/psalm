@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class UndefinedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'possiblyUndefinedVariable' => [
-                '<?php
+                'input' => '<?php
                     $flag = rand(0, 1);
                     $otherflag = rand(0, 1);
                     $yetanotherflag = rand(0, 1);
@@ -31,7 +31,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                         echo $a;
                     }',
-                '<?php
+                'output' => '<?php
                     $flag = rand(0, 1);
                     $otherflag = rand(0, 1);
                     $yetanotherflag = rand(0, 1);
@@ -52,12 +52,12 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                         echo $a;
                     }',
-                '5.6',
-                ['PossiblyUndefinedGlobalVariable'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
             ],
             'twoPossiblyUndefinedVariables' => [
-                '<?php
+                'input' => '<?php
                     if (rand(0, 1)) {
                       $a = 1;
                       $b = 2;
@@ -65,7 +65,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                     echo $a;
                     echo $b;',
-                '<?php
+                'output' => '<?php
                     $a = null;
                     $b = null;
                     if (rand(0, 1)) {
@@ -75,12 +75,12 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                     echo $a;
                     echo $b;',
-                '5.6',
-                ['PossiblyUndefinedGlobalVariable'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
             ],
             'possiblyUndefinedVariableInElse' => [
-                '<?php
+                'input' => '<?php
                     if (rand(0, 1)) {
                       // do nothing
                     } else {
@@ -88,7 +88,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
                     }
 
                     echo $a;',
-                '<?php
+                'output' => '<?php
                     $a = null;
                     if (rand(0, 1)) {
                       // do nothing
@@ -97,27 +97,27 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
                     }
 
                     echo $a;',
-                '5.6',
-                ['PossiblyUndefinedGlobalVariable'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
             ],
             'unsetPossiblyUndefinedVariable' => [
-                '<?php
+                'input' => '<?php
                     if (rand(0, 1)) {
                       $a = "bar";
                     }
                     unset($a);',
-                '<?php
+                'output' => '<?php
                     if (rand(0, 1)) {
                       $a = "bar";
                     }
                     unset($a);',
-                '5.6',
-                ['PossiblyUndefinedGlobalVariable'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
             ],
             'useUnqualifierPlugin' => [
-                '<?php
+                'input' => '<?php
                     namespace A\B\C {
                         class D {}
                     }
@@ -126,7 +126,7 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                         new \A\B\C\D();
                     }',
-                '<?php
+                'output' => '<?php
                     namespace A\B\C {
                         class D {}
                     }
@@ -135,9 +135,9 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                         new D();
                     }',
-                '7.4',
-                [],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => [],
+                'safe_types' => true,
             ],
         ];
     }

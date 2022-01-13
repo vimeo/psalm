@@ -11,13 +11,13 @@ class PropertyTypeInvarianceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validcode' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass
                     {
                         /** @var null|string */
@@ -45,7 +45,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplatedInvariance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as string|null
                      */
@@ -63,7 +63,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplatedInvarianceWithListTemplate' => [
-                '<?php
+                'code' => '<?php
                     abstract class Item {}
                     class Foo extends Item {}
 
@@ -82,7 +82,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplatedInvarianceWithClassTemplate' => [
-                '<?php
+                'code' => '<?php
                     abstract class Item {}
                     class Foo extends Item {}
 
@@ -104,7 +104,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplatedInvarianceWithClassStringTemplate' => [
-                '<?php
+                'code' => '<?php
                     abstract class Item {}
                     class Foo extends Item {}
 
@@ -123,7 +123,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'templatedInvarianceGrandchild' => [
-                '<?php
+                'code' => '<?php
                     abstract class Item {}
                     class Foo extends Item {}
                     class Bar extends Foo {}
@@ -153,7 +153,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplateCovariant' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class Bar extends Foo {}
                     class Baz extends Bar {}
@@ -179,7 +179,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }',
             ],
             'allowTemplateCovariantManyTemplates' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends B {}
@@ -238,13 +238,13 @@ class PropertyTypeInvarianceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'variantDocblockProperties' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass
                     {
                         /** @var null|string */
@@ -259,7 +259,7 @@ class PropertyTypeInvarianceTest extends TestCase
                 'error_message' => 'NonInvariantDocblockPropertyType',
             ],
             'variantProperties' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass
                     {
                         protected ?string $mightExist = null;
@@ -272,7 +272,7 @@ class PropertyTypeInvarianceTest extends TestCase
                 'error_message' => 'NonInvariantPropertyType',
             ],
             'variantTemplatedProperties' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as string|null
                      */
@@ -291,7 +291,7 @@ class PropertyTypeInvarianceTest extends TestCase
                 'error_message' => 'NonInvariantDocblockPropertyType',
             ],
             'variantTemplatedGrandchild' => [
-                '<?php
+                'code' => '<?php
                     abstract class Item {}
                     class Foo extends Item {}
                     class Bar extends Foo {}
@@ -322,7 +322,7 @@ class PropertyTypeInvarianceTest extends TestCase
                 'error_message' => 'NonInvariantDocblockPropertyType',
             ],
             'variantPropertiesWithTemplateNotSpecified' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
 
                     /** @template T */

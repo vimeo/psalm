@@ -12,7 +12,7 @@ class InArrayTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'inArrayNonStrictCallReturnsBoolWhenTypesAreCompatible' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @return string[]
                  */
@@ -21,11 +21,11 @@ class InArrayTest extends TestCase
                 }
                 $ret = in_array("1", f());
             ',
-            ['$ret' => 'bool'],
+            'assertions' => ['$ret' => 'bool'],
         ];
 
         yield 'inArrayNonStrictCallReturnsBoolWhenTypesAreIncompatible' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @return string[]
                  */
@@ -34,11 +34,11 @@ class InArrayTest extends TestCase
                 }
                 $ret = in_array(1, f());
             ',
-            ['$ret' => 'bool'],
+            'assertions' => ['$ret' => 'bool'],
         ];
 
         yield 'inArrayStrictCallReturnsFalseWhenTypesAreIncompatible' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @return string[]
                  */
@@ -47,11 +47,11 @@ class InArrayTest extends TestCase
                 }
                 $ret = in_array(1, f(), true);
             ',
-            ['$ret' => 'false'],
+            'assertions' => ['$ret' => 'false'],
         ];
 
         yield 'inArrayStrictCallReturnsBoolWhenTypesAreCompatible' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @return string[]
                  */
@@ -60,7 +60,7 @@ class InArrayTest extends TestCase
                 }
                 $ret = in_array("1", f(), true);
             ',
-            ['$ret' => 'bool'],
+            'assertions' => ['$ret' => 'bool'],
         ];
     }
 }

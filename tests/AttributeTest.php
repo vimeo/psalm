@@ -11,13 +11,13 @@ class AttributeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'classAndPropertyAttributesExists' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -49,12 +49,12 @@ class AttributeTest extends TestCase
                             public string $name = "",
                         ) {}
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'functionAttributeExists' => [
-                '<?php
+                'code' => '<?php
                     namespace {
                         #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_FUNCTION | Attribute::TARGET_PARAMETER)]
                         class Deprecated {}
@@ -64,12 +64,12 @@ class AttributeTest extends TestCase
                         #[\Deprecated]
                         function foo() : void {}
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'paramAttributeExists' => [
-                '<?php
+                'code' => '<?php
                     namespace {
                         #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_FUNCTION | Attribute::TARGET_PARAMETER)]
                         class Deprecated {}
@@ -78,12 +78,12 @@ class AttributeTest extends TestCase
                     namespace Foo\Bar {
                         function foo(#[\Deprecated] string $foo) : void {}
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'testReflectingClass' => [
-                '<?php
+                'code' => '<?php
                     abstract class BaseAttribute {
                         public function __construct(public string $name) {}
                     }
@@ -98,12 +98,12 @@ class AttributeTest extends TestCase
                             echo $attribute->name;
                         }
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'testReflectingAllAttributes' => [
-                '<?php
+                'code' => '<?php
                     /** @var class-string $a */
                     $cs = stdClass::class;
 
@@ -114,10 +114,10 @@ class AttributeTest extends TestCase
                     '$b' => 'array<array-key, ReflectionAttribute<object>>',
                 ],
                 [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'convertKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute(Attribute::TARGET_CLASS)]
                     class Route {
                         private $methods = [];
@@ -131,21 +131,21 @@ class AttributeTest extends TestCase
                     #[Route(methods: ["GET"])]
                     class HealthController
                     {}',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allowsRepeatableFlag' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute(Attribute::TARGET_ALL|Attribute::IS_REPEATABLE)] // results in int(127)
                     class A {}
                 ',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allowsClassString' => [
-                '<?php
+                'code' => '<?php
 
                     #[Attribute(Attribute::TARGET_CLASS)]
                     class Foo
@@ -160,12 +160,12 @@ class AttributeTest extends TestCase
 
                     #[Foo(_className: Baz::class)]
                     class Baz {}',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allowsClassStringFromDifferentNamespace' => [
-                '<?php
+                'code' => '<?php
 
                     namespace NamespaceOne {
                         use Attribute;
@@ -200,7 +200,7 @@ class AttributeTest extends TestCase
                 '
             ],
             'returnTypeWillChange7.1' => [
-                '<?php
+                'code' => '<?php
 
                     namespace Rabus\PsalmReturnTypeWillChange;
 
@@ -216,12 +216,12 @@ class AttributeTest extends TestCase
                             return new EmptyIterator();
                         }
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '7.1'
+                'php_version' => '7.1'
             ],
             'returnTypeWillChange8.1' => [
-                '<?php
+                'code' => '<?php
 
                     namespace Rabus\PsalmReturnTypeWillChange;
 
@@ -237,21 +237,21 @@ class AttributeTest extends TestCase
                             return new EmptyIterator();
                         }
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.1'
+                'php_version' => '8.1'
             ]
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'attributeClassHasNoAttributeAnnotation' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     #[A]
@@ -259,10 +259,10 @@ class AttributeTest extends TestCase
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'missingAttributeOnClass' => [
-                '<?php
+                'code' => '<?php
                     use Foo\Bar\Pure;
 
                     #[Pure]
@@ -270,10 +270,10 @@ class AttributeTest extends TestCase
                 'error_message' => 'UndefinedAttributeClass',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'missingAttributeOnFunction' => [
-                '<?php
+                'code' => '<?php
                     use Foo\Bar\Pure;
 
                     #[Pure]
@@ -281,20 +281,20 @@ class AttributeTest extends TestCase
                 'error_message' => 'UndefinedAttributeClass',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'missingAttributeOnParam' => [
-                '<?php
+                'code' => '<?php
                     use Foo\Bar\Pure;
 
                     function foo(#[Pure] string $str) : void {}',
                 'error_message' => 'UndefinedAttributeClass',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'tooFewArgumentsToAttributeConstructor' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -307,10 +307,10 @@ class AttributeTest extends TestCase
                 'error_message' => 'TooFewArguments',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'invalidArgument' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class Foo
                     {
@@ -324,10 +324,10 @@ class AttributeTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'classAttributeUsedOnFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -340,37 +340,37 @@ class AttributeTest extends TestCase
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'interfaceCannotBeAttributeClass' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     interface Foo {}',
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'traitCannotBeAttributeClass' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     interface Foo {}',
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'abstractClassCannotBeAttributeClass' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     abstract class Baz {}',
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'abstractClassCannotHavePrivateConstructor' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class Baz {
                         private function __construct() {}
@@ -378,7 +378,7 @@ class AttributeTest extends TestCase
                 'error_message' => 'InvalidAttribute',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
         ];
     }

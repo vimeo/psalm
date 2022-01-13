@@ -11,20 +11,20 @@ class AssignmentTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nestedAssignment' => [
-                '<?php
+                'code' => '<?php
                     $a = $b = $c = 5;',
                 'assertions' => [
                     '$a' => 'int',
                 ],
             ],
             'assignmentInByRefParams' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $s, ?string $t): void {}
                     foo($s = null, $t = null);
                     echo $s;
@@ -41,7 +41,7 @@ class AssignmentTest extends TestCase
                     echo $e;',
             ],
             'bitwiseAssignment' => [
-                '<?php
+                'code' => '<?php
                     $x = 0;
                     $x |= (int) (rand(0, 2) !== 2);
                     $x |= 1;
@@ -51,20 +51,20 @@ class AssignmentTest extends TestCase
                     }',
             ],
             'ifAssignment' => [
-                '<?php
+                'code' => '<?php
                     if ($foo = rand(0, 1)) {
                         echo $foo;
                     }',
             ],
             'explicitlyTypedMixedAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed */
                     $a = 5;
                     /** @var mixed */
                     $b = $a;',
             ],
             'referenceAssignmentArray' => [
-                '<?php
+                'code' => '<?php
                     $matrix = [
                       [1, 0],
                       [0, 1],
@@ -73,23 +73,23 @@ class AssignmentTest extends TestCase
                     echo $row[0];',
             ],
             'referenceAssignmentLhs' => [
-                '<?php
+                'code' => '<?php
                     $a = 1;
                     $b =& $a;
                     echo $b;',
             ],
             'referenceAssignmentRhs' => [
-                '<?php
+                'code' => '<?php
                     $a = 1;
                     $b =& $a;
                     echo $a;',
             ],
             'chainedAssignmentUncomplicated' => [
-                '<?php
+                'code' => '<?php
                     $a = $b = $c = $d = $e = $f = $g = $h = $i = $j = $k = $l = $m
                        = $n = $o = $p = $q = $r = $s = $t = $u = $v = $w = $x = $y
                        = $z = $A = $B = 0;',
-                [
+                'assertions' => [
                     '$a' => 'int',
                     '$B' => 'int',
                 ]
@@ -98,13 +98,13 @@ class AssignmentTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'mixedAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed */
                     $a = 5;
                     $b = $a;',

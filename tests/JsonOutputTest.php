@@ -67,13 +67,13 @@ class JsonOutputTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,message:string,line:int,error:string}>
+     * @return array<string,array{code:string,message:string,line:int,error:string}>
      */
     public function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): string {
                         return $a + 1;
                     }',
@@ -82,7 +82,7 @@ class JsonOutputTest extends TestCase
                 'error' => '$a + 1',
             ],
             'undefinedVar' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
@@ -91,7 +91,7 @@ class JsonOutputTest extends TestCase
                 'error' => '$b',
             ],
             'unknownParamClass' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
@@ -100,7 +100,7 @@ class JsonOutputTest extends TestCase
                 'error' => 'Badger\\Bodger',
             ],
             'missingReturnType' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo() {
                         return "hello";
                     }',
@@ -109,7 +109,7 @@ class JsonOutputTest extends TestCase
                 'error' => 'fooFoo',
             ],
             'wrongMultilineReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return int
                      */
@@ -121,7 +121,7 @@ class JsonOutputTest extends TestCase
                 'error' => '"hello"',
             ],
             'assertCancelsMixedAssignment' => [
-                '<?php
+                'code' => '<?php
                     $a = $_GET["hello"];
                     assert(is_int($a));
                     if (is_int($a)) {}',

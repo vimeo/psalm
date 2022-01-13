@@ -12,13 +12,13 @@ class ClassStringMapTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'basicClassStringMap' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -46,7 +46,7 @@ class ClassStringMapTest extends TestCase
                     }',
             ],
             'basicClassStringMapDifferentTemplateName' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -74,7 +74,7 @@ class ClassStringMapTest extends TestCase
                     }',
             ],
             'noCrashWithSplatMap' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /** @param array<array-key, mixed> $args */
@@ -90,13 +90,13 @@ class ClassStringMapTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'assignInvalidClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -114,7 +114,7 @@ class ClassStringMapTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue'
             ],
             'assignInvalidClassDifferentTemplateName' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {

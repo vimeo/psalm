@@ -9,13 +9,13 @@ class ThisOutTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'changeInterface' => [
-                '<?php
+                'code' => '<?php
                       interface Foo {
                           /**
                            * @return void
@@ -37,7 +37,7 @@ class ThisOutTest extends TestCase
                 '
             ],
             'changeTemplateArguments' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T as int
                      */

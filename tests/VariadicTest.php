@@ -71,38 +71,38 @@ class VariadicTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,1?:array<string,string>,2?:string[]}>
+     * @return iterable<string,array{code: string}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'variadic' => [
-                '<?php
-                /**
-                 * @param mixed $req
-                 * @param mixed $opt
-                 * @param mixed ...$params
-                 * @return array<mixed>
-                 */
-                function f($req, $opt = null, ...$params) {
-                    return $params;
-                }
+                'code' => '<?php
+                    /**
+                     * @param mixed $req
+                     * @param mixed $opt
+                     * @param mixed ...$params
+                     * @return array<mixed>
+                     */
+                    function f($req, $opt = null, ...$params) {
+                        return $params;
+                    }
 
-                f(1);
-                f(1, 2);
-                f(1, 2, 3);
-                f(1, 2, 3, 4);
-                f(1, 2, 3, 4, 5);',
+                    f(1);
+                    f(1, 2);
+                    f(1, 2, 3);
+                    f(1, 2, 3, 4);
+                    f(1, 2, 3, 4, 5);',
             ],
             'funcNumArgsVariadic' => [
-                '<?php
+                'code' => '<?php
                     function test(): array {
                         return func_get_args();
                     }
                     var_export(test(2));',
             ],
             'variadicArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int ...$a_list
                      * @return array<array-key, int>

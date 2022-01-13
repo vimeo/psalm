@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class UnusedCodeManipulationTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'removePossiblyUnusedMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -19,18 +19,18 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
 
                     (new A)->foo();',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedMethodInMiddle' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -41,7 +41,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
 
                     (new A)->foo();
                     (new A)->bat();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -50,12 +50,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
 
                     (new A)->foo();
                     (new A)->bat();',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removeAllPossiblyUnusedMethods' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -65,18 +65,18 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     new A();',
-                '<?php
+                'output' => '<?php
                     class A {
 
                     }
 
                     new A();',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithMixedUse' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -84,7 +84,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo($a) {
                         $a->foo();
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -92,12 +92,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo($a) {
                         $a->foo();
                     }',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithSuppression' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -106,7 +106,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -115,12 +115,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removeUnusedMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -128,18 +128,18 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
 
                     (new A)->foo();',
-                '7.1',
-                ['UnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedMethod'],
+                'safe_types' => true,
             ],
             'removeUnusedMethodAtBeginning' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         private function foo() : void {}
 
@@ -147,7 +147,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->bar();',
-                '<?php
+                'output' => '<?php
                     class A {
 
 
@@ -155,12 +155,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->bar();',
-                '7.1',
-                ['UnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedMethod'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedMethodWithDocblock' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -169,18 +169,18 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
 
                     (new A)->foo();',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removeUnusedMethodWithDocblock' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -189,18 +189,18 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new A)->foo();',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
 
                     (new A)->foo();',
-                '7.1',
-                ['UnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithVariableCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -208,7 +208,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         echo $a->$var();
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -216,12 +216,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         echo $a->$var();
                     }',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithVariableCallableCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -231,7 +231,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         takeCallable([$a, $var]);
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -241,12 +241,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         takeCallable([$a, $var]);
                     }',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithCallUserFuncCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -254,7 +254,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         call_user_func([$a, $var]);
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -262,12 +262,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         call_user_func([$a, $var]);
                     }',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithVariableCallableLhsCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                         public function bar() : void {}
@@ -280,7 +280,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A);',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {}
 
@@ -293,12 +293,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A);',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedMethodWithVariableCallOnParent' => [
-                '<?php
+                'input' => '<?php
                     class A { }
 
                     class B extends A {
@@ -310,7 +310,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new B);',
-                '<?php
+                'output' => '<?php
                     class A { }
 
                     class B extends A {
@@ -322,12 +322,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new B);',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedMethodWithVariableCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -336,7 +336,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                         /** @psalm-ignore-variable-method */
                         echo $a->$var();
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
 
                     }
@@ -345,29 +345,29 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                         /** @psalm-ignore-variable-method */
                         echo $a->$var();
                     }',
-                '7.1',
-                ['PossiblyUnusedMethod'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedMethodAndMissingReturnType' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {}
                     }
 
                     new A();',
-                '<?php
+                'output' => '<?php
                     class A {
 
                     }
 
                     new A();',
-                '7.1',
-                ['PossiblyUnusedMethod', 'MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedMethod', 'MissingReturnType'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedPropertyWithDocblock' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "hello";
@@ -377,19 +377,19 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     echo (new A)->foo;',
-                '<?php
+                'output' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "hello";
                     }
 
                     echo (new A)->foo;',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithMixedUse' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -397,7 +397,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo($a) {
                         echo $a->foo;
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -405,27 +405,27 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo($a) {
                         echo $a->foo;
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithSuppression' => [
-                '<?php
+                'input' => '<?php
                     /** @psalm-suppress PossiblyUnusedProperty */
                     class A {
                         public $foo = "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /** @psalm-suppress PossiblyUnusedProperty */
                     class A {
                         public $foo = "hello";
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableFetch' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -433,7 +433,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         echo $a->$var;
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -441,12 +441,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         echo $a->$var;
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'removePossiblyUnusedPropertyWithVariableFetch' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -455,7 +455,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                         /** @psalm-ignore-variable-property */
                         echo $a->$var;
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
 
                     }
@@ -464,12 +464,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                         /** @psalm-ignore-variable-property */
                         echo $a->$var;
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableFetchInParent' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function __set(string $k, $v) {
                             $this->$k = $v;
@@ -481,7 +481,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new B())->__set("foo", "bar");',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function __set(string $k, $v) {
                             $this->$k = $v;
@@ -493,12 +493,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new B())->__set("foo", "bar");',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableOnParent' => [
-                '<?php
+                'input' => '<?php
                     class A {}
 
                     class B extends A {
@@ -510,7 +510,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A(), "foo");',
-                '<?php
+                'output' => '<?php
                     class A {}
 
                     class B extends A {
@@ -522,12 +522,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A(), "foo");',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableFetchImplementedInterface' => [
-                '<?php
+                'input' => '<?php
                     interface I {}
 
                     class A implements I {
@@ -539,7 +539,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A(), "foo");',
-                '<?php
+                'output' => '<?php
                     interface I {}
 
                     class A implements I {
@@ -551,12 +551,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new A(), "foo");',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithStaticVariableFetch' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public static $foo = "hello";
                     }
@@ -564,7 +564,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(string $var) {
                         echo A::$$var;
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public static $foo = "hello";
                     }
@@ -572,12 +572,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(string $var) {
                         echo A::$$var;
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableAssignment' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -585,7 +585,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         $a->$var = "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public $foo = "hello";
                     }
@@ -593,12 +593,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         $a->$var = "hello";
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithVariableAssignmentOnParent' => [
-                '<?php
+                'input' => '<?php
                     class A {}
 
                     class B extends A {
@@ -610,7 +610,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new B);',
-                '<?php
+                'output' => '<?php
                     class A {}
 
                     class B extends A {
@@ -622,12 +622,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     foo(new B);',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'dontRemovePossiblyUnusedPropertyWithStaticVariableAssignment' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public static $foo = "hello";
                     }
@@ -635,7 +635,7 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(string $var) {
                         A::$$var = "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public static $foo = "hello";
                     }
@@ -643,12 +643,12 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(string $var) {
                         A::$$var = "hello";
                     }',
-                '7.1',
-                ['PossiblyUnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUnusedProperty'],
+                'safe_types' => true,
             ],
             'removeUnusedPropertyWithDocblock' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "hello";
@@ -658,16 +658,16 @@ class UnusedCodeManipulationTest extends FileManipulationTestCase
                     }
 
                     echo (new A)->foo;',
-                '<?php
+                'output' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "hello";
                     }
 
                     echo (new A)->foo;',
-                '7.1',
-                ['UnusedProperty'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedProperty'],
+                'safe_types' => true,
             ],
         ];
     }

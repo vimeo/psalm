@@ -35,13 +35,13 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'multipleValuedArray' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     $var = [];
@@ -49,7 +49,7 @@ class TypeCombinationTest extends TestCase
                     $var[] = new B();',
             ],
             'preventLiteralAndClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "array"|class-string $type_name
                      */
@@ -58,7 +58,7 @@ class TypeCombinationTest extends TestCase
                     }',
             ],
             'NeverTwice' => [
-                '<?php
+                'code' => '<?php
                     /** @return no-return */
                     function other() {
                         throw new Exception();
@@ -67,7 +67,7 @@ class TypeCombinationTest extends TestCase
                     rand(0,1) ? die() : other();',
             ],
             'ArrayAndTraversableNotIterable' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
 
                     /** @param mixed $identifier */
                     function isNullIdentifier($identifier): bool

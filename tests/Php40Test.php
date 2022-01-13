@@ -9,13 +9,13 @@ class Php40Test extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'extendOldStyleConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @return string
@@ -32,7 +32,7 @@ class Php40Test extends TestCase
                     }',
             ],
             'sameNameMethodWithNewStyleConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(string $s) { }
                         /** @return void */

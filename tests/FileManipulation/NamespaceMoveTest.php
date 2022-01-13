@@ -75,13 +75,13 @@ class NamespaceMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveClassesIntoNamespace' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         class A {
                             /** @var ?B */
@@ -117,7 +117,7 @@ class NamespaceMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Bar\Baz {
                         class A {
                             /** @var B|null */
@@ -153,7 +153,7 @@ class NamespaceMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                [
+                'migrations' => [
                     'Foo\*' => 'Bar\Baz\*',
                 ],
             ],

@@ -11,13 +11,13 @@ class PureAnnotationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'simplePureFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /** @psalm-pure */
@@ -30,7 +30,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'pureFunctionCallingBuiltinFunctions' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /** @psalm-pure */
@@ -39,7 +39,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'pureWithStrReplace' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function highlight(string $needle, string $output) : string {
                         $needle = preg_quote($needle, \'#\');
@@ -50,7 +50,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'implicitAnnotations' => [
-                '<?php
+                'code' => '<?php
                     abstract class Foo {
                         private array $options;
                         private array $defaultOptions;
@@ -74,7 +74,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'canCreateObjectWithNoExternalMutations' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-external-mutation-free */
                     class Counter {
                         private int $count = 0;
@@ -106,7 +106,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'canCreateImmutableObject' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class A {
                         private string $s;
@@ -132,7 +132,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'assertIsPureInProductionn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -142,7 +142,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'allowArrayMapClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param string[] $arr
@@ -152,7 +152,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'pureBuiltinCall' => [
-                '<?php
+                'code' => '<?php
                     final class Date
                     {
                         /** @psalm-pure */
@@ -163,7 +163,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'sortFunctionPure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      *
@@ -179,7 +179,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'exitFunctionWithNoArgumentIsPure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         exit;
@@ -187,7 +187,7 @@ class PureAnnotationTest extends TestCase
                 ',
             ],
             'exitFunctionWithIntegerArgumentIsPure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         exit(0);
@@ -195,7 +195,7 @@ class PureAnnotationTest extends TestCase
                 ',
             ],
             'dieFunctionWithNoArgumentIsPure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         die;
@@ -203,7 +203,7 @@ class PureAnnotationTest extends TestCase
                 ',
             ],
             'dieFunctionWithIntegerArgumentIsPure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         die(0);
@@ -211,7 +211,7 @@ class PureAnnotationTest extends TestCase
                 ',
             ],
             'allowPureToString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @psalm-pure */
                         public function __toString() {
@@ -228,7 +228,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'exceptionGetMessage' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -239,7 +239,7 @@ class PureAnnotationTest extends TestCase
                     echo getMessage(new Exception("test"));'
             ],
             'exceptionGetCode' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      *
@@ -252,7 +252,7 @@ class PureAnnotationTest extends TestCase
                     echo getCode(new Exception("test"));'
             ],
             'exceptionGetFile' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -263,7 +263,7 @@ class PureAnnotationTest extends TestCase
                     echo getFile(new Exception("test"));'
             ],
             'exceptionGetLine' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -274,7 +274,7 @@ class PureAnnotationTest extends TestCase
                     echo getLine(new Exception("test"));'
             ],
             'exceptionGetTrace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -285,7 +285,7 @@ class PureAnnotationTest extends TestCase
                     echo count(getTrace(new Exception("test")));'
             ],
             'exceptionGetPrevious' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -296,7 +296,7 @@ class PureAnnotationTest extends TestCase
                     echo gettype(getPrevious(new Exception("test")));'
             ],
             'exceptionGetTraceAsString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -307,7 +307,7 @@ class PureAnnotationTest extends TestCase
                     echo getTraceAsString(new Exception("test"));'
             ],
             'callingMethodInThrowStillPure' => [
-                '<?php
+                'code' => '<?php
                     final class MyException extends \Exception {
                         public static function hello(): self
                         {
@@ -330,7 +330,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'countMethodCanBePure' => [
-                '<?php
+                'code' => '<?php
                     class A implements Countable {
                         /** @psalm-mutation-free */
                         public function count(): int {
@@ -346,7 +346,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'mutationFreeAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private ?A $other = null;
 
@@ -375,7 +375,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'allowPropertyAccessOnImmutableClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /** @psalm-immutable */
@@ -397,7 +397,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'allowPureInConstrucctorThis' => [
-                '<?php
+                'code' => '<?php
                     class Port {
                        private int $portNumber;
 
@@ -418,7 +418,7 @@ class PureAnnotationTest extends TestCase
                     }'
             ],
             'pureThroughCallStatic' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @method static self FOO()
@@ -447,7 +447,7 @@ class PureAnnotationTest extends TestCase
                     }',
             ],
             'dontCrashWhileCheckingPurityOnCallStaticInATrait' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static static tt()
                      */
@@ -467,13 +467,13 @@ class PureAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'impurePropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -493,7 +493,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpurePropertyAssignment',
             ],
             'impureMethodCall' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -517,7 +517,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
             ],
             'impureFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     function impure() : ?string {
@@ -536,7 +536,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'impureConstructorCall' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -562,7 +562,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
             ],
             'canCreateObjectWithNoExternalMutations' => [
-                '<?php
+                'code' => '<?php
                     class Counter {
                         private int $count = 0;
 
@@ -584,7 +584,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
             ],
             'useOfStaticMakesFunctionImpure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function addCumulative(int $left) : int {
                         /** @var int */
@@ -595,7 +595,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureStaticVariable',
             ],
             'preventImpureArrayMapClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param string[] $arr
@@ -606,7 +606,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'sortFunctionImpure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      *
@@ -624,7 +624,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'printFunctionIsImpure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         print("x");
@@ -633,7 +633,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'exitFunctionWithNonIntegerArgumentIsImpure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         exit("x");
@@ -642,7 +642,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'dieFunctionWithNonIntegerArgumentIsImpure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function foo(): void {
                         die("x");
@@ -651,7 +651,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'impureByRef' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      */
@@ -662,7 +662,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureByReferenceAssignment'
             ],
             'staticPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     final class Number1 {
                         public static ?string $zero = null;
 
@@ -676,7 +676,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureStaticProperty',
             ],
             'staticPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     final class Number1 {
                         /** @var string|null */
                         private static $zero;
@@ -692,7 +692,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureStaticProperty',
             ],
             'preventImpureToStringViaComparison' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString() {
                             echo "hi";
@@ -710,7 +710,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall'
             ],
             'preventImpureToStringViaConcatenation' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString() {
                             echo "hi";
@@ -727,7 +727,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall'
             ],
             'countCanBeImpure' => [
-                '<?php
+                'code' => '<?php
                     class A implements Countable {
                         public function count(): int {
                             echo "oops";
@@ -744,7 +744,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'propertyFetchIsNotPure' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public string $foo = "hello";
 
@@ -756,7 +756,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpurePropertyFetch',
             ],
             'preventPropertyAccessOnMutableClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -778,7 +778,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpurePropertyFetch',
             ],
             'preventIssetOnMutableClassKnownProperty' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -800,7 +800,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpurePropertyFetch',
             ],
             'preventIssetOnMutableClassUnknownProperty' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -822,7 +822,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpurePropertyFetch',
             ],
             'impureThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public int $a = 5;
 
@@ -836,7 +836,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureVariable',
             ],
             'iterableIsNotPure' => [
-                '<?php
+                'code' => '<?php
                     namespace Test;
 
                     /**
@@ -855,7 +855,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
             ],
             'impureThroughCallStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static void test()
                      */
@@ -877,7 +877,7 @@ class PureAnnotationTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
             ],
             'impureCallableInImmutableContext' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @psalm-immutable

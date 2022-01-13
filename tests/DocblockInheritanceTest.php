@@ -11,13 +11,13 @@ class DocblockInheritanceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'inheritParentReturnDocbblock' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return int[]
@@ -34,12 +34,12 @@ class DocblockInheritanceTest extends TestCase
                     }
 
                     $b = (new Bar)->doFoo();',
-                [
+                'assertions' => [
                     '$b' => 'array<array-key, int>',
                 ],
             ],
             'inheritedSelfAnnotation' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @param self $i
@@ -59,7 +59,7 @@ class DocblockInheritanceTest extends TestCase
                     }',
             ],
             'inheritTwice' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return string[]
@@ -82,7 +82,7 @@ class DocblockInheritanceTest extends TestCase
                     }'
             ],
             'inheritTwiceWithArrayType' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return string[]
@@ -105,7 +105,7 @@ class DocblockInheritanceTest extends TestCase
                     }'
             ],
             'inheritCorrectReturnTypeOnInterface' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /**
                          * @return A
@@ -125,7 +125,7 @@ class DocblockInheritanceTest extends TestCase
                     }'
             ],
             'inheritCorrectReturnTypeOnClass' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /**
                          * @return A
@@ -154,13 +154,13 @@ class DocblockInheritanceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'automaticInheritDoc' => [
-                '<?php
+                'code' => '<?php
                     class Y {
                         /**
                          * @param string[] $arr

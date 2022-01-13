@@ -92,13 +92,13 @@ class AssertAnnotationTest extends TestCase
 
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'implictAssertInstanceOfB' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {}
@@ -118,7 +118,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implicitAssertEqualsNull' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $int): void { echo $int; }
 
                     function getIntOrNull(): ?int {
@@ -137,7 +137,7 @@ class AssertAnnotationTest extends TestCase
                     takesInt($value);',
             ],
             'dropInReplacementForAssert' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -156,7 +156,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'dropInReplacementForAntiAssert' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $foo
                      * @psalm-assert falsy $foo
@@ -178,7 +178,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'sortOfReplacementForAssert' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -197,7 +197,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implictAssertInstanceOfInterface' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -223,7 +223,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implicitAssertInstanceOfMultipleInterfaces' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -253,7 +253,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implicitAssertInstanceOfBInClassMethod' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {}
@@ -275,7 +275,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implicitAssertPropertyNotNull' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -299,7 +299,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'implicitAssertWithoutRedundantCondition' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -323,7 +323,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertInstanceOfBAnnotation' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {}
@@ -344,7 +344,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertIfTrueAnnotation' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /** @psalm-assert-if-true string $myVar */
@@ -359,7 +359,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertIfFalseAnnotation' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /** @psalm-assert-if-false string $myVar */
@@ -376,7 +376,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertServerVar' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -393,7 +393,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'dontBleedBadAssertVarIntoContext' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -421,7 +421,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertAllStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert iterable<mixed,string> $i
                      *
@@ -449,13 +449,13 @@ class AssertAnnotationTest extends TestCase
 
                     $iterable = getIterable();
                     assertAllStrings($iterable);',
-                [
+                'assertions' => [
                     '$array' => 'array<array-key, string>',
                     '$iterable' => 'iterable<mixed, string>',
                 ],
             ],
             'assertStaticMethodIfFalse' => [
-                '<?php
+                'code' => '<?php
                     class StringUtility {
                         /**
                          * @psalm-assert-if-false !null $yStr
@@ -476,7 +476,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertStaticMethodIfTrue' => [
-                '<?php
+                'code' => '<?php
                     class StringUtility {
                         /**
                          * @psalm-assert-if-true !null $yStr
@@ -497,7 +497,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertUnion' => [
-                '<?php
+                'code' => '<?php
                     class Foo{
                         public function bar() : void {}
                     }
@@ -520,7 +520,7 @@ class AssertAnnotationTest extends TestCase
                     if (!is_int($a)) $a->bar();',
             ],
             'assertThisType' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert FooType $this
@@ -544,7 +544,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeIfTrue' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert-if-true FooType $this
@@ -565,7 +565,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeCombined' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert FooType $this
@@ -602,7 +602,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeCombinedInsideMethod' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert FooType $this
@@ -640,7 +640,7 @@ class AssertAnnotationTest extends TestCase
 '
             ],
             'assertThisTypeSimpleCombined' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert FooType $this
@@ -679,7 +679,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeIfTrueCombined' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert-if-true FooType $this
@@ -712,7 +712,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeSimpleAndIfTrueCombined' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert BarType $this
@@ -742,7 +742,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertThisTypeSwitchTrue' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert-if-true FooType $this
@@ -764,7 +764,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertNotArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  mixed $value
                      * @psalm-assert !array $value
@@ -794,7 +794,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertIfTrueOnProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -817,7 +817,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertIfFalseOnProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -840,7 +840,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertIfTrueOnPropertyNegated' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -863,7 +863,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertIfFalseOnPropertyNegated' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -886,7 +886,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertPropertyVisibleOutside' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public ?int $x = null;
 
@@ -912,7 +912,7 @@ class AssertAnnotationTest extends TestCase
                     echo (2 * $a->x);',
             ],
             'parseAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array<string, string[]> $data
                      * @param mixed $data
@@ -929,7 +929,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'noExceptionOnShortArrayAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed[] $a
                      */
@@ -944,7 +944,7 @@ class AssertAnnotationTest extends TestCase
                     function isInts($value): void {}',
             ],
             'simpleArrayAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array $data
                      * @param mixed $data
@@ -961,7 +961,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'listAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert list $data
                      * @param mixed $data
@@ -978,7 +978,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'scanAssertionTypes' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $_p
                      * @psalm-assert-if-true Exception $_p
@@ -994,7 +994,7 @@ class AssertAnnotationTest extends TestCase
                     if (!f($q)) {}'
             ],
             'assertDifferentTypeOfArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array{0: string, 1: string} $value
                      * @param mixed $value
@@ -1020,7 +1020,7 @@ class AssertAnnotationTest extends TestCase
                     echo $parts[1];'
             ],
             'assertStringOrIntOnString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $v
                      * @psalm-assert string|int $v
@@ -1035,7 +1035,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertIfTrueWithSpace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $data
                      * @return bool
@@ -1058,7 +1058,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertOnNestedProperty' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class B {
                         public ?array $arr = null;
@@ -1088,7 +1088,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertOnNestedMethod' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class B {
                         private ?array $arr = null;
@@ -1122,7 +1122,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertOnThisMethod' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class A {
                         private ?array $arr = null;
@@ -1150,14 +1150,14 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'preventErrorWhenAssertingOnArrayUnion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array<string,string|object> $data
                      */
                     function validate(array $data): void {}'
             ],
             'nonEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert non-empty-list $array
                      *
@@ -1185,7 +1185,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'nonEmptyListOfStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert non-empty-list<string> $array
                      *
@@ -1203,7 +1203,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertResource' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  mixed $foo
                      * @psalm-assert resource $foo
@@ -1226,7 +1226,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'parseLongAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array{
                      *      extensions: array<string, array{
@@ -1246,7 +1246,7 @@ class AssertAnnotationTest extends TestCase
                     function assertStructure($data): void {}'
             ],
             'intersectArraysAfterAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert array{foo: string} $v
                      */
@@ -1265,7 +1265,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertListIsIterableOfStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert iterable<string> $value
                      *
@@ -1281,7 +1281,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertListIsListOfStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert list<string> $value
                      *
@@ -1297,7 +1297,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'multipleAssertIfTrue' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $a
                      * @param mixed $b
@@ -1324,7 +1324,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'convertConstStringType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const T1 = 1;
                         const T2 = 2;
@@ -1349,7 +1349,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'multipleAssertIfTrueOnSameVariable' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo(string|null|A $a) : A {
@@ -1367,12 +1367,12 @@ class AssertAnnotationTest extends TestCase
                     function isComputed(mixed $value): bool {
                         return $value !== null && !is_string($value);
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'assertStaticSelf' => [
-                '<?php
+                'code' => '<?php
                     final class C {
                         /** @var null|int */
                         private static $q = null;
@@ -1390,7 +1390,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'assertIfTrueStaticSelf' => [
-                '<?php
+                'code' => '<?php
                     final class C {
                         /** @var null|int */
                         private static $q = null;
@@ -1414,7 +1414,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'assertIfFalseStaticSelf' => [
-                '<?php
+                'code' => '<?php
                     final class C {
                         /** @var null|int */
                         private static $q = null;
@@ -1438,7 +1438,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'assertStaticByInheritedMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var null|int */
                         protected static $q = null;
@@ -1458,7 +1458,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'assertInheritedStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var null|int */
                         protected static $q = null;
@@ -1477,7 +1477,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'assertStaticOnUnrelatedClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var null|int */
                         public static $q = null;
@@ -1496,7 +1496,7 @@ class AssertAnnotationTest extends TestCase
                 ?>'
             ],
             'implicitComplexAssertionNoCrash' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         private string $status = "";
 
@@ -1514,7 +1514,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'assertArrayIteratorIsIterableOfStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert iterable<string> $value
                      * @param mixed $value
@@ -1536,7 +1536,7 @@ class AssertAnnotationTest extends TestCase
                     }'
             ],
             'implicitReflectionParameterAssertion' => [
-                '<?php
+                'code' => '<?php
                     $method = new ReflectionMethod(stdClass::class);
                     $parameters = $method->getParameters();
                     foreach ($parameters as $parameter) {
@@ -1546,18 +1546,18 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
-                '<?php
+                'code' => '<?php
                     /** @return class-string|null */
                     function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
                         $type = $reflectionItem->getType();
                         return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '7.4',
+                'php_version' => '7.4',
             ],
             'withHasTypeCall' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-immutable
                      */
@@ -1581,7 +1581,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertTemplatedIterable' => [
-                '<?php
+                'code' => '<?php
                     class Foo{}
 
                     /**
@@ -1603,7 +1603,7 @@ class AssertAnnotationTest extends TestCase
                     function allIsInstanceOf($value, $class): void {}'
             ],
             'implicitReflectionPropertyAssertion' => [
-                '<?php
+                'code' => '<?php
                     $class = new ReflectionClass(stdClass::class);
                     $properties = $class->getProperties();
                     foreach ($properties as $property) {
@@ -1611,12 +1611,12 @@ class AssertAnnotationTest extends TestCase
                             $property->getType()->allowsNull();
                         }
                     }',
-                    [],
+                    'assertions' => [],
                     [],
                     '7.4'
             ],
             'onPropertyOfImmutableArgument' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class Aclass {
                         public ?string $b;
@@ -1637,7 +1637,7 @@ class AssertAnnotationTest extends TestCase
                     echo strlen($a->b);',
             ],
             'inTrueOnPropertyOfImmutableArgument' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class A {
                         public ?int $b;
@@ -1660,7 +1660,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'inFalseOnPropertyOfAImmutableArgument' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     class A {
                         public ?int $b;
@@ -1683,7 +1683,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'ifTrueOnNestedPropertyOfArgument' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         public ?string $c;
                         public function __construct(?string $c) {
@@ -1710,7 +1710,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'ifFalseOnNestedPropertyOfArgument' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         public ?string $c;
                         public function __construct(?string $c) {
@@ -1737,7 +1737,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertOnKeyedArrayWithClassStringOffset' => [
-                '<?php
+                'code' => '<?php
 
                     class A
                     {
@@ -1764,7 +1764,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'assertOnKeyedArrayWithSpecialCharsInNames' => [
-                '<?php
+                'code' => '<?php
 
                     class Foo {
                         /** @var array<string, int> */
@@ -1799,7 +1799,7 @@ class AssertAnnotationTest extends TestCase
                     }',
             ],
             'dontForgetAssertionAfterIrrelevantNonMutationFreeCall' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -1826,7 +1826,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'SKIPPED-applyAssertionsToReferences' => [ // See #7254
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -1851,7 +1851,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'SKIPPED-applyAssertionsFromReferences' => [ // See #7254
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -1876,7 +1876,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'SKIPPED-applyAssertionsToReferencesWithConditionalOperator' => [ // See #7254
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -1899,7 +1899,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'assertInArrayWithTemplateDontCrash' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @template T
@@ -1922,7 +1922,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'assertionOnMagicProperty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @property ?string $b
                      */
@@ -1945,7 +1945,7 @@ class AssertAnnotationTest extends TestCase
                 ',
             ],
             'assertWithEmptyStringOnKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         function test(): void
@@ -1975,13 +1975,13 @@ class AssertAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'assertInstanceOfMultipleInterfaces' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function bar() : void {}
                     }
@@ -2010,7 +2010,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'assertIfTrueNoAnnotation' => [
-                '<?php
+                'code' => '<?php
                     function isValidString(?string $myVar) : bool {
                         return $myVar !== null && $myVar[0] === "a";
                     }
@@ -2023,7 +2023,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullOperand',
             ],
             'assertIfFalseNoAnnotation' => [
-                '<?php
+                'code' => '<?php
                     function isInvalidString(?string $myVar) : bool {
                         return $myVar === null || $myVar[0] !== "a";
                     }
@@ -2038,7 +2038,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullOperand',
             ],
             'assertIfTrueMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @param mixed $p
@@ -2059,7 +2059,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'assertIfStaticTrueMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @param mixed $p
@@ -2080,7 +2080,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'noFatalForUnknownAssertClass' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
 
                     class Bar implements Foo {
@@ -2110,7 +2110,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'assertValueImpossible' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert "foo"|"bar"|"foo-bar" $s
                      */
@@ -2122,7 +2122,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'sortOfReplacementForAssert' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -2142,7 +2142,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'assertScalarAndEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $value
                      * @psalm-assert scalar $value
@@ -2166,7 +2166,7 @@ class AssertAnnotationTest extends TestCase
                                     . DIRECTORY_SEPARATOR . 'somefile.php:19:29',
             ],
             'assertOneOfStrings' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-assert "a"|"b" $s
                      */
@@ -2179,7 +2179,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'assertThisType' => [
-                '<?php
+                'code' => '<?php
                     class Type {
                         /**
                          * @psalm-assert FooType $this
@@ -2204,7 +2204,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'invalidUnionAssertion' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @psalm-assert null|!ExpectedType $value
@@ -2214,7 +2214,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'assertNotEmptyOnBool' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $value
                      * @psalm-assert !empty $value
@@ -2228,7 +2228,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'withoutHasTypeCall' => [
-                '<?php
+                'code' => '<?php
                     $method = new ReflectionMethod(stdClass::class);
                     $parameters = $method->getParameters();
                     foreach ($parameters as $parameter) {
@@ -2237,7 +2237,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'forgetAssertionAfterRelevantNonMutationFreeCall' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -2268,7 +2268,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'SKIPPED-forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [ // See #7254
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -2300,7 +2300,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'SKIPPED-forgetAssertionAfterReferenceModification' => [ // See #7254
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public ?string $bar = null;
@@ -2327,7 +2327,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'assertionOnMagicPropertyWithoutMutationFreeGet' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @property ?string $b
                      */
@@ -2350,7 +2350,7 @@ class AssertAnnotationTest extends TestCase
                 'error_message' => 'A::__get is not mutation-free',
             ],
             'randomValueFromMagicGetterIsNotMutationFree' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @property int<1, 10> $b
                      */

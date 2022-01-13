@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'removeUnusedVariableSimple' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = 5;
@@ -19,19 +19,19 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             echo $b;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $b = "hello";
                             echo $b;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'removeUnusedVariableFromTry' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             try {
@@ -40,19 +40,19 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             } catch (Exception $e) {}
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             try {
                             } catch (Exception $e) {}
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'removeUnusedVariableAndFunctionCall' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = substr("wonderful", 2);
@@ -60,20 +60,20 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             echo $b;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $b = "hello";
                             echo $b;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVariableTwoVar' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = "a";
@@ -82,20 +82,20 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             echo $b;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $b = "b";
                             echo $b;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVariableTwoVarFunctionCalls' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = substr("hello world", 4);
@@ -104,7 +104,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             echo $b;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $b = "b";
@@ -112,13 +112,13 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             echo $b;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVariableClassMethod' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a =bar();
@@ -130,7 +130,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             ;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             bar();
@@ -142,13 +142,13 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             ;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVariableFunctionCallAndStrLiteral' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = "hello".bar();
@@ -160,7 +160,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             return "bar";
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             "hello".bar();
@@ -172,228 +172,228 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             return "bar";
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVariableChainAssignment' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = $b = $c = $d = $e = "";
                             echo $a.$b.$d.$e;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $a = $b = $d = $e = "";
                             echo $a.$b.$d.$e;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeTwoUnusedVariableChainAssignment' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = $b = $c = $d = $e = "hello";
                             echo $a.$d.$e;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $a = $d = $e = "hello";
                             echo $a.$d.$e;
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeAllUnusedVariableChainAssignment' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = $b = $c = $d = $e = "hello";
                             echo "hello";
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             echo "hello";
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedArrayAccess' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         $a = $b[1];
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         $b[1];
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeEmptyArrayAssign' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         $a = [];
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedArrayAssignInt' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         $a = [5];
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedArrayAssignCallable' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         $a = [foo()];
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         [foo()];
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarShellExec' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = shell_exec("ls");
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         shell_exec("ls");
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarExit' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = exit(1);
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         exit(1);
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarTwoPass' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = 5;
                         $a += 1;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarAssignByRef' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = 5;
                         $b = &$a;
                         echo $a;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         $a = 5;
                         $b = &$a;
                         echo $a;
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarAssignByRefPartial' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
                         $b = &$a[1];
                         print_r($a);
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
                         $b = &$a[1];
                         print_r($a);
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarAssignByRefPartialWithSpaceAfter' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
                         $b = & $a[1];
                         print_r($a);
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         $a = [1, 2, 3];
                         $b = & $a[1];
                         print_r($a);
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedVarNewObject' => [
-                '<?php
+                'input' => '<?php
                     class B {}
 
                     function foo() : void {
@@ -401,7 +401,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                         $b = new B();
                         echo $a;
                     }',
-                '<?php
+                'output' => '<?php
                     class B {}
 
                     function foo() : void {
@@ -409,29 +409,29 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                         new B();
                         echo $a;
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeUnusedChainMixedAssign' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = 5;
                         $b = 6;
                         $c = $b += $a -= intval("4");
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'removeUnusedUnchainedAssign' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = 5;
                         $b = 6;
@@ -440,69 +440,69 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                         $c = $b;
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'removeUnusedVariableBinaryOp' => [
-                '<?php
+                'input' => '<?php
                     function foo() : void {
                         $a = 5;
                         $b = 6;
                         $c = $a + $b;
                         echo "foo";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo() : void {
                         echo "foo";
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'dontremoveUnusedVariableFor' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         for($i = 5; $j<5; $j++){
                             echo "abc";
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         for($i = 5; $j<5; $j++){
                             echo "abc";
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'dontremoveUnusedVariableWhile' => [
-                '<?php
+                'input' => '<?php
                     function foo($b) : void {
                         while($i=5){
                             echo "abc";
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     function foo($b) : void {
                         while($i=5){
                             echo "abc";
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'dontRemoveUnusedVariableInsideIf' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() : void {
                             $a = "hello";
@@ -511,7 +511,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public function foo() : void {
                             $a = "hello";
@@ -520,33 +520,33 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'donRemoveSuppressedUnusedVariable' => [
-                '<?php
+                'input' => '<?php
                     /** @psalm-suppress UnusedVariable */
                     function foo() : void {
                         $a = 5;
                         $b = "hello";
                         echo $b;
                     }',
-                '<?php
+                'output' => '<?php
                     /** @psalm-suppress UnusedVariable */
                     function foo() : void {
                         $a = 5;
                         $b = "hello";
                         echo $b;
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
 
             'removeLongUnusedAssignment' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @psalm-external-mutation-free
                      */
@@ -572,7 +572,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                     function foo() : void {
                         $a = makeA("hello")->getFoo();
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @psalm-external-mutation-free
                      */
@@ -597,12 +597,12 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
 
                     function foo() : void {
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'dontRemoveUsedToStringCall' => [
-                '<?php
+                'input' => '<?php
                     class S {
                         /**
                          * @throws Exception
@@ -622,7 +622,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             // this class is not stringable
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class S {
                         /**
                          * @throws Exception
@@ -642,28 +642,28 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             // this class is not stringable
                         }
                     }',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
             'dontRemoveUnusedClosureUse' => [
-                '<?php
+                'input' => '<?php
                     $b = 5;
                     echo $b;
                     $a = function() use ($b) : void {
                         echo 4;
                     };
                     $a();',
-                '<?php
+                'output' => '<?php
                     $b = 5;
                     echo $b;
                     $a = function() use ($b) : void {
                         echo 4;
                     };
                     $a();',
-                '7.1',
-                ['UnusedVariable'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
             ],
         ];
     }

@@ -11,13 +11,13 @@ class NamespaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'emptyNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /** @return void */
                         function foo() {
@@ -36,7 +36,7 @@ class NamespaceTest extends TestCase
                     }',
             ],
             'constantReference' => [
-                '<?php
+                'code' => '<?php
                     namespace Aye\Bee {
                         const HELLO = "hello";
                     }
@@ -55,14 +55,14 @@ class NamespaceTest extends TestCase
                     }',
             ],
             'argvReference' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     $a = $argv;
                     $b = $argc;',
             ],
             'argvReferenceInFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     function foo() : void {
@@ -75,13 +75,13 @@ class NamespaceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'callNamespacedFunctionFromEmptyNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /** @return void */
                         function foo() {
@@ -94,7 +94,7 @@ class NamespaceTest extends TestCase
                 'error_message' => 'UndefinedFunction',
             ],
             'callRootFunctionFromNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace {
                         /** @return void */
                         function foo() {

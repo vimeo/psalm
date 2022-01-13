@@ -346,13 +346,13 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var mixed
@@ -373,20 +373,20 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertyWithoutTypeSuppressingIssue' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo = "hello";
                     }
 
                     $a = (new A)->foo;',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
             ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         function foo() {
@@ -396,7 +396,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'UndefinedThisPropertyFetch',
                     'MixedAssignment',
                     'MixedArgument',
@@ -405,7 +405,7 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'sharedPropertyInIf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $foo = 0;
@@ -426,7 +426,7 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'sharedPropertyInElseIf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $foo = 0;
@@ -453,7 +453,7 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'nullablePropertyCheck' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $aa = "";
@@ -471,7 +471,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'nullablePropertyAfterGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         public $aa;
@@ -486,7 +486,7 @@ class PropertyTypeTest extends TestCase
                     echo substr($a->aa, 1);',
             ],
             'nullableStaticPropertyWithIfCheck' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var A|null */
                         public static $fooFoo;
@@ -501,7 +501,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'reflectionProperties' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                     }
 
@@ -510,7 +510,7 @@ class PropertyTypeTest extends TestCase
                     echo $a->name . " - " . $a->class;',
             ],
             'grandparentReflectedProperties' => [
-                '<?php
+                'code' => '<?php
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
@@ -518,19 +518,19 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'propertyMapHydration' => [
-                '<?php
+                'code' => '<?php
                     function foo(DOMElement $e) : void {
                         echo $e->attributes->length;
                     }',
             ],
             'genericTypeFromPropertyMap' => [
-                '<?php
+                'code' => '<?php
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
                     }'
             ],
             'goodArrayProperties' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {}
 
                     class A1 implements I1{}
@@ -547,10 +547,10 @@ class PropertyTypeTest extends TestCase
                     $c->is = [new A1, new A1];
                     $c->is = [new A1, new B1];',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'issetPropertyDoesNotExist' => [
-                '<?php
+                'code' => '<?php
                     class A {
                     }
 
@@ -561,7 +561,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'notSetInConstructorButHasDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a = 0;
@@ -570,7 +570,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInPrivateMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -585,7 +585,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'definedInTraitSetInConstructor' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         /** @var string **/
                         public $a;
@@ -599,7 +599,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInNestedPrivateMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -618,7 +618,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertyArrayIssetAssertion' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $s): void { }
 
                     class A {
@@ -633,7 +633,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertyArrayIssetAssertionWithVariableOffset' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $s): void { }
 
                     class A {
@@ -652,7 +652,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticPropertyArrayIssetAssertionWithVariableOffset' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $s): void { }
 
                     class A {
@@ -671,7 +671,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticPropertyArrayIssetAssertionWithVariableOffsetAndElse' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $s): void { }
 
                     class A {
@@ -693,7 +693,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'traitConstructor' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                       /** @var string **/
                       public $foo;
@@ -708,14 +708,14 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'abstractClassWithNoConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
                     }',
             ],
             'abstractClassConstructorAndChildConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -732,7 +732,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'abstractClassConstructorAndImplicitChildConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -747,7 +747,7 @@ class PropertyTypeTest extends TestCase
                     class E extends \Exception{}',
             ],
             'notSetInEmptyConstructor' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress PropertyNotSetInConstructor */
                     class A {
                         /** @var int */
@@ -757,7 +757,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'extendsClassWithPrivateConstructorSet' => [
-                '<?php
+                'code' => '<?php
                     namespace Q;
 
                     class Base
@@ -789,7 +789,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'extendsClassWithPrivateAndException' => [
-                '<?php
+                'code' => '<?php
                     abstract class A extends \Exception {
                         /** @var string **/
                         private $p;
@@ -803,7 +803,7 @@ class PropertyTypeTest extends TestCase
                     final class B extends A {}',
             ],
             'setInAbstractMethod' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function foo(): void;
                     }
@@ -823,12 +823,12 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'PropertyNotSetInConstructor' => Config::REPORT_INFO,
                 ],
             ],
             'callsPrivateParentMethodThenUsesParentInitializedProperty' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $bar;
@@ -851,7 +851,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'setInFinalMethod' => [
-                '<?php
+                'code' => '<?php
                     class C
                     {
                         /**
@@ -885,7 +885,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'setInFinalClass' => [
-                '<?php
+                'code' => '<?php
                     final class C
                     {
                         /**
@@ -919,7 +919,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'selfPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class Node
                     {
                         /** @var self|null */
@@ -939,7 +939,7 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'perPropertySuppress' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var int
@@ -951,7 +951,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'analyzePropertyMappedClass' => [
-                '<?php
+                'code' => '<?php
                     namespace PhpParser\Node\Stmt;
 
                     use PhpParser\Node;
@@ -983,7 +983,7 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
             ],
             'privatePropertyAccessible' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var string */
                       private $foo;
@@ -1006,7 +1006,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'privatePropertyAccessibleDifferentType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var int */
                       private $foo;
@@ -1029,7 +1029,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'privatePropertyAccessibleInTwoSubclasses' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct() {}
                     }
@@ -1059,7 +1059,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'noIssueWhenSuppressingMixedAssignmentForProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         public $foo;
@@ -1071,12 +1071,12 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'propertyAssignmentToMixed' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @var string|null */
                         public $foo;
@@ -1088,12 +1088,12 @@ class PropertyTypeTest extends TestCase
                         $c->foo = $a;
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'propertySetInBothIfBranches' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var int */
@@ -1110,7 +1110,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInPrivateMethodWithIfAndElse' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -1133,7 +1133,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'allowMixedAssignmetWhenDesired' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var mixed
@@ -1150,7 +1150,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'suppressUndefinedThisPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct() {
                             /** @psalm-suppress UndefinedThisPropertyAssignment */
@@ -1164,7 +1164,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'suppressUndefinedPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct() {
                             /** @psalm-suppress UndefinedThisPropertyAssignment */
@@ -1177,7 +1177,7 @@ class PropertyTypeTest extends TestCase
                     if ($a->bar === null && rand(0, 1)) {}',
             ],
             'setPropertiesOfSpecialObjects' => [
-                '<?php
+                'code' => '<?php
                     $a = new stdClass();
                     $a->b = "c";
 
@@ -1191,7 +1191,7 @@ class PropertyTypeTest extends TestCase
                 ],
             ],
             'allowLessSpecificReturnTypeForOverriddenMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function aa(): ?string {
                             return "bar";
@@ -1211,7 +1211,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'allowLessSpecificReturnTypeForInterfaceMethod' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public static function foo(): ?string;
                     }
@@ -1257,7 +1257,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticPropertyMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var self|null */
                         public static $instance;
@@ -1281,7 +1281,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'nonStaticPropertyMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var self|null */
                         public $instance;
@@ -1307,7 +1307,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticPropertyOfStaticTypeMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var static|null */
                         public $instance;
@@ -1328,7 +1328,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'classStringPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @psalm-var array<class-string, int> */
                         public $member = [
@@ -1337,7 +1337,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'allowPrivatePropertySetAfterInstanceof' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         private $foo;
@@ -1354,7 +1354,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {}',
             ],
             'noCrashForAbstractConstructorWithInstanceofInterface' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var int */
                         public $a;
@@ -1373,7 +1373,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'SKIPPED-abstractConstructorWithInstanceofClass' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var int */
                         public $a;
@@ -1392,11 +1392,11 @@ class PropertyTypeTest extends TestCase
                             return 3;
                         }
                     }',
-                [],
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'inheritDocPropertyTypes' => [
-                '<?php
+                'code' => '<?php
                     class X {
                         /**
                          * @var string|null
@@ -1420,7 +1420,7 @@ class PropertyTypeTest extends TestCase
                     echo Y::$b;',
             ],
             'subclassPropertySetInParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     class Base {
                         /** @var string */
                         protected $prop;
@@ -1435,7 +1435,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'callInParentContext' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $i = 1;
@@ -1476,19 +1476,19 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticVarSelf' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var self */
                         public static $current;
                     }
 
                     $a = Foo::$current;',
-                [
+                'assertions' => [
                     '$a' => 'Foo',
                 ],
             ],
             'noMixedErrorWhenAssignmentExpectsMixed' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array<string, mixed> $bar */
                         public $bar = [];
@@ -1500,7 +1500,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInGrandparentExplicitly' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var string
@@ -1519,7 +1519,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInGrandparentImplicitly' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var string
@@ -1534,7 +1534,7 @@ class PropertyTypeTest extends TestCase
                     class C extends B {}',
             ],
             'unitializedPropertySuppressPropertyNotSetInConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo;
@@ -1548,11 +1548,11 @@ class PropertyTypeTest extends TestCase
                             $this->foo = "foo";
                         }
                     }',
-                [],
-                ['PropertyNotSetInConstructor'],
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
             ],
             'setTKeyedArrayPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @psalm-var array{from:bool, to:bool}
@@ -1571,7 +1571,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'noRedundantConditionWhenCheckingInitializations' => [
-                '<?php
+                'code' => '<?php
                     final class Clazz {
                         /**
                          * @var bool
@@ -1607,7 +1607,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'noRedundantConditionWhenCheckingInitializationsEdgeCases' => [
-                '<?php
+                'code' => '<?php
                     final class Clazz {
                         /**
                          * @var bool
@@ -1643,7 +1643,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'propertySetInProtectedMethodWithConstant' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -1668,7 +1668,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'setPropertyInParentProtectedMethodExplicitCall' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         public function __construct() {
                             $this->overriddenByB();
@@ -1697,7 +1697,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'setPropertyInParentProtectedMethodImplicitCall' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         public function __construct() {
                             $this->overriddenByB();
@@ -1722,7 +1722,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'setPropertyInParentWithPrivateConstructor' => [
-                '<?php
+                'code' => '<?php
                     namespace NS;
 
                     class Base
@@ -1747,7 +1747,7 @@ class PropertyTypeTest extends TestCase
                     class Concrete extends Base {}',
             ],
             'preventCrashWhenCallingInternalMethodInPropertyInitialisationChecks' => [
-                '<?php
+                'code' => '<?php
                     class Foo extends \RuntimeException {
                         /** @var array */
                         protected $serializableTrace;
@@ -1761,7 +1761,7 @@ class PropertyTypeTest extends TestCase
                     class Bar extends Foo {}',
             ],
             'inferPropertyTypesForSimpleConstructors' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private $foo;
                         private $bar;
@@ -1781,14 +1781,14 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'nullableDocblockTypedPropertyNoConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private $foo;
                     }',
             ],
             'nullableDocblockTypedPropertyEmptyConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private $foo;
@@ -1797,7 +1797,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'nullableDocblockTypedPropertyUseBeforeInitialised' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private $foo;
@@ -1808,7 +1808,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'dontAlterClosureParams' => [
-                '<?php
+                'code' => '<?php
                     class C {
                       /** @var array */
                       public $i;
@@ -1822,7 +1822,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'inferSpreadParamType' => [
-                '<?php
+                'code' => '<?php
                     class Tag {}
                     class EntityTags {
                         private $tags;
@@ -1834,7 +1834,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'staticPropertyDefaultWithStaticType' => [
-                '<?php
+                'code' => '<?php
                     class Test {
                         /** @var array<int, static> */
                         private static $t1 = [];
@@ -1844,7 +1844,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'propagateIgnoreNullableOnPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public string $s = "hey";
                     }
@@ -1865,7 +1865,7 @@ class PropertyTypeTest extends TestCase
                     takesString($foo->s);',
             ],
             'noMissingPropertyWhenArrayTypeProvided' => [
-                '<?php
+                'code' => '<?php
 
                     class Foo {
                         private $bar;
@@ -1881,7 +1881,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'rememberThisPropertyAsssignmentsInMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public bool $foo = false;
 
@@ -1900,7 +1900,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'testRemoveClauseAfterReassignment' => [
-                '<?php
+                'code' => '<?php
                     class Test {
                         /** @var ?bool */
                         private $foo;
@@ -1919,7 +1919,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'allowIssetOnTypedProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public string $a;
 
@@ -1938,7 +1938,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'allowGoodArrayPushOnArrayValue' => [
-                '<?php
+                'code' => '<?php
                     class MyClass {
                         /**
                          * @var int[]
@@ -1954,7 +1954,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'someConditionalCallToParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     class GrandParentClassDoesNotDefine {
                         public function __construct() {}
                     }
@@ -1977,7 +1977,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'noConditionalCallToParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     class GrandParentClassDoesNotDefine {
                         public function __construct() {}
                     }
@@ -1998,7 +1998,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'allowByReferenceAssignmentToUninitializedNullableProperty' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         private ?\Closure $onCancel;
 
@@ -2016,7 +2016,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'dontCarryAssertionsOver' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         private string $network;
@@ -2044,7 +2044,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'useVariableAccessInStatic' => [
-                '<?php
+                'code' => '<?php
                     class A2 {
                         public static string $title = "foo";
                         public static string $label = "bar";
@@ -2056,7 +2056,7 @@ class PropertyTypeTest extends TestCase
                     echo $message;'
             ],
             'staticPropertyInFinalMethod' => [
-                '<?php
+                'code' => '<?php
                     abstract class Foo {
                         /** @var static */
                         protected Foo $foo;
@@ -2073,7 +2073,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'aliasedFinalMethod' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         private int $prop;
                         public final function setProp(int $prop): void {
@@ -2092,7 +2092,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'aliasedAsFinalMethod' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         private int $prop;
                         public function setProp(int $prop): void {
@@ -2111,7 +2111,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'staticPropertyAssertion' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var int */
                         private static $transactionDepth;
@@ -2129,7 +2129,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'dontMemoizePropertyTypeAfterRootVarAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public string $i = "";
                     }
@@ -2147,7 +2147,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'unionPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public string|int $i;
 
@@ -2163,7 +2163,7 @@ class PropertyTypeTest extends TestCase
                     if ($a->i === "foo") {}'
             ],
             'setClassStringOfStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static array $stack = [];
 
@@ -2174,7 +2174,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'promotedPublicPropertyWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(public int $foo = 5) {}
                     }
@@ -2182,7 +2182,7 @@ class PropertyTypeTest extends TestCase
                     echo (new A)->foo;'
             ],
             'promotedPublicPropertyWitoutDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(public int $foo) {}
                     }
@@ -2190,7 +2190,7 @@ class PropertyTypeTest extends TestCase
                     echo (new A(5))->foo;'
             ],
             'promotedProtectedProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(protected int $foo) {}
                     }
@@ -2202,7 +2202,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'skipConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         protected string $s;
 
@@ -2223,7 +2223,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'getPropertyThatMayNotBeSet' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress MissingConstructor
                      */
@@ -2250,7 +2250,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'memoizePropertyAfterSetting' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {
                             /** @psalm-suppress UndefinedThisPropertyAssignment */
@@ -2260,7 +2260,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'noErrorForSplatArgs' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         protected array $b;
 
@@ -2272,7 +2272,7 @@ class PropertyTypeTest extends TestCase
                     class Bar extends Foo {}'
             ],
             'noUndefinedPropertyIssueAfterSuppressingOnInterface' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
 
                     function bar(I $i) : void {
@@ -2284,7 +2284,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'noRedundantCastWhenCheckingProperties' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public array $map;
@@ -2306,7 +2306,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'ignoreUndefinedMethodOnUnion' => [
-                '<?php
+                'code' => '<?php
                     class NullObject {
                         /**
                          * @return null
@@ -2327,12 +2327,12 @@ class PropertyTypeTest extends TestCase
 
                         return $name;
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'dynamicPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public int $a = 0;
                     }
@@ -2343,7 +2343,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'nullCoalesceWithNullablePropertyAccess' => [
-                '<?php
+                'code' => '<?php
                     class Bar {
                         public ?string $a = null;
                     }
@@ -2351,12 +2351,12 @@ class PropertyTypeTest extends TestCase
                     function takesBar(?Bar $bar) : string {
                         return $bar?->a ?? "default";
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'possiblyNullOnFunctionCallCoalesced' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var int */
@@ -2369,7 +2369,7 @@ class PropertyTypeTest extends TestCase
                     }',
             ],
             'dontMemoizeConditionalAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -2391,7 +2391,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'allowDefaultForTemplatedProperty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as string|null
                      */
@@ -2408,14 +2408,14 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'allowBuiltinPropertyDocblock' => [
-                '<?php
+                'code' => '<?php
                     class FooException extends LogicException {
                         /** @var int */
                         protected $code = 404;
                     }'
             ],
             'dontMemoizeFinalMutationFreeInferredMethod' => [
-                '<?php
+                'code' => '<?php
                     final class ExecutionMode
                     {
                         private bool $isAutoCommitEnabled = true;
@@ -2444,7 +2444,7 @@ class PropertyTypeTest extends TestCase
                     assert($mode->isAutoCommitEnabled() === true);'
             ],
             'promotedInheritedPropertyWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var array */
                         public array $arr;
@@ -2456,7 +2456,7 @@ class PropertyTypeTest extends TestCase
                     }'
             ],
             'nullsafeShortCircuit' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         private ?self $nullableSelf = null;
 
@@ -2467,21 +2467,21 @@ class PropertyTypeTest extends TestCase
                             return $this->nullableSelf?->self->self;
                         }
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                     }
 
@@ -2489,7 +2489,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
             'undefinedPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                     }
 
@@ -2497,7 +2497,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'undefinedThisPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(): void {
                             $this->foo = "cool";
@@ -2506,7 +2506,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedThisPropertyAssignment',
             ],
             'undefinedStaticPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function barBar(): void
                         {
@@ -2517,7 +2517,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
             'undefinedThisPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(): void {
                             echo $this->foo;
@@ -2526,7 +2526,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'missingPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo = null;
 
@@ -2538,7 +2538,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInit' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo;
 
@@ -2550,7 +2550,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider int',
             ],
             'missingPropertyTypeWithConstructorInitAndNull' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo;
 
@@ -2566,7 +2566,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo = null;
 
@@ -2578,7 +2578,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInitConditionallySet' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo;
 
@@ -2592,7 +2592,7 @@ class PropertyTypeTest extends TestCase
                     'declared type - consider int|null',
             ],
             'badAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo;
@@ -2605,7 +2605,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'badStaticAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public static $foo = "a";
@@ -2618,7 +2618,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'typeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var B|null */
                         public $foo;
@@ -2633,7 +2633,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyTypeCoercion',
             ],
             'mixedTypeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array<int, A> */
                         public $foo = [];
@@ -2647,7 +2647,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MixedPropertyTypeCoercion',
             ],
             'staticTypeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var B|null */
                         public static $foo;
@@ -2662,7 +2662,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyTypeCoercion',
             ],
             'staticMixedTypeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array<int, A> */
                         public static $foo = [];
@@ -2676,7 +2676,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MixedPropertyTypeCoercion',
             ],
             'possiblyBadAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo;
@@ -2689,7 +2689,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'possiblyBadStaticAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public static $foo = "a";
@@ -2702,25 +2702,25 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'badAssignmentAsWell' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     $a->foo = "bar";',
                 'error_message' => 'InvalidPropertyAssignment',
             ],
             'badFetch' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     echo $a->foo;',
                 'error_message' => 'InvalidPropertyFetch',
             ],
             'possiblyBadFetch' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 5) > 3 ? "hello" : new stdClass;
                     echo $a->foo;',
                 'error_message' => 'PossiblyInvalidPropertyFetch',
             ],
             'mixedPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var string */
                         public $foo = "";
@@ -2731,13 +2731,13 @@ class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
             ],
             'mixedPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var string */
                         public $foo = "";
@@ -2748,13 +2748,13 @@ class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
             ],
             'possiblyNullablePropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var string */
                         public $foo = "";
@@ -2766,14 +2766,14 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyNullPropertyAssignment',
             ],
             'nullablePropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
 
                     $a->foo = "hello";',
                 'error_message' => 'NullPropertyAssignment',
             ],
             'possiblyNullablePropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var string */
                         public $foo = "";
@@ -2785,14 +2785,14 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyNullPropertyFetch',
             ],
             'nullablePropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
 
                     echo $a->foo;',
                 'error_message' => 'NullPropertyFetch',
             ],
             'badArrayProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {}
@@ -2807,7 +2807,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'possiblyBadArrayProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int[] */
                         public $bb = [];
@@ -2823,7 +2823,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'notSetInEmptyConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -2833,7 +2833,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'noConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -2841,7 +2841,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingConstructor',
             ],
             'abstractClassInheritsNoConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -2851,7 +2851,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingConstructor',
             ],
             'abstractClassInheritsPrivateConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -2867,7 +2867,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13',
             ],
             'classInheritsPrivateConstructorWithImplementedConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -2883,7 +2883,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'notSetInAllBranchesOfIf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -2897,7 +2897,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'propertySetInProtectedMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -2917,7 +2917,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
             ],
             'definedInTraitNotSetInEmptyConstructor' => [
-                '<?php
+                'code' => '<?php
                     trait A {
                         /** @var string **/
                         public $a;
@@ -2931,7 +2931,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:6',
             ],
             'propertySetInPrivateMethodWithIf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a;
@@ -2949,7 +2949,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'privatePropertySameNameNotSetInConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         private $b;
@@ -2966,7 +2966,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:13',
             ],
             'privateMethodCalledInParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     class C extends B {}
 
                     abstract class B extends A {
@@ -2991,7 +2991,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2',
             ],
             'privatePropertySetInParentConstructorReversedOrder' => [
-                '<?php
+                'code' => '<?php
                     class B extends A {
                         /** @var string */
                         private $b;
@@ -3007,7 +3007,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
             ],
             'privatePropertySetInParentConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct() {
                             if ($this instanceof B) {
@@ -3025,7 +3025,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
             ],
             'undefinedPropertyClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var B */
                         public $foo;
@@ -3033,7 +3033,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'abstractClassWithNoConstructorButChild' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public $foo;
@@ -3045,17 +3045,17 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'badAssignmentToUndefinedVars' => [
-                '<?php
+                'code' => '<?php
                     $x->$y = 4;',
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'echoUndefinedPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     echo $x->$y;',
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'toStringPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var ?string */
                       public $foo;
@@ -3072,7 +3072,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
             ],
             'noInfiniteLoop' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo;
@@ -3096,7 +3096,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'invalidPropertyDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $a = "hello";
@@ -3104,7 +3104,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'prohibitMixedAssignmentNormally' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var string
@@ -3122,7 +3122,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MixedAssignment',
             ],
             'assertPropertyTypeHasImpossibleType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?B */
                         public $foo;
@@ -3133,7 +3133,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'impossiblePropertyCheck' => [
-                '<?php
+                'code' => '<?php
                     class Bar {}
                     class Foo {
                         /** @var Bar */
@@ -3150,7 +3150,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'staticPropertyOfStaticTypeMethodCallWithUndefinedMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var static|null */
                         public $instance;
@@ -3168,7 +3168,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'misnamedPropertyByVariable' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         /** @var string|null */
                         public $foo;
@@ -3184,7 +3184,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'inheritDocPropertyTypesIncorrectAssignmentToInstanceProperty' => [
-                '<?php
+                'code' => '<?php
                     class X {
                         /**
                          * @var string|null
@@ -3203,7 +3203,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'inheritDocPropertyTypesIncorrectAssignmentToStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     class X {
                         /**
                          * @var string|null
@@ -3219,7 +3219,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'unitializedProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo;
@@ -3232,7 +3232,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
             ],
             'unitializedPropertyWithoutType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public $foo;
 
@@ -3242,10 +3242,10 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                ['MixedArgument', 'MissingPropertyType']
+                'ignored_issues' => ['MixedArgument', 'MissingPropertyType']
             ],
             'unitializedObjectProperty' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var int */
                         public $bar = 5;
@@ -3263,7 +3263,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
             ],
             'possiblyNullArg' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -3276,7 +3276,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'noCrashOnMagicCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         private $a;
@@ -3290,7 +3290,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
             ],
             'reportGoodLocationForPropertyError' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @var string */
                         public $s;
@@ -3312,7 +3312,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
             ],
             'noCrashWhenUnsettingPropertyWithoutDefaultInConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var bool */
                         private $foo;
@@ -3324,14 +3324,14 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
             'nullableTypedPropertyNoConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private ?bool $foo;
                     }',
                 'error_message' => 'MissingConstructor',
             ],
             'nullableTypedPropertyEmptyConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private ?bool $foo;
 
@@ -3340,7 +3340,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
             'nullableTypedPropertyUseBeforeInitialised' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private ?bool $foo;
 
@@ -3351,7 +3351,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
             ],
             'nullableTypedPropertyNoConstructorWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private ?bool $foo;
@@ -3359,7 +3359,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingConstructor',
             ],
             'nullableTypedPropertyEmptyConstructorWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private ?bool $foo;
@@ -3369,7 +3369,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
             'nullableTypedPropertyUseBeforeInitialisedWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?bool */
                         private ?bool $foo;
@@ -3381,7 +3381,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
             ],
             'badStaticPropertyDefault' => [
-                '<?php
+                'code' => '<?php
                     class TestStatic {
                         /**
                          * @var array<string, bool>
@@ -3391,7 +3391,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue'
             ],
             'addNullToMixedAfterNullablePropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var mixed
@@ -3411,7 +3411,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'catchBadArrayStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class Foo {}
@@ -3429,7 +3429,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue'
             ],
             'preventArrayPushOnArrayValue' => [
-                '<?php
+                'code' => '<?php
                     class MyClass {
                         /**
                          * @var int[]
@@ -3446,7 +3446,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue'
             ],
             'overriddenConstructorCalledMethod' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         private string $prop;
 
@@ -3465,7 +3465,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor'
             ],
             'propertyWithSameNameUndefined' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
 
                     class Bar {
@@ -3478,7 +3478,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'missingPropertyTypeWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @varr int
@@ -3488,7 +3488,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MissingPropertyType',
             ],
             'promotedPrivateProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(private int $foo = 5) {}
                     }
@@ -3497,7 +3497,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
             ],
             'overwritePropertyType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array */
                         public string $s = [];
@@ -3505,7 +3505,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MismatchingDocblockPropertyType',
             ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
-                '<?php
+                'code' => '<?php
                     function getC() : ?C {
                         return rand(0, 1) ? new C() : null;
                     }
@@ -3520,7 +3520,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'PossiblyNullPropertyFetch',
             ],
             'noCrashWhenCallingMagicSet' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __set(string $s, mixed $value) : void {}
                     }
@@ -3529,7 +3529,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'noCrashWhenCallingMagicGet' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __get(string $s) : mixed {}
                     }
@@ -3538,7 +3538,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'staticReadOfNonStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $prop = 1;
@@ -3548,7 +3548,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'staticWriteToNonStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $prop = 1;
@@ -3558,7 +3558,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
             'nonStaticReadOfStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public static $prop = 1;
@@ -3568,7 +3568,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'nonStaticWriteToStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public static $prop = 1;

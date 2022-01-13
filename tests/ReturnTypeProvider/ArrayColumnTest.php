@@ -12,7 +12,7 @@ class ArrayColumnTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'arrayColumnObjectWithProperties' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param object{id: int} $o
                  * @return non-empty-list<int>
@@ -24,7 +24,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithPrivatePropertiesExternal' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var int */
                     private $id = 42;
@@ -33,11 +33,11 @@ class ArrayColumnTest extends TestCase
             ',
             // for inaccessible properties we cannot figure out neither type nor emptiness
             // in practice, array_column() omits inaccessible elements
-            ['$r' => 'list<mixed>'],
+            'assertions' => ['$r' => 'list<mixed>'],
         ];
 
         yield 'arrayColumnWithPrivatePropertiesInternal' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var int */
                     private $id = 42;
@@ -51,7 +51,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithShapes' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param array{id:int} $shape
                  * @return non-empty-list<int>

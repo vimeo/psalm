@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'addPureAnnotationToFunction' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public int $i;
 
@@ -23,7 +23,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @psalm-immutable
                      */
@@ -38,12 +38,12 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '7.4',
-                ['MissingImmutableAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
             ],
             'addPureAnnotationToFunctionWithExistingDocblock' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * This is a class
                      * that is cool
@@ -61,7 +61,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * This is a class
                      * that is cool
@@ -81,12 +81,12 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '7.4',
-                ['MissingImmutableAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
             ],
             'dontAddPureAnnotationWhenMethodHasImpurity' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public int $i;
 
@@ -99,7 +99,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public int $i;
 
@@ -112,12 +112,12 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '7.4',
-                ['MissingImmutableAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
             ],
             'addPureAnnotationWhenClassCanHoldMutableData' => [
-                '<?php
+                'input' => '<?php
                     class B {
                         public int $i = 5;
                     }
@@ -143,7 +143,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     $b->i = 6;
 
                     echo $a->getPlus5();',
-                '<?php
+                'output' => '<?php
                     class B {
                         public int $i = 5;
                     }
@@ -172,12 +172,12 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     $b->i = 6;
 
                     echo $a->getPlus5();',
-                '7.4',
-                ['MissingImmutableAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
             ],
             'addPureAnnotationToClassThatExtends' => [
-                '<?php
+                'input' => '<?php
                     class AParent {
                         public int $i;
 
@@ -195,7 +195,7 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class AParent {
                         public int $i;
 
@@ -213,9 +213,9 @@ class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                             return $this->i + 5;
                         }
                     }',
-                '7.4',
-                ['MissingImmutableAnnotation'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
             ],
         ];
     }

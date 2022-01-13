@@ -11,13 +11,13 @@ class MatchTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'switchTruthy' => [
-                '<?php
+                'code' => '<?php
                     class A {
                        public ?string $a = null;
                        public ?string $b = null;
@@ -30,12 +30,12 @@ class MatchTest extends TestCase
                             default => throw new \InvalidArgumentException("$obj->a or $obj->b must be set"),
                         };
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'defaultAboveCase' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a) : string {
                         return match ($a) {
                             "a" => "hello",
@@ -43,12 +43,12 @@ class MatchTest extends TestCase
                             "b" => "goodbye",
                         };
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allMatchedNoRedundantCondition' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -56,12 +56,12 @@ class MatchTest extends TestCase
                             "b" => "goodbye",
                         };
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'getClassWithMethod' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
 
                     class Bar implements Foo
@@ -78,21 +78,21 @@ class MatchTest extends TestCase
                             default => "b",
                         };
                     }',
+                'assertions' => [],
                 [],
-                [],
-                '8.0'
+                'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>,strict_mode?:bool,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'getClassArgWrongClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {}
@@ -105,10 +105,10 @@ class MatchTest extends TestCase
                 'error_message' => 'UndefinedMethod',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'getClassMissingClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -120,10 +120,10 @@ class MatchTest extends TestCase
                 'error_message' => 'UndefinedClass',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allMatchedDefaultImpossible' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -135,10 +135,10 @@ class MatchTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'allMatchedAnotherImpossible' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -150,10 +150,10 @@ class MatchTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 [],
                 false,
-                '8.0'
+                'php_version' => '8.0'
             ],
             'notAllEnumsMet' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "foo"|"bar" $foo
                      */
@@ -165,10 +165,10 @@ class MatchTest extends TestCase
                 'error_message' => 'UnhandledMatchCondition',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
             'notAllConstEnumsMet' => [
-                '<?php
+                'code' => '<?php
                     class Airport {
                         const JFK = "jfk";
                         const LHR = "lhr";
@@ -187,10 +187,10 @@ class MatchTest extends TestCase
                 'error_message' => 'UnhandledMatchCondition',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
             'paradoxWithDuplicateValue' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) : void {
                         echo match ($i) {
                             1 => 0,
@@ -200,10 +200,10 @@ class MatchTest extends TestCase
                 'error_message' => 'ParadoxicalCondition',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
             'noCrashWithEmptyMatch' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) {
                         match ($i) {
 
@@ -212,10 +212,10 @@ class MatchTest extends TestCase
                 'error_message' => 'UnhandledMatchCondition',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
             'exitIsLikeThrow' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param 1|2|3 $i
                      */
@@ -229,10 +229,10 @@ class MatchTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
             'matchTrueImpossible' => [
-                '<?php
+                'code' => '<?php
                     $foo = new \stdClass();
                     $a = match (true) {
                         $foo instanceof \stdClass => 1,
@@ -241,7 +241,7 @@ class MatchTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 [],
                 false,
-                '8.0',
+                'php_version' => '8.0',
             ],
         ];
     }

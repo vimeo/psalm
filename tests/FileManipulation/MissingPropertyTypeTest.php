@@ -5,13 +5,13 @@ namespace Psalm\Tests\FileManipulation;
 class MissingPropertyTypeTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'addMissingUnionType56' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v;
 
@@ -23,7 +23,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @var int|string
@@ -40,12 +40,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '5.6',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingNullableType56' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v;
 
@@ -55,7 +55,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @var int|null
@@ -70,12 +70,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '5.6',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingNullableTypeNoDefault74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v;
 
@@ -85,7 +85,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @var int|null
@@ -100,12 +100,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingNullableTypeWithDefault74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v = null;
 
@@ -115,7 +115,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public ?int $v = null;
 
@@ -125,12 +125,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingUnionTypeSetInBranches74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v;
 
@@ -142,7 +142,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @var int|string
@@ -159,12 +159,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingIntTypeSetInBranches74' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $v;
 
@@ -176,7 +176,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public int $v;
 
@@ -188,12 +188,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             }
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingDocblockTypesSpacedProperly' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $u;
                         public $v;
@@ -203,7 +203,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->v = $j;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @var int
@@ -220,12 +220,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->v = $j;
                         }
                     }',
-                '7.1',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingTypehintsSpacedProperly' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $u;
                         public $v;
@@ -235,7 +235,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->v = $j;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public int $u;
                         public int $v;
@@ -245,12 +245,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->v = $j;
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'addMissingTypehintWithDefault' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public $u = false;
 
@@ -258,7 +258,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->u = true;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         public bool $u = false;
 
@@ -266,12 +266,12 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->u = true;
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
             'dontAddMissingPropertyTypeInTrait' => [
-                '<?php
+                'input' => '<?php
                     trait T {
                         public $u;
                     }
@@ -282,7 +282,7 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->u = 5;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     trait T {
                         public $u;
                     }
@@ -293,9 +293,9 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                             $this->u = 5;
                         }
                     }',
-                '7.4',
-                ['MissingPropertyType'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
             ],
         ];
     }

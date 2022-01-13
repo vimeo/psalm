@@ -147,13 +147,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:array<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nopType' => [
-                '<?php
+                'code' => '<?php
                     $_a = "hello";
 
                     /** @var int $_a */',
@@ -162,7 +162,7 @@ class AnnotationTest extends TestCase
                 ],
             ],
             'validDocblockReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return string
                      */
@@ -185,7 +185,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'reassertWithIs' => [
-                '<?php
+                'code' => '<?php
                     /** @param array $a */
                     function foo($a): void {
                         if (is_array($a)) {
@@ -196,7 +196,7 @@ class AnnotationTest extends TestCase
                 'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIs' => [
-                '<?php
+                'code' => '<?php
                     /** @param mixed $b */
                     function foo($b): void {
                         /**
@@ -212,7 +212,7 @@ class AnnotationTest extends TestCase
                 'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'goodDocblock' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @param A $a
@@ -223,7 +223,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'goodDocblockInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class A {
@@ -237,7 +237,7 @@ class AnnotationTest extends TestCase
             ],
 
             'ignoreNullableReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         public $bar = 5;
@@ -260,7 +260,7 @@ class AnnotationTest extends TestCase
                     takeA($a);',
             ],
             'invalidDocblockParamSuppress' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $_bar
                      * @psalm-suppress MismatchingDocblockParamType
@@ -269,7 +269,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'differentDocblockParamClassSuppress' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -281,14 +281,14 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'varDocblock' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<Exception> */
                     $a = [];
 
                     echo $a[0]->getMessage();',
             ],
             'ignoreVarDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var array<Exception>
                      * @ignore-var
@@ -300,7 +300,7 @@ class AnnotationTest extends TestCase
                 'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
             ],
             'psalmIgnoreVarDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var array<Exception>
                      * @psalm-ignore-var
@@ -312,7 +312,7 @@ class AnnotationTest extends TestCase
                 'error_level' => ['EmptyArrayAccess', 'MixedMethodCall'],
             ],
             'mixedDocblockParamTypeDefinedInParent' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @param mixed $a */
                         public function foo($a): void {}
@@ -323,7 +323,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'intDocblockParamTypeDefinedInParent' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @param int $a */
                         public function foo($a): void {}
@@ -334,7 +334,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'varSelf' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public function foo(): void {}
@@ -347,7 +347,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'psalmVar' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         /** @psalm-var array<int, string> */
@@ -359,7 +359,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'psalmParam' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $_a): void {}
 
                     /**
@@ -373,14 +373,14 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'returnDocblock' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i): int {
                         /** @var int */
                         return $i;
                     }',
             ],
             'doubleVar' => [
-                '<?php
+                'code' => '<?php
                     function foo() : array {
                         return ["hello" => new stdClass, "goodbye" => new stdClass];
                     }
@@ -402,19 +402,19 @@ class AnnotationTest extends TestCase
                 ],
             ],
             'allowOptionalParamsToBeEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param array{b?: int, c?: string} $_a */
                     function foo(array $_a = []) : void {}',
             ],
             'allowEmptyVarAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param $_x
                      */
                     function example(array $_x) : void {}',
             ],
             'allowCapitalisedNamespacedString' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     /**
@@ -423,14 +423,14 @@ class AnnotationTest extends TestCase
                     function example(string $_x) : void {}',
             ],
             'megaClosureAnnotationWithoutSpacing' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a:Closure():(array<mixed, mixed>|null), b?:Closure():array<mixed, mixed>, c?:Closure():array<mixed, mixed>, d?:Closure():array<mixed, mixed>, e?:Closure():(array{f:null|string, g:null|string, h:null|string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), p?:Closure():(array{f:null|string, g:null|string, h:null|string, q:string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), r?:Closure():(array<mixed, mixed>|null), s:array<mixed, mixed>} */
                     $arr = [];
 
                     $arr["a"]();',
             ],
             'megaClosureAnnotationWithSpacing' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var array{
                      * a: Closure() : (array<mixed, mixed>|null),
@@ -473,7 +473,7 @@ class AnnotationTest extends TestCase
                     $arr["a"]();',
             ],
             'multipeLineGenericArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type MiddlewareArray = array<
                      *     class-string<\Exception>,
@@ -494,7 +494,7 @@ class AnnotationTest extends TestCase
                     class A {}',
             ],
             'builtInClassInAShape' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{d:Exception}
                      * @psalm-suppress InvalidReturnType
@@ -502,7 +502,7 @@ class AnnotationTest extends TestCase
                     function f() {}'
             ],
             'slashAfter?' => [
-                '<?php
+                'code' => '<?php
                     namespace ns;
 
                     /** @param ?\stdClass $_s */
@@ -513,7 +513,7 @@ class AnnotationTest extends TestCase
                     foo(new \stdClass);',
             ],
             'returnTypeShouldBeNullable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return stdClass
                      */
@@ -525,7 +525,7 @@ class AnnotationTest extends TestCase
                     if ($f) {}',
             ],
             'spreadOperatorAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $_s */
                     function foo(string ...$_s) : void {}
                     /** @param string ...$_s */
@@ -536,7 +536,7 @@ class AnnotationTest extends TestCase
                     bar(...["hello", "goodbye"]);',
             ],
             'spreadOperatorByRefAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /** @param string &...$s */
                     function foo(&...$s) : void {}
                     /** @param string ...&$s */
@@ -557,7 +557,7 @@ class AnnotationTest extends TestCase
                 ],
             ],
             'valueReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "a"|"b" $_p
                      */
@@ -573,7 +573,7 @@ class AnnotationTest extends TestCase
                     acceptsLiteral(returnsLiteral());',
             ],
             'typeAliasBeforeClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type CoolType = A|B|null
                      */
@@ -600,7 +600,7 @@ class AnnotationTest extends TestCase
                     bar(foo());',
             ],
             'typeAliasBeforeFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type A_OR_B = A|B
                      * @psalm-type CoolType = A_OR_B|null
@@ -627,7 +627,7 @@ class AnnotationTest extends TestCase
                     bar(foo());',
             ],
             'typeAliasInSeparateBlockBeforeFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type CoolType = A|B|null
                      */
@@ -655,7 +655,7 @@ class AnnotationTest extends TestCase
                     bar(foo());',
             ],
             'almostFreeStandingTypeAlias' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type CoolType = A|B|null
                      */
@@ -684,7 +684,7 @@ class AnnotationTest extends TestCase
                     bar(foo());',
             ],
             'typeAliasUsedTwice' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-type TA = array<int, string> */
 
                     class Bar {
@@ -719,7 +719,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'listUnpackWithDocblock' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
 
                     class A implements I {
@@ -737,27 +737,27 @@ class AnnotationTest extends TestCase
                     $a1->bar();',
             ],
             'spaceInType' => [
-                '<?php
+                'code' => '<?php
                     /** @return string | null */
                     function foo(string $s = null) {
                         return $s;
                     }',
             ],
             'missingReturnTypeWithBadDocblockIgnoreBoth' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return [bad]
                      */
                     function fooBar() {
                     }',
-                [],
-                [
+                'assertions' => [],
+                'ignored_issues' => [
                     'InvalidDocblock' => Config::REPORT_INFO,
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
             'objectWithPropertiesAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /** @param object{foo:string} $o */
                     function foo(object $o) : string {
                         return $o->foo;
@@ -775,7 +775,7 @@ class AnnotationTest extends TestCase
                     foo(new A);',
             ],
             'refineTypeInNestedCall' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr): \Generator {
                         /** @var array<string, mixed> $arr */
                         foreach (array_filter(array_keys($arr), function (string $key) : bool {
@@ -786,7 +786,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'allowAnnotationOnServer' => [
-                '<?php
+                'code' => '<?php
                     function foo(): \Generator {
                         /** @var array<string, mixed> $_SERVER */
                         foreach (array_filter(array_keys($_SERVER), function (string $key) : bool {
@@ -797,7 +797,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'annotationOnForeachItems' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr) : void {
                         $item = null;
 
@@ -839,13 +839,13 @@ class AnnotationTest extends TestCase
 
                         if (is_null($item)) {}
                     }',
-                [],
-                [
+                'assertions' => [],
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'extraneousDocblockParamName' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string $_foo
                      * @param string[] $bar
@@ -854,7 +854,7 @@ class AnnotationTest extends TestCase
                     function f(string $_foo, array $_barb): void {}',
             ],
             'nonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-array<string> $arr */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -873,7 +873,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'nonEmptyArrayInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace ns;
 
                     /** @param non-empty-array<string> $arr */
@@ -894,14 +894,14 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'noExceptionOnIntersection' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var null|\DateTime&\DateTimeImmutable */
                         private $s = null;
                     }',
             ],
             'intersectionWithSpace' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         public function foo() : void;
                     }
@@ -916,7 +916,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'allowClosingComma' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type _Alias=array{
                      *    foo: string,
@@ -951,7 +951,7 @@ class AnnotationTest extends TestCase
                     $_foo = ["foo" => "", "bar" => "", "baz" => ""];',
             ],
             'returnNumber' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @return 1
@@ -962,7 +962,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'returnNumberForInterface' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return 1
@@ -971,7 +971,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'psalmTypeAnnotationAboveReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type Person = array{name: string, age: int}
                      */
@@ -986,7 +986,7 @@ class AnnotationTest extends TestCase
                     }'
             ],
             'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-array $_bar */
                     function foo(array $_bar) : void { }
 
@@ -996,12 +996,12 @@ class AnnotationTest extends TestCase
                     foo($bar);'
             ],
             'allowResourceInList' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<scalar|array|object|resource|null> $_s */
                     function foo(array $_s) : void { }'
             ],
             'possiblyUndefinedObjectProperty' => [
-                '<?php
+                'code' => '<?php
                     function consume(string $value): void {
                         echo $value;
                     }
@@ -1011,7 +1011,7 @@ class AnnotationTest extends TestCase
                     consume($data->value ?? "");'
             ],
             'throwSelf' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class MyException extends \Exception {
@@ -1024,7 +1024,7 @@ class AnnotationTest extends TestCase
                     }'
             ],
             'parseTrailingCommaInReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return array{
                      *     a: int,
@@ -1036,7 +1036,7 @@ class AnnotationTest extends TestCase
                     }'
             ],
             'falsableFunctionAllowedWhenBooleanExpected' => [
-                '<?php
+                'code' => '<?php
 
                     /** @psalm-return bool */
                     function alwaysFalse1()
@@ -1050,7 +1050,7 @@ class AnnotationTest extends TestCase
                     }'
             ],
             'dontInheritDocblockReturnWhenRedeclared' => [
-                '<?php
+                'code' => '<?php
                     interface Id {}
 
                     class UserId implements Id {}
@@ -1065,33 +1065,33 @@ class AnnotationTest extends TestCase
                             return new UserId();
                         }
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'arrayWithKeySlashesAndNewline' => [
-                '<?php
+                'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
-                [
+                'assertions' => [
                     '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}'
                 ]
             ],
             'doubleSpaceBeforeAt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      *  @param string $_c
                      */
                     function foo($_c) : void {}'
             ],
             'throwsAnnotationWithBarAndSpace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @throws \Exception| \InvalidArgumentException
                      */
                     function bar() : void {}'
             ],
             'varDocblockAboveCall' => [
-                '<?php
+                'code' => '<?php
 
                     function example(string $s): void {
                         if (preg_match(\'{foo-(\w+)}\', $s, $m)) {
@@ -1103,12 +1103,12 @@ class AnnotationTest extends TestCase
                     function takesString(string $_s): void {}'
             ],
             'noCrashWithoutAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @var DateTime $obj */
                     echo $obj->format("Y");'
             ],
             'intMaskWithClassConstants' => [
-                '<?php
+                'code' => '<?php
                     class FileFlag {
                         public const OPEN = 1;
                         public const MODIFIED = 2;
@@ -1125,7 +1125,7 @@ class AnnotationTest extends TestCase
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
             ],
             'intMaskWithZero' => [
-                '<?php
+                'code' => '<?php
                     /** @param int-mask<1,2> $_flags */
                     function takesFlags(int $_flags): void {}
 
@@ -1133,7 +1133,7 @@ class AnnotationTest extends TestCase
                 '
             ],
             'intMaskOfWithClassWildcard' => [
-                '<?php
+                'code' => '<?php
                     class FileFlag {
                         public const OPEN = 1;
                         public const MODIFIED = 2;
@@ -1150,7 +1150,7 @@ class AnnotationTest extends TestCase
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
             ],
             'intMaskOfWithZero' => [
-                '<?php
+                'code' => '<?php
                     class FileFlag {
                         public const OPEN = 1;
                         public const MODIFIED = 2;
@@ -1164,7 +1164,7 @@ class AnnotationTest extends TestCase
                 '
             ],
             'emptyStringFirst' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param \'\'|\'a\'|\'b\' $v
                      */
@@ -1173,7 +1173,7 @@ class AnnotationTest extends TestCase
                     }'
             ],
             'UnnecessaryVarAnnotationSuppress' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-consistent-constructor */
                     final class Foo{}
                     /**
@@ -1194,7 +1194,7 @@ class AnnotationTest extends TestCase
                     }',
             ],
             'suppressNonInvariantDocblockPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class Vendor
                     {
                         /**
@@ -1217,7 +1217,7 @@ class AnnotationTest extends TestCase
                     echo (string)($a->getConfig()[0]??"");'
             ],
             'promotedPropertiesDocumentationEitherForParamOrForProperty' => [
-                '<?php
+                'code' => '<?php
                     final class UserRole
                     {
                         /** @psalm-param stdClass $id */
@@ -1233,7 +1233,7 @@ class AnnotationTest extends TestCase
                     '
             ],
             'promotedPropertiesDocumentationForPropertyAndSignature' => [
-                '<?php
+                'code' => '<?php
                     final class A
                     {
                         public function __construct(
@@ -1249,13 +1249,13 @@ class AnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:array<string>}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidClassMethodReturn' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @return $thus
@@ -1268,7 +1268,7 @@ class AnnotationTest extends TestCase
             ],
 
             'invalidClassMethodReturnBrackets' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @return []
@@ -1280,7 +1280,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'invalidInterfaceMethodReturn' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return $thus
@@ -1290,7 +1290,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingDocblockType',
             ],
             'invalidInterfaceMethodReturnBrackets' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return []
@@ -1300,7 +1300,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'invalidPropertyBrackets' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var []
@@ -1310,7 +1310,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'invalidReturnClassWithComma' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return 1,
@@ -1320,7 +1320,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'returnClassWithComma' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return a,
@@ -1330,7 +1330,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'missingParamType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string $bar
                      */
@@ -1342,7 +1342,7 @@ class AnnotationTest extends TestCase
                     . '- expecting 0 but saw 1',
             ],
             'missingParamVar' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string
                      */
@@ -1351,7 +1351,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @param',
             ],
             'invalidSlashWithString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return \?string
                      */
@@ -1361,19 +1361,19 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'missingReturnTypeWithBadDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return [bad]
                      */
                     function fooBar() {
                     }',
                 'error_message' => 'MissingReturnType',
-                [
+                'ignored_issues' => [
                     'InvalidDocblock' => Config::REPORT_INFO,
                 ],
             ],
             'invalidDocblockReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return string
                      */
@@ -1383,7 +1383,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MismatchingDocblockReturnType',
             ],
             'intParamTypeDefinedInParent' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(int $a): void {}
                     }
@@ -1392,10 +1392,10 @@ class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'error_levels' => ['MethodSignatureMismatch'],
+                'ignored_issues' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         /** @psalm-var array<int, string> */
@@ -1408,7 +1408,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'incorrectDocblockOrder' => [
-                '<?php
+                'code' => '<?php
                     class MyClass {
                         /**
                          * Comment
@@ -1419,7 +1419,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingDocblockType',
             ],
             'badlyFormattedVar' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return string[]
                      */
@@ -1431,7 +1431,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'badlyWrittenVar' => [
-                '<?php
+                'code' => '<?php
                     /** @param mixed $x */
                     function myvalue($x): void {
                         /** @var $myVar MyNS\OtherClass */
@@ -1441,7 +1441,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingDocblockType',
             ],
             'dontOverrideSameType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return ?int */
                         public function foo(): ?int {
@@ -1451,7 +1451,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'alwaysCheckReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -1464,14 +1464,14 @@ class AnnotationTest extends TestCase
                 'error_message' => 'UndefinedClass',
             ],
             'preventBadBoolean' => [
-                '<?php
+                'code' => '<?php
                     function foo(): boolean {
                         return true;
                     }',
                 'error_message' => 'UndefinedClass',
             ],
             'undefinedDocblockClassCall' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         /**
                          * @return A
@@ -1491,13 +1491,13 @@ class AnnotationTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'noPhpStormAnnotationsThankYou' => [
-                '<?php
+                'code' => '<?php
                     /** @param ArrayIterator|string[] $i */
                     function takesArrayIteratorOfString(ArrayIterator $i): void {}',
                 'error_message' => 'MismatchingDocblockParamType',
             ],
             'noPhpStormAnnotationsPossiblyInvalid' => [
-                '<?php
+                'code' => '<?php
                     /** @param ArrayIterator|string[] $i */
                     function takesArrayIteratorOfString($i): void {
                         $s = $i->offsetGet("a");
@@ -1505,19 +1505,19 @@ class AnnotationTest extends TestCase
                 'error_message' => 'PossiblyInvalidMethodCall',
             ],
             'doubleBar' => [
-                '<?php
+                'code' => '<?php
                     /** @param PDO||Closure|numeric $a */
                     function foo($a) : void {}',
                 'error_message' => 'InvalidDocblock',
             ],
             'badStringVar' => [
-                '<?php
+                'code' => '<?php
                     /** @var string; */
                     $a = "hello";',
                 'error_message' => 'InvalidDocblock',
             ],
             'badCallableVar' => [
-                '<?php
+                'code' => '<?php
                     /** @return Closure(int): */
                     function foo() : callable {
                         return function () : void {};
@@ -1525,7 +1525,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'hyphenInType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return - Description
                      */
@@ -1535,7 +1535,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'badAmpersand' => [
-                '<?php
+                'code' => '<?php
                     /** @return &array */
                     function foo() : array {
                         return [];
@@ -1543,7 +1543,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'invalidTypeAlias' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type CoolType = A|B>
                      */
@@ -1552,7 +1552,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'typeAliasInTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
                      */
@@ -1564,7 +1564,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'noCrashOnHalfDoneArrayPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array< */
                         private $foo = [];
@@ -1572,7 +1572,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'noCrashOnHalfDoneTKeyedArrayPropertyType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array{ */
                         private $foo = [];
@@ -1580,7 +1580,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'noCrashOnInvalidClassTemplateAsType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as ' . '
                      */
@@ -1588,7 +1588,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'noCrashOnInvalidFunctionTemplateAsType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as ' . '
                      */
@@ -1596,7 +1596,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'returnTypeNewLineIsIgnored' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return
                      *     Some text
@@ -1605,7 +1605,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingReturnType',
             ],
             'objectWithPropertiesAnnotationNoMatchingProperty' => [
-                '<?php
+                'code' => '<?php
                     /** @param object{foo:string} $o */
                     function foo(object $o) : string {
                         return $o->foo;
@@ -1617,26 +1617,26 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'badVar' => [
-                '<?php
+                'code' => '<?php
                     /** @var Foo */
                     $a = $_GET["foo"];',
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'badPsalmType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type Foo = array{a:}
                      */',
                 'error_message' => 'InvalidDocblock',
             ],
             'mismatchingDocblockParamName' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $bar */
                     function f(array $barb): void {}',
                 'error_message' => 'InvalidDocblockParamName - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:41',
             ],
             'nonEmptyArrayCalledWithEmpty' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-array<string> $arr */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -1647,7 +1647,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'nonEmptyArrayCalledWithEmptyInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace ns;
 
                     /** @param non-empty-array<string> $arr */
@@ -1660,7 +1660,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'nonEmptyArrayCalledWithArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-array<string> $arr */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -1674,21 +1674,21 @@ class AnnotationTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'spreadOperatorArrayAnnotationBadArg' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $_s */
                     function foo(string ...$_s) : void {}
                     foo(5);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'spreadOperatorArrayAnnotationBadSpreadArg' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $_s */
                     function foo(string ...$_s) : void {}
                     foo(...[5]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall1' => [
-                '<?php
+                'code' => '<?php
                     /** @param string &...$s */
                     function foo(&...$s) : void {}
 
@@ -1697,7 +1697,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall2' => [
-                '<?php
+                'code' => '<?php
                     /** @param string ...&$s */
                     function foo(&...$s) : void {}
 
@@ -1706,7 +1706,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'spreadOperatorByRefAnnotationBadCall3' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] &$s */
                     function foo(&...$s) : void {}
 
@@ -1715,13 +1715,13 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'identifyReturnType' => [
-                '<?php
+                'code' => '<?php
                     /** @return array{hello: string} */
                     function foo() {}',
                 'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
             ],
             'invalidParamDocblockAsterisk' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param    *   $reference
                      */
@@ -1729,7 +1729,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingDocblockType',
             ],
             'canNeverReturnDeclaredType' => [
-                '<?php
+                'code' => '<?php
 
                     /** @psalm-return false */
                     function alwaysFalse() : bool
@@ -1739,7 +1739,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
             ],
             'falsableWithExpectedTypeTrue' => [
-                '<?php
+                'code' => '<?php
 
                     /** @psalm-return true */
                     function alwaysFalse()
@@ -1749,7 +1749,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'FalsableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
             ],
             'DuplicatedParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param array $arr
                      * @psalm-param array $arr
@@ -1758,7 +1758,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for bar',
             ],
             'DuplicatedReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return void
                      * @return void
@@ -1767,7 +1767,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Found duplicated @return or prefixed @return tag in docblock for bar',
             ],
             'missingClassForTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /** @return object{id: int, a: int} */
                         public function run();
@@ -1780,35 +1780,35 @@ class AnnotationTest extends TestCase
                 'error_message' => 'ImplementedReturnTypeMismatch'
             ],
             'unexpectedImportType' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-import-type asd */
                     function f(): void {}
                 ',
                 'error_message' => 'PossiblyInvalidDocblockTag',
             ],
             'unexpectedVarOnFunction' => [
-                '<?php
+                'code' => '<?php
                     /** @var int $p */
                     function f($p): void {}
                 ',
                 'error_message' => 'PossiblyInvalidDocblockTag',
             ],
             'unterminatedParentheses' => [
-                '<?php
+                'code' => '<?php
                     /** @return ( */
                     function f() {}
                 ',
                 'error_message' => 'InvalidDocblock',
             ],
             'emptyParentheses' => [
-                '<?php
+                'code' => '<?php
                     /** @return () */
                     function f() {}
                 ',
                 'error_message' => 'InvalidDocblock',
             ],
             'unbalancedParentheses' => [
-                "<?php
+                'code' => "<?php
                     /** @return ((string) */
                     function f(): string {
                         return '';
@@ -1817,7 +1817,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstParam' => [
-                '<?php
+                'code' => '<?php
                     final class UserRole
                     {
                         /** @psalm-param stdClass $id */
@@ -1832,7 +1832,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstProperty' => [
-                '<?php
+                'code' => '<?php
                     final class UserRole
                     {
                         public function __construct(
@@ -1847,7 +1847,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'promotedPropertyDuplicateDoc' => [
-                '<?php
+                'code' => '<?php
                     final class UserRole
                     {
                         /** @psalm-param string $id */
@@ -1861,7 +1861,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'promotedPropertyWithParamDocblockAndSignatureType' => [
-                '<?php
+                'code' => '<?php
 
                     class A
                     {
