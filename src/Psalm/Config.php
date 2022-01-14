@@ -792,6 +792,7 @@ class Config
         $deprecated_attributes = [
             'allowCoercionFromStringToClassConst',
             'allowPhpStormGenerics',
+            'forbidEcho'
         ];
 
         $deprecated_elements = [
