@@ -736,7 +736,7 @@ class ClosureTest extends TestCase
                 'php_version' => '8.1',
             ],
             'arrowFunctionReturnsNeverImplictly' => [
-                '<?php
+                'code' => '<?php
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
@@ -744,11 +744,11 @@ class ClosureTest extends TestCase
                         $bar
                     );',
                 'assertions' => [],
-                'error_levels' => [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'arrowFunctionReturnsNeverExplictly' => [
-                '<?php
+                'code' => '<?php
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
@@ -757,8 +757,8 @@ class ClosureTest extends TestCase
                         $bar
                     );',
                 'assertions' => [],
-                'error_levels' => [],
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
         ];
     }

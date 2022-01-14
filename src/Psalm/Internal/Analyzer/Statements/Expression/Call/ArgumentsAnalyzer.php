@@ -1521,7 +1521,7 @@ class ArgumentsAnalyzer
 
                                 $packed_var_definite_args_tmp[] = $atomic_arg_type->count;
                             } elseif ($atomic_arg_type instanceof TArray
-                                && $atomic_arg_type->type_params[1]->isEmpty()
+                                && $atomic_arg_type->type_params[1]->isNever()
                             ) {
                                 $packed_var_definite_args_tmp[] = 0;
                             } else {

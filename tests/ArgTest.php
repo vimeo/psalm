@@ -691,7 +691,7 @@ class ArgTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'MissingMandatoryParamWithNamedParams' => [
-                '<?php
+                'code' => '<?php
                 class User
                 {
                     public function __construct(

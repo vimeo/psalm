@@ -2122,7 +2122,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'keepClassStringInOffsetThroughArrayMerge' => [
-                '<?php
+                'code' => '<?php
 
                     class A {
                         /** @var array<class-string, string> */

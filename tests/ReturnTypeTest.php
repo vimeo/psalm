@@ -248,7 +248,7 @@ class ReturnTypeTest extends TestCase
                 ],
             ],
             'extendsStaticConstReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         private const FOO = 1;

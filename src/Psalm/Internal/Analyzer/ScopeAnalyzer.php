@@ -97,7 +97,7 @@ class ScopeAnalyzer
                     }
 
                     // don't consider a return if the expression never returns (e.g. a throw inside a short closure)
-                    if ($stmt_return_type && ($stmt_return_type->isNever() || $stmt_return_type->isEmpty())) {
+                    if ($stmt_return_type && $stmt_return_type->isNever()) {
                         return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
                     }
 
