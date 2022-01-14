@@ -347,6 +347,11 @@ class Config
     /**
      * @var bool
      */
+    public $seal_all_properties = false;
+
+    /**
+     * @var bool
+     */
     public $memoize_method_calls = false;
 
     /**
@@ -910,6 +915,7 @@ class Config
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
+            'sealAllProperties' => 'seal_all_properties',
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
@@ -1180,21 +1186,23 @@ class Config
         }
 
         if (isset($config_xml->issueHandlers)) {
-            /** @var SimpleXMLElement $issue_handler */
-            foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
-                if ($key === 'PluginIssue') {
-                    $custom_class_name = (string) $issue_handler['name'];
-                    /** @var string $key */
-                    $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                        $issue_handler,
-                        $base_dir
-                    );
-                } else {
-                    /** @var string $key */
-                    $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                        $issue_handler,
-                        $base_dir
-                    );
+            foreach ($config_xml->issueHandlers as $issue_handlers) {
+                /** @var SimpleXMLElement $issue_handler */
+                foreach ($issue_handlers->children() as $key => $issue_handler) {
+                    if ($key === 'PluginIssue') {
+                        $custom_class_name = (string) $issue_handler['name'];
+                        /** @var string $key */
+                        $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                            $issue_handler,
+                            $base_dir
+                        );
+                    } else {
+                        /** @var string $key */
+                        $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                            $issue_handler,
+                            $base_dir
+                        );
+                    }
                 }
             }
         }

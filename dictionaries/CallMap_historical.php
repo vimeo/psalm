@@ -10375,7 +10375,7 @@ return [
     'dio_tcsetattr' => ['bool', 'fd'=>'resource', 'options'=>'array'],
     'dio_truncate' => ['bool', 'fd'=>'resource', 'offset'=>'int'],
     'dio_write' => ['int', 'fd'=>'resource', 'data'=>'string', 'length='=>'int'],
-    'dir' => ['Directory|false|null', 'directory'=>'string', 'context='=>'resource'],
+    'dir' => ['Directory|false', 'directory'=>'string', 'context='=>'resource'],
     'dirname' => ['string', 'path'=>'string', 'levels='=>'int'],
     'disk_free_space' => ['float|false', 'directory'=>'string'],
     'disk_total_space' => ['float|false', 'directory'=>'string'],

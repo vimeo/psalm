@@ -325,12 +325,13 @@ class FunctionCallReturnTypeFetcher
         if (!$call_args) {
             switch ($call_map_key) {
                 case 'hrtime':
-                    return new Union([
-                        new TKeyedArray([
-                            Type::getInt(),
-                            Type::getInt()
-                        ])
+                    $keyed_array = new TKeyedArray([
+                        Type::getInt(),
+                        Type::getInt()
                     ]);
+                    $keyed_array->sealed = true;
+                    $keyed_array->is_list = true;
+                    return new Union([$keyed_array]);
 
                 case 'get_called_class':
                     return new Union([
@@ -438,20 +439,19 @@ class FunctionCallReturnTypeFetcher
                             return $int;
                         }
 
+                        $keyed_array = new TKeyedArray([
+                            Type::getInt(),
+                            Type::getInt()
+                        ]);
+                        $keyed_array->sealed = true;
+                        $keyed_array->is_list = true;
+
                         if ((string) $first_arg_type === 'false') {
-                            return new Union([
-                                new TKeyedArray([
-                                    Type::getInt(),
-                                    Type::getInt()
-                                ])
-                            ]);
+                            return new Union([$keyed_array]);
                         }
 
                         return new Union([
-                            new TKeyedArray([
-                                Type::getInt(),
-                                Type::getInt()
-                            ]),
+                            $keyed_array,
                             new TInt()
                         ]);
                     }

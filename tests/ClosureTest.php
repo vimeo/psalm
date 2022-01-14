@@ -735,6 +735,31 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'arrowFunctionReturnsNeverImplictly' => [
+                '<?php
+                    $bar = ["foo", "bar"];
+
+                    $bam = array_map(
+                        fn(string $a) => throw new Exception($a),
+                        $bar
+                    );',
+                'assertions' => [],
+                'error_levels' => [],
+                '8.1'
+            ],
+            'arrowFunctionReturnsNeverExplictly' => [
+                '<?php
+                    $bar = ["foo", "bar"];
+
+                    $bam = array_map(
+                        /** @return never */
+                        fn(string $a) => die(),
+                        $bar
+                    );',
+                'assertions' => [],
+                'error_levels' => [],
+                '8.1'
+            ],
         ];
     }
 

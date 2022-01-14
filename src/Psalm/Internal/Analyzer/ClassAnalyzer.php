@@ -1938,6 +1938,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $method_analyzer,
                     $interface_return_type,
                     $interface_class,
+                    $original_fq_classlike_name,
                     $interface_return_type_location,
                     [$analyzed_method_id->__toString()],
                     $did_explicitly_return
@@ -1963,6 +1964,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_analyzer,
             $return_type,
             $fq_classlike_name,
+            $original_fq_classlike_name,
             $return_type_location,
             $overridden_method_ids,
             $did_explicitly_return

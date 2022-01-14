@@ -1054,9 +1054,9 @@ class FunctionCallTest extends TestCase
                     $d = hrtime(false);',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'array{0: int, 1: int}',
-                    '$c' => 'array{0: int, 1: int}|int',
-                    '$d' => 'array{0: int, 1: int}',
+                    '$b' => 'array{int, int}',
+                    '$c' => 'array{int, int}|int',
+                    '$d' => 'array{int, int}',
                 ],
             ],
             'hrtimeCanBeFloat' => [
@@ -2160,7 +2160,7 @@ class FunctionCallTest extends TestCase
             'tooFewArgsAccurateCount' => [
                 'code' => '<?php
                     preg_match(\'/adsf/\');',
-                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting 2 but saw 1',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
             ],
             'compactUndefinedVariable' => [
                 'code' => '<?php

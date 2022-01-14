@@ -686,6 +686,9 @@ class IntRangeTest extends TestCase
 
                     assert($length === 1);
                     ',
+                'assertions' => [
+                    '$length===' => '1',
+                ],
             ],
         ];
     }

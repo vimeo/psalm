@@ -53,6 +53,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $codebase = $statements_source->getCodebase();
 
         $generic_properties = [];
+        $class_strings = [];
         $all_keyed_arrays = true;
         $all_int_offsets = true;
         $all_nonempty_lists = true;
@@ -108,6 +109,10 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                 if (!is_string($key)) {
                                     $generic_properties[] = $type;
                                     continue;
+                                }
+
+                                if (isset($unpacked_type_part->class_strings[$key])) {
+                                    $class_strings[$key] = true;
                                 }
 
                                 if (!isset($generic_properties[$key]) || !$type->possibly_undefined) {
@@ -220,6 +225,10 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 || $generic_property_count < 16)
         ) {
             $objectlike = new TKeyedArray($generic_properties);
+
+            if ($class_strings !== []) {
+                $objectlike->class_strings = $class_strings;
+            }
 
             if ($all_nonempty_lists || $all_int_offsets) {
                 $objectlike->is_list = true;

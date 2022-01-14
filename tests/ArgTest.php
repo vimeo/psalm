@@ -690,6 +690,24 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'MissingMandatoryParamWithNamedParams' => [
+                '<?php
+                class User
+                {
+                    public function __construct(
+                        protected string $name,
+                        protected string $problematicOne,
+                        protected string $id = "",
+                    ){}
+                }
+
+                new User(
+                name: "John",
+                id: "asd",
+                );
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
         ];
     }
 }

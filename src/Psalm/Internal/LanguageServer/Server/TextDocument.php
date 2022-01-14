@@ -24,7 +24,6 @@ use Psalm\Codebase;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\LanguageServer;
-use Psalm\IssueBuffer;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -367,9 +366,15 @@ class TextDocument
         $this->codebase->analyzer->addFilesToAnalyze(
             array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
         );
-        $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $issues = IssueBuffer::clear();
+        try {
+            $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        } catch (UnexpectedValueException $e) {
+            error_log('codeAction errored on file ' . $file_path. ', Reason: '.$e->getMessage());
+            return new Success(null);
+        }
+
+        $issues = $this->server->getCurrentIssues();
 
         if (empty($issues[$file_path])) {
             return new Success(null);

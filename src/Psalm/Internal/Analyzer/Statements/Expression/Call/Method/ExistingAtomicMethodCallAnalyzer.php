@@ -539,7 +539,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             case '__set':
                 // If `@psalm-seal-properties` is set, the property must be defined with
                 // a `@property` annotation
-                if ($class_storage->sealed_properties
+                if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyAssignment(
@@ -638,7 +638,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             case '__get':
                 // If `@psalm-seal-properties` is set, the property must be defined with
                 // a `@property` annotation
-                if ($class_storage->sealed_properties
+                if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_get_types['$' . $prop_name])
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(

@@ -38,20 +38,27 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
 use function array_reverse;
+use function array_slice;
 use function count;
 use function in_array;
 use function is_string;
 use function max;
+use function min;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -557,41 +564,10 @@ class ArgumentsAnalyzer
 
         $has_packed_var = false;
 
-        $packed_var_definite_args = 0;
-
         foreach ($args as $arg) {
             if ($arg->unpack) {
-                $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
-
-                if (!$arg_value_type
-                    || !$arg_value_type->isSingle()
-                    || !$arg_value_type->hasArray()
-                ) {
-                    $has_packed_var = true;
-                    break;
-                }
-
-                foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
-                    if (!$atomic_arg_type instanceof TKeyedArray) {
-                        $has_packed_var = true;
-                        break 2;
-                    }
-
-                    $packed_var_definite_args = 0;
-
-                    foreach ($atomic_arg_type->properties as $property_type) {
-                        if ($property_type->possibly_undefined) {
-                            $has_packed_var = true;
-                        } else {
-                            $packed_var_definite_args++;
-                        }
-                    }
-                }
+                $has_packed_var = true;
             }
-        }
-
-        if (!$has_packed_var) {
-            $packed_var_definite_args = max(0, $packed_var_definite_args - 1);
         }
 
         $last_param = $function_params
@@ -951,9 +927,7 @@ class ArgumentsAnalyzer
             $in_call_map,
             $method_id,
             $cased_method_id,
-            $code_location,
-            $has_packed_var,
-            $packed_var_definite_args
+            $code_location
         );
 
         return null;
@@ -1465,9 +1439,7 @@ class ArgumentsAnalyzer
         bool $in_call_map,
         $method_id,
         ?string $cased_method_id,
-        CodeLocation $code_location,
-        bool $has_packed_var,
-        int $packed_var_definite_args
+        CodeLocation $code_location
     ): void {
         if (!$is_variadic
             && count($args) > count($function_params)
@@ -1491,48 +1463,113 @@ class ArgumentsAnalyzer
             return;
         }
 
-        if (!$has_packed_var && count($args) < count($function_params)) {
-            if ($function_storage) {
-                $expected_param_count = $function_storage->required_param_count;
-            } else {
-                for ($i = 0, $j = count($function_params); $i < $j; ++$i) {
-                    $param = $function_params[$i];
+        if (count($args) < count($function_params)) {
+            //we're gonna loop over given args and unset them from the function_params.
+            // If some mandatory params are left at the end, we'll throw an error
+            foreach ($args as $arg) {
+                // when the argument is not named, we can remove the params in order
+                if ($arg->name === null) {
+                    // if we're unpacking, we try to unset the exact number of params, if we can't we give up and return
+                    if ($arg->unpack) {
+                        $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-                    if ($param->is_optional || $param->is_variadic) {
-                        break;
+                        if (!$arg_value_type || !$arg_value_type->hasArray()) {
+                            return;
+                        }
+
+                        if ($arg_value_type->isSingle()
+                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic())
+                            && $atomic_arg_type instanceof TKeyedArray
+                            && !$atomic_arg_type->is_list
+                        ) {
+                            //if we have a single shape, we'll check param names
+                            foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
+                                foreach ($function_params as $k => $param) {
+                                    if ($param->name === $property_name) {
+                                        unset($function_params[$k]);
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+
+                        foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
+                            $packed_var_definite_args_tmp = [];
+                            if ($atomic_arg_type instanceof TCallableArray ||
+                                $atomic_arg_type instanceof TCallableList ||
+                                $atomic_arg_type instanceof TCallableKeyedArray
+                            ) {
+                                $packed_var_definite_args_tmp[] = 2;
+                            } elseif ($atomic_arg_type instanceof TKeyedArray) {
+                                if (!$atomic_arg_type->sealed) {
+                                    return;
+                                }
+
+                                foreach ($atomic_arg_type->properties as $property_type) {
+                                    if ($property_type->possibly_undefined) {
+                                        return;
+                                    }
+                                }
+                                //we did not return. The number of packed params is the number of properties
+                                $packed_var_definite_args_tmp[] = count($atomic_arg_type->properties);
+                            } elseif ($atomic_arg_type instanceof TNonEmptyArray ||
+                                $atomic_arg_type instanceof TNonEmptyList
+                            ) {
+                                if ($atomic_arg_type->count === null) {
+                                    return;
+                                }
+
+                                $packed_var_definite_args_tmp[] = $atomic_arg_type->count;
+                            } elseif ($atomic_arg_type instanceof TArray
+                                && $atomic_arg_type->type_params[1]->isEmpty()
+                            ) {
+                                $packed_var_definite_args_tmp[] = 0;
+                            } else {
+                                return;
+                            }
+
+
+                            if (min($packed_var_definite_args_tmp) === max($packed_var_definite_args_tmp)) {
+                                //we have a stable number of params
+                                $packed_var_definite_args = $packed_var_definite_args_tmp[0];
+                            } else {
+                                return;
+                            }
+                        }
+                    } else {
+                        //if we're not unpacking, we remove the first param
+                        $packed_var_definite_args = 1;
                     }
+
+                    $function_params = array_slice($function_params, $packed_var_definite_args);
+                    continue;
                 }
 
-                $expected_param_count = $i;
+                foreach ($function_params as $k => $param) {
+                    if ($param->name === $arg->name->name) {
+                        unset($function_params[$k]);
+                        continue;
+                    }
+                }
             }
 
-            for ($i = count($args) + $packed_var_definite_args, $j = count($function_params); $i < $j; ++$i) {
-                $param = $function_params[$i];
-
-                if (!$param->is_optional
-                    && !$param->is_variadic
-                    && ($in_call_map
-                        || !$function_storage instanceof MethodStorage
-                        || $function_storage->is_static
-                        || ($method_id instanceof MethodIdentifier
-                            && $method_id->method_name === '__construct'))
-                ) {
+            //we're now left with an array of params that were not passed.
+            // If they're mandatory, throw an error. Otherwise, we compute the default value
+            foreach ($function_params as $i => $param) {
+                if (!$param->is_optional && !$param->is_variadic) {
                     IssueBuffer::maybeAdd(
                         new TooFewArguments(
                             'Too few arguments for ' . $cased_method_id
-                            . ' - expecting ' . $expected_param_count
-                            . ' but saw ' . (count($args) + $packed_var_definite_args),
+                            . ' - expecting ' . $param->name . ' to be passed',
                             $code_location,
                             (string)$method_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-
-                    break;
+                    continue;
                 }
 
-                if ($param->is_optional
-                    && $param->type
+                if ($param->type
                     && $param->default_type
                     && !$param->is_variadic
                     && $template_result
