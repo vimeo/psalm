@@ -2,7 +2,6 @@
 
 namespace Psalm\Tests;
 
-use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
