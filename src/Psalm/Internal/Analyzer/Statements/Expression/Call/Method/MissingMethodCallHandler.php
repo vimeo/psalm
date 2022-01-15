@@ -8,9 +8,12 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
@@ -19,6 +22,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
@@ -36,7 +40,8 @@ class MissingMethodCallHandler
         Context $context,
         Config $config,
         ?Union $all_intersection_return_type,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
+        ?Atomic $lhs_type_part
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -106,13 +111,23 @@ class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            $found_generic_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $class_storage,
+                $class_storage,
+                $method_name_lc,
+                $lhs_type_part,
+                !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
                 true,
-                $context
+                $context,
+                $found_generic_params ? new TemplateResult([], $found_generic_params) : null
             );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
@@ -122,13 +137,21 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                null,
+                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
                 new CodeLocation($statements_analyzer, $stmt),
                 $context
             );
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                if ($found_generic_params) {
+                    TemplateInferredTypeReplacer::replace(
+                        $return_type_candidate,
+                        new TemplateResult([], $found_generic_params),
+                        $codebase
+                    );
+                }
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
@@ -228,7 +251,8 @@ class MissingMethodCallHandler
         array $all_intersection_existent_method_ids,
         ?string $intersection_method_id,
         string $cased_method_id,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
+        ?Atomic $lhs_type_part
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -254,13 +278,23 @@ class MissingMethodCallHandler
                 return;
             }
 
+            $found_generic_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $class_storage,
+                $class_storage,
+                $method_name_lc,
+                $lhs_type_part,
+                !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
                 true,
-                $context
+                $context,
+                $found_generic_params ? new TemplateResult([], $found_generic_params) : null
             ) === false) {
                 return;
             }
@@ -272,7 +306,7 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                null,
+                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context
             ) === false) {
@@ -281,6 +315,14 @@ class MissingMethodCallHandler
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                if ($found_generic_params) {
+                    TemplateInferredTypeReplacer::replace(
+                        $return_type_candidate,
+                        new TemplateResult([], $found_generic_params),
+                        $codebase
+                    );
+                }
 
                 if ($all_intersection_return_type) {
                     $return_type_candidate = Type::intersectUnionTypes(

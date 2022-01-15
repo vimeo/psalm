@@ -354,7 +354,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $codebase->config,
                     $all_intersection_return_type,
-                    $result
+                    $result,
+                    $lhs_type_part
                 );
 
                 if ($new_call_context) {
@@ -417,7 +418,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $all_intersection_existent_method_ids,
                 $intersection_method_id,
                 $cased_method_id,
-                $result
+                $result,
+                $lhs_type_part
             );
 
             return;
