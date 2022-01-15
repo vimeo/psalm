@@ -339,7 +339,7 @@ class Reconciler
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
                 if ($type[0][0] === '=isset'
-                    || $type[0][0] === '!=empty'
+                    //|| $type[0][0] === '!=empty'
                     || $type[0][0] === 'isset'
                     || $type[0][0] === '!empty'
                 ) {
