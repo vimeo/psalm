@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 use Exception;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
@@ -481,6 +482,12 @@ class AtomicStaticCallAnalyzer
 
         $config = $codebase->config;
 
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc
+        );
+
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -488,7 +495,7 @@ class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSource()
             )
             || $fake_method_exists
-            || (isset($class_storage->pseudo_static_methods[$method_name_lc])
+            || ($found_method_and_class_storage
                 && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
         ) {
             $callstatic_id = new MethodIdentifier(
@@ -548,8 +555,8 @@ class AtomicStaticCallAnalyzer
                     }
                 }
 
-                if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {
-                    $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
+                if ($found_method_and_class_storage) {
+                    [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
                     if (self::checkPseudoMethod(
                         $statements_analyzer,
@@ -557,7 +564,7 @@ class AtomicStaticCallAnalyzer
                         $method_id,
                         $fq_class_name,
                         $args,
-                        $class_storage,
+                        $defining_class_storage,
                         $pseudo_method_storage,
                         $context
                     ) === false
@@ -642,10 +649,10 @@ class AtomicStaticCallAnalyzer
                     $fq_class_name,
                     '__callstatic'
                 );
-            } elseif (isset($class_storage->pseudo_static_methods[$method_name_lc])
+            } elseif ($found_method_and_class_storage
                 && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
             ) {
-                $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
+                [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
                 if (self::checkPseudoMethod(
                     $statements_analyzer,
@@ -653,7 +660,7 @@ class AtomicStaticCallAnalyzer
                     $method_id,
                     $fq_class_name,
                     $args,
-                    $class_storage,
+                    $defining_class_storage,
                     $pseudo_method_storage,
                     $context
                 ) === false
@@ -834,7 +841,7 @@ class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
-        string $fq_class_name,
+        string $static_fq_class_name,
         array $args,
         ClassLikeStorage $class_storage,
         MethodStorage $pseudo_method_storage,
@@ -904,8 +911,8 @@ class AtomicStaticCallAnalyzer
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
                 $return_type_candidate,
-                $fq_class_name,
-                $fq_class_name,
+                $class_storage->name,
+                $static_fq_class_name,
                 $class_storage->parent_class
             );
 
@@ -1001,5 +1008,42 @@ class AtomicStaticCallAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues()
         );
+    }
+
+    /**
+     * Try to find matching pseudo method over ancestors (including interfaces).
+     *
+     * Returns the pseudo method if exists, with its defining class storage.
+     * If the method is not declared, null is returned.
+     *
+     * @param Codebase $codebase
+     * @param ClassLikeStorage $static_class_storage The called class
+     * @param lowercase-string $method_name_lc
+     *
+     * @return array{MethodStorage, ClassLikeStorage}|null
+     */
+    private static function findPseudoMethodAndClassStorages(
+        Codebase $codebase,
+        ClassLikeStorage $static_class_storage,
+        string $method_name_lc
+    ): ?array {
+        if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
+            return [$pseudo_method_storage, $static_class_storage];
+        }
+
+        $ancestors = $static_class_storage->class_implements + $static_class_storage->parent_classes;
+
+        foreach ($ancestors as $fq_class_name => $_) {
+            $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
+
+            if ($class_storage && isset($class_storage->pseudo_static_methods[$method_name_lc])) {
+                return [
+                    $class_storage->pseudo_static_methods[$method_name_lc],
+                    $class_storage
+                ];
+            }
+        }
+
+        return null;
     }
 }

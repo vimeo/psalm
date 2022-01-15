@@ -94,11 +94,17 @@ class MissingMethodCallHandler
             }
         }
 
-        if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc
+        );
+
+        if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[] = $method_id->__toString();
 
-            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+            [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
@@ -127,9 +133,9 @@ class MissingMethodCallHandler
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
+                    $defining_class_storage->name,
                     $fq_class_name,
-                    $fq_class_name,
-                    $class_storage->parent_class
+                    $defining_class_storage->parent_class
                 );
 
                 if ($all_intersection_return_type) {
@@ -229,13 +235,19 @@ class MissingMethodCallHandler
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc
+        );
+
         if (($is_interface || $config->use_phpdoc_method_without_magic_or_parent)
-            && isset($class_storage->pseudo_methods[$method_name_lc])
+            && $found_method_and_class_storage
         ) {
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[] = $method_id->__toString();
 
-            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+            [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
             if ($stmt->isFirstClassCallable()) {
                 $result->return_type = self::createFirstClassCallableReturnType($pseudo_method_storage);
@@ -281,9 +293,9 @@ class MissingMethodCallHandler
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
+                    $defining_class_storage->name,
                     $fq_class_name,
-                    $fq_class_name,
-                    $class_storage->parent_class,
+                    $defining_class_storage->parent_class,
                     true,
                     false,
                     $class_storage->final
@@ -350,5 +362,42 @@ class MissingMethodCallHandler
         }
 
         return Type::getClosure();
+    }
+
+    /**
+     * Try to find matching pseudo method over ancestors (including interfaces).
+     *
+     * Returns the pseudo method if exists, with its defining class storage.
+     * If the method is not declared, null is returned.
+     *
+     * @param Codebase $codebase
+     * @param ClassLikeStorage $static_class_storage The called class
+     * @param lowercase-string $method_name_lc
+     *
+     * @return array{MethodStorage, ClassLikeStorage}
+     */
+    private static function findPseudoMethodAndClassStorages(
+        Codebase $codebase,
+        ClassLikeStorage $static_class_storage,
+        string $method_name_lc
+    ): ?array {
+        if ($pseudo_method_storage = $static_class_storage->pseudo_methods[$method_name_lc] ?? null) {
+            return [$pseudo_method_storage, $static_class_storage];
+        }
+
+        $ancestors = $static_class_storage->class_implements + $static_class_storage->parent_classes;
+
+        foreach ($ancestors as $fq_class_name => $_) {
+            $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
+
+            if ($class_storage && isset($class_storage->pseudo_methods[$method_name_lc])) {
+                return [
+                    $class_storage->pseudo_methods[$method_name_lc],
+                    $class_storage
+                ];
+            }
+        }
+
+        return null;
     }
 }
