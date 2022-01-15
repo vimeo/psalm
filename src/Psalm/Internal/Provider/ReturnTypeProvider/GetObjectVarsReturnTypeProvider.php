@@ -43,7 +43,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
 
             if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
-                    return Type::getEmptyArray();
+                    return Type::parseString('array<string, mixed>');
                 }
                 return new Union([
                     new TKeyedArray($object_type->properties)
@@ -62,7 +62,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 }
 
                 if ([] === $class_storage->appearing_property_ids) {
-                    return Type::getEmptyArray();
+                    if ($class_storage->final) {
+                        return Type::getEmptyArray();
+                    }
+
+                    return Type::parseString('array<string, mixed>');
                 }
 
                 $properties = [];
@@ -86,7 +90,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 }
 
                 if ([] === $properties) {
-                    return Type::getEmptyArray();
+                    if ($class_storage->final) {
+                        return Type::getEmptyArray();
+                    }
+
+                    return Type::parseString('array<string, mixed>');
                 }
 
                 return new Union([
