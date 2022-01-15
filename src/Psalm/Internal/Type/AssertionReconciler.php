@@ -70,7 +70,7 @@ class AssertionReconciler extends Reconciler
      *
      * @param   string[]            $suppressed_issues
      * @param   array<string, array<string, Union>> $template_type_map
-     * @param-out   0|1|2   $failed_reconciliation
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     public static function reconcile(
         string $assertion,
@@ -306,10 +306,10 @@ class AssertionReconciler extends Reconciler
      * This method is called when SimpleAssertionReconciler was not enough. It receives the existing type, the assertion
      * and also a new type created from the assertion string.
      *
-     * @param 0|1|2         $failed_reconciliation
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param   array<string, array<string, Union>> $template_type_map
-     * @param-out   0|1|2   $failed_reconciliation
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function refine(
         StatementsAnalyzer $statements_analyzer,

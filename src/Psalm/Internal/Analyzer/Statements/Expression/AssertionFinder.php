@@ -52,6 +52,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -1909,7 +1910,7 @@ class AssertionFinder
     }
 
     /**
-     * @return  0|1|2
+     * @return Reconciler::RECONCILIATION_*
      */
     protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {

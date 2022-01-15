@@ -750,6 +750,75 @@ class MagicMethodAnnotationTest extends TestCase
 
                     (new Cache)->bar(new \DateTime(), new Cache());'
             ],
+            'magicMethodInheritance' => [
+                '<?php
+                    /**
+                     * @method string foo()
+                     */
+                    interface I {}
+
+                    /**
+                     * @method int bar()
+                     */
+                    class A implements I {}
+
+                    class B extends A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    $b = new B();
+
+                    function consumeString(string $s): void {}
+                    function consumeInt(int $i): void {}
+
+                    consumeString($b->foo());
+                    consumeInt($b->bar());'
+            ],
+            'magicMethodInheritanceOnInterface' => [
+                '<?php
+                    /**
+                     * @method string foo()
+                     */
+                    interface I {}
+                    interface I2 extends I {}
+                    function consumeString(string $s): void {}
+
+                    /** @var I2 $i */
+                    consumeString($i->foo());'
+            ],
+            'magicStaticMethodInheritance' => [
+                '<?php
+                    /**
+                     * @method static string foo()
+                     */
+                    interface I {}
+
+                    /**
+                     * @method static int bar()
+                     */
+                    class A implements I {}
+
+                    class B extends A {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    function consumeString(string $s): void {}
+                    function consumeInt(int $i): void {}
+
+                    consumeString(B::foo());
+                    consumeInt(B::bar());'
+            ],
+            'magicStaticMethodInheritanceWithoutCallStatic' => [
+                '<?php
+                    /**
+                     * @method static int bar()
+                     */
+                    class A {}
+                    class B extends A {}
+                    function consumeInt(int $i): void {}
+
+                    consumeInt(B::bar());'
+            ],
         ];
     }
 
