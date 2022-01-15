@@ -3581,7 +3581,7 @@ class ClassTemplateTest extends TestCase
                     }'
             ],
             'templateOnDocblockMethod' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @method T get()
@@ -3602,7 +3602,7 @@ class ClassTemplateTest extends TestCase
                 '
             ],
             'templateOnDocblockMethodOnInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @method T get()
@@ -4380,7 +4380,7 @@ class ClassTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'invalidTemplateArgumentOnDocblockMethod' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @method void set(T $value)

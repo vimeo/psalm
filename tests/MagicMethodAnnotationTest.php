@@ -751,7 +751,7 @@ class MagicMethodAnnotationTest extends TestCase
                     (new Cache)->bar(new \DateTime(), new Cache());'
             ],
             'magicMethodInheritance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string foo()
                      */
@@ -775,7 +775,7 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeInt($b->bar());'
             ],
             'magicMethodInheritanceOnInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string foo()
                      */
@@ -787,7 +787,7 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeString($i->foo());'
             ],
             'magicStaticMethodInheritance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static string foo()
                      */
@@ -809,7 +809,7 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeInt(B::bar());'
             ],
             'magicStaticMethodInheritanceWithoutCallStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static int bar()
                      */
