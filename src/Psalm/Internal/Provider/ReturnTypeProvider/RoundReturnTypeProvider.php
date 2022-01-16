@@ -13,6 +13,9 @@ use function round;
 
 use const PHP_ROUND_HALF_UP;
 
+/**
+ * @internal
+ */
 class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
