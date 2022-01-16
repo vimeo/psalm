@@ -1785,6 +1785,14 @@ class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'round_literalValue' => [
+                'code' => '<?php
+                    $a = round(10.363, 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'float(10.36)',
+                ],
+            ],
         ];
     }
 
