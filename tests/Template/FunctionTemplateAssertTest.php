@@ -233,16 +233,19 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertSame($expected, $actual) : void {}
 
-                    $a = rand(0, 1) ? "goodbye" : "hello";
-                    $b = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Goodbye {}
+
+                    $a = rand(0, 1) ? new Goodbye() : new Hello();
+                    $b = rand(0, 1) ? new Hello() : new Goodbye();
                     assertSame($a, $b);
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    $c = new Hello();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertSame($c, $d);
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    $c = new Hello();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertSame($d, $c);
 
                     $c = 4;
@@ -282,8 +285,11 @@ class FunctionTemplateAssertTest extends TestCase
                         public static function assertSame($expected, $actual) : void {}
                     }
 
-                    $a = rand(0, 1) ? "goodbye" : "hello";
-                    $b = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Goodbye {}
+
+                    $a = rand(0, 1) ? new Goodbye() : new Hello();
+                    $b = rand(0, 1) ? new Hello() : new Goodbye();
                     Assertion::assertSame($a, $b);',
             ],
             'allowCanBeNotSameAfterAssertion' => [
@@ -300,17 +306,20 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertNotSame($expected, $actual) : void {}
 
-                    $a = rand(0, 1) ? "goodbye" : "hello";
-                    $b = rand(0, 1) ? "hello" : "goodbye";
-                    assertNotSame($a, $b);
+                    class Hello {}
+                    class Goodbye {}
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
-                    assertNotSame($c, $d);
+                    $goodbye_or_hello = rand(0, 1) ? new Goodbye() : new Hello();
+                    $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
+                    assertNotSame($goodbye_or_hello, $hello_or_goodbye);
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
-                    assertNotSame($d, $c);
+                    $hello = new Hello();
+                    $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
+                    assertNotSame($hello, $hello_or_goodbye);
+
+                    $hello = new Hello();
+                    $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
+                    assertNotSame($hello_or_goodbye, $hello);
 
                     $c = 4;
                     $d = rand(0, 1) ? 4 : 5;
@@ -333,16 +342,19 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertEqual($expected, $actual) : void {}
 
-                    $a = rand(0, 1) ? "goodbye" : "hello";
-                    $b = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Goodbye {}
+
+                    $a = rand(0, 1) ? new Goodbye() : new Hello();
+                    $b = rand(0, 1) ? new Hello() : new Goodbye();
                     assertEqual($a, $b);
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    $c = new Hello();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertEqual($c, $d);
 
-                    $c = "hello";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    $c = new Hello();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertEqual($d, $c);
 
                     $c = 4;
@@ -903,8 +915,10 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertSame($expected, $actual) : void {}
 
+                    class Hello {}
+
                     $a = 5;
-                    $b = "hello";
+                    $b = new Hello();
                     assertSame($a, $b);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
@@ -939,8 +953,12 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertSame($expected, $actual) : void {}
 
-                    $c = "helloa";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Helloa {}
+                    class Goodbye {}
+
+                    $c = new Helloa();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertSame($c, $d);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
@@ -957,8 +975,12 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertNotSame($expected, $actual) : void {}
 
-                    $c = "helloa";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Helloa {}
+                    class Goodbye {}
+
+                    $c = new Helloa();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertNotSame($c, $d);',
                 'error_message' => 'RedundantCondition',
             ],
@@ -975,8 +997,12 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertEqual($expected, $actual) : void {}
 
-                    $c = "helloa";
-                    $d = rand(0, 1) ? "hello" : "goodbye";
+                    class Hello {}
+                    class Helloa {}
+                    class Goodbye {}
+
+                    $c = new Helloa();
+                    $d = rand(0, 1) ? new Hello() : new Goodbye();
                     assertEqual($c, $d);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
@@ -1045,8 +1071,10 @@ class FunctionTemplateAssertTest extends TestCase
                      */
                     function assertNotSame($expected, $actual, $message = "") {}
 
+                    class Hello {}
+
                     function bar(array $j) : void {
-                        assertNotSame("hello", $j);
+                        assertNotSame(new Hello(), $j);
                     }',
                 'error_message' => 'RedundantCondition',
             ],
