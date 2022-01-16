@@ -7,7 +7,6 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TAssertionFalsy;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIterable;

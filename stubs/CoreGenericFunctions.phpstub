@@ -1,13 +1,12 @@
 <?php
 /**
- * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  * @param mixed $search_value
  * @param bool  $strict
  *
- * @return (TArray is non-empty-array ? non-empty-list<TKey> : list<TKey>)
+ * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
  */
 function array_keys(array $array, $search_value = null, bool $strict = false)
@@ -145,12 +144,11 @@ function key($array)
 }
 
 /**
- * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  *
- * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
 function array_key_first($array)
@@ -158,12 +156,11 @@ function array_key_first($array)
 }
 
 /**
- * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  *
- * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
 function array_key_last($array)

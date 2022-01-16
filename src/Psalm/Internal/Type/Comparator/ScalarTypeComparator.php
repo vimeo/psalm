@@ -253,18 +253,16 @@ class ScalarTypeComparator
             return true;
         }
 
-        if ($container_type_part instanceof TArrayKey
-            && $input_type_part instanceof TNumeric
-        ) {
-            return true;
-        }
+        if ($container_type_part instanceof TTemplateKeyOf) {
+            if (!$input_type_part instanceof TTemplateKeyOf) {
+                return false;
+            }
 
-        if ($container_type_part instanceof TArrayKey
-            && ($input_type_part instanceof TInt
-                || $input_type_part instanceof TString
-                || $input_type_part instanceof TTemplateKeyOf)
-        ) {
-            return true;
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->as,
+                $container_type_part->as
+            );
         }
 
         if ($input_type_part instanceof TTemplateKeyOf) {
@@ -286,6 +284,20 @@ class ScalarTypeComparator
                 }
             }
 
+            return true;
+        }
+
+        if ($container_type_part instanceof TArrayKey
+            && $input_type_part instanceof TNumeric
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TArrayKey
+            && ($input_type_part instanceof TInt
+                || $input_type_part instanceof TString
+                || $input_type_part instanceof TTemplateKeyOf)
+        ) {
             return true;
         }
 

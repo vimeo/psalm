@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfClassConstant;
+use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -60,7 +60,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfClassConstant;
+use Psalm\Type\Atomic\TValueOfArray;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
@@ -692,7 +692,7 @@ class TypeParser
                 return new TTemplateKeyOf(
                     $param_name,
                     $defining_class,
-                    $template_type_map[$param_name][$defining_class]
+                    $generic_params[0]
                 );
             }
 
@@ -702,16 +702,13 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in key-of type');
             }
 
-            if (!$param_union_types[0] instanceof TClassConstant) {
+            if (!TKeyOfArray::isViableTemplateType($param_union_types[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be a class constant'
+                    'Untemplated key-of param ' . $param_name . ' should be a class constant or an array'
                 );
             }
 
-            return new TKeyOfClassConstant(
-                $param_union_types[0]->fq_classlike_name,
-                $param_union_types[0]->const_name
-            );
+            return new TKeyOfArray($param_union_types[0]);
         }
 
         if ($generic_type_value === 'value-of') {
@@ -723,16 +720,16 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in value-of type');
             }
 
-            if (!$param_union_types[0] instanceof TClassConstant) {
+            if (!$param_union_types[0] instanceof TArray
+                && !$param_union_types[0] instanceof TList
+                && !$param_union_types[0] instanceof TKeyedArray
+                && !$param_union_types[0] instanceof TClassConstant) {
                 throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be a class constant'
+                    'Untemplated value-of param ' . $param_name . ' should be a class constant or an array'
                 );
             }
 
-            return new TValueOfClassConstant(
-                $param_union_types[0]->fq_classlike_name,
-                $param_union_types[0]->const_name
-            );
+            return new TValueOfArray($param_union_types[0]);
         }
 
         if ($generic_type_value === 'int-mask') {
@@ -803,8 +800,8 @@ class TypeParser
             $param_type = $param_union_types[0];
 
             if (!$param_type instanceof TClassConstant
-                && !$param_type instanceof TValueOfClassConstant
-                && !$param_type instanceof TKeyOfClassConstant
+                && !$param_type instanceof TValueOfArray
+                && !$param_type instanceof TKeyOfArray
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'

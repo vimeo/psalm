@@ -49,9 +49,9 @@ The classes are as follows:
 
 `TIntMaskOf` - as above, but used with with a reference to constants in code`int-mask<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
 
-`TKeyOfClassConstant` - Represents an offset of a class constant array.
+`TKeyOfArray` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
 
-`TValueOfClassConstant` - Represents a value of a class constant array.
+`TValueOfArray` - Represents a value of an array (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
 
 `TTemplateIndexedAccess` - To be documented
 
@@ -277,5 +277,3 @@ Another way of creating these instances is to use the class `Psalm\Type` which i
 ```
 
 You can find how Psalm would represent a given type as objects, by specifying the type as an input to this function, and calling `var_dump` on the result.
-
-

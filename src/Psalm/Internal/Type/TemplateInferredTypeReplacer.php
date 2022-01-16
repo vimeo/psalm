@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -18,6 +19,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
@@ -227,6 +229,21 @@ class TemplateInferredTypeReplacer
                     }
                 } else {
                     $new_types[] = new TMixed();
+                }
+            } elseif ($atomic_type instanceof TTemplateKeyOf) {
+                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                        $codebase
+                    )
+                    : null;
+
+                if ($template_type) {
+                    $template_type = $template_type->getSingleAtomic();
+                    if (TKeyOfArray::isViableTemplateType($template_type)) {
+                        $keys_to_unset[] = $key;
+                        $new_types[] = new TKeyOfArray(clone $template_type);
+                    }
                 }
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
