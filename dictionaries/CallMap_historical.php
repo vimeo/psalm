@@ -14642,7 +14642,7 @@ return [
     'radius_strerror' => ['string', 'radius_handle'=>'resource'],
     'rand' => ['int', 'min'=>'int', 'max'=>'int'],
     'rand\'1' => ['int'],
-    'random_bytes' => ['string', 'length'=>'int'],
+    'random_bytes' => ['non-empty-string', 'length'=>'positive-int'],
     'random_int' => ['int', 'min'=>'int', 'max'=>'int'],
     'range' => ['array', 'start'=>'mixed', 'end'=>'mixed', 'step='=>'int|float'],
     'rar_allow_broken_set' => ['bool', 'rarfile'=>'RarArchive', 'allow_broken'=>'bool'],
