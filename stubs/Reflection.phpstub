@@ -13,7 +13,7 @@ class ReflectionClass implements Reflector {
     public $name;
 
     /**
-     * @param T|class-string<T>|interface-string<T>|trait-string $argument
+     * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $argument
      */
     public function __construct($argument) {}
 

@@ -251,8 +251,17 @@ abstract class Atomic implements TypeNode
                 return new TObjectWithProperties([], ['__tostring' => 'string']);
 
             case 'class-string':
-            case 'interface-string':
                 return new TClassString();
+
+            case 'interface-string':
+                $type = new TClassString();
+                $type->is_interface = true;
+                return $type;
+
+            case 'enum-string':
+                $type = new TClassString();
+                $type->is_enum = true;
+                return $type;
 
             case 'trait-string':
                 return new TTraitString();

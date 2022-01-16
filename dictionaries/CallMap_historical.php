@@ -12998,7 +12998,7 @@ return [
     'memory_get_peak_usage' => ['int', 'real_usage='=>'bool'],
     'memory_get_usage' => ['int', 'real_usage='=>'bool'],
     'metaphone' => ['string|false', 'string'=>'string', 'max_phonemes='=>'int'],
-    'method_exists' => ['bool', 'object_or_class'=>'object|class-string|interface-string', 'method'=>'string'],
+    'method_exists' => ['bool', 'object_or_class'=>'object|class-string|interface-string|enum-string', 'method'=>'string'],
     'mhash' => ['string', 'algo'=>'int', 'data'=>'string', 'key='=>'string'],
     'mhash_count' => ['int'],
     'mhash_get_block_size' => ['int|false', 'algo'=>'int'],

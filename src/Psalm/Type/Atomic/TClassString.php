@@ -39,6 +39,9 @@ class TClassString extends TString
     /** @var bool */
     public $is_interface = false;
 
+    /** @var bool */
+    public $is_enum = false;
+
     public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
     {
         $this->as = $as;
@@ -47,8 +50,15 @@ class TClassString extends TString
 
     public function getKey(bool $include_extra = true): string
     {
-        return ($this->is_interface ? 'interface' : 'class')
-            . '-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        if ($this->is_interface) {
+            $key = 'interface-string';
+        } elseif ($this->is_enum) {
+            $key = 'enum-string';
+        } else {
+            $key = 'class-string';
+        }
+
+        return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
     public function __toString(): string
@@ -58,9 +68,15 @@ class TClassString extends TString
 
     public function getId(bool $nested = false): string
     {
-        return ($this->is_loaded ? 'loaded-' : '')
-            . ($this->is_interface ? 'interface' : 'class')
-            . '-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        if ($this->is_interface) {
+            $key = 'interface-string';
+        } elseif ($this->is_enum) {
+            $key = 'enum-string';
+        } else {
+            $key = 'class-string';
+        }
+
+        return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
     public function getAssertionString(): string

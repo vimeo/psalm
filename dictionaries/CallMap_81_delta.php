@@ -17,7 +17,7 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
-    'enum_exists' => ['bool', 'class' => 'class-string', 'autoload=' => 'bool'],
+    'enum_exists' => ['bool', 'class' => 'string', 'autoload=' => 'bool'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
     'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],

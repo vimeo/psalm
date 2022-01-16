@@ -132,7 +132,9 @@ class NamedFunctionCallHandler
         if ($function_id === 'interface_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value)) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
@@ -141,6 +143,28 @@ class NamedFunctionCallHandler
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
                     if (!$codebase->classlikes->interfaceExists($resolved_name)) {
+                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                    }
+                }
+            }
+
+            return;
+        }
+
+        if ($function_id === 'enum_exists') {
+            if ($first_arg) {
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    if (!$codebase->classlikes->enumExists($first_arg->value->value)) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    }
+                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $first_arg->value->class instanceof PhpParser\Node\Name
+                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                    && $first_arg->value->name->name === 'class'
+                ) {
+                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+
+                    if (!$codebase->classlikes->enumExists($resolved_name)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }

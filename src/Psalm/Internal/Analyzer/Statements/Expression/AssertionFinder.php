@@ -790,6 +790,12 @@ class AssertionFinder
                     $if_types[$first_var_name] = [[new IsIdentical(new TTraitString())]];
                 }
             }
+        } elseif (self::hasEnumExistsCheck($expr)) {
+            if ($first_var_name) {
+                $class_string = new TClassString();
+                $class_string->is_enum = true;
+                $if_types[$first_var_name] = [[new IsType($class_string)]];
+            }
         } elseif (self::hasInterfaceExistsCheck($expr)) {
             if ($first_var_name) {
                 $class_string = new TClassString();
@@ -1992,6 +1998,11 @@ class AssertionFinder
         }
 
         return 0;
+    }
+
+    protected static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    {
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'enum_exists';
     }
 
     protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
