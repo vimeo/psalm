@@ -22,7 +22,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
