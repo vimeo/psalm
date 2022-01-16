@@ -303,7 +303,8 @@ class FunctionLikeDocblockScanner
                     $docblock_info->self_out['type'],
                     $aliases,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
+                    $classlike_storage ? $classlike_storage->name : null
                 ),
                 null,
                 $function_template_types + $class_template_types,
@@ -319,7 +320,8 @@ class FunctionLikeDocblockScanner
                     $docblock_info->if_this_is['type'],
                     $aliases,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
+                    $classlike_storage ? $classlike_storage->name : null
                 ),
                 null,
                 $function_template_types + $class_template_types,
