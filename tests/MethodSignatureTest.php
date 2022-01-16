@@ -310,6 +310,30 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testExtendReflectionPropertyOnPhp8(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile(
+            'MyReflectionProperty.php',
+            '<?php
+                class MyReflectionProperty extends ReflectionProperty
+                {
+                    public function getValue(?object $object = null): mixed
+                    {
+                        return parent::getValue($object);
+                    }
+
+                    public function setValue(mixed $objectOrValue, mixed $value = null): void
+                    {
+                        parent::setValue($objectOrValue, $value);
+                    }
+                }'
+        );
+
+        $this->analyzeFile('MyReflectionProperty.php', new Context());
+    }
+
     /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
