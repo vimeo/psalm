@@ -59,16 +59,6 @@ class TConditional extends Atomic
         $this->else_type = $else_type;
     }
 
-    public function __toString(): string
-    {
-        return '('
-            . $this->param_name
-            . ' is ' . $this->conditional_type
-            . ' ? ' . $this->if_type
-            . ' : ' . $this->else_type
-            . ')';
-    }
-
     public function __clone()
     {
         $this->conditional_type = clone $this->conditional_type;
@@ -79,7 +69,7 @@ class TConditional extends Atomic
 
     public function getKey(bool $include_extra = true): string
     {
-        return $this->__toString();
+        return 'TConditional<' . $this->param_name . '>';
     }
 
     public function getAssertionString(): string
@@ -87,13 +77,13 @@ class TConditional extends Atomic
         return '';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return '('
-            . $this->param_name . ':' . $this->defining_class
-            . ' is ' . $this->conditional_type->getId()
-            . ' ? ' . $this->if_type->getId()
-            . ' : ' . $this->else_type->getId()
+            . $this->param_name
+            . ' is ' . $this->conditional_type->getId($exact)
+            . ' ? ' . $this->if_type->getId($exact)
+            . ' : ' . $this->else_type->getId($exact)
             . ')';
     }
 

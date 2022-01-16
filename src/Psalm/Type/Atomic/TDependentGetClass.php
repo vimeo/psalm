@@ -31,12 +31,12 @@ class TDependentGetClass extends TString implements DependentType
         $this->as_type = $as_type;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return $this->as_type->isMixed()
             || $this->as_type->hasObject()
             ? 'class-string'
-            : 'class-string<' . $this->as_type->getId() . '>';
+            : 'class-string<' . $this->as_type->getId($exact) . '>';
     }
 
     public function getKey(bool $include_extra = true): string

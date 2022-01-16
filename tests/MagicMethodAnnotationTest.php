@@ -845,8 +845,8 @@ class MagicMethodAnnotationTest extends TestCase
                     /** @var I<B> $i */
                     $c = $i->foo();',
                 [
-                    '$b' => 'A<B>',
-                    '$c' => 'I<B>',
+                    '$b' => 'A<B>&static',
+                    '$c' => 'I<B>&static',
                 ]
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [

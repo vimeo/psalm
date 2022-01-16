@@ -1553,7 +1553,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $message .= ' - consider ' . str_replace(
                 ['<array-key, mixed>', '<never, never>'],
                 '',
-                (string)$suggested_type
+                $suggested_type->getId(false)
             );
         }
 

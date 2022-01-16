@@ -104,7 +104,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => 'Method fooFoo does not have a return type, expecting "hello"',
+                'message' => "Method fooFoo does not have a return type, expecting 'hello'",
                 'line' => 2,
                 'error' => 'fooFoo',
             ],
@@ -116,7 +116,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => "The inferred type '\"hello\"' does not match the declared return type 'int' for fooFoo",
+                'message' => "The inferred type ''hello'' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
                 'error' => '"hello"',
             ],

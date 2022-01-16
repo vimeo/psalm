@@ -24,7 +24,7 @@ class TEnumCase extends TNamedObject
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }

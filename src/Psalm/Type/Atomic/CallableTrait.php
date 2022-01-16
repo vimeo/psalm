@@ -63,7 +63,30 @@ trait CallableTrait
 
     public function getKey(bool $include_extra = true): string
     {
-        return $this->__toString();
+        $param_string = '';
+        $return_type_string = '';
+
+        if ($this->params !== null) {
+            $param_string .= '(';
+            foreach ($this->params as $i => $param) {
+                if ($i) {
+                    $param_string .= ', ';
+                }
+
+                $param_string .= $param->getId();
+            }
+
+            $param_string .= ')';
+        }
+
+        if ($this->return_type !== null) {
+            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
+            $return_type_string = ':' . ($return_type_multiple ? '(' : '')
+                . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
+        }
+
+        return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
+            . $this->value . $param_string . $return_type_string;
     }
 
     /**
@@ -147,7 +170,7 @@ trait CallableTrait
         return $this->value;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $param_string = '';
         $return_type_string = '';
@@ -168,16 +191,11 @@ trait CallableTrait
         if ($this->return_type !== null) {
             $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
             $return_type_string = ':' . ($return_type_multiple ? '(' : '')
-                . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
+                . $this->return_type->getId($exact) . ($return_type_multiple ? ')' : '');
         }
 
         return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
             . $this->value . $param_string . $return_type_string;
-    }
-
-    public function __toString(): string
-    {
-        return $this->getId();
     }
 
     public function replaceTemplateTypesWithStandins(

@@ -14,7 +14,7 @@ class TSqlSelectString extends TLiteralString
         return 'sql-select-string';
     }
 
-    public function getId(bool $nested = true): string
+    public function getId(bool $exact = true, bool $nested = true): string
     {
         return 'sql-select-string(' . $this->value . ')';
     }

@@ -27,12 +27,7 @@ class TClassConstant extends Atomic
         return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }
 
-    public function __toString(): string
-    {
-        return $this->fq_classlike_name . '::' . $this->const_name;
-    }
-
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return $this->fq_classlike_name . '::' . $this->const_name;
     }

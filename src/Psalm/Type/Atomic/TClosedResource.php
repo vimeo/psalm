@@ -9,17 +9,7 @@ use Psalm\Type\Atomic;
  */
 class TClosedResource extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'closed-resource';
-    }
-
     public function getKey(bool $include_extra = true): string
-    {
-        return 'closed-resource';
-    }
-
-    public function getId(bool $nested = false): string
     {
         return 'closed-resource';
     }

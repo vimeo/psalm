@@ -36,16 +36,10 @@ class TList extends Atomic
         $this->type_param = $type_param;
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         /** @psalm-suppress MixedOperand */
-        return static::KEY . '<' . $this->type_param . '>';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        /** @psalm-suppress MixedOperand */
-        return static::KEY . '<' . $this->type_param->getId() . '>';
+        return static::KEY . '<' . $this->type_param->getId($exact) . '>';
     }
 
     public function __clone()

@@ -7,11 +7,6 @@ namespace Psalm\Type\Atomic;
  */
 class TArrayKey extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'array-key';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'array-key';

@@ -49,11 +49,6 @@ class TNamedObject extends Atomic
         $this->definite_class = $definite_class;
     }
 
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -63,19 +58,19 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->value . '&' . implode(
                 '&',
                 array_map(
-                    fn($type) => $type->getId(true),
+                    fn($type) => $type->getId($exact, true),
                     $this->extra_types
                 )
             );
         }
 
-        return $this->is_static ? $this->value . '&static' : $this->value;
+        return $this->is_static && $exact ? $this->value . '&static' : $this->value;
     }
 
     /**

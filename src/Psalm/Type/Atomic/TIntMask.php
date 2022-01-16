@@ -30,12 +30,12 @@ class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
 
         foreach ($this->values as $value) {
-            $s .= $value->getId() . ', ';
+            $s .= $value->getId($exact) . ', ';
         }
 
         return 'int-mask<' . substr($s, 0, -2) . '>';

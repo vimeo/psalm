@@ -61,11 +61,11 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId() . ', ';
+            $s .= $type_param->getId($exact) . ', ';
         }
 
         $extra_types = '';
@@ -75,11 +75,6 @@ class TIterable extends Atomic
         }
 
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
-    }
-
-    public function __toString(): string
-    {
-        return $this->getId();
     }
 
     /**

@@ -7,19 +7,18 @@ namespace Psalm\Type\Atomic;
  */
 class TNumericString extends TNonEmptyString
 {
+    public function getId(bool $exact = true, bool $nested = false): string
+    {
+        if (!$exact) {
+            return 'string';
+        }
+
+        return 'numeric-string';
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric-string';
-    }
-
-    public function __toString(): string
-    {
-        return 'numeric-string';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

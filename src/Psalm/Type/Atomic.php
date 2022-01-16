@@ -77,8 +77,6 @@ use function strtolower;
 
 abstract class Atomic implements TypeNode
 {
-    public const KEY = 'atomic';
-
     /**
      * Whether or not the type has been checked yet
      *
@@ -325,6 +323,10 @@ abstract class Atomic implements TypeNode
         return new TNamedObject($value);
     }
 
+    /**
+     * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
+     * the same getKey value will override themselves in an Union
+     */
     abstract public function getKey(bool $include_extra = true): string;
 
     public function isNumericType(): bool
@@ -548,9 +550,9 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    public function __toString(): string
+    final public function __toString(): string
     {
-        return '';
+        return $this->getId();
     }
 
     public function __clone()
@@ -572,18 +574,27 @@ abstract class Atomic implements TypeNode
         }
     }
 
-    public function getId(bool $nested = false): string
+    /**
+     * This is the true identifier for the type. It defaults to self::getKey() but can be overrided to be more precise
+     */
+    public function getId(bool $exact = true, bool $nested = false): string
     {
-        return $this->__toString();
+        return $this->getKey();
     }
-
+    /**
+     * This string is used in order to transform a type into an string assertion for the assertion module
+     * Default to self::getId()
+     */
     public function getAssertionString(): string
     {
         return $this->getId();
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * Returns the detailed description of the type, either in phpdoc standard format or Psalm format depending on flag
+     * Default to self::getKey()
+     *
+     * @param array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -595,6 +606,9 @@ abstract class Atomic implements TypeNode
     }
 
     /**
+     * Returns a string representation of the type compatible with php signature or null if the type can't be expressed
+     *  with the given php version
+     *
      * @param  array<lowercase-string, string> $aliased_classes
      */
     abstract public function toPhpString(

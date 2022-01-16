@@ -1105,7 +1105,7 @@ class ArrayAccessTest extends TestCase
                 $a = ["a", "b"];
                 unset($a[0]);
                 ',
-                'assertions' => ['$a===' => 'array{1: "b"}']
+                'assertions' => ['$a===' => "array{1: 'b'}"]
             ],
         ];
     }

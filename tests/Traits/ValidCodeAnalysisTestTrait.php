@@ -79,10 +79,11 @@ trait ValidCodeAnalysisTestTrait
             }
 
             if (isset($context->vars_in_scope[$var])) {
+                $value = $context->vars_in_scope[$var]->getId($exact);
                 if ($exact) {
-                    $actual_vars[$var . '==='] = $context->vars_in_scope[$var]->getId();
+                    $actual_vars[$var . '==='] = $value;
                 } else {
-                    $actual_vars[$var] = (string)$context->vars_in_scope[$var];
+                    $actual_vars[$var] = $value;
                 }
             }
         }

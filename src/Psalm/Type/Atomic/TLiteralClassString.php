@@ -25,11 +25,6 @@ class TLiteralClassString extends TLiteralString
         $this->definite_class = $definite_class;
     }
 
-    public function __toString(): string
-    {
-        return 'class-string';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'class-string(' . $this->value . ')';
@@ -52,8 +47,12 @@ class TLiteralClassString extends TLiteralString
         return false;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'class-string';
+        }
+
         return $this->value . '::class';
     }
 

@@ -7,11 +7,6 @@ namespace Psalm\Type\Atomic;
  */
 class TNumeric extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'numeric';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric';

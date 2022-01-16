@@ -8,7 +8,7 @@ namespace Psalm\Type\Atomic;
  */
 class TNonspecificLiteralInt extends TInt
 {
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = true): string
     {
         return 'literal-int';
     }

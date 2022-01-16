@@ -17,11 +17,6 @@ class TMixed extends Atomic
         $this->from_loop_isset = $from_loop_isset;
     }
 
-    public function __toString(): string
-    {
-        return 'mixed';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'mixed';

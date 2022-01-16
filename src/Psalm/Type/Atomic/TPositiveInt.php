@@ -7,12 +7,7 @@ namespace Psalm\Type\Atomic;
  */
 class TPositiveInt extends TInt
 {
-    public function getId(bool $nested = false): string
-    {
-        return 'positive-int';
-    }
-
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'positive-int';
     }

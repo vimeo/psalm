@@ -9,11 +9,6 @@ use Psalm\Type\Atomic;
  */
 class TObject extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'object';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'object';

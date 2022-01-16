@@ -24,15 +24,18 @@ class TLiteralString extends TString
         return 'string(' . $this->value . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'string';
+        }
         // quote control characters, backslashes and double quote
         $no_newline_value = addcslashes($this->value, "\0..\37\\\"");
         if (mb_strlen($this->value) > 80) {
-            return '"' . mb_substr($no_newline_value, 0, 80) . '...' . '"';
+            return "'" . mb_substr($no_newline_value, 0, 80) . '...' . "'";
         }
 
-        return '"' . $no_newline_value . '"';
+        return "'" . $no_newline_value . "'";
     }
 
     public function getAssertionString(): string

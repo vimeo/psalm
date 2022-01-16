@@ -39,11 +39,6 @@ class TTemplateParam extends Atomic
         $this->defining_class = $defining_class;
     }
 
-    public function __toString(): string
-    {
-        return $this->param_name;
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -58,16 +53,20 @@ class TTemplateParam extends Atomic
         return $this->as->getId();
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return $this->param_name;
+        }
+
         if ($this->extra_types) {
-            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId()
-                . ')&' . implode('&', array_map(fn($type) => $type->getId(true), $this->extra_types));
+            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact)
+                . ')&' . implode('&', array_map(fn($type) => $type->getId($exact, true), $this->extra_types));
         }
 
         return ($nested ? '(' : '') . $this->param_name
             . ':' . $this->defining_class
-            . ' as ' . $this->as->getId() . ($nested ? ')' : '');
+            . ' as ' . $this->as->getId($exact) . ($nested ? ')' : '');
     }
 
     /**

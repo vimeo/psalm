@@ -9,11 +9,6 @@ use Psalm\Type\Atomic;
  */
 class TVoid extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'void';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'void';

@@ -27,11 +27,6 @@ class TIntMaskOf extends TInt
         return 'int-mask-of<' . $this->value->getKey() . '>';
     }
 
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */

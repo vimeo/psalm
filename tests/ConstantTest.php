@@ -327,7 +327,7 @@ class ConstantTest extends TestCase
 
                     $foo = new Foo();
                     $_trace = $foo::BAR;',
-                'assertions' => ['$_trace===' => '"bar"'],
+                'assertions' => ['$_trace===' => "'bar'"],
             ],
             'unsafeInferenceClassConstFetch' => [
                 'code' => '<?php
@@ -351,7 +351,7 @@ class ConstantTest extends TestCase
                     /** @var Foo $foo */
                     $foo = new stdClass();
                     $_trace = $foo::BAR;',
-                'assertions' => ['$_trace===' => '"bar"'],
+                'assertions' => ['$_trace===' => "'bar'"],
             ],
             'dynamicClassConstFetchClassString' => [
                 'code' => '<?php
@@ -1149,7 +1149,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'array{10: "aa", 11: "zz", 5: "a", 6: "z"}',
+                    '$arr===' => "array{10: 'aa', 11: 'zz', 5: 'a', 6: 'z'}",
                 ],
             ],
             'arrayKeysSequenceContinuesAfterNonIntKey' => [
@@ -1160,7 +1160,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'array{5: "a", 6: "aa", zz: "z"}',
+                    '$arr===' => "array{5: 'a', 6: 'aa', zz: 'z'}",
                 ],
             ],
             'unresolvedConstWithUnaryMinus' => [

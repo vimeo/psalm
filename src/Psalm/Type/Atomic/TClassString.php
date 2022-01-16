@@ -61,12 +61,7 @@ class TClassString extends TString
         return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->is_interface) {
             $key = 'interface-string';

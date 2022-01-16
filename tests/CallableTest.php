@@ -671,12 +671,12 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array{string, string}',
-                    '$b' => 'array{string, string}',
-                    '$c' => 'array{string, string}',
-                    '$d' => 'array{string, string}',
-                    '$e' => 'array{string, string}',
-                    '$f' => 'array{string, string}',
+                    '$a' => 'array{string, string}<string>',
+                    '$b' => 'array{string, string}<string>',
+                    '$c' => 'array{string, string}<string>',
+                    '$d' => 'array{string, string}<string>',
+                    '$e' => 'array{string, string}<string>',
+                    '$f' => 'array{string, string}<string>',
                 ],
             ],
             'arrayCallableMethod' => [
