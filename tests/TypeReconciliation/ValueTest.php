@@ -904,6 +904,14 @@ class ValueTest extends TestCase
                         if (empty($s)) {}
                     }',
             ],
+            'literalInt' => [
+                'code' => '<?php
+                    $a = (int)"5";
+                ',
+                'assertions' => [
+                    '$a===' => '5',
+                ],
+            ],
         ];
     }
 

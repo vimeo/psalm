@@ -22,7 +22,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -64,8 +63,8 @@ class CastAnalyzer
                 return false;
             }
 
-            $as_int = true;
             $valid_int_type = null;
+            $type_parent_nodes = null;
             $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($maybe_type) {
@@ -74,35 +73,29 @@ class CastAnalyzer
                     if (!$maybe_type->from_calculation) {
                         self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                     }
+                } elseif ($maybe_type->isSingleStringLiteral()) {
+                    $valid_int_type = Type::getInt(false, (int)$maybe_type->getSingleStringLiteral()->value);
                 }
 
                 if (count($maybe_type->getAtomicTypes()) === 1
-                    && $maybe_type->getSingleAtomic() instanceof TBool) {
-                    $as_int = false;
-                    $type = new Union([
+                    && $maybe_type->getSingleAtomic() instanceof Type\Atomic\TBool) {
+                    $valid_int_type = new Union([
                         new TLiteralInt(0),
                         new TLiteralInt(1),
                     ]);
+                }
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                    ) {
-                        $type->parent_nodes = $maybe_type->parent_nodes;
-                    }
-
-                    $statements_analyzer->node_data->setType($stmt, $type);
+                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    $type_parent_nodes = $maybe_type->parent_nodes;
                 }
             }
 
-            if ($as_int) {
-                $type = $valid_int_type ?? Type::getInt();
-
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                ) {
-                    $type->parent_nodes = $maybe_type->parent_nodes ?? [];
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $type);
+            $type = $valid_int_type ?? Type::getInt();
+            if ($type_parent_nodes !== null) {
+                $type->parent_nodes = $type_parent_nodes;
             }
+
+            $statements_analyzer->node_data->setType($stmt, $type);
 
             return true;
         }
