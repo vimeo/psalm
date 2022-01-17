@@ -445,37 +445,16 @@ class AtomicStaticCallAnalyzer
                         $class_storage->final
                     );
 
-                    $old_data_provider = $statements_analyzer->node_data;
-
-                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
                     $context->vars_in_scope['$tmp_mixin_var'] = $new_lhs_type;
 
-                    $fake_method_call_expr = new VirtualMethodCall(
-                        new VirtualVariable(
-                            'tmp_mixin_var',
-                            $stmt->class->getAttributes()
-                        ),
-                        $stmt_name,
-                        $stmt->getArgs(),
-                        $stmt->getAttributes()
-                    );
-
-                    if (MethodCallAnalyzer::analyze(
+                    return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
-                        $fake_method_call_expr,
-                        $context
-                    ) === false) {
-                        return false;
-                    }
-
-                    $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
-
-                    $statements_analyzer->node_data = $old_data_provider;
-
-                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type ?? Type::getMixed());
-
-                    return true;
+                        $stmt,
+                        $stmt_name,
+                        $context,
+                        'tmp_mixin_var',
+                        true
+                    );
                 }
             }
         }
@@ -671,6 +650,18 @@ class AtomicStaticCallAnalyzer
                 if ($pseudo_method_storage->return_type) {
                     return true;
                 }
+            } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'parent'
+                && !$codebase->methodExists($method_id)
+                && !$statements_analyzer->isStatic()
+            ) {
+                // In case of parent::xxx() call on instance method context (i.e. not static context)
+                // with nonexistent method, we try to forward to instance method call for resolve pseudo method.
+                return self::forwardCallToInstanceMethod(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_name,
+                    $context
+                );
             }
 
             if (!$context->check_methods) {
@@ -781,37 +772,12 @@ class AtomicStaticCallAnalyzer
             }
 
             if ($is_dynamic_this_method) {
-                $old_data_provider = $statements_analyzer->node_data;
-
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                $fake_method_call_expr = new VirtualMethodCall(
-                    new VirtualVariable(
-                        'this',
-                        $stmt->class->getAttributes()
-                    ),
-                    $stmt_name,
-                    $stmt->getArgs(),
-                    $stmt->getAttributes()
-                );
-
-                if (MethodCallAnalyzer::analyze(
+                return self::forwardCallToInstanceMethod(
                     $statements_analyzer,
-                    $fake_method_call_expr,
+                    $stmt,
+                    $stmt_name,
                     $context
-                ) === false) {
-                    return false;
-                }
-
-                $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
-
-                $statements_analyzer->node_data = $old_data_provider;
-
-                if ($fake_method_call_type) {
-                    $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
-                }
-
-                return true;
+                );
             }
         }
 
@@ -1045,5 +1011,60 @@ class AtomicStaticCallAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Forward static call to instance call, using `VirtualMethodCall` and `MethodCallAnalyzer::analyze()`
+     * The resolved method return type will be set as type of the $stmt node.
+     *
+     * @param StatementsAnalyzer $statements_analyzer
+     * @param PhpParser\Node\Expr\StaticCall $stmt
+     * @param PhpParser\Node\Identifier $stmt_name
+     * @param Context $context
+     * @param string $virtual_var_name Temporary var name to use for create the fake MethodCall statement.
+     * @param bool $always_set_node_type If true, when the method has no declared typed, mixed will be set on node.
+     *
+     * @return bool Result of analysis. False if the call is invalid.
+     *
+     * @see MethodCallAnalyzer::analyze()
+     */
+    private static function forwardCallToInstanceMethod(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        PhpParser\Node\Identifier $stmt_name,
+        Context $context,
+        string $virtual_var_name = 'this',
+        bool $always_set_node_type = false
+    ): bool {
+        $old_data_provider = $statements_analyzer->node_data;
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $fake_method_call_expr = new VirtualMethodCall(
+            new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
+            $stmt_name,
+            $stmt->getArgs(),
+            $stmt->getAttributes()
+        );
+
+        if (MethodCallAnalyzer::analyze(
+            $statements_analyzer,
+            $fake_method_call_expr,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
+
+        $statements_analyzer->node_data = $old_data_provider;
+
+        if ($fake_method_call_type) {
+            $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);
+        } elseif ($always_set_node_type) {
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+        }
+
+        return true;
     }
 }
