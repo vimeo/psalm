@@ -3655,65 +3655,65 @@ class AssertionFinder
 
         if ($literal_assertions && $first_var_name) {
             $if_types[$first_var_name] = [$literal_assertions];
-        } else {
-            $array_root = isset($expr->getArgs()[1]->value)
-                ? ExpressionIdentifier::getArrayVarId(
-                    $expr->getArgs()[1]->value,
-                    $this_class_name,
-                    $source
-                )
-                : null;
+        }
 
-            if ($array_root) {
-                if ($first_var_name === null && isset($expr->getArgs()[0])) {
-                    $first_arg = $expr->getArgs()[0];
+        $array_root = isset($expr->getArgs()[1]->value)
+            ? ExpressionIdentifier::getArrayVarId(
+                $expr->getArgs()[1]->value,
+                $this_class_name,
+                $source
+            )
+            : null;
 
-                    if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                        $first_var_name = '\'' . $first_arg->value->value . '\'';
-                    } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
-                        $first_var_name = (string)$first_arg->value->value;
-                    }
+        if ($array_root) {
+            if ($first_var_name === null && isset($expr->getArgs()[0])) {
+                $first_arg = $expr->getArgs()[0];
+
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $first_var_name = '\'' . $first_arg->value->value . '\'';
+                } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    $first_var_name = (string)$first_arg->value->value;
+                }
+            }
+
+            if ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $expr->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
+                && $expr->getArgs()[0]->value->name->name !== 'class'
+            ) {
+                $const_type = null;
+
+                if ($source instanceof StatementsAnalyzer) {
+                    $const_type = $source->node_data->getType($expr->getArgs()[0]->value);
                 }
 
-                if ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $expr->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                    && $expr->getArgs()[0]->value->name->name !== 'class'
-                ) {
-                    $const_type = null;
-
-                    if ($source instanceof StatementsAnalyzer) {
-                        $const_type = $source->node_data->getType($expr->getArgs()[0]->value);
-                    }
-
-                    if ($const_type) {
-                        if ($const_type->isSingleStringLiteral()) {
-                            $first_var_name = $const_type->getSingleStringLiteral()->value;
-                        } elseif ($const_type->isSingleIntLiteral()) {
-                            $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
-                        } else {
-                            $first_var_name = null;
-                        }
+                if ($const_type) {
+                    if ($const_type->isSingleStringLiteral()) {
+                        $first_var_name = $const_type->getSingleStringLiteral()->value;
+                    } elseif ($const_type->isSingleIntLiteral()) {
+                        $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
                     } else {
                         $first_var_name = null;
                     }
-                } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
-                    && $source instanceof StatementsAnalyzer
-                    && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
-                ) {
-                    foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
-                        $if_types[$array_root . "['" . $array_literal_type->value . "']"] = [['array-key-exists']];
-                    }
-                    foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
-                        $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [['array-key-exists']];
-                    }
+                } else {
+                    $first_var_name = null;
                 }
+            } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
+                && $source instanceof StatementsAnalyzer
+                && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+            ) {
+                foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
+                    $if_types[$array_root . "['" . $array_literal_type->value . "']"] = [['array-key-exists']];
+                }
+                foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
+                    $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [['array-key-exists']];
+                }
+            }
 
-                if ($first_var_name !== null
-                    && !strpos($first_var_name, '->')
-                    && !strpos($first_var_name, '[')
-                ) {
-                    $if_types[$array_root . '[' . $first_var_name . ']'] = [['array-key-exists']];
-                }
+            if ($first_var_name !== null
+                && !strpos($first_var_name, '->')
+                && !strpos($first_var_name, '[')
+            ) {
+                $if_types[$array_root . '[' . $first_var_name . ']'] = [['array-key-exists']];
             }
         }
 
@@ -4029,6 +4029,7 @@ class AssertionFinder
                 }
             }
         }
+
 
         return $if_types ? [$if_types] : [];
     }
