@@ -1487,15 +1487,14 @@ class ConfigTest extends TestCase
         FileTypeSelfRegisteringPlugin::$names = $names;
         FileTypeSelfRegisteringPlugin::$flags = $flags;
 
+        /** @var non-empty-string $xml */
+        $xml = sprintf(
+            '<?xml version="1.0"?>
+            <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
+            FileTypeSelfRegisteringPlugin::class
+        );
         $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                sprintf(
-                    '<?xml version="1.0"?>
-                    <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
-                    FileTypeSelfRegisteringPlugin::class
-                )
-            )
+            TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
         );
 
 

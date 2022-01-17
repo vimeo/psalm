@@ -387,6 +387,7 @@ class MethodCallTest extends TestCase
             ],
             'domElementIteratorOrEmptyArray' => [
                 '<?php
+                    /** @param non-empty-string $XML */
                     function foo(string $XML) : void {
                         $dom = new DOMDocument();
                         $dom->loadXML($XML);
