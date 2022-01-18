@@ -54,7 +54,6 @@ use UnexpectedValueException;
 use function array_map;
 use function array_reverse;
 use function array_slice;
-use function assert;
 use function count;
 use function in_array;
 use function is_string;
