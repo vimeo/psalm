@@ -354,8 +354,11 @@ class ArgumentsAnalyzer
      * * return list<B>
      * function map(array $items, callable $ab): array { ... }
      *
-     * $result = map([1, 2, 3], id());
-     * // $result is list<1|2|3> because template T of id() was inferred by previous arg.
+     * // list<int>
+     * $numbers = [1, 2, 3];
+     *
+     * $result = map($numbers, id());
+     * // $result is list<int> because template T of id() was inferred by previous arg.
      * ```
      */
     private static function handleHighOrderFuncCallArg(
@@ -377,45 +380,57 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        $expected_hof_atomic = $storage->return_type && $storage->return_type->isSingle()
+        $input_hof_atomic = $storage->return_type && $storage->return_type->isSingle()
             ? $storage->return_type->getSingleAtomic()
             : null;
 
-        if (!$expected_hof_atomic instanceof TClosure && !$expected_hof_atomic instanceof TCallable) {
+        if (!$input_hof_atomic instanceof TClosure && !$input_hof_atomic instanceof TCallable) {
             return null;
         }
 
-        $actual_hof_atomic = $actual_func_param->type && $actual_func_param->type->isSingle()
+        $container_hof_atomic = $actual_func_param->type && $actual_func_param->type->isSingle()
             ? $actual_func_param->type->getSingleAtomic()
             : null;
 
-        if (!$actual_hof_atomic instanceof TClosure && !$actual_hof_atomic instanceof TCallable) {
+        if (!$container_hof_atomic instanceof TClosure && !$container_hof_atomic instanceof TCallable) {
             return null;
         }
 
-        $replaced_actual_hof_atomic = new Union([clone $actual_hof_atomic]);
+        $replaced_container_hof_atomic = new Union([clone $container_hof_atomic]);
 
+        // Replaces all input args in container function.
+        //
+        // For example:
+        // The map function expects callable(A):B as second param
+        // We know that previous arg type is list<int> where the int is the A template.
+        // Then we can replace callable(A): B to callable(int):B using $inferred_template_result.
         TemplateInferredTypeReplacer::replace(
-            $replaced_actual_hof_atomic,
+            $replaced_container_hof_atomic,
             $inferred_template_result,
             $codebase
         );
 
-        /** @var TClosure|TCallable $actual_hof_atomic */
-        $actual_hof_atomic = $replaced_actual_hof_atomic->getSingleAtomic();
+        /** @var TClosure|TCallable $container_hof_atomic */
+        $container_hof_atomic = $replaced_container_hof_atomic->getSingleAtomic();
         $high_order_template_result = new TemplateResult($storage->template_types ?: [], []);
 
-        foreach ($expected_hof_atomic->params ?? [] as $offset => $actual_func_param) {
+        // We can replace each templated param for the input function.
+        // Example:
+        // map($numbers, id());
+        // We know that map expects callable(int):B because the $numbers is list<int>.
+        // We know that id() returns callable(T):T.
+        // Then we can replace templated params sequentially using the expected callable(int):B.
+        foreach ($input_hof_atomic->params ?? [] as $offset => $actual_func_param) {
             if ($actual_func_param->type &&
                 $actual_func_param->type->getTemplateTypes() &&
-                isset($actual_hof_atomic->params[$offset])
+                isset($container_hof_atomic->params[$offset])
             ) {
                 TemplateStandinTypeReplacer::replace(
                     clone $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
                     null,
-                    $actual_hof_atomic->params[$offset]->type
+                    $container_hof_atomic->params[$offset]->type
                 );
             }
         }
