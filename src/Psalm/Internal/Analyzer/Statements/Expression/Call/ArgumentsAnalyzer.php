@@ -203,7 +203,7 @@ class ArgumentsAnalyzer
                 && $param
                 && !$arg->value->getDocComment()
             ) {
-                $high_order_template_result = self::handlePartiallyAppliedClosureArg(
+                $high_order_template_result = self::handleHighOrderFuncCallArg(
                     $statements_analyzer,
                     $template_result ?? new TemplateResult([], []),
                     $arg->value,
@@ -359,7 +359,7 @@ class ArgumentsAnalyzer
      * // $result is list<1|2|3> because template T of id() was inferred by previous arg.
      * ```
      */
-    private static function handlePartiallyAppliedClosureArg(
+    private static function handleHighOrderFuncCallArg(
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $inferred_template_result,
         PhpParser\Node\Expr\FuncCall $high_order_func_call,
