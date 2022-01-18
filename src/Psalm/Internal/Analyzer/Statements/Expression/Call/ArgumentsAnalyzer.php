@@ -394,7 +394,7 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        $replaced_actual_hof_atomic = clone $actual_func_param->type;
+        $replaced_actual_hof_atomic = new Union([clone $actual_hof_atomic]);
 
         TemplateInferredTypeReplacer::replace(
             $replaced_actual_hof_atomic,
