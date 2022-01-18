@@ -272,7 +272,7 @@ class ReadonlyPropertyTest extends TestCase
                 'php_version' => '8.1',
             ],
             'readonlyPhpDocPromotedPropertyAssignOperator' => [
-                '<?php
+                'code' => '<?php
 
                     final class A
                     {
@@ -290,9 +290,8 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

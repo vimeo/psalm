@@ -691,7 +691,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'PositiveIntCombinedWithIntRange' => [
-                '<?php
+                'code' => '<?php
                     /** @var positive-int */
                     $int = 1;
                     /** @var array<int<0, max>, int<0, max>> */

@@ -113,7 +113,7 @@ class IfThisIsTest extends TestCase
                 '
             ],
             'ifThisIsWithSelfAlias' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of string
                      */
