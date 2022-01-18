@@ -357,6 +357,8 @@ class ArgumentsAnalyzer
 
             if ($function_like_call instanceof PhpParser\Node\Expr\MethodCall &&
                 $function_like_call->var instanceof PhpParser\Node\Expr\Variable &&
+                $function_like_call->name instanceof PhpParser\Node\Identifier &&
+                is_string($function_like_call->var->name) &&
                 isset($context->vars_in_scope['$' . $function_like_call->var->name])
             ) {
                 $lhs_type = $context->vars_in_scope['$' . $function_like_call->var->name]->getSingleAtomic();
@@ -367,7 +369,7 @@ class ArgumentsAnalyzer
 
                 $method_id = new MethodIdentifier(
                     $lhs_type->value,
-                    (string)$function_like_call->name
+                    strtolower((string)$function_like_call->name)
                 );
 
                 return $codebase->methods->getStorage($method_id);
@@ -378,7 +380,7 @@ class ArgumentsAnalyzer
             ) {
                 $method_id = new MethodIdentifier(
                     (string)$function_like_call->class->getAttribute('resolvedName'),
-                    $function_like_call->name->name
+                    strtolower($function_like_call->name->name)
                 );
 
                 return $codebase->methods->getStorage($method_id);
