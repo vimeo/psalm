@@ -205,8 +205,8 @@ class ArgumentsAnalyzer
             ) {
                 $high_order_template_result = self::handlePartiallyAppliedClosureArg(
                     $statements_analyzer,
-                    $arg->value,
                     $template_result ?? new TemplateResult([], []),
+                    $arg->value,
                     $param
                 );
             } elseif (($arg->value instanceof PhpParser\Node\Expr\Closure
@@ -336,14 +336,37 @@ class ArgumentsAnalyzer
         }
     }
 
+    /**
+     * Compiles TemplateResult for high-order functions ($func_call)
+     * by previous template args ($inferred_template_result).
+     *
+     * It's need for proper template replacement:
+     *
+     * ```
+     * * template T
+     * * return Closure(T): T
+     * function id(): Closure { ... }
+     *
+     * * template A
+     * * template B
+     * *
+     * * param list<A> $_items
+     * * param callable(A): B $_ab
+     * * return list<B>
+     * function map(array $items, callable $ab): array { ... }
+     *
+     * $result = map([1, 2, 3], id());
+     * // $result is list<1|2|3> because template T of id() was inferred by previous arg.
+     * ```
+     */
     private static function handlePartiallyAppliedClosureArg(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\FuncCall $func_call,
         TemplateResult $inferred_template_result,
-        FunctionLikeParameter $param
+        PhpParser\Node\Expr\FuncCall $high_order_func_call,
+        FunctionLikeParameter $actual_func_param
     ): ?TemplateResult {
         $codebase = $statements_analyzer->getCodebase();
-        $function_id = strtolower((string) $func_call->name->getAttribute('resolvedName'));
+        $function_id = strtolower((string) $high_order_func_call->name->getAttribute('resolvedName'));
 
         if (empty($function_id)) {
             return null;
@@ -355,50 +378,45 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        if (!$storage->return_type || !$storage->return_type->isSingle()) {
+        $expected_hof_atomic = $storage->return_type && $storage->return_type->isSingle()
+            ? $storage->return_type->getSingleAtomic()
+            : null;
+
+        if (!$expected_hof_atomic instanceof TClosure && !$expected_hof_atomic instanceof TCallable) {
             return null;
         }
 
-        $return_type = $storage->return_type->getSingleAtomic();
+        $actual_hof_atomic = $actual_func_param->type && $actual_func_param->type->isSingle()
+            ? $actual_func_param->type->getSingleAtomic()
+            : null;
 
-        if (!$return_type instanceof TClosure && !$return_type instanceof TCallable) {
+        if (!$actual_hof_atomic instanceof TClosure && !$actual_hof_atomic instanceof TCallable) {
             return null;
         }
 
-        if (!$param->type || !$param->type->isSingle()) {
-            return null;
-        }
-
-        $param_type = $param->type->getSingleAtomic();
-
-        if (!$param_type instanceof TClosure && !$param_type instanceof TCallable) {
-            return null;
-        }
-
-        $replaced_type = clone $param->type;
+        $replaced_actual_hof_atomic = clone $actual_func_param->type;
 
         TemplateInferredTypeReplacer::replace(
-            $replaced_type,
+            $replaced_actual_hof_atomic,
             $inferred_template_result,
             $codebase
         );
 
-        $param_type = $replaced_type->getSingleAtomic();
-        assert($param_type instanceof TClosure || $param_type instanceof TCallable);
-
+        /** @var TClosure|TCallable $actual_hof_atomic */
+        $actual_hof_atomic = $replaced_actual_hof_atomic->getSingleAtomic();
         $high_order_template_result = new TemplateResult($storage->template_types ?: [], []);
 
-        foreach ($return_type->params ?? [] as $offset => $param) {
-            if ($param->type &&
-                $param->type->getTemplateTypes() &&
-                isset($param_type->params[$offset])
+        foreach ($expected_hof_atomic->params ?? [] as $offset => $actual_func_param) {
+            if ($actual_func_param->type &&
+                $actual_func_param->type->getTemplateTypes() &&
+                isset($actual_hof_atomic->params[$offset])
             ) {
                 TemplateStandinTypeReplacer::replace(
-                    clone $param->type,
+                    clone $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
                     null,
-                    $param_type->params[$offset]->type
+                    $actual_hof_atomic->params[$offset]->type
                 );
             }
         }
