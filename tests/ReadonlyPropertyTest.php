@@ -271,6 +271,29 @@ class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'readonlyPhpDocPromotedPropertyAssignOperator' => [
+                '<?php
+
+                    final class A
+                    {
+                        public function __construct(
+                            /**
+                             * @psalm-readonly
+                             */
+                            private string $string,
+                        ) {
+                        }
+
+                        private function mutateString(): void
+                        {
+                            $this->string = "";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                [],
+                false,
+                '8.1',
+            ],
         ];
     }
 }

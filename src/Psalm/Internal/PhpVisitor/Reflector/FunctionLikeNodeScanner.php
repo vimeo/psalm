@@ -610,6 +610,7 @@ class FunctionLikeNodeScanner
 
                 $doc_comment = $param->getDocComment();
                 $var_comment_type = null;
+                $var_comment_readonly = false;
                 if ($doc_comment) {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
                         $doc_comment,
@@ -623,6 +624,7 @@ class FunctionLikeNodeScanner
 
                     if ($var_comment !== null) {
                         $var_comment_type = $var_comment->type;
+                        $var_comment_readonly = $var_comment->readonly;
                     }
                 }
 
@@ -653,7 +655,8 @@ class FunctionLikeNodeScanner
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $property_storage->readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
+                $param_type_readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
+                $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 

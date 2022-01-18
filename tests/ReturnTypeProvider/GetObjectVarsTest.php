@@ -24,7 +24,7 @@ class GetObjectVarsTest extends TestCase
 
         yield 'omitsPrivateAndProtectedPropertiesWhenCalledOutsideOfClassScope' => [
             'code' => '<?php
-                class C {
+                final class C {
                     /** @var string */
                     private $priv = "val";
 

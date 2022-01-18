@@ -637,6 +637,10 @@ class Config
             throw new InvalidArgumentException('Cannot open ' . $file_path);
         }
 
+        if ($file_contents === '') {
+            throw new InvalidArgumentException('Invalid empty file ' . $file_path);
+        }
+
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
             $config->hash = sha1($file_contents . PSALM_VERSION);
@@ -660,6 +664,7 @@ class Config
     /**
      * Creates a new config object from an XML string
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
+     * @param  non-empty-string $file_contents
      *
      * @throws ConfigException
      */
@@ -678,6 +683,9 @@ class Config
         return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir, $file_path);
     }
 
+    /**
+     * @param non-empty-string $file_contents
+     */
     private static function loadDomDocument(string $base_dir, string $file_contents): DOMDocument
     {
         $dom_document = new DOMDocument();
@@ -695,6 +703,8 @@ class Config
     }
 
     /**
+     * @param non-empty-string $file_contents
+     *
      * @throws ConfigException
      */
     private static function validateXmlConfig(string $base_dir, string $file_contents): void
@@ -722,7 +732,9 @@ class Config
             $psalm_node->setAttribute('xmlns', self::CONFIG_NAMESPACE);
 
             $old_dom_document = $dom_document;
-            $dom_document = self::loadDomDocument($base_dir, $old_dom_document->saveXML());
+            $old_file_contents = $old_dom_document->saveXML();
+            assert($old_file_contents !== false && $old_file_contents !== '');
+            $dom_document = self::loadDomDocument($base_dir, $old_file_contents);
         }
 
         // Enable user error handling
@@ -860,6 +872,8 @@ class Config
     }
 
     /**
+     * @param non-empty-string $file_contents
+     *
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument

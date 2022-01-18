@@ -54,6 +54,9 @@ class Creator
 </psalm>
 ';
 
+    /**
+     * @return non-empty-string
+     */
     public static function getContents(
         string $current_dir,
         ?string $suggested_dir,
@@ -82,6 +85,7 @@ class Creator
             );
         }
 
+        /** @var non-empty-string */
         return str_replace(
             'errorLevel="1"',
             'errorLevel="' . $level . '"',

@@ -1175,6 +1175,13 @@ class TypeCombiner
                     }
                 } elseif (!isset($combination->value_types['int'])) {
                     $combination->value_types['int'] = $type;
+                } elseif ($combination->value_types['int'] instanceof TIntRange) {
+                    //if we already had a range, we ensure the min is no higher than 1
+                    $combination->value_types['int']->min_bound = TIntRange::getNewLowestBound(
+                        $combination->value_types['int']->min_bound,
+                        1
+                    );
+                    $combination->value_types['int']->max_bound = null;
                 } elseif (get_class($combination->value_types['int']) !== get_class($type)) {
                     $combination->value_types['int'] = new TInt();
                 }
