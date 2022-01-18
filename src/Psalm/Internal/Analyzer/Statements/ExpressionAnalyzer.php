@@ -186,11 +186,11 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
-            return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context, true, $template_result);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
-            return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context, $template_result);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {

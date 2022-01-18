@@ -198,14 +198,16 @@ class ArgumentsAnalyzer
 
             $high_order_template_result = null;
 
-            if ($arg->value instanceof PhpParser\Node\Expr\FuncCall
+            if (($arg->value instanceof PhpParser\Node\Expr\FuncCall
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    || $arg->value instanceof PhpParser\Node\Expr\StaticCall)
                 && $param
-                && !$arg->value->getDocComment()
+                && $function_storage = self::getHighOrderFuncStorage($context, $statements_analyzer, $arg->value)
             ) {
                 $high_order_template_result = self::handleHighOrderFuncCallArg(
                     $statements_analyzer,
                     $template_result ?? new TemplateResult([], []),
-                    $arg->value,
+                    $function_storage,
                     $param
                 );
             } elseif (($arg->value instanceof PhpParser\Node\Expr\Closure
@@ -335,6 +337,59 @@ class ArgumentsAnalyzer
         }
     }
 
+    private static function getHighOrderFuncStorage(
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $function_like_call
+    ): ?FunctionLikeStorage {
+        $codebase = $statements_analyzer->getCodebase();
+
+        try {
+            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall) {
+                $function_id = strtolower((string) $function_like_call->name->getAttribute('resolvedName'));
+
+                if (empty($function_id)) {
+                    return null;
+                }
+
+                return $codebase->functions->getStorage($statements_analyzer, $function_id);
+            }
+
+            if ($function_like_call instanceof PhpParser\Node\Expr\MethodCall &&
+                $function_like_call->var instanceof PhpParser\Node\Expr\Variable &&
+                isset($context->vars_in_scope['$' . $function_like_call->var->name])
+            ) {
+                $lhs_type = $context->vars_in_scope['$' . $function_like_call->var->name]->getSingleAtomic();
+
+                if (!$lhs_type instanceof Type\Atomic\TNamedObject) {
+                    return null;
+                }
+
+                $method_id = new MethodIdentifier(
+                    $lhs_type->value,
+                    (string)$function_like_call->name
+                );
+
+                return $codebase->methods->getStorage($method_id);
+            }
+
+            if ($function_like_call instanceof PhpParser\Node\Expr\StaticCall &&
+                $function_like_call->name instanceof PhpParser\Node\Identifier
+            ) {
+                $method_id = new MethodIdentifier(
+                    (string)$function_like_call->class->getAttribute('resolvedName'),
+                    $function_like_call->name->name
+                );
+
+                return $codebase->methods->getStorage($method_id);
+            }
+        } catch (UnexpectedValueException $e) {
+            return null;
+        }
+
+        return null;
+    }
+
     /**
      * Compiles TemplateResult for high-order functions ($func_call)
      * by previous template args ($inferred_template_result).
@@ -364,22 +419,9 @@ class ArgumentsAnalyzer
     private static function handleHighOrderFuncCallArg(
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $inferred_template_result,
-        PhpParser\Node\Expr\FuncCall $high_order_func_call,
+        FunctionLikeStorage $storage,
         FunctionLikeParameter $actual_func_param
     ): ?TemplateResult {
-        $codebase = $statements_analyzer->getCodebase();
-        $function_id = strtolower((string) $high_order_func_call->name->getAttribute('resolvedName'));
-
-        if (empty($function_id)) {
-            return null;
-        }
-
-        try {
-            $storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
-        } catch (UnexpectedValueException $e) {
-            return null;
-        }
-
         $input_hof_atomic = $storage->return_type && $storage->return_type->isSingle()
             ? $storage->return_type->getSingleAtomic()
             : null;
@@ -397,6 +439,7 @@ class ArgumentsAnalyzer
         }
 
         $replaced_container_hof_atomic = new Union([clone $container_hof_atomic]);
+        $codebase = $statements_analyzer->getCodebase();
 
         // Replaces all input args in container function.
         //

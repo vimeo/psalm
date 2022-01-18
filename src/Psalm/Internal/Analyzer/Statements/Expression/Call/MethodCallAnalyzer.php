@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -43,7 +44,8 @@ class MethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
-        bool $real_method_call = true
+        bool $real_method_call = true,
+        ?TemplateResult $template_result = null
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -194,7 +196,8 @@ class MethodCallAnalyzer extends CallAnalyzer
                     : null,
                 false,
                 $lhs_var_id,
-                $result
+                $result,
+                $template_result
             );
             if (isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union

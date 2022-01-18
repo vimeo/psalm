@@ -41,7 +41,8 @@ class StaticCallAnalyzer extends CallAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
-        Context $context
+        Context $context,
+        ?TemplateResult $template_result = null
     ): bool {
         $method_id = null;
 
@@ -219,7 +220,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $lhs_type->ignore_nullable_issues,
                 $moved_call,
                 $has_mock,
-                $has_existing_method
+                $has_existing_method,
+                $template_result
             );
         }
 
