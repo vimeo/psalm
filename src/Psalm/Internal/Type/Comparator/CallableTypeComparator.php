@@ -391,7 +391,9 @@ class CallableTypeComparator
                 $template_result = null;
 
                 if ($input_type_part instanceof Atomic\TGenericObject) {
-                    $invokable_storage = $codebase->methods->getClassLikeStorageForMethod($declaring_method_id);
+                    $invokable_storage = $codebase->methods->getClassLikeStorageForMethod(
+                        $declaring_method_id ?? $invoke_id
+                    );
                     $type_params = [];
 
                     foreach ($invokable_storage->template_types ?? [] as $template => $for_class) {
@@ -402,16 +404,18 @@ class CallableTypeComparator
                         }
                     }
 
-                    $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
-                    $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
+                    if (!empty($type_params)) {
+                        $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
+                        $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
 
-                    TemplateStandinTypeReplacer::replace(
-                        new Type\Union([$input_with_templates]),
-                        $template_result,
-                        $codebase,
-                        null,
-                        new Type\Union([$input_type_part])
-                    );
+                        TemplateStandinTypeReplacer::replace(
+                            new Type\Union([$input_with_templates]),
+                            $template_result,
+                            $codebase,
+                            null,
+                            new Type\Union([$input_type_part])
+                        );
+                    }
                 }
 
                 if ($declaring_method_id) {
