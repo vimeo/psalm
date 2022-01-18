@@ -124,29 +124,6 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testForbiddenEchoFunctionViaFlag(): void
-    {
-        $this->expectExceptionMessage('ForbiddenEcho');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm forbidEcho="true"></psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                echo "hello";'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
     public function testAllowedPrintFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -427,11 +427,6 @@ class Config
     /**
      * @var bool
      */
-    public $forbid_echo = false;
-
-    /**
-     * @var bool
-     */
     public $find_unused_code = false;
 
     /**
@@ -905,7 +900,6 @@ class Config
             'addParamDefaultToDocblockType' => 'add_param_default_to_docblock_type',
             'checkForThrowsDocblock' => 'check_for_throws_docblock',
             'checkForThrowsInGlobalScope' => 'check_for_throws_in_global_scope',
-            'forbidEcho' => 'forbid_echo',
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
