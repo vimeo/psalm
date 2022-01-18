@@ -97,7 +97,7 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testForbiddenEchoFunctionViaFunctions(): void
+    public function testForbiddenCodeFunctionViaFunctions(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
         $this->expectException(CodeException::class);

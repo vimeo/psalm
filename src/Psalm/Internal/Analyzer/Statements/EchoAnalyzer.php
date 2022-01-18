@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\ForbiddenCode;
-use Psalm\Issue\ForbiddenEcho;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;

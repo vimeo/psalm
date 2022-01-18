@@ -277,9 +277,6 @@ class DocumentationTest extends TestCase
                 case 'InvalidStringClass':
                     continue 2;
 
-                case 'ForbiddenEcho':
-                    continue 2;
-
                 case 'PluginClass':
                     continue 2;
 

@@ -226,7 +226,6 @@
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalseOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ForbiddenEcho" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IfThisIsMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementationRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
