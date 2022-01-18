@@ -366,6 +366,73 @@ class CallableTest extends TestCase
                     '$result' => 'list<int>',
                 ],
             ],
+            '' => [
+                '<?php
+                     /**
+                      * @template A
+                      * @template B
+                      */
+                     final class MapOperator
+                     {
+                         /**
+                          * @param Closure(A): B $ab
+                          */
+                         public function __construct(private Closure $ab) { }
+
+                         /**
+                          * @param list<A> $a
+                          * @return list<B>
+                          */
+                         public function __invoke($a): array
+                         {
+                             $b = [];
+
+                             foreach ($a as $item) {
+                                 $b[] = ($this->ab)($item);
+                             }
+
+                             return $b;
+                         }
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param Closure(A): B $ab
+                      * @return MapOperator<A, B>
+                      */
+                     function map(Closure $ab): MapOperator
+                     {
+                         return new MapOperator($ab);
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param A $_a
+                      * @param callable(A): B $_ab
+                      * @return B
+                      */
+                     function pipe(array $_a, callable $_ab): array
+                     {
+                         throw new RuntimeException("???");
+                     }
+                     $result1 = pipe(
+                         ["1", "2", "3"],
+                         map(fn ($i) => (int) $i)
+                     );
+                     $result2 = pipe(
+                         ["1", "2", "3"],
+                         new MapOperator(fn ($i) => (int) $i)
+                     );
+                 ',
+                'assertions' => [
+                    '$result1' => 'list<int>',
+                    '$result2' => 'list<int>',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
             'inferPipelineWithPartiallyAppliedFunctions' => [
                 '<?php
                     /**

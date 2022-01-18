@@ -19,6 +19,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -424,9 +425,30 @@ class ArgumentsAnalyzer
         FunctionLikeStorage $storage,
         FunctionLikeParameter $actual_func_param
     ): ?TemplateResult {
+        $codebase = $statements_analyzer->getCodebase();
+
         $input_hof_atomic = $storage->return_type && $storage->return_type->isSingle()
             ? $storage->return_type->getSingleAtomic()
             : null;
+
+        // Try upcast invokable to callable type.
+        if ($input_hof_atomic instanceof Type\Atomic\TNamedObject &&
+            $input_hof_atomic->value !== 'Closure' &&
+            $codebase->classExists($input_hof_atomic->value)
+        ) {
+            $callable_from_invokable = CallableTypeComparator::getCallableFromAtomic(
+                $codebase,
+                $input_hof_atomic
+            );
+
+            if ($callable_from_invokable) {
+                $invoke_id = new MethodIdentifier($input_hof_atomic->value, '__invoke');
+                $declaring_invoke_id = $codebase->methods->getDeclaringMethodId($invoke_id);
+
+                $storage = $codebase->methods->getStorage($declaring_invoke_id ?? $invoke_id);
+                $input_hof_atomic = $callable_from_invokable;
+            }
+        }
 
         if (!$input_hof_atomic instanceof TClosure && !$input_hof_atomic instanceof TCallable) {
             return null;
@@ -441,7 +463,6 @@ class ArgumentsAnalyzer
         }
 
         $replaced_container_hof_atomic = new Union([clone $container_hof_atomic]);
-        $codebase = $statements_analyzer->getCodebase();
 
         // Replaces all input args in container function.
         //
