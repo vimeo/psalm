@@ -1004,6 +1004,34 @@ class MethodCallTest extends TestCase
                 [],
                 '8.0'
             ],
+            'parentMagicMethodCall' => [
+                '<?php
+                    class Model {
+                        /**
+                         * @return static
+                         */
+                        public function __call() {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static;
+                        }
+                    }
+
+                    class BlahModel extends Model {
+                        /**
+                         * @param mixed $input
+                         */
+                        public function create($input): BlahModel
+                        {
+                            return parent::create([]);
+                        }
+                    }
+
+                    $m = new BlahModel();
+                    $n = $m->create([]);',
+                [
+                    '$n' => 'BlahModel',
+                ]
+            ],
         ];
     }
 
