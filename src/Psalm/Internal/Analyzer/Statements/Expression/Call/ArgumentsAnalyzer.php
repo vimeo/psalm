@@ -54,6 +54,7 @@ use UnexpectedValueException;
 use function array_map;
 use function array_reverse;
 use function array_slice;
+use function assert;
 use function count;
 use function in_array;
 use function is_string;
@@ -196,7 +197,19 @@ class ArgumentsAnalyzer
                 $toggled_class_exists = true;
             }
 
-            if (($arg->value instanceof PhpParser\Node\Expr\Closure
+            $high_order_template_result = null;
+
+            if ($arg->value instanceof PhpParser\Node\Expr\FuncCall
+                && $param
+                && !$arg->value->getDocComment()
+            ) {
+                $high_order_template_result = self::handlePartiallyAppliedClosureArg(
+                    $statements_analyzer,
+                    $arg->value,
+                    $template_result ?? new TemplateResult([], []),
+                    $param
+                );
+            } elseif (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && $param
                 && !$arg->value->getDocComment()
@@ -217,7 +230,15 @@ class ArgumentsAnalyzer
 
             $context->inside_call = true;
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+            if (ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $arg->value,
+                $context,
+                false,
+                null,
+                false,
+                $high_order_template_result
+            ) === false) {
                 $context->inside_call = $was_inside_call;
 
                 return false;
@@ -313,6 +334,76 @@ class ArgumentsAnalyzer
 
             $template_result->lower_bounds += $replace_template_result->lower_bounds;
         }
+    }
+
+    private static function handlePartiallyAppliedClosureArg(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $func_call,
+        TemplateResult $inferred_template_result,
+        FunctionLikeParameter $param
+    ): ?TemplateResult {
+        $codebase = $statements_analyzer->getCodebase();
+        $function_id = strtolower((string) $func_call->name->getAttribute('resolvedName'));
+
+        if (empty($function_id)) {
+            return null;
+        }
+
+        try {
+            $storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
+        } catch (UnexpectedValueException $e) {
+            return null;
+        }
+
+        if (!$storage->return_type || !$storage->return_type->isSingle()) {
+            return null;
+        }
+
+        $return_type = $storage->return_type->getSingleAtomic();
+
+        if (!$return_type instanceof TClosure && !$return_type instanceof TCallable) {
+            return null;
+        }
+
+        if (!$param->type || !$param->type->isSingle()) {
+            return null;
+        }
+
+        $param_type = $param->type->getSingleAtomic();
+
+        if (!$param_type instanceof TClosure && !$param_type instanceof TCallable) {
+            return null;
+        }
+
+        $replaced_type = clone $param->type;
+
+        TemplateInferredTypeReplacer::replace(
+            $replaced_type,
+            $inferred_template_result,
+            $codebase
+        );
+
+        $param_type = $replaced_type->getSingleAtomic();
+        assert($param_type instanceof TClosure || $param_type instanceof TCallable);
+
+        $high_order_template_result = new TemplateResult($storage->template_types ?: [], []);
+
+        foreach ($return_type->params ?? [] as $offset => $param) {
+            if ($param->type &&
+                $param->type->getTemplateTypes() &&
+                isset($param_type->params[$offset])
+            ) {
+                TemplateStandinTypeReplacer::replace(
+                    clone $param->type,
+                    $high_order_template_result,
+                    $codebase,
+                    null,
+                    $param_type->params[$offset]->type
+                );
+            }
+        }
+
+        return $high_order_template_result;
     }
 
     /**

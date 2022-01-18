@@ -82,7 +82,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
-        Context $context
+        Context $context,
+        ?TemplateResult $template_result = null
     ): bool {
         $function_name = $stmt->name;
 
@@ -166,10 +167,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if (!$is_first_class_callable) {
-            $template_result = null;
-
             if (isset($function_call_info->function_storage->template_types)) {
-                $template_result = new TemplateResult($function_call_info->function_storage->template_types ?: [], []);
+                if (!$template_result) {
+                    $template_result = new TemplateResult([], []);
+                }
+
+                $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
 
             ArgumentsAnalyzer::analyze(
@@ -205,6 +208,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $already_inferred_lower_bounds = $template_result
+            ? $template_result->lower_bounds
+            : [];
+
         $template_result = new TemplateResult([], []);
 
         // do this here to allow closure param checks
@@ -228,6 +235,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $code_location,
             $function_call_info->function_id
         );
+
+        $template_result->lower_bounds += $already_inferred_lower_bounds;
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
