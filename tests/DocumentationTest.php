@@ -241,7 +241,7 @@ class DocumentationTest extends TestCase
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->config->visitPreloadedStubFiles($codebase);

@@ -82,7 +82,7 @@ class UnusedVariableTest extends TestCase
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
