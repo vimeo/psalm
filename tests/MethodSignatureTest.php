@@ -1582,7 +1582,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
                 [],
                 false,
                 '8.0'
@@ -1595,7 +1595,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
                 [],
                 false,
                 '8.1'

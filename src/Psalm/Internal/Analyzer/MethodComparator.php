@@ -21,6 +21,7 @@ use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
@@ -130,8 +131,8 @@ class MethodComparator
             )
         ) {
             IssueBuffer::maybeAdd(
-                new MethodSignatureMismatch(
-                    'Method ' . $cased_implementer_method_id . ' is missing a return type signature!',
+                new MethodSignatureMustProvideReturnType(
+                    'Method ' . $cased_implementer_method_id . ' must have a return type signature!',
                     $implementer_method_storage->location ?: $code_location
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues
