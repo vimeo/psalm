@@ -448,6 +448,7 @@ class Populator
             $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
             $storage->pseudo_methods += $trait_storage->pseudo_methods;
+            $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
         }
     }
 
@@ -606,6 +607,7 @@ class Populator
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
         $storage->pseudo_methods += $parent_storage->pseudo_methods;
+        $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
     }
 
     private function populateInterfaceDataFromParentInterfaces(
@@ -694,6 +696,7 @@ class Populator
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
 
             $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
+            $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
         }
 
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
