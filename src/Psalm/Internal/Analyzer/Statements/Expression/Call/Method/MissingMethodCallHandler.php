@@ -157,7 +157,7 @@ class MissingMethodCallHandler
                     $codebase,
                     $return_type_candidate,
                     $defining_class_storage->name,
-                    $lhs_type_part,
+                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class
                 );
 
@@ -336,7 +336,7 @@ class MissingMethodCallHandler
                     $codebase,
                     $return_type_candidate,
                     $defining_class_storage->name,
-                    $lhs_type_part,
+                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
                     true,
                     false,

@@ -606,7 +606,7 @@ class ClassLikeNodeScanner
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
                         $fq_classlike_name,
-                        $method->name->name
+                        $lc_method_name
                     );
                 }
 
