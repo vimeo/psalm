@@ -119,19 +119,21 @@ or using the configuration:
 </psalm>
 ```
 
-To update that baseline file (to remove references to things that have been fixed), use
+To update that baseline file, use
 
 ```
 vendor/bin/psalm --update-baseline
 ```
 
-Baseline files are a great way to gradually improve a codebase.
+This will remove fixed issues, but will _not_ add new issues. To add new issues, use `--set-baseline`.
 
 In case you want to run psalm without the baseline, run
 
 ```
 vendor/bin/psalm --ignore-baseline
 ```
+
+Baseline files are a great way to gradually improve a codebase.
 
 ## Using a plugin
 
