@@ -237,6 +237,16 @@ class ClassLikeStorage
     public $pseudo_static_methods = [];
 
     /**
+     * Maps pseudo method names to the original declaring method identifier
+     * The key is the method name in lowercase, and the value is the original `MethodIdentifier` instance
+     *
+     * This property contains all pseudo methods declared on ancestors.
+     *
+     * @var array<lowercase-string, MethodIdentifier>
+     */
+    public $declaring_pseudo_method_ids = [];
+
+    /**
      * @var array<lowercase-string, MethodIdentifier>
      */
     public $declaring_method_ids = [];
