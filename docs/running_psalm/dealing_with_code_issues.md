@@ -99,13 +99,39 @@ If you have a bunch of errors and you don't want to fix them all at once, Psalm 
 vendor/bin/psalm --set-baseline=your-baseline.xml
 ```
 
-will generate a file containing the current errors. You can commit that generated file so that Psalm running in other places (e.g. CI) won't complain about those errors either, and you can update that baseline file (to remove references to things that have been fixed) with
+will generate a file containing the current errors. You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either.
+
+You have two options to use the generated baseline when running psalm:
+
+```
+vendor/bin/psalm --use-baseline=your-baseline.xml
+```
+
+or using the configuration:
+
+```xml
+<?xml version="1.0"?>
+<psalm
+       ...
+       errorBaseline="./path/to/your-baseline.xml"
+>
+   ...
+</psalm>
+```
+
+To update that baseline file (to remove references to things that have been fixed), use
 
 ```
 vendor/bin/psalm --update-baseline
 ```
 
 Baseline files are a great way to gradually improve a codebase.
+
+In case you want to run psalm without the baseline, run
+
+```
+vendor/bin/psalm --ignore-baseline
+```
 
 ## Using a plugin
 
