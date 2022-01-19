@@ -7,7 +7,6 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 
 use function is_int;
-use function method_exists;
 use function preg_quote;
 use function str_replace;
 use function strpos;
