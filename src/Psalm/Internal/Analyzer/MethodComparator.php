@@ -118,6 +118,7 @@ class MethodComparator
 
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
+            && $codebase->analysis_php_version_id >= 80100
             && ($guide_method_storage->return_type
                 || $guide_method_storage->signature_return_type
             )
