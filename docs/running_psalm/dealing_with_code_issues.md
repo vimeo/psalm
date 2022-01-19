@@ -125,7 +125,7 @@ To update that baseline file, use
 vendor/bin/psalm --update-baseline
 ```
 
-This will remove fixed issues, but will _not_ add new issues. To add new issues, use `--set-baseline`.
+This will remove fixed issues, but will _not_ add new issues. To add new issues, use `--set-baseline=...`.
 
 In case you want to run psalm without the baseline, run
 
