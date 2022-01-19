@@ -150,7 +150,7 @@ class PsalmPluginTest extends TestCase
         $help_command = new CommandTester($this->app->find('help'));
         $help_command->execute(['command_name' => $command]);
         $output = $help_command->getDisplay();
-        $this->assertRegExp('/Usage:.*$\s+' . preg_quote($command, '/') . '\b/m', $output);
+        $this->assertMatchesRegularExpression('/Usage:.*$\s+' . preg_quote($command, '/') . '\b/m', $output);
     }
 
     /**
