@@ -116,6 +116,16 @@ The PHPDoc `@method` annotation normally only applies to classes with a `__call`
 ```
 The PHPDoc `@property`, `@property-read` and `@property-write` annotations normally only apply to classes with `__get`/`__set` methods. Setting this to `true` allows you to use the `@property`, `@property-read` and `@property-write` annotations to override property existence checks and resulting property types. Defaults to `false`.
 
+#### disableVarParsing
+
+```xml
+<psalm
+  disableVarParsing="[bool]"
+/>
+```
+
+Disables parsing of `@var` PHPDocs everywhere except for properties. Setting this to `true` can remove many false positives due to outdated `@var` annotations, used before integrations of Psalm generics and proper typing, enforcing Single Source Of Truth principles. Defaults to `false`.
+
 #### strictBinaryOperands
 
 ```xml
