@@ -30,6 +30,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\GetObjectVarsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
@@ -97,6 +98,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(RandReturnTypeProvider::class);
         $this->registerClass(InArrayReturnTypeProvider::class);
         $this->registerClass(RoundReturnTypeProvider::class);
+        $this->registerClass(MbInternalEncodingReturnTypeProvider::class);
     }
 
     /**
