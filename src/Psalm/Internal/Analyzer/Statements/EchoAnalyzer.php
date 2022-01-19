@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\ForbiddenCode;
-use Psalm\Issue\ForbiddenEcho;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
@@ -96,17 +95,7 @@ class EchoAnalyzer
             }
         }
 
-        if ($codebase->config->forbid_echo) {
-            if (IssueBuffer::accepts(
-                new ForbiddenEcho(
-                    'Use of echo',
-                    new CodeLocation($statements_analyzer, $stmt)
-                ),
-                $statements_analyzer->getSource()->getSuppressedIssues()
-            )) {
-                return false;
-            }
-        } elseif (isset($codebase->config->forbidden_functions['echo'])) {
+        if (isset($codebase->config->forbidden_functions['echo'])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of echo',

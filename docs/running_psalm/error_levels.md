@@ -284,7 +284,6 @@ These issues are treated as errors at level 7 and below.
 
 ## Feature-specific errors
 
- - [ForbiddenEcho](issues/ForbiddenEcho.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)
