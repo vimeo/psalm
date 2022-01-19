@@ -11,7 +11,7 @@ This issue is emitted when a method overriding a native method is defined withou
 
 class A implements JsonSerializable {
     public function jsonSerialize() {
-        return ['type' = 'A'];
+        return ['type' => 'A'];
     }
 }
 ```
