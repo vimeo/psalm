@@ -234,7 +234,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferTemplateOfHighOrderFunctionArgByPreviousArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return list<int>
                      */
@@ -263,7 +263,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferTemplateOfHighOrderFunctionArgByPreviousArgInClassContext' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      */
@@ -296,7 +296,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferTemplateOfHighOrderFunctionFromMethodArgByPreviousArg' => [
-                '<?php
+                'code' => '<?php
                      final class Ops
                      {
                          /**
@@ -332,7 +332,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferTemplateOfHighOrderFunctionFromStaticMethodArgByPreviousArg' => [
-                '<?php
+                'code' => '<?php
                      final class StaticOps
                      {
                          /**
@@ -366,8 +366,8 @@ class CallableTest extends TestCase
                     '$result' => 'list<int>',
                 ],
             ],
-            '' => [
-                '<?php
+            'PipeTest' => [
+                'code' => '<?php
                      /**
                       * @template A
                       * @template B
@@ -434,7 +434,7 @@ class CallableTest extends TestCase
                 '8.0',
             ],
             'inferPipelineWithPartiallyAppliedFunctions' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
