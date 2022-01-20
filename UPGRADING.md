@@ -19,7 +19,6 @@
     - `Psalm\Type\Atomic\Scalar`
     - `Psalm\Type\Atomic\TArray`
     - `Psalm\Type\Atomic\TArrayKey`
-    - `Psalm\Type\Atomic\TAssertionFalsy`
     - `Psalm\Type\Atomic\TCallable`
     - `Psalm\Type\Atomic\TCallableObject`
     - `Psalm\Type\Atomic\TCallableString`
@@ -77,7 +76,6 @@
     - `Psalm\Type\Atomic\TAnonymousClassInstance`
     - `Psalm\Type\Atomic\TArray`
     - `Psalm\Type\Atomic\TArrayKey`
-    - `Psalm\Type\Atomic\TAssertionFalsy`
     - `Psalm\Type\Atomic\TBool`
     - `Psalm\Type\Atomic\TCallable`
     - `Psalm\Type\Atomic\TCallableObject`
@@ -121,6 +119,7 @@
  - [BC] Property `Psalm\Type\Atomic\TNamedObject::$was_static` was renamed to `$is_static`
  - [BC] Method `Psalm\Type\Union::isFormerStaticObject()` was renamed to `isStaticObject()`
  - [BC] Method `Psalm\Type\Union::hasFormerStaticObject()` was renamed to `hasStaticObject()`
+ - [BC] Function assertions (from `@psalm-assert Foo $bar`) have been converted from strings to specific `Assertion` objects.
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
