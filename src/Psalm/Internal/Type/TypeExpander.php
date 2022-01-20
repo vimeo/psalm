@@ -906,7 +906,6 @@ class TypeExpander
                 throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
             }
 
-            $constant_type = null;
             try {
                 $constant_type = $codebase->classlikes->getClassConstantType(
                     $type_param->fq_classlike_name,
