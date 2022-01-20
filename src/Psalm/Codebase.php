@@ -15,7 +15,6 @@ use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use PhpParser\Node\Arg;
-use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;

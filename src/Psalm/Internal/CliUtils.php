@@ -11,7 +11,6 @@ use Psalm\Config\Creator;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
 use Psalm\Report;
 
 use function array_slice;

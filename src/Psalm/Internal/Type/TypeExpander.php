@@ -4,9 +4,6 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
-use Psalm\Internal\Type\SimpleAssertionReconciler;
-use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
-use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -93,7 +90,7 @@ class TypeExpander
             if ($return_type_part instanceof TTypeAlias || count($parts) > 1) {
                 $had_split_values = true;
             }
-            
+
             $new_return_type_parts = array_merge($new_return_type_parts, $parts);
         }
 

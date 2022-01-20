@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Analyzer;
 
 use Psalm\Context;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;

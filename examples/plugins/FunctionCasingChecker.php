@@ -3,12 +3,9 @@ namespace Psalm\Example\Plugin;
 
 use Exception;
 use PhpParser;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
-use Psalm\FileManipulation;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
@@ -16,7 +13,6 @@ use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 
 use function explode;

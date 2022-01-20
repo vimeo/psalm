@@ -26,7 +26,6 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
-use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -631,7 +630,7 @@ class ScalarTypeComparator
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced
                         = $atomic_comparison_result->type_coerced_from_scalar
-                        = ($input_type_part instanceof TScalar || $input_type_part instanceof TNonEmptyScalar);
+                        = $input_type_part instanceof TScalar;
                     $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
                 }
             }

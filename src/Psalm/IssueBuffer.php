@@ -16,7 +16,6 @@ use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
-use Psalm\Report;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;

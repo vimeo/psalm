@@ -4,7 +4,6 @@ namespace Psalm\Example\Plugin;
 use PhpParser;
 use Psalm\Checker;
 use Psalm\CodeLocation;
-use Psalm\FileManipulation;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;

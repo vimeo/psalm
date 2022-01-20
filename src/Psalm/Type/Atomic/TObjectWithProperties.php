@@ -8,8 +8,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -145,7 +143,7 @@ class TObjectWithProperties extends TObject
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,
-                                $use_phpdoc_format
+                                false
                             ),
                         array_keys($this->properties),
                         $this->properties

@@ -648,10 +648,6 @@ abstract class Atomic implements TypeNode
             return true;
         }
 
-        if ($this instanceof TCallableString) {
-            return true;
-        }
-
         if ($this instanceof TNonEmptyArray) {
             return true;
         }
