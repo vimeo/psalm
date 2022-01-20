@@ -7,7 +7,6 @@ use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;

@@ -6,7 +6,6 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
-use Psalm\Tests\TestCase;
 
 class ClassLikeDocblockParserTest extends TestCase
 {

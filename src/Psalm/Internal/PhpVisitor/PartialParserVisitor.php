@@ -4,7 +4,6 @@ namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
-use Psalm\Internal\PhpVisitor\OffsetShifterVisitor;
 
 use function count;
 use function preg_match_all;
