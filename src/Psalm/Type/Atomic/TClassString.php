@@ -33,6 +33,12 @@ class TClassString extends TString
      */
     public $as_type;
 
+    /** @var bool */
+    public $is_loaded = false;
+
+    /** @var bool */
+    public $is_interface = false;
+
     public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
     {
         $this->as = $as;
@@ -41,7 +47,8 @@ class TClassString extends TString
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        return ($this->is_interface ? 'interface' : 'class')
+            . '-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
     public function __toString(): string
@@ -51,7 +58,9 @@ class TClassString extends TString
 
     public function getId(bool $nested = false): string
     {
-        return $this->getKey();
+        return ($this->is_loaded ? 'loaded-' : '')
+            . ($this->is_interface ? 'interface' : 'class')
+            . '-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
     public function getAssertionString(bool $exact = false): string

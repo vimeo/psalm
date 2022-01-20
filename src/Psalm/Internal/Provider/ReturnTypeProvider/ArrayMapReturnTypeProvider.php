@@ -21,6 +21,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -255,7 +256,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     }
 
     /**
-     * @param-out array<string, array<array<int, string>>>|null $assertions
+     * @param array<string, array<array<int, Assertion>>>|null $assertions
      */
     private static function executeFakeCall(
         StatementsAnalyzer $statements_analyzer,
@@ -338,7 +339,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
      * @param list<PhpParser\Node\Arg> $array_args
      * @param int|null $fake_var_discriminator Set the fake variable id to a known value with the discriminator
      *                                         as a substring, and don't clear it from the context.
-     * @param-out array<string, array<array<int, string>>>|null $assertions
+     * @param array<string, array<array<int, Assertion>>>|null $assertions
      */
     public static function getReturnTypeFromMappingIds(
         StatementsAnalyzer $statements_source,

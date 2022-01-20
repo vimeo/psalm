@@ -539,7 +539,7 @@ class ArrayFunctionArgumentsAnalyzer
 
                     if ($array_atomic_type instanceof TNonEmptyArray) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
-                            if ($array_atomic_type->count === 0) {
+                            if ($array_atomic_type->count === 1) {
                                 $array_atomic_type = new TArray(
                                     [
                                         new Union([new TNever]),
@@ -547,6 +547,7 @@ class ArrayFunctionArgumentsAnalyzer
                                     ]
                                 );
                             } else {
+                                /** @psalm-suppress PropertyTypeCoercion */
                                 $array_atomic_type->count--;
                             }
                         } else {
@@ -556,7 +557,7 @@ class ArrayFunctionArgumentsAnalyzer
                         $array_type->addType($array_atomic_type);
                     } elseif ($array_atomic_type instanceof TNonEmptyList) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
-                            if ($array_atomic_type->count === 0) {
+                            if ($array_atomic_type->count === 1) {
                                 $array_atomic_type = new TArray(
                                     [
                                         new Union([new TNever]),
@@ -564,6 +565,7 @@ class ArrayFunctionArgumentsAnalyzer
                                     ]
                                 );
                             } else {
+                                /** @psalm-suppress PropertyTypeCoercion */
                                 $array_atomic_type->count--;
                             }
                         } else {

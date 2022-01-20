@@ -1708,7 +1708,8 @@ class ArrayFetchAnalyzer
                 || (count($key_values) === 1
                     && is_int($key_values[0])
                     && $key_values[0] > 0
-                    && $key_values[0] > ($type->count - 1))
+                    && $key_values[0] > ($type->count - 1)
+                    && $key_values[0] > ($type->min_count - 1))
             ) {
                 $expected_offset_type = Type::getInt();
 

@@ -34,13 +34,13 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -340,22 +340,23 @@ class FunctionLikeNodeScanner
                         foreach ($rules as $var_id => $rule) {
                             foreach ($rule as $rule_part) {
                                 if (count($rule_part) > 1) {
+                                    $var_assertions = [];
                                     continue 2;
                                 }
-                            }
 
-                            if (isset($existing_params[$var_id])) {
-                                $param_offset = $existing_params[$var_id];
+                                if (isset($existing_params[$var_id])) {
+                                    $param_offset = $existing_params[$var_id];
 
-                                $var_assertions[] = new Assertion(
-                                    $param_offset,
-                                    $rule
-                                );
-                            } elseif (strpos($var_id, '$this->') === 0) {
-                                $var_assertions[] = new Assertion(
-                                    $var_id,
-                                    $rule
-                                );
+                                    $var_assertions[] = new Possibilities(
+                                        $param_offset,
+                                        $rule_part
+                                    );
+                                } elseif (strpos($var_id, '$this->') === 0) {
+                                    $var_assertions[] = new Possibilities(
+                                        $var_id,
+                                        $rule_part
+                                    );
+                                }
                             }
                         }
                     } else {

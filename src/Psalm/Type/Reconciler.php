@@ -19,9 +19,27 @@ use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyExists;
+use Psalm\Storage\Assertion\Empty_;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayKey;
+use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
+use Psalm\Storage\Assertion\HasStringArrayAccess;
+use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsNotIsset;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\NestedAssertions;
+use Psalm\Storage\Assertion\NonEmpty;
+use Psalm\Storage\Assertion\NonEmptyCountable;
+use Psalm\Storage\Assertion\NotNestedAssertions;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
@@ -47,7 +65,6 @@ use function count;
 use function explode;
 use function implode;
 use function is_numeric;
-use function json_decode;
 use function ksort;
 use function preg_match;
 use function preg_quote;
@@ -56,8 +73,6 @@ use function str_split;
 use function strpos;
 use function strtolower;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 class Reconciler
 {
@@ -71,8 +86,8 @@ class Reconciler
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
-     * @param  array<string, array<array<int, string>>> $new_types
-     * @param  array<string, array<array<int, string>>> $active_new_types - types we can complain about
+     * @param  array<string, array<array<int, Assertion>>> $new_types
+     * @param  array<string, array<array<int, Assertion>>> $active_new_types - types we can complain about
      * @param  array<string, Union> $existing_types
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
@@ -118,7 +133,7 @@ class Reconciler
             $has_negation = false;
             $has_isset = false;
             $has_inverted_isset = false;
-            $has_falsyish = false;
+            $has_truthy_or_falsy_or_empty = false;
             $has_empty = false;
             $has_count_check = false;
             $is_real = ($old_new_types[$key] ?? null) === $new_type_parts;
@@ -126,30 +141,31 @@ class Reconciler
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    if ($new_type_part_part[0] === '!') {
+                    if ($new_type_part_part->isNegation()) {
                         $has_negation = true;
                     }
 
                     $has_isset = $has_isset
-                        || $new_type_part_part === 'isset'
-                        || $new_type_part_part === '=isset'
-                        || $new_type_part_part === 'array-key-exists'
-                        || $new_type_part_part === '=string-array-access';
+                        || $new_type_part_part instanceof IsIsset
+                        || $new_type_part_part instanceof IsEqualIsset
+                        || $new_type_part_part instanceof ArrayKeyExists
+                        || $new_type_part_part instanceof HasStringArrayAccess;
 
-                    $has_empty = $has_empty || $new_type_part_part === 'empty';
+                    $has_empty = $has_empty || $new_type_part_part instanceof Empty_;
 
-                    $has_falsyish = $has_falsyish
-                        || $new_type_part_part === 'empty'
-                        || $new_type_part_part === 'falsy';
+                    $has_truthy_or_falsy_or_empty = $has_truthy_or_falsy_or_empty
+                        || $new_type_part_part instanceof NonEmpty
+                        || $new_type_part_part instanceof Truthy
+                        || $new_type_part_part instanceof Empty_
+                        || $new_type_part_part instanceof Falsy;
 
                     $is_equality = $is_equality
-                        && $new_type_part_part[0] === '='
-                        && $new_type_part_part !== '=isset';
+                        && $new_type_part_part instanceof IsIdentical;
 
-                    $has_inverted_isset = $has_inverted_isset || $new_type_part_part === '!isset';
+                    $has_inverted_isset = $has_inverted_isset || $new_type_part_part instanceof IsNotIsset;
 
                     $has_count_check = $has_count_check
-                        || $new_type_part_part === 'non-empty-countable';
+                        || $new_type_part_part instanceof NonEmptyCountable;
                 }
             }
 
@@ -184,19 +200,15 @@ class Reconciler
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    if ($new_type_part_part[0] === '@'
-                        || ($new_type_part_part[0] === '!'
-                            && $new_type_part_part[1] === '@')
+                    if ($new_type_part_part instanceof NestedAssertions
+                        || $new_type_part_part instanceof NotNestedAssertions
                     ) {
-                        if ($new_type_part_part[0] === '!') {
-                            $nested_negated = !$negated;
+                        $data = $new_type_part_part->assertions;
 
-                            /** @var array<string, array<int, array<int, string>>> */
-                            $data = json_decode(substr($new_type_part_part, 2), true, 512, JSON_THROW_ON_ERROR);
+                        if ($new_type_part_part instanceof NotNestedAssertions) {
+                            $nested_negated = !$negated;
                         } else {
                             $nested_negated = $negated;
-                            /** @var array<string, array<int, array<int, string>>> */
-                            $data = json_decode(substr($new_type_part_part, 1), true, 512, JSON_THROW_ON_ERROR);
                         }
 
                         $existing_types = self::reconcileKeyedTypes(
@@ -212,7 +224,7 @@ class Reconciler
                             $nested_negated
                         );
 
-                        $new_type_part_part = ($nested_negated ? '' : '!') . 'falsy';
+                        $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
                     }
 
                     $result_type_candidate = AssertionReconciler::reconcile(
@@ -299,7 +311,7 @@ class Reconciler
                         }
                     }
                 }
-            } elseif (!$has_negation && !$has_falsyish && !$has_isset) {
+            } elseif (!$has_negation && !$has_truthy_or_falsy_or_empty && !$has_isset) {
                 $changed_var_ids[$key] = true;
             }
 
@@ -329,19 +341,18 @@ class Reconciler
      *     '$a[0]->foo->bar' => 'isset' // original assertion
      * ]
      *
-     * @param array<string, array<array<int, string>>> $new_types
+     * @param array<string, array<array<int, Assertion>>> $new_types
      * @param array<string, Union> $existing_types
      *
-     * @return array<string, array<array<int, string>>>
+     * @return array<string, array<array<int, Assertion>>>
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
-                if ($type[0][0] === '=isset'
-                    //|| $type[0][0] === '!=empty'
-                    || $type[0][0] === 'isset'
-                    || $type[0][0] === '!empty'
+                if ($type[0][0] instanceof IsEqualIsset
+                    || $type[0][0] instanceof IsIsset
+                    || $type[0][0] instanceof NonEmpty
                 ) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
@@ -354,9 +365,9 @@ class Reconciler
 
                     if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
                         if (!isset($new_types[$base_key])) {
-                            $new_types[$base_key] = [['=isset']];
+                            $new_types[$base_key] = [[new IsEqualIsset()]];
                         } else {
-                            $new_types[$base_key][] = ['=isset'];
+                            $new_types[$base_key][] = [new IsEqualIsset()];
                         }
                     }
 
@@ -370,9 +381,9 @@ class Reconciler
                             $new_base_key = $base_key . '[' . $array_key . ']';
 
                             if (strpos($array_key, '\'') !== false) {
-                                $new_types[$base_key][] = ['=string-array-access'];
+                                $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
-                                $new_types[$base_key][] = ['=int-or-string-array-access'];
+                                $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
                             }
 
                             $base_key = $new_base_key;
@@ -385,7 +396,7 @@ class Reconciler
                             $new_base_key = $base_key . '->' . $property_name;
 
                             if (!isset($new_types[$base_key])) {
-                                $new_types[$base_key] = [['=isset']];
+                                $new_types[$base_key] = [[new IsEqualIsset()]];
                             }
 
                             $base_key = $new_base_key;
@@ -398,16 +409,20 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$base_key])) {
-                            $new_types[$base_key] = [['!~bool'], ['!~int'], ['=isset']];
+                            $new_types[$base_key] = [
+                                [new IsNotLooselyEqual(new TBool())],
+                                [new IsNotLooselyEqual(new TInt())],
+                                [new IsEqualIsset()]
+                            ];
                         } else {
-                            $new_types[$base_key][] = ['!~bool'];
-                            $new_types[$base_key][] = ['!~int'];
-                            $new_types[$base_key][] = ['=isset'];
+                            $new_types[$base_key][] = [new IsNotLooselyEqual(new TBool())];
+                            $new_types[$base_key][] = [new IsNotLooselyEqual(new TInt())];
+                            $new_types[$base_key][] = [new IsEqualIsset()];
                         }
                     }
                 }
 
-                if ($type[0][0] === 'array-key-exists') {
+                if ($type[0][0] instanceof ArrayKeyExists) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
                     if (count($key_parts) === 4
@@ -417,9 +432,9 @@ class Reconciler
                     ) {
                         if ($key_parts[0][0] === '$') {
                             if (isset($new_types[$key_parts[0]])) {
-                                $new_types[$key_parts[0]][] = ['=has-array-key-' . $key_parts[2]];
+                                $new_types[$key_parts[0]][] = [new HasArrayKey($key_parts[2])];
                             } else {
-                                $new_types[$key_parts[0]] = [['=has-array-key-' . $key_parts[2]]];
+                                $new_types[$key_parts[0]] = [[new HasArrayKey($key_parts[2])]];
                             }
                         }
                     }
@@ -881,23 +896,24 @@ class Reconciler
         Union $existing_var_type,
         string $old_var_type_string,
         string $key,
-        string $assertion,
+        Assertion $assertion,
         bool $redundant,
         bool $negated,
         CodeLocation $code_location,
         array $suppressed_issues
     ): void {
-        $not = $assertion[0] === '!';
+        $assertion_string = (string)$assertion;
+        $not = $assertion_string[0] === '!';
 
         if ($not) {
-            $assertion = substr($assertion, 1);
+            $assertion_string = substr($assertion_string, 1);
         }
 
-        $operator = substr($assertion, 0, 1);
+        $operator = substr($assertion_string, 0, 1);
         if ($operator === '>') {
-            $assertion = '>= '.substr($assertion, 1);
+            $assertion_string = '>= '.substr($assertion_string, 1);
         } elseif ($operator === '<') {
-            $assertion = '<= '.substr($assertion, 1);
+            $assertion_string = '<= '.substr($assertion_string, 1);
         }
 
         if ($negated) {
@@ -908,11 +924,13 @@ class Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $from_docblock = $existing_var_type->from_docblock
-            || (isset($existing_var_atomic_types[$assertion])
-                && $existing_var_atomic_types[$assertion]->from_docblock);
+            || (isset($existing_var_atomic_types[$assertion_string])
+                && $existing_var_atomic_types[$assertion_string]->from_docblock);
 
         if ($redundant) {
-            if ($existing_var_type->from_property && $assertion === 'isset') {
+            if ($existing_var_type->from_property
+                && ($assertion instanceof IsIsset || $assertion instanceof IsNotIsset)
+            ) {
                 if ($existing_var_type->from_static_property) {
                     IssueBuffer::maybeAdd(
                         new RedundantPropertyInitializationCheck(
@@ -938,9 +956,9 @@ class Reconciler
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
                         . ' for ' . $key
-                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
+                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $assertion_string
                     ),
                     $suppressed_issues
                 );
@@ -949,9 +967,9 @@ class Reconciler
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
                         . ' for ' . $key
-                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion,
+                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $assertion_string
                     ),
                     $suppressed_issues
                 );
@@ -962,20 +980,20 @@ class Reconciler
                     new DocblockTypeContradiction(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
+                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $assertion_string
                     ),
                     $suppressed_issues
                 );
             } else {
-                if ($assertion === 'null' && !$not) {
+                if ($assertion_string === 'null' && !$not) {
                     $issue = new TypeDoesNotContainNull(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is never ' . $assertion,
+                            . ' is never ' . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $assertion_string
                     );
                 } else {
                     $issue = new TypeDoesNotContainType(

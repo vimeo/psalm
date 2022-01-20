@@ -4,6 +4,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Internal\Clause;
+use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
 /**
@@ -47,7 +48,7 @@ class IfScope
     public $updated_vars = [];
 
     /**
-     * @var array<string, array<int, array<int, string>>>
+     * @var array<string, list<array<int, Assertion>>>
      */
     public $negated_types = [];
 

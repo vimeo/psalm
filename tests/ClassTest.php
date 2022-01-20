@@ -398,7 +398,7 @@ class ClassTest extends TestCase
                         if (class_exists($s) || interface_exists($s)) {}
                     }',
             ],
-            'classExistsWithFalseArg' => [
+            'classExistsWithFalseArgRefinedAsString' => [
                 'code' => '<?php
                     /**
                      * @param class-string $class

@@ -122,17 +122,17 @@ abstract class FunctionLikeStorage
     public $template_types;
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_true_assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_false_assertions = [];
 

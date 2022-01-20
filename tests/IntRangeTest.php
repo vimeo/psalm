@@ -580,9 +580,10 @@ class IntRangeTest extends TestCase
             ],
             'intersections' => [
                 'code' => '<?php
-                    function getInt(): int{return 0;}
+                    /** @return int<0, 10> */
+                    function getInt(): int{ return rand(0, 10); }
+                    
                     $a = getInt();
-                    /** @var int<0, 10> $a */
                     $b = -$a;
                     $c = null;
                     if($b === $a){

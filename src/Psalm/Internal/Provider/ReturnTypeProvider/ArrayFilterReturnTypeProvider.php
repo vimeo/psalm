@@ -15,6 +15,7 @@ use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
@@ -95,7 +96,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $prev_keyed_type = $keyed_type;
 
                             $keyed_type = AssertionReconciler::reconcile(
-                                '!falsy',
+                                new Truthy(),
                                 clone $keyed_type,
                                 '',
                                 $statements_source,
@@ -129,7 +130,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if (!isset($call_args[1])) {
             $inner_type = AssertionReconciler::reconcile(
-                '!falsy',
+                new Truthy(),
                 clone $inner_type,
                 '',
                 $statements_source,
@@ -203,12 +204,13 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $statements_source
                     );
 
-                    if (isset($assertions[$array_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]"])) {
+                    $assertion_id = $array_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]";
+
+                    if (isset($assertions[$assertion_id])) {
                         $changed_var_ids = [];
 
                         $assertions = [
-                            '$inner_type' =>
-                                $assertions["{$array_var_id}[\$__fake_{$fake_var_discriminator}_offset_var__]"],
+                            '$inner_type' => $assertions[$assertion_id],
                         ];
 
                         $reconciled_types = Reconciler::reconcileKeyedTypes(

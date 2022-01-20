@@ -473,19 +473,6 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion'
             ],
-            'secondEmptyTwice' => [
-                'code' => '<?php
-                    /**
-                     * @param array{a?:int,b?:string} $p
-                     */
-                    function f(array $p) : void {
-                        if (empty($p)) {
-                            throw new RuntimeException("");
-                        }
-                        assert(!empty($p));
-                    }',
-                'error_message' => 'RedundantCondition'
-            ],
         ];
     }
 }

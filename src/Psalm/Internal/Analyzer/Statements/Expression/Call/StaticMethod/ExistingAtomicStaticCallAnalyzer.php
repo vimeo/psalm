@@ -25,8 +25,8 @@ use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -312,15 +312,13 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            $generic_params = $template_result->lower_bounds;
-
             if ($method_storage->assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
                     $method_storage->assertions,
                     $stmt->getArgs(),
-                    $generic_params,
+                    $template_result,
                     $context,
                     $statements_analyzer
                 );
@@ -330,8 +328,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion =>
-                            $assertion->getUntemplatedCopy($generic_params, null, $codebase),
+                        fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $method_storage->if_true_assertions
                     )
                 );
@@ -341,8 +339,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion =>
-                            $assertion->getUntemplatedCopy($generic_params, null, $codebase),
+                        fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $method_storage->if_false_assertions
                     )
                 );

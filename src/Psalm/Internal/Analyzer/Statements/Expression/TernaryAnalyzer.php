@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
@@ -280,7 +281,7 @@ class TernaryAnalyzer
             }
         } elseif ($stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond)) {
             $if_return_type_reconciled = AssertionReconciler::reconcile(
-                '!falsy',
+                new Truthy(),
                 clone $stmt_cond_type,
                 '',
                 $statements_analyzer,

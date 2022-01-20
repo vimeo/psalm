@@ -110,6 +110,10 @@
         </properties>
     </rule>
 
+    <rule ref="Squiz.Classes.ValidClassName">
+        <exclude-pattern>src/Psalm/Storage/Assertion/Empty_.php</exclude-pattern>
+    </rule>
+
     <!--
         Handle imports from namespaces.
         https://github.com/slevomat/coding-standard#slevomatcodingstandardnamespacesreferenceusednamesonly-

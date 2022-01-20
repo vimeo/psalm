@@ -37,8 +37,8 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
-use Psalm\Storage\Assertion;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -345,15 +345,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            $inferred_lower_bounds = $template_result->lower_bounds;
-
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
                     $function_call_info->function_storage->assertions,
                     $stmt->getArgs(),
-                    $inferred_lower_bounds,
+                    $template_result,
                     $context,
                     $statements_analyzer
                 );
@@ -363,8 +361,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion =>
-                            $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase),
+                        fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $function_call_info->function_storage->if_true_assertions
                     )
                 );
@@ -374,8 +372,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion =>
-                            $assertion->getUntemplatedCopy($inferred_lower_bounds ?: [], null, $codebase),
+                        fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $function_call_info->function_storage->if_false_assertions
                     )
                 );

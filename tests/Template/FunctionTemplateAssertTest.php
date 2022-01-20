@@ -55,7 +55,7 @@ class FunctionTemplateAssertTest extends TestCase
 
                     class C {
                         /**
-                         * @template T
+                         * @template T as object
                          * @param class-string<T> $expected
                          * @param mixed  $actual
                          * @psalm-assert T $actual
@@ -99,7 +99,7 @@ class FunctionTemplateAssertTest extends TestCase
                     namespace Bar;
 
                     /**
-                     * @template T
+                     * @template T as object
                      * @param class-string<T> $expected
                      * @param mixed  $actual
                      * @psalm-assert T $actual
@@ -160,14 +160,14 @@ class FunctionTemplateAssertTest extends TestCase
             ],
             'assertTemplatedTypeString' => [
                 'code' => '<?php
-                    interface Foo {
-                        function bat() : void;
-                    }
+                    interface Foo {}
 
                     /**
+                     * @template T as object
+                     *
                      * @param mixed $value
                      * @param class-string<T> $type
-                     * @template T
+                     * 
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -175,11 +175,7 @@ class FunctionTemplateAssertTest extends TestCase
                     }
 
                     function getFoo() : Foo {
-                        return new class implements Foo {
-                            public function bat(): void {
-                                echo "Hello";
-                            }
-                        };
+                        return new class implements Foo {};
                     }
 
                     $f = getFoo();
@@ -189,8 +185,7 @@ class FunctionTemplateAssertTest extends TestCase
                     $class = "hello";
 
                     /** @psalm-suppress MixedArgument */
-                    assertInstanceOf($f, $class);
-                    $f->bat();',
+                    assertInstanceOf($f, $class);',
                 'assertions' => [
                     '$f' => 'Foo',
                 ],
@@ -292,7 +287,7 @@ class FunctionTemplateAssertTest extends TestCase
                     $b = rand(0, 1) ? new Hello() : new Goodbye();
                     Assertion::assertSame($a, $b);',
             ],
-            'allowCanBeNotSameAfterAssertion' => [
+            'allowCanBeNotSameAfterAssertionReverseUnion' => [
                 'code' => '<?php
                     namespace Bar;
 
@@ -311,15 +306,63 @@ class FunctionTemplateAssertTest extends TestCase
 
                     $goodbye_or_hello = rand(0, 1) ? new Goodbye() : new Hello();
                     $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
-                    assertNotSame($goodbye_or_hello, $hello_or_goodbye);
+                    assertNotSame($goodbye_or_hello, $hello_or_goodbye);',
+            ],
+            'allowCanBeNotSameAfterAssertionAcmpAorB' => [
+                'code' => '<?php
+                    namespace Bar;
+
+                    /**
+                     * Asserts that two variables are the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert !=T $actual
+                     */
+                    function assertNotSame($expected, $actual) : void {}
+
+                    class Hello {}
+                    class Goodbye {}
 
                     $hello = new Hello();
                     $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
-                    assertNotSame($hello, $hello_or_goodbye);
+                    assertNotSame($hello, $hello_or_goodbye);',
+            ],
+            'allowCanBeNotSameAfterAssertionAorBcmpA' => [
+                'code' => '<?php
+                    namespace Bar;
+
+                    /**
+                     * Asserts that two variables are the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert !=T $actual
+                     */
+                    function assertNotSame($expected, $actual) : void {}
+
+                    class Hello {}
+                    class Goodbye {}
 
                     $hello = new Hello();
                     $hello_or_goodbye = rand(0, 1) ? new Hello() : new Goodbye();
-                    assertNotSame($hello_or_goodbye, $hello);
+                    assertNotSame($hello_or_goodbye, $hello);',
+            ],
+            'allowCanBeNotSameAfterAssertionScalar' => [
+                'code' => '<?php
+                    namespace Bar;
+
+                    /**
+                     * Asserts that two variables are the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert !=T $actual
+                     */
+                    function assertNotSame($expected, $actual) : void {}
 
                     $c = 4;
                     $d = rand(0, 1) ? 4 : 5;
@@ -634,12 +677,15 @@ class FunctionTemplateAssertTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-template RequestedClass of object
-                     * @psalm-param class-string<RequestedClass> $expectedType
+                     * @psalm-param class-string<RequestedClass> $templated_class_string
                      * @psalm-return class-string<RequestedClass>
                      */
-                    function castStringToClassString(string $expectedType, string $anyString): string {
-                        \assert(\is_a($anyString, $expectedType, true));
-                        return $anyString;
+                    function castStringToClassString(
+                        string $templated_class_string,
+                        string $input_string
+                    ): string {
+                        \assert(\is_a($input_string, $templated_class_string, true));
+                        return $input_string;
                     }'
             ],
             'classTemplateAssert' => [
@@ -1006,7 +1052,8 @@ class FunctionTemplateAssertTest extends TestCase
                     assertEqual($c, $d);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'detectIntFloatNeverCanBeEqualAfterAssertion' => [
+            // Ignoring this to put the behaviour on par with regular equality checks
+            'SKIPPED-detectIntFloatNeverCanBeEqualAfterAssertion' => [
                 'code' => '<?php
 
                     /**

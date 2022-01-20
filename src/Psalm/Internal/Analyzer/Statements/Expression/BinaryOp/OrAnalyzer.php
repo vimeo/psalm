@@ -20,6 +20,7 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
@@ -335,7 +336,7 @@ class OrAnalyzer
 
             if ($var_id && isset($left_context->vars_in_scope[$var_id])) {
                 $left_inferred_reconciled = AssertionReconciler::reconcile(
-                    '!falsy',
+                    new Truthy(),
                     clone $left_context->vars_in_scope[$var_id],
                     '',
                     $statements_analyzer,

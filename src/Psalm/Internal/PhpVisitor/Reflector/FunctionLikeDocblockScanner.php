@@ -19,17 +19,25 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Empty_;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NonEmpty;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TAssertionFalsy;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
@@ -537,7 +545,7 @@ class FunctionLikeDocblockScanner
      * @param array<string, array<string, Union>> $class_template_types
      * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @return non-empty-list<string>|null
+     * @return non-empty-list<Assertion>|null
      */
     private static function getAssertionParts(
         Codebase $codebase,
@@ -552,20 +560,22 @@ class FunctionLikeDocblockScanner
         array $type_aliases,
         ?string $self_fqcln
     ): ?array {
-        $prefix = '';
+        $is_negation = false;
+        $is_loose_equality = false;
+        $is_strict_equality = false;
 
         if ($assertion_type[0] === '!') {
-            $prefix = '!';
+            $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
         if ($assertion_type[0] === '~') {
-            $prefix .= '~';
+            $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
         if ($assertion_type[0] === '=') {
-            $prefix .= '=';
+            $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
@@ -573,17 +583,33 @@ class FunctionLikeDocblockScanner
             ? $class_template_types
             : [];
 
+        if ($assertion_type === 'falsy') {
+            return [$is_negation ? new Truthy() : new Falsy()];
+        }
+
+        if ($assertion_type === 'truthy') {
+            return [$is_negation ? new Falsy() : new Truthy()];
+        }
+
+        if ($assertion_type === 'empty') {
+            return [$is_negation ? new NonEmpty() : new Empty_()];
+        }
+
+        $template_types = $function_template_types + $class_template_types;
+
         try {
             $namespaced_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
                     $assertion_type,
                     $aliases,
-                    $function_template_types + $class_template_types,
+                    $template_types,
                     $type_aliases,
                     $self_fqcln,
                     null,
                     true
-                )
+                ),
+                null,
+                $template_types
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -594,10 +620,11 @@ class FunctionLikeDocblockScanner
             return null;
         }
 
-
-        if ($prefix && count($namespaced_type->getAtomicTypes()) > 1) {
+        if (($is_negation || $is_loose_equality || $is_strict_equality)
+            && count($namespaced_type->getAtomicTypes()) > 1
+        ) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Docblock assertions cannot contain | characters together with ' . $prefix,
+                'Docblock assertions cannot contain | characters together with a prefix',
                 new CodeLocation($file_scanner, $stmt, null, true)
             );
 
@@ -613,20 +640,22 @@ class FunctionLikeDocblockScanner
         $assertion_type_parts = [];
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
-            if ($namespaced_type_part instanceof TAssertionFalsy
-                || $namespaced_type_part instanceof TClassConstant
-                || ($namespaced_type_part instanceof TList
-                    && $namespaced_type_part->type_param->isMixed())
-                || ($namespaced_type_part instanceof TArray
-                    && $namespaced_type_part->type_params[0]->isArrayKey()
-                    && $namespaced_type_part->type_params[1]->isMixed())
-                || ($namespaced_type_part instanceof TIterable
-                    && $namespaced_type_part->type_params[0]->isMixed()
-                    && $namespaced_type_part->type_params[1]->isMixed())
-            ) {
-                $assertion_type_parts[] = $prefix . $namespaced_type_part->getAssertionString();
+            if ($is_negation) {
+                if ($is_strict_equality) {
+                    $assertion_type_parts[] = new IsNotIdentical($namespaced_type_part);
+                } elseif ($is_loose_equality) {
+                    $assertion_type_parts[] = new IsNotLooselyEqual($namespaced_type_part);
+                } else {
+                    $assertion_type_parts[] = new IsNotType($namespaced_type_part);
+                }
             } else {
-                $assertion_type_parts[] = $prefix . $namespaced_type_part->getId();
+                if ($is_strict_equality) {
+                    $assertion_type_parts[] = new IsIdentical($namespaced_type_part);
+                } elseif ($is_loose_equality) {
+                    $assertion_type_parts[] = new IsLooselyEqual($namespaced_type_part);
+                } else {
+                    $assertion_type_parts[] = new IsType($namespaced_type_part);
+                }
             }
         }
 
@@ -1190,25 +1219,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->assertions[] = new Assertion(
+                        $storage->assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->assertions[] = new Assertion(
+                        $storage->assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->assertions[] = new Assertion(
+                $storage->assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }
@@ -1237,25 +1266,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_true_assertions[] = new Assertion(
+                        $storage->if_true_assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_true_assertions[] = new Assertion(
+                        $storage->if_true_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->if_true_assertions[] = new Assertion(
+                $storage->if_true_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }
@@ -1284,25 +1313,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_false_assertions[] = new Assertion(
+                        $storage->if_false_assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_false_assertions[] = new Assertion(
+                        $storage->if_false_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->if_false_assertions[] = new Assertion(
+                $storage->if_false_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }

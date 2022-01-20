@@ -564,7 +564,6 @@ class Context
         ?StatementsAnalyzer $statements_analyzer = null
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
-
         $clauses_to_keep = [];
 
         foreach ($clauses as $clause) {
@@ -578,8 +577,9 @@ class Context
                 }
             }
 
-            if (!isset($clause->possibilities[$remove_var_id]) ||
-                $clause->possibilities[$remove_var_id] === [$new_type_string]
+            if (!isset($clause->possibilities[$remove_var_id])
+                || (count($clause->possibilities[$remove_var_id]) === 1
+                    && (string)$clause->possibilities[$remove_var_id][0] === $new_type_string)
             ) {
                 $clauses_to_keep[] = $clause;
             } elseif ($statements_analyzer &&
@@ -590,15 +590,15 @@ class Context
 
                 // if the clause contains any possibilities that would be altered
                 // by the new type
-                foreach ($clause->possibilities[$remove_var_id] as $type) {
+                foreach ($clause->possibilities[$remove_var_id] as $assertion) {
                     // if we're negating a type, we generally don't need the clause anymore
-                    if ($type[0] === '!' && $type !== '!falsy' && $type !== '!empty') {
+                    if ($assertion->isNegation()) {
                         $type_changed = true;
                         break;
                     }
 
                     $result_type = AssertionReconciler::reconcile(
-                        $type,
+                        $assertion,
                         clone $new_type,
                         null,
                         $statements_analyzer,

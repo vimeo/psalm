@@ -102,6 +102,12 @@
             </errorLevel>
         </PossiblyUndefinedIntArrayOffset>
 
+        <ImpureMethodCall>
+            <errorLevel type="suppress">
+                <directory name="src/Psalm/Storage/Assertion"/>
+            </errorLevel>
+        </ImpureMethodCall>
+
         <MissingThrowsDocblock errorLevel="info"/>
 
         <PossiblyUnusedProperty>
