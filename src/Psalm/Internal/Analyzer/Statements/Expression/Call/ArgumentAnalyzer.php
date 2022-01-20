@@ -60,9 +60,12 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_diff;
+use function array_keys;
 use function array_merge;
 use function count;
 use function explode;
+use function implode;
 use function in_array;
 use function ord;
 use function preg_split;
@@ -1031,26 +1034,30 @@ class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
                 }
-            } elseif ($types_can_be_identical) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyInvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', possibly different type ' . $type . ' provided',
-                        $arg_location,
-                        $cased_method_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
             } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', ' . $type . ' provided',
-                        $arg_location,
-                        $cased_method_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
+                $extension = self::extendKeyedArrayComparison($param_type, $input_type);
+
+                if ($types_can_be_identical) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyInvalidArgument(
+                            'Argument '.($argument_offset+1).$method_identifier.' expects '.$param_type->getId().
+                            ', possibly different type '.$type.' provided'.$extension,
+                            $arg_location,
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'Argument '.($argument_offset+1).$method_identifier.' expects '.$param_type->getId().
+                            ', '.$type.' provided'.$extension,
+                            $arg_location,
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
             }
 
             return null;
@@ -1627,5 +1634,26 @@ class ArgumentAnalyzer
         }
 
         return $input_type;
+    }
+
+    private static function extendKeyedArrayComparison(Union $param_type, Union $input_type): string
+    {
+        // Default value is an empty string
+        $extension = '';
+
+        // Not sure if there's a better or more robust way to do this
+        $first_param_type = $param_type->getAtomicTypes()['array'];
+        $first_input_type = $input_type->getAtomicTypes()['array'];
+        if ($first_param_type instanceof TKeyedArray && $first_input_type instanceof TKeyedArray) {
+            // There's many ways to illustrate this but this is the simplest and provides info
+            // without being too opinionated
+            $extension .= '. The differences are in the following keys: ';
+            $param_keys = array_keys($first_param_type->properties);
+            $input_keys = array_keys($first_input_type->properties);
+            $key_comparison = array_diff($param_keys, $input_keys);
+            $extension .= implode(', ', $key_comparison);
+        }
+
+        return $extension;
     }
 }
