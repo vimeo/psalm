@@ -402,7 +402,7 @@ Allows you to hard-code a serializer for Psalm to use when caching data. By defa
         threads="[int]"
 >
 ```
-Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will only be applied if it is lower than the number of threads Psalm would natively use (i.e. you cannot override other settings that force threads=1 or utilise more threads than detected on the machine)
 
 
 ## Project settings
