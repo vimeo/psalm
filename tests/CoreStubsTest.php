@@ -18,5 +18,20 @@ class CoreStubsTest extends TestCase
 
             new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);'
         ];
+        yield 'proc_open() named arguments' => [
+            '<?php
+
+            proc_open(
+                command: "ls",
+                descriptor_spec: [],
+                pipes: $pipes,
+                cwd: null,
+                env_vars: null,
+                options: null
+            );',
+            'assertions' => [],
+            'error_levels' => [],
+            'php_version' => '8.0',
+        ];
     }
 }
