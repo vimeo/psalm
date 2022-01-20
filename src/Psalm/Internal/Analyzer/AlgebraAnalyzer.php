@@ -12,7 +12,6 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 
 use function array_intersect_key;
-use function array_unique;
 use function count;
 use function implode;
 use function preg_match;
