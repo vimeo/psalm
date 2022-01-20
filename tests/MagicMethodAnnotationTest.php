@@ -852,6 +852,92 @@ class MagicMethodAnnotationTest extends TestCase
                     $d = new BlahModel();
                     consumeBlah($d->create([]));'
             ],
+            'returnThisShouldKeepGenerics' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @method $this foo()
+                     */
+                    class A
+                    {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @template E
+                     * @method $this foo()
+                     */
+                    interface I {}
+
+                    class B {}
+
+                    /** @var A<B> $a */
+                    $a = new A();
+                    $b = $a->foo();
+
+                    /** @var I<B> $i */
+                    $c = $i->foo();',
+                [
+                    '$b' => 'A<B>',
+                    '$c' => 'I<B>',
+                ]
+            ],
+            'genericsOfInheritedMethodsShouldBeResolved' => [
+                '<?php
+                    /**
+                     * @template E
+                     * @method E get()
+                     */
+                    interface I {}
+
+                    /**
+                     * @template E
+                     * @implements I<E>
+                     */
+                    class A implements I
+                    {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @template E
+                     * @extends I<E>
+                     */
+                    interface I2 extends I {}
+
+                    class B {}
+
+                    /**
+                     * @template E
+                     * @method E get()
+                     */
+                    class C
+                    {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @template E
+                     * @extends C<E>
+                     */
+                    class D extends C {}
+
+                    /** @var A<B> $a */
+                    $a = new A();
+                    $b = $a->get();
+
+                    /** @var I2<B> $i */
+                    $c = $i->get();
+
+                    /** @var D<B> $d */
+                    $d = new D();
+                    $e = $d->get();',
+                [
+                    '$b' => 'B',
+                    '$c' => 'B',
+                    '$e' => 'B',
+                ]
+            ],
         ];
     }
 

@@ -159,7 +159,7 @@ class PluginListTest extends TestCase
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessageRegExp('/unknown plugin/i');
+        $this->expectExceptionMessageMatches('/unknown plugin/i');
         $plugin_list->resolvePluginClass('vendor/package');
     }
 

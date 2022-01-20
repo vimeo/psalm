@@ -598,11 +598,16 @@ class ClassLikeNodeScanner
 
                 /** @var MethodStorage */
                 $pseudo_method_storage = $functionlike_node_scanner->start($method, true);
+                $lc_method_name = strtolower($method->name->name);
 
                 if ($pseudo_method_storage->is_static) {
-                    $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
                 } else {
-                    $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
+                    $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
+                        $fq_classlike_name,
+                        $lc_method_name
+                    );
                 }
 
                 $storage->sealed_methods = true;

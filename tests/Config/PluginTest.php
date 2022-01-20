@@ -982,24 +982,23 @@ class PluginTest extends TestCase
 
     public function testPluginFilenameCanBeAbsolute(): void
     {
+        /** @var non-empty-string $xml */
+        $xml = sprintf(
+            '<?xml version="1.0"?>
+            <psalm
+            errorLevel="1"
+        >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <plugins>
+                    <plugin filename="%s/examples/plugins/StringChecker.php" />
+                </plugins>
+            </psalm>',
+            __DIR__ . '/../..'
+        );
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                sprintf(
-                    '<?xml version="1.0"?>
-                    <psalm
-                    errorLevel="1"
-                >
-                        <projectFiles>
-                            <directory name="src" />
-                        </projectFiles>
-                        <plugins>
-                            <plugin filename="%s/examples/plugins/StringChecker.php" />
-                        </plugins>
-                    </psalm>',
-                    __DIR__ . '/../..'
-                )
-            )
+            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -1010,24 +1009,23 @@ class PluginTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
 
+        /** @var non-empty-string $xml */
+        $xml = sprintf(
+            '<?xml version="1.0"?>
+            <psalm
+            errorLevel="1"
+        >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <plugins>
+                    <plugin filename="%s/does-not-exist/plugins/StringChecker.php" />
+                </plugins>
+            </psalm>',
+            __DIR__ . '/..'
+        );
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                sprintf(
-                    '<?xml version="1.0"?>
-                    <psalm
-                    errorLevel="1"
-                >
-                        <projectFiles>
-                            <directory name="src" />
-                        </projectFiles>
-                        <plugins>
-                            <plugin filename="%s/does-not-exist/plugins/StringChecker.php" />
-                        </plugins>
-                    </psalm>',
-                    __DIR__ . '/..'
-                )
-            )
+            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -1158,7 +1156,7 @@ class PluginTest extends TestCase
         $this->project_analyzer->trackTaintedInputs();
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/TaintedHtml/');
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());
     }
