@@ -69,6 +69,11 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $class_constant_ids = [];
+
+    /**
+     * @var array<string>
+     */
     protected $var_names = [];
 
     /**
@@ -326,6 +331,13 @@ class FileFilter
             }
         }
 
+        if (isset($config['referencedConstant']) && is_iterable($config['referencedConstant'])) {
+            /** @var array $referenced_constant */
+            foreach ($config['referencedConstant'] as $referenced_constant) {
+                $filter->class_constant_ids[] = strtolower((string) ($referenced_constant['name'] ?? ''));
+            }
+        }
+
         if (isset($config['referencedVariable']) && is_iterable($config['referencedVariable'])) {
             /** @var array $referenced_variable */
             foreach ($config['referencedVariable'] as $referenced_variable) {
@@ -397,6 +409,14 @@ class FileFilter
             /** @var SimpleXMLElement $referenced_property */
             foreach ($e->referencedProperty as $referenced_property) {
                 $config['referencedProperty'][]['name'] = strtolower((string)$referenced_property['name']);
+            }
+        }
+
+        if ($e->referencedConstant) {
+            $config['referencedConstant'] = [];
+            /** @var SimpleXMLElement $referenced_constant */
+            foreach ($e->referencedConstant as $referenced_constant) {
+                $config['referencedConstant'][]['name'] = strtolower((string)$referenced_constant['name']);
             }
         }
 
@@ -531,6 +551,11 @@ class FileFilter
     public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
+    }
+
+    public function allowsClassConstant(string $constant_id): bool
+    {
+        return in_array(strtolower($constant_id), $this->class_constant_ids, true);
     }
 
     public function allowsVariable(string $var_name): bool

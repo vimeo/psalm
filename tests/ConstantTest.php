@@ -619,6 +619,8 @@ class ConstantTest extends TestCase
 
                     class Clazz {
                         /**
+                         * @var 0|1
+                         *
                          * @psalm-suppress RedundantCondition
                          */
                         const cons2 = (cons1) ? 1 : 0;
@@ -1293,6 +1295,30 @@ class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'classConstSuppress' => [
+                '<?php
+                    class Foo
+                    {
+                        /**
+                         * @psalm-suppress InvalidConstantAssignmentValue
+                         *
+                         * @var int
+                         */
+                        public const BAR = "bar";
+                    }
+                ',
+            ],
+            'spreadEmptyArray' => [
+                '<?php
+                    class A {
+                        public const ARR = [];
+                    }
+
+                    /** @param array<never, never> $arg */
+                    function foo(array $arg): void {}
+                    foo([...A::ARR]);
+                ',
+            ],
         ];
     }
 
@@ -1641,6 +1667,28 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'UnresolvableConstant',
+            ],
+            'invalidConstantAssignmentType' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        public const BAR = "bar";
+                    }
+                ',
+                'error_message' => "InvalidConstantAssignmentValue",
+            ],
+            'invalidConstantAssignmentTypeResolvedLate' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        public const BAR = "bar" . self::BAZ;
+                        public const BAZ = "baz";
+                        public const BARBAZ = self::BAR . self::BAZ;
+                    }
+                ',
+                'error_message' => "InvalidConstantAssignmentValue",
             ],
         ];
     }

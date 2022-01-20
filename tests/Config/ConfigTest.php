@@ -443,6 +443,11 @@ class ConfigTest extends TestCase
                                 <referencedVariable name="a" />
                             </errorLevel>
                         </UndefinedGlobalVariable>
+                        <InvalidConstantAssignmentValue>
+                            <errorLevel type="suppress">
+                                <referencedConstant name="Psalm\Bodger::FOO" />
+                            </errorLevel>
+                        </InvalidConstantAssignmentValue>
                     </issueHandlers>
                 </psalm>'
             )
@@ -587,6 +592,14 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
                 'b'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClassConstant(
+                'InvalidConstantAssignmentValue',
+                'Psalm\Bodger::FOO'
             )
         );
     }

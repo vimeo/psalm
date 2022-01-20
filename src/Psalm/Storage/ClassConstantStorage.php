@@ -62,6 +62,11 @@ class ClassConstantStorage
     public $attributes = [];
 
     /**
+     * @var array<int, string>
+     */
+    public $suppressed_issues = [];
+
+    /**
      * @var ?string
      */
     public $description;

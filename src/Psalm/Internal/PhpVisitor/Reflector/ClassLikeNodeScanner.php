@@ -1270,8 +1270,10 @@ class ClassLikeNodeScanner
             );
 
             $type_location = null;
+            $suppressed_issues = [];
             if ($var_comment !== null && $var_comment->type !== null) {
                 $const_type = $var_comment->type;
+                $suppressed_issues = $var_comment->suppressed_issues;
 
                 if ($var_comment->type_start !== null
                     && $var_comment->type_end !== null
@@ -1301,6 +1303,7 @@ class ClassLikeNodeScanner
                     $const->name
                 )
             );
+            $constant_storage->suppressed_issues = $suppressed_issues;
 
             $constant_storage->type_location = $type_location;
 

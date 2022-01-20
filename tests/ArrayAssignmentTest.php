@@ -1514,9 +1514,8 @@ class ArrayAssignmentTest extends TestCase
                     $y = [];
 
                     $x = [...$x, ...$y];
-
-                    $x ? 1 : 0;
                 ',
+                'assertions' => ['$x' => 'array<never, never>']
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
