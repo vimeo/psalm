@@ -56,9 +56,7 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    public function getAssertionString()
-
-    /** @psalm-mutation-free */: string
+    public function getAssertionString(): string
     {
         return 'iterable';
     }

@@ -409,9 +409,7 @@ class TKeyedArray extends Atomic
         return true;
     }
 
-    public function getAssertionString()
-
-    /** @psalm-mutation-free */: string
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

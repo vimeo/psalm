@@ -97,9 +97,7 @@ class TKeyOfClassConstant extends Scalar
         return 'key-of<\\' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    public function getAssertionString()
-
-    /** @psalm-mutation-free */: string
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

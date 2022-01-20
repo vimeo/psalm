@@ -23,9 +23,7 @@ class TCallableString extends TNonFalsyString
         return false;
     }
 
-    public function getAssertionString()
-
-    /** @psalm-mutation-free */: string
+    public function getAssertionString(): string
     {
         return 'string';
     }

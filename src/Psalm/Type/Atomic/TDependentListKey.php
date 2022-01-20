@@ -34,9 +34,7 @@ class TDependentListKey extends TInt implements DependentType
         return $this->var_id;
     }
 
-    public function getAssertionString()
-
-    /** @psalm-mutation-free */: string
+    public function getAssertionString(): string
     {
         return 'int';
     }
