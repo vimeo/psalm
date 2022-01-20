@@ -38,6 +38,7 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_push;
 use function array_values;
 use function count;
 use function get_class;
