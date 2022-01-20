@@ -254,7 +254,7 @@ class ClassConstFetchAnalyzer
                     $class_visibility,
                     $statements_analyzer,
                     [],
-                    $stmt->class->parts[0] === "self"
+                    $stmt->class->parts[0] === "static"
                 );
             } catch (InvalidArgumentException $_) {
                 return true;

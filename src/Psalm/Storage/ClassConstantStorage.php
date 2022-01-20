@@ -69,10 +69,11 @@ class ClassConstantStorage
     /**
      * @param ClassLikeAnalyzer::VISIBILITY_* $visibility
      */
-    public function __construct(?Union $type, int $visibility, ?CodeLocation $location)
+    public function __construct(?Union $type, ?Union $inferred_type, int $visibility, ?CodeLocation $location)
     {
         $this->visibility = $visibility;
         $this->location = $location;
         $this->type = $type;
+        $this->inferred_type = $inferred_type;
     }
 }

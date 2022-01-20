@@ -1633,7 +1633,7 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = [],
-        bool $static_binding = false
+        bool $late_static_binding = true
     ): ?Union {
         $class_name = strtolower($class_name);
 
@@ -1671,7 +1671,7 @@ class ClassLikes
                 }
             }
 
-            return $static_binding ? $constant_storage->inferred_type : $constant_storage->type;
+            return $late_static_binding ? $constant_storage->type : ($constant_storage->inferred_type ?? null);
         } elseif (isset($storage->enum_cases[$constant_name])) {
             return new Union([new TEnumCase($storage->name, $constant_name)]);
         }

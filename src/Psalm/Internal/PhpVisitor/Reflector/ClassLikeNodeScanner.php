@@ -1290,6 +1290,7 @@ class ClassLikeNodeScanner
 
             $storage->constants[$const->name->name] = $constant_storage = new ClassConstantStorage(
                 $const_type,
+                $inferred_type,
                 $stmt->isProtected()
                     ? ClassLikeAnalyzer::VISIBILITY_PROTECTED
                     : ($stmt->isPrivate()
@@ -1301,7 +1302,6 @@ class ClassLikeNodeScanner
                 )
             );
 
-            $constant_storage->inferred_type = $inferred_type;
             $constant_storage->type_location = $type_location;
 
             $constant_storage->stmt_location = new CodeLocation(

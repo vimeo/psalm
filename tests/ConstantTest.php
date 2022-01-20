@@ -10,6 +10,38 @@ class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
+    // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
+    // {
+    //     $this->expectException(CodeException::class);
+    //     $this->expectExceptionMessage("PossiblyUndefinedIntArrayOffset");
+
+    //     $this->testConfig->ensure_array_int_offsets_exist = true;
+
+    //     $file_path = getcwd() . '/src/somefile.php';
+
+    //     $this->addFile(
+    //         $file_path,
+    //         '<?php
+    //             class Foo
+    //             {
+    //                 /** @var array<int, int> */
+    //                 public const CONST = [1, 2, 3];
+
+    //                 /**
+    //                  * @param key-of<self::CONST> $key
+    //                  */
+    //                 public function bar(int $key): int
+    //                 {
+    //                     return static::CONST[$key];
+    //                 }
+    //             }
+    //         '
+    //     );
+
+    //     $this->analyzeFile($file_path, new Context());
+    // }
+
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>, php_version?: string}>
      */
@@ -1609,24 +1641,6 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'UnresolvableConstant',
-            ],
-            'SKIPPED-keyofSelfConstDoesntImplyKeyofStaticConst' => [
-                '<?php
-                    class Foo
-                    {
-                        /** @var array<int, int> */
-                        public const CONST = [1, 2, 3];
-
-                        /**
-                         * @param key-of<self::CONST> $key
-                         */
-                        public function bar(int $key): int
-                        {
-                            return static::CONST[$key];
-                        }
-                    }
-                ',
-                'error_message' => 'MixedArrayAccess',
             ],
         ];
     }

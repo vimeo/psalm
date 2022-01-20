@@ -30,6 +30,9 @@ use function explode;
 use function gettype;
 use function implode;
 use function in_array;
+use function is_float;
+use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function strtolower;
@@ -510,6 +513,37 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             default:
                 return Type::getMixed();
         }
+    }
+
+    /**
+     * Gets the Psalm literal type from a particular value
+     *
+     * @param array|scalar|null $value
+     *
+     */
+    public static function getLiteralTypeFromValue($value): Type\Union
+    {
+        if (is_string($value)) {
+            return Type::getString($value);
+        }
+
+        if (is_int($value)) {
+            return Type::getInt(false, $value);
+        }
+
+        if (is_float($value)) {
+            return Type::getFloat($value);
+        }
+
+        if ($value === false) {
+            return Type::getFalse();
+        }
+
+        if ($value === true) {
+            return Type::getTrue();
+        }
+
+        return Type::getNull();
     }
 
     /**
