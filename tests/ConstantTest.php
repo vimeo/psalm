@@ -1266,7 +1266,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'selfConstUsesInferredType' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var string */
@@ -1283,7 +1283,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'typedClassConst' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var string */
@@ -1297,7 +1297,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'classConstSuppress' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /**
@@ -1310,7 +1310,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'spreadEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public const ARR = [];
                     }
@@ -1602,7 +1602,7 @@ class ConstantTest extends TestCase
                 'php_version' => '8.1',
             ],
             'returnValueofNonExistantConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public const BAR = ["bar"];
@@ -1619,7 +1619,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'UnresolvableConstant',
             ],
             'returnValueofStaticConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public const BAR = ["bar"];
@@ -1636,7 +1636,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'UnresolvableConstant',
             ],
             'takeKeyofNonExistantConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public const BAR = ["bar"];
@@ -1653,7 +1653,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'UnresolvableConstant',
             ],
             'takeKeyofStaticConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public const BAR = ["bar"];
@@ -1670,7 +1670,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'UnresolvableConstant',
             ],
             'invalidConstantAssignmentType' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var int */
@@ -1680,7 +1680,7 @@ class ConstantTest extends TestCase
                 'error_message' => "InvalidConstantAssignmentValue",
             ],
             'invalidConstantAssignmentTypeResolvedLate' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /** @var int */

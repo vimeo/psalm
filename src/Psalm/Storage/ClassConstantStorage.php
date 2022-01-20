@@ -60,7 +60,6 @@ class ClassConstantStorage
 
     /**
      * @var list<AttributeStorage>
-     * @psalm-suppress PossiblyUnusedProperty
      */
     public $attributes = [];
 
