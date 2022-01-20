@@ -246,7 +246,7 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::detectThreads($options, $in_ci);
+        $threads = self::useThreads($options, $config, $in_ci);
 
         self::emitMacPcreWarning($options, $threads);
 
@@ -909,12 +909,14 @@ final class Psalm
         }
     }
 
-    private static function detectThreads(array $options, bool $in_ci): int
+    private static function detectThreads(array $options, Config $config, bool $in_ci): int
     {
         if (isset($options['threads'])) {
             $threads = (int)$options['threads'];
         } elseif (isset($options['debug']) || $in_ci) {
             $threads = 1;
+        } elseif ($config->threads) {
+            $threads = $config->threads;
         } else {
             $threads = max(1, ProjectAnalyzer::getCpuCount() - 1);
         }
@@ -1169,5 +1171,16 @@ final class Psalm
                 )
             );
         }
+    }
+
+    private static function useThreads(array $options, bool $in_ci, Config $config): int
+    {
+        $threads = self::detectThreads($options, $in_ci);
+
+        if ($config->threads && $config->threads<$threads) {
+            $threads = $config->threads;
+        }
+
+        return $threads;
     }
 }
