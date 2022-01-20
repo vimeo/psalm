@@ -1143,10 +1143,8 @@ class AssertionReconciler extends Reconciler
         $value = $assertion_type->value;
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([new TLiteralString($value)]);
+        $literal_asserted_type_string = new Union([clone $assertion_type]);
         $literal_asserted_type_string->from_docblock = $existing_var_type->from_docblock;
-        $literal_asserted_type_classstring = new Union([new TLiteralClassString($value)]);
-        $literal_asserted_type_classstring->from_docblock = $existing_var_type->from_docblock;
 
         $compatible_string_type = self::getCompatibleStringType(
             $existing_var_type,
@@ -1179,18 +1177,10 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                if ($assertion_type instanceof TLiteralClassString) {
-                    return $literal_asserted_type_classstring;
-                }
-
                 return $literal_asserted_type_string;
             }
 
             if ($existing_var_atomic_type instanceof TString && !$existing_var_atomic_type instanceof TLiteralString) {
-                if ($assertion_type instanceof TLiteralClassString) {
-                    return $literal_asserted_type_classstring;
-                }
-
                 return $literal_asserted_type_string;
             }
 
@@ -1206,10 +1196,6 @@ class AssertionReconciler extends Reconciler
                 }
 
                 if ($existing_var_atomic_type->as->hasString()) {
-                    if ($assertion_type instanceof TLiteralClassString) {
-                        return $literal_asserted_type_classstring;
-                    }
-
                     return $literal_asserted_type_string;
                 }
 
