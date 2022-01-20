@@ -305,14 +305,17 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentStringConcat' => [
                 'code' => '<?php
                     class A {
+                        /** @var non-empty-string */
                         public const STR = "a";
                     }
 
                     class B extends A {
+                        /** @var non-empty-string */
                         public const STR = parent::STR . "b";
                     }
 
                     class C extends B {
+                        /** @var non-empty-string */
                         public const STR = parent::STR . "c";
                     }
 

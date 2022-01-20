@@ -1633,7 +1633,7 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = [],
-        bool $late_static_binding = true
+        bool $late_static_binding = false
     ): ?Union {
         $class_name = strtolower($class_name);
 
