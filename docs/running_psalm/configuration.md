@@ -402,8 +402,7 @@ Allows you to hard-code a serializer for Psalm to use when caching data. By defa
         threads="[int]"
 >
 ```
-Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will only be applied if it is lower than the number of threads Psalm would natively use (i.e. you cannot override other settings that force threads=1 or utilise more threads than detected on the machine)
-
+Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
 ## Project settings
 
