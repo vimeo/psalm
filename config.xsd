@@ -458,6 +458,7 @@
             <xs:element name="UnnecessaryVarAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnresolvableConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeGenericInstantiation" type="IssueHandlerType" minOccurs="0" />

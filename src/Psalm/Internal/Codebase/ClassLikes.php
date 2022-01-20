@@ -1632,7 +1632,8 @@ class ClassLikes
         string $constant_name,
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
-        array $visited_constant_ids = []
+        array $visited_constant_ids = [],
+        bool $static_binding = false,
     ): ?Union {
         $class_name = strtolower($class_name);
 
@@ -1659,15 +1660,18 @@ class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
-                $constant_storage->type = new Union([ConstantTypeResolver::resolve(
+                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
                     $this,
                     $constant_storage->unresolved_node,
                     $statements_analyzer,
                     $visited_constant_ids
                 )]);
+                if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
+                    $constant_storage->type = $constant_storage->inferred_type;
+                }
             }
 
-            return $constant_storage->type;
+            return $static_binding ? $constant_storage->inferred_type : $constant_storage->type;
         } elseif (isset($storage->enum_cases[$constant_name])) {
             return new Union([new TEnumCase($storage->name, $constant_name)]);
         }

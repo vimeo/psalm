@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type;
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -347,7 +348,11 @@ class TypeExpander
                 $return_type->fq_classlike_name = $self_class;
             }
 
-            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+            if ($evaluate_class_constants) {
+                if (!$codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+                    throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
+                }
+
                 try {
                     $class_constant_type = $codebase->classlikes->getClassConstantType(
                         $return_type->fq_classlike_name,
@@ -374,6 +379,8 @@ class TypeExpander
                             return array_values($const_type_atomic->type_params[1]->getAtomicTypes());
                         }
                     }
+                } else {
+                    throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
                 }
             }
 

@@ -1652,6 +1652,11 @@ class SimpleAssertionReconciler extends Reconciler
     ): Union {
         $new_var_type = clone $assertion->type;
 
+        if ($new_var_type->isSingle() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
+            // Can't do assertion on const with non-literal type
+            return $existing_var_type;
+        }
+
         $intersection = Type::intersectUnionTypes($new_var_type, $existing_var_type, $codebase);
 
         if ($intersection === null) {

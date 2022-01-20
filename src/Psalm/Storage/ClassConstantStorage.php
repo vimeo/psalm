@@ -9,10 +9,26 @@ use Psalm\Type\Union;
 
 class ClassConstantStorage
 {
+    use CustomMetadataTrait;
+
     /**
+     * @var ?CodeLocation
+     */
+    public $type_location;
+
+    /**
+     * The type from an annotation, or the inferred type if no annotation exists.
+     *
      * @var ?Union
      */
     public $type;
+
+    /**
+     * The type inferred from the value.
+     *
+     * @var ?Union
+     */
+    public $inferred_type;
 
     /**
      * @var ClassLikeAnalyzer::VISIBILITY_*

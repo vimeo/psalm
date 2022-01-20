@@ -252,7 +252,9 @@ class ClassConstFetchAnalyzer
                     $fq_class_name,
                     $stmt->name->name,
                     $class_visibility,
-                    $statements_analyzer
+                    $statements_analyzer,
+                    [],
+                    $stmt->class->parts[0] === "self"
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
@@ -378,7 +380,7 @@ class ClassConstFetchAnalyzer
                 );
             }
 
-            if ($first_part_lc !== 'static' || $const_class_storage->final) {
+            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock) {
                 $stmt_type = clone $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);

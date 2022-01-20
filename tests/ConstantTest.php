@@ -1230,6 +1230,37 @@ class ConstantTest extends TestCase
                     Reconciler::reconcileKeyedTypes();
                 ',
             ],
+            'selfConstUsesInferredType' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        public const BAR = "bar";
+
+                        /**
+                         * @return "bar"
+                         */
+                        public function bar(): string
+                        {
+                            return self::BAR;
+                        }
+                    }
+                ',
+            ],
+            'typedClassConst' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        public const BAR = "bar";
+
+                        public function bar(): string
+                        {
+                            return static::BAR;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
@@ -1510,6 +1541,92 @@ class ConstantTest extends TestCase
                 'error_message' => 'DuplicateConstant',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'returnValueofNonExistantConstant' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @return value-of<self::BAT>
+                         */
+                        public function bar(): string
+                        {
+                            return self::BAR[0];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'returnValueofStaticConstant' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @return value-of<static::BAR>
+                         */
+                        public function bar(): string
+                        {
+                            return static::BAR[0];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'takeKeyofNonExistantConstant' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @param key-of<self::BAT> $key
+                         */
+                        public function bar(int $key): string
+                        {
+                            return static::BAR[$key];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'takeKeyofStaticConstant' => [
+                '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @param key-of<static::BAR> $key
+                         */
+                        public function bar(int $key): string
+                        {
+                            return static::BAR[$key];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'SKIPPED-keyofSelfConstDoesntImplyKeyofStaticConst' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var array<int, int> */
+                        public const CONST = [1, 2, 3];
+
+                        /**
+                         * @param key-of<self::CONST> $key
+                         */
+                        public function bar(int $key): int
+                        {
+                            return static::CONST[$key];
+                        }
+                    }
+                ',
+                'error_message' => 'MixedArrayAccess',
             ],
         ];
     }
