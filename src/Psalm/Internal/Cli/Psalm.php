@@ -1338,7 +1338,8 @@ final class Psalm
         HELP;
     }
 
-    private static function useThreads(array $options, bool $in_ci, Config $config): int{
+    private static function useThreads(array $options, bool $in_ci, Config $config): int
+    {
         $threads = self::detectThreads($options, $in_ci);
 
         if ($config->threads && $config->threads<$threads) {
