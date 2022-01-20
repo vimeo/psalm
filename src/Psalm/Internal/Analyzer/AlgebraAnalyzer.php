@@ -79,24 +79,6 @@ class AlgebraAnalyzer
 
         // remove impossible types
         foreach ($negated_formula2 as $negated_clause_2) {
-            if (count($negated_formula2) === 1) {
-                foreach ($negated_clause_2->possibilities as $key => $values) {
-                    if (count($values) > 1
-                        && !isset($new_assigned_var_ids[$key])
-                        && count(array_unique($values)) < count($values)
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                new CodeLocation($statements_analyzer, $stmt),
-                                null
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        );
-                    }
-                }
-            }
-
             if (!$negated_clause_2->reconcilable || $negated_clause_2->wedge) {
                 continue;
             }
