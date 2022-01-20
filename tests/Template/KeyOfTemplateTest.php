@@ -54,7 +54,7 @@ class KeyOfTemplateTest extends TestCase
                     }
                 '
             ],
-            'SKIP-acceptsIfArrayKeyExistsFn' => [
+            'SKIPPED-acceptsIfArrayKeyExistsFn' => [
                 'code' => '<?php
                     /**
                      * @template T of array
