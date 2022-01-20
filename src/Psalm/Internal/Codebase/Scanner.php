@@ -80,7 +80,7 @@ use const PHP_EOL;
 /**
  * @internal
  *
- * Contains methods that aid in the scanning of Psalm's codebase>
+ * Contains methods that aid in the scanning of Psalm's codebase
  */
 class Scanner
 {
