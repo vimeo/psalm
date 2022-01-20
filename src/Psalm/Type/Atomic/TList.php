@@ -197,13 +197,13 @@ class TList extends Atomic
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
-        if (!$exact || $this->type_param->isMixed()) {
+        if ($this->type_param->isMixed()) {
             return 'list';
         }
 
-        return $this->toNamespacedString(null, [], null, false);
+        return $this->getId();
     }
 
     public function getChildNodes(): array

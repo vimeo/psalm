@@ -98,7 +98,9 @@ class TGenericObject extends TNamedObject
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString()
+
+    /** @psalm-mutation-free */: string
     {
         return $this->value;
     }

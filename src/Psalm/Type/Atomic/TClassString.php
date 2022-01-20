@@ -63,7 +63,9 @@ class TClassString extends TString
             . '-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString()
+
+    /** @psalm-mutation-free */: string
     {
         return 'class-string';
     }

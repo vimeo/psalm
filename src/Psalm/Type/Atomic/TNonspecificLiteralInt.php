@@ -18,7 +18,7 @@ class TNonspecificLiteralInt extends TInt
         return false;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'int';
     }

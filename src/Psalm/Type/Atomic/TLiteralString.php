@@ -35,7 +35,7 @@ class TLiteralString extends TString
         return '"' . $no_newline_value . '"';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'string(' . $this->value . ')';
     }

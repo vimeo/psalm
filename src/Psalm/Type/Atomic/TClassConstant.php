@@ -37,7 +37,9 @@ class TClassConstant extends Atomic
         return $this->fq_classlike_name . '::' . $this->const_name;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString()
+
+    /** @psalm-mutation-free */: string
     {
         return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
     }

@@ -22,7 +22,7 @@ class IsLooselyEqual extends Assertion
 
     public function __toString(): string
     {
-        return '~' . $this->type->getAssertionString(true);
+        return '~' . $this->type->getAssertionString();
     }
 
     /** @psalm-mutation-free */

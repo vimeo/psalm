@@ -72,7 +72,7 @@ class TValueOfClassConstant extends Atomic
             . '>::' . $this->const_name . '>';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

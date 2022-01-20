@@ -57,7 +57,9 @@ class TLiteralClassString extends TLiteralString
         return $this->value . '::class';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString()
+
+    /** @psalm-mutation-free */: string
     {
         return $this->getKey();
     }
