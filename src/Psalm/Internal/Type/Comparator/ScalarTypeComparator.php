@@ -295,8 +295,7 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TArrayKey
             && ($input_type_part instanceof TInt
-                || $input_type_part instanceof TString
-                || $input_type_part instanceof TTemplateKeyOf)
+                || $input_type_part instanceof TString)
         ) {
             return true;
         }

@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class KeyOfArrayTest extends TestCase
+class ValueOfArrayTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -18,50 +18,50 @@ class KeyOfArrayTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'keyOfListClassConstant' => [
+            'valueOfListClassConstant' => [
                 'code' => '<?php
                     class A {
                         const FOO = [
                             "bar"
                         ];
-                        /** @return key-of<A::FOO> */
-                        public function getKey() {
-                            return 0;
-                        }
-                    }
-                '
-            ],
-            'keyOfAssociativeArrayClassConstant' => [
-                'code' => '<?php
-                    class A {
-                        const FOO = [
-                            "bar" => 42
-                        ];
-                        /** @return key-of<A::FOO> */
+                        /** @return value-of<A::FOO> */
                         public function getKey() {
                             return "bar";
                         }
                     }
                 '
             ],
-            'allKeysOfAssociativeArrayPossible' => [
+            'valueOfAssociativeArrayClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        const FOO = [
+                            "bar" => 42
+                        ];
+                        /** @return value-of<A::FOO> */
+                        public function getValue() {
+                            return 42;
+                        }
+                    }
+                '
+            ],
+            'allValuesOfAssociativeArrayPossible' => [
                 'code' => '<?php
                     class A {
                         const FOO = [
                             "bar" => 42,
                             "adams" => 43,
                         ];
-                        /** @return key-of<A::FOO> */
-                        public function getKey(bool $adams) {
+                        /** @return value-of<A::FOO> */
+                        public function getValue(bool $adams) {
                             if ($adams) {
-                                return "adams";
+                                return 42;
                             }
-                            return "bar";
+                            return 43;
                         }
                     }
                 '
             ],
-            'keyOfAsArray' => [
+            'valueOfAsArray' => [
                 'code' => '<?php
                     class A {
                         /** @var array */
@@ -69,29 +69,29 @@ class KeyOfArrayTest extends TestCase
                             "bar" => 42,
                             "adams" => 43,
                         ];
-                        /** @return key-of<self::FOO>[] */
-                        public function getKey() {
-                            return array_keys(self::FOO);
+                        /** @return value-of<self::FOO>[] */
+                        public function getValues() {
+                            return array_values(self::FOO);
                         }
                     }
                 '
             ],
-            'keyOfArrayLiteral' => [
+            'valueOfArrayLiteral' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<array<int, string>>
+                     * @return value-of<array<int, string>>
                      */
                     function getKey() {
-                        return 32;
+                        return "42";
                     }
                 '
             ],
-            'keyOfUnionArrayLiteral' => [
+            'valueOfUnionArrayLiteral' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<array<int, string>|array<float, string>>
+                     * @return value-of<array<array-key, int>|array<string, float>>
                      */
-                    function getKey(bool $asFloat) {
+                    function getValue(bool $asFloat) {
                         if ($asFloat) {
                             return 42.0;
                         }
@@ -99,40 +99,30 @@ class KeyOfArrayTest extends TestCase
                     }
                 '
             ],
-            'keyOfUnionListAndKeyedArray' => [
-                'code' => '<?php
-                    /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
-                     */
-                    function getKey(bool $asInt) {
-                        if ($asInt) {
-                            return 42;
-                        }
-                        return "a";
-                    }
-                ',
-            ],
-            'keyOfListArrayLiteral' => [
-                'code' => '<?php
-                    /**
-                     * @return key-of<list<string>>
-                     */
-                    function getKey() {
-                        return 42;
-                    }
-                '
-            ],
-            'keyOfStringArrayConformsToString' => [
+            'valueOfStringArrayConformsToString' => [
                 'code' => '<?php
                     /**
                      * @return string
                      */
                     function getKey2() {
-                        /** @var key-of<array<string, string>>[] */
+                        /** @var value-of<array<string>>[] */
                         $keys2 = ["foo"];
                         return $keys2[0];
                     }
                 '
+            ],
+            'acceptLiteralIntInValueOfUnionLiteralInts' => [
+                'code' => '<?php
+                    /**
+                     * @return value-of<list<0|1|2>|array{0: 3, 1: 4}>
+                     */
+                    function getValue(int $i) {
+                        if ($i >= 0 && $i <= 4) {
+                            return $i;
+                        }
+                        return 0;
+                    }
+                ',
             ],
         ];
     }
@@ -143,67 +133,64 @@ class KeyOfArrayTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'onlyDefinedKeysOfAssociativeArray' => [
+            'onlyDefinedValuesOfConstantList' => [
                 'code' => '<?php
                     class A {
                         const FOO = [
-                            "bar" => 42
+                            "bar"
                         ];
                         /** @return key-of<A::FOO> */
-                        public function getKey() {
+                        public function getValue() {
                             return "adams";
                         }
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
-            'keyOfArrayLiteral' => [
+            'noIntForValueOfStringArrayLiteral' => [
                 'code' => '<?php
                     class A {
                         /**
-                         * @return key-of<array<int, string>>
+                         * @return value-of<array<int, string>>
                          */
-                        public function getKey() {
-                            return "foo";
+                        public function getValue() {
+                            return 42;
                         }
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
-            'onlyIntAllowedForKeyOfList' => [
+            'noStringForValueOfIntList' => [
                 'code' => '<?php
                     class A {
                         /**
-                         * @return key-of<list<string>>
+                         * @return value-of<list<int>>
                          */
-                        public function getKey() {
+                        public function getValue() {
                             return "42";
                         }
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
-            'noStringAllowedInKeyOfIntFloatArray' => [
+            'noOtherStringAllowedForValueOfKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<array<int, string>|array<float, string>>
+                     * @return value-of<array{a: "foo", b: "bar"}>
                      */
-                    function getKey(bool $asFloat) {
-                        if ($asFloat) {
-                            return 42.0;
-                        }
-                        return "42";
+                    function getValue() {
+                        return "adams";
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
-            'noLiteralCAllowedInKeyOfUnionListAndKeyedArray' => [
+            'noOtherIntAllowedInValueOfUnionLiteralInts' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
+                     * @return value-of<list<0|1|2>|array{0: 3, 1: 4}>
                      */
-                    function getKey() {
-                        return "c";
+                    function getValue() {
+                        return 5;
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'

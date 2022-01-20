@@ -54,22 +54,21 @@ class KeyOfTemplateTest extends TestCase
                     }
                 '
             ],
-            // Currently not works!
-            // 'acceptsIfArrayKeyExistsFn' => [
-            //     'code' => '<?php
-            //         /**
-            //          * @template T of array
-            //          * @param T $array
-            //          * @return key-of<T>|null
-            //          */
-            //         function getKey(string $key, $array) {
-            //             if (array_key_exists($key, $array)) {
-            //                 return $key;
-            //             }
-            //             return null;
-            //         }
-            //     '
-            // ],
+            'SKIP-acceptsIfArrayKeyExistsFn' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return key-of<T>|null
+                     */
+                    function getKey(string $key, $array) {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return null;
+                    }
+                '
+            ],
         ];
     }
 
@@ -87,7 +86,7 @@ class KeyOfTemplateTest extends TestCase
                      * @return key-of<T>
                      */
                     function getKey($array) {
-                        return \'foo\';
+                        return "foo";
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'

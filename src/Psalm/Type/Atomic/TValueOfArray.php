@@ -3,19 +3,17 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 /**
  * Represents a value of an array.
  */
 class TValueOfArray extends Atomic
 {
-    /** @var TClassConstant|TKeyedArray|TList|TArray */
+    /** @var Union */
     public $type;
 
-    /**
-     * @param TClassConstant|TKeyedArray|TList|TArray $type
-     */
-    public function __construct(Atomic $type)
+    public function __construct(Union $type)
     {
         $this->type = $type;
     }
@@ -45,5 +43,19 @@ class TValueOfArray extends Atomic
     public function getAssertionString(): string
     {
         return 'mixed';
+    }
+
+    public static function isViableTemplateType(Union $template_type): bool
+    {
+        foreach ($template_type->getAtomicTypes() as $type) {
+            if (!$type instanceof TArray
+                && !$type instanceof TClassConstant
+                && !$type instanceof TKeyedArray
+                && !$type instanceof TList
+            ) {
+                return false;
+            }
+        }
+        return true;
     }
 }

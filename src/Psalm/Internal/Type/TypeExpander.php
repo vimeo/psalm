@@ -887,9 +887,14 @@ class TypeExpander
         bool $evaluate_class_constants,
         bool $throw_on_unresolvable_constant
     ): array {
-        $type_param = $return_type->type;
+        // Expand class constants to their atomics
+        $type_atomics = [];
+        foreach ($return_type->type->getAtomicTypes() as $type_param) {
+            if (!$evaluate_class_constants || !$type_param instanceof TClassConstant) {
+                array_push($type_atomics, $type_param);
+                continue;
+            }
 
-        if ($evaluate_class_constants && $type_param instanceof TClassConstant) {
             if ($type_param->fq_classlike_name === 'self' && $self_class) {
                 $type_param->fq_classlike_name = $self_class;
             }
@@ -900,8 +905,9 @@ class TypeExpander
                 throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
             }
 
+            $constant_type = null;
             try {
-                $type_param = $codebase->classlikes->getClassConstantType(
+                $constant_type = $codebase->classlikes->getClassConstantType(
                     $type_param->fq_classlike_name,
                     $type_param->const_name,
                     ReflectionProperty::IS_PRIVATE
@@ -909,38 +915,44 @@ class TypeExpander
             } catch (CircularReferenceException $e) {
                 return [$return_type];
             }
-            if (!$type_param) {
+
+            if (!$constant_type
+                || (
+                    $return_type instanceof TKeyOfArray
+                    && !TKeyOfArray::isViableTemplateType($constant_type)
+                )
+                || (
+                    $return_type instanceof TValueOfArray
+                    && !TValueOfArray::isViableTemplateType($constant_type)
+                )
+            ) {
                 if ($throw_on_unresolvable_constant) {
-                    throw new UnresolvableConstantException($return_type->type->fq_classlike_name, $return_type->type->const_name);
+                    throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
                 } else {
                     return [$return_type];
                 }
             }
+
+            $type_atomics = array_merge(
+                $type_atomics,
+                $constant_type->getAtomicTypes()
+            );
         }
 
-        if (!$type_param instanceof Union) {
-            $type_param = new Union([$type_param]);
-        }
+        // Types inside union are checked on instantiation and above on
+        // expansion, currently there is no Union<T> for typing here.
+        /** @var list<TList|TKeyedArray|TArray> $type_atomics */
 
         // Merge keys/values of provided array types
         $new_return_types = [];
-        foreach ($type_param->getAtomicTypes() as $type_atomic) {
-            // Abort if any type of the param's union is invalid
-            if (!$type_atomic instanceof TKeyedArray
-                && !$type_atomic instanceof TArray
-                && !$type_atomic instanceof TList
-            ) {
-                break;
-            }
-
+        foreach ($type_atomics as $type_atomic) {
             // Transform all types to TArray if needed
             if ($type_atomic instanceof TList) {
                 $type_atomic = new TArray([
                     new Union([new TInt()]),
                     $type_atomic->type_param
                 ]);
-            }
-            if ($type_atomic instanceof TKeyedArray) {
+            } elseif ($type_atomic instanceof TKeyedArray) {
                 $type_atomic = $type_atomic->getGenericArrayType();
             }
 
@@ -958,7 +970,7 @@ class TypeExpander
             }
         }
 
-        if (empty($new_return_types)) {
+        if ($new_return_types === []) {
             return [$return_type];
         }
         return $new_return_types;

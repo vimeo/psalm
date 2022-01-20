@@ -239,7 +239,6 @@ class TemplateInferredTypeReplacer
                     : null;
 
                 if ($template_type) {
-                    $template_type = $template_type->getSingleAtomic();
                     if (TKeyOfArray::isViableTemplateType($template_type)) {
                         $keys_to_unset[] = $key;
                         $new_types[] = new TKeyOfArray(clone $template_type);

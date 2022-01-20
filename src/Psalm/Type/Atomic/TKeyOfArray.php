@@ -3,21 +3,17 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 /**
  * Represents an offset of an array.
- *
- * @psalm-type ArrayLikeTemplateType = TClassConstant|TKeyedArray|TList|TArray
  */
 class TKeyOfArray extends TArrayKey
 {
-    /** @var ArrayLikeTemplateType */
+    /** @var Union */
     public $type;
 
-    /**
-     * @param ArrayLikeTemplateType $type
-     */
-    public function __construct(Atomic $type)
+    public function __construct(Union $type)
     {
         $this->type = $type;
     }
@@ -49,14 +45,17 @@ class TKeyOfArray extends TArrayKey
         return 'mixed';
     }
 
-    /**
-     * @psalm-assert-if-true ArrayLikeTemplateType $template_type
-     */
-    public static function isViableTemplateType(Atomic $template_type): bool
+    public static function isViableTemplateType(Union $template_type): bool
     {
-        return $template_type instanceof TArray
-            || $template_type instanceof TClassConstant
-            || $template_type instanceof TKeyedArray
-            || $template_type instanceof TList;
+        foreach ($template_type->getAtomicTypes() as $type) {
+            if (!$type instanceof TArray
+                && !$type instanceof TClassConstant
+                && !$type instanceof TKeyedArray
+                && !$type instanceof TList
+            ) {
+                return false;
+            }
+        }
+        return true;
     }
 }

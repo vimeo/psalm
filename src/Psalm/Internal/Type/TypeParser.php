@@ -696,40 +696,25 @@ class TypeParser
                 );
             }
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
-
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in key-of type');
-            }
-
-            if (!TKeyOfArray::isViableTemplateType($param_union_types[0])) {
+            if (!TKeyOfArray::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be a class constant or an array'
                 );
             }
 
-            return new TKeyOfArray($param_union_types[0]);
+            return new TKeyOfArray($generic_params[0]);
         }
 
         if ($generic_type_value === 'value-of') {
             $param_name = $generic_params[0]->getId(false);
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
-
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in value-of type');
-            }
-
-            if (!$param_union_types[0] instanceof TArray
-                && !$param_union_types[0] instanceof TList
-                && !$param_union_types[0] instanceof TKeyedArray
-                && !$param_union_types[0] instanceof TClassConstant) {
+            if (!TValueOfArray::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
                     'Untemplated value-of param ' . $param_name . ' should be a class constant or an array'
                 );
             }
 
-            return new TValueOfArray($param_union_types[0]);
+            return new TValueOfArray($generic_params[0]);
         }
 
         if ($generic_type_value === 'int-mask') {

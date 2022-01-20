@@ -28,7 +28,7 @@ class ArrayKeysTest extends TestCase
             ],
             'arrayKeysOfKeyedArrayReturnsNonEmptyListOfStrings' => [
                 'code' => '<?php
-                    $keys = array_keys([\'foo\' => \'bar\']);
+                    $keys = array_keys(["foo" => "bar"]);
                 ',
                 'assertions' => [
                     '$keys' => 'non-empty-list<string>',
@@ -36,7 +36,7 @@ class ArrayKeysTest extends TestCase
             ],
             'arrayKeysOfListReturnsNonEmptyListOfInts' => [
                 'code' => '<?php
-                    $keys = array_keys([\'foo\', \'bar\']);
+                    $keys = array_keys(["foo", "bar"]);
                 ',
                 'assertions' => [
                     '$keys' => 'non-empty-list<int>',
@@ -44,7 +44,7 @@ class ArrayKeysTest extends TestCase
             ],
             'arrayKeysOfKeyedStringIntArrayReturnsNonEmptyListOfIntsOrStrings' => [
                 'code' => '<?php
-                    $keys = array_keys([\'foo\' => \'bar\', 42]);
+                    $keys = array_keys(["foo" => "bar", 42]);
                 ',
                 'assertions' => [
                     '$keys' => 'non-empty-list<int|string>',
@@ -63,10 +63,10 @@ class ArrayKeysTest extends TestCase
             'arrayKeysOfKeyedArrayConformsToCorrectLiteralStringList' => [
                 'code' => '<?php
                     /**
-                     * @return non-empty-list<\'foo\'|\'bar\'>
+                     * @return non-empty-list<"foo"|"bar">
                      */
                     function getKeys() {
-                        return array_keys([\'foo\' => 42, \'bar\' => 42]);
+                        return array_keys(["foo" => 42, "bar" => 42]);
                     }
                 '
             ],
@@ -76,7 +76,7 @@ class ArrayKeysTest extends TestCase
                      * @return non-empty-list<0|1>
                      */
                     function getKeys() {
-                        return array_keys([\'foo\', \'bar\']);
+                        return array_keys(["foo", "bar"]);
                     }
                 '
             ],
@@ -86,7 +86,7 @@ class ArrayKeysTest extends TestCase
                      * @return 0|1
                      */
                     function getKey() {
-                        return array_key_first([\'foo\', \'bar\']);
+                        return array_key_first(["foo", "bar"]);
                     }
                 '
             ],
@@ -96,7 +96,7 @@ class ArrayKeysTest extends TestCase
                      * @return 0|1
                      */
                     function getKey() {
-                        return array_key_last([\'foo\', \'bar\']);
+                        return array_key_last(["foo", "bar"]);
                     }
                 '
             ],
@@ -127,7 +127,7 @@ class ArrayKeysTest extends TestCase
                      * @return list<int>
                      */
                     function getKeys() {
-                        return array_keys([\'foo\' => 42, \'bar\' => 42]);
+                        return array_keys(["foo" => 42, "bar" => 42]);
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
