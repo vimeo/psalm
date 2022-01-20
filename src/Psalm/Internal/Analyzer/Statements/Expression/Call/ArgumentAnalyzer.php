@@ -1642,17 +1642,26 @@ class ArgumentAnalyzer
         $extension = '';
 
         // Not sure if there's a better or more robust way to do this
+        $param_types = $param_type->getAtomicTypes();
+        $input_types = $input_type->getAtomicTypes();
+
+        if (!isset($param_types['array'], $input_types['array'])) {
+            return $extension;
+        }
+
         $first_param_type = $param_type->getAtomicTypes()['array'];
         $first_input_type = $input_type->getAtomicTypes()['array'];
-        if ($first_param_type instanceof TKeyedArray && $first_input_type instanceof TKeyedArray) {
-            // There's many ways to illustrate this but this is the simplest and provides info
-            // without being too opinionated
-            $extension .= '. The differences are in the following keys: ';
-            $param_keys = array_keys($first_param_type->properties);
-            $input_keys = array_keys($first_input_type->properties);
-            $key_comparison = array_diff($param_keys, $input_keys);
-            $extension .= implode(', ', $key_comparison);
+        if (!$first_param_type instanceof TKeyedArray || !$first_input_type instanceof TKeyedArray) {
+            return $extension;
         }
+
+        // There's many ways to illustrate this but this is the simplest and provides info
+        // without being too opinionated
+        $extension .= '. The differences are in the following keys: ';
+        $param_keys = array_keys($first_param_type->properties);
+        $input_keys = array_keys($first_input_type->properties);
+        $key_comparison = array_diff($param_keys, $input_keys);
+        $extension .= implode(', ', $key_comparison);
 
         return $extension;
     }
