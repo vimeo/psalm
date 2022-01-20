@@ -249,7 +249,7 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::detectThreads($options, $in_ci);
+        $threads = self::useThreads($options, $in_ci, $config);
 
         self::emitMacPcreWarning($options, $threads);
 
@@ -1336,5 +1336,15 @@ final class Psalm
                 Run Psalm Language Server
 
         HELP;
+    }
+
+    private static function useThreads(array $options, bool $in_ci, Config $config): int{
+        $threads = self::detectThreads($options, $in_ci);
+
+        if ($config->threads && $config->threads<$threads) {
+            $threads = $config->threads;
+        }
+
+        return $threads;
     }
 }
