@@ -76,7 +76,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?Atomic $static_type,
         bool $is_intersection,
         ?string $lhs_var_id,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
@@ -440,7 +441,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $static_type,
             $lhs_var_id,
             $method_id,
-            $result
+            $result,
+            $inferred_template_result
         );
 
         $statements_analyzer->node_data = $old_node_data;

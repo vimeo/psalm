@@ -47,6 +47,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
@@ -70,7 +71,8 @@ class ExpressionAnalyzer
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
-        bool $from_stmt = false
+        bool $from_stmt = false,
+        ?TemplateResult $template_result = null
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -80,9 +82,9 @@ class ExpressionAnalyzer
             $context,
             $array_assignment,
             $global_context,
-            $from_stmt
-        ) === false
-        ) {
+            $from_stmt,
+            $template_result
+        ) === false) {
             return false;
         }
 
@@ -144,7 +146,8 @@ class ExpressionAnalyzer
         Context $context,
         bool $array_assignment,
         ?Context $global_context,
-        bool $from_stmt
+        bool $from_stmt,
+        ?TemplateResult $template_result = null
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return VariableFetchAnalyzer::analyze(
@@ -183,11 +186,11 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
-            return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context, true, $template_result);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
-            return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context, $template_result);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
@@ -295,7 +298,8 @@ class ExpressionAnalyzer
             return FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
+                $template_result
             );
         }
 

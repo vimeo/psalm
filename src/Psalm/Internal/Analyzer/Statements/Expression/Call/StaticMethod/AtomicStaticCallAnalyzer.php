@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -74,7 +75,8 @@ class AtomicStaticCallAnalyzer
         bool $ignore_nullable_issues,
         bool &$moved_call,
         bool &$has_mock,
-        bool &$has_existing_method
+        bool &$has_existing_method,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         $intersection_types = [];
 
@@ -209,7 +211,8 @@ class AtomicStaticCallAnalyzer
                 $intersection_types ?: [],
                 $fq_class_name,
                 $moved_call,
-                $has_existing_method
+                $has_existing_method,
+                $inferred_template_result
             );
         } else {
             if ($stmt->name instanceof PhpParser\Node\Expr) {
@@ -271,7 +274,8 @@ class AtomicStaticCallAnalyzer
         array $intersection_types,
         string $fq_class_name,
         bool &$moved_call,
-        bool &$has_existing_method
+        bool &$has_existing_method,
+        ?TemplateResult $inferred_template_result = null
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -829,7 +833,8 @@ class AtomicStaticCallAnalyzer
             $method_id,
             $cased_method_id,
             $class_storage,
-            $moved_call
+            $moved_call,
+            $inferred_template_result
         );
 
         return true;

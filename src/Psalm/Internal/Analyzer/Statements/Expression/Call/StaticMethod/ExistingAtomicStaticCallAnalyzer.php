@@ -62,7 +62,8 @@ class ExistingAtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         string $cased_method_id,
         ClassLikeStorage $class_storage,
-        bool &$moved_call
+        bool &$moved_call,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -184,6 +185,10 @@ class ExistingAtomicStaticCallAnalyzer
         }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
+
+        if ($inferred_template_result) {
+            $template_result->lower_bounds += $inferred_template_result->lower_bounds;
+        }
 
         if (CallAnalyzer::checkMethodArgs(
             $method_id,

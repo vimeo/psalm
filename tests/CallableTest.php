@@ -233,6 +233,290 @@ class CallableTest extends TestCase
                     '$inferred' => 'list<Foo>',
                 ],
             ],
+            'inferTemplateOfHighOrderFunctionArgByPreviousArg' => [
+                '<?php
+                    /**
+                     * @return list<int>
+                     */
+                    function getList() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template A
+                     * @template B
+                     *
+                     * @param list<A> $_items
+                     * @param callable(A): B $_ab
+                     * @return list<B>
+                     */
+                    function map(array $_items, callable $_ab) { throw new RuntimeException("???"); }
+
+                    $result = map(getList(), id());
+                ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionArgByPreviousArgInClassContext' => [
+                '<?php
+                    /**
+                     * @template A
+                     */
+                    final class ArrayList
+                    {
+                        /**
+                         * @template B
+                         *
+                         * @param callable(A): B $ab
+                         * @return ArrayList<B>
+                         */
+                        public function map(callable $ab) { throw new RuntimeException("???"); }
+                    }
+
+                    /**
+                     * @return ArrayList<int>
+                     */
+                    function getList() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id() { throw new RuntimeException("???"); }
+
+                    $result = getList()->map(id());
+                ',
+                'assertions' => [
+                    '$result' => 'ArrayList<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionFromMethodArgByPreviousArg' => [
+                '<?php
+                     final class Ops
+                     {
+                         /**
+                          * @template T
+                          * @return Closure(list<T>): T
+                          */
+                         public function flatten() { throw new RuntimeException("???"); }
+                     }
+                     /**
+                      * @return list<list<int>>
+                      */
+                     function getList() { throw new RuntimeException("???"); }
+                     /**
+                      * @template T
+                      * @return Closure(list<T>): T
+                      */
+                     function flatten() { throw new RuntimeException("???"); }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param list<A> $_a
+                      * @param callable(A): B $_ab
+                      * @return list<B>
+                      */
+                     function map(array $_a, callable $_ab) { throw new RuntimeException("???"); }
+
+                     $ops = new Ops;
+                     $result = map(getList(), $ops->flatten());
+                 ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionFromStaticMethodArgByPreviousArg' => [
+                '<?php
+                     final class StaticOps
+                     {
+                         /**
+                          * @template T
+                          * @return Closure(list<T>): T
+                          */
+                         public static function flatten() { throw new RuntimeException("???"); }
+                     }
+                     /**
+                      * @return list<list<int>>
+                      */
+                     function getList() { throw new RuntimeException("???"); }
+                     /**
+                      * @template T
+                      * @return Closure(list<T>): T
+                      */
+                     function flatten() { throw new RuntimeException("???"); }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param list<A> $_a
+                      * @param callable(A): B $_ab
+                      * @return list<B>
+                      */
+                     function map(array $_a, callable $_ab) { throw new RuntimeException("???"); }
+
+                     $result = map(getList(), StaticOps::flatten());
+                 ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            '' => [
+                '<?php
+                     /**
+                      * @template A
+                      * @template B
+                      */
+                     final class MapOperator
+                     {
+                         /**
+                          * @param Closure(A): B $ab
+                          */
+                         public function __construct(private Closure $ab) { }
+
+                         /**
+                          * @param list<A> $a
+                          * @return list<B>
+                          */
+                         public function __invoke($a): array
+                         {
+                             $b = [];
+
+                             foreach ($a as $item) {
+                                 $b[] = ($this->ab)($item);
+                             }
+
+                             return $b;
+                         }
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param Closure(A): B $ab
+                      * @return MapOperator<A, B>
+                      */
+                     function map(Closure $ab): MapOperator
+                     {
+                         return new MapOperator($ab);
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param A $_a
+                      * @param callable(A): B $_ab
+                      * @return B
+                      */
+                     function pipe(array $_a, callable $_ab): array
+                     {
+                         throw new RuntimeException("???");
+                     }
+                     $result1 = pipe(
+                         ["1", "2", "3"],
+                         map(fn ($i) => (int) $i)
+                     );
+                     $result2 = pipe(
+                         ["1", "2", "3"],
+                         new MapOperator(fn ($i) => (int) $i)
+                     );
+                 ',
+                'assertions' => [
+                    '$result1' => 'list<int>',
+                    '$result2' => 'list<int>',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
+            'inferPipelineWithPartiallyAppliedFunctions' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param callable(T, int): bool $_predicate
+                     * @return Closure(list<T>): list<T>
+                     */
+                    function filter(callable $_predicate): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template A
+                     * @template B
+                     *
+                     * @param callable(A): B $_ab
+                     * @return Closure(list<A>): list<B>
+                     */
+                    function map(callable $_ab): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template T
+                     * @return (Closure(list<T>): (non-empty-list<T> | null))
+                     */
+                    function asNonEmptyList(): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id(): Closure { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     * @template D
+                     * @template E
+                     * @template F
+                     *
+                     * @param A $arg
+                     * @param callable(A): B $ab
+                     * @param callable(B): C $bc
+                     * @param callable(C): D $cd
+                     * @param callable(D): E $de
+                     * @param callable(E): F $ef
+                     * @return F
+                     */
+                    function pipe4(mixed $arg, callable $ab, callable $bc, callable $cd, callable $de, callable $ef): mixed
+                    {
+                        return $ef($de($cd($bc($ab($arg)))));
+                    }
+
+                    /**
+                     * @template TFoo of string
+                     * @template TBar of bool
+                     */
+                    final class Item
+                    {
+                        /**
+                         * @param TFoo $foo
+                         * @param TBar $bar
+                         */
+                        public function __construct(
+                           public string $foo,
+                           public bool $bar,
+                       ) { }
+                    }
+
+                    /**
+                     * @return list<Item>
+                     */
+                    function getList(): array { return []; }
+
+                    $result = pipe4(
+                        getList(),
+                        filter(fn($i) => $i->bar),
+                        filter(fn(Item $i) => $i->foo !== "bar"),
+                        map(fn($i) => new Item("test: " . $i->foo, $i->bar)),
+                        asNonEmptyList(),
+                        id(),
+                    );',
+                'assertions' => [
+                    '$result' => 'non-empty-list<Item<string, bool>>|null',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
             'varReturnType' => [
                 'code' => '<?php
                     $add_one = function(int $a) : int {
