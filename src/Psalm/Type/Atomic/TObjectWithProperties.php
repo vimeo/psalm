@@ -145,7 +145,7 @@ class TObjectWithProperties extends TObject
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,
-                                $use_phpdoc_format
+                                false
                             ),
                         array_keys($this->properties),
                         $this->properties

@@ -1453,12 +1453,6 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                if ($assertion_type instanceof TLiteralClassString) {
-                    $assertion_type = new Union([clone $assertion_type]);
-                    $assertion_type->from_docblock = $existing_var_type->from_docblock;
-                    return $assertion_type;
-                }
-
                 $assertion_type = new Union([clone $assertion_type]);
                 $assertion_type->from_docblock = $existing_var_type->from_docblock;
                 return $assertion_type;

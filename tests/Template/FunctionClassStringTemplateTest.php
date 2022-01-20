@@ -270,7 +270,7 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @param interface-string<S> $type
                      * @return T&S
                      */
-                    function filter(object $item, string $type) {
+                    function filter($item, string $type) {
                         if (is_a($item, $type)) {
                             return $item;
                         };
