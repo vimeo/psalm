@@ -7,6 +7,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-suppress PossiblyUnusedProperty
+ */
 class ClassConstantStorage
 {
     use CustomMetadataTrait;
