@@ -8,9 +8,30 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NonEmpty;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 class ReconcilerTest extends TestCase
@@ -46,7 +67,7 @@ class ReconcilerTest extends TestCase
     /**
      * @dataProvider providerTestReconcilation
      */
-    public function testReconcilation(string $expected_type, string $assertion, string $original_type): void
+    public function testReconcilation(string $expected_type, Assertion $assertion, string $original_type): void
     {
         $reconciled = AssertionReconciler::reconcile(
             $assertion,
@@ -84,76 +105,80 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string}>
+     * @return array<string,array{string,Assertion,string}>
      */
     public function providerTestReconcilation(): array
     {
         return [
-            'notNullWithObject' => ['SomeClass', '!null', 'SomeClass'],
-            'notNullWithObjectPipeNull' => ['SomeClass', '!null', 'SomeClass|null'],
-            'notNullWithSomeClassPipeFalse' => ['SomeClass|false', '!null', 'SomeClass|false'],
-            'notNullWithMixed' => ['mixed', '!null', 'mixed'],
+            'notNullWithObject' => ['SomeClass', new IsNotType(new TNull()), 'SomeClass'],
+            'notNullWithObjectPipeNull' => ['SomeClass', new IsNotType(new TNull()), 'SomeClass|null'],
+            'notNullWithSomeClassPipeFalse' => ['SomeClass|false', new IsNotType(new TNull()), 'SomeClass|false'],
+            'notNullWithMixed' => ['mixed', new IsNotType(new TNull()), 'mixed'],
 
-            'notEmptyWithSomeClass' => ['SomeClass', '!falsy', 'SomeClass'],
-            'notEmptyWithSomeClassPipeNull' => ['SomeClass', '!falsy', 'SomeClass|null'],
-            'notEmptyWithSomeClassPipeFalse' => ['SomeClass', '!falsy', 'SomeClass|false'],
-            'notEmptyWithMixed' => ['non-empty-mixed', '!falsy', 'mixed'],
+            'notEmptyWithSomeClass' => ['SomeClass', new Truthy(), 'SomeClass'],
+            'notEmptyWithSomeClassPipeNull' => ['SomeClass', new Truthy(), 'SomeClass|null'],
+            'notEmptyWithSomeClassPipeFalse' => ['SomeClass', new Truthy(), 'SomeClass|false'],
+            'notEmptyWithMixed' => ['non-empty-mixed', new Truthy(), 'mixed'],
             // @todo in the future this should also work
             //'notEmptyWithSomeClassFalseTrue' => ['SomeClass|true', '!falsy', 'SomeClass|bool'],
 
-            'nullWithSomeClassPipeNull' => ['null', 'null', 'SomeClass|null'],
-            'nullWithMixed' => ['null', 'null', 'mixed'],
+            'nullWithSomeClassPipeNull' => ['null', new IsType(new TNull()), 'SomeClass|null'],
+            'nullWithMixed' => ['null', new IsType(new TNull()), 'mixed'],
 
-            'falsyWithSomeClass' => ['never', 'falsy', 'SomeClass'],
-            'falsyWithSomeClassPipeFalse' => ['false', 'falsy', 'SomeClass|false'],
-            'falsyWithSomeClassPipeBool' => ['false', 'falsy', 'SomeClass|bool'],
-            'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
-            'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['""|"0"|null', 'falsy', 'string|null'],
-            'falsyWithScalarOrNull' => ['empty-scalar', 'falsy', 'scalar'],
+            'falsyWithSomeClass' => ['never', new Falsy(), 'SomeClass'],
+            'falsyWithSomeClassPipeFalse' => ['false', new Falsy(), 'SomeClass|false'],
+            'falsyWithSomeClassPipeBool' => ['false', new Falsy(), 'SomeClass|bool'],
+            'falsyWithMixed' => ['empty-mixed', new Falsy(), 'mixed'],
+            'falsyWithBool' => ['false', new Falsy(), 'bool'],
+            'falsyWithStringOrNull' => ['""|"0"|null', new Falsy(), 'string|null'],
+            'falsyWithScalarOrNull' => ['empty-scalar', new Falsy(), 'scalar'],
+            'trueWithBool' => ['true', new IsType(new TTrue()), 'bool'],
+            'falseWithBool' => ['false', new IsType(new TFalse()), 'bool'],
+            'notTrueWithBool' => ['false', new IsNotIdentical(new TTrue()), 'bool'],
+            'notFalseWithBool' => ['true', new IsNotIdentical(new TFalse()), 'bool'],
 
-            'notSomeClassWithSomeClassPipeBool' => ['bool', '!SomeClass', 'SomeClass|bool'],
-            'notSomeClassWithSomeClassPipeNull' => ['null', '!SomeClass', 'SomeClass|null'],
-            'notSomeClassWithAPipeB' => ['B', '!A', 'A|B'],
-            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', '!DateTime', 'DateTimeInterface'],
-            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', '!DateTimeImmutable', 'DateTimeInterface'],
+            'notSomeClassWithSomeClassPipeBool' => ['bool', new IsNotType(new TNamedObject('SomeClass')), 'SomeClass|bool'],
+            'notSomeClassWithSomeClassPipeNull' => ['null', new IsNotType(new TNamedObject('SomeClass')), 'SomeClass|null'],
+            'notSomeClassWithAPipeB' => ['B', new IsNotType(new TNamedObject('A')), 'A|B'],
+            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', new IsNotType(new TNamedObject('DateTime')), 'DateTimeInterface'],
+            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', new IsNotType(new TNamedObject('DateTimeImmutable')), 'DateTimeInterface'],
 
-            'myObjectWithSomeClassPipeBool' => ['SomeClass', 'SomeClass', 'SomeClass|bool'],
-            'myObjectWithAPipeB' => ['A', 'A', 'A|B'],
+            'myObjectWithSomeClassPipeBool' => ['SomeClass', new IsType(new TNamedObject('SomeClass')), 'SomeClass|bool'],
+            'myObjectWithAPipeB' => ['A', new IsType(new TNamedObject('A')), 'A|B'],
 
-            'array' => ['array<array-key, mixed>', 'array', 'array|null'],
+            'array' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'array|null'],
 
-            '2dArray' => ['array<array-key, array<array-key, string>>', 'array', 'array<array<string>>|null'],
+            '2dArray' => ['array<array-key, array<array-key, string>>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'array<array<string>>|null'],
 
-            'numeric' => ['numeric-string', 'numeric', 'string'],
+            'numeric' => ['numeric-string', new IsType(new TNumeric()), 'string'],
 
-            'nullableClassString' => ['null', 'falsy', '?class-string'],
-            'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
-            'mixedOrNullFalsy' => ['empty-mixed|null', 'falsy', 'mixed|null'],
-            'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<SomeClass>|null'],
-            'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<SomeClass>|null'],
-            'nullableClassStringTruthy' => ['class-string<SomeClass>', '!falsy', 'class-string<SomeClass>|null'],
-            'iterableToArray' => ['array<int, int>', 'array', 'iterable<int, int>'],
-            'iterableToTraversable' => ['Traversable<int, int>', 'Traversable', 'iterable<int, int>'],
-            'callableToCallableArray' => ['callable-array{0: class-string|object, 1: string}', 'array', 'callable'],
-            'SmallKeyedArrayAndCallable' => ['array{test: string}', 'array{test: string}', 'callable'],
-            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', 'array{foo: string, test: string, thing: string}', 'callable'],
-            'callableOrArrayToCallableArray' => ['array<array-key, mixed>', 'array', 'callable|array'],
-            'traversableToIntersection' => ['Countable&Traversable', 'Traversable', 'Countable'],
-            'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', '!array', 'iterable'],
-            'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', '!array', 'iterable<int, string>'],
-            'iterableAndObject' => ['Traversable<int, string>', 'object', 'iterable<int, string>'],
-            'iterableAndNotObject' => ['array<int, string>', '!object', 'iterable<int, string>'],
-            'boolNotEmptyIsTrue' => ['true', '!empty', 'bool'],
-            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', 'SomeInterface', 'SomeClass|SomeInterface'],
-            'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', 'SomeClass', 'SomeClass|SomeInterface'],
-            'stringToNumericStringWithInt' => ['numeric-string', '~int', 'string'],
-            'stringToNumericStringWithFloat' => ['numeric-string', '~float', 'string'],
-            'filterKeyedArrayWithIterable' => ['array{some: string}', 'iterable<string>', 'array{some: mixed}'],
-            'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', '!falsy', 'SimpleXMLElement'],
-            'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', 'falsy', 'SimpleXMLElement'],
-            'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', '!falsy', 'SimpleXMLIterator'],
-            'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', 'falsy', 'SimpleXMLIterator'],
+            'nullableClassString' => ['null', new Falsy(), '?class-string'],
+            'mixedOrNullNotFalsy' => ['non-empty-mixed', new Truthy(), 'mixed|null'],
+            'mixedOrNullFalsy' => ['empty-mixed|null', new Falsy(), 'mixed|null'],
+            'nullableClassStringFalsy' => ['null', new Falsy(), 'class-string<SomeClass>|null'],
+            'nullableClassStringEqualsNull' => ['null', new IsIdentical(new TNull()), 'class-string<SomeClass>|null'],
+            'nullableClassStringTruthy' => ['class-string<SomeClass>', new Truthy(), 'class-string<SomeClass>|null'],
+            'iterableToArray' => ['array<int, int>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, int>'],
+            'iterableToTraversable' => ['Traversable<int, int>', new IsType(new TNamedObject('Traversable')), 'iterable<int, int>'],
+            'callableToCallableArray' => ['callable-array{0: class-string|object, 1: string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
+            'SmallKeyedArrayAndCallable' => ['array{test: string}', new IsType(new TKeyedArray(['test' => Type::getString()])), 'callable'],
+            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', new IsType(new TKeyedArray(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
+            'callableOrArrayToCallableArray' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable|array'],
+            'traversableToIntersection' => ['Countable&Traversable', new IsType(new TNamedObject('Traversable')), 'Countable'],
+            'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable'],
+            'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, string>'],
+            'iterableAndObject' => ['Traversable<int, string>', new IsType(new TObject()), 'iterable<int, string>'],
+            'iterableAndNotObject' => ['array<int, string>', new IsNotType(new TObject()), 'iterable<int, string>'],
+            'boolNotEmptyIsTrue' => ['true', new NonEmpty(), 'bool'],
+            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', new IsType(new TNamedObject('SomeInterface')), 'SomeClass|SomeInterface'],
+            'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject('SomeClass')), 'SomeClass|SomeInterface'],
+            'stringToNumericStringWithInt' => ['numeric-string', new IsLooselyEqual(new TInt()), 'string'],
+            'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
+            'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
+            'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', new Truthy(), 'SimpleXMLElement'],
+            'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],
+            'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', new Truthy(), 'SimpleXMLIterator'],
+            'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', new Falsy(), 'SimpleXMLIterator'],
         ];
     }
 
@@ -194,7 +219,7 @@ class ReconcilerTest extends TestCase
     /**
      * @dataProvider constantAssertions
      */
-    public function testReconciliationOfClassConstantInAssertions(string $assertion, string $expected_type): void
+    public function testReconciliationOfClassConstantInAssertions(Assertion $assertion, string $expected_type): void
     {
         $this->addFile(
             'psalm-assert.php',
@@ -229,29 +254,29 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<non-empty-string,array{non-empty-string,string}>
+     * @return array<non-empty-string,array{Assertion,string}>
      */
     public function constantAssertions(): array
     {
         return [
             'constant-with-prefix' => [
-                'class-constant(ReconciliationTest\\Foo::PREFIX_*)',
+                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_*')),
                 '"bar"|"baz"',
             ],
             'single-class-constant' => [
-                'class-constant(ReconciliationTest\\Foo::PREFIX_BAR)',
+                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_BAR')),
                 '"bar"',
             ],
             'referencing-another-class-constant' => [
-                'class-constant(ReconciliationTest\\Foo::PREFIX_QOO)',
+                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_QOO')),
                 '"bar"',
             ],
             'referencing-all-class-constants' => [
-                'class-constant(ReconciliationTest\\Foo::*)',
+                new IsType(new TClassConstant('ReconciliationTest\\Foo', '*')),
                 '"bar"|"baz"',
             ],
             'referencing-some-class-constants-with-wildcard' => [
-                'class-constant(ReconciliationTest\\Foo::PREFIX_B*)',
+                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_B*')),
                 '"bar"|"baz"',
             ],
         ];

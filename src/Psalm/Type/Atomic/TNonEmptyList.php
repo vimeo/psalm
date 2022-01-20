@@ -8,13 +8,18 @@ namespace Psalm\Type\Atomic;
 class TNonEmptyList extends TList
 {
     /**
-     * @var int|null
+     * @var positive-int|null
      */
     public $count;
 
+    /**
+     * @var positive-int|null
+     */
+    public $min_count;
+
     public const KEY = 'non-empty-list';
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'non-empty-list';
     }

@@ -83,13 +83,13 @@ class TArray extends Atomic
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
-        if (!$exact || $this->type_params[1]->isMixed()) {
+        if ($this->type_params[0]->isMixed() && $this->type_params[1]->isMixed()) {
             return 'array';
         }
 
-        return $this->toNamespacedString(null, [], null, false);
+        return $this->getId();
     }
 
     public function isEmptyArray(): bool

@@ -231,7 +231,7 @@ class TClassStringMap extends Atomic
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

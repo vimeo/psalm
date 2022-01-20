@@ -66,6 +66,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftLeft;
 use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Assertion\Falsy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -1678,7 +1679,7 @@ class AssignmentAnalyzer
                     );
 
                     $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy']], $var_object_id, $var_object_id)],
+                        [new Clause([$var_id => [new Falsy()]], $var_object_id, $var_object_id)],
                         $right_clauses,
                         $cond_object_id
                     );

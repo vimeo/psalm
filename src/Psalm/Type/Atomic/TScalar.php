@@ -35,7 +35,7 @@ class TScalar extends Scalar
         return false;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'scalar';
     }

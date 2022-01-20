@@ -824,7 +824,9 @@ class IssueBuffer
 
         $normalized_data = $issues_data === [] ? [] : array_merge(...array_values($issues_data));
 
-        switch ($report_options->format) {
+        $format = $report_options->format;
+
+        switch ($format) {
             case Report::TYPE_COMPACT:
                 $output = new CompactReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;

@@ -43,7 +43,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
-use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
@@ -439,21 +438,6 @@ class Union implements TypeNode
         $this->id = $id;
 
         return $id;
-    }
-
-    public function getAssertionString(bool $exact = false): string
-    {
-        $assertions = [];
-        foreach ($this->types as $type) {
-            $assertions[] = $type->getAssertionString($exact);
-        }
-
-        $assertions = array_unique($assertions);
-        if (count($assertions) !== 1) {
-            throw new UnexpectedValueException('Should only be one type per assertion');
-        }
-
-        return reset($assertions);
     }
 
     /**

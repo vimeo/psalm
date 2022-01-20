@@ -12,11 +12,11 @@ use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Storage\Assertion\Truthy;
 
 use function array_merge;
 use function count;
 use function spl_object_id;
-use function strlen;
 use function substr;
 
 /**
@@ -165,11 +165,7 @@ class FormulaGenerator
                                 spl_object_id($conditional->expr),
                                 false,
                                 true,
-                                $orred_types[0][0] === '='
-                                    || $orred_types[0][0] === '~'
-                                    || (strlen($orred_types[0]) > 1
-                                        && ($orred_types[0][1] === '='
-                                            || $orred_types[0][1] === '~')),
+                                $orred_types[0]->hasEquality(),
                                 $redefined ? [$var => true] : []
                             );
                         }
@@ -436,11 +432,7 @@ class FormulaGenerator
                         $creating_object_id,
                         false,
                         true,
-                        $orred_types[0][0] === '='
-                            || $orred_types[0][0] === '~'
-                            || (strlen($orred_types[0]) > 1
-                                && ($orred_types[0][1] === '='
-                                    || $orred_types[0][1] === '~')),
+                        $orred_types[0]->hasEquality(),
                         $redefined ? [$var => true] : []
                     );
                 }
@@ -455,6 +447,6 @@ class FormulaGenerator
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
-        return [new Clause([$conditional_ref => ['!falsy']], $conditional_object_id, $creating_object_id)];
+        return [new Clause([$conditional_ref => [new Truthy()]], $conditional_object_id, $creating_object_id)];
     }
 }

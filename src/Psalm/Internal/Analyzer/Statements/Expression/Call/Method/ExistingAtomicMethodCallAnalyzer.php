@@ -34,7 +34,7 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Storage\Assertion;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -405,15 +405,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $class_template_params = $template_result->lower_bounds;
-
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getArrayVarId($stmt->var, null, $statements_analyzer),
                     $method_storage->assertions,
                     $args,
-                    $class_template_params,
+                    $template_result,
                     $context,
                     $statements_analyzer
                 );
@@ -423,8 +421,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion => $assertion->getUntemplatedCopy(
-                            $class_template_params ?: [],
+                        fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                            $template_result,
                             $lhs_var_id,
                             $codebase
                         ),
@@ -437,8 +435,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        fn(Assertion $assertion): Assertion => $assertion->getUntemplatedCopy(
-                            $class_template_params ?: [],
+                        fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                            $template_result,
                             $lhs_var_id,
                             $codebase
                         ),

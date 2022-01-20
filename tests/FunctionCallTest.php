@@ -191,6 +191,13 @@ class FunctionCallTest extends TestCase
                         '$a' => 'array<never, never>',
                     ],
             ],
+            'countCheckOnNonEmptyArray' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr): void {
+                        if (count($arr) > 5) {}
+                    }',
+            ],
             'byRefAfterCallable' => [
                 'code' => '<?php
                     /**

@@ -3,6 +3,8 @@
 namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
+use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Falsy;
 use UnexpectedValueException;
 
 use function array_diff_key;
@@ -14,9 +16,7 @@ use function array_pop;
 use function array_unique;
 use function array_values;
 use function count;
-use function in_array;
 use function mt_rand;
-use function substr;
 
 /**
  * @internal
@@ -24,9 +24,9 @@ use function substr;
 class Algebra
 {
     /**
-     * @param array<string, non-empty-list<non-empty-list<string>>>  $all_types
+     * @param array<string, non-empty-list<non-empty-list<Assertion>>>  $all_types
      *
-     * @return array<string, non-empty-list<non-empty-list<string>>>
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
      *
      * @psalm-pure
      */
@@ -35,9 +35,9 @@ class Algebra
         return array_filter(
             array_map(
                 /**
-                 * @param  non-empty-list<non-empty-list<string>> $anded_types
+                 * @param  non-empty-list<non-empty-list<Assertion>> $anded_types
                  *
-                 * @return list<non-empty-list<string>>
+                 * @return list<non-empty-list<Assertion>>
                  */
                 function (array $anded_types): array {
                     if (count($anded_types) > 1) {
@@ -48,7 +48,7 @@ class Algebra
                                 return [];
                             }
 
-                            $new_anded_types[] = self::negateType($orred_types[0]);
+                            $new_anded_types[] = $orred_types[0]->getNegation();
                         }
 
                         return [$new_anded_types];
@@ -57,7 +57,7 @@ class Algebra
                     $new_orred_types = [];
 
                     foreach ($anded_types[0] as $orred_type) {
-                        $new_orred_types[] = [self::negateType($orred_type)];
+                        $new_orred_types[] = [$orred_type->getNegation()];
                     }
 
                     return $new_orred_types;
@@ -65,18 +65,6 @@ class Algebra
                 $all_types
             )
         );
-    }
-
-    /**
-     * @psalm-pure
-     */
-    public static function negateType(string $type): string
-    {
-        if ($type === 'mixed') {
-            return $type;
-        }
-
-        return $type[0] === '!' ? substr($type, 1) : '!' . $type;
     }
 
     /**
@@ -152,14 +140,12 @@ class Algebra
                         foreach ($clause_a->possibilities as $key => $a_possibilities) {
                             $b_possibilities = $clause_b->possibilities[$key];
 
-                            if ($a_possibilities === $b_possibilities) {
+                            if ($clause_a->possibility_strings[$key] === $clause_b->possibility_strings[$key]) {
                                 continue;
                             }
 
                             if (count($a_possibilities) === 1 && count($b_possibilities) === 1) {
-                                if ($a_possibilities[0] === '!' . $b_possibilities[0]
-                                    || $b_possibilities[0] === '!' . $a_possibilities[0]
-                                ) {
+                                if ($a_possibilities[0]->isNegationOf($b_possibilities[0])) {
                                     $opposing_keys[] = $key;
                                     continue;
                                 }
@@ -187,38 +173,45 @@ class Algebra
 
             $clause_var = array_keys($clause_a->possibilities)[0];
             $only_type = array_pop(array_values($clause_a->possibilities)[0]);
-            $negated_clause_type = self::negateType($only_type);
+            $negated_clause_type = $only_type->getNegation();
+            $negated_clause_type_string = (string)$negated_clause_type;
 
             foreach ($cloned_clauses as $clause_b_hash => $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
 
-                if (isset($clause_b->possibilities[$clause_var]) &&
-                    in_array($negated_clause_type, $clause_b->possibilities[$clause_var], true)
-                ) {
-                    $clause_var_possibilities = array_values(
-                        array_filter(
-                            $clause_b->possibilities[$clause_var],
-                            fn(string $possible_type): bool => $possible_type !== $negated_clause_type
-                        )
-                    );
+                if (isset($clause_b->possibilities[$clause_var])) {
+                    $unmatched = [];
+                    $matched = [];
 
-                    unset($cloned_clauses[$clause_b_hash]);
+                    foreach ($clause_b->possibilities[$clause_var] as $possible_type) {
+                        if ((string)$possible_type === $negated_clause_type_string) {
+                            $matched[] = $possible_type;
+                        } else {
+                            $unmatched[] = $possible_type;
+                        }
+                    }
 
-                    if (!$clause_var_possibilities) {
-                        $updated_clause = $clause_b->removePossibilities($clause_var);
+                    if ($matched) {
+                        $clause_var_possibilities = $unmatched;
 
-                        if ($updated_clause) {
+                        unset($cloned_clauses[$clause_b_hash]);
+
+                        if (!$clause_var_possibilities) {
+                            $updated_clause = $clause_b->removePossibilities($clause_var);
+
+                            if ($updated_clause) {
+                                $cloned_clauses[$updated_clause->hash] = $updated_clause;
+                            }
+                        } else {
+                            $updated_clause = $clause_b->addPossibilities(
+                                $clause_var,
+                                $clause_var_possibilities
+                            );
+
                             $cloned_clauses[$updated_clause->hash] = $updated_clause;
                         }
-                    } else {
-                        $updated_clause = $clause_b->addPossibilities(
-                            $clause_var,
-                            $clause_var_possibilities
-                        );
-
-                        $cloned_clauses[$updated_clause->hash] = $updated_clause;
                     }
                 }
             }
@@ -257,9 +250,9 @@ class Algebra
      *
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
-     * @param  array<string, array<int, array<int, string>>> $active_truths
+     * @param  array<string, array<int, array<int, Assertion>>> $active_truths
      *
-     * @return array<string, list<array<int, string>>>
+     * @return array<string, list<list<Assertion>>>
      */
     public static function getTruthsFromFormula(
         array $clauses,
@@ -303,23 +296,23 @@ class Algebra
                     }
                 } else {
                     // if there's only one active clause, return all the non-negation clause members ORed together
-                    $things_that_can_be_said = array_filter(
-                        $possible_types,
-                        fn(string $possible_type): bool => $possible_type[0] !== '!'
-                    );
+                    $things_that_can_be_said = [];
+
+                    foreach ($possible_types as $assertion) {
+                        if ($assertion instanceof Falsy || !$assertion->isNegation()) {
+                            $things_that_can_be_said[(string)$assertion] = $assertion;
+                        }
+                    }
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
-                        $things_that_can_be_said = array_unique($things_that_can_be_said);
-
                         if ($clause->generated && count($possible_types) > 1) {
                             unset($cond_referenced_var_ids[$var]);
                         }
 
-                        /** @var array<int, string> $things_that_can_be_said */
-                        $truths[$var] = [$things_that_can_be_said];
+                        $truths[$var] = [array_values($things_that_can_be_said)];
 
                         if ($creating_conditional_id && $creating_conditional_id === $clause->creating_conditional_id) {
-                            $active_truths[$var] = [$things_that_can_be_said];
+                            $active_truths[$var] = [array_values($things_that_can_be_said)];
                         }
                     }
                 }
@@ -396,7 +389,7 @@ class Algebra
                                     $ith = $new_clause_possibilities[$var][$i];
                                     $jth = $new_clause_possibilities[$var][$j];
 
-                                    if ($ith === '!' . $jth || $jth === '!' . $ith) {
+                                    if ($ith->isNegationOf($jth)) {
                                         $removed_indexes[$i] = true;
                                         $removed_indexes[$j] = true;
                                     }
@@ -492,7 +485,7 @@ class Algebra
                     continue;
                 }
 
-                /** @var  array<string, non-empty-list<string>> */
+                /** @var  array<string, non-empty-list<Assertion>> */
                 $possibilities = [];
 
                 $can_reconcile = true;
@@ -533,9 +526,7 @@ class Algebra
 
                 foreach ($possibilities as $var_possibilities) {
                     if (count($var_possibilities) === 2) {
-                        if ($var_possibilities[0] === '!' . $var_possibilities[1]
-                            || $var_possibilities[1] === '!' . $var_possibilities[0]
-                        ) {
+                        if ($var_possibilities[0]->isNegationOf($var_possibilities[1])) {
                             continue 2;
                         }
                     }

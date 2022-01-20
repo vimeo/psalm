@@ -296,6 +296,75 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testCountOnKeyedArrayInRange(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        echo $list[1];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCountOnKeyedArrayInRangeWithUpdate(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        if ($list[1][0] === "a") {
+                            $list[1] = "foo";
+                        }
+                        echo $list[1];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCountOnKeyedArrayOutOfRange(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        echo $list[2];
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureListOffsetExistsAfterCountValueOutOfRange(): void
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;

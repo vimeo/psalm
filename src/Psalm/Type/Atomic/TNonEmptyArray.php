@@ -9,9 +9,14 @@ namespace Psalm\Type\Atomic;
 class TNonEmptyArray extends TArray
 {
     /**
-     * @var int|null
+     * @var positive-int|null
      */
     public $count;
+
+    /**
+     * @var positive-int|null
+     */
+    public $min_count;
 
     /**
      * @var string

@@ -53,7 +53,7 @@ class TTemplateParam extends Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->as->getId();
     }

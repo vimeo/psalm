@@ -38,6 +38,9 @@ class TypeCombination
     /** @var array<int, bool>|null */
     public $array_counts = [];
 
+    /** @var array<int, bool>|null */
+    public $array_min_counts = [];
+
     /** @var bool */
     public $array_sometimes_filled = false;
 

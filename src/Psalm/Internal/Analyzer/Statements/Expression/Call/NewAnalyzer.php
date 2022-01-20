@@ -446,15 +446,13 @@ class NewAnalyzer extends CallAnalyzer
                     }
                 }
 
-                $generic_params = $template_result->lower_bounds;
-
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
                     self::applyAssertionsToContext(
                         $stmt->class,
                         null,
                         $method_storage->assertions,
                         $stmt->getArgs(),
-                        $generic_params,
+                        $template_result,
                         $context,
                         $statements_analyzer
                     );
@@ -464,7 +462,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
                         array_map(
-                            fn($assertion) => $assertion->getUntemplatedCopy($generic_params, null, $codebase),
+                            fn($assertion) => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_true_assertions
                         )
                     );
@@ -474,7 +472,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
                         array_map(
-                            fn($assertion) => $assertion->getUntemplatedCopy($generic_params, null, $codebase),
+                            fn($assertion) => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_false_assertions
                         )
                     );

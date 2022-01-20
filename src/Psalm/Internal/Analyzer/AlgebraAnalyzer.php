@@ -10,11 +10,12 @@ use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\NotInArray;
 
 use function array_intersect_key;
 use function count;
 use function implode;
-use function preg_match;
 
 /**
  * @internal
@@ -100,7 +101,7 @@ class AlgebraAnalyzer
                         break;
                     }
                     foreach ($keyed_possibilities as $possibility) {
-                        if (preg_match('@^!?in-array-@', $possibility)) {
+                        if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
                             $negated_clause_2_contains_1_possibilities = false;
                             break;
                         }

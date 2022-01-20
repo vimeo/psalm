@@ -44,7 +44,7 @@ class TMixed extends Atomic
         return $analysis_php_version_id >= 8_00_00;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

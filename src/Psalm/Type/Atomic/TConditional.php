@@ -82,7 +82,7 @@ class TConditional extends Atomic
         return $this->__toString();
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return '';
     }

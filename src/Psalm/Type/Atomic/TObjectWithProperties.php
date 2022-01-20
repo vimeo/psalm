@@ -265,7 +265,7 @@ class TObjectWithProperties extends TObject
         return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

@@ -13,6 +13,7 @@ use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeAbstract;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Possibilities;
 use Psalm\Type\Union;
 use SplObjectStorage;
 
@@ -25,14 +26,14 @@ class NodeDataProvider implements NodeTypeProvider
     private $node_types;
 
     /**
-     * @var SplObjectStorage<Node,list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null>
+     * @var SplObjectStorage<Node,list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>|null>
      */
     private $node_assertions;
 
-    /** @var SplObjectStorage<Node, array<int, Assertion>> */
+    /** @var SplObjectStorage<Node, array<int, Possibilities>> */
     private $node_if_true_assertions;
 
-    /** @var SplObjectStorage<Node, array<int, Assertion>> */
+    /** @var SplObjectStorage<Node, array<int, Possibilities>> */
     private $node_if_false_assertions;
 
     /** @var bool */
@@ -63,7 +64,7 @@ class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null $assertions
+     * @param list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>|null $assertions
      */
     public function setAssertions(Expr $node, ?array $assertions): void
     {
@@ -75,7 +76,7 @@ class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @return list<non-empty-array<string, non-empty-list<non-empty-list<string>>>>|null
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>|null
      */
     public function getAssertions(Expr $node): ?array
     {
@@ -88,7 +89,7 @@ class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @param FuncCall|MethodCall|StaticCall|New_ $node
-     * @param array<int, Assertion>  $assertions
+     * @param array<int, Possibilities>  $assertions
      */
     public function setIfTrueAssertions(Expr $node, array $assertions): void
     {
@@ -97,7 +98,7 @@ class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @param Expr\FuncCall|MethodCall|StaticCall|New_ $node
-     * @return array<int, Assertion>|null
+     * @return array<int, Possibilities>|null
      */
     public function getIfTrueAssertions(Expr $node): ?array
     {
@@ -106,7 +107,7 @@ class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @param FuncCall|MethodCall|StaticCall|New_ $node
-     * @param array<int, Assertion>  $assertions
+     * @param array<int, Possibilities>  $assertions
      */
     public function setIfFalseAssertions(Expr $node, array $assertions): void
     {
@@ -115,7 +116,7 @@ class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @param FuncCall|MethodCall|StaticCall|New_ $node
-     * @return array<int, Assertion>|null
+     * @return array<int, Possibilities>|null
      */
     public function getIfFalseAssertions(Expr $node): ?array
     {

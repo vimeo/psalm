@@ -7,6 +7,7 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -714,7 +715,7 @@ class TypeExpander
                     );
 
                     if (count($candidate) === 1) {
-                        $assertion = $candidate[0]->getAssertionString();
+                        $assertion = new IsType($candidate[0]);
                     }
                 }
             }

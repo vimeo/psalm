@@ -45,7 +45,7 @@ class TTemplateParamClass extends TClassString
             . ' as ' . ($this->as_type ? $this->as_type->getId() : $this->as) . '>';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
