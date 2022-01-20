@@ -619,8 +619,6 @@ class ConstantTest extends TestCase
 
                     class Clazz {
                         /**
-                         * @var 0|1
-                         *
                          * @psalm-suppress RedundantCondition
                          */
                         const cons2 = (cons1) ? 1 : 0;
