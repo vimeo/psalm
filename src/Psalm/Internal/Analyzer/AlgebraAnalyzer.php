@@ -74,22 +74,6 @@ class AlgebraAnalyzer
                 );
             }
 
-            foreach ($formula_2_clause->possibilities as $key => $values) {
-                if (!$formula_2_clause->generated
-                    && count($values) > 1
-                    && !isset($new_assigned_var_ids[$key])
-                    && count(array_unique($values)) < count($values)
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new ParadoxicalCondition(
-                            'Found a redundant condition when evaluating assertion (' . $formula_2_clause . ')',
-                            new CodeLocation($statements_analyzer, $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                }
-            }
-
             $formula_2_hashes[$hash] = true;
         }
 
