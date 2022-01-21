@@ -60,12 +60,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_diff;
-use function array_keys;
 use function array_merge;
 use function count;
 use function explode;
-use function implode;
 use function in_array;
 use function ord;
 use function preg_split;
@@ -989,10 +986,13 @@ class ArgumentAnalyzer
                     $statements_analyzer->getSuppressedIssues()
                 );
             } elseif ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
+                $extension = $param_type->getExtendedComparisonDescription($input_type);
+                $extension = $extension ? '. '.$extension : '';
+
                 IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', parent type ' . $input_type->getId() . ' provided',
+                            ', parent type ' . $input_type->getId() . ' provided'.$extension,
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1035,7 +1035,8 @@ class ArgumentAnalyzer
                     );
                 }
             } else {
-                $extension = (string) $param_type->getExtendedComparisonDescription($input_type);
+                $extension = $param_type->getExtendedComparisonDescription($input_type);
+                $extension = $extension ? '. '.$extension : '';
 
                 if ($types_can_be_identical) {
                     IssueBuffer::maybeAdd(

@@ -46,7 +46,9 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_filter;
+use function array_keys;
 use function array_merge;
 use function array_unique;
 use function count;
@@ -1589,28 +1591,44 @@ class Union implements TypeNode
 
     public function getExtendedComparisonDescription(Union $other_type): ?string
     {
-        // Not sure if there's a better or more robust way to do this
-        $param_types = $this->getAtomicTypes();
-        $input_types = $other_type->getAtomicTypes();
-
-        if (!isset($param_types['array'], $input_types['array'])) {
-            return null;
+        $this_single = $other_single = null;
+        if ($this->isSingle()) {
+            $this_single = $this->getSingleAtomic();
+        }
+        if ($other_type->isSingle()) {
+            $other_single = $other_type->getSingleAtomic();
         }
 
-        $first_param_type = $param_types['array'];
-        $first_input_type = $input_types['array'];
-        if (!$first_param_type instanceof TKeyedArray || !$first_input_type instanceof TKeyedArray) {
+        if (!$this_single instanceof TKeyedArray || !$other_single instanceof TKeyedArray) {
             return null;
         }
 
         // There's many ways to illustrate this but this is the simplest and provides info
         // without being too opinionated
         $text_diff = 'The differences are in the following keys: ';
-        $param_keys = array_keys($first_param_type->properties);
-        $input_keys = array_keys($first_input_type->properties);
+        $param_keys = array_keys(self::rekeyPropertiesArray($this_single->properties));
+        $input_keys = array_keys(self::rekeyPropertiesArray($other_single->properties));
         $key_comparison = array_diff($param_keys, $input_keys);
+
         $text_diff .= implode(', ', $key_comparison);
 
         return $text_diff;
+    }
+
+    /**
+     * @param array<string, Union> $properties
+     * @return array<string, Union> $properties
+     */
+    private static function rekeyPropertiesArray(array $properties) :array
+    {
+        $rekeyed = [];
+        foreach ($properties as $key => $property) {
+            if ($property->possibly_undefined){
+                $key = "?$key";
+            }
+            $rekeyed[$key] = $property;
+        }
+
+        return $rekeyed;
     }
 }
