@@ -1395,7 +1395,7 @@ class Config
             } catch (Throwable $t) {
                 throw new ConfigException(
                     'Failed to process plugin file extensions ' . $pluginClassName,
-                    1635800581,
+                    1_635_800_581,
                     $t
                 );
             }
@@ -1438,7 +1438,7 @@ class Config
             } catch (Throwable $t) {
                 throw new ConfigException(
                     'Failed to invoke plugin ' . $plugin_class_name,
-                    1635800582,
+                    1_635_800_582,
                     $t
                 );
             }
@@ -1505,11 +1505,11 @@ class Config
                 self::requirePath($pluginclas_class_path);
             } else {
                 if (!class_exists($pluginClassName)) {
-                    throw new \UnexpectedValueException($pluginClassName . ' is not a known class');
+                    throw new UnexpectedValueException($pluginClassName . ' is not a known class');
                 }
             }
             if (!is_a($pluginClassName, PluginInterface::class, true)) {
-                throw new \UnexpectedValueException($pluginClassName . ' is not a PluginInterface implementation');
+                throw new UnexpectedValueException($pluginClassName . ' is not a PluginInterface implementation');
             }
             $this->plugins[$pluginClassName] = new $pluginClassName;
             $projectAnalyzer->progress->debug('Loaded plugin ' . $pluginClassName . PHP_EOL);
