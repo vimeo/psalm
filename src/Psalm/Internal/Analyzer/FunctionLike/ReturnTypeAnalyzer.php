@@ -529,11 +529,14 @@ class ReturnTypeAnalyzer
                             }
                         }
                     } else {
+                        $extension = $declared_return_type->getExtendedComparisonDescription($inferred_return_type);
+                        $extension = $extension ? '. '.$extension : '';
+
                         if (IssueBuffer::accepts(
                             new MoreSpecificReturnType(
                                 'The declared return type \'' . $declared_return_type->getId() . '\' for '
                                     . $cased_method_id . ' is more specific than the inferred return type '
-                                    . '\'' . $inferred_return_type->getId() . '\'',
+                                    . '\'' . $inferred_return_type->getId() . '\''.$extension,
                                 $return_type_location
                             ),
                             $suppressed_issues

@@ -417,11 +417,14 @@ class ReturnAnalyzer
                                     }
                                 }
                             } else {
+                                $extension = $stmt_type->getExtendedComparisonDescription($local_return_type);
+                                $extension = $extension ? '. '.$extension : '';
+
                                 IssueBuffer::maybeAdd(
                                     new LessSpecificReturnStatement(
                                         'The type \'' . $stmt_type->getId() . '\' is more general than the'
                                             . ' declared return type \'' . $local_return_type->getId() . '\''
-                                            . ' for ' . $cased_method_id,
+                                            . ' for ' . $cased_method_id.$extension,
                                         new CodeLocation($source, $stmt->expr)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
