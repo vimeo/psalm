@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -1584,5 +1585,32 @@ class Union implements TypeNode
     public function isUnionEmpty(): bool
     {
         return $this->types === [];
+    }
+
+    public function getExtendedComparisonDescription(Union $other_type): ?string
+    {
+        // Not sure if there's a better or more robust way to do this
+        $param_types = $this->getAtomicTypes();
+        $input_types = $other_type->getAtomicTypes();
+
+        if (!isset($param_types['array'], $input_types['array'])) {
+            return null;
+        }
+
+        $first_param_type = $param_types['array'];
+        $first_input_type = $input_types['array'];
+        if (!$first_param_type instanceof TKeyedArray || !$first_input_type instanceof TKeyedArray) {
+            return null;
+        }
+
+        // There's many ways to illustrate this but this is the simplest and provides info
+        // without being too opinionated
+        $text_diff = 'The differences are in the following keys: ';
+        $param_keys = array_keys($first_param_type->properties);
+        $input_keys = array_keys($first_input_type->properties);
+        $key_comparison = array_diff($param_keys, $input_keys);
+        $text_diff .= implode(', ', $key_comparison);
+
+        return $text_diff;
     }
 }
