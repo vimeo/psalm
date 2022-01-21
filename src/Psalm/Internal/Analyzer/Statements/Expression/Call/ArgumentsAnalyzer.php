@@ -1291,6 +1291,7 @@ class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\FuncCall
             || $arg->value instanceof PhpParser\Node\Expr\MethodCall
             || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+            || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
             || $arg->value instanceof PhpParser\Node\Expr\New_
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Assign

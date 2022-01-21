@@ -528,49 +528,56 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         if ($function_call_info->function_exists) {
+            if (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
+                try {
+                    $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
+                        $statements_analyzer,
+                        strtolower($function_call_info->function_id)
+                    );
+
+                    $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                    if (!$function_storage->allow_named_arg_calls) {
+                        $function_call_info->allow_named_args = false;
+                    }
+
+                    if (!$is_predefined) {
+                        $function_call_info->defined_constants = $function_storage->defined_constants;
+                        $function_call_info->global_variables = $function_storage->global_variables;
+                    }
+                } catch (UnexpectedValueException $e) {
+                    $function_call_info->function_params = [
+                        new FunctionLikeParameter('args', false, null, null, null, false, false, true)
+                    ];
+                }
+            } else {
+                $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                    $codebase,
+                    $function_call_info->function_id,
+                    $args,
+                    $statements_analyzer->node_data
+                );
+
+                $function_call_info->function_params = $function_callable->params;
+            }
+
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
+                ArgumentsAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt->getArgs(),
+                    $function_call_info->function_params,
+                    $function_call_info->function_id,
+                    $function_call_info->allow_named_args,
+                    $context
+                );
+
                 $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,
                     $args,
-                    null,
+                    $context,
                     $code_location
                 );
-            }
-
-            if ($function_call_info->function_params === null) {
-                if (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
-                    try {
-                        $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
-                            $statements_analyzer,
-                            strtolower($function_call_info->function_id)
-                        );
-
-                        $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                        if (!$function_storage->allow_named_arg_calls) {
-                            $function_call_info->allow_named_args = false;
-                        }
-
-                        if (!$is_predefined) {
-                            $function_call_info->defined_constants = $function_storage->defined_constants;
-                            $function_call_info->global_variables = $function_storage->global_variables;
-                        }
-                    } catch (UnexpectedValueException $e) {
-                        $function_call_info->function_params = [
-                            new FunctionLikeParameter('args', false, null, null, null, false, false, true)
-                        ];
-                    }
-                } else {
-                    $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                        $codebase,
-                        $function_call_info->function_id,
-                        $args,
-                        $statements_analyzer->node_data
-                    );
-
-                    $function_call_info->function_params = $function_callable->params;
-                }
             }
 
             if ($codebase->store_node_types
