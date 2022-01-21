@@ -1616,14 +1616,14 @@ class Union implements TypeNode
     }
 
     /**
-     * @param array<string, Union> $properties
-     * @return array<string, Union> $properties
+     * @param non-empty-array<int|string, Union> $properties
+     * @return non-empty-array<int|string, Union> $properties
      */
-    private static function rekeyPropertiesArray(array $properties) :array
+    private static function rekeyPropertiesArray(array $properties): array
     {
         $rekeyed = [];
         foreach ($properties as $key => $property) {
-            if ($property->possibly_undefined){
+            if ($property->possibly_undefined) {
                 $key = "?$key";
             }
             $rekeyed[$key] = $property;
