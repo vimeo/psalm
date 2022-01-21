@@ -143,6 +143,7 @@ class PluginRegistrationSocket implements RegistrationInterface
     /**
      * @param string $fileExtension e.g. `'html'`
      * @param class-string<FileScanner> $className
+     * @deprecated will be removed in v5.0, use \Psalm\Plugin\FileExtensionsInterface instead (#6788)
      */
     public function addFileTypeScanner(string $fileExtension, string $className): void
     {
@@ -170,6 +171,7 @@ class PluginRegistrationSocket implements RegistrationInterface
 
     /**
      * @return array<string, class-string<FileScanner>>
+     * @deprecated will be removed in v5.0, use \Psalm\PluginFileExtensionsSocket instead (#6788)
      */
     public function getAdditionalFileTypeScanners(): array
     {
@@ -179,6 +181,7 @@ class PluginRegistrationSocket implements RegistrationInterface
     /**
      * @param string $fileExtension e.g. `'html'`
      * @param class-string<FileAnalyzer> $className
+     * @deprecated will be removed in v5.0, use \Psalm\PluginFileExtensionsSocket instead (#6788)
      */
     public function addFileTypeAnalyzer(string $fileExtension, string $className): void
     {
@@ -206,6 +209,7 @@ class PluginRegistrationSocket implements RegistrationInterface
 
     /**
      * @return array<string, class-string<FileAnalyzer>>
+     * @deprecated will be removed in v5.0, use \Psalm\PluginFileExtensionsSocket instead (#6788)
      */
     public function getAdditionalFileTypeAnalyzers(): array
     {
@@ -214,6 +218,7 @@ class PluginRegistrationSocket implements RegistrationInterface
 
     /**
      * @return list<string> e.g. `['html', 'perl']`
+     * @deprecated will be removed in v5.0, use \Psalm\PluginFileExtensionsSocket instead (#6788)
      */
     public function getAdditionalFileExtensions(): array
     {
@@ -222,6 +227,7 @@ class PluginRegistrationSocket implements RegistrationInterface
 
     /**
      * @param string $fileExtension e.g. `'html'`
+     * @deprecated will be removed in v5.0, use \Psalm\PluginFileExtensionsSocket instead (#6788)
      */
     private function addFileExtension(string $fileExtension): void
     {
