@@ -1488,21 +1488,22 @@ class ClassLikeNodeScanner
             $parser_property_type = $stmt->type;
             /** @var Identifier|IntersectionType|Name|NullableType|UnionType $parser_property_type */
 
-            $signature_type = TypeHintResolver::resolve(
-                $parser_property_type,
-                $this->codebase,
-                $this->file_storage,
-                $this->storage,
-                $this->aliases,
-                $this->codebase->analysis_php_version_id
-            );
-
             $signature_type_location = new CodeLocation(
                 $this->file_scanner,
                 $parser_property_type,
                 null,
                 false,
                 CodeLocation::FUNCTION_RETURN_TYPE
+            );
+
+            $signature_type = TypeHintResolver::resolve(
+                $parser_property_type,
+                $signature_type_location,
+                $this->codebase,
+                $this->file_storage,
+                $this->storage,
+                $this->aliases,
+                $this->codebase->analysis_php_version_id
             );
         }
 

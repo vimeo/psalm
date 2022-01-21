@@ -10,7 +10,10 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\ParseError;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -31,6 +34,7 @@ class TypeHintResolver
      */
     public static function resolve(
         PhpParser\NodeAbstract $hint,
+        CodeLocation $code_location,
         Codebase $codebase,
         FileStorage $file_storage,
         ?ClassLikeStorage $classlike_storage,
@@ -44,9 +48,19 @@ class TypeHintResolver
                 throw new UnexpectedValueException('bad');
             }
 
+            if ($analysis_php_version_id < 8_00_00) {
+                IssueBuffer::add(
+                    new ParseError(
+                        'Union types are not supported in PHP < 8',
+                        $code_location
+                    )
+                );
+            }
+
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
+                    $code_location,
                     $codebase,
                     $file_storage,
                     $classlike_storage,
@@ -67,15 +81,36 @@ class TypeHintResolver
                 throw new UnexpectedValueException('bad');
             }
 
+            if ($analysis_php_version_id < 8_10_00) {
+                IssueBuffer::add(
+                    new ParseError(
+                        'Intersection types are not supported in PHP < 8.1',
+                        $code_location
+                    )
+                );
+                return false;
+            }
+
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
+                    $code_location,
                     $codebase,
                     $file_storage,
                     $classlike_storage,
                     $aliases,
                     $analysis_php_version_id
                 );
+
+                if ($resolved_type->hasScalarType()) {
+                    IssueBuffer::add(
+                        new ParseError(
+                            'Intersection types cannot contain scalar types',
+                            $code_location
+                        )
+                    );
+                    return null;
+                }
 
                 $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
             }

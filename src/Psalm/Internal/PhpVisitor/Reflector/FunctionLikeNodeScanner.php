@@ -430,6 +430,10 @@ class FunctionLikeNodeScanner
 
             $storage->return_type = TypeHintResolver::resolve(
                 $original_type,
+                new CodeLocation(
+                    $this->file_scanner,
+                    $original_type
+                ),
                 $this->codebase,
                 $this->file_storage,
                 $this->classlike_storage,
@@ -825,6 +829,10 @@ class FunctionLikeNodeScanner
 
             $param_type = TypeHintResolver::resolve(
                 $param_typehint,
+                new CodeLocation(
+                    $this->file_scanner,
+                    $param_typehint
+                ),
                 $this->codebase,
                 $this->file_storage,
                 $this->classlike_storage,

@@ -103,6 +103,48 @@ class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'intersectionsNotAllowedWithUnions' => [
+                '<?php
+                    interface A {
+                    }
+                    interface B {
+                    }
+                    interface C {
+                    }
+                    function foo (A&B|C $test): A&B|C {
+                        return $test;
+                    }',
+                'error_message' => 'ParseError',
+                [],
+                false,
+                '8.1'
+            ],
+            'intersectionsNotAllowedWithNonClasses' => [
+                '<?php
+                    interface A {
+                    }
+                    function foo (A&string $test): A&string {
+                        return $test;
+                    }',
+                'error_message' => 'ParseError',
+                [],
+                false,
+                '8.1'
+            ],
+            'intersectionsNotAllowedInPHP80' => [
+                '<?php
+                    interface A {
+                    }
+                    interface B {
+                    }
+                    function foo (A&B $test): A&B {
+                        return $test;
+                    }',
+                'error_message' => 'ParseError',
+                [],
+                false,
+                '8.0'
+            ],
         ];
     }
 }
