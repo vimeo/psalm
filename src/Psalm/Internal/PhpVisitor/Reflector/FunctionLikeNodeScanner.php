@@ -5,6 +5,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 use LogicException;
 use PhpParser;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\Class_;
@@ -425,14 +426,11 @@ class FunctionLikeNodeScanner
 
         if ($parser_return_type) {
             $original_type = $parser_return_type;
-            if ($original_type instanceof PhpParser\Node\IntersectionType) {
-                throw new UnexpectedValueException('Intersection types not yet supported');
-            }
-            /** @var Identifier|Name|NullableType|UnionType $original_type */
+            /** @var Identifier|IntersectionType|Name|NullableType|UnionType $original_type */
 
             $storage->return_type = TypeHintResolver::resolve(
                 $original_type,
-                $this->codebase->scanner,
+                $this->codebase,
                 $this->file_storage,
                 $this->classlike_storage,
                 $this->aliases,
@@ -823,14 +821,11 @@ class FunctionLikeNodeScanner
         $param_typehint = $param->type;
 
         if ($param_typehint) {
-            if ($param_typehint instanceof PhpParser\Node\IntersectionType) {
-                throw new UnexpectedValueException('Intersection types not yet supported');
-            }
-            /** @var Identifier|Name|NullableType|UnionType $param_typehint */
+            /** @var Identifier|IntersectionType|Name|NullableType|UnionType $param_typehint */
 
             $param_type = TypeHintResolver::resolve(
                 $param_typehint,
-                $this->codebase->scanner,
+                $this->codebase,
                 $this->file_storage,
                 $this->classlike_storage,
                 $this->aliases,

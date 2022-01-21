@@ -3,9 +3,14 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\IntersectionType;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
+use PhpParser\Node\UnionType;
 use Psalm\Aliases;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Codebase\Scanner as CodebaseScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -22,11 +27,11 @@ use function strtolower;
 class TypeHintResolver
 {
     /**
-     * @param PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|PhpParser\Node\UnionType $hint
+     * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint
      */
     public static function resolve(
         PhpParser\NodeAbstract $hint,
-        CodebaseScanner $scanner,
+        Codebase $codebase,
         FileStorage $file_storage,
         ?ClassLikeStorage $classlike_storage,
         Aliases $aliases,
@@ -42,7 +47,7 @@ class TypeHintResolver
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
-                    $scanner,
+                    $codebase,
                     $file_storage,
                     $classlike_storage,
                     $aliases,
@@ -50,6 +55,33 @@ class TypeHintResolver
                 );
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
+            }
+
+            return $type;
+        }
+
+        if ($hint instanceof PhpParser\Node\IntersectionType) {
+            $type = null;
+
+            if (!$hint->types) {
+                throw new UnexpectedValueException('bad');
+            }
+
+            foreach ($hint->types as $atomic_typehint) {
+                $resolved_type = self::resolve(
+                    $atomic_typehint,
+                    $codebase,
+                    $file_storage,
+                    $classlike_storage,
+                    $aliases,
+                    $analysis_php_version_id
+                );
+
+                $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
+            }
+
+            if ($type === null) {
+                throw new UnexpectedValueException('bad');
             }
 
             return $type;
@@ -69,7 +101,7 @@ class TypeHintResolver
         } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$hint;
 
-            $scanner->queueClassLikeForScanning($fq_type_string);
+            $codebase->scanner->queueClassLikeForScanning($fq_type_string);
             $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         } else {
             $lower_hint = strtolower($hint->parts[0]);
@@ -87,7 +119,7 @@ class TypeHintResolver
                 $type_string = implode('\\', $hint->parts);
                 $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $aliases);
 
-                $scanner->queueClassLikeForScanning($fq_type_string);
+                $codebase->scanner->queueClassLikeForScanning($fq_type_string);
                 $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
             }
         }
