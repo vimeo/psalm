@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Codebase;
 
 use Exception;
+use LibXMLError;
 use LogicException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -64,7 +65,7 @@ class Reflection
     {
         $class_name = $reflected_class->name;
 
-        if ($class_name === 'LibXMLError') {
+        if ($class_name === LibXMLError::class) {
             $class_name = 'libXMLError';
         }
 
