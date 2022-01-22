@@ -4,8 +4,8 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
-use Psalm\Storage\Assertion\IsType;
 use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
