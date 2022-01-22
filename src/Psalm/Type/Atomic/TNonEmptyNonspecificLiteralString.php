@@ -8,8 +8,12 @@ namespace Psalm\Type\Atomic;
  */
 class TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
 {
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'string';
+        }
+
         return 'non-empty-literal-string';
     }
 }

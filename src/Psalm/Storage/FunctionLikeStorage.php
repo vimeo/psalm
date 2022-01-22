@@ -250,7 +250,7 @@ abstract class FunctionLikeStorage
                 array_map(
                     fn(FunctionLikeParameter $param): string =>
                         ($newlines ? '    ' : '')
-                        . ($param->type ?: 'mixed')
+                        . ($param->type ? $param->type->getId(false) : 'mixed')
                         . ' $' . $param->name,
                     $this->params
                 )

@@ -39,14 +39,13 @@ class TTemplateKeyOf extends TArrayKey
         return 'key-of<' . $this->param_name . '>';
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
-        return 'key-of<' . $this->param_name . '>';
-    }
+        if (!$exact) {
+            return 'key-of<' . $this->param_name . '>';
+        }
 
-    public function getId(bool $nested = false): string
-    {
-        return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId() . '>';
+        return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact) . '>';
     }
 
     /**

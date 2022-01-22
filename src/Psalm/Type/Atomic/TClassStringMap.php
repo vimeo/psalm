@@ -34,8 +34,6 @@ class TClassStringMap extends Atomic
      */
     public $value_param;
 
-    public const KEY = 'class-string-map';
-
     /**
      * Constructs a new instance of a list
      */
@@ -46,29 +44,15 @@ class TClassStringMap extends Atomic
         $this->as_type = $as_type;
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
+        return 'class-string-map'
             . '<'
             . $this->param_name
             . ' as '
-            . ($this->as_type ? (string) $this->as_type : 'object')
+            . ($this->as_type ? $this->as_type->getId($exact) : 'object')
             . ', '
-            . ((string) $this->value_param)
-            . '>';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
-            . '<'
-            . $this->param_name
-            . ' as '
-            . ($this->as_type ? (string) $this->as_type : 'object')
-            . ', '
-            . $this->value_param->getId()
+            . $this->value_param->getId($exact)
             . '>';
     }
 
@@ -97,8 +81,7 @@ class TClassStringMap extends Atomic
                 );
         }
 
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
+        return 'class-string-map'
             . '<'
             . $this->param_name
             . ($this->as_type ? ' as ' . $this->as_type : '')

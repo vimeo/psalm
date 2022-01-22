@@ -24,7 +24,7 @@ class TDependentListKey extends TInt implements DependentType
         $this->var_id = $var_id;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'list-key<' . $this->var_id . '>';
     }

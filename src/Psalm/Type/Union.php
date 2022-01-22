@@ -212,8 +212,18 @@ class Union implements TypeNode
      */
     public $has_mutations = true;
 
-    /** @var null|string */
+    /**
+     * This is a cache of getId on non-exact mode
+     * @var null|string
+     */
     private $id;
+
+    /**
+     * This is a cache of getId on exact mode
+     * @var null|string
+     */
+    private $exact_id;
+
 
     /**
      * @var array<string, DataFlowNode>
@@ -311,7 +321,7 @@ class Union implements TypeNode
             }
         }
 
-        $this->id = null;
+        $this->bustCache();
     }
 
     public function __clone()
@@ -367,7 +377,7 @@ class Union implements TypeNode
                 $printed_int = true;
             }
 
-            $types[] = (string)$type;
+            $types[] = $type->getId(false);
         }
 
         sort($types);
@@ -413,16 +423,19 @@ class Union implements TypeNode
         return implode('|', $types);
     }
 
-    public function getId(): string
+    public function getId(bool $exact = true): string
     {
-        if ($this->id) {
+        if ($exact && $this->exact_id) {
+            return $this->exact_id;
+        } elseif (!$exact && $this->id) {
             return $this->id;
         }
 
         $types = [];
         foreach ($this->types as $type) {
-            $types[] = $type->getId();
+            $types[] = $type->getId($exact);
         }
+        $types = array_unique($types);
         sort($types);
 
         if (count($types) > 1) {
@@ -435,7 +448,11 @@ class Union implements TypeNode
 
         $id = implode('|', $types);
 
-        $this->id = $id;
+        if ($exact) {
+            $this->exact_id = $id;
+        } else {
+            $this->id = $id;
+        }
 
         return $id;
     }
@@ -597,7 +614,7 @@ class Union implements TypeNode
                 );
             }
 
-            $this->id = null;
+            $this->bustCache();
 
             return true;
         }
@@ -636,6 +653,7 @@ class Union implements TypeNode
     public function bustCache(): void
     {
         $this->id = null;
+        $this->exact_id = null;
     }
 
     public function hasType(string $type_string): bool
@@ -1086,7 +1104,7 @@ class Union implements TypeNode
             $this->types['mixed'] = new TMixed();
         }
 
-        $this->id = null;
+        $this->bustCache();
     }
 
     public function isSingle(): bool
@@ -1424,6 +1442,10 @@ class Union implements TypeNode
         }
 
         if ($other_type->id && $this->id && $other_type->id !== $this->id) {
+            return false;
+        }
+
+        if ($other_type->exact_id && $this->exact_id && $other_type->exact_id !== $this->exact_id) {
             return false;
         }
 

@@ -9,11 +9,6 @@ use Psalm\Type\Atomic;
  */
 class TNull extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'null';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'null';

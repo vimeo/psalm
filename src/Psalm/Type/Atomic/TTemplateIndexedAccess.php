@@ -36,16 +36,6 @@ class TTemplateIndexedAccess extends Atomic
         return $this->array_param_name . '[' . $this->offset_param_name . ']';
     }
 
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */

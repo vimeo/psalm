@@ -130,7 +130,7 @@ class ReconcilerTest extends TestCase
             'falsyWithSomeClassPipeBool' => ['false', new Falsy(), 'SomeClass|bool'],
             'falsyWithMixed' => ['empty-mixed', new Falsy(), 'mixed'],
             'falsyWithBool' => ['false', new Falsy(), 'bool'],
-            'falsyWithStringOrNull' => ['""|"0"|null', new Falsy(), 'string|null'],
+            'falsyWithStringOrNull' => ["''|'0'|null", new Falsy(), 'string|null'],
             'falsyWithScalarOrNull' => ['empty-scalar', new Falsy(), 'scalar'],
             'trueWithBool' => ['true', new IsType(new TTrue()), 'bool'],
             'falseWithBool' => ['false', new IsType(new TFalse()), 'bool'],
@@ -261,23 +261,23 @@ class ReconcilerTest extends TestCase
         return [
             'constant-with-prefix' => [
                 new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_*')),
-                '"bar"|"baz"',
+                "'bar'|'baz'",
             ],
             'single-class-constant' => [
                 new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_BAR')),
-                '"bar"',
+                "'bar'",
             ],
             'referencing-another-class-constant' => [
                 new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_QOO')),
-                '"bar"',
+                "'bar'",
             ],
             'referencing-all-class-constants' => [
                 new IsType(new TClassConstant('ReconciliationTest\\Foo', '*')),
-                '"bar"|"baz"',
+                "'bar'|'baz'",
             ],
             'referencing-some-class-constants-with-wildcard' => [
                 new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_B*')),
-                '"bar"|"baz"',
+                "'bar'|'baz'",
             ],
         ];
     }

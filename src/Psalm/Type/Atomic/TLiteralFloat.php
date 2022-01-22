@@ -20,8 +20,12 @@ class TLiteralFloat extends TFloat
         return 'float(' . $this->value . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'float';
+        }
+
         return 'float(' . $this->value . ')';
     }
 

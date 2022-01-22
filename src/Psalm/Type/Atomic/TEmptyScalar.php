@@ -7,7 +7,7 @@ namespace Psalm\Type\Atomic;
  */
 class TEmptyScalar extends TScalar
 {
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'empty-scalar';
     }

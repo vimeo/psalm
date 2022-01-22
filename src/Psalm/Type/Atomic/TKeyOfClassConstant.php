@@ -30,16 +30,6 @@ class TKeyOfClassConstant extends Scalar
         return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    public function __toString(): string
-    {
-        return 'key-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */

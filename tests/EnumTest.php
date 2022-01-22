@@ -114,7 +114,7 @@ class EnumTest extends TestCase
                     $a = Status::DRAFT->name;
                 ',
                 'assertions' => [
-                    '$a===' => '"DRAFT"',
+                    '$a===' => "'DRAFT'",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'

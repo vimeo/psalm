@@ -8,11 +8,6 @@ namespace Psalm\Type\Atomic;
  */
 class TScalar extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'scalar';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'scalar';

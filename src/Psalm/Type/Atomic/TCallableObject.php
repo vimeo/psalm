@@ -7,11 +7,6 @@ namespace Psalm\Type\Atomic;
  */
 class TCallableObject extends TObject
 {
-    public function __toString(): string
-    {
-        return 'callable-object';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'callable-object';

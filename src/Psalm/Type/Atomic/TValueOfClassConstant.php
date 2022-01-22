@@ -27,16 +27,6 @@ class TValueOfClassConstant extends Atomic
         return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
     }
 
-    public function __toString(): string
-    {
-        return 'value-of<' . $this->fq_classlike_name . '::' . $this->const_name . '>';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */

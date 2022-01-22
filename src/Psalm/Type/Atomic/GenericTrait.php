@@ -21,27 +21,11 @@ use function substr;
 
 trait GenericTrait
 {
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
-            $s .= $type_param . ', ';
-        }
-
-        $extra_types = '';
-
-        if ($this instanceof TNamedObject && $this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
-        }
-
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        $s = '';
-        foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId() . ', ';
+            $s .= $type_param->getId($exact) . ', ';
         }
 
         $extra_types = '';
@@ -51,7 +35,7 @@ trait GenericTrait
                 $extra_types = '&' . implode(
                     '&',
                     array_map(
-                        fn($type) => $type->getId(true),
+                        fn($type) => $type->getId($exact, true),
                         $this->extra_types
                     )
                 );

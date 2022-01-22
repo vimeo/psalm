@@ -621,7 +621,7 @@ class TypeParser
             || $generic_type_value === 'interface-string'
             || $generic_type_value === 'enum-string'
         ) {
-            $class_name = (string)$generic_params[0];
+            $class_name = $generic_params[0]->getId(false);
 
             if (isset($template_type_map[$class_name])) {
                 $first_class = array_keys($template_type_map[$class_name])[0];
@@ -685,7 +685,7 @@ class TypeParser
         }
 
         if ($generic_type_value === 'key-of') {
-            $param_name = (string)$generic_params[0];
+            $param_name = $generic_params[0]->getId(false);
 
             if (isset($template_type_map[$param_name])) {
                 $defining_class = array_keys($template_type_map[$param_name])[0];
@@ -716,7 +716,7 @@ class TypeParser
         }
 
         if ($generic_type_value === 'value-of') {
-            $param_name = (string)$generic_params[0];
+            $param_name = $generic_params[0]->getId(false);
 
             $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 

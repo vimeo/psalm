@@ -1490,12 +1490,12 @@ class FunctionCallTest extends TestCase
                     /** @psalm-suppress MixedArgument */
                     $F3 = date("F", $_GET["F3"]);',
                 'assertions' => [
-                    '$y' => 'numeric-string',
-                    '$m' => 'numeric-string',
-                    '$F' => 'string',
-                    '$y2' => 'numeric-string',
-                    '$F2' => 'string',
-                    '$F3' => 'false|string',
+                    '$y===' => 'numeric-string',
+                    '$m===' => 'numeric-string',
+                    '$F===' => 'string',
+                    '$y2===' => 'numeric-string',
+                    '$F2===' => 'string',
+                    '$F3===' => 'false|string',
                 ]
             ],
             'sscanfReturnTypeWithTwoParameters' => [

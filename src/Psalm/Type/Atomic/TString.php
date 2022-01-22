@@ -19,11 +19,6 @@ class TString extends Scalar
         return $analysis_php_version_id >= 7_00_00 ? 'string' : null;
     }
 
-    public function __toString(): string
-    {
-        return 'string';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'string';

@@ -7,11 +7,6 @@ namespace Psalm\Type\Atomic;
  */
 class TBool extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'bool';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'bool';

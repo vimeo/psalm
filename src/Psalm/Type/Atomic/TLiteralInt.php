@@ -20,8 +20,12 @@ class TLiteralInt extends TInt
         return 'int(' . $this->value . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'int';
+        }
+
         return (string) $this->value;
     }
 

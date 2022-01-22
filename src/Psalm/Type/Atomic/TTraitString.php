@@ -12,16 +12,6 @@ class TTraitString extends TString
         return 'trait-string';
     }
 
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */

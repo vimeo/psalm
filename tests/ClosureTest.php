@@ -98,7 +98,7 @@ class ClosureTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'array{int, int, int}',
+                    '$a' => 'array{int, int, int}<int>',
                 ],
             ],
             'inlineCallableFunction' => [
@@ -344,7 +344,7 @@ class ClosureTest extends TestCase
                     $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
-                    '$a' => 'pure-Closure():pure-Closure():"hello"',
+                    '$a' => 'pure-Closure():pure-Closure():string',
                     '$b' => 'string',
                 ],
             ],
@@ -418,7 +418,7 @@ class ClosureTest extends TestCase
                     $closure = Closure::fromCallable("strlen");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                    '$closure' => 'pure-Closure(string):(int|positive-int)',
                 ]
             ],
             'allowClosureWithNarrowerReturn' => [
@@ -562,7 +562,7 @@ class ClosureTest extends TestCase
                     $maker = maker(stdClass::class);
                     $result = array_map($maker, ["abc"]);',
                 'assertions' => [
-                    '$result' => 'array{stdClass}'
+                    '$result' => 'array{stdClass}<stdClass>'
                 ],
             ],
             'FirstClassCallable:NamedFunction:is_int' => [
@@ -583,7 +583,7 @@ class ClosureTest extends TestCase
                     $result = $closure("test");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                    '$closure' => 'pure-Closure(string):(int|positive-int)',
                     '$result' => 'int|positive-int',
                 ],
                 'ignored_issues' => [],
@@ -660,7 +660,7 @@ class ClosureTest extends TestCase
                     $closure = $closure(...);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(0|positive-int)',
+                    '$closure' => 'pure-Closure(string):(int|positive-int)',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
@@ -722,9 +722,9 @@ class ClosureTest extends TestCase
                     $result3 = array_map($closure(...), $array);
                 ',
                 'assertions' => [
-                    '$result1' => 'array{null, null, null}',
-                    '$result2' => 'array{string, string, string}',
-                    '$result3' => 'array{int, int, int}',
+                    '$result1' => 'array{null, null, null}<null>',
+                    '$result2' => 'array{string, string, string}<string>',
+                    '$result3' => 'array{int, int, int}<int>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'

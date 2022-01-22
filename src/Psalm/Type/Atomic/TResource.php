@@ -9,11 +9,6 @@ use Psalm\Type\Atomic;
  */
 class TResource extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'resource';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'resource';

@@ -10,11 +10,6 @@ use Psalm\Type\Atomic;
  */
 class TNever extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'never';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'never';

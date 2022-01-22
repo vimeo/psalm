@@ -78,12 +78,12 @@ class TKeyedArray extends Atomic
         $this->class_strings = $class_strings;
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = array_map(
-            function ($name, Union $type): string {
+            function ($name, Union $type) use ($exact): string {
                 if ($this->is_list && $this->sealed) {
-                    return (string) $type;
+                    return $type->getId($exact);
                 }
 
                 $class_string_suffix = '';
@@ -93,36 +93,8 @@ class TKeyedArray extends Atomic
 
                 $name = $this->escapeAndQuote($name);
 
-                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
-            },
-            array_keys($this->properties),
-            $this->properties
-        );
-
-        if (!$this->is_list) {
-            sort($property_strings);
-        }
-
-        /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' . implode(', ', $property_strings) . '}';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        $property_strings = array_map(
-            function ($name, Union $type): string {
-                if ($this->is_list && $this->sealed) {
-                    return $type->getId();
-                }
-
-                $class_string_suffix = '';
-                if (isset($this->class_strings[$name])) {
-                    $class_string_suffix = '::class';
-                }
-
-                $name = $this->escapeAndQuote($name);
-
-                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
+                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
+                    . ': ' . $type->getId($exact);
             },
             array_keys($this->properties),
             $this->properties
@@ -139,8 +111,8 @@ class TKeyedArray extends Atomic
                 . ($this->previous_value_type
                     && (!$this->previous_value_type->isMixed()
                         || ($this->previous_key_type && !$this->previous_key_type->isArrayKey()))
-                    ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId() . ', ' : '')
-                        . $this->previous_value_type->getId() . '>'
+                    ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId($exact) . ', ' : '')
+                        . $this->previous_value_type->getId($exact) . '>'
                     : '');
     }
 

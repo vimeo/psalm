@@ -28,11 +28,6 @@ class TIntRange extends TInt
         $this->max_bound = $max_bound;
     }
 
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
