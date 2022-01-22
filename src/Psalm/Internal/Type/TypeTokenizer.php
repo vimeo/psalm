@@ -47,6 +47,7 @@ class TypeTokenizer
         'numeric-string' => true,
         'class-string' => true,
         'interface-string' => true,
+        'enum-string' => true,
         'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,

@@ -42,6 +42,10 @@ You can also parameterize `class-string` with an object name e.g. [`class-string
 
 Psalm also supports a `trait-string` annotation denote a trait that exists.
 
+### enum-string
+
+Psalm also supports a `enum-string` annotation denote an enum that exists.
+
 ### callable-string
 
 `callable-string` denotes a string value that has passed an `is_callable` check.

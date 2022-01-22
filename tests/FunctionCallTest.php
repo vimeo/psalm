@@ -1800,6 +1800,51 @@ class FunctionCallTest extends TestCase
                     '$a===' => 'float(10.36)',
                 ],
             ],
+            'allowConstructorAfterEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (enum_exists($s)) {
+                            new $s();
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
+                'php_version' => '8.1',
+            ],
+            'refineWithEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (enum_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'refineWithClassExistsOrEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s) || enum_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function bar(string $s) : void {
+                        if (enum_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function baz(string $s) : void {
+                        if (enum_exists($s) || interface_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

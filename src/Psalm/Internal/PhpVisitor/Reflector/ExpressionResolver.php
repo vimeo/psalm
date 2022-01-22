@@ -448,6 +448,38 @@ class ExpressionResolver
             return false;
         }
 
+        if ($function->name->parts === ['enum_exists']
+            && isset($function->getArgs()[0])
+        ) {
+            $string_value = null;
+
+            if ($function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                $string_value = $function->getArgs()[0]->value->value;
+            } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
+                && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+            ) {
+                $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
+            }
+
+            // We're using class_exists here because enum_exists doesn't exist on old versions of PHP
+            // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
+            if ($string_value && class_exists($string_value)) {
+                $reflection_class = new ReflectionClass($string_value);
+
+                if ($reflection_class->getFileName() !== $file_path) {
+                    $codebase->scanner->queueClassLikeForScanning(
+                        $string_value
+                    );
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         return null;
     }
 }
