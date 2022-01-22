@@ -26,13 +26,14 @@
     </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Config.php">
-    <DeprecatedProperty occurrences="6">
+    <DeprecatedProperty occurrences="7">
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_minor_version</code>
       <code>$codebase-&gt;php_minor_version</code>
+      <code>$this-&gt;load_xdebug_stub</code>
     </DeprecatedProperty>
     <DeprecatedMethod occurrences="3">
       <code>getAdditionalFileExtensions</code>
@@ -385,6 +386,12 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$stmt-&gt;expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Cli/Psalm.php">
+    <DeprecatedProperty occurrences="2">
+      <code>$config-&gt;load_xdebug_stub</code>
+      <code>$config-&gt;load_xdebug_stub</code>
+    </DeprecatedProperty>
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <DeprecatedClass occurrences="2">

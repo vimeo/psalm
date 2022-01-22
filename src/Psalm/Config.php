@@ -195,6 +195,8 @@ class Config
     /**
      * Whether or not to load Xdebug stub
      *
+     * @deprecated going to be removed in Psalm 5
+     *
      * @var bool|null
      */
     public $load_xdebug_stub;
