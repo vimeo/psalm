@@ -609,6 +609,27 @@ class ClosureTest extends TestCase
                 [],
                 '8.1'
             ],
+            'FirstClassCallable:InstanceMethod:Expr' => [
+                '<?php
+                    class Test {
+                        public function __construct(private readonly string $string) {
+                        }
+
+                        public function length(): int {
+                            return strlen($this->string);
+                        }
+                    }
+                    $test = new Test("test");
+                    $method_name = "length";
+                    $closure = $test->$method_name(...);
+                    $length = $closure();
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
             'FirstClassCallable:InstanceMethod:BuiltIn' => [
                 '<?php
                     $queue = new \SplQueue;
@@ -629,6 +650,23 @@ class ClosureTest extends TestCase
                         }
                     }
                     $closure = Test::length(...);
+                    $length = $closure("test");
+                ',
+                'assertions' => [
+                    '$length' => 'int',
+                ],
+                [],
+                '8.1'
+            ],
+            'FirstClassCallable:StaticMethod:Expr' => [
+                '<?php
+                    class Test {
+                        public static function length(string $param): int {
+                            return strlen($param);
+                        }
+                    }
+                    $method_name = "length";
+                    $closure = Test::$method_name(...);
                     $length = $closure("test");
                 ',
                 'assertions' => [
