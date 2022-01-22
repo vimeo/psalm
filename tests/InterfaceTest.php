@@ -13,7 +13,7 @@ class InterfaceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -719,7 +719,10 @@ class InterfaceTest extends TestCase
                         if ($some instanceof SomeInterface) {
                             $some->doStuff();
                         }
-                    }'
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -3,9 +3,17 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\IntersectionType;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
+use PhpParser\Node\UnionType;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Codebase\Scanner as CodebaseScanner;
+use Psalm\Issue\ParseError;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -22,11 +30,12 @@ use function strtolower;
 class TypeHintResolver
 {
     /**
-     * @param PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|PhpParser\Node\UnionType $hint
+     * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint
      */
     public static function resolve(
         PhpParser\NodeAbstract $hint,
-        CodebaseScanner $scanner,
+        CodeLocation $code_location,
+        Codebase $codebase,
         FileStorage $file_storage,
         ?ClassLikeStorage $classlike_storage,
         Aliases $aliases,
@@ -36,13 +45,23 @@ class TypeHintResolver
             $type = null;
 
             if (!$hint->types) {
-                throw new UnexpectedValueException('bad');
+                throw new UnexpectedValueException('Union type should not be empty');
+            }
+
+            if ($analysis_php_version_id < 8_00_00) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        'Union types are not supported in PHP < 8',
+                        $code_location
+                    )
+                );
             }
 
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
-                    $scanner,
+                    $code_location,
+                    $codebase,
                     $file_storage,
                     $classlike_storage,
                     $aliases,
@@ -50,6 +69,52 @@ class TypeHintResolver
                 );
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
+            }
+
+            return $type;
+        }
+
+        if ($hint instanceof PhpParser\Node\IntersectionType) {
+            $type = null;
+
+            if (!$hint->types) {
+                throw new UnexpectedValueException('Intersection type should not be empty');
+            }
+
+            if ($analysis_php_version_id < 8_01_00) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        'Intersection types are not supported in PHP < 8.1',
+                        $code_location
+                    )
+                );
+            }
+
+            foreach ($hint->types as $atomic_typehint) {
+                $resolved_type = self::resolve(
+                    $atomic_typehint,
+                    $code_location,
+                    $codebase,
+                    $file_storage,
+                    $classlike_storage,
+                    $aliases,
+                    $analysis_php_version_id
+                );
+
+                if ($resolved_type->hasScalarType()) {
+                    IssueBuffer::maybeAdd(
+                        new ParseError(
+                            'Intersection types cannot contain scalar types',
+                            $code_location
+                        )
+                    );
+                }
+
+                $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
+            }
+
+            if ($type === null) {
+                throw new UnexpectedValueException('Intersection type could not be resolved');
             }
 
             return $type;
@@ -69,7 +134,7 @@ class TypeHintResolver
         } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$hint;
 
-            $scanner->queueClassLikeForScanning($fq_type_string);
+            $codebase->scanner->queueClassLikeForScanning($fq_type_string);
             $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         } else {
             $lower_hint = strtolower($hint->parts[0]);
@@ -87,7 +152,7 @@ class TypeHintResolver
                 $type_string = implode('\\', $hint->parts);
                 $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $aliases);
 
-                $scanner->queueClassLikeForScanning($fq_type_string);
+                $codebase->scanner->queueClassLikeForScanning($fq_type_string);
                 $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
             }
         }

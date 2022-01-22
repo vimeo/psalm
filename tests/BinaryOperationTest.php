@@ -260,7 +260,7 @@ class BinaryOperationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -818,6 +818,9 @@ class BinaryOperationTest extends TestCase
                             return 0;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'NumericStringIncrementLiteral' => [
                 'code' => '<?php

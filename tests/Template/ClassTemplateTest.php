@@ -14,7 +14,7 @@ class ClassTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -3490,6 +3490,9 @@ class ClassTemplateTest extends TestCase
                     function foo(Collection $c, Collection $d): object {
                         return rand(0, 1) ? $c->get() : $d->get();
                     }',
+                    'assertions' => [],
+                    'ignored_issues' => [],
+                    'php_version' => '8.0',
             ],
             'allowCovariantBoundsMismatchDifferentContainers' => [
                 'code' => '<?php
@@ -3525,6 +3528,9 @@ class ClassTemplateTest extends TestCase
                     function foo(Collection1 $c, Collection2 $d): object {
                         return rand(0, 1) ? $c->get() : $d->get();
                     }',
+                    'assertions' => [],
+                    'ignored_issues' => [],
+                    'php_version' => '8.0',
             ],
             'allowCovariantBoundsMismatchContainerAndObject' => [
                 'code' => '<?php
@@ -3556,6 +3562,9 @@ class ClassTemplateTest extends TestCase
                     function foo(object $c, Collection $d): object {
                         return rand(0, 1) ? $c : $d->get();
                     }',
+                    'assertions' => [],
+                    'ignored_issues' => [],
+                    'php_version' => '8.0',
             ],
             'allowCompatibleGenerics' => [
                 'code' => '<?php

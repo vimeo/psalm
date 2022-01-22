@@ -8,6 +8,7 @@ use LogicException;
 use PhpParser;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
@@ -1485,19 +1486,7 @@ class ClassLikeNodeScanner
 
         if ($stmt->type) {
             $parser_property_type = $stmt->type;
-            if ($parser_property_type instanceof PhpParser\Node\IntersectionType) {
-                throw new UnexpectedValueException('Intersection types not yet supported');
-            }
-            /** @var Identifier|Name|NullableType|UnionType $parser_property_type */
-
-            $signature_type = TypeHintResolver::resolve(
-                $parser_property_type,
-                $this->codebase->scanner,
-                $this->file_storage,
-                $this->storage,
-                $this->aliases,
-                $this->codebase->analysis_php_version_id
-            );
+            /** @var Identifier|IntersectionType|Name|NullableType|UnionType $parser_property_type */
 
             $signature_type_location = new CodeLocation(
                 $this->file_scanner,
@@ -1505,6 +1494,16 @@ class ClassLikeNodeScanner
                 null,
                 false,
                 CodeLocation::FUNCTION_RETURN_TYPE
+            );
+
+            $signature_type = TypeHintResolver::resolve(
+                $parser_property_type,
+                $signature_type_location,
+                $this->codebase,
+                $this->file_storage,
+                $this->storage,
+                $this->aliases,
+                $this->codebase->analysis_php_version_id
             );
         }
 
