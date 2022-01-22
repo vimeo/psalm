@@ -120,6 +120,7 @@
  - [BC] Method `Psalm\Type\Union::isFormerStaticObject()` was renamed to `isStaticObject()`
  - [BC] Method `Psalm\Type\Union::hasFormerStaticObject()` was renamed to `hasStaticObject()`
  - [BC] Function assertions (from `@psalm-assert Foo $bar`) have been converted from strings to specific `Assertion` objects.
+ - [BC] Property `Psalm\Storage\ClassLikeStorage::$invalid_dependencies` changed from `array<string>` to `array<string, true>`.
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
