@@ -1569,7 +1569,7 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
             ],
             'noMixedTypehintInDescendant' => [
-                '<?php
+                'code' => '<?php
                     class a {
                         public function test(): mixed {
                             return 0;
@@ -1582,12 +1582,11 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
-                [],
-                false,
+                'ignored_issues' => [],
                 '8.0'
             ],
             'noTypehintInNativeDescendant' => [
-                '<?php
+                'code' => '<?php
                     class a implements JsonSerializable {
                         public function jsonSerialize() {
                             return 0;
@@ -1595,8 +1594,7 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
-                [],
-                false,
+                'ignored_issues' => [],
                 '8.1'
             ],
         ];

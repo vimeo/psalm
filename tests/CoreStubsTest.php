@@ -9,7 +9,7 @@ class CoreStubsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -19,7 +19,7 @@ class CoreStubsTest extends TestCase
             new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);'
         ];
         yield 'proc_open() named arguments' => [
-            '<?php
+            'code' => '<?php
 
             proc_open(
                 command: "ls",
@@ -30,7 +30,7 @@ class CoreStubsTest extends TestCase
                 options: null
             );',
             'assertions' => [],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
     }

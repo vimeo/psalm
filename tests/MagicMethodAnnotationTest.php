@@ -820,7 +820,7 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeInt(B::bar());'
             ],
             'returnThisShouldKeepGenerics' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @method $this foo()
@@ -850,7 +850,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ]
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @method E get()
