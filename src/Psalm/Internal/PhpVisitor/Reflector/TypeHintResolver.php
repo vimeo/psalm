@@ -49,7 +49,7 @@ class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_00_00) {
-                IssueBuffer::add(
+                IssueBuffer::maybeAdd(
                     new ParseError(
                         'Union types are not supported in PHP < 8',
                         $code_location
@@ -81,14 +81,13 @@ class TypeHintResolver
                 throw new UnexpectedValueException('bad');
             }
 
-            if ($analysis_php_version_id < 8_10_00) {
-                IssueBuffer::add(
+            if ($analysis_php_version_id < 8_01_00) {
+                IssueBuffer::maybeAdd(
                     new ParseError(
                         'Intersection types are not supported in PHP < 8.1',
                         $code_location
                     )
                 );
-                return false;
             }
 
             foreach ($hint->types as $atomic_typehint) {
@@ -103,13 +102,12 @@ class TypeHintResolver
                 );
 
                 if ($resolved_type->hasScalarType()) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new ParseError(
                             'Intersection types cannot contain scalar types',
                             $code_location
                         )
                     );
-                    return null;
                 }
 
                 $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);

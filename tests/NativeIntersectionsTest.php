@@ -11,7 +11,7 @@ class NativeIntersectionsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -104,7 +104,7 @@ class NativeIntersectionsTest extends TestCase
                 'php_version' => '8.1'
             ],
             'intersectionsNotAllowedWithUnions' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                     }
                     interface B {
@@ -115,24 +115,22 @@ class NativeIntersectionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'intersectionsNotAllowedWithNonClasses' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                     }
                     function foo (A&string $test): A&string {
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                [],
-                false,
-                '8.1'
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'intersectionsNotAllowedInPHP80' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                     }
                     interface B {
@@ -141,9 +139,8 @@ class NativeIntersectionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
         ];
     }

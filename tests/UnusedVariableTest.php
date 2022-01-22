@@ -35,7 +35,6 @@ class UnusedVariableTest extends TestCase
             )
         );
 
-        $this->project_analyzer->setPhpVersion('7.4', 'tests');
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
@@ -46,12 +45,14 @@ class UnusedVariableTest extends TestCase
      * @param array<string> $error_levels
      *
      */
-    public function testValidCode($code, array $error_levels = []): void
+    public function testValidCode($code, array $error_levels = [], string $php_version = '7.4'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
+
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -84,6 +85,8 @@ class UnusedVariableTest extends TestCase
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
         $file_path = self::$src_dir_path . 'somefile.php';
 
         foreach ($error_levels as $error_level) {
@@ -99,7 +102,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>}>
+     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -2371,7 +2374,9 @@ class UnusedVariableTest extends TestCase
                                 return 2;
                             }
                         }
-                    }'
+                    }',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'concatWithUnknownProperty' => [
                 'code' => '<?php

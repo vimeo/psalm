@@ -11,13 +11,13 @@ class NativeUnionsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[],php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nativeTypeUnionInConstructor' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                     }
                     interface B {
@@ -35,7 +35,7 @@ class NativeUnionsTest extends TestCase
                 'php_version' => '8.0'
             ],
             'nativeTypeUnionAsArgument' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         function foo(): void;
                     }
@@ -56,7 +56,7 @@ class NativeUnionsTest extends TestCase
                 'php_version' => '8.0'
             ],
             'unionAndNullableEquivalent' => [
-                '<?php
+                'code' => '<?php
                     function test(string|null $in): ?string {
                         return $in;
                     }
@@ -69,25 +69,24 @@ class NativeUnionsTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidNativeUnionArgument' => [
-                '<?php
+                'code' => '<?php
                     function test(string|null $in): string|null {
                         return $in;
                     }
                     test(2);
                 ',
                 'error_message' => 'InvalidScalarArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'mismatchDocblockNativeUnionArgument' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|null $in
                      */
@@ -96,12 +95,11 @@ class NativeUnionsTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockParamType',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'unionsNotAllowedInPHP74' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                     }
                     interface B {
@@ -110,9 +108,8 @@ class NativeUnionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                [],
-                false,
-                '7.4'
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
         ];
     }

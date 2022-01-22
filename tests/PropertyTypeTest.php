@@ -346,7 +346,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -2157,7 +2157,10 @@ class PropertyTypeTest extends TestCase
                     $a = new A();
 
                     if ($a->i === 3) {}
-                    if ($a->i === "foo") {}'
+                    if ($a->i === "foo") {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'setClassStringOfStatic' => [
                 'code' => '<?php
