@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@c90cffd382bb7a5d390387d4ad2a02a4935fba5c">
+<files psalm-version="dev-master@093edcbe1d5c90ad574efcddd62fe741819e7cf2">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -24,9 +24,6 @@
       <code>getAdditionalFileTypeAnalyzers</code>
       <code>getAdditionalFileTypeScanners</code>
     </DeprecatedMethod>
-    <DeprecatedProperty occurrences="1">
-      <code>$this-&gt;load_xdebug_stub</code>
-    </DeprecatedProperty>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -203,12 +200,6 @@
       <code>$stmt-&gt;expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <DeprecatedProperty occurrences="2">
-      <code>$config-&gt;load_xdebug_stub</code>
-      <code>$config-&gt;load_xdebug_stub</code>
-    </DeprecatedProperty>
-  </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$callables[0]</code>
@@ -286,8 +277,7 @@
     <DeprecatedProperty occurrences="1">
       <code>$storage-&gt;template_extended_count</code>
     </DeprecatedProperty>
-    <PossiblyUndefinedIntArrayOffset occurrences="4">
-      <code>$imported_type_data[3]</code>
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$l[4]</code>
       <code>$r[4]</code>
       <code>$var_line_parts[0]</code>

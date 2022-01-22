@@ -197,15 +197,6 @@ class Config
     public $throw_exception = false;
 
     /**
-     * Whether or not to load Xdebug stub
-     *
-     * @deprecated going to be removed in Psalm 5
-     *
-     * @var bool|null
-     */
-    public $load_xdebug_stub;
-
-    /**
      * The directory to store PHP Parser (and other) caches
      *
      * @var string|null
@@ -957,7 +948,6 @@ class Config
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
-            'loadXdebugStub' => 'load_xdebug_stub',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
@@ -1002,10 +992,6 @@ class Config
         }
         foreach ($config->php_extensions as $ext => $_) {
             $config->php_extensions[$ext] = isset($composer_json["require"]["ext-$ext"]);
-        }
-
-        if ($config->load_xdebug_stub !== null) {
-            $config->php_extensions["xdebug"] = $config->load_xdebug_stub;
         }
 
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {

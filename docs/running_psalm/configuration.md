@@ -246,17 +246,6 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 ```
 When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
 
-#### loadXdebugStub
-```xml
-<psalm
-  loadXdebugStub="[bool]"
->
-```
-Deprecated, use &lt;enableExtensions&gt; instead.
-If not present, Psalm will only load the Xdebug stub if Psalm has unloaded the extension.
-When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
-Setting to `false` prevents the stub from loading.
-
 #### ensureArrayStringOffsetsExist
 ```xml
 <psalm
