@@ -88,7 +88,7 @@ class IncludeTest extends TestCase
         $config->skip_checks_on_unresolvable_includes = false;
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->scanFiles();
 

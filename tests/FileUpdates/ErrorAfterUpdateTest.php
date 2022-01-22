@@ -90,7 +90,7 @@ class ErrorAfterUpdateTest extends TestCase
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 

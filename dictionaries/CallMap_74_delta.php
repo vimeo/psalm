@@ -33,8 +33,8 @@ return [
       'new' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     ],
     'proc_open' => [
-      'old' => ['resource|false', 'command'=>'string', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
-      'new' => ['resource|false', 'cmd'=>'string|array', 'descriptorspec'=>'array', '&w_pipes'=>'resource[]', 'cwd='=>'?string', 'env='=>'?array', 'other_options='=>'array'],
+      'old' => ['resource|false', 'command'=>'string', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
+      'new' => ['resource|false', 'command'=>'string|array', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
     ],
   ],
   'removed' => [

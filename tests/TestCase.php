@@ -24,7 +24,6 @@ use function defined;
 use function getcwd;
 use function ini_set;
 use function is_string;
-use function method_exists;
 
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
@@ -151,28 +150,6 @@ class TestCase extends BaseTestCase
     protected function getTestName($withDataSet = true): string
     {
         return $this->getName($withDataSet);
-    }
-
-    /**
-     * Compatibility alias
-     */
-    public function expectExceptionMessageRegExp(string $regexp): void
-    {
-        if (method_exists($this, 'expectExceptionMessageMatches')) {
-            $this->expectExceptionMessageMatches($regexp);
-        } else {
-            /** @psalm-suppress UndefinedMethod */
-            parent::expectExceptionMessageRegExp($regexp);
-        }
-    }
-
-    public static function assertRegExp(string $pattern, string $string, string $message = ''): void
-    {
-        if (method_exists(self::class, 'assertMatchesRegularExpression')) {
-            self::assertMatchesRegularExpression($pattern, $string, $message);
-        } else {
-            parent::assertRegExp($pattern, $string, $message);
-        }
     }
 
     public static function assertArrayKeysAreStrings(array $array, string $message = ''): void

@@ -98,6 +98,7 @@
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
+ - [MethodSignatureMustProvideReturnType](issues/MethodSignatureMustProvideReturnType.md)
  - [MismatchingDocblockParamType](issues/MismatchingDocblockParamType.md)
  - [MismatchingDocblockPropertyType](issues/MismatchingDocblockPropertyType.md)
  - [MismatchingDocblockReturnType](issues/MismatchingDocblockReturnType.md)

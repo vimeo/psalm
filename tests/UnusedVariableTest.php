@@ -83,7 +83,7 @@ class UnusedVariableTest extends TestCase
         }
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
 

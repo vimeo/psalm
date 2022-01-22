@@ -1018,7 +1018,7 @@ class PluginTest extends TestCase
         $this->project_analyzer->trackTaintedInputs();
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageRegExp('/TaintedHtml/');
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());
     }
