@@ -45,7 +45,7 @@ class TypeHintResolver
             $type = null;
 
             if (!$hint->types) {
-                throw new UnexpectedValueException('bad');
+                throw new UnexpectedValueException('Union type should not be empty');
             }
 
             if ($analysis_php_version_id < 8_00_00) {
@@ -78,7 +78,7 @@ class TypeHintResolver
             $type = null;
 
             if (!$hint->types) {
-                throw new UnexpectedValueException('bad');
+                throw new UnexpectedValueException('Intersection type should not be empty');
             }
 
             if ($analysis_php_version_id < 8_01_00) {
@@ -114,7 +114,7 @@ class TypeHintResolver
             }
 
             if ($type === null) {
-                throw new UnexpectedValueException('bad');
+                throw new UnexpectedValueException('Intersection type could not be resolved');
             }
 
             return $type;
