@@ -170,6 +170,12 @@ class Properties
             return true;
         }
 
+        if (($read_mode === true && isset($class_storage->pseudo_property_get_types[$property_name]))
+            || ($read_mode === false && isset($class_storage->pseudo_property_set_types[$property_name]))
+        ) {
+            return true;
+        }
+
         if ($context && $context->calling_method_id) {
             $this->file_reference_provider->addMethodReferenceToMissingClassMember(
                 $context->calling_method_id,
