@@ -22,7 +22,6 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -31,10 +30,6 @@ use function explode;
 use function gettype;
 use function implode;
 use function in_array;
-use function is_array;
-use function is_float;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function strtolower;
@@ -515,57 +510,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             default:
                 return Type::getMixed();
         }
-    }
-
-    /**
-     * Gets the Psalm literal type from a particular value
-     *
-     * @param array|scalar|null $value
-     * @throws InvalidArgumentException
-     *
-     */
-    public static function getLiteralTypeFromValue($value, bool $sealed_array = true): Type\Union
-    {
-        if (is_array($value)) {
-            if (empty($value)) {
-                return Type::getEmptyArray();
-            }
-
-            $types = [];
-            /** @var array|scalar|null $val */
-            foreach ($value as $key => $val) {
-                $types[$key] = self::getLiteralTypeFromValue($val, $sealed_array);
-            }
-            $type = new TKeyedArray($types);
-            $type->sealed = $sealed_array;
-            return new Type\Union([$type]);
-        }
-
-        if (is_string($value)) {
-            return Type::getString($value);
-        }
-
-        if (is_int($value)) {
-            return Type::getInt(false, $value);
-        }
-
-        if (is_float($value)) {
-            return Type::getFloat($value);
-        }
-
-        if ($value === false) {
-            return Type::getFalse();
-        }
-
-        if ($value === true) {
-            return Type::getTrue();
-        }
-
-        if ($value === null) {
-            return Type::getNull();
-        }
-
-        throw new InvalidArgumentException();
     }
 
     /**
