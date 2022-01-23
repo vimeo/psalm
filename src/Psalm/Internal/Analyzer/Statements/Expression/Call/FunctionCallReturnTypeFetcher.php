@@ -636,7 +636,8 @@ class FunctionCallReturnTypeFetcher
             }
         }
 
-        if ($conditionally_removed_taints && $function_storage->location) {
+        $toBeRemovedTaints = array_merge($removed_taints, $conditionally_removed_taints);
+        if ($toBeRemovedTaints && $function_storage->location) {
             $assignment_node = DataFlowNode::getForAssignment(
                 $function_id . '-escaped',
                 $function_storage->signature_return_type_location ?: $function_storage->location,
@@ -648,7 +649,7 @@ class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($removed_taints, $conditionally_removed_taints)
+                $toBeRemovedTaints
             );
 
             $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
