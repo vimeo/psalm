@@ -505,7 +505,7 @@ class IntRangeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'int<-9, 9>',
                     '$c===' => 'int<0, 9>',
-                    '$d===' => '0|positive-int'
+                    '$d===' => 'int<0, max>'
                 ],
             ],
             'minus' => [
@@ -582,7 +582,7 @@ class IntRangeTest extends TestCase
                 'code' => '<?php
                     /** @return int<0, 10> */
                     function getInt(): int{ return rand(0, 10); }
-                    
+
                     $a = getInt();
                     $b = -$a;
                     $c = null;

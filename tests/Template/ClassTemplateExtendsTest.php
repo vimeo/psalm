@@ -4145,7 +4145,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    /** @return Functor<int> */
+                    /** @return Functor<int<0, max>> */
                     function foo(string $s) : Functor {
                         $foo = new FakeFunctor($s);
                         $function = function (string $a): int {

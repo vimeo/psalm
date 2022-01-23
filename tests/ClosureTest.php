@@ -418,7 +418,7 @@ class ClosureTest extends TestCase
                     $closure = Closure::fromCallable("strlen");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(int|positive-int)',
+                    '$closure' => 'pure-Closure(string):int<0, max>',
                 ]
             ],
             'allowClosureWithNarrowerReturn' => [
@@ -583,8 +583,8 @@ class ClosureTest extends TestCase
                     $result = $closure("test");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(int|positive-int)',
-                    '$result' => 'int|positive-int',
+                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
@@ -660,7 +660,7 @@ class ClosureTest extends TestCase
                     $closure = $closure(...);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):(int|positive-int)',
+                    '$closure' => 'pure-Closure(string):int<0, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'

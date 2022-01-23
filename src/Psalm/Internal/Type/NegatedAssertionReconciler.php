@@ -11,7 +11,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
-use Psalm\Storage\Assertion\IsNotPositiveNumeric;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -85,10 +84,6 @@ class NegatedAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues
             );
-        }
-
-        if ($is_equality && $assertion instanceof IsNotPositiveNumeric) {
-            return $existing_var_type;
         }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
