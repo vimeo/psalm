@@ -16,7 +16,7 @@ class UnionTest extends TestCase
         'void',
         'array-key',
         'iterable',
-        'never-return',
+        'never',
         'object',
         'callable',
         'pure-callable',
@@ -35,7 +35,6 @@ class UnionTest extends TestCase
         'numeric',
         'true',
         'false',
-        'empty',
         'scalar',
         'null',
         'mixed',
@@ -44,10 +43,7 @@ class UnionTest extends TestCase
         'trait-string',
         'callable-string',
         'numeric-string',
-        'html-escaped-string',
-        'false-y',
         '$this',
-
     ];
 
     public function testUnionsAreCommutative(): void
