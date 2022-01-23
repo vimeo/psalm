@@ -533,7 +533,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $statements_analyzer,
                 $function_call_info->function_id,
-                $args,
                 $context,
                 $code_location
             );

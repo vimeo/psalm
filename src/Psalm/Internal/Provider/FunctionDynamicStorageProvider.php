@@ -51,14 +51,10 @@ final class FunctionDynamicStorageProvider
         return isset(self::$handlers[strtolower($fq_function_name)]);
     }
 
-    /**
-     * @param list<PhpParser\Node\Arg> $call_args
-     */
     public function getFunctionSignature(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
-        array $call_args,
         Context $context,
         CodeLocation $code_location
     ): ?FunctionStorage {
@@ -76,7 +72,7 @@ final class FunctionDynamicStorageProvider
             $event = new FunctionDynamicStorageProviderEvent(
                 $statements_analyzer,
                 $function_id,
-                $call_args,
+                $stmt,
                 $context,
                 $code_location
             );

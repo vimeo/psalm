@@ -13,24 +13,20 @@ class FunctionDynamicStorageProviderEvent
 {
     private StatementsAnalyzer $statements_analyzer;
     private string $function_id;
-    /** @var list<PhpParser\Node\Arg> */
-    private array $call_args;
+    private PhpParser\Node\Expr\FuncCall $func_call;
     private Context $context;
     private CodeLocation $code_location;
 
-    /**
-     * @param list<PhpParser\Node\Arg> $call_args
-     */
     public function __construct(
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
-        array $call_args,
+        PhpParser\Node\Expr\FuncCall $func_call,
         Context $context,
         CodeLocation $code_location
     ) {
         $this->statements_analyzer = $statements_analyzer;
         $this->function_id = $function_id;
-        $this->call_args = $call_args;
+        $this->func_call = $func_call;
         $this->context = $context;
         $this->code_location = $code_location;
     }
@@ -45,12 +41,9 @@ class FunctionDynamicStorageProviderEvent
         return $this->function_id;
     }
 
-    /**
-     * @return list<PhpParser\Node\Arg>
-     */
-    public function getCallArgs(): array
+    public function getExpr(): PhpParser\Node\Expr\FuncCall
     {
-        return $this->call_args;
+        return $this->func_call;
     }
 
     public function getContext(): Context

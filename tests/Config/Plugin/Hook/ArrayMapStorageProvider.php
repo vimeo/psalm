@@ -29,9 +29,15 @@ class ArrayMapStorageProvider implements FunctionDynamicStorageProviderInterface
 
     public static function getFunctionStorage(FunctionDynamicStorageProviderEvent $event): ?FunctionStorage
     {
+        $func_call = $event->getExpr();
+
+        if ($func_call->isFirstClassCallable()) {
+            return null;
+        }
+
         $context = $event->getContext();
         $statements_analyzer = $event->getStatementsAnalyzer();
-        $call_args = $event->getCallArgs();
+        $call_args = $func_call->getArgs();
         $args_count = count($call_args);
         $expected_callable_args_count = $args_count - 1;
 

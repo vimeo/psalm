@@ -360,7 +360,6 @@ class ArgumentsAnalyzer
                         $function_like_call,
                         $statements_analyzer,
                         $function_id,
-                        $function_like_call->getArgs(),
                         $context,
                         new CodeLocation($statements_analyzer, $function_like_call),
                     );
