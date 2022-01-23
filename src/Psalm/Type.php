@@ -194,6 +194,7 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /** @deprecated will be removed in Psalm 5 */
     public static function getPositiveInt(bool $from_calculation = false): Union
     {
         $union = new Union([new TPositiveInt()]);

@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an int that is also positive (strictly > 0)
+ * @deprecated will be removed in Psalm 5
  */
 class TPositiveInt extends TInt
 {

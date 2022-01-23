@@ -231,6 +231,42 @@ class AtomicStaticCallAnalyzer
                 );
             }
 
+            if ($stmt->isFirstClassCallable()) {
+                $return_type_candidate = null;
+                if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+                    $method_name_type = $statements_analyzer->node_data->getType($stmt->name);
+                    if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
+                        $method_identifier = new MethodIdentifier(
+                            $fq_class_name,
+                            strtolower($method_name_type->getSingleStringLiteral()->value)
+                        );
+                        //the call to methodExists will register that the method was called from somewhere
+                        if ($codebase->methods->methodExists(
+                            $method_identifier,
+                            $context->calling_method_id,
+                            null,
+                            $statements_analyzer,
+                            $statements_analyzer->getFilePath(),
+                            true,
+                            $context->insideUse()
+                        )) {
+                            $method_storage = $codebase->methods->getStorage($method_identifier);
+
+                            $return_type_candidate = new Union([new TClosure(
+                                'Closure',
+                                $method_storage->params,
+                                $method_storage->return_type,
+                                $method_storage->pure
+                            )]);
+                        }
+                    }
+                }
+
+                $statements_analyzer->node_data->setType($stmt, $return_type_candidate ?? Type::getClosure());
+
+                return;
+            }
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),

@@ -371,6 +371,17 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'InterfacesWithProperties' => [
+                'code' => '<?php
+
+                    static fn (\UnitEnum $tag): string => $tag->name;
+
+                    static fn (\BackedEnum $tag): string|int => $tag->value;
+                    ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
