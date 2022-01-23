@@ -356,7 +356,7 @@ class ArgumentsAnalyzer
                 }
 
                 if ($codebase->functions->dynamic_storage_provider->has($function_id)) {
-                    return $codebase->functions->dynamic_storage_provider->getFunctionSignature(
+                    return $codebase->functions->dynamic_storage_provider->getFunctionStorage(
                         $function_like_call,
                         $statements_analyzer,
                         $function_id,

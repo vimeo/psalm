@@ -529,7 +529,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $has_dynamic_storage = false;
 
         if ($codebase->functions->dynamic_storage_provider->has($function_call_info->function_id)) {
-            $dynamic_function_storage = $codebase->functions->dynamic_storage_provider->getFunctionSignature(
+            $dynamic_function_storage = $codebase->functions->dynamic_storage_provider->getFunctionStorage(
                 $stmt,
                 $statements_analyzer,
                 $function_call_info->function_id,
