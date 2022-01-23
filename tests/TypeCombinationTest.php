@@ -630,28 +630,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineZeroAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     'positive-int',
                 ],
             ],
             'combinePositiveIntAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '0',
                 ],
             ],
             'combinePositiveIntAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     'positive-int',
                     '-1',
                 ],
             ],
             'combinePositiveIntZeroAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     'positive-int',
@@ -659,14 +659,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '-1',
                     'positive-int',
                 ],
             ],
             'combineZeroMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     '-1',
@@ -674,7 +674,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineZeroOneAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     '1',
@@ -682,7 +682,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveIntOneAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '1',
@@ -690,7 +690,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveInts' => [
-                'positive-int',
+                'int<1, max>',
                 [
                     'positive-int',
                     'positive-int',

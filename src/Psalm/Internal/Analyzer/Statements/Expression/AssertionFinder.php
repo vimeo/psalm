@@ -58,7 +58,6 @@ use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
-use Psalm\Storage\Assertion\IsPositiveNumeric;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -3869,13 +3868,7 @@ class AssertionFinder
 
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($superior_value_comparison === 0) {
-                        $if_types[$var_name] = [[new IsPositiveNumeric(true), new IsIdentical(new TLiteralInt(0))]];
-                    } elseif ($superior_value_comparison === 1) {
-                        $if_types[$var_name] = [[new IsPositiveNumeric(true)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
-                    }
+                    $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
                 } else {
                     $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
                 }
@@ -3984,13 +3977,7 @@ class AssertionFinder
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
                 } else {
-                    if ($inferior_value_comparison === 0) {
-                        $if_types[$var_name] = [[new IsPositiveNumeric(false), new IsIdentical(new TLiteralInt(0))]];
-                    } elseif ($inferior_value_comparison === 1) {
-                        $if_types[$var_name] = [[new IsPositiveNumeric(true)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
-                    }
+                    $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
                 }
 
                 if ($isset_assert) {

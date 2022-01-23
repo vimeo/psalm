@@ -28,6 +28,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -202,8 +203,7 @@ class ConcatAnalyzer
                 );
 
                 if ($left_is_numeric) {
-                    $right_uint = Type::getPositiveInt();
-                    $right_uint->addType(new TLiteralInt(0));
+                    $right_uint = new Union([new TIntRange(0, null)]);
                     $right_is_uint = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $right_type,

@@ -210,7 +210,7 @@ abstract class Atomic implements TypeNode
                 return new TClosedResource();
 
             case 'positive-int':
-                return new TPositiveInt();
+                return new TIntRange(1, null);
 
             case 'numeric':
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();

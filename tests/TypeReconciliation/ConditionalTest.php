@@ -2717,7 +2717,7 @@ class ConditionalTest extends TestCase
                     }
 
                     if ($a >= 0) {
-                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
                     }
 
@@ -2726,7 +2726,7 @@ class ConditionalTest extends TestCase
                     }
 
                     if (0 <= $a) {
-                        /** @tmp-psalm-suppress PossiblyNullOperand this should be suppressed but assertions remove null for now */
+                        /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
                     }
 
