@@ -23,7 +23,7 @@ final class FunctionDynamicStorageProvider
     /** @var array<lowercase-string, array<Closure(FunctionDynamicStorageProviderEvent): ?FunctionStorage>> */
     private static $handlers = [];
 
-    /** @var array<lowercase-string, FunctionStorage> */
+    /** @var array<lowercase-string, ?FunctionStorage> */
     private static $dynamic_storages = [];
 
     /**
@@ -82,9 +82,9 @@ final class FunctionDynamicStorageProvider
             );
 
             $result = $class_handler($event);
+            self::$dynamic_storages[$dynamic_storage_id] = $result;
 
             if ($result) {
-                self::$dynamic_storages[$dynamic_storage_id] = $result;
                 return $result;
             }
         }
