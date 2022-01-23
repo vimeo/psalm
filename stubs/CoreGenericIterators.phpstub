@@ -357,7 +357,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     const FULL_CACHE = 256 ;
     
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
@@ -389,8 +389,8 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
  */
 class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
     /**
-     * @param Iterator<TKey, TValue> $iterator
-     * @param callable(TValue, TKey, Iterator<TKey, TValue>): bool $callback
+     * @param TIterator $iterator
+     * @param callable(TValue, TKey, TIterator): bool $callback
      */
     public function __construct(Iterator $iterator, callable $callback) {}
 
@@ -536,7 +536,7 @@ class GlobIterator extends FilesystemIterator implements Countable {
  */
 class InfiniteIterator extends IteratorIterator {
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(Iterator $iterator) {}
 
@@ -564,7 +564,7 @@ class InfiniteIterator extends IteratorIterator {
  */
 class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(Iterator $iterator, int $offset = 0, int $count = -1) {}
 
@@ -592,7 +592,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
  */
 class NoRewindIterator extends IteratorIterator {
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(Iterator $iterator) {}
 
@@ -674,18 +674,19 @@ class MultipleIterator implements Iterator {
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as RecursiveIterator<TKey, TValue>
  *
- * @template-extends FilterIterator<TKey, TValue>
+ * @template-extends FilterIterator<TKey, TValue, TIterator>
  * @template-implements RecursiveIterator<TKey, TValue>
  */
 abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
 
     /**
-     * @param RecursiveIterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
-     * @return RecursiveFilterIterator<TKey, TValue>
+     * @return TIterator
      */
     public function getChildren() {}
 
@@ -710,8 +711,9 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as RecursiveIterator<TKey, TValue>
  *
- * @template-extends RecursiveFilterIterator<TKey, TValue>
+ * @template-extends RecursiveFilterIterator<TKey, TValue, TIterator>
  */
 class ParentIterator extends RecursiveFilterIterator implements RecursiveIterator, OuterIterator {
 
@@ -720,7 +722,7 @@ class ParentIterator extends RecursiveFilterIterator implements RecursiveIterato
      */
     public function accept() {}
     /**
-     * @param RecursiveIterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
@@ -791,9 +793,10 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as Iterator<TKey, TValue>
  *
  * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends ArrayIterator<TKey, TValue>
+ * @template-extends CachingIterator<TKey, TValue, TIterator>
  */
 class RecursiveCachingIterator extends CachingIterator implements RecursiveIterator {
 
@@ -805,12 +808,12 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     const FULL_CACHE = 256 ;
 
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags
      */
     public function __construct(Iterator $iterator, int $flags = 0) {}
     /**
-     * @return RecursiveCachingIterator<TKey,TValue>
+     * @return RecursiveCachingIterator<TKey,TValue, TIterator>
      */
     public function getChildren() {}
 
@@ -835,7 +838,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template TIterator as RecursiveIterator<TKey, TValue>
  *
  * @template-implements RecursiveIterator<TKey, TValue>
  * @template-extends CallbackFilterIterator<TKey, TValue, TIterator>
@@ -843,8 +846,8 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements RecursiveIterator {
 
     /**
-     * @param RecursiveIterator<TKey, TValue> $iterator
-     * @param callable(TValue, TKey, RecursiveIterator<TKey, TValue>): bool $callback
+     * @param TIterator $iterator
+     * @param callable(TValue, TKey, TIterator): bool $callback
      */
     public function __construct(RecursiveIterator $iterator, callable $callback) {}
     /**
@@ -933,9 +936,10 @@ class RecursiveIteratorIterator implements OuterIterator {
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as RecursiveIterator<TKey, TValue>
  *
  * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends RegexIterator<TKey, TValue>
+ * @template-extends RegexIterator<TKey, TValue, TIterator>
  */
 class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator {
 
@@ -947,7 +951,7 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
     const USE_KEY = 1 ;
 
     /**
-     * @param RecursiveIterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      * @param string $regex
      * @param self::MATH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param self::USE_KEY|0 $flags
@@ -1070,8 +1074,9 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
 /**
  * @template TKey
  * @template TValue
+ * @template TIterator as Traversable<TKey, TValue>
  *
- * @template-extends FilterIterator<TKey, TValue>
+ * @template-extends FilterIterator<TKey, TValue, TIterator>
  */
 class RegexIterator extends FilterIterator {
     const MATCH = 0 ;
@@ -1082,7 +1087,7 @@ class RegexIterator extends FilterIterator {
     const USE_KEY = 1 ;
 
     /**
-     * @param Iterator<TKey, TValue> $iterator
+     * @param TIterator $iterator
      * @param string $regex
      * @param self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param int-mask<self::USE_KEY> $flags
