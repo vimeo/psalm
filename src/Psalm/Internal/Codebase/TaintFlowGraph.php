@@ -202,6 +202,9 @@ class TaintFlowGraph extends DataFlowGraph
         $sources = $this->sources;
         $sinks = $this->sinks;
 
+        // tries to reorganize taints of "orphaned" forward edges
+        new OrphanForwardEdgesWorker($this->forward_edges);
+
         ksort($this->specializations);
         ksort($this->forward_edges);
 
