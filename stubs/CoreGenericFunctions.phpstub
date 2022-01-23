@@ -250,6 +250,17 @@ function uksort(array &$array, callable $callback): bool
 }
 
 /**
+ * @param $data string
+ * @param $options array{allowed_classes?:string[]|bool}
+ * @return mixed
+ * @psalm-taint-sink unserialize $data
+ * @psalm-taint-specialize
+ */
+function unserialize(string $data, array $options = [])
+{
+}
+
+/**
  * @psalm-pure
  *
  * @psalm-template K of array-key

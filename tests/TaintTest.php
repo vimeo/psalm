@@ -6,6 +6,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use stdClass;
 
 use function array_map;
 use function preg_quote;
@@ -705,6 +706,16 @@ class TaintTest extends TestCase
                     function query(string $sql) {}
                     $value = $_GET["value"];
                     $result = fetch($value);'
+            ],
+            'NoTaintedUnserialize having allowed_classes => false' => [
+                'code' => '<?php // --taint-analysis
+                    $payload = $_GET[\'payload\'];
+                    unserialize($payload, [\'allowed_classes\' => false]);'
+            ],
+            'NoTaintedUnserialize having allowed_classes => [stdClass]}' => [
+                'code' => '<?php // --taint-analysis
+                    $payload = $_GET[\'payload\'];
+                    unserialize($payload, [\'allowed_classes\' => [stdClass::class]]]);'
             ],
         ];
     }
@@ -1766,6 +1777,11 @@ class TaintTest extends TestCase
             'taintUnserialize' => [
                 'code' => '<?php
                     $cb = unserialize($_POST[\'x\']);',
+                'error_message' => 'TaintedUnserialize',
+            ],
+            'taintUnserialize having allowed_classes => UnknownClass' => [
+                'code' => '<?php
+                    $cb = unserialize($_POST[\'x\'], [\'allowed_classes\' => UnknownClass::class]);',
                 'error_message' => 'TaintedUnserialize',
             ],
             'taintCreateFunction' => [

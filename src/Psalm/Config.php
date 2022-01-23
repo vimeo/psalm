@@ -25,6 +25,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\UnserializeFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassIssue;
@@ -1405,9 +1406,11 @@ class Config
             $this->filetype_analyzers[$extension] = $className;
         }
 
-        new HtmlFunctionTainter();
-
+        // `class_exists` triggers class autoloader
+        class_exists(HtmlFunctionTainter::class);
+        class_exists(UnserializeFunctionTainter::class);
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
+        $socket->registerHooksFromClass(UnserializeFunctionTainter::class);
     }
 
     private static function requirePath(string $path): void

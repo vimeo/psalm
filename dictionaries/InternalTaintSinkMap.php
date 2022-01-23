@@ -57,7 +57,6 @@ return [
 'setcookie' => [['cookie'], ['cookie']],
 'shell_exec' => [['shell']],
 'system' => [['shell']],
-'unserialize' => [['unserialize']],
 'popen' => [['shell']],
 'proc_open' => [['shell']],
 'curl_init' => [['ssrf']],
