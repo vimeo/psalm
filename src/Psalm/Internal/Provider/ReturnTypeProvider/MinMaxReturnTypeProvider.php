@@ -11,7 +11,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -72,9 +71,6 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     } elseif ($atomic_type instanceof TIntRange) {
                         $min_bounds[] = $atomic_type->min_bound;
                         $max_bounds[] = $atomic_type->max_bound;
-                    } elseif ($atomic_type instanceof TPositiveInt) {
-                        $min_bounds[] = 1;
-                        $max_bounds[] = null;
                     } elseif (get_class($atomic_type) === TInt::class) {
                         $min_bounds[] = null;
                         $max_bounds[] = null;
@@ -119,15 +115,6 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $return_type = null;
         foreach ($call_args as $arg) {
             if ($array_arg_type = $nodeTypeProvider->getType($arg->value)) {
-                if ($array_arg_type->isSingle()) {
-                    $atomic_type = $array_arg_type->getSingleAtomic();
-                    if ($atomic_type instanceof TPositiveInt) {
-                        //we replace TPositiveInt with a range for better combination
-                        $array_arg_type->removeType('int');
-                        $array_arg_type->addType(new TIntRange(1, null));
-                    }
-                }
-
                 $return_type = Type::combineUnionTypes(
                     $return_type,
                     $array_arg_type

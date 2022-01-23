@@ -64,6 +64,7 @@ class ForTest extends TestCase
             'preventNegativeZeroScrewingThingsUp' => [
                 'code' => '<?php
                     function foo() : void {
+                      /** @var array<int, int> $v */
                       $v = [1 => 0];
                       for ($d = 0; $d <= 10; $d++) {
                         for ($k = -$d; $k <= $d; $k += 2) {

@@ -97,10 +97,6 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
     private static function isPositiveNumericType(Union $arg): bool
     {
-        if ($arg->isSingle() && $arg->hasPositiveInt()) {
-            return true;
-        }
-
         if ($arg->isSingle()) {
             foreach ($arg->getRangeInts() as $range_int) {
                 if ($range_int->isPositive()) {

@@ -58,7 +58,6 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
@@ -698,10 +697,6 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TIntRange && !$this->contains(0)) {
-            return true;
-        }
-
-        if ($this instanceof TPositiveInt) {
             return true;
         }
 

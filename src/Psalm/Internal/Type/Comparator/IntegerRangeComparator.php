@@ -7,7 +7,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -62,17 +61,7 @@ class IntegerRangeComparator
                 return true;
             }
 
-            if (get_class($container_atomic_types['int']) === TPositiveInt::class) {
-                if ($input_type_part->isPositive()) {
-                    return true;
-                }
-
-                //every positive integer is satisfied by the positive-int int container so we reduce the range
-                $reduced_range->max_bound = 0;
-                unset($container_atomic_types['int']);
-            } else {
-                throw new UnexpectedValueException('Should not happen: unknown int key');
-            }
+            throw new UnexpectedValueException('Should not happen: unknown int key');
         }
 
         $new_nb_atomics = count($container_atomic_types);

@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
@@ -79,12 +78,6 @@ class UnaryPlusMinusAnalyzer
                         } else {
                             $type_part->min_bound = -$old_max_bound;
                         }
-                    }
-
-                    if ($type_part instanceof TPositiveInt
-                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
-                    ) {
-                        $type_part = new TIntRange(null, -1);
                     }
 
                     $acceptable_types[] = $type_part;

@@ -147,7 +147,7 @@ class ArrayAnalyzer
                 $array_type = new TList($item_value_type ?? Type::getMixed());
             } else {
                 $array_type = new TNonEmptyList($item_value_type ?? Type::getMixed());
-                /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $array_type->count = count($array_creation_info->property_types);
             }
 
@@ -235,7 +235,7 @@ class ArrayAnalyzer
             $item_value_type ?? Type::getMixed(),
         ]);
 
-        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         $array_type->count = count($array_creation_info->property_types);
 
         $stmt_type = new Union([

@@ -55,7 +55,6 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -855,10 +854,6 @@ class TypeParser
 
             if ($min_bound === null && $max_bound === null) {
                 return new TInt();
-            }
-
-            if ($min_bound === 1 && $max_bound === null) {
-                return new TPositiveInt();
             }
 
             return new TIntRange($min_bound, $max_bound);

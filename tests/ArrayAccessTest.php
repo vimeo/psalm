@@ -1018,7 +1018,7 @@ class ArrayAccessTest extends TestCase
 
                     if ($foo !== null) {}'
             ],
-            'accessKnownArrayWithPositiveInt' => [
+            'SKIPPED-accessKnownArrayWithPositiveInt' => [
                 'code' => '<?php
                     /** @param list<int> $arr */
                     function foo(array $arr) : void {

@@ -72,7 +72,6 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
@@ -888,11 +887,6 @@ class ArrayFetchAnalyzer
                             $array_var_id . '[' . $offset_type_part->value . ']'
                         ]->possibly_undefined
                 ) {
-                    $found_match = true;
-                    break;
-                }
-
-                if ($offset_type_part instanceof TPositiveInt) {
                     $found_match = true;
                     break;
                 }

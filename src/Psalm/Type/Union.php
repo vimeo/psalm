@@ -38,7 +38,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -854,11 +853,6 @@ class Union implements TypeNode
     {
         return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
             || array_filter($this->types, fn(Atomic $type) => $type instanceof TIntRange);
-    }
-
-    public function hasPositiveInt(): bool
-    {
-        return isset($this->types['int']) && $this->types['int'] instanceof TPositiveInt;
     }
 
     public function hasArrayKey(): bool

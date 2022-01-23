@@ -12,7 +12,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
@@ -413,24 +412,8 @@ class UnionTypeComparator
 
         foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
             foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
-                //special cases for TIntRange because it can contain a part of the other type.
-                //For exemple int<0,1> and positive-int can be identical but none contain the other
-                if (($type1_part instanceof TIntRange && $type2_part instanceof TPositiveInt)) {
-                    $intersection_range = TIntRange::intersectIntRanges(
-                        TIntRange::convertToIntRange($type2_part),
-                        $type1_part
-                    );
-                    return $intersection_range !== null;
-                }
-
-                if ($type2_part instanceof TIntRange && $type1_part instanceof TPositiveInt) {
-                    $intersection_range = TIntRange::intersectIntRanges(
-                        TIntRange::convertToIntRange($type1_part),
-                        $type2_part
-                    );
-                    return $intersection_range !== null;
-                }
-
+                //special case for TIntRange because it can contain a part of another TIntRange.
+                //For exemple int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,

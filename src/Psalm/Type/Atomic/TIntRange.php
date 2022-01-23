@@ -122,10 +122,6 @@ class TIntRange extends TInt
             return $int_atomic;
         }
 
-        if ($int_atomic instanceof TPositiveInt) {
-            return new TIntRange(1, null);
-        }
-
         if ($int_atomic instanceof TLiteralInt) {
             return new TIntRange($int_atomic->value, $int_atomic->value);
         }
