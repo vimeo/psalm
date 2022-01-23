@@ -50,7 +50,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -781,19 +780,7 @@ class AssertionReconciler extends Reconciler
 
         //These partial match wouldn't have been handled by AtomicTypeComparator
         $new_range = null;
-        if ($type_2_atomic instanceof TIntRange && $type_1_atomic instanceof TPositiveInt) {
-            $new_range = TIntRange::intersectIntRanges(
-                TIntRange::convertToIntRange($type_1_atomic),
-                $type_2_atomic
-            );
-        } elseif ($type_1_atomic instanceof TIntRange
-            && $type_2_atomic instanceof TPositiveInt
-        ) {
-            $new_range = TIntRange::intersectIntRanges(
-                $type_1_atomic,
-                TIntRange::convertToIntRange($type_2_atomic)
-            );
-        } elseif ($type_2_atomic instanceof TIntRange
+        if ($type_2_atomic instanceof TIntRange
             && $type_1_atomic instanceof TIntRange
         ) {
             $new_range = TIntRange::intersectIntRanges(
@@ -1012,10 +999,6 @@ class AssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
-            if ($existing_var_atomic_type instanceof TPositiveInt && $value > 0) {
-                return $literal_asserted_type;
-            }
-
             if ($existing_var_atomic_type instanceof TIntRange && $existing_var_atomic_type->contains($value)) {
                 return $literal_asserted_type;
             }

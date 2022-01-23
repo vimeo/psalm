@@ -83,7 +83,7 @@ All scalar types have literal versions e.g. `int` vs `int(5)`.
 
 `TLiteralInt` - is used to represent an integer value where the exact numeric value is known.
 
-`TPositiveInt` - denotes an int that is also positive (strictly > 0)
+`TIntRange` - allows to describe an int with bounded values (ie. `int<1, 5>`).
 
 #### Floats
 

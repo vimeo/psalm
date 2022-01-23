@@ -320,9 +320,7 @@ class NegatedAssertionReconciler extends Reconciler
         if ($assertion_type instanceof TLiteralInt) {
             if ($existing_var_type->hasInt()) {
                 if ($existing_var_type->getLiteralInts()) {
-                    if (!$existing_var_type->hasPositiveInt()) {
-                        $did_match_literal_type = true;
-                    }
+                    $did_match_literal_type = true;
 
                     if ($existing_var_type->removeType($assertion_type->getKey())) {
                         $did_remove_type = true;

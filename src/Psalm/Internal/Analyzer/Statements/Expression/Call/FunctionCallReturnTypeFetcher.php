@@ -41,7 +41,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -373,7 +372,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
+                                            : new TIntRange(1, null)
                                     ]);
                                 }
 
@@ -381,7 +380,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
+                                            : new TIntRange(1, null)
                                     ]);
                                 }
 
@@ -422,8 +421,7 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 return new Union([
-                                    new TLiteralInt(0),
-                                    new TPositiveInt
+                                    new TIntRange(0, null)
                                 ]);
                             }
                         }

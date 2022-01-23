@@ -32,7 +32,6 @@ use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
@@ -307,8 +306,7 @@ class ScalarTypeComparator
         }
 
         if (get_class($container_type_part) === TDependentListKey::class
-            && ($input_type_part instanceof TLiteralInt
-                || $input_type_part instanceof TPositiveInt)
+            && $input_type_part instanceof TLiteralInt
         ) {
             return true;
         }
@@ -369,11 +367,7 @@ class ScalarTypeComparator
             return true;
         }
 
-        if ((get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt)
-            || (get_class($input_type_part) === TPositiveInt::class
-                && $container_type_part instanceof TLiteralInt
-                && $container_type_part->value > 0)
-        ) {
+        if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_scalar = true;
@@ -389,49 +383,7 @@ class ScalarTypeComparator
             );
         }
 
-        if ($input_type_part instanceof TInt && $container_type_part instanceof TPositiveInt) {
-            if ($input_type_part instanceof TPositiveInt) {
-                return true;
-            }
-            if ($input_type_part instanceof TLiteralInt) {
-                return $input_type_part->value > 0;
-            }
-            if ($input_type_part instanceof TIntRange) {
-                return $input_type_part->isPositive();
-            }
-
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-                $atomic_comparison_result->type_coerced_from_scalar = true;
-            }
-
-            return false;
-        }
-
         if ($input_type_part instanceof TInt && $container_type_part instanceof TIntRange) {
-            if ($input_type_part instanceof TPositiveInt) {
-                if ($container_type_part->min_bound > 1) {
-                    //any positive int can't be pushed inside a range with a min > 1
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                        $atomic_comparison_result->type_coerced_from_scalar = true;
-                    }
-
-                    return false;
-                }
-
-                if ($container_type_part->max_bound !== null) {
-                    //any positive int can't be pushed inside a range where the max bound isn't max without coercion
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                        $atomic_comparison_result->type_coerced_from_scalar = true;
-                    }
-
-                    return false;
-                }
-
-                return true;
-            }
             if ($input_type_part instanceof TLiteralInt) {
                 $min_bound = $container_type_part->min_bound;
                 $max_bound = $container_type_part->max_bound;

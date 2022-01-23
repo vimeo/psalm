@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -728,11 +727,11 @@ class ArithmeticOpAnalyzer
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
                 } else {
-                    $left_is_positive = $left_type_part instanceof TPositiveInt
-                        || ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0);
+                    $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
+                        || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
 
-                    $right_is_positive = $right_type_part instanceof TPositiveInt
-                        || ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0);
+                    $right_is_positive = ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0)
+                        || ($right_type_part instanceof TIntRange && $right_type_part->isPositive());
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                         $always_positive = false;
@@ -772,17 +771,14 @@ class ArithmeticOpAnalyzer
                             }
                         } else {
                             if ($always_positive) {
-                                $result_type = new Union([
-                                    new TPositiveInt(),
-                                    new TLiteralInt(0)
-                                ]);
+                                $result_type = new Union([new TIntRange(0, null)]);
                             } else {
                                 $result_type = Type::getInt();
                             }
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
+                            $always_positive ? new Union([new TIntRange(1, null)]) : Type::getInt(true),
                             $result_type
                         );
                     }

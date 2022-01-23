@@ -37,7 +37,6 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
@@ -192,15 +191,6 @@ abstract class Type
         $type = new TLowercaseString();
 
         return new Union([$type]);
-    }
-
-    /** @deprecated will be removed in Psalm 5 */
-    public static function getPositiveInt(bool $from_calculation = false): Union
-    {
-        $union = new Union([new TPositiveInt()]);
-        $union->from_calculation = $from_calculation;
-
-        return $union;
     }
 
     public static function getNonEmptyLowercaseString(): Union

@@ -54,7 +54,6 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
@@ -1712,12 +1711,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
                     }
                 }*/
-            } elseif ($atomic_type instanceof TPositiveInt) {
-                $did_remove_type = true;
-                $existing_var_type->removeType($atomic_type->getKey());
-                if ($assertion_value >= 1) {
-                    $existing_var_type->addType(new TIntRange(1, $assertion_value));
-                }
             } elseif ($atomic_type instanceof TInt) {
                 $did_remove_type = true;
                 $existing_var_type->removeType($atomic_type->getKey());
@@ -1818,12 +1811,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
                     }
                 }*/
-            } elseif ($atomic_type instanceof TPositiveInt) {
-                if ($assertion_value > 1) {
-                    $did_remove_type = true;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                    $existing_var_type->addType(new TIntRange($assertion_value, null));
-                }
             } elseif ($atomic_type instanceof TInt) {
                 $did_remove_type = true;
                 $existing_var_type->removeType($atomic_type->getKey());
