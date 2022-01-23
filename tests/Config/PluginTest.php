@@ -1022,4 +1022,58 @@ class PluginTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testFunctionDynamicStorageProviderHook(): void
+    {
+        require_once __DIR__ . '/Plugin/StoragePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\StoragePlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param mixed ...$_args
+                 * @return mixed
+                 */
+                function custom_array_map(...$_args) { throw new RuntimeException("???"); }
+
+                /**
+                 * @param list<array{num: int}> $_list
+                 */
+                function acceptsList(array $_list): void { }
+
+                /** @var list<int> $list */
+                $list = [1, 2, 3];
+
+                $tuples = custom_array_map(
+                    fn($a) => $a + 1,
+                    fn($a) => ["num" => $a],
+                    $list
+                );
+
+                acceptsList($tuples);'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }
