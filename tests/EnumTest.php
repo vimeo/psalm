@@ -371,6 +371,17 @@ class EnumTest extends TestCase
                 [],
                 '8.1',
             ],
+            'InterfacesWithProperties' => [
+                '<?php
+
+                    static fn (\UnitEnum $tag): string => $tag->name;
+
+                    static fn (\BackedEnum $tag): string|int => $tag->value;
+                    ',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
         ];
     }
 
