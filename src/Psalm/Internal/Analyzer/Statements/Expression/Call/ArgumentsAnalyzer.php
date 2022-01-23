@@ -346,11 +346,24 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall) {
+            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall &&
+                !$function_like_call->isFirstClassCallable()
+            ) {
                 $function_id = strtolower((string) $function_like_call->name->getAttribute('resolvedName'));
 
                 if (empty($function_id)) {
                     return null;
+                }
+
+                if ($codebase->functions->dynamic_storage_provider->has($function_id)) {
+                    return $codebase->functions->dynamic_storage_provider->getFunctionSignature(
+                        $function_like_call,
+                        $statements_analyzer,
+                        $function_id,
+                        $function_like_call->getArgs(),
+                        $context,
+                        new CodeLocation($statements_analyzer, $function_like_call),
+                    );
                 }
 
                 return $codebase->functions->getStorage($statements_analyzer, $function_id);

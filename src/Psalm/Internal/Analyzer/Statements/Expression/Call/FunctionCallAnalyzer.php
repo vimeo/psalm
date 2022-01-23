@@ -526,39 +526,63 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $function_call_info->defined_constants = [];
         $function_call_info->global_variables = [];
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+        $has_dynamic_storage = false;
+
+        if ($codebase->functions->dynamic_storage_provider->has($function_call_info->function_id)) {
+            $dynamic_function_storage = $codebase->functions->dynamic_storage_provider->getFunctionSignature(
+                $stmt,
+                $statements_analyzer,
+                $function_call_info->function_id,
+                $args,
+                $context,
+                $code_location
+            );
+
+            if ($dynamic_function_storage) {
+                $has_dynamic_storage = true;
+
+                $function_call_info->function_storage = $dynamic_function_storage;
+                $function_call_info->function_params = $function_call_info->function_storage->params;
+                $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
+                $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
+                $function_call_info->global_variables = $dynamic_function_storage->global_variables;
+            }
+        }
 
         if ($function_call_info->function_exists) {
-            if (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
-                try {
-                    $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
-                        $statements_analyzer,
-                        strtolower($function_call_info->function_id)
+            if (!$has_dynamic_storage) {
+                if (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
+                    try {
+                        $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
+                            $statements_analyzer,
+                            strtolower($function_call_info->function_id)
+                        );
+
+                        $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                        if (!$function_storage->allow_named_arg_calls) {
+                            $function_call_info->allow_named_args = false;
+                        }
+
+                        if (!$is_predefined) {
+                            $function_call_info->defined_constants = $function_storage->defined_constants;
+                            $function_call_info->global_variables = $function_storage->global_variables;
+                        }
+                    } catch (UnexpectedValueException $e) {
+                        $function_call_info->function_params = [
+                            new FunctionLikeParameter('args', false, null, null, null, false, false, true)
+                        ];
+                    }
+                } else {
+                    $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                        $codebase,
+                        $function_call_info->function_id,
+                        $args,
+                        $statements_analyzer->node_data
                     );
 
-                    $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                    if (!$function_storage->allow_named_arg_calls) {
-                        $function_call_info->allow_named_args = false;
-                    }
-
-                    if (!$is_predefined) {
-                        $function_call_info->defined_constants = $function_storage->defined_constants;
-                        $function_call_info->global_variables = $function_storage->global_variables;
-                    }
-                } catch (UnexpectedValueException $e) {
-                    $function_call_info->function_params = [
-                        new FunctionLikeParameter('args', false, null, null, null, false, false, true)
-                    ];
+                    $function_call_info->function_params = $function_callable->params;
                 }
-            } else {
-                $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $codebase,
-                    $function_call_info->function_id,
-                    $args,
-                    $statements_analyzer->node_data
-                );
-
-                $function_call_info->function_params = $function_callable->params;
             }
 
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {

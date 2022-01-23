@@ -9,6 +9,7 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Plugin\EventHandler\FunctionDynamicStorageProviderInterface;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
@@ -107,6 +108,10 @@ class PluginRegistrationSocket implements RegistrationInterface
 
         if (is_subclass_of($handler, FunctionReturnTypeProviderInterface::class)) {
             $this->codebase->functions->return_type_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, FunctionDynamicStorageProviderInterface::class)) {
+            $this->codebase->functions->dynamic_storage_provider->registerClass($handler);
         }
     }
 
