@@ -38,15 +38,11 @@ class BreakAnalyzer
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
-            if ($loop_scope->possibly_redefined_loop_parent_vars === null) {
-                $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
-            } else {
-                foreach ($redefined_vars as $var => $type) {
-                    $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null
-                    );
-                }
+            foreach ($redefined_vars as $var => $type) {
+                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                    $type,
+                    $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null
+                );
             }
 
             if ($loop_scope->iteration_count === 0) {

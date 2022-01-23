@@ -59,18 +59,14 @@ class ContinueAnalyzer
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
-            if ($loop_scope->redefined_loop_vars === null) {
-                $loop_scope->redefined_loop_vars = $redefined_vars;
-            } else {
-                foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
-                    if (!isset($redefined_vars[$redefined_var])) {
-                        unset($loop_scope->redefined_loop_vars[$redefined_var]);
-                    } else {
-                        $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
-                            $redefined_vars[$redefined_var],
-                            $type
-                        );
-                    }
+            foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
+                if (!isset($redefined_vars[$redefined_var])) {
+                    unset($loop_scope->redefined_loop_vars[$redefined_var]);
+                } else {
+                    $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
+                        $redefined_vars[$redefined_var],
+                        $type
+                    );
                 }
             }
 

@@ -426,15 +426,13 @@ class LoopAnalyzer
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
         if ($does_sometimes_break) {
-            if ($loop_scope->possibly_redefined_loop_parent_vars !== null) {
-                foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
-                    $loop_scope->loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->loop_parent_context->vars_in_scope[$var]
-                    );
+            foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
+                $loop_scope->loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                    $type,
+                    $loop_scope->loop_parent_context->vars_in_scope[$var]
+                );
 
-                    $loop_scope->loop_parent_context->possibly_assigned_var_ids[$var] = true;
-                }
+                $loop_scope->loop_parent_context->possibly_assigned_var_ids[$var] = true;
             }
         }
 
@@ -573,11 +571,9 @@ class LoopAnalyzer
         if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
             $loop_scope->loop_context->vars_in_scope = $pre_outer_context->vars_in_scope;
         } else {
-            if ($loop_scope->redefined_loop_vars !== null) {
-                foreach ($loop_scope->redefined_loop_vars as $var => $type) {
-                    $loop_scope->loop_context->vars_in_scope[$var] = $type;
-                    $updated_loop_vars[$var] = true;
-                }
+            foreach ($loop_scope->redefined_loop_vars as $var => $type) {
+                $loop_scope->loop_context->vars_in_scope[$var] = $type;
+                $updated_loop_vars[$var] = true;
             }
 
             if ($loop_scope->possibly_redefined_loop_vars) {
