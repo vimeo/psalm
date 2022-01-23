@@ -23,6 +23,8 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -33,6 +35,8 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_merge;
+use function array_values;
 use function count;
 use function get_class;
 use function strtolower;
@@ -162,6 +166,8 @@ class NegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($assertion_type instanceof TNamedObject
             && strtolower($assertion_type->value) === 'traversable'
             && isset($existing_var_atomic_types['iterable'])
@@ -193,9 +199,21 @@ class NegatedAssertionReconciler extends Reconciler
         ) {
             // checking if two types share a common parent is not enough to guarantee childs are instanceof each other
             // fall through
+        } elseif ($existing_var_type->isArray()
+            && ($assertion->getAtomicType() instanceof TArray
+                || $assertion->getAtomicType() instanceof TList
+                || $assertion->getAtomicType() instanceof TKeyedArray)
+        ) {
+            //if both types are arrays, try to combine them
+            $combined_type = TypeCombiner::combine(
+                array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
+                $codebase,
+            );
+            $existing_var_type->removeType('array');
+            if ($combined_type->isSingle()) {
+                $existing_var_type->addType($combined_type->getSingleAtomic());
+            }
         } elseif (!$is_equality) {
-            $codebase = $statements_analyzer->getCodebase();
-
             $assertion_type = $assertion->getAtomicType();
 
             // if there wasn't a direct hit, go deeper, eliminating subtypes
