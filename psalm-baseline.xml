@@ -126,12 +126,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TPositiveInt()</code>
-    </DeprecatedClass>
-    <DeprecatedMethod occurrences="1">
-      <code>Type::getPositiveInt(true)</code>
-    </DeprecatedMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$invalid_left_messages[0]</code>
       <code>$invalid_right_messages[0]</code>
@@ -163,13 +157,6 @@
       <code>$parts[1]</code>
       <code>$stmt-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallReturnTypeFetcher.php">
-    <DeprecatedClass occurrences="3">
-      <code>new TPositiveInt</code>
-      <code>new TPositiveInt</code>
-      <code>new TPositiveInt</code>
-    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
@@ -328,20 +315,7 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Type/Comparator/IntegerRangeComparator.php">
-    <DeprecatedClass occurrences="1">
-      <code>TPositiveInt::class</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Type/Comparator/ScalarTypeComparator.php">
-    <DeprecatedClass occurrences="1">
-      <code>TPositiveInt::class</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TPositiveInt()</code>
-    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
       <code>$combination-&gt;array_type_params[1]</code>
@@ -352,9 +326,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TPositiveInt()</code>
-    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="9">
       <code>$intersection_types[0]</code>
       <code>$parse_tree-&gt;children[0]</code>
@@ -397,11 +368,6 @@
       <code>addFileExtension</code>
       <code>addFileExtension</code>
     </DeprecatedMethod>
-  </file>
-  <file src="src/Psalm/Type.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TPositiveInt()</code>
-    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
