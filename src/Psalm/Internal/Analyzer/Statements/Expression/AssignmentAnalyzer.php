@@ -240,8 +240,12 @@ class AssignmentAnalyzer
                 $context->inside_general_use = $was_inside_general_use;
 
                 if ($var_id) {
-                    if ($array_var_id) {
-                        $context->removeDescendents($array_var_id, null, $assign_value_type);
+                    if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
+                        $context->removeDescendents(
+                            $array_var_id,
+                            $context->vars_in_scope[$array_var_id],
+                            $assign_value_type
+                        );
                     }
 
                     // if we're not exiting immediately, make everything mixed

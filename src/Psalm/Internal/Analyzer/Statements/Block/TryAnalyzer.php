@@ -300,7 +300,7 @@ class TryAnalyzer
                 // removes dependent vars from $context
                 $catch_context->removeDescendents(
                     $catch_var_id,
-                    null,
+                    $catch_context->vars_in_scope[$catch_var_id],
                     $catch_context->vars_in_scope[$catch_var_id],
                     $statements_analyzer
                 );

@@ -642,20 +642,10 @@ class Context
      */
     public function removeDescendents(
         string $remove_var_id,
-        ?Union $existing_type = null,
+        Union $existing_type,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
     ): void {
-        if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
-            $existing_type = $this->vars_in_scope[$remove_var_id];
-        }
-
-        if (!$existing_type) {
-            return;
-        }
-
-        $existing_type->allow_mutations = true;
-
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
             $existing_type->hasMixed()
