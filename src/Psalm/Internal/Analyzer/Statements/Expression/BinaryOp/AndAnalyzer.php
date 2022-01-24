@@ -148,10 +148,6 @@ class AndAnalyzer
             );
 
             $right_context->vars_in_scope = $right_vars_in_scope;
-
-            if ($context->if_scope) {
-                $context->if_scope->if_cond_changed_var_ids += $changed_var_ids;
-            }
         }
 
         $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);

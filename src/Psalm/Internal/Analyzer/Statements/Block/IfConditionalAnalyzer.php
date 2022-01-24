@@ -143,7 +143,6 @@ class IfConditionalAnalyzer
 
         $if_conditional_context = clone $if_context;
         $if_conditional_context->if_context = $if_context;
-        $if_conditional_context->if_scope = $if_scope;
 
         if ($codebase->alter_code) {
             $if_context->branch_point = $branch_point;
