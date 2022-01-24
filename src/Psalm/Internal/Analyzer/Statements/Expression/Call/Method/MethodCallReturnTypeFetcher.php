@@ -101,7 +101,7 @@ class MethodCallReturnTypeFetcher
             if ($premixin_method_id->fq_class_name === PDOException::class) {
                 return Type::getString();
             } else {
-                return Type::getInt();
+                return Type::getInt(true); // TODO: Remove the flag in Psalm 5
             }
         }
 
