@@ -486,7 +486,12 @@ class FunctionLikeDocblockParser
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
         $info->pure = isset($parsed_docblock->tags['psalm-pure'])
-            || isset($parsed_docblock->tags['pure']);
+            || isset($parsed_docblock->tags['pure'])
+            || isset($parsed_docblock->tags['psalm-validator']);
+
+        if (isset($parsed_docblock->tags['psalm-validator'])) {
+            $info->validator = true;
+        }
 
         if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
             $info->mutation_free = true;

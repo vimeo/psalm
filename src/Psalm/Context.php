@@ -396,6 +396,11 @@ final class Context
 
     /**
      * @var bool
+     */
+    public $validator = false;
+
+    /**
+     * @var bool
      * Set by @psalm-immutable
      */
     public $mutation_free = false;

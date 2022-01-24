@@ -140,6 +140,10 @@ class FunctionLikeDocblockScanner
             }
         }
 
+        if ($docblock_info->validator) {
+            $storage->validator = true;
+        }
+
         if ($docblock_info->specialize_call) {
             $storage->specialize_call = true;
         }

@@ -182,6 +182,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $pure = false;
 
     /**
+     * @var bool
+     */
+    public $validator = false;
+
+    /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
      *

@@ -515,7 +515,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if (!$in_assignment) {
+        if (!$in_assignment && !$context->validator) {
             self::validateArrayOffset(
                 $statements_analyzer,
                 $stmt,
