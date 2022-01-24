@@ -100,12 +100,15 @@ class OrAnalyzer
             $post_leaving_if_context = clone $context;
 
             $left_context = clone $context;
-            $left_context->parent_context = $context;
             $left_context->if_context = null;
             $left_context->assigned_var_ids = [];
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
                 return false;
+            }
+
+            foreach ($left_context->parent_remove_vars as $var_id => $_) {
+                $context->removeVarFromConflictingClauses($var_id);
             }
 
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);

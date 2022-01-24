@@ -233,13 +233,6 @@ class Context
     public $byref_constraints = [];
 
     /**
-     * If this context inherits from a context, it is here
-     *
-     * @var Context|null
-     */
-    public $parent_context;
-
-    /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
@@ -374,6 +367,11 @@ class Context
      */
     public $vars_from_global = [];
 
+    /**
+     * @var array<string, true>
+     */
+    public $parent_remove_vars = [];
+
     public function __construct(?string $self = null)
     {
         $this->self = $self;
@@ -382,7 +380,6 @@ class Context
     public function __destruct()
     {
         $this->case_scope = null;
-        $this->parent_context = null;
     }
 
     public function __clone()
@@ -624,10 +621,7 @@ class Context
         ?StatementsAnalyzer $statements_analyzer = null
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
-
-        if ($this->parent_context) {
-            $this->parent_context->removeVarFromConflictingClauses($remove_var_id);
-        }
+        $this->parent_remove_vars[$remove_var_id] = true;
     }
 
     /**
@@ -705,10 +699,6 @@ class Context
         }
 
         $this->clauses = $clauses_to_keep;
-
-        if ($this->parent_context) {
-            $this->parent_context->removeMutableObjectVars($methods_only);
-        }
     }
 
     public function updateChecks(Context $op_context): void

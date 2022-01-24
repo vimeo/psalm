@@ -60,8 +60,6 @@ class IfAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $if_context->parent_context = $outer_context;
-
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
         $if_context->assigned_var_ids = [];
@@ -73,6 +71,10 @@ class IfAnalyzer
         ) === false
         ) {
             return false;
+        }
+
+        foreach ($if_context->parent_remove_vars as $var_id => $_) {
+            $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(

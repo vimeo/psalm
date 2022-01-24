@@ -119,6 +119,10 @@ class ElseAnalyzer
             ) {
                 return false;
             }
+
+            foreach ($else_context->parent_remove_vars as $var_id => $_) {
+                $outer_context->removeVarFromConflictingClauses($var_id);
+            }
         }
 
         /** @var array<string, int> */

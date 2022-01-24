@@ -82,7 +82,6 @@ class SwitchCaseAnalyzer
             $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
 
-        $case_context->parent_context = $context;
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
 
         $case_equality_expr = null;
@@ -109,7 +108,6 @@ class SwitchCaseAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -281,7 +279,6 @@ class SwitchCaseAnalyzer
 
             unset($case_scope->parent_context);
             unset($case_context->case_scope);
-            unset($case_context->parent_context);
 
             $statements_analyzer->node_data = $old_node_data;
 
@@ -513,7 +510,6 @@ class SwitchCaseAnalyzer
             ) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -570,7 +566,6 @@ class SwitchCaseAnalyzer
 
         unset($case_scope->parent_context);
         unset($case_context->case_scope);
-        unset($case_context->parent_context);
 
         return null;
     }

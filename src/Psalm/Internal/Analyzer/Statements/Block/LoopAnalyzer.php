@@ -114,8 +114,6 @@ class LoopAnalyzer
             $assignment_depth++;
         }
 
-        $loop_scope->loop_context->parent_context = $loop_scope->loop_parent_context;
-
         $pre_outer_context = $loop_scope->loop_parent_context;
 
         if ($assignment_depth === 0 || $does_always_break) {
@@ -127,7 +125,6 @@ class LoopAnalyzer
 
             $inner_context->loop_scope = $loop_scope;
 
-            $inner_context->parent_context = $loop_scope->loop_context;
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
 
@@ -197,7 +194,6 @@ class LoopAnalyzer
                 $inner_context->vars_in_scope[$context_var_id] = clone $context_type;
             }
 
-            $inner_context->parent_context = $loop_scope->loop_context;
             $inner_context->loop_scope = $loop_scope;
 
             $old_referenced_var_ids = $inner_context->referenced_var_ids;

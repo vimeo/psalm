@@ -574,17 +574,15 @@ class ScalarTypeComparator
             }
         }
 
-        if ($input_type_part instanceof Scalar) {
-            if (!$container_type_part instanceof TLiteralInt
-                && !$container_type_part instanceof TLiteralString
-                && !$container_type_part instanceof TLiteralFloat
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced
-                        = $atomic_comparison_result->type_coerced_from_scalar
-                        = $input_type_part instanceof TScalar;
-                    $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
-                }
+        if (!$container_type_part instanceof TLiteralInt
+            && !$container_type_part instanceof TLiteralString
+            && !$container_type_part instanceof TLiteralFloat
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced
+                    = $atomic_comparison_result->type_coerced_from_scalar
+                    = $input_type_part instanceof TScalar;
+                $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
         }
 

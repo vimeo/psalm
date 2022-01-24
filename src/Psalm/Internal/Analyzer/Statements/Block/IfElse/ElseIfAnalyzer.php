@@ -275,6 +275,10 @@ class ElseIfAnalyzer
             return false;
         }
 
+        foreach ($elseif_context->parent_remove_vars as $var_id => $_) {
+            $outer_context->removeVarFromConflictingClauses($var_id);
+        }
+
         /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = $pre_stmts_assigned_var_ids + $new_stmts_assigned_var_ids;
