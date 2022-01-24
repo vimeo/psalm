@@ -491,8 +491,6 @@ class IfElseAnalyzer
             }
         }
 
-        $context->possibly_assigned_var_ids += $if_scope->possibly_assigned_var_ids;
-
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
             $context->has_returned = true;
         }
