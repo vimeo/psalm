@@ -212,7 +212,9 @@ class IssueBuffer
             }
         }
 
-        $suppress_all_position = array_search('all', $suppressed_issues);
+        $suppress_all_position = $config->disable_suppress_all
+            ? false
+            : array_search('all', $suppressed_issues);
 
         if ($suppress_all_position !== false) {
             if (is_int($suppress_all_position)) {

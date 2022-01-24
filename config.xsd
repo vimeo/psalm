@@ -114,6 +114,7 @@
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
         <xs:attribute name="restrictReturnTypes" type="xs:boolean" default="false" />
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
+        <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
     </xs:complexType>
 
