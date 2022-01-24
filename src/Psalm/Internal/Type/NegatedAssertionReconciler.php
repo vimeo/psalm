@@ -222,12 +222,12 @@ class NegatedAssertionReconciler extends Reconciler
 
                         if (!$existing_var_type_part instanceof TTemplateParam
                             && AtomicTypeComparator::isContainedBy(
-                            $codebase,
-                            $existing_var_type_part,
-                            $assertion_type,
-                            false,
-                            false
-                        )) {
+                                $codebase,
+                                $existing_var_type_part,
+                                $assertion_type,
+                                false,
+                                false
+                            )) {
                             $existing_var_type->removeType($part_name);
                         } elseif (AtomicTypeComparator::isContainedBy(
                             $codebase,
