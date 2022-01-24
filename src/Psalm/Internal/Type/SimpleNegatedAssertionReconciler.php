@@ -15,7 +15,9 @@ use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\DoesNotHaveExactCount;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsGreaterThan;
 use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
+use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\NotInArray;
@@ -1653,21 +1655,22 @@ class SimpleNegatedAssertionReconciler extends Reconciler
      */
     private static function reconcileIsLessThanOrEqualTo(
         IsLessThanOrEqualTo $assertion,
-        Union         $existing_var_type,
-        bool          $inside_loop,
-        string        $old_var_type_string,
-        ?string       $var_id,
-        bool          $negated,
-        ?CodeLocation $code_location,
-        array         $suppressed_issues
+        Union               $existing_var_type,
+        bool                $inside_loop,
+        string              $old_var_type_string,
+        ?string             $var_id,
+        bool                $negated,
+        ?CodeLocation       $code_location,
+        array               $suppressed_issues
     ): Union {
-        if ($assertion->value === null) {
-            return $existing_var_type;
-        }
-
-        $assertion_value = $assertion->value - 1;
+        $assertion_value = $assertion->value;
 
         $did_remove_type = false;
+
+        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('null');
+        }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {
@@ -1756,21 +1759,22 @@ class SimpleNegatedAssertionReconciler extends Reconciler
      */
     private static function reconcileIsGreaterThanOrEqualTo(
         IsGreaterThanOrEqualTo $assertion,
-        Union         $existing_var_type,
-        bool          $inside_loop,
-        string        $old_var_type_string,
-        ?string       $var_id,
-        bool          $negated,
-        ?CodeLocation $code_location,
-        array         $suppressed_issues
+        Union                  $existing_var_type,
+        bool                   $inside_loop,
+        string                 $old_var_type_string,
+        ?string                $var_id,
+        bool                   $negated,
+        ?CodeLocation          $code_location,
+        array                  $suppressed_issues
     ): Union {
-        if ($assertion->value === null) {
-            return $existing_var_type;
-        }
-
-        $assertion_value = $assertion->value + 1;
+        $assertion_value = $assertion->value;
 
         $did_remove_type = false;
+
+        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('null');
+        }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {

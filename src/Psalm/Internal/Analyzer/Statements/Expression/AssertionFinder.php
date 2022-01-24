@@ -51,9 +51,11 @@ use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsCountable;
 use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsGreaterThan;
+use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLessThan;
+use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
@@ -1644,8 +1646,7 @@ class AssertionFinder
     protected static function hasSuperiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison,
-        bool &$isset_assert
+        ?int &$literal_value_comparison
     ) {
         $right_assignment = false;
         $value_right = null;
@@ -1666,10 +1667,7 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $value_right !== null) {
-            $isset_assert = $value_right === 0 && $conditional instanceof Greater;
-
-            $literal_value_comparison = $value_right +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
+            $literal_value_comparison = $value_right;
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
@@ -1693,10 +1691,7 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $value_left !== null) {
-            $isset_assert = $value_left === 0 && $conditional instanceof Greater;
-
-            $literal_value_comparison = $value_left +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? -1 : 0);
+            $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -1711,8 +1706,7 @@ class AssertionFinder
     protected static function hasInferiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison,
-        bool &$isset_assert
+        ?int &$literal_value_comparison
     ) {
         $right_assignment = false;
         $value_right = null;
@@ -1733,10 +1727,8 @@ class AssertionFinder
             $value_right = $conditional->right->expr->value;
         }
         if ($right_assignment === true && $value_right !== null) {
-            $isset_assert = $value_right === 0 && $conditional instanceof Smaller;
+            $literal_value_comparison = $value_right;
 
-            $literal_value_comparison = $value_right +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? -1 : 0);
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
@@ -1759,10 +1751,7 @@ class AssertionFinder
             $value_left = $conditional->left->expr->value;
         }
         if ($left_assignment === true && $value_left !== null) {
-            $isset_assert = $value_left === 0 && $conditional instanceof Smaller;
-
-            $literal_value_comparison = $value_left +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+            $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -3788,13 +3777,11 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
-        $isset_assert = false;
         $superior_value_comparison = null;
         $superior_value_position = self::hasSuperiorNumberCheck(
             $source,
             $conditional,
-            $superior_value_comparison,
-            $isset_assert
+            $superior_value_comparison
         );
 
         if ($count_equality_position) {
@@ -3851,7 +3838,7 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($superior_value_position) {
+        if ($superior_value_position && $superior_value_comparison !== null) {
             if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
                 $var_name = ExpressionIdentifier::getArrayVarId(
                     $conditional->left,
@@ -3868,13 +3855,17 @@ class AssertionFinder
 
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
+                    if ($conditional instanceof GreaterOrEqual) {
+                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($superior_value_comparison)]];
+                    } else {
+                        $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
+                    }
                 } else {
-                    $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
-                }
-
-                if ($isset_assert) {
-                    $if_types[$var_name][] = [new IsEqualIsset()];
+                    if ($conditional instanceof GreaterOrEqual) {
+                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($superior_value_comparison)]];
+                    } else {
+                        $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
+                    }
                 }
             }
 
@@ -3898,13 +3889,11 @@ class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
-        $isset_assert = false;
         $inferior_value_comparison = null;
         $inferior_value_position = self::hasInferiorNumberCheck(
             $source,
             $conditional,
-            $inferior_value_comparison,
-            $isset_assert
+            $inferior_value_comparison
         );
 
         if ($count_equality_position) {
@@ -3973,15 +3962,19 @@ class AssertionFinder
             }
 
 
-            if ($var_name !== null) {
+            if ($var_name !== null && $inferior_value_comparison !== null) {
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
+                    if ($conditional instanceof SmallerOrEqual) {
+                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($inferior_value_comparison)]];
+                    } else {
+                        $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
+                    }
                 } else {
-                    $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
-                }
-
-                if ($isset_assert) {
-                    $if_types[$var_name][] = [new IsEqualIsset()];
+                    if ($conditional instanceof SmallerOrEqual) {
+                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($inferior_value_comparison)]];
+                    } else {
+                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
+                    }
                 }
             }
 

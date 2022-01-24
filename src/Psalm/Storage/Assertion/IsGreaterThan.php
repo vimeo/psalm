@@ -6,9 +6,9 @@ use Psalm\Storage\Assertion;
 
 class IsGreaterThan extends Assertion
 {
-    public ?int $value;
+    public int $value;
 
-    public function __construct(?int $value)
+    public function __construct(int $value)
     {
         $this->value = $value;
     }
@@ -28,5 +28,10 @@ class IsGreaterThan extends Assertion
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsLessThanOrEqualTo && $this->value === $assertion->value;
+    }
+
+    public function doesFilterNull(): bool
+    {
+        return true;
     }
 }
