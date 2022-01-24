@@ -177,7 +177,7 @@ class ArrayMapStorageProvider implements FunctionDynamicStorageProviderInterface
             $template = self::createTemplate('T', $i);
 
             $template_params[$template->param_name] = [
-                $template->defining_class => new Union([$template])
+                $template->defining_class => $template->as
             ];
         }
 
