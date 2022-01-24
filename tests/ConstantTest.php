@@ -1328,7 +1328,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'classConstCovariant' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var string */
                         public const COVARIANT = "";
@@ -1349,7 +1349,7 @@ class ConstantTest extends TestCase
                 ',
             ],
             'overrideClassConstFromInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo
                     {
                         /** @var non-empty-string */
@@ -1369,7 +1369,7 @@ class ConstantTest extends TestCase
                 '8.1',
             ],
             'inheritedConstDoesNotOverride' => [
-                '<?php
+                'code' => '<?php
                     interface Foo
                     {
                         public const BAR="baz";
@@ -1473,9 +1473,8 @@ class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'outOfScopeDefinedConstant' => [
                 'code' => '<?php
@@ -1753,7 +1752,7 @@ class ConstantTest extends TestCase
                 'error_message' => "InvalidConstantAssignmentValue",
             ],
             'classConstContravariant' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /** @var non-empty-string */
                         public const CONTRAVARIANT = "foo";
@@ -1769,7 +1768,7 @@ class ConstantTest extends TestCase
                 'error_message' => "LessSpecificClassConstantType",
             ],
             'classConstAmbiguousInherit' => [
-                '<?php
+                'code' => '<?php
                     interface Foo
                     {
                         /** @var non-empty-string */
@@ -1791,7 +1790,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'AmbiguousConstantInheritance',
             ],
             'overrideClassConstFromInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo
                     {
                         /** @var non-empty-string */
@@ -1809,7 +1808,7 @@ class ConstantTest extends TestCase
                 'error_message' => 'OverriddenInterfaceConstant',
             ],
             'overrideClassConstFromInterfaceWithInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo
                     {
                         /** @var non-empty-string */

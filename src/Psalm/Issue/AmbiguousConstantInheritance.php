@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Issue;
 
 class AmbiguousConstantInheritance extends ClassConstantIssue

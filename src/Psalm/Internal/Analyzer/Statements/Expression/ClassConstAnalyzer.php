@@ -722,15 +722,14 @@ class ClassConstAnalyzer
     ): void {
         foreach ($class_storage->constants as $const_name => $const_storage) {
             // Check covariance
-            /** @psalm-suppress PossiblyNullArrayAccess https://github.com/vimeo/psalm/issues/7151 */
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
                 $class_storage,
                 $const_storage,
                 $const_name,
                 $codebase
             );
-            /** @psalm-suppress RedundantConditionGivenDocblockType https://github.com/vimeo/psalm/issues/7151 */
             if ($parent_const_storage !== null) {
+                assert($parent_classlike_storage !== null);
                 $location = $const_storage->type_location ?? $const_storage->stmt_location;
                 if ($location !== null
                     && $const_storage->type !== null
@@ -776,10 +775,7 @@ class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 if ($const_storage->location
                     && $const_storage !== $parent_const_storage
-                    && (
-                        $codebase->php_major_version < 8
-                        || ($codebase->php_major_version === 8 && $codebase->php_minor_version < 1)
-                    )
+                    && $codebase->analysis_php_version_id < 8_01_00
                 ) {
                     $interface_overrides[strtolower($interface)] = new OverriddenInterfaceConstant(
                         "{$class_storage->name}::{$const_name} cannot override constant from $interface",

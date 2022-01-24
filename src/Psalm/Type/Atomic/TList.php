@@ -39,7 +39,6 @@ class TList extends Atomic
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
     }
 

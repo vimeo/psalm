@@ -2,6 +2,7 @@
 
  - [AbstractInstantiation](issues/AbstractInstantiation.md)
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
+ - [AmbiguousConstantInheritance](issues/AmbiguousConstantInheritance.md)
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [AssignmentToVoid](issues/AssignmentToVoid.md)
  - [CircularReference](issues/CircularReference.md)
@@ -93,6 +94,7 @@
  - [InvalidToString](issues/InvalidToString.md)
  - [InvalidTraversableImplementation](issues/InvalidTraversableImplementation.md)
  - [InvalidTypeImport](issues/InvalidTypeImport.md)
+ - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
@@ -153,6 +155,7 @@
  - [NullPropertyAssignment](issues/NullPropertyAssignment.md)
  - [NullPropertyFetch](issues/NullPropertyFetch.md)
  - [NullReference](issues/NullReference.md)
+ - [OverriddenInterfaceConstant](issues/OverriddenInterfaceConstant.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
