@@ -783,6 +783,27 @@ class TypeCombiner
             return null;
         }
 
+        if ($type instanceof TTemplateParam) {
+            if (isset($combination->value_types[$type_key])) {
+                /** @var TTemplateParam */
+                $existing_template_type = $combination->value_types[$type_key];
+
+                if (!$existing_template_type->as->equals($type->as)) {
+                    $existing_template_type->as = Type::combineUnionTypes(
+                        clone $type->as,
+                        $existing_template_type->as,
+                        $codebase
+                    );
+                }
+
+                return null;
+            }
+
+            $combination->value_types[$type_key] = $type;
+
+            return null;
+        }
+
         if ($type instanceof TNamedObject) {
             if ($combination->named_object_types === null) {
                 return null;

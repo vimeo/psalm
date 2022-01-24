@@ -3637,12 +3637,32 @@ class ClassTemplateTest extends TestCase
                         public function __construct(
                             private object $t
                         ) {}
-                        
+
                         public function foo(): void {
                             if ($this->t instanceof One || $this->t instanceof Two) {}
                         }
                     }
-                          
+
+                    final class One {}
+                    final class Two {}
+                    final class Three {}',
+            ],
+            'refineTemplateTypeOfUnionMoreComplex' => [
+                'code' => '<?php
+                    /** @psalm-template T as One|Two|Three */
+                    class A {
+                        /** @param T $t */
+                        public function __construct(
+                            private object $t
+                        ) {}
+
+                        public function foo(): void {
+                            if ($this->t instanceof One && rand(0, 1)) {}
+
+                            if ($this->t instanceof Two) {}
+                        }
+                    }
+
                     final class One {}
                     final class Two {}
                     final class Three {}',
@@ -4422,9 +4442,32 @@ class ClassTemplateTest extends TestCase
 
                     /** @var Container<A> $container */
                     $container = new Container();
-                    $container->set(new B());
-                ',
+                    $container->set(new B());',
                 'error_message' => 'InvalidArgument',
+            ],
+            'refineTemplateTypeOfUnionAccurately' => [
+                'code' => '<?php
+                    /** @psalm-template T as One|Two|Three */
+                    class A {
+                        /** @param T $t */
+                        public function __construct(
+                            private object $t
+                        ) {}
+
+                        /** @return int */
+                        public function foo() {
+                            if ($this->t instanceof One || $this->t instanceof Two) {
+                                return $this->t;
+                            }
+
+                            throw new \Exception();
+                        }
+                    }
+
+                    final class One {}
+                    final class Two {}
+                    final class Three {}',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40 - The inferred type \'T:A as One|Two\' ',
             ],
         ];
     }
