@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -219,7 +220,8 @@ class NegatedAssertionReconciler extends Reconciler
                             continue;
                         }
 
-                        if (AtomicTypeComparator::isContainedBy(
+                        if (!$existing_var_type_part instanceof TTemplateParam
+                            && AtomicTypeComparator::isContainedBy(
                             $codebase,
                             $existing_var_type_part,
                             $assertion_type,
