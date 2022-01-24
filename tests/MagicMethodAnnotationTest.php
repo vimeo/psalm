@@ -825,7 +825,7 @@ class MagicMethodAnnotationTest extends TestCase
                      * @method static create(array $data)
                      */
                     class Model {
-                        public function __call() {
+                        public function __call(string $name, array $arguments) {
                             /** @psalm-suppress UnsafeInstantiation */
                             return new static;
                         }
@@ -834,6 +834,7 @@ class MagicMethodAnnotationTest extends TestCase
                     class BlahModel extends Model {
                         /**
                          * @param mixed $input
+                         * @return static
                          */
                         public function create($input): BlahModel
                         {

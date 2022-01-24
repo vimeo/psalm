@@ -656,12 +656,38 @@ class AtomicStaticCallAnalyzer
             ) {
                 // In case of parent::xxx() call on instance method context (i.e. not static context)
                 // with nonexistent method, we try to forward to instance method call for resolve pseudo method.
-                return self::forwardCallToInstanceMethod(
+
+                // Use parent type as static type for the method call
+                $context->vars_in_scope['$tmp_parent_var'] = new Union([$lhs_type_part]);
+
+                if (self::forwardCallToInstanceMethod(
                     $statements_analyzer,
                     $stmt,
                     $stmt_name,
-                    $context
-                );
+                    $context,
+                    'tmp_parent_var'
+                ) === false) {
+                    return false;
+                }
+
+                // Resolve actual static return type according to caller (i.e. $this) static type
+                if (isset($context->vars_in_scope['$this'])
+                    && $method_call_type = $statements_analyzer->node_data->getType($stmt)
+                ) {
+                    $method_call_type = clone $method_call_type;
+
+                    foreach ($method_call_type->getAtomicTypes() as $name => $type) {
+                        if ($type instanceof TNamedObject && $type->was_static && $type->value === $fq_class_name) {
+                            // Replace parent&static type to actual static type
+                            $method_call_type->removeType($name);
+                            $method_call_type->addType($context->vars_in_scope['$this']->getSingleAtomic());
+                        }
+                    }
+
+                    $statements_analyzer->node_data->setType($stmt, $method_call_type);
+                }
+
+                return true;
             }
 
             if (!$context->check_methods) {

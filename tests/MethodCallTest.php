@@ -1011,7 +1011,7 @@ class MethodCallTest extends TestCase
                         /**
                          * @return static
                          */
-                        public function __call() {
+                        public function __call(string $method, array $args) {
                             /** @psalm-suppress UnsafeInstantiation */
                             return new static;
                         }
@@ -1565,6 +1565,16 @@ class MethodCallTest extends TestCase
                 [],
                 false,
                 '8.0'
+            ],
+            'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                        public function foo(): string {
+                            return parent::foo();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
