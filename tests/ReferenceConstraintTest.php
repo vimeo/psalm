@@ -183,6 +183,19 @@ class ReferenceConstraintTest extends TestCase
                         array_walk_recursive($val, /** @param mixed $arg */ function (&$arg): void {});
                     }'
             ],
+            'investigateByrefArg' => [
+                'code' => '<?php
+                    class A {}
+                    function takesNullableObj(?A &$a): bool { return true; }
+
+                    $a = null;
+
+                    if (takesNullableObj($a) === false) {
+                        return;
+                    } else {}
+
+                    if ($a) {}',
+            ],
         ];
     }
 
