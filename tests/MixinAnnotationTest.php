@@ -233,6 +233,27 @@ class MixinAnnotationTest extends TestCase
                         return $b->foo;
                     }'
             ],
+            'inheritMethodAnnotations' => [
+                '<?php
+                    /**
+                     * @method string foo()
+                     */
+                    class A {}
+
+                    /**
+                     * @mixin A
+                     */
+                    class B {
+                        /** @return mixed */
+                        public function __call(string $s, array $p) {
+                            return 5;
+                        }
+                    }
+
+                    function toArray(B $b) : string {
+                        return $b->foo();
+                    }'
+            ],
             'inheritTemplatedMixinWithStatic' => [
                 'code' => '<?php
                     /**
