@@ -14,7 +14,6 @@ interface Foo
 interface Bar
 {
     /**
-     * @psalm-suppress OverriddenInterfaceConstant
      * @var non-empty-string
      */
     public const CONSTANT='bar';
