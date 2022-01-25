@@ -2051,7 +2051,7 @@ return [
 'dom_document_schema_validate' => ['bool', 'source'=>'string', 'flags'=>'int'],
 'dom_document_schema_validate_file' => ['bool', 'filename'=>'string', 'flags'=>'int'],
 'dom_document_xinclude' => ['int', 'options'=>'int'],
-'dom_import_simplexml' => ['DOMElement|false', 'node'=>'SimpleXMLElement'],
+'dom_import_simplexml' => ['DOMElement', 'node'=>'SimpleXMLElement'],
 'dom_xpath_evaluate' => ['', 'expr'=>'string', 'context'=>'DOMNode', 'registernodens'=>'bool'],
 'dom_xpath_query' => ['DOMNodeList', 'expr'=>'string', 'context'=>'DOMNode', 'registernodens'=>'bool'],
 'dom_xpath_register_ns' => ['bool', 'prefix'=>'string', 'uri'=>'string'],
