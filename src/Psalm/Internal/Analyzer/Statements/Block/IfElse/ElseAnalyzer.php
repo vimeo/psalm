@@ -59,16 +59,6 @@ class ElseAnalyzer
 
         $else_types = Algebra::getTruthsFromFormula($else_context->clauses);
 
-        if (!$else && !$else_types) {
-            $if_scope->final_actions = array_merge([ScopeAnalyzer::ACTION_NONE], $if_scope->final_actions);
-            $if_scope->assigned_var_ids = [];
-            $if_scope->new_vars = [];
-            $if_scope->redefined_vars = [];
-            $if_scope->reasonable_clauses = [];
-
-            return null;
-        }
-
         $original_context = clone $else_context;
 
         if ($else_types) {
@@ -120,10 +110,10 @@ class ElseAnalyzer
             ) {
                 return false;
             }
+        }
 
-            foreach ($else_context->parent_remove_vars as $var_id => $_) {
-                $outer_context->removeVarFromConflictingClauses($var_id);
-            }
+        foreach ($else_context->parent_remove_vars as $var_id => $_) {
+            $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
         /** @var array<string, int> */
@@ -185,7 +175,7 @@ class ElseAnalyzer
                 $new_assigned_var_ids,
                 $new_possibly_assigned_var_ids,
                 [],
-                (bool) $else
+                true
             );
 
             $if_scope->reasonable_clauses = [];

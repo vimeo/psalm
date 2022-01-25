@@ -10,13 +10,16 @@ use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -38,6 +41,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function substr;
 
 /**
  * @internal
@@ -403,6 +407,50 @@ class IfElseAnalyzer
             $context
         ) === false) {
             return false;
+        }
+
+        if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
+            && !$stmt->elseifs
+        ) {
+            $context->clauses = $else_context->clauses;
+            foreach ($else_context->vars_in_scope as $var_id => $type) {
+                $context->vars_in_scope[$var_id] = clone $type;
+            }
+
+            foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+                if ($first_appearance
+                    && isset($post_if_context->vars_in_scope[$var_id])
+                    && $post_if_context->vars_in_scope[$var_id]->hasMixed()
+                    && !$reconciled_type->hasMixed()
+                ) {
+                    if (!$post_if_context->collect_initializations
+                        && !$post_if_context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    ) {
+                        $parent_source = $statements_analyzer->getSource();
+
+                        $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
+                            ? $parent_source->getFunctionLikeStorage($statements_analyzer)
+                            : null;
+
+                        if (!$functionlike_storage
+                                || (!$parent_source->getSource() instanceof TraitAnalyzer
+                                    && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                        ) {
+                            $codebase = $statements_analyzer->getCodebase();
+                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                        }
+                    }
+
+                    IssueBuffer::remove(
+                        $statements_analyzer->getFilePath(),
+                        'MixedAssignment',
+                        $first_appearance->raw_file_start
+                    );
+                }
+            }
         }
 
         if ($context->loop_scope) {

@@ -1527,6 +1527,19 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition'
             ],
+            'secondFalsyTwiceWithoutChangeWithElse' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?:int,b?:string} $p
+                     */
+                    function f(array $p) : void {
+                        if (!$p) {
+                            throw new RuntimeException("");
+                        } else {}
+                        assert(!!$p);
+                    }',
+                'error_message' => 'RedundantCondition'
+            ],
         ];
     }
 }

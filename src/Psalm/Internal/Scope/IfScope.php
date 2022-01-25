@@ -79,6 +79,11 @@ class IfScope
     /**
      * @var string[]
      */
+    public $if_actions = [];
+
+    /**
+     * @var string[]
+     */
     public $final_actions = [];
 
     /**

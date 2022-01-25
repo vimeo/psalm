@@ -129,7 +129,7 @@ class IncDecExpressionAnalyzer
             if ($stmt instanceof PreInc || $stmt instanceof PreDec) {
                 $old_node_data->setType(
                     $stmt,
-                    $statements_analyzer->node_data->getType($operation) ?? Type::getMixed()
+                    $statements_analyzer->node_data->getType($fake_assignment) ?? Type::getMixed()
                 );
             }
 

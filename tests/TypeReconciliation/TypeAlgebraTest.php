@@ -1194,8 +1194,6 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogicWithException' => [
                 'code' => '<?php
-                    function takesString(string $s): void {}
-
                     function foo(?string $a, ?string $b, ?string $c): void {
                         if ($a !== null || $b !== null || $c !== null) {
                             if ($c !== null) {
@@ -1209,11 +1207,9 @@ class TypeAlgebraTest extends TestCase
                             } else {
                                 $d = $c;
                             }
-
-                            takesString($d);
                         }
                     }',
-                'error_message' => 'PossiblyNullArgument',
+                'error_message' => 'RedundantCondition',
             ],
             'invertedTwoVarLogicNotNestedWithVarChange' => [
                 'code' => '<?php

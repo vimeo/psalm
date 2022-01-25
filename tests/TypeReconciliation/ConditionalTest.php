@@ -2083,6 +2083,7 @@ class ConditionalTest extends TestCase
                         /**
                          * @psalm-suppress MixedReturnStatement
                          * @psalm-suppress MixedInferredReturnType
+                         * @psalm-suppress MixedArrayAccess
                          */
                         public static function get(string $k1, string $k2) : ?string {
                             if (!isset(static::$cache[$k1][$k2])) {

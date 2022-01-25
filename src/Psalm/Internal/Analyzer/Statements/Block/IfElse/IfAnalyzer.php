@@ -6,12 +6,9 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\Internal\Algebra;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -23,7 +20,6 @@ use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
-use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff_key;
@@ -77,7 +73,7 @@ class IfAnalyzer
             $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
-        $final_actions = ScopeAnalyzer::getControlActions(
+        $if_scope->if_actions = $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             []
@@ -91,6 +87,7 @@ class IfAnalyzer
         $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
 
+        $if_scope->if_actions = $final_actions;
         $if_scope->final_actions = $final_actions;
 
         /** @var array<string, int> */
@@ -127,8 +124,6 @@ class IfAnalyzer
                 $outer_context->byref_constraints[$var_id] = $byref_constraint;
             }
         }
-
-        $mic_drop = false;
 
         if (!$has_leaving_statements) {
             self::updateIfScope(
@@ -168,27 +163,13 @@ class IfAnalyzer
                         $if_conditional_scope->assigned_in_conditional_var_ids
                     );
                 }
-
-                if (!$stmt->else && !$stmt->elseifs) {
-                    $mic_drop = self::handleMicDrop(
-                        $statements_analyzer,
-                        $stmt->cond,
-                        $if_scope,
-                        $outer_context,
-                        $new_assigned_var_ids
-                    );
-
-                    $outer_context->clauses = Algebra::simplifyCNF(
-                        array_merge($outer_context->clauses, $if_scope->negated_clauses)
-                    );
-                }
             }
         }
 
         // update the parent context as necessary, but only if we can safely reason about type negation.
         // We only update vars that changed both at the start of the if block and then again by an assignment
         // in the if statement.
-        if ($if_scope->negated_types && !$mic_drop) {
+        if ($if_scope->negated_types) {
             $vars_to_update = array_intersect(
                 array_keys($pre_assignment_else_redefined_vars),
                 array_keys($if_scope->negated_types)
@@ -261,99 +242,6 @@ class IfAnalyzer
         );
 
         return null;
-    }
-
-    /**
-     * This handles the situation when returning inside an
-     * if block with no else or elseifs
-     *
-     * @param array<string, int>    $new_assigned_var_ids
-     */
-    private static function handleMicDrop(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $cond,
-        IfScope $if_scope,
-        Context $post_if_context,
-        array $new_assigned_var_ids
-    ): bool {
-        if (!$if_scope->negated_types) {
-            return false;
-        }
-
-        $newly_reconciled_var_ids = [];
-
-        $post_if_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
-            $if_scope->negated_types,
-            [],
-            $post_if_context->vars_in_scope,
-            $post_if_context->references_in_scope,
-            $newly_reconciled_var_ids,
-            [],
-            $statements_analyzer,
-            $statements_analyzer->getTemplateTypeMap() ?: [],
-            $post_if_context->inside_loop,
-            new CodeLocation(
-                $statements_analyzer->getSource(),
-                $cond instanceof PhpParser\Node\Expr\BooleanNot
-                    ? $cond->expr
-                    : $cond,
-                $post_if_context->include_location,
-                false
-            )
-        );
-
-        foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
-            $post_if_context->removeVarFromConflictingClauses($changed_var_id);
-        }
-
-        $newly_reconciled_var_ids += $new_assigned_var_ids;
-
-        foreach ($newly_reconciled_var_ids as $var_id => $_) {
-            $if_scope->negated_clauses = Context::filterClauses(
-                $var_id,
-                $if_scope->negated_clauses
-            );
-        }
-
-        foreach ($newly_reconciled_var_ids as $var_id => $_) {
-            $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-            if ($first_appearance
-                && isset($post_if_context->vars_in_scope[$var_id])
-                && isset($post_if_context_vars_reconciled[$var_id])
-                && $post_if_context->vars_in_scope[$var_id]->hasMixed()
-                && !$post_if_context_vars_reconciled[$var_id]->hasMixed()
-            ) {
-                if (!$post_if_context->collect_initializations
-                    && !$post_if_context->collect_mutations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                ) {
-                    $parent_source = $statements_analyzer->getSource();
-
-                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                        : null;
-
-                    if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
-                    ) {
-                        $codebase = $statements_analyzer->getCodebase();
-                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
-                    }
-                }
-
-                IssueBuffer::remove(
-                    $statements_analyzer->getFilePath(),
-                    'MixedAssignment',
-                    $first_appearance->raw_file_start
-                );
-            }
-        }
-
-        $post_if_context->vars_in_scope = $post_if_context_vars_reconciled;
-
-        return true;
     }
 
     /**
