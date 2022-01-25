@@ -1025,7 +1025,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         true,
                         false,
                         false,
-                        true
+                        true,
+                        false,
+                        true,
                     );
                 } catch (UnresolvableConstantException $e) {
                     if ($function_param->type_location !== null) {

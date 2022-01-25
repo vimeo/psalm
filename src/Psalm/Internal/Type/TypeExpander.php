@@ -66,7 +66,8 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false,
     ): Union {
         $return_type = clone $return_type;
 
@@ -85,7 +86,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
             if ($return_type_part instanceof TTypeAlias || count($parts) > 1) {
@@ -134,7 +136,8 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -152,7 +155,8 @@ class TypeExpander
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
                         $expand_generic,
-                        $expand_templates
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
@@ -197,7 +201,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
             if ($new_as_type instanceof TNamedObject) {
@@ -215,7 +220,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
             if ($expand_templates) {
@@ -324,7 +330,8 @@ class TypeExpander
                                 $evaluate_conditional_types,
                                 $final,
                                 $expand_generic,
-                                $expand_templates
+                                $expand_templates,
+                                $throw_on_unresolvable_constant,
                             );
 
                             $recursively_fleshed_out_types = array_merge(
@@ -349,7 +356,9 @@ class TypeExpander
             }
 
             if ($evaluate_class_constants) {
-                if (!$codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+                if ($throw_on_unresolvable_constant
+                    && !$codebase->classOrInterfaceExists($return_type->fq_classlike_name)
+                ) {
                     throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
                 }
 
@@ -379,7 +388,7 @@ class TypeExpander
                             return array_values($const_type_atomic->type_params[1]->getAtomicTypes());
                         }
                     }
-                } else {
+                } elseif ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
                 }
             }
@@ -405,7 +414,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
                 $new_value_type = reset($new_value_type);
@@ -437,7 +447,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
             $potential_ints = [];
@@ -464,7 +475,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
         }
 
@@ -484,7 +496,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
             }
         } elseif ($return_type instanceof TKeyedArray) {
@@ -499,7 +512,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
             }
         } elseif ($return_type instanceof TList) {
@@ -513,7 +527,8 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
         }
 
@@ -529,7 +544,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
             }
         }
@@ -550,7 +566,8 @@ class TypeExpander
                             $evaluate_conditional_types,
                             $final,
                             $expand_generic,
-                            $expand_templates
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
                         );
                     }
                 }
@@ -566,7 +583,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
             }
         }
@@ -683,7 +701,8 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         $new_as_type = self::expandUnion(
             $codebase,
@@ -695,7 +714,8 @@ class TypeExpander
             $evaluate_conditional_types,
             $final,
             $expand_generic,
-            $expand_templates
+            $expand_templates,
+            $throw_on_unresolvable_constant,
         );
 
         $return_type->as_type = $new_as_type;
@@ -715,7 +735,8 @@ class TypeExpander
                         $evaluate_conditional_types,
                         $final,
                         $expand_generic,
-                        $expand_templates
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
                     );
 
                     if (count($candidate) === 1) {
@@ -737,7 +758,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
                 $if_conditional_return_types = array_merge(
@@ -759,7 +781,8 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
                 $else_conditional_return_types = array_merge(
@@ -852,7 +875,8 @@ class TypeExpander
             $evaluate_conditional_types,
             $final,
             $expand_generic,
-            $expand_templates
+            $expand_templates,
+            $throw_on_unresolvable_constant,
         );
 
         $return_type->if_type = self::expandUnion(
@@ -865,7 +889,8 @@ class TypeExpander
             $evaluate_conditional_types,
             $final,
             $expand_generic,
-            $expand_templates
+            $expand_templates,
+            $throw_on_unresolvable_constant,
         );
 
         $return_type->else_type = self::expandUnion(
@@ -878,7 +903,8 @@ class TypeExpander
             $evaluate_conditional_types,
             $final,
             $expand_generic,
-            $expand_templates
+            $expand_templates,
+            $throw_on_unresolvable_constant,
         );
 
         return [$return_type];
