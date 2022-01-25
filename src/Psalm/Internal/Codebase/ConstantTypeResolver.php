@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -40,6 +41,7 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function ctype_digit;
+use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
@@ -137,7 +139,9 @@ class ConstantTypeResolver
                 }
 
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    return new TKeyedArray($left->properties + $right->properties);
+                    $type = new TKeyedArray($left->properties + $right->properties);
+                    $type->sealed = true;
+                    return $type;
                 }
 
                 return new TMixed;
@@ -332,10 +336,27 @@ class ConstantTypeResolver
     }
 
     /**
-     * @param  string|int|float|bool|null $value
+     * Note: This takes an array, but any array should only contain other arrays and scalars.
+     *
+     * @param  array|string|int|float|bool|null $value
      */
-    private static function getLiteralTypeFromScalarValue($value): Atomic
+    public static function getLiteralTypeFromScalarValue($value, bool $sealed_array = true): Atomic
     {
+        if (is_array($value)) {
+            if (empty($value)) {
+                return Type::getEmptyArray()->getSingleAtomic();
+            }
+
+            $types = [];
+            /** @var array|scalar|null $val */
+            foreach ($value as $key => $val) {
+                $types[$key] = new Union([self::getLiteralTypeFromScalarValue($val, $sealed_array)]);
+            }
+            $type = new TKeyedArray($types);
+            $type->sealed = $sealed_array;
+            return $type;
+        }
+
         if (is_string($value)) {
             return new TLiteralString($value);
         }
@@ -349,13 +370,17 @@ class ConstantTypeResolver
         }
 
         if ($value === false) {
-            return new TFalse;
+            return new TFalse();
         }
 
         if ($value === true) {
-            return new TTrue;
+            return new TTrue();
         }
 
-        return new TNull;
+        if ($value === null) {
+            return new TNull();
+        }
+
+        throw new InvalidArgumentException('$value must be a scalar.');
     }
 }

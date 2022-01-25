@@ -27,6 +27,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
+use Psalm\Issue\ClassConstantIssue;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
@@ -1585,6 +1586,8 @@ class Config
             $reporting_level = $this->getReportingLevelForFunction($issue_type, $e->function_id);
         } elseif ($e instanceof PropertyIssue) {
             $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
+        } elseif ($e instanceof ClassConstantIssue) {
+            $reporting_level = $this->getReportingLevelForClassConstant($issue_type, $e->const_id);
         } elseif ($e instanceof ArgumentIssue && $e->function_id) {
             $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
         } elseif ($e instanceof VariableIssue) {
@@ -1791,6 +1794,15 @@ class Config
     {
         if (isset($this->issue_handlers[$issue_type])) {
             return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
+        }
+
+        return null;
+    }
+
+    public function getReportingLevelForClassConstant(string $issue_type, string $constant_id): ?string
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForClassConstant($constant_id);
         }
 
         return null;

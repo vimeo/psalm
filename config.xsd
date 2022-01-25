@@ -260,6 +260,7 @@
             <xs:element name="InvalidCatch" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidConstantAssignmentValue" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblockParamName" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidEnumBackingType" type="ClassIssueHandlerType" minOccurs="0" />
@@ -463,6 +464,7 @@
             <xs:element name="UnnecessaryVarAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnresolvableConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeGenericInstantiation" type="IssueHandlerType" minOccurs="0" />
@@ -597,6 +599,24 @@
                         <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="referencedProperty" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="ErrorLevelType" />
+    </xs:complexType>
+
+    <xs:complexType name="ClassConstantIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="referencedConstant" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />

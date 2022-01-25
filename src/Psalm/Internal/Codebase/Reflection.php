@@ -171,6 +171,7 @@ class Reflection
         foreach ($class_constants as $name => $value) {
             $storage->constants[$name] = new ClassConstantStorage(
                 ClassLikeAnalyzer::getTypeFromValue($value),
+                new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]),
                 ClassLikeAnalyzer::VISIBILITY_PUBLIC,
                 null
             );

@@ -117,6 +117,12 @@ class ArrayAnalyzer
             $item_value_type = null;
         }
 
+        if ($item_key_type === null && $item_value_type === null) {
+            $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
+
+            return true;
+        }
+
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type
             && $item_key_type

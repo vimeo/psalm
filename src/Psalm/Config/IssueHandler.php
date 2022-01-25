@@ -131,6 +131,17 @@ class IssueHandler
         return null;
     }
 
+    public function getReportingLevelForClassConstant(string $constant_id): ?string
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsClassConstant($constant_id)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return null;
+    }
+
     public function getReportingLevelForVariable(string $var_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
@@ -155,6 +166,7 @@ class IssueHandler
             fn(string $issue_name): bool => $issue_name !== ''
                 && $issue_name !== 'MethodIssue'
                 && $issue_name !== 'PropertyIssue'
+                && $issue_name !== 'ClassConstantIssue'
                 && $issue_name !== 'FunctionIssue'
                 && $issue_name !== 'ArgumentIssue'
                 && $issue_name !== 'VariableIssue'

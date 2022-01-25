@@ -15,11 +15,13 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InvalidConstantAssignmentValue;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
@@ -35,6 +37,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function assert;
 use function explode;
 use function in_array;
 use function strtolower;
@@ -252,7 +255,9 @@ class ClassConstFetchAnalyzer
                     $fq_class_name,
                     $stmt->name->name,
                     $class_visibility,
-                    $statements_analyzer
+                    $statements_analyzer,
+                    [],
+                    $stmt->class->parts[0] === "static"
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
@@ -378,7 +383,7 @@ class ClassConstFetchAnalyzer
                 );
             }
 
-            if ($first_part_lc !== 'static' || $const_class_storage->final) {
+            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock) {
                 $stmt_type = clone $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -674,6 +679,32 @@ class ClassConstFetchAnalyzer
     ): void {
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
+
+            assert($context->self !== null);
+            $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
+            $const_storage = $class_storage->constants[$const->name->name];
+            if ($assigned_type = $statements_analyzer->node_data->getType($const->value)) {
+                if ($const_storage->type !== null
+                    && $const_storage->stmt_location !== null
+                    && $assigned_type !== $const_storage->type
+                    && !UnionTypeComparator::isContainedBy(
+                        $statements_analyzer->getCodebase(),
+                        $assigned_type,
+                        $const_storage->type
+                    )
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidConstantAssignmentValue(
+                            "{$context->self}::{$const->name->name} with declared type {$const_storage->type->getId()} "
+                            . "cannot be assigned type {$assigned_type->getId()}",
+                            $const_storage->stmt_location,
+                            "{$context->self}::{$const->name->name}"
+                        ),
+                        $const_storage->suppressed_issues,
+                        true
+                    );
+                }
+            }
         }
     }
 }

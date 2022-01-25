@@ -10,6 +10,38 @@ class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
+    // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
+    // {
+    //     $this->expectException(CodeException::class);
+    //     $this->expectExceptionMessage("PossiblyUndefinedIntArrayOffset");
+
+    //     $this->testConfig->ensure_array_int_offsets_exist = true;
+
+    //     $file_path = getcwd() . '/src/somefile.php';
+
+    //     $this->addFile(
+    //         $file_path,
+    //         '<?php
+    //             class Foo
+    //             {
+    //                 /** @var array<int, int> */
+    //                 public const CONST = [1, 2, 3];
+
+    //                 /**
+    //                  * @param key-of<self::CONST> $key
+    //                  */
+    //                 public function bar(int $key): int
+    //                 {
+    //                     return static::CONST[$key];
+    //                 }
+    //             }
+    //         '
+    //     );
+
+    //     $this->analyzeFile($file_path, new Context());
+    // }
+
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>, php_version?: string}>
      */
@@ -273,14 +305,17 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentStringConcat' => [
                 'code' => '<?php
                     class A {
+                        /** @var non-empty-string */
                         public const STR = "a";
                     }
 
                     class B extends A {
+                        /** @var non-empty-string */
                         public const STR = parent::STR . "b";
                     }
 
                     class C extends B {
+                        /** @var non-empty-string */
                         public const STR = parent::STR . "c";
                     }
 
@@ -1230,6 +1265,61 @@ class ConstantTest extends TestCase
                     Reconciler::reconcileKeyedTypes();
                 ',
             ],
+            'selfConstUsesInferredType' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        public const BAR = "bar";
+
+                        /**
+                         * @return "bar"
+                         */
+                        public function bar(): string
+                        {
+                            return self::BAR;
+                        }
+                    }
+                ',
+            ],
+            'typedClassConst' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        public const BAR = "bar";
+
+                        public function bar(): string
+                        {
+                            return static::BAR;
+                        }
+                    }
+                ',
+            ],
+            'classConstSuppress' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /**
+                         * @psalm-suppress InvalidConstantAssignmentValue
+                         *
+                         * @var int
+                         */
+                        public const BAR = "bar";
+                    }
+                ',
+            ],
+            'spreadEmptyArray' => [
+                'code' => '<?php
+                    class A {
+                        public const ARR = [];
+                    }
+
+                    /** @param array<never, never> $arg */
+                    function foo(array $arg): void {}
+                    foo([...A::ARR]);
+                ',
+            ],
         ];
     }
 
@@ -1510,6 +1600,96 @@ class ConstantTest extends TestCase
                 'error_message' => 'DuplicateConstant',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'returnValueofNonExistantConstant' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @return value-of<self::BAT>
+                         */
+                        public function bar(): string
+                        {
+                            return self::BAR[0];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'returnValueofStaticConstant' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @return value-of<static::BAR>
+                         */
+                        public function bar(): string
+                        {
+                            return static::BAR[0];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'takeKeyofNonExistantConstant' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @param key-of<self::BAT> $key
+                         */
+                        public function bar(int $key): string
+                        {
+                            return static::BAR[$key];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'takeKeyofStaticConstant' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = ["bar"];
+
+                        /**
+                         * @param key-of<static::BAR> $key
+                         */
+                        public function bar(int $key): string
+                        {
+                            return static::BAR[$key];
+                        }
+                    }
+                ',
+                'error_message' => 'UnresolvableConstant',
+            ],
+            'invalidConstantAssignmentType' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        public const BAR = "bar";
+                    }
+                ',
+                'error_message' => "InvalidConstantAssignmentValue",
+            ],
+            'invalidConstantAssignmentTypeResolvedLate' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        public const BAR = "bar" . self::BAZ;
+                        public const BAZ = "baz";
+                        public const BARBAZ = self::BAR . self::BAZ;
+                    }
+                ',
+                'error_message' => "InvalidConstantAssignmentValue",
             ],
         ];
     }

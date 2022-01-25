@@ -202,7 +202,6 @@ class ArrayKeyExistsTest extends TestCase
             'assertArrayKeyExistsRefinesType' => [
                 'code' => '<?php
                     class Foo {
-                        /** @var array<int,string> */
                         public const DAYS = [
                             1 => "mon",
                             2 => "tue",

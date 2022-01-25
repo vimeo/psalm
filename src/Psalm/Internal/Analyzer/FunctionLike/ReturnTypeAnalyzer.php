@@ -11,6 +11,7 @@ use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
@@ -40,6 +41,7 @@ use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
+use Psalm\Issue\UnresolvableConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
@@ -821,15 +823,27 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $fleshed_out_return_type = TypeExpander::expandUnion(
-            $codebase,
-            $storage->return_type,
-            $classlike_storage->name ?? null,
-            $classlike_storage->name ?? null,
-            $parent_class,
-            true,
-            true
-        );
+        try {
+            $fleshed_out_return_type = TypeExpander::expandUnion(
+                $codebase,
+                $storage->return_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $parent_class,
+                true,
+                true
+            );
+        } catch (UnresolvableConstantException $e) {
+            IssueBuffer::maybeAdd(
+                new UnresolvableConstant(
+                    "Could not resolve constant {$e->class_name}::{$e->const_name}",
+                    $storage->return_type_location
+                ),
+                $storage->suppressed_issues,
+                true
+            );
+            $fleshed_out_return_type = $storage->return_type;
+        }
 
         if ($fleshed_out_return_type->check(
             $function_like_analyzer,

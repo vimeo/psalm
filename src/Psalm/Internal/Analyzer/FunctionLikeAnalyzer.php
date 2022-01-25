@@ -10,6 +10,7 @@ use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
@@ -38,6 +39,7 @@ use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
+use Psalm\Issue\UnresolvableConstant;
 use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
@@ -1013,17 +1015,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->type) {
                 $param_type = clone $function_param->type;
 
-                $param_type = TypeExpander::expandUnion(
-                    $codebase,
-                    $param_type,
-                    $context->self,
-                    $context->self,
-                    $this->getParentFQCLN(),
-                    true,
-                    false,
-                    false,
-                    true
-                );
+                try {
+                    $param_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $param_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                        true,
+                        false,
+                        false,
+                        true
+                    );
+                } catch (UnresolvableConstantException $e) {
+                    if ($function_param->type_location !== null) {
+                        IssueBuffer::maybeAdd(
+                            new UnresolvableConstant(
+                                "Could not resolve constant {$e->class_name}::{$e->const_name}",
+                                $function_param->type_location
+                            ),
+                            $storage->suppressed_issues,
+                            true
+                        );
+                    }
+                }
 
                 if ($function_param->type_location) {
                     if ($param_type->check(

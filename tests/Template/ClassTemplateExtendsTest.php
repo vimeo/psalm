@@ -28,6 +28,7 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     abstract class Tuple
                     {
+                        /** @var int */
                         const ARITY = 0;
 
                         /**
@@ -36,7 +37,7 @@ class ClassTemplateExtendsTest extends TestCase
                          */
                         public function arity(): int
                         {
-                            return (int)static::ARITY;
+                            return static::ARITY;
                         }
 
                         /**
@@ -74,7 +75,7 @@ class ClassTemplateExtendsTest extends TestCase
                          */
                         public function arity(): int
                         {
-                            return (int)static::ARITY;
+                            return static::ARITY;
                         }
 
                         /**
