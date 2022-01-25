@@ -1193,7 +1193,7 @@ class TypeCombiner
 
                 if (!isset($combination->value_types['int'])) {
                     $combination->value_types['int'] = $all_nonnegative
-                        ? new TIntRange(1, null)
+                        ? new TIntRange(0, null) // improvement: use min and max literals to bound
                         : new TNonspecificLiteralInt();
                 }
             }

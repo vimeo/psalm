@@ -704,6 +704,18 @@ class IntRangeTest extends TestCase
                     '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
                 ],
             ],
+            'noErrorPushingBigShapeIntoConstant' => [
+                'code' => '<?php
+                        class DocComment
+                            {
+                                private const PSALM_ANNOTATIONS = [
+                                    "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+                                    "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+                                ];
+                            }',
+                'assertions' => [
+                ],
+            ],
         ];
     }
 
