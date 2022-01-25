@@ -9,6 +9,9 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Plugin\ArgTypeInferer;
+use Psalm\Plugin\DynamicFunctionStorage;
+use Psalm\Plugin\DynamicTemplateProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionDynamicStorageProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionDynamicStorageProviderInterface;
 use Psalm\Storage\FunctionStorage;
@@ -20,7 +23,7 @@ use function strtolower;
  */
 final class FunctionDynamicStorageProvider
 {
-    /** @var array<lowercase-string, array<Closure(FunctionDynamicStorageProviderEvent): ?FunctionStorage>> */
+    /** @var array<lowercase-string, array<Closure(FunctionDynamicStorageProviderEvent): ?DynamicFunctionStorage>> */
     private static $handlers = [];
 
     /** @var array<lowercase-string, ?FunctionStorage> */
@@ -39,7 +42,7 @@ final class FunctionDynamicStorageProvider
     }
 
     /**
-     * @param Closure(FunctionDynamicStorageProviderEvent): ?FunctionStorage $c
+     * @param Closure(FunctionDynamicStorageProviderEvent): ?DynamicFunctionStorage $c
      */
     public function registerClosure(string $fq_function_name, Closure $c): void
     {
@@ -70,19 +73,20 @@ final class FunctionDynamicStorageProvider
 
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
             $event = new FunctionDynamicStorageProviderEvent(
+                new ArgTypeInferer($context, $statements_analyzer),
+                new DynamicTemplateProvider('fn-' . strtolower($function_id)),
                 $statements_analyzer,
                 $function_id,
                 $stmt,
                 $context,
-                $code_location
+                $code_location,
             );
 
             $result = $class_handler($event);
-            self::$dynamic_storages[$dynamic_storage_id] = $result;
 
-            if ($result) {
-                return $result;
-            }
+            return self::$dynamic_storages[$dynamic_storage_id] = $result
+                ? $result->toFunctionStorage($function_id)
+                : null;
         }
 
         return null;

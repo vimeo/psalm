@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Plugin\EventHandler;
 
+use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\EventHandler\Event\FunctionDynamicStorageProviderEvent;
-use Psalm\Storage\FunctionStorage;
 
 interface FunctionDynamicStorageProviderInterface
 {
@@ -14,5 +14,5 @@ interface FunctionDynamicStorageProviderInterface
      */
     public static function getFunctionIds(): array;
 
-    public static function getFunctionStorage(FunctionDynamicStorageProviderEvent $event): ?FunctionStorage;
+    public static function getFunctionStorage(FunctionDynamicStorageProviderEvent $event): ?DynamicFunctionStorage;
 }
