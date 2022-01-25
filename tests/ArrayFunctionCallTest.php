@@ -210,9 +210,9 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayMergeIntArrays' => [
                 '<?php
-                    $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
+                    $d = array_merge(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
+                    '$d' => 'array{0: string, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}',
                 ],
             ],
             'arrayMergePossiblyUndefined' => [
@@ -266,9 +266,9 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayReplaceIntArrays' => [
                 '<?php
-                    $d = array_replace(["a", "b", "c"], [1, 2, 3]);',
+                    $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: string, 1: string, 2: string, 3: int, 4: int, 5: int}',
+                    '$d' => 'array{0: int, 1: int, 2: int, 3: string}',
                 ],
             ],
             'arrayReplacePossiblyUndefined' => [
