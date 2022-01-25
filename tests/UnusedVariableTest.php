@@ -2442,7 +2442,7 @@ class UnusedVariableTest extends TestCase
                     }'
             ],
             'usedPlusInAddition' => [
-                '<?php
+                'code' => '<?php
                     function takesAnInt(): void {
                         $i = 0;
 
