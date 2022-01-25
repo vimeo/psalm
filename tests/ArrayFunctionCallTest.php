@@ -264,6 +264,74 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'arrayMergeRecursiveIntArrays' => [
+                '<?php
+                    $d = array_merge_recursive(["a", "b", "c"], [1, 2, [31, 32]]);',
+                'assertions' => [
+                    '$d' => 'list{string, string, string, int, int, list{int, int}}',
+                ],
+            ],
+            'arrayMergeRecursiveAssocArrays' => [
+                '<?php
+                    $d = array_merge_recursive([
+                        "a" => 1,
+                        "b" => [2, 3, "c" => [1]]
+                    ], [
+                        "b" => ["b4", "c" => [2, "v"]]
+                    ]);',
+                'assertions' => [
+                    '$d' => 'array{a: int, b: array{0: int, 1: int, c: list{int, int, string}, 2: string}}',
+                ],
+            ],
+            'arrayMergeRecursivePossiblyUndefined' => [
+                '<?php
+                    /**
+                     * @param array{host?:string} $opts
+                     * @return array{host:string|int}
+                     */
+                    function b(array $opts): array {
+                        return array_merge_recursive(["host" => 5], $opts);
+                    }',
+            ],
+            'arrayMergeRecursiveListResultWithArray' => [
+                '<?php
+                    /**
+                     * @param array<int, string> $list
+                     * @return list<string>
+                     */
+                    function bar(array $list) : array {
+                        return array_merge_recursive($list, ["test"]);
+                    }',
+            ],
+            'arrayMergeRecursiveListResultWithList' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function foo(array $list) : array {
+                        return array_merge_recursive($list, ["test"]);
+                    }',
+            ],
+            'arrayMergeRecursiveTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function merge($a, $b): array
+                        {
+                            return array_merge_recursive($a, $b);
+                        }
+                    }',
+            ],
             'arrayReplaceIntArrays' => [
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
@@ -317,6 +385,74 @@ class ArrayFunctionCallTest extends TestCase
                         public function replace($a, $b): array
                         {
                             return array_replace($a, $b);
+                        }
+                    }',
+            ],
+            'arrayReplaceRecursiveIntArrays' => [
+                '<?php
+                    $d = array_replace_recursive(["a", "b", ["c1"], "d"], [1, 2, [31, 32]]);',
+                'assertions' => [
+                    '$d' => 'list{int, int, list{int, int}, string}',
+                ],
+            ],
+            'arrayReplaceRecursiveAssocArrays' => [
+                '<?php
+                    $d = array_replace_recursive([
+                        "a" => 1,
+                        "b" => [2, 3, "c" => [1, "b", 3]]
+                    ], [
+                        "b" => ["b4", "c" => ["v"]]
+                    ]);',
+                'assertions' => [
+                    '$d' => 'array{a: int, b: array{0: string, 1: int, c: list{string, string, int}}}',
+                ],
+            ],
+            'arrayReplaceRecursivePossiblyUndefined' => [
+                '<?php
+                    /**
+                     * @param array{host?:string} $opts
+                     * @return array{host:string|int}
+                     */
+                    function b(array $opts): array {
+                        return array_replace_recursive(["host" => 5], $opts);
+                    }',
+            ],
+            'arrayReplaceRecursiveListResultWithArray' => [
+                '<?php
+                    /**
+                     * @param array<int, string> $list
+                     * @return list<string>
+                     */
+                    function bar(array $list) : array {
+                        return array_replace_recursive($list, ["test"]);
+                    }',
+            ],
+            'arrayReplaceRecursiveListResultWithList' => [
+                '<?php
+                    /**
+                     * @param list<string> $list
+                     * @return list<string>
+                     */
+                    function foo(array $list) : array {
+                        return array_replace_recursive($list, ["test"]);
+                    }',
+            ],
+            'arrayReplaceRecursiveTypes' => [
+                '<?php
+                    /**
+                     * @psalm-type A=array{name: string}
+                     * @psalm-type B=array{age: int}
+                     */
+                    class Demo
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @return A&B
+                         */
+                        public function replace($a, $b): array
+                        {
+                            return array_replace_recursive($a, $b);
                         }
                     }',
             ],
@@ -726,6 +862,26 @@ class ArrayFunctionCallTest extends TestCase
                     '$a3' => 'array{bye: int, hi: int}',
                 ],
             ],
+            'arrayMergeRecursiveTKeyedArray' => [
+                '<?php
+                  /**
+                   * @param array<string, int> $a
+                   * @return array<string, int>
+                   */
+                  function foo($a)
+                  {
+                    return $a;
+                  }
+
+                  $a1 = ["hi" => 3];
+                  $a2 = ["bye" => 5];
+                  $a3 = array_merge_recursive($a1, $a2);
+
+                  foo($a3);',
+                'assertions' => [
+                    '$a3' => 'array{hi: int, bye: int}',
+                ],
+            ],
             'arrayReplaceTKeyedArray' => [
                 'code' => '<?php
                   /**
@@ -744,6 +900,26 @@ class ArrayFunctionCallTest extends TestCase
                   foo($a3);',
                 'assertions' => [
                     '$a3' => 'array{bye: int, hi: int}',
+                ],
+            ],
+            'arrayReplaceRecursiveTKeyedArray' => [
+                '<?php
+                  /**
+                   * @param array<string, int> $a
+                   * @return array<string, int>
+                   */
+                  function foo($a)
+                  {
+                    return $a;
+                  }
+
+                  $a1 = ["hi" => 3];
+                  $a2 = ["bye" => 5];
+                  $a3 = array_replace_recursive($a1, $a2);
+
+                  foo($a3);',
+                'assertions' => [
+                    '$a3' => 'array{hi: int, bye: int}',
                 ],
             ],
             'arrayRand' => [
@@ -2141,6 +2317,30 @@ class ArrayFunctionCallTest extends TestCase
                         return array_merge($a, $b);
                     }'
             ],
+            'arrayMergeRecursiveKeepLastKeysAndType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_merge_recursive($b, $a);
+                    }'
+            ],
+            'arrayMergeRecursiveKeepFirstKeysSameType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, int> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_merge_recursive($a, $b);
+                    }'
+            ],
             'arrayReplaceKeepLastKeysAndType' => [
                 'code' => '<?php
                     /**
@@ -2163,6 +2363,30 @@ class ArrayFunctionCallTest extends TestCase
                      */
                     function merger(array $a, array $b) : array {
                         return array_replace($a, $b);
+                    }'
+            ],
+            'arrayReplaceRecursiveKeepLastKeysAndType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, string> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_replace_recursive($b, $a);
+                    }'
+            ],
+            'arrayReplaceRecursiveKeepFirstKeysSameType' => [
+                '<?php
+                    /**
+                     * @param array{A: int} $a
+                     * @param array<string, int> $b
+                     *
+                     * @return array{A: int}
+                     */
+                    function merger(array $a, array $b) : array {
+                        return array_replace_recursive($a, $b);
                     }'
             ],
             'filteredArrayCanBeEmpty' => [
