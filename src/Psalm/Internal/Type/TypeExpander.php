@@ -67,7 +67,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false,
+        bool $throw_on_unresolvable_constant = false
     ): Union {
         $return_type = clone $return_type;
 
@@ -137,7 +137,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false,
+        bool $throw_on_unresolvable_constant = false
     ): array {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
@@ -702,7 +702,7 @@ class TypeExpander
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false,
+        bool $throw_on_unresolvable_constant = false
     ): array {
         $new_as_type = self::expandUnion(
             $codebase,
