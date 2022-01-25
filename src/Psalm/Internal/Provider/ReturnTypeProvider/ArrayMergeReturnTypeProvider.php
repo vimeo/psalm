@@ -23,6 +23,7 @@ use function array_values;
 use function count;
 use function is_string;
 use function max;
+use function mb_strcut;
 
 class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
