@@ -93,6 +93,14 @@ return [
       'old' => ['bool', 'mode'=>'int'],
       'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
     ],
+    'Phar::getMetadata' => [
+      'old' => ['mixed'],
+      'new' => ['mixed', 'unserializeOptions='=>'array'],
+    ],
+    'PharFileInfo::getMetadata' => [
+      'old' => ['mixed'],
+      'new' => ['mixed', 'unserializeOptions='=>'array'],
+    ],
     'ReflectionClass::getConstants' => [
       'old' => ['array<string,mixed>'],
       'new' => ['array<string,mixed>', 'filter='=>'?int'],
