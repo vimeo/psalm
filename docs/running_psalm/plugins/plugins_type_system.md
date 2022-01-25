@@ -55,7 +55,9 @@ The classes are as follows:
 
 `TTemplateIndexedAccess` - To be documented
 
-`TTemplateKeyOf` - Represents the type used when using TKeyOfClassConstant when the type of the class constant array is a template
+`TTemplateKeyOf` - Represents the type used when using TKeyOfArray when the type of the array is a template
+
+`TTemplateValueOf` - Represents the type used when using TValueOfArray when the type of the array is a template
 
 `TTypeAlias` - To be documented
 

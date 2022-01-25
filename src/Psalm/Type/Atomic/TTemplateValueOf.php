@@ -2,12 +2,13 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
- * Represents the type used when using TKeyOfArray when the type of the array is a template
+ * Represents the type used when using TValueOfArray when the type of the array is a template
  */
-class TTemplateKeyOf extends TArrayKey
+class TTemplateValueOf extends Atomic
 {
     /**
      * @var string
@@ -36,16 +37,16 @@ class TTemplateKeyOf extends TArrayKey
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'key-of<' . $this->param_name . '>';
+        return 'value-of<' . $this->param_name . '>';
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
-            return 'key-of<' . $this->param_name . '>';
+            return 'value-of<' . $this->param_name . '>';
         }
 
-        return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact) . '>';
+        return 'value-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact) . '>';
     }
 
     /**
@@ -57,6 +58,23 @@ class TTemplateKeyOf extends TArrayKey
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
-        return 'key-of<' . $this->param_name . '>';
+        return 'value-of<' . $this->param_name . '>';
+    }
+
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id
+    ): ?string {
+        return null;
+    }
+
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
     }
 }

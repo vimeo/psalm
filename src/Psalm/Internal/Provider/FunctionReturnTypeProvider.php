@@ -21,7 +21,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider;
-use Psalm\Internal\Provider\ReturnTypeProvider\ArrayValuesReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ExplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
@@ -79,7 +78,6 @@ class FunctionReturnTypeProvider
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayUniqueReturnTypeProvider::class);
-        $this->registerClass(ArrayValuesReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);

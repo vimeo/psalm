@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
@@ -22,6 +23,8 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOfArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -230,19 +233,18 @@ class TemplateInferredTypeReplacer
                 } else {
                     $new_types[] = new TMixed();
                 }
-            } elseif ($atomic_type instanceof TTemplateKeyOf) {
-                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-                        $codebase
-                    )
-                    : null;
+            } elseif ($atomic_type instanceof TTemplateKeyOf
+                || $atomic_type instanceof TTemplateValueOf
+            ) {
+                $new_type = self::replaceTemplateKeyOfValueOf(
+                    $codebase,
+                    $atomic_type,
+                    $inferred_lower_bounds
+                );
 
-                if ($template_type) {
-                    if (TKeyOfArray::isViableTemplateType($template_type)) {
-                        $keys_to_unset[] = $key;
-                        $new_types[] = new TKeyOfArray(clone $template_type);
-                    }
+                if ($new_type) {
+                    $keys_to_unset[] = $key;
+                    $new_types[] = $new_type;
                 }
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
@@ -429,5 +431,38 @@ class TemplateInferredTypeReplacer
                 $codebase
             )->getAtomicTypes()
         );
+    }
+
+    /**
+     * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     */
+    private static function replaceTemplateKeyOfValueOf(
+        ?Codebase $codebase,
+        Atomic $atomic_type,
+        array $inferred_lower_bounds
+    ): ?Atomic {
+        if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+            return null;
+        }
+
+        $template_type = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+            $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+            $codebase
+        );
+
+        if ($atomic_type instanceof TTemplateKeyOf
+            && TKeyOfArray::isViableTemplateType($template_type)
+        ) {
+            return new TKeyOfArray(clone $template_type);
+        }
+
+        if ($atomic_type instanceof TTemplateValueOf
+            && TValueOfArray::isViableTemplateType($template_type)
+        ) {
+            return new TValueOfArray(clone $template_type);
+        }
+
+        return null;
     }
 }

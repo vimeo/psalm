@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 use Throwable;
 
@@ -270,48 +271,58 @@ class TemplateStandinTypeReplacer
             return [$atomic_type];
         }
 
-        if ($atomic_type instanceof TTemplateKeyOf) {
-            if ($replace) {
-                $atomic_types = [];
-
-                $include_first = true;
-
-                if (isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
-                    $template_type
-                        = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
-
-                    if ($template_type->isSingle()) {
-                        $template_type = $template_type->getSingleAtomic();
-
-                        if ($template_type instanceof TKeyedArray
-                            || $template_type instanceof TArray
-                            || $template_type instanceof TList
-                        ) {
-                            if ($template_type instanceof TKeyedArray) {
-                                $key_type = $template_type->getGenericKeyType();
-                            } elseif ($template_type instanceof TList) {
-                                $key_type = Type::getInt();
-                            } else {
-                                $key_type = clone $template_type->type_params[0];
-                            }
-
-                            $include_first = false;
-
-                            foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
-                                $atomic_types[] = $key_atomic_type;
-                            }
-                        }
-                    }
-                }
-
-                if ($include_first) {
-                    $atomic_types[] = $atomic_type;
-                }
-
-                return $atomic_types;
+        if ($atomic_type instanceof TTemplateKeyOf
+            || $atomic_type instanceof TTemplateValueOf) {
+            if (!$replace) {
+                return [$atomic_type];
             }
 
-            return [$atomic_type];
+            $atomic_types = [];
+
+            $include_first = true;
+
+            if (isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
+                $template_type = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
+
+                foreach ($template_type->getAtomicTypes() as $template_atomic) {
+                    if (!$template_atomic instanceof TKeyedArray
+                        && !$template_atomic instanceof TArray
+                        && !$template_atomic instanceof TList
+                    ) {
+                        return [$atomic_type];
+                    }
+
+                    if ($atomic_type instanceof TTemplateKeyOf) {
+                        if ($template_atomic instanceof TKeyedArray) {
+                            $template_atomic = $template_atomic->getGenericKeyType();
+                        } elseif ($template_atomic instanceof TList) {
+                            $template_atomic = Type::getInt();
+                        } else {
+                            $template_atomic = clone $template_atomic->type_params[0];
+                        }
+                    } else {
+                        if ($template_atomic instanceof TKeyedArray) {
+                            $template_atomic = $template_atomic->getGenericValueType();
+                        } elseif ($template_atomic instanceof TList) {
+                            $template_atomic = clone $template_atomic->type_param;
+                        } else {
+                            $template_atomic = clone $template_atomic->type_params[1];
+                        }
+                    }
+
+                    $include_first = false;
+
+                    foreach ($template_atomic->getAtomicTypes() as $key_atomic_type) {
+                        $atomic_types[] = $key_atomic_type;
+                    }
+                }
+            }
+
+            if ($include_first) {
+                $atomic_types[] = $atomic_type;
+            }
+
+            return $atomic_types;
         }
 
         $matching_atomic_types = [];

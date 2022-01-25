@@ -59,12 +59,14 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfArray;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_key_exists;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -686,9 +688,9 @@ class TypeParser
         if ($generic_type_value === 'key-of') {
             $param_name = $generic_params[0]->getId(false);
 
-            if (isset($template_type_map[$param_name])) {
-                $defining_class = array_keys($template_type_map[$param_name])[0];
-
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
                 return new TTemplateKeyOf(
                     $param_name,
                     $defining_class,
@@ -698,7 +700,7 @@ class TypeParser
 
             if (!TKeyOfArray::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be a class constant or an array'
+                    'Untemplated key-of param ' . $param_name . ' should be an array'
                 );
             }
 
@@ -708,9 +710,19 @@ class TypeParser
         if ($generic_type_value === 'value-of') {
             $param_name = $generic_params[0]->getId(false);
 
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
+                return new TTemplateValueOf(
+                    $param_name,
+                    $defining_class,
+                    $generic_params[0]
+                );
+            }
+
             if (!TValueOfArray::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be a class constant or an array'
+                    'Untemplated value-of param ' . $param_name . ' should be an array'
                 );
             }
 

@@ -168,6 +168,18 @@ function array_key_last($array)
 }
 
 /**
+ * @psalm-template TArray as array
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is non-empty-array ? non-empty-list<value-of<TArray>> : list<value-of<TArray>>)
+ * @psalm-pure
+ */
+function array_values($array)
+{
+}
+
+/**
  * @psalm-template T
  *
  * @param mixed           $needle
