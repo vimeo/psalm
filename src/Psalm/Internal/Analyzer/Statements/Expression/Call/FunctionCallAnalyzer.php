@@ -579,15 +579,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-                ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->getArgs(),
-                    $function_call_info->function_params,
-                    $function_call_info->function_id,
-                    $function_call_info->allow_named_args,
-                    $context
-                );
-
                 $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,
