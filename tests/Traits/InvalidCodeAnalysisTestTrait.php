@@ -54,6 +54,7 @@ trait InvalidCodeAnalysisTestTrait
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
+        Config::getInstance()->setCustomErrorLevel('LiteralKeyUnshapedArray', Config::REPORT_SUPPRESS);
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
