@@ -122,6 +122,32 @@
 - [BC] Method `Psalm\Type\Union::hasFormerStaticObject()` was renamed to `hasStaticObject()`
 - [BC] Function assertions (from `@psalm-assert Foo $bar`) have been converted from strings to specific `Assertion` objects.
 - [BC] Property `Psalm\Storage\ClassLikeStorage::$invalid_dependencies` changed from `array<string>` to `array<string, true>`.
+- [BC] Event classes became final and their constructors were marked `@internal`:
+  - `Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent`
+  - `Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent`
+  - `Psalm\Plugin\EventHandler\Event\StringInterpreterEvent`
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
