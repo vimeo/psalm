@@ -122,6 +122,7 @@
 - [BC] Method `Psalm\Type\Union::hasFormerStaticObject()` was renamed to `hasStaticObject()`
 - [BC] Function assertions (from `@psalm-assert Foo $bar`) have been converted from strings to specific `Assertion` objects.
 - [BC] Property `Psalm\Storage\ClassLikeStorage::$invalid_dependencies` changed from `array<string>` to `array<string, true>`.
+- [BC] Property `Psalm\Storage\ClassLikeStorage::$template_extended_count` was renamed to `$template_type_extends_count`, its type was changed from `int|null` to `array<string, int>|null`.
 - [BC] Event classes became final and their constructors were marked `@internal`:
   - `Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent`
   - `Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent`
