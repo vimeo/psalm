@@ -16,6 +16,9 @@ final class ArgTypeInferer
     private Context $context;
     private StatementsAnalyzer $statements_analyzer;
 
+    /**
+     * @internal
+     */
     public function __construct(Context $context, StatementsAnalyzer $statements_analyzer)
     {
         $this->context = $context;
