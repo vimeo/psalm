@@ -64,6 +64,7 @@ class TKeyedArray extends Atomic
      */
     public $is_list = false;
 
+    /** @var non-empty-lowercase-string */
     public const KEY = 'array';
 
     /**
@@ -104,7 +105,6 @@ class TKeyedArray extends Atomic
             sort($property_strings);
         }
 
-        /** @psalm-suppress MixedOperand */
         return static::KEY . '{' .
                 implode(', ', $property_strings) .
                 '}'
@@ -135,7 +135,6 @@ class TKeyedArray extends Atomic
             );
         }
 
-        /** @psalm-suppress MixedOperand */
         return static::KEY . '{' .
                 implode(
                     ', ',

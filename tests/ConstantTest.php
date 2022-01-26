@@ -428,6 +428,7 @@ class ConstantTest extends TestCase
             'resolveClassConstToCurrentClass' => [
                 'code' => '<?php
                     interface I {
+                        /** @var string|array */
                         public const C = "a";
 
                         public function getC(): string;
@@ -446,6 +447,9 @@ class ConstantTest extends TestCase
                             return self::C;
                         }
                     }',
+                [],
+                [],
+                '8.1',
             ],
             'resolveCalculatedConstant' => [
                 'code' => '<?php
@@ -956,6 +960,7 @@ class ConstantTest extends TestCase
             'protectedClassConstantAccessibilitySameNameInChild' => [
                 'code' => '<?php
                     class A {
+                        /** @var int<1,max> */
                         protected const A = 1;
 
                         public static function test(): void {
@@ -972,7 +977,9 @@ class ConstantTest extends TestCase
             'referenceClassConstantWithSelf' => [
                 'code' => '<?php
                     abstract class A {
+                        /** @var array<non-empty-string, non-empty-string> */
                         public const KEYS = [];
+                        /** @var array<non-empty-string, non-empty-string> */
                         public const VALUES = [];
                     }
 
@@ -1320,6 +1327,57 @@ class ConstantTest extends TestCase
                     foo([...A::ARR]);
                 ',
             ],
+            'classConstCovariant' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @var string */
+                        public const COVARIANT = "";
+
+                        /** @var string */
+                        public const INVARIANT = "";
+                    }
+
+                    abstract class B extends A {}
+
+                    abstract class C extends B {
+                        /** @var non-empty-string */
+                        public const COVARIANT = "foo";
+
+                        /** @var string */
+                        public const INVARIANT = "";
+                    }
+                ',
+            ],
+            'overrideClassConstFromInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="baz";
+                    }
+
+                    interface Bar extends Foo {}
+
+                    class Baz implements Bar
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="foobar";
+                    }
+                ',
+                [],
+                [],
+                '8.1',
+            ],
+            'inheritedConstDoesNotOverride' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        public const BAR="baz";
+                    }
+
+                    interface Bar extends Foo {}
+                ',
+            ],
         ];
     }
 
@@ -1415,6 +1473,8 @@ class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'outOfScopeDefinedConstant' => [
                 'code' => '<?php
@@ -1690,6 +1750,78 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => "InvalidConstantAssignmentValue",
+            ],
+            'classConstContravariant' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @var non-empty-string */
+                        public const CONTRAVARIANT = "foo";
+                    }
+
+                    abstract class B extends A {}
+
+                    abstract class C extends B {
+                        /** @var string */
+                        public const CONTRAVARIANT = "";
+                    }
+                ',
+                'error_message' => "LessSpecificClassConstantType",
+            ],
+            'classConstAmbiguousInherit' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="baz";
+                    }
+
+                    interface Bar extends Foo {}
+
+                    class Baz
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="foobar";
+                    }
+
+                    class BarBaz extends Baz implements Bar
+                    {
+                    }
+                ',
+                'error_message' => 'AmbiguousConstantInheritance',
+            ],
+            'overrideClassConstFromInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="baz";
+                    }
+
+                    interface Bar extends Foo {}
+
+                    class Baz implements Bar
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="foobar";
+                    }
+                ',
+                'error_message' => 'OverriddenInterfaceConstant',
+            ],
+            'overrideClassConstFromInterfaceWithInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="baz";
+                    }
+
+                    interface Bar extends Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="bar";
+                    }
+                ',
+                'error_message' => 'OverriddenInterfaceConstant',
             ],
         ];
     }

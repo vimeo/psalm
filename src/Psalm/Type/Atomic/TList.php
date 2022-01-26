@@ -26,6 +26,7 @@ class TList extends Atomic
      */
     public $type_param;
 
+    /** @var non-empty-lowercase-string */
     public const KEY = 'list';
 
     /**
@@ -38,7 +39,6 @@ class TList extends Atomic
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        /** @psalm-suppress MixedOperand */
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
     }
 
@@ -67,7 +67,6 @@ class TList extends Atomic
                 );
         }
 
-        /** @psalm-suppress MixedOperand */
         return static::KEY
             . '<'
             . $this->type_param->toNamespacedString(

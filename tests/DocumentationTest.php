@@ -319,6 +319,7 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
+                case 'AmbiguousConstantInheritance':
                 case 'InvalidEnumBackingType':
                 case 'InvalidEnumCaseValue':
                 case 'DuplicateEnumCase':

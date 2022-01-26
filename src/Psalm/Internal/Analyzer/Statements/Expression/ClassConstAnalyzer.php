@@ -1,10 +1,11 @@
 <?php
 
-namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
+namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation;
@@ -16,16 +17,21 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\AmbiguousConstantInheritance;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidConstantAssignmentValue;
+use Psalm\Issue\LessSpecificClassConstantType;
 use Psalm\Issue\NonStaticSelfCall;
+use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
+use Psalm\Storage\ClassConstantStorage;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -45,13 +51,13 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassConstFetchAnalyzer
+class ClassConstAnalyzer
 {
     /**
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
      * analyse the ::class int $stmt->name separately
      */
-    public static function analyze(
+    public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
@@ -672,17 +678,19 @@ class ClassConstFetchAnalyzer
         return true;
     }
 
-    public static function analyzeClassConstAssignment(
+    public static function analyzeAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\ClassConst $stmt,
         Context $context
     ): void {
+        assert($context->self !== null);
+        $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
+
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
-
-            assert($context->self !== null);
-            $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
             $const_storage = $class_storage->constants[$const->name->name];
+
+            // Check assigned type matches docblock type
             if ($assigned_type = $statements_analyzer->node_data->getType($const->value)) {
                 if ($const_storage->type !== null
                     && $const_storage->stmt_location !== null
@@ -695,10 +703,10 @@ class ClassConstFetchAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidConstantAssignmentValue(
-                            "{$context->self}::{$const->name->name} with declared type {$const_storage->type->getId()} "
-                            . "cannot be assigned type {$assigned_type->getId()}",
+                            "{$class_storage->name}::{$const->name->name} with declared type "
+                            . "{$const_storage->type->getId()} cannot be assigned type {$assigned_type->getId()}",
                             $const_storage->stmt_location,
-                            "{$context->self}::{$const->name->name}"
+                            "{$class_storage->name}::{$const->name->name}"
                         ),
                         $const_storage->suppressed_issues,
                         true
@@ -706,5 +714,140 @@ class ClassConstFetchAnalyzer
                 }
             }
         }
+    }
+
+    public static function analyze(
+        ClassLikeStorage $class_storage,
+        Codebase $codebase
+    ): void {
+        foreach ($class_storage->constants as $const_name => $const_storage) {
+            // Check covariance
+            [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
+                $class_storage,
+                $const_storage,
+                $const_name,
+                $codebase
+            );
+            if ($parent_const_storage !== null) {
+                assert($parent_classlike_storage !== null);
+                $location = $const_storage->type_location ?? $const_storage->stmt_location;
+                if ($location !== null
+                    && $const_storage->type !== null
+                    && $parent_const_storage->type !== null
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $const_storage->type,
+                        $parent_const_storage->type
+                    )
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new LessSpecificClassConstantType(
+                            "The type '{$const_storage->type->getId()}' for {$class_storage->name}::"
+                                . "{$const_name} is more general than the type "
+                                . "'{$parent_const_storage->type->getId()}' inherited from "
+                                . "{$parent_classlike_storage->name}::{$const_name}",
+                            $location,
+                            "{$class_storage->name}::{$const_name}"
+                        ),
+                        $const_storage->suppressed_issues
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the const storage from the parent or interface that this class is overriding.
+     *
+     * @return array{ClassLikeStorage, ClassConstantStorage}|null
+     */
+    private static function getOverriddenConstant(
+        ClassLikeStorage $class_storage,
+        ClassConstantStorage $const_storage,
+        string $const_name,
+        Codebase $codebase
+    ): ?array {
+        $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
+        $interface_overrides = [];
+        foreach ($class_storage->class_implements ?: $class_storage->direct_interface_parents as $interface) {
+            $interface_storage = $codebase->classlike_storage_provider->get($interface);
+            $parent_const_storage = $interface_storage->constants[$const_name] ?? null;
+            if ($parent_const_storage !== null) {
+                if ($const_storage->location
+                    && $const_storage !== $parent_const_storage
+                    && $codebase->analysis_php_version_id < 8_01_00
+                ) {
+                    $interface_overrides[strtolower($interface)] = new OverriddenInterfaceConstant(
+                        "{$class_storage->name}::{$const_name} cannot override constant from $interface",
+                        $const_storage->location,
+                        "{$class_storage->name}::{$const_name}"
+                    );
+                }
+                if ($interface_const_storage !== null && $const_storage->location !== null) {
+                    assert($parent_classlike_storage !== null);
+                    if (!isset($parent_classlike_storage->parent_interfaces[strtolower($interface)])
+                        && !isset($interface_storage->parent_interfaces[strtolower($parent_classlike_storage->name)])
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new AmbiguousConstantInheritance(
+                                "Ambiguous inheritance of {$class_storage->name}::{$const_name} from $interface and "
+                                    . $parent_classlike_storage->name,
+                                $const_storage->location,
+                                "{$class_storage->name}::{$const_name}"
+                            ),
+                            $const_storage->suppressed_issues
+                        );
+                    }
+                }
+                $interface_const_storage = $parent_const_storage;
+                $parent_classlike_storage = $interface_storage;
+            }
+        }
+
+        foreach ($class_storage->parent_classes as $parent_class) {
+            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $parent_const_storage = $parent_class_storage->constants[$const_name] ?? null;
+            if ($parent_const_storage !== null) {
+                if ($const_storage->location !== null && $interface_const_storage !== null) {
+                    assert($parent_classlike_storage !== null);
+                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
+                        IssueBuffer::maybeAdd(
+                            new AmbiguousConstantInheritance(
+                                "Ambiguous inheritance of {$class_storage->name}::{$const_name} from "
+                                    . "$parent_classlike_storage->name and $parent_class",
+                                $const_storage->location,
+                                "{$class_storage->name}::{$const_name}"
+                            ),
+                            $const_storage->suppressed_issues
+                        );
+                    }
+                }
+                foreach ($interface_overrides as $interface_lc => $_) {
+                    // If the parent is the one with the const that's overriding the interface const, and the parent
+                    // doesn't implement the interface, it's just an AmbiguousConstantInheritance, not an
+                    // OverriddenInterfaceConstant
+                    if (!isset($parent_class_storage->class_implements[$interface_lc])
+                        && $parent_const_storage === $const_storage
+                    ) {
+                        unset($interface_overrides[$interface_lc]);
+                    }
+                }
+                $parent_classlike_storage = $parent_class_storage;
+                break;
+            }
+        }
+
+        foreach ($interface_overrides as $_ => $issue) {
+            IssueBuffer::maybeAdd(
+                $issue,
+                $const_storage->suppressed_issues
+            );
+        }
+
+        if ($parent_classlike_storage !== null) {
+            assert($parent_const_storage !== null);
+            return [$parent_classlike_storage, $parent_const_storage];
+        }
+        return null;
     }
 }
