@@ -27,6 +27,12 @@ final class ArgTypeInferer
      */
     public function infer(PhpParser\Node\Arg $arg)
     {
+        $already_inferred_type = $this->statements_analyzer->node_data->getType($arg->value);
+
+        if ($already_inferred_type) {
+            return $already_inferred_type;
+        }
+
         if (ExpressionAnalyzer::analyze($this->statements_analyzer, $arg->value, $this->context) === false) {
             return false;
         }
