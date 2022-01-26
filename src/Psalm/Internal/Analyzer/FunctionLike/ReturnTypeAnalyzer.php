@@ -831,7 +831,11 @@ class ReturnTypeAnalyzer
                 $classlike_storage->name ?? null,
                 $parent_class,
                 true,
-                true
+                true,
+                false,
+                false,
+                false,
+                true,
             );
         } catch (UnresolvableConstantException $e) {
             IssueBuffer::maybeAdd(
