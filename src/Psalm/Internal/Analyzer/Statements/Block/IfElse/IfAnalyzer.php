@@ -28,8 +28,11 @@ use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_unique;
 use function count;
 use function in_array;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -171,6 +174,20 @@ class IfAnalyzer
                 array_keys($pre_assignment_else_redefined_vars),
                 array_keys($if_scope->negated_types)
             );
+
+            $extra_vars_to_update = [];
+
+            // if there's an object-like array in there, we also need to update the root array variable
+            foreach ($vars_to_update as $var_id) {
+                $bracked_pos = strpos($var_id, '[');
+                if ($bracked_pos !== false) {
+                    $extra_vars_to_update[] = substr($var_id, 0, $bracked_pos);
+                }
+            }
+
+            if ($extra_vars_to_update) {
+                $vars_to_update = array_unique(array_merge($extra_vars_to_update, $vars_to_update));
+            }
 
             $outer_context->update(
                 $old_if_context,
