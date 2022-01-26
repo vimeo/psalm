@@ -317,7 +317,7 @@ class LoopAnalyzer
 
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
-                    unset($inner_context->vars_in_scope[$var_id]);
+                    $inner_context->removePossibleReference($var_id);
                 }
 
                 $inner_context->clauses = $pre_loop_context->clauses;
@@ -360,7 +360,7 @@ class LoopAnalyzer
                         if (isset($pre_loop_context->vars_in_scope[$var_id])) {
                             $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
                         } else {
-                            unset($inner_context->vars_in_scope[$var_id]);
+                            $inner_context->removePossibleReference($var_id);
                         }
                     }
                 }
@@ -453,7 +453,7 @@ class LoopAnalyzer
         if (!$does_always_break) {
             foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
                 if (!isset($inner_context->vars_in_scope[$var_id])) {
-                    unset($loop_scope->loop_parent_context->vars_in_scope[$var_id]);
+                    $loop_scope->loop_parent_context->removePossibleReference($var_id);
                     continue;
                 }
 
@@ -503,6 +503,7 @@ class LoopAnalyzer
                     $negated_pre_condition_types,
                     [],
                     $inner_context->vars_in_scope,
+                    $inner_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -554,6 +555,12 @@ class LoopAnalyzer
         if ($inner_do_context) {
             $inner_context = $inner_do_context;
         }
+
+        // Track references set in the loop to make sure they aren't reused later
+        $loop_scope->loop_parent_context->updateReferencesPossiblyFromConfusingScope(
+            $inner_context,
+            $statements_analyzer
+        );
 
         return null;
     }
@@ -630,7 +637,7 @@ class LoopAnalyzer
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
             $loop_context->inside_conditional = $was_inside_conditional;
-            
+
             return [];
         }
 
@@ -660,6 +667,7 @@ class LoopAnalyzer
                 $reconcilable_while_types,
                 $active_while_types,
                 $loop_context->vars_in_scope,
+                $loop_context->references_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,

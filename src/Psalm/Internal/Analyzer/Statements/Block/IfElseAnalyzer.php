@@ -267,6 +267,7 @@ class IfElseAnalyzer
                     $reconcilable_if_types,
                     $active_if_types,
                     $if_context->vars_in_scope,
+                    $if_context->references_in_scope,
                     $changed_var_ids,
                     $cond_referenced_var_ids,
                     $statements_analyzer,
@@ -297,7 +298,7 @@ class IfElseAnalyzer
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
-                            unset($if_context->vars_in_scope[$var_id]);
+                            $if_context->removePossibleReference($var_id);
                         }
                     }
                 }
@@ -328,6 +329,7 @@ class IfElseAnalyzer
                 $if_scope->negated_types,
                 [],
                 $temp_else_context->vars_in_scope,
+                $temp_else_context->references_in_scope,
                 $changed_var_ids,
                 [],
                 $statements_analyzer,

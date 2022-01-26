@@ -12,6 +12,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+use RuntimeException;
 
 use function is_string;
 
@@ -61,6 +62,7 @@ class GlobalAnalyzer
 
                         $context->byref_constraints[$var_id] = new ReferenceConstraint();
                     }
+
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var)
@@ -68,7 +70,17 @@ class GlobalAnalyzer
                     $context->vars_in_scope[$var_id]->parent_nodes = [
                         $assignment_node->id => $assignment_node,
                     ];
-                    $context->vars_from_global[$var_id] = true;
+                    $context->references_to_external_scope[$var_id] = true;
+
+                    if (isset($context->references_in_scope[$var_id])) {
+                        // Global shadows existing reference
+                        $reference_count = &$context->referenced_counts[$context->references_in_scope[$var_id]];
+                        if ($reference_count < 1) {
+                            throw new RuntimeException("Incorrect referenced count found");
+                        }
+                        --$reference_count;
+                        unset($context->references_in_scope[$var_id]);
+                    }
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),
@@ -79,6 +91,10 @@ class GlobalAnalyzer
                         $var,
                         $var_id
                     );
+
+                    if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                        $global_context->referenced_globals[$var_id] = true;
+                    }
                 }
             }
         }

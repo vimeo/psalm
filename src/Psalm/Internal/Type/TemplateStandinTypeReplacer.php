@@ -214,7 +214,6 @@ class TemplateStandinTypeReplacer
                     $bound_equality_classlike,
                     $depth,
                     $was_single,
-                    $had_template
                 );
             }
         }
@@ -895,8 +894,7 @@ class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
-        bool $was_single,
-        bool &$had_template
+        bool $was_single
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];

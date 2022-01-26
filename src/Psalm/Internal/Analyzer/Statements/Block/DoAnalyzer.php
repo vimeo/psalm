@@ -129,6 +129,7 @@ class DoAnalyzer
                     $negated_while_types,
                     [],
                     $inner_loop_context->vars_in_scope,
+                    $inner_loop_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,

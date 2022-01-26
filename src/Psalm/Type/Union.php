@@ -190,7 +190,9 @@ class Union implements TypeNode
     private $literal_float_types = [];
 
     /**
-     * Whether or not the type was passed by reference
+     * True if the type was passed or returned by reference, or if the type refers to an object's
+     * property or an item in an array. Note that this is not true for locally created references
+     * that don't refer to properties or array items (see Context::$references_in_scope).
      *
      * @var bool
      */

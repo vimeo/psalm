@@ -216,6 +216,7 @@
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
+ - [ReferenceReusedFromConfusingScope](issues/ReferenceReusedFromConfusingScope.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [StringIncrement](issues/StringIncrement.md)
  - [TaintedCallable](issues/TaintedCallable.md)

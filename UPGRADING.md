@@ -152,6 +152,8 @@
 - [BC] Atomic::__toString() is now final
 - [BC] Atomic::__toString() now returns a more detailed version of the type (it calls getId() under the hood)
 - [BC] Atomic::getId() has now a first param $exact. Calling the method with false will return a less detailed version of the type in some cases (similarly to what __toString used to return)
+- [BC] To remove a variable from the context, Context::remove(). Calling
+  `unset($context->vars_in_scope[$var_id])` can cause problems when using references.
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
@@ -194,3 +196,4 @@
  - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
  - [BC] Method `Psalm\DocComment::parse()` was removed
  - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
+ - [BC] Property `Psalm\Context::$vars_from_global` has been renamed to `$referenced_globals`

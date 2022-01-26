@@ -1494,7 +1494,7 @@ class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer
             );
 
-            unset($context->vars_in_scope[$var_id]);
+            $context->removePossibleReference($var_id);
         }
 
         $old_data_provider = $statements_analyzer->node_data;

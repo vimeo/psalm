@@ -298,6 +298,15 @@ class ForeachAnalyzer
             $value_type->by_ref = true;
         }
 
+        if ($stmt->byRef
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+        ) {
+            // When assigning as reference, it removes any previous
+            // reference, so it's no longer from a previous confusing scope
+            unset($foreach_context->references_possibly_from_confusing_scope['$' . $stmt->valueVar->name]);
+        }
+
         AssignmentAnalyzer::analyze(
             $statements_analyzer,
             $stmt->valueVar,
@@ -310,6 +319,14 @@ class ForeachAnalyzer
                 ? ['$' . $stmt->valueVar->name => true]
                 : []
         );
+
+        if ($stmt->byRef
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+        ) {
+            // TODO support references with destructuring
+            $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+        }
 
         foreach ($var_comments as $var_comment) {
             if (!$var_comment->var_id || !$var_comment->type) {

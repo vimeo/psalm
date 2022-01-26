@@ -49,6 +49,8 @@ class VariableFetchAnalyzer
 
     /**
      * @param bool $from_global - when used in a global keyword
+     * @param bool $assigned_to_reference This is set to true when the expression being analyzed
+     *                                    here is being assigned to another variable by reference.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -57,7 +59,8 @@ class VariableFetchAnalyzer
         bool $passed_by_reference = false,
         ?Union $by_ref_type = null,
         bool $array_assignment = false,
-        bool $from_global = false
+        bool $from_global = false,
+        bool $assigned_to_reference = false
     ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
@@ -220,11 +223,16 @@ class VariableFetchAnalyzer
             if (!isset($context->vars_possibly_in_scope[$var_name])
                 || !$statements_analyzer->getFirstAppearance($var_name)
             ) {
-                if ($array_assignment) {
-                    // if we're in an array assignment, let's assign the variable
-                    // because PHP allows it
-
-                    $context->vars_in_scope[$var_name] = Type::getArray();
+                if ($array_assignment || $assigned_to_reference) {
+                    if ($array_assignment) {
+                        // if we're in an array assignment, let's assign the variable because PHP allows it
+                        $stmt_type = Type::getArray();
+                    } else {
+                        // If a variable is assigned by reference to a variable that
+                        // does not exist, they are automatically initialized as `null`
+                        $stmt_type = Type::getNull();
+                    }
+                    $context->vars_in_scope[$var_name] = $stmt_type;
                     $context->vars_possibly_in_scope[$var_name] = true;
 
                     // it might have been defined first in another if/else branch
@@ -234,6 +242,16 @@ class VariableFetchAnalyzer
                             new CodeLocation($statements_analyzer, $stmt),
                             $context->branch_point
                         );
+                    }
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                    if ($assigned_to_reference) {
+                        // Since this variable was created by being assigned to as a reference (ie for
+                        // `$a = &$b` this variable is $b), we need to analyze it as an assignment to null.
+                        AssignmentAnalyzer::analyze($statements_analyzer, $stmt, null, $stmt_type, $context, null);
+
+                        // Stop here, we don't want it to be considered possibly undefined like the array case.
+                        return true;
                     }
                 } elseif (!$context->inside_isset
                     || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer

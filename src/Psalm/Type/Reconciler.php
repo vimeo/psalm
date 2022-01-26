@@ -88,6 +88,8 @@ class Reconciler
      * @param  array<string, array<array<int, Assertion>>> $new_types
      * @param  array<string, array<array<int, Assertion>>> $active_new_types - types we can complain about
      * @param  array<string, Union> $existing_types
+     * @param  array<string, string> $existing_references Maps keys of $existing_types that are references to other
+     *                                                    keys of $existing_types that they are references to.
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
      * @param  array<string, array<string, Union>> $template_type_map
@@ -98,6 +100,7 @@ class Reconciler
         array $new_types,
         array $active_new_types,
         array $existing_types,
+        array $existing_references,
         array &$changed_var_ids,
         array $referenced_var_ids,
         StatementsAnalyzer $statements_analyzer,
@@ -108,6 +111,32 @@ class Reconciler
     ): array {
         if (!$new_types) {
             return $existing_types;
+        }
+
+        $reference_map = [];
+        if (!empty($existing_references)) {
+            // PHP behaves oddly when passing an array containing references: https://bugs.php.net/bug.php?id=20993
+            // To work around the issue, if there are any references, we have to recreate the array and fix the
+            // references so they're properly scoped and won't affect the caller. Starting with a new array is
+            // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
+            $old_existing_types = $existing_types;
+            $existing_types = [];
+
+            $cloned_referenceds = [];
+            foreach ($existing_references as $reference => $referenced) {
+                if (!isset($cloned_referenceds[$referenced])) {
+                    $existing_types[$referenced] = clone $old_existing_types[$referenced];
+                    $cloned_referenceds[$referenced] = true;
+                }
+                $existing_types[$reference] = &$existing_types[$referenced];
+            }
+            $existing_types += $old_existing_types;
+
+            // Build a map from reference/referenced variables to other variables with the same reference
+            foreach ($existing_references as $reference => $referenced) {
+                $reference_map[$reference][] = $referenced;
+                $reference_map[$referenced][] = $reference;
+            }
         }
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -214,6 +243,7 @@ class Reconciler
                             $data,
                             $data,
                             $existing_types,
+                            $existing_references,
                             $changed_var_ids,
                             $referenced_var_ids,
                             $statements_analyzer,
@@ -285,11 +315,11 @@ class Reconciler
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
 
+            $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
                 if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
-                    $key_parts = self::breakUpPathIntoParts($key);
                     self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
@@ -320,6 +350,16 @@ class Reconciler
 
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
+            }
+
+            if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_map[$key_parts[0]])) {
+                // If key is new, create references for other variables that reference the root variable.
+                $reference_key_parts = $key_parts;
+                foreach ($reference_map[$key_parts[0]] as $reference) {
+                    $reference_key_parts[0] = $reference;
+                    $reference_key = implode("", $reference_key_parts);
+                    $existing_types[$reference_key] = &$existing_types[$key];
+                }
             }
         }
 

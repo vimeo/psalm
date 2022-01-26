@@ -1825,7 +1825,74 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
             ],
-            'SKIPPED-applyAssertionsToReferences' => [ // See #7254
+            'referencesDontBreakAssertions' => [
+                'code' => '<?php
+                    /** @var string|null */
+                    $foo = "";
+                    $bar = &$foo;
+                    $baz = &$foo;
+
+                    if (assertNotNull($foo)) {
+                        requiresString($foo);
+                    }
+
+                    /**
+                     * @param mixed $foo
+                     * @psalm-assert-if-true !null $foo
+                     */
+                    function assertNotNull($foo): bool
+                    {
+                        return $foo !== null;
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'applyAssertionsToReferences' => [
+                'code' => '<?php
+                    /** @var string|null */
+                    $foo = "";
+                    $bar = &$foo;
+
+                    if (assertNotNull($foo)) {
+                        requiresString($bar);
+                    }
+
+                    /**
+                     * @param mixed $foo
+                     * @psalm-assert-if-true !null $foo
+                     */
+                    function assertNotNull($foo): bool
+                    {
+                        return $foo !== null;
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'applyAssertionsFromReferences' => [
+                'code' => '<?php
+                    /** @var string|null */
+                    $foo = "";
+                    $bar = &$foo;
+
+                    if (assertNotNull($bar)) {
+                        requiresString($foo);
+                    }
+
+                    /**
+                     * @param mixed $foo
+                     * @psalm-assert-if-true !null $foo
+                     */
+                    function assertNotNull($foo): bool
+                    {
+                        return $foo !== null;
+                    }
+
+                    function requiresString(string $_str): void {}
+                ',
+            ],
+            'applyAssertionsOnPropertiesToReferences' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -1850,7 +1917,7 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
             ],
-            'SKIPPED-applyAssertionsFromReferences' => [ // See #7254
+            'applyAssertionsOnPropertiesFromReferences' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -1875,7 +1942,7 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
             ],
-            'SKIPPED-applyAssertionsToReferencesWithConditionalOperator' => [ // See #7254
+            'applyAssertionsOnPropertiesToReferencesWithConditionalOperator' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2267,7 +2334,7 @@ class AssertAnnotationTest extends TestCase
                 ',
                 'error_message' => 'PossiblyNullArgument',
             ],
-            'SKIPPED-forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [ // See #7254
+            'forgetAssertionAfterRelevantNonMutationFreeCallOnReference' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2299,7 +2366,7 @@ class AssertAnnotationTest extends TestCase
                 ',
                 'error_message' => 'PossiblyNullArgument',
             ],
-            'SKIPPED-forgetAssertionAfterReferenceModification' => [ // See #7254
+            'forgetAssertionAfterReferenceModification' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2324,7 +2391,7 @@ class AssertAnnotationTest extends TestCase
 
                     function requiresString(string $_str): void {}
                 ',
-                'error_message' => 'PossiblyNullArgument',
+                'error_message' => 'NullArgument',
             ],
             'assertionOnMagicPropertyWithoutMutationFreeGet' => [
                 'code' => '<?php

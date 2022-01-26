@@ -254,6 +254,12 @@ class IfAnalyzer
             $outer_context->mergeExceptions($if_context);
         }
 
+        // Track references set in the if to make sure they aren't reused later
+        $outer_context->updateReferencesPossiblyFromConfusingScope(
+            $if_context,
+            $statements_analyzer
+        );
+
         return null;
     }
 
@@ -280,6 +286,7 @@ class IfAnalyzer
             $if_scope->negated_types,
             [],
             $post_if_context->vars_in_scope,
+            $post_if_context->references_in_scope,
             $newly_reconciled_var_ids,
             [],
             $statements_analyzer,

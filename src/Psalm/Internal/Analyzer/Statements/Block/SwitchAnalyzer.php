@@ -159,6 +159,7 @@ class SwitchAnalyzer
                         $reconcilable_if_types,
                         [],
                         $original_context->vars_in_scope,
+                        $original_context->references_in_scope,
                         $changed_var_ids,
                         [],
                         $statements_analyzer,

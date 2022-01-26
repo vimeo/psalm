@@ -413,6 +413,7 @@
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantPropertyInitializationCheck" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ReferenceReusedFromConfusingScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCallable" type="IssueHandlerType" minOccurs="0" />

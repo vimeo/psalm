@@ -54,6 +54,7 @@ class IfConditionalAnalyzer
                     $if_scope->negated_types,
                     [],
                     $outer_context->vars_in_scope,
+                    $outer_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,

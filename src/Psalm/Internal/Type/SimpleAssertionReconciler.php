@@ -241,8 +241,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -254,8 +253,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -434,7 +432,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -560,7 +558,6 @@ class SimpleAssertionReconciler extends Reconciler
 
     /**
      * @param   string[]  $suppressed_issues
-     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileNonEmptyCountable(
         Assertion $assertion,
@@ -569,7 +566,6 @@ class SimpleAssertionReconciler extends Reconciler
         bool $negated,
         ?CodeLocation $code_location,
         array $suppressed_issues,
-        int &$failed_reconciliation,
         bool $is_equality
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
