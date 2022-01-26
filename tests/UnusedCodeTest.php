@@ -739,7 +739,7 @@ class UnusedCodeTest extends TestCase
             ],
             'useIteratorMethodsWhenCallingForeach' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnimplementedInterfaceMethod */
+                    /** @psalm-suppress UnimplementedInterfaceMethod, MissingTemplateParam */
                     class IterableResult implements \Iterator {
                         public function current() {
                             return null;

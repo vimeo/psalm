@@ -689,6 +689,9 @@ class ArrayAssignmentTest extends TestCase
             ],
             'implementsArrayAccess' => [
                 'code' => '<?php
+                    /**
+                     * @implements \ArrayAccess<array-key, mixed>
+                     */
                     class A implements \ArrayAccess {
                         /**
                          * @param  string|int $offset
@@ -734,6 +737,9 @@ class ArrayAssignmentTest extends TestCase
             ],
             'implementsArrayAccessInheritingDocblock' => [
                 'code' => '<?php
+                    /**
+                     * @implements \ArrayAccess<string, mixed>
+                     */
                     class A implements \ArrayAccess
                     {
                         /**

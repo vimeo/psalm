@@ -369,6 +369,12 @@ class ClassLikeStorage
     /**
      * @var array<string, int>|null
      */
+    public $template_type_extends_count;
+
+
+    /**
+     * @var array<string, int>|null
+     */
     public $template_type_implements_count;
 
     /**

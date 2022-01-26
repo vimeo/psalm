@@ -43,6 +43,14 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
 
+        $fq_interface_name = $this->getFQCLN();
+
+        if (!$fq_interface_name) {
+            throw new UnexpectedValueException('bad');
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+
         if ($this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
@@ -66,12 +74,12 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     continue;
                 }
 
-                if (!$extended_interface_storage->is_interface) {
-                    $code_location = new CodeLocation(
-                        $this,
-                        $extended_interface
-                    );
+                $code_location = new CodeLocation(
+                    $this,
+                    $extended_interface
+                );
 
+                if (!$extended_interface_storage->is_interface) {
                     IssueBuffer::maybeAdd(
                         new UndefinedInterface(
                             $extended_interface_name . ' is not an interface',
@@ -92,16 +100,16 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $extended_interface_name
                     );
                 }
+                
+                $this->checkTemplateParams(
+                    $codebase,
+                    $class_storage,
+                    $extended_interface_storage,
+                    $code_location,
+                    $class_storage->template_type_extends_count[$extended_interface_name] ?? 0
+                );
             }
         }
-
-        $fq_interface_name = $this->getFQCLN();
-
-        if (!$fq_interface_name) {
-            throw new UnexpectedValueException('bad');
-        }
-
-        $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
 
         foreach ($class_storage->attributes as $attribute) {
             AttributeAnalyzer::analyze(

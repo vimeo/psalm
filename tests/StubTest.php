@@ -1186,6 +1186,9 @@ class StubTest extends TestCase
                     public function find($id, $lockMode = null, $lockVersion = null) {}
                 }
 
+                /**
+                 * @psalm-suppress MissingTemplateParam
+                 */
                 class B extends A {}
 
                 class Obj {}

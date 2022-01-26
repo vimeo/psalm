@@ -531,24 +531,37 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey
                      * @template TValue
+                     * 
+                     * @extends \IteratorAggregate<TKey, TValue>
                      */
                     interface ICollection extends \IteratorAggregate {
                         /** @return \Traversable<TKey,TValue> */
                         public function getIterator();
                     }
 
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * 
+                     * @implements ICollection<TKey, TValue>
+                     */
                     class Collection implements ICollection {
-                        /** @var array */
+                        /** @var array<TKey, TValue> */
                         private $data;
+                        /**
+                         * @param array<TKey, TValue> $data
+                         */
                         public function __construct(array $data) {
                             $this->data = $data;
                         }
+                        /**
+                         * @return \Traversable<TKey, TValue>
+                         */
                         public function getIterator(): \Traversable {
                             return new \ArrayIterator($this->data);
                         }
                     }
 
-                    /** @var ICollection<string, int> */
                     $c = new Collection(["a" => 1]);
 
                     foreach ($c as $k => $v) { atan($v); strlen($k); }',
@@ -862,6 +875,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /**
+                     * @psalm-suppress MissingTemplateParam
                      * @template TKey
                      * @template TValue
                      */
@@ -926,6 +940,8 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey
                      * @template Tv
+                     * 
+                     * @psalm-suppress MissingTemplateParam
                      */
                     class KeyValueContainer extends ValueContainer
                     {
@@ -985,6 +1001,9 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class AppUser extends User {}
 
                     $au = new AppUser(-1);
@@ -1732,6 +1751,7 @@ class ClassTemplateTest extends TestCase
                         function foo();
                     }
 
+                    /** @psalm-suppress MissingTemplateParam */
                     interface IChild extends IParent {}
 
                     class C {}
@@ -1766,6 +1786,8 @@ class ClassTemplateTest extends TestCase
                      * @psalm-param class-string<T> $className
                      *
                      * @psalm-return T&I<T>
+                     * 
+                     * @psalm-suppress MissingTemplateParam
                      */
                     function makeConcrete(string $className) : object
                     {
@@ -1926,6 +1948,7 @@ class ClassTemplateTest extends TestCase
                         /** @psalm-param T $val */
                         public function set($val) : void {
                             $this->value = $val;
+                            /** @psalm-suppress MissingTemplateParam */
                             new class extends Foo {};
                         }
 

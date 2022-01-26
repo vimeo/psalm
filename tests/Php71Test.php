@@ -197,6 +197,9 @@ class Php71Test extends TestCase
             ],
             'traversableObject' => [
                 'code' => '<?php
+                    /**
+                     * @implements Iterator<0, mixed>
+                     */
                     class IteratorObj implements Iterator {
                         function rewind(): void {}
                         /** @return mixed */

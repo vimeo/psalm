@@ -788,6 +788,9 @@ class ArrayAccessTest extends TestCase
 
                     $c = isset($array["foo"]) ? $array["foo"] : null;
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements ArrayAccess
                     {
                         /**
@@ -944,6 +947,9 @@ class ArrayAccessTest extends TestCase
                         public function foo() : void {}
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements ArrayAccess
                     {
                         /**

@@ -307,6 +307,11 @@ class InterfaceTest extends TestCase
             ],
             'extendIteratorIterator' => [
                 'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @extends IteratorIterator<TKey, TValue, Traversable<TKey, TValue>>
+                     */
                     class SomeIterator extends IteratorIterator {}',
             ],
             'SKIPPED-suppressMismatch' => [
@@ -395,6 +400,10 @@ class InterfaceTest extends TestCase
             ],
             'interfaceExtendsTraversible' => [
                 'code' => '<?php
+                    /**
+                     * @extends IteratorAggregate<mixed, mixed>
+                     * @extends ArrayAccess<mixed, mixed>
+                     */
                     interface Collection extends Countable, IteratorAggregate, ArrayAccess {}
 
                     function takesCollection(Collection $c): void {
@@ -429,8 +438,14 @@ class InterfaceTest extends TestCase
             ],
             'filterIteratorExtension' => [
                 'code' => '<?php
+                    /**
+                     * @extends Iterator<mixed, mixed>
+                     */
                     interface I2 extends Iterator {}
 
+                    /**
+                     * @extends FilterIterator<mixed, mixed>
+                     */
                     class DedupeIterator extends FilterIterator {
                         public function __construct(I2 $i) {
                             parent::__construct($i);
@@ -963,6 +978,31 @@ class InterfaceTest extends TestCase
                         public function withoutAnyReturnType($s) : void;
                     }',
                 'error_message' => 'MissingParamType'
+            ],
+            'missingTemplateExtendsInterface' => [
+                '<?php
+                    /** @template T */
+                    interface A {}
+                    interface B extends A {}
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+            'missingTemplateExtendsNativeInterface' => [
+                '<?php
+                    interface a extends Iterator {
+                    }
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+            'missingTemplateExtendsNativeMultipleInterface' => [
+                '<?php
+                    /**
+                     * @extends Iterator<mixed, mixed>
+                     */
+                    interface a extends Iterator, Traversable {
+                    }
+                ',
+                'error_message' => 'MissingTemplateParam',
             ],
             'reconcileAfterClassInstanceof' => [
                 'code' => '<?php

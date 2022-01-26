@@ -335,6 +335,9 @@ class PropertyTypeInvarianceTest extends TestCase
                         protected $b;
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam 
+                     */
                     class FooPair extends Pair
                     {
                         /** @var Foo|null */ // Template defaults to mixed, this is invariant

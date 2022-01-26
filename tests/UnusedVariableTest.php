@@ -2255,6 +2255,7 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-immutable
+                     * @psalm-suppress MissingTemplateParam
                      */
                     class A implements IteratorAggregate
                     {

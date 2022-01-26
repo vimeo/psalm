@@ -613,6 +613,10 @@ class ClassTest extends TestCase
             ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
+                    /**
+                     * @implements Traversable<int, 1>
+                     * @implements IteratorAggregate<int, 1>
+                     */
                     final class C implements Traversable, IteratorAggregate {
                         public function getIterator() {
                             yield 1;
@@ -622,6 +626,10 @@ class ClassTest extends TestCase
             ],
             'allowTraversableImplementationAlongWithIterator' => [
                 'code' => '<?php
+                    /**
+                     * @implements Traversable<1, 1>
+                     * @implements Iterator<1, 1>
+                     */
                     final class C implements Traversable, Iterator {
                         public function current() { return 1; }
                         public function key() { return 1; }
@@ -633,11 +641,20 @@ class ClassTest extends TestCase
             ],
             'allowTraversableImplementationOnAbstractClass' => [
                 'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * 
+                     * @implements Traversable<TKey, TValue>
+                     */
                     abstract class C implements Traversable {}
                 ',
             ],
             'allowIndirectTraversableImplementationOnAbstractClass' => [
                 'code' => '<?php
+                    /**
+                     * @extends Traversable<int, int>
+                     */
                     interface I extends Traversable {}
                     abstract class C implements I {}
                 ',
@@ -803,6 +820,11 @@ class ClassTest extends TestCase
             ],
             'abstractReflectedClassMethod' => [
                 'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @extends FilterIterator<TKey, TValue>
+                     */
                     class DedupeIterator extends FilterIterator {
                         public function __construct(Iterator $i) {
                             parent::__construct($i);
@@ -908,16 +930,76 @@ class ClassTest extends TestCase
             ],
             'preventTraversableImplementation' => [
                 'code' => '<?php
+                    /**
+                     * @implements Traversable<int, int>
+                     */
                     final class C implements Traversable {}
                 ',
                 'error_message' => 'InvalidTraversableImplementation',
             ],
             'preventIndirectTraversableImplementation' => [
                 'code' => '<?php
+                    /**
+                     * @extends Traversable<int, int>
+                     */
                     interface I extends Traversable {}
                     final class C implements I {}
                 ',
                 'error_message' => 'InvalidTraversableImplementation',
+            ],
+            'detectMissingTemplateExtends' => [
+                '<?php
+                    /** @template T */
+                    abstract class A {}
+                    final class B extends A {}
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+            'detectMissingTemplateImplements' => [
+                '<?php
+                    /** @template T */
+                    interface A {}
+                    final class B implements A {}
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+            'detectMissingTemplateUse' => [
+                '<?php
+                    /** @template T */
+                    trait A {}
+                    final class B {
+                        use A;
+                    }
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+
+            'detectMissingTemplateExtendsNative' => [
+                '<?php
+                    final class C extends ArrayObject {}
+                ',
+                'error_message' => 'MissingTemplateParam',
+            ],
+
+            'detectMissingTemplateImplementsNative' => [
+                '<?php
+                    final class C implements Iterator {
+                        public function current(): mixed {
+                            return 0;
+                        }
+                        public function key(): mixed {
+                            return 0;
+                        }
+                        public function next(): void {
+                        }
+                        public function rewind(): void {
+                        }
+                        public function valid(): bool {
+                            return false;
+                        }
+                    }
+                ',
+                'error_message' => 'MissingTemplateParam',
             ],
         ];
     }
