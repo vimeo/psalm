@@ -41,6 +41,10 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
+    <DeprecatedProperty occurrences="2">
+      <code>$storage-&gt;template_extended_count</code>
+      <code>$storage-&gt;template_extended_count</code>
+    </DeprecatedProperty>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$comments[0]</code>
       <code>$stmt-&gt;props[0]</code>
@@ -279,7 +283,11 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <DeprecatedProperty occurrences="1">
+      <code>$storage-&gt;template_extended_count</code>
+    </DeprecatedProperty>
+    <PossiblyUndefinedIntArrayOffset occurrences="4">
+      <code>$imported_type_data[3]</code>
       <code>$l[4]</code>
       <code>$r[4]</code>
       <code>$var_line_parts[0]</code>

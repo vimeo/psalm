@@ -143,6 +143,15 @@ Setting this to `false` means that any function calls will cause Psalm to forget
 ```
 When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
 
+#### disableSuppressAll
+
+```xml
+<psalm
+  disableSuppressAll="[bool]"
+>
+```
+When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `false`.
+
 #### memoizeMethodCallResults
 
 ```xml

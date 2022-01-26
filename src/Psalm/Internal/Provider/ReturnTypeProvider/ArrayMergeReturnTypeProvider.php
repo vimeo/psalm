@@ -23,6 +23,7 @@ use function array_values;
 use function count;
 use function is_string;
 use function max;
+use function mb_strcut;
 
 /**
  * @internal
@@ -46,6 +47,8 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         ) {
             return Type::getMixed();
         }
+
+        $is_replace = mb_strcut($event->getFunctionId(), 6, 7) === 'replace';
 
         $inner_value_types = [];
         $inner_key_types = [];
@@ -107,7 +110,11 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                             foreach ($unpacked_type_part->properties as $key => $type) {
                                 if (!is_string($key)) {
-                                    $generic_properties[] = $type;
+                                    if ($is_replace) {
+                                        $generic_properties[$key] = $type;
+                                    } else {
+                                        $generic_properties[] = $type;
+                                    }
                                     continue;
                                 }
 

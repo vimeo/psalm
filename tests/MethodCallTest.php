@@ -1005,6 +1005,34 @@ class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
+            'parentMagicMethodCall' => [
+                'code' => '<?php
+                    class Model {
+                        /**
+                         * @return static
+                         */
+                        public function __call(string $method, array $args) {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static;
+                        }
+                    }
+
+                    class BlahModel extends Model {
+                        /**
+                         * @param mixed $input
+                         */
+                        public function create($input): BlahModel
+                        {
+                            return parent::create([]);
+                        }
+                    }
+
+                    $m = new BlahModel();
+                    $n = $m->create([]);',
+                'assertions' => [
+                    '$n' => 'BlahModel',
+                ]
+            ],
         ];
     }
 
@@ -1536,6 +1564,16 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
                 'ignored_issues' => [],
                 'php_version' => '8.0'
+            ],
+            'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {
+                        public function foo(): string {
+                            return parent::foo();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }

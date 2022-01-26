@@ -330,6 +330,11 @@ class Config
     /**
      * @var bool
      */
+    public $disable_suppress_all = false;
+
+    /**
+     * @var bool
+     */
     public $use_phpdoc_method_without_magic_or_parent = false;
 
     /**
@@ -913,6 +918,7 @@ class Config
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
+            'disableSuppressAll' => 'disable_suppress_all',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
             'usePhpDocPropertiesWithoutMagicCall' => 'use_phpdoc_property_without_magic_or_parent',
             'memoizeMethodCallResults' => 'memoize_method_calls',
