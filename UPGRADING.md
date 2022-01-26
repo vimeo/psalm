@@ -148,7 +148,7 @@
   - `Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent`
   - `Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent`
   - `Psalm\Plugin\EventHandler\Event\StringInterpreterEvent`
-- [BC] Atomic::__toString() used to return a string representation of the type that was using double quotes (") to quote literals. This is now using simple quotes (') to be more aligned with the rest of the codebase.
+- [BC] Atomic::__toString() used to return a string representation of the type that was using double quotes (") to quote literals. This is now using single quotes (') to be more aligned with the rest of the codebase.
 - [BC] Atomic::__toString() is now final
 - [BC] Atomic::__toString() now returns a more detailed version of the type (it calls getId() under the hood)
 - [BC] Atomic::getId() has now a first param $exact. Calling the method with false will return a less detailed version of the type in some cases (similarly to what __toString used to return)
