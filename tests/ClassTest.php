@@ -948,7 +948,7 @@ class ClassTest extends TestCase
                 'error_message' => 'InvalidTraversableImplementation',
             ],
             'detectMissingTemplateExtends' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     abstract class A {}
                     final class B extends A {}
@@ -956,7 +956,7 @@ class ClassTest extends TestCase
                 'error_message' => 'MissingTemplateParam',
             ],
             'detectMissingTemplateImplements' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     interface A {}
                     final class B implements A {}
@@ -964,7 +964,7 @@ class ClassTest extends TestCase
                 'error_message' => 'MissingTemplateParam',
             ],
             'detectMissingTemplateUse' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     trait A {}
                     final class B {
@@ -975,14 +975,14 @@ class ClassTest extends TestCase
             ],
 
             'detectMissingTemplateExtendsNative' => [
-                '<?php
+                'code' => '<?php
                     final class C extends ArrayObject {}
                 ',
                 'error_message' => 'MissingTemplateParam',
             ],
 
             'detectMissingTemplateImplementsNative' => [
-                '<?php
+                'code' => '<?php
                     final class C implements Iterator {
                         public function current(): mixed {
                             return 0;

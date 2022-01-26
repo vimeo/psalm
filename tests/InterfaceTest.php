@@ -980,7 +980,7 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MissingParamType'
             ],
             'missingTemplateExtendsInterface' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     interface A {}
                     interface B extends A {}
@@ -988,14 +988,14 @@ class InterfaceTest extends TestCase
                 'error_message' => 'MissingTemplateParam',
             ],
             'missingTemplateExtendsNativeInterface' => [
-                '<?php
+                'code' => '<?php
                     interface a extends Iterator {
                     }
                 ',
                 'error_message' => 'MissingTemplateParam',
             ],
             'missingTemplateExtendsNativeMultipleInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @extends Iterator<mixed, mixed>
                      */
