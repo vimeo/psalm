@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class MethodParamsProviderEvent
+final class MethodParamsProviderEvent
 {
     /**
      * @var string
@@ -36,6 +36,7 @@ class MethodParamsProviderEvent
 
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
+     * @internal
      */
     public function __construct(
         string $fq_classlike_name,

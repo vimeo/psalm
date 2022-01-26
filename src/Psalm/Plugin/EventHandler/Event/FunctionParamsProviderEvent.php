@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class FunctionParamsProviderEvent
+final class FunctionParamsProviderEvent
 {
     /**
      * @var StatementsSource
@@ -32,6 +32,7 @@ class FunctionParamsProviderEvent
 
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
+     * @internal
      */
     public function __construct(
         StatementsSource $statements_source,

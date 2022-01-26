@@ -7,7 +7,7 @@ use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
-class AfterClassLikeExistenceCheckEvent
+final class AfterClassLikeExistenceCheckEvent
 {
     /**
      * @var string
@@ -32,6 +32,7 @@ class AfterClassLikeExistenceCheckEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @internal
      */
     public function __construct(
         string $fq_class_name,

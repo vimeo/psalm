@@ -7,7 +7,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class AddRemoveTaintsEvent
+final class AddRemoveTaintsEvent
 {
     /**
      * @var Expr
@@ -28,6 +28,7 @@ class AddRemoveTaintsEvent
 
     /**
      * Called after an expression has been checked
+     * @internal
      */
     public function __construct(
         Expr $expr,

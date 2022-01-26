@@ -2,7 +2,7 @@
 
 namespace Psalm\Plugin\EventHandler\Event;
 
-class StringInterpreterEvent
+final class StringInterpreterEvent
 {
     /**
      * @var string
@@ -11,6 +11,8 @@ class StringInterpreterEvent
 
     /**
      * Called after a statement has been checked
+     *
+     * @internal
      */
     public function __construct(string $value)
     {

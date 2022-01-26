@@ -4,7 +4,7 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
 
-class AfterCodebasePopulatedEvent
+final class AfterCodebasePopulatedEvent
 {
     /**
      * @var Codebase
@@ -13,6 +13,7 @@ class AfterCodebasePopulatedEvent
 
     /**
      * Called after codebase has been populated
+     * @internal
      */
     public function __construct(Codebase $codebase)
     {
