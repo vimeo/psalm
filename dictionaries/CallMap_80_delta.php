@@ -310,7 +310,7 @@ return [
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
     ],
     'dom_import_simplexml' => [
-        'old' => ['DOMElement|false', 'node'=>'SimpleXMLElement'],
+        'old' => ['DOMElement|null', 'node'=>'SimpleXMLElement'],
         'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
     ],
     'explode' => [
