@@ -68,9 +68,12 @@ final class FunctionDynamicStorageProviderEvent
         return $this->function_id;
     }
 
-    public function getExpr(): PhpParser\Node\Expr\FuncCall
+    /**
+     * @return list<PhpParser\Node\Arg>
+     */
+    public function getArgs(): array
     {
-        return $this->func_call;
+        return $this->func_call->getArgs();
     }
 
     public function getContext(): Context

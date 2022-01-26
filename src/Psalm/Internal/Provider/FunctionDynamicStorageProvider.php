@@ -61,6 +61,10 @@ final class FunctionDynamicStorageProvider
         Context $context,
         CodeLocation $code_location
     ): ?FunctionStorage {
+        if ($stmt->isFirstClassCallable()) {
+            return null;
+        }
+
         $dynamic_storage_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $stmt->getLine()
             . ':' . (int)$stmt->getAttribute('startFilePos')
