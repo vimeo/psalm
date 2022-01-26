@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@093edcbe1d5c90ad574efcddd62fe741819e7cf2">
+<files psalm-version="dev-master@485e516088a22efd18e902926a2efdad1b040d72">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -18,13 +18,6 @@
       <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Config.php">
-    <DeprecatedMethod occurrences="3">
-      <code>getAdditionalFileExtensions</code>
-      <code>getAdditionalFileTypeAnalyzers</code>
-      <code>getAdditionalFileTypeScanners</code>
-    </DeprecatedMethod>
-  </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>explode('::', $method_id)[1]</code>
@@ -38,10 +31,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
-    <DeprecatedProperty occurrences="2">
-      <code>$storage-&gt;template_extended_count</code>
-      <code>$storage-&gt;template_extended_count</code>
-    </DeprecatedProperty>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$comments[0]</code>
       <code>$stmt-&gt;props[0]</code>
@@ -60,11 +49,6 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$iterator_atomic_type-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/IfElse/IfAnalyzer.php">
-    <ReferenceConstraintViolation occurrences="1">
-      <code>$newly_reconciled_var_ids</code>
-    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/LoopAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -274,9 +258,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <DeprecatedProperty occurrences="1">
-      <code>$storage-&gt;template_extended_count</code>
-    </DeprecatedProperty>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$l[4]</code>
       <code>$r[4]</code>
@@ -360,12 +341,6 @@
     <PropertyNotSetInConstructor occurrences="1">
       <code>VirtualConst</code>
     </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/PluginRegistrationSocket.php">
-    <DeprecatedMethod occurrences="2">
-      <code>addFileExtension</code>
-      <code>addFileExtension</code>
-    </DeprecatedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
