@@ -196,4 +196,4 @@
  - [BC] Method `Psalm\Issue\CodeIssue::getMessage()` was removed
  - [BC] Method `Psalm\DocComment::parse()` was removed
  - [BC] Class `Psalm\Type\Atomic\THtmlEscapedString` has been removed
- - [BC] Property `Psalm\Context::$vars_from_global` has been removed
+ - [BC] Property `Psalm\Context::$vars_from_global` has been renamed to `$referenced_globals`

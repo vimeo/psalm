@@ -8,7 +8,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\InvalidGlobal;
@@ -93,10 +92,8 @@ class GlobalAnalyzer
                         $var_id
                     );
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-                        if ($global_context !== null && $global_context->hasVariable($var_id)) {
-                            $global_context->referenced_globals[$var_id] = true;
-                        }
+                    if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                        $global_context->referenced_globals[$var_id] = true;
                     }
                 }
             }

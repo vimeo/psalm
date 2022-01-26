@@ -95,8 +95,6 @@ class Reconciler
      * @param  array<string, array<string, Union>> $template_type_map
      *
      * @return array<string, Union>
-     *
-     * @psalm-suppress ComplexMethod
      */
     public static function reconcileKeyedTypes(
         array $new_types,

@@ -125,6 +125,8 @@ class TypeExpander
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *
      * @return non-empty-list<Atomic>
+     *
+     * @psalm-suppress ComplexMethod
      */
     public static function expandAtomic(
         Codebase $codebase,
