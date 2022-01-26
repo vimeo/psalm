@@ -829,12 +829,6 @@ class Context
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
             $this->referenced_var_ids[$var_name] = true;
-
-            if (!isset($this->vars_possibly_in_scope[$var_name])
-                && !isset($this->vars_in_scope[$var_name])
-            ) {
-                return false;
-            }
         }
 
         return isset($this->vars_in_scope[$var_name]);
