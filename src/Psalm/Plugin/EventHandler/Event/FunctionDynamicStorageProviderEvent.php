@@ -12,7 +12,7 @@ use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicTemplateProvider;
 use Psalm\StatementsSource;
 
-class FunctionDynamicStorageProviderEvent
+final class FunctionDynamicStorageProviderEvent
 {
     private ArgTypeInferer $arg_type_inferer;
     private DynamicTemplateProvider $template_provider;
@@ -22,6 +22,9 @@ class FunctionDynamicStorageProviderEvent
     private Context $context;
     private CodeLocation $code_location;
 
+    /**
+     * @internal
+     */
     public function __construct(
         ArgTypeInferer $arg_type_inferer,
         DynamicTemplateProvider $template_provider,
