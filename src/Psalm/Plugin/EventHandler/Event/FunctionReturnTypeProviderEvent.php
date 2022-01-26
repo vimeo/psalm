@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class FunctionReturnTypeProviderEvent
+final class FunctionReturnTypeProviderEvent
 {
     /**
      * @var StatementsSource
@@ -36,6 +36,7 @@ class FunctionReturnTypeProviderEvent
      * if something should be returned, but can't be more specific.
      *
      * @param non-empty-string $function_id
+     * @internal
      */
     public function __construct(
         StatementsSource $statements_source,

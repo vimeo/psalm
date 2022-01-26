@@ -8,7 +8,7 @@ use Psalm\FileManipulation;
 use Psalm\FileSource;
 use Psalm\Storage\ClassLikeStorage;
 
-class AfterClassLikeVisitEvent
+final class AfterClassLikeVisitEvent
 {
     /**
      * @var ClassLike
@@ -33,6 +33,7 @@ class AfterClassLikeVisitEvent
 
     /**
      * @param  FileManipulation[] $file_replacements
+     * @internal
      */
     public function __construct(
         ClassLike $stmt,

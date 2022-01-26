@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
-class AfterStatementAnalysisEvent
+final class AfterStatementAnalysisEvent
 {
     /**
      * @var Stmt
@@ -35,6 +35,7 @@ class AfterStatementAnalysisEvent
      * Called after a statement has been checked
      *
      * @param  FileManipulation[]   $file_replacements
+     * @internal
      */
     public function __construct(
         Stmt $stmt,

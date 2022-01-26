@@ -10,7 +10,7 @@ use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
-class AfterFunctionLikeAnalysisEvent
+final class AfterFunctionLikeAnalysisEvent
 {
     /**
      * @var Node\FunctionLike
@@ -45,6 +45,7 @@ class AfterFunctionLikeAnalysisEvent
      * Called after a statement has been checked
      *
      * @param  FileManipulation[]   $file_replacements
+     * @internal
      */
     public function __construct(
         Node\FunctionLike $stmt,

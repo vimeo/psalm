@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
-class MethodReturnTypeProviderEvent
+final class MethodReturnTypeProviderEvent
 {
     /**
      * @var StatementsSource
@@ -56,6 +56,8 @@ class MethodReturnTypeProviderEvent
      * @param  ?array<Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
+     *
+     * @internal
      */
     public function __construct(
         StatementsSource $source,

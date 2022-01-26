@@ -9,7 +9,7 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
-class AfterFunctionCallAnalysisEvent
+final class AfterFunctionCallAnalysisEvent
 {
     /**
      * @var FuncCall
@@ -43,6 +43,7 @@ class AfterFunctionCallAnalysisEvent
     /**
      * @param non-empty-string $function_id
      * @param FileManipulation[] $file_replacements
+     * @internal
      */
     public function __construct(
         FuncCall $expr,
