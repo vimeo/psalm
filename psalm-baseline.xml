@@ -51,7 +51,7 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
-    <DeprecatedProperty occurrences="7">
+    <DeprecatedProperty occurrences="9">
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_major_version</code>
       <code>$codebase-&gt;php_major_version</code>
@@ -59,6 +59,8 @@
       <code>$codebase-&gt;php_minor_version</code>
       <code>$codebase-&gt;php_minor_version</code>
       <code>$codebase-&gt;php_minor_version</code>
+      <code>$storage-&gt;template_extended_count</code>
+      <code>$storage-&gt;template_extended_count</code>
     </DeprecatedProperty>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$comments[0]</code>
@@ -501,7 +503,8 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <DeprecatedProperty occurrences="2">
+    <DeprecatedProperty occurrences="3">
+      <code>$storage-&gt;template_extended_count</code>
       <code>$this-&gt;codebase-&gt;php_major_version</code>
       <code>$this-&gt;codebase-&gt;php_minor_version</code>
     </DeprecatedProperty>
