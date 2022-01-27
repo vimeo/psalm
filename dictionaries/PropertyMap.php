@@ -370,7 +370,7 @@ return [
     ],
     'domnode' => [
         'nodeName' => 'string',
-        'nodeValue' => 'string',
+        'nodeValue' => 'string|null',
         'nodeType' => 'int',
         'parentNode' => 'DOMNode|null',
         'childNodes' => 'DomNodeList<DomNode>',
