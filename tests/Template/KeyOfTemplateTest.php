@@ -79,7 +79,20 @@ class KeyOfTemplateTest extends TestCase
                          * @return key-of<T>
                          */
                         abstract public function getRandomKey(): string;
-                    }',
+                    }
+                ',
+            ],
+            'SKIPPED-keyOfNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of int
+                     * @template TArray of array<TKey, bool>
+                     * @param TArray $array
+                     * @return list<TKey>
+                     */
+                    function toListOfKeys(array $array): array {
+                        return array_keys($array);
+                    }'
             ],
         ];
     }

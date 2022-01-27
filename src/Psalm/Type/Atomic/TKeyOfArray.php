@@ -62,8 +62,10 @@ class TKeyOfArray extends TArrayKey
         return true;
     }
 
-    public static function getArrayKeyType(Union $type): ?Union
-    {
+    public static function getArrayKeyType(
+        Union $type,
+        bool $keep_template_params = false
+    ): ?Union {
         $key_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -74,9 +76,13 @@ class TKeyOfArray extends TArrayKey
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $array_key_atomics = $atomic_type->getGenericKeyType();
             } elseif ($atomic_type instanceof TTemplateParam) {
-                $array_key_atomics = static::getArrayKeyType($atomic_type->as);
-                if ($array_key_atomics === null) {
-                    continue;
+                if ($keep_template_params) {
+                    $array_key_atomics = new Union([$atomic_type]);
+                } else {
+                    $array_key_atomics = static::getArrayKeyType($atomic_type->as);
+                    if ($array_key_atomics === null) {
+                        continue;
+                    }
                 }
             } else {
                 continue;

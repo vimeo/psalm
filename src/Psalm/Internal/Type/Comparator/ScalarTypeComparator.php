@@ -266,7 +266,10 @@ class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateKeyOf) {
-            $array_key_type = TKeyOfArray::getArrayKeyType($input_type_part->as);
+            $array_key_type = TKeyOfArray::getArrayKeyType(
+                $input_type_part->as,
+                $container_type_part instanceof TTemplateParam
+            );
             if ($array_key_type === null) {
                 return false;
             }

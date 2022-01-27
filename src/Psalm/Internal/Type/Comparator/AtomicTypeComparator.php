@@ -326,6 +326,43 @@ class AtomicTypeComparator
             return true;
         }
 
+        if ($container_type_part instanceof TTemplateValueOf) {
+            if (!$input_type_part instanceof TTemplateValueOf) {
+                return false;
+            }
+
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->as,
+                $container_type_part->as
+            );
+        }
+
+        if ($input_type_part instanceof TTemplateValueOf) {
+            $array_value_type = TValueOfArray::getArrayValueType(
+                $input_type_part->as,
+                $container_type_part instanceof TTemplateParam
+            );
+            if ($array_value_type === null) {
+                return false;
+            }
+
+            foreach ($array_value_type->getAtomicTypes() as $array_value_atomic) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $array_value_atomic,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result
+                )) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
             return UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -355,40 +392,6 @@ class AtomicTypeComparator
             }
 
             return false;
-        }
-
-        if ($container_type_part instanceof TTemplateValueOf) {
-            if (!$input_type_part instanceof TTemplateValueOf) {
-                return false;
-            }
-
-            return UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part->as,
-                $container_type_part->as
-            );
-        }
-
-        if ($input_type_part instanceof TTemplateValueOf) {
-            $array_value_type = TValueOfArray::getArrayValueType($input_type_part->as);
-            if ($array_value_type === null) {
-                return false;
-            }
-
-            foreach ($array_value_type->getAtomicTypes() as $array_value_atomic) {
-                if (!self::isContainedBy(
-                    $codebase,
-                    $array_value_atomic,
-                    $container_type_part,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                    $atomic_comparison_result
-                )) {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         if ($container_type_part instanceof TConditional) {

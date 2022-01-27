@@ -62,8 +62,10 @@ class TValueOfArray extends Atomic
         return true;
     }
 
-    public static function getArrayValueType(Union $type): ?Union
-    {
+    public static function getArrayValueType(
+        Union $type,
+        bool $keep_template_params = false
+    ): ?Union {
         $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -74,9 +76,16 @@ class TValueOfArray extends Atomic
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $array_value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {
-                $array_value_atomics = static::getArrayValueType($atomic_type->as);
-                if ($array_value_atomics === null) {
-                    continue;
+                if ($keep_template_params) {
+                    $array_value_atomics = new Union([$atomic_type]);
+                } else {
+                    $array_value_atomics = static::getArrayValueType(
+                        $atomic_type->as,
+                        $keep_template_params
+                    );
+                    if ($array_value_atomics === null) {
+                        continue;
+                    }
                 }
             } else {
                 continue;

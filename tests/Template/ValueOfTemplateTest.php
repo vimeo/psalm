@@ -55,7 +55,20 @@ class ValueOfTemplateTest extends TestCase
                          * @return value-of<T>
                          */
                         abstract public function getRandomValue(): bool;
-                    }',
+                    }
+                ',
+            ],
+            'valueOfNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TArray of array<TValue>
+                     * @param TArray $array
+                     * @return list<TValue>
+                     */
+                    function toList(array $array): array {
+                        return array_values($array);
+                    }'
             ],
         ];
     }
