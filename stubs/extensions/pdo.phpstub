@@ -151,3 +151,8 @@ class PDOStatement implements Traversable
      */
     public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
 }
+
+ class PDOException extends RuntimeException {
+    protected string $code;
+    public ?array $errorInfo = null;
+}
