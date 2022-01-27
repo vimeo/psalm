@@ -4,9 +4,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallableString;
@@ -19,8 +17,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -269,30 +266,22 @@ class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateKeyOf) {
-            foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
-                /** @var TArray|TList|TKeyedArray $atomic_type */
+            $array_key_type = TKeyOfArray::getArrayKeyType($input_type_part->as);
+            if ($array_key_type === null) {
+                return false;
+            }
 
-                // Transform all types to TArray if needed
-                if ($atomic_type instanceof TArray) {
-                    $array_key_atomics = $atomic_type->type_params[0];
-                } elseif ($atomic_type instanceof TList) {
-                    $array_key_atomics = Type::getInt();
-                } else {
-                    $array_key_atomics = $atomic_type->getGenericKeyType();
-                }
-
-                /** @var Scalar $array_key_atomic */
-                foreach ($array_key_atomics->getAtomicTypes() as $array_key_atomic) {
-                    if (!self::isContainedBy(
-                        $codebase,
-                        $array_key_atomic,
-                        $container_type_part,
-                        $allow_interface_equality,
-                        $allow_float_int_equality,
-                        $atomic_comparison_result
-                    )) {
-                        return false;
-                    }
+            /** @var Scalar $array_key_atomic */
+            foreach ($array_key_type->getAtomicTypes() as $array_key_atomic) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $array_key_atomic,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result
+                )) {
+                    return false;
                 }
             }
 

@@ -935,44 +935,21 @@ class TypeExpander
 
             $type_atomics = array_merge(
                 $type_atomics,
-                $constant_type->getAtomicTypes()
+                array_values($constant_type->getAtomicTypes())
             );
         }
-
-        // Types inside union are checked on instantiation and above on
-        // expansion, currently there is no Union<T> for typing here.
-        /** @var list<TList|TKeyedArray|TArray> $type_atomics */
-
-        // Merge keys/values of provided array types
-        $new_return_types = [];
-        foreach ($type_atomics as $type_atomic) {
-            // Transform all types to TArray if needed
-            if ($type_atomic instanceof TList) {
-                $type_atomic = new TArray([
-                    new Union([new TInt()]),
-                    $type_atomic->type_param
-                ]);
-            } elseif ($type_atomic instanceof TKeyedArray) {
-                $type_atomic = $type_atomic->getGenericArrayType();
-            }
-
-            // Add key-of/value-of type to return types list
-            if ($return_type instanceof TKeyOfArray) {
-                $new_return_types = array_merge(
-                    $new_return_types,
-                    array_values($type_atomic->type_params[0]->getAtomicTypes())
-                ) ;
-            } else {
-                $new_return_types = array_merge(
-                    $new_return_types,
-                    array_values($type_atomic->type_params[1]->getAtomicTypes())
-                ) ;
-            }
-        }
-
-        if ($new_return_types === []) {
+        if ($type_atomics === []) {
             return [$return_type];
         }
-        return $new_return_types;
+
+        if ($return_type instanceof TKeyOfArray) {
+            $new_return_types = TKeyOfArray::getArrayKeyType(new Union($type_atomics));
+        } else {
+            $new_return_types = TValueOfArray::getArrayValueType(new Union($type_atomics));
+        }
+        if ($new_return_types === null) {
+            return [$return_type];
+        }
+        return array_values($new_return_types->getAtomicTypes());
     }
 }

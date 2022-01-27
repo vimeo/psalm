@@ -2,7 +2,11 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
 use Psalm\Type\Union;
+
+use function array_merge;
+use function array_values;
 
 /**
  * Represents an offset of an array.
@@ -56,5 +60,37 @@ class TKeyOfArray extends TArrayKey
             }
         }
         return true;
+    }
+
+    public static function getArrayKeyType(Union $type): ?Union
+    {
+        $key_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray) {
+                $array_key_atomics = $atomic_type->type_params[0];
+            } elseif ($atomic_type instanceof TList) {
+                $array_key_atomics = Type::getInt();
+            } elseif ($atomic_type instanceof TKeyedArray) {
+                $array_key_atomics = $atomic_type->getGenericKeyType();
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                $array_key_atomics = static::getArrayKeyType($atomic_type->as);
+                if ($array_key_atomics === null) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+
+            $key_types = array_merge(
+                $key_types,
+                array_values($array_key_atomics->getAtomicTypes())
+            );
+        }
+
+        if ($key_types === []) {
+            return null;
+        }
+        return new Union($key_types);
     }
 }

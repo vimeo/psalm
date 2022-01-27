@@ -45,6 +45,18 @@ class ValueOfTemplateTest extends TestCase
                     }
                 '
             ],
+            'valueOfUnreplacedTemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array<bool>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @return value-of<T>
+                         */
+                        abstract public function getRandomValue(): bool;
+                    }',
+            ],
         ];
     }
 
@@ -79,6 +91,20 @@ class ValueOfTemplateTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'valueOfUnresolvedTemplateParamIsStillChecked' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array<bool>
+                     */
+                    abstract class Foo {
+                        /**
+                         * @return value-of<T>
+                         */
+                        abstract public function getRandomValue(): string;
+                    }
+                ',
+                'error_message' => 'MismatchingDocblockReturnType'
             ],
         ];
     }

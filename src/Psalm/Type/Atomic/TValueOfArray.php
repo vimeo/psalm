@@ -5,6 +5,9 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_merge;
+use function array_values;
+
 /**
  * Represents a value of an array.
  */
@@ -57,5 +60,37 @@ class TValueOfArray extends Atomic
             }
         }
         return true;
+    }
+
+    public static function getArrayValueType(Union $type): ?Union
+    {
+        $value_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray) {
+                $array_value_atomics = $atomic_type->type_params[1];
+            } elseif ($atomic_type instanceof TList) {
+                $array_value_atomics = $atomic_type->type_param;
+            } elseif ($atomic_type instanceof TKeyedArray) {
+                $array_value_atomics = $atomic_type->getGenericValueType();
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                $array_value_atomics = static::getArrayValueType($atomic_type->as);
+                if ($array_value_atomics === null) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+
+            $value_types = array_merge(
+                $value_types,
+                array_values($array_value_atomics->getAtomicTypes())
+            );
+        }
+
+        if ($value_types === []) {
+            return null;
+        }
+        return new Union($value_types);
     }
 }

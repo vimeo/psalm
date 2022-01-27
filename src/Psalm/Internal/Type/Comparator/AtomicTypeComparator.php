@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOfArray;
 
 use function array_merge;
 use function array_values;
@@ -369,29 +370,21 @@ class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateValueOf) {
-            foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
-                /** @var TArray|TList|TKeyedArray $atomic_type */
+            $array_value_type = TValueOfArray::getArrayValueType($input_type_part->as);
+            if ($array_value_type === null) {
+                return false;
+            }
 
-                // Transform all types to TArray if needed
-                if ($atomic_type instanceof TArray) {
-                    $array_value_atomics = $atomic_type->type_params[1];
-                } elseif ($atomic_type instanceof TList) {
-                    $array_value_atomics = $atomic_type->type_param;
-                } else {
-                    $array_value_atomics = $atomic_type->getGenericValueType();
-                }
-
-                foreach ($array_value_atomics->getAtomicTypes() as $array_value_atomic) {
-                    if (!self::isContainedBy(
-                        $codebase,
-                        $array_value_atomic,
-                        $container_type_part,
-                        $allow_interface_equality,
-                        $allow_float_int_equality,
-                        $atomic_comparison_result
-                    )) {
-                        return false;
-                    }
+            foreach ($array_value_type->getAtomicTypes() as $array_value_atomic) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $array_value_atomic,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result
+                )) {
+                    return false;
                 }
             }
 
