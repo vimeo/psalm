@@ -165,6 +165,7 @@
  - [BC] Property `Psalm\Config::$allow_phpstorm_generics` was removed
  - [BC] Property `Psalm\Config::$exit_functions` was removed
  - [BC] Property `Psalm\Config::$forbid_echo` was removed
+ - [BC] Property `Psalm\Config::$load_xdebug_stub` was removed
  - [BC] Method `Psalm\Type::getEmpty()` was removed
  - [BC] Legacy hook interfaces have been removed:
    -  `Psalm\Plugin\Hook\MethodReturnTypeProviderInterface`
