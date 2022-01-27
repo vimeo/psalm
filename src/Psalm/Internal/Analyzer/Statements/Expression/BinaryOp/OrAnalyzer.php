@@ -64,6 +64,8 @@ class OrAnalyzer
 
         $post_leaving_if_context = null;
 
+        // we cap this at max depth of 4 to prevent quadratic behaviour
+        // when analysing <expr> || <expr> || <expr> || <expr> || <expr>
         if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || !$stmt->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || !$stmt->left->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
