@@ -2461,18 +2461,6 @@ class UnusedVariableTest extends TestCase
                         $a = false;
                     }'
             ],
-            'usedPlusInAddition' => [
-                'code' => '<?php
-                    function takesAnInt(): void {
-                        $i = 0;
-
-                        while (rand(0, 1)) {
-                            if (++$i > 10) {
-                                break;
-                            } else {}
-                        }
-                    }',
-            ],
             'referenceUseUsesReferencedVariable' => [
                 'code' => '<?php
                     $a = 1;
@@ -2536,6 +2524,30 @@ class UnusedVariableTest extends TestCase
 
                     function takesArray(array $_arr): void {}
                 ',
+            ],
+            'usedPlusInAddition' => [
+                'code' => '<?php
+                    function takesAnInt(): void {
+                        $i = 0;
+
+                        while (rand(0, 1)) {
+                            if (($i = $i + 1) > 10) {
+                                break;
+                            } else {}
+                        }
+                    }',
+            ],
+            'usedPlusInUnaryAddition' => [
+                'code' => '<?php
+                    function takesAnInt(): void {
+                        $i = 0;
+
+                        while (rand(0, 1)) {
+                            if (++$i > 10) {
+                                break;
+                            } else {}
+                        }
+                    }',
             ],
         ];
     }

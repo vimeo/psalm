@@ -10,27 +10,26 @@ use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
-use function array_combine;
 use function array_diff;
-use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
-use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_reduce;
 use function array_unique;
 use function array_values;
 use function count;
@@ -38,6 +37,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function substr;
 
 /**
  * @internal
@@ -106,10 +106,11 @@ class IfElseAnalyzer
                 $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
             );
 
+            // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;
 
+            // this is the context for stuff that happens after the `if` block
             $post_if_context = $if_conditional_scope->post_if_context;
-            $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (ScopeAnalysisException $e) {
             return false;
@@ -226,100 +227,6 @@ class IfElseAnalyzer
             )
         );
 
-        $active_if_types = [];
-
-        $reconcilable_if_types = Algebra::getTruthsFromFormula(
-            $if_context->clauses,
-            spl_object_id($stmt->cond),
-            $cond_referenced_var_ids,
-            $active_if_types
-        );
-
-        if (array_filter(
-            $context->clauses,
-            fn($clause): bool => (bool)$clause->possibilities
-        )) {
-            $omit_keys = array_reduce(
-                $context->clauses,
-                /**
-                 * @param array<string> $carry
-                 * @return array<string>
-                 */
-                fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
-                []
-            );
-
-            $omit_keys = array_combine($omit_keys, $omit_keys);
-            $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($context->clauses));
-
-            $cond_referenced_var_ids = array_diff_key(
-                $cond_referenced_var_ids,
-                $omit_keys
-            );
-        }
-
-        // if the if has an || in the conditional, we cannot easily reason about it
-        if ($reconcilable_if_types) {
-            $changed_var_ids = [];
-
-            $if_vars_in_scope_reconciled =
-                Reconciler::reconcileKeyedTypes(
-                    $reconcilable_if_types,
-                    $active_if_types,
-                    $if_context->vars_in_scope,
-                    $if_context->references_in_scope,
-                    $changed_var_ids,
-                    $cond_referenced_var_ids,
-                    $statements_analyzer,
-                    $statements_analyzer->getTemplateTypeMap() ?: [],
-                    $if_context->inside_loop,
-                    $context->check_variables
-                        ? new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
-                                ? $stmt->cond->expr
-                                : $stmt->cond,
-                            $context->include_location
-                        ) : null
-                );
-
-            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
-
-            foreach ($reconcilable_if_types as $var_id => $_) {
-                $if_context->vars_possibly_in_scope[$var_id] = true;
-            }
-
-            if ($changed_var_ids) {
-                $if_context->clauses = Context::removeReconciledClauses($if_context->clauses, $changed_var_ids)[0];
-
-                foreach ($changed_var_ids as $changed_var_id => $_) {
-                    foreach ($if_context->vars_in_scope as $var_id => $_) {
-                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
-                            && !array_key_exists($var_id, $changed_var_ids)
-                            && !array_key_exists($var_id, $cond_referenced_var_ids)
-                        ) {
-                            $if_context->removePossibleReference($var_id);
-                        }
-                    }
-                }
-            }
-
-            $if_scope->if_cond_changed_var_ids = $changed_var_ids;
-        }
-
-        $if_context->reconciled_expression_clauses = [];
-
-        $old_if_context = clone $if_context;
-        $context->vars_possibly_in_scope = array_merge(
-            $if_context->vars_possibly_in_scope,
-            $context->vars_possibly_in_scope
-        );
-
-        $context->referenced_var_ids = array_merge(
-            $if_context->referenced_var_ids,
-            $context->referenced_var_ids
-        );
-
         $temp_else_context = clone $post_if_context;
 
         $changed_var_ids = [];
@@ -362,7 +269,6 @@ class IfElseAnalyzer
             $if_scope,
             $if_conditional_scope,
             $if_context,
-            $old_if_context,
             $context,
             $pre_assignment_else_redefined_vars
         ) === false) {
@@ -403,6 +309,50 @@ class IfElseAnalyzer
             $context
         ) === false) {
             return false;
+        }
+
+        if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
+            && !$stmt->elseifs
+        ) {
+            $context->clauses = $else_context->clauses;
+            foreach ($else_context->vars_in_scope as $var_id => $type) {
+                $context->vars_in_scope[$var_id] = clone $type;
+            }
+
+            foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+                if ($first_appearance
+                    && isset($post_if_context->vars_in_scope[$var_id])
+                    && $post_if_context->vars_in_scope[$var_id]->hasMixed()
+                    && !$reconciled_type->hasMixed()
+                ) {
+                    if (!$post_if_context->collect_initializations
+                        && !$post_if_context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    ) {
+                        $parent_source = $statements_analyzer->getSource();
+
+                        $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
+                            ? $parent_source->getFunctionLikeStorage($statements_analyzer)
+                            : null;
+
+                        if (!$functionlike_storage
+                                || (!$parent_source->getSource() instanceof TraitAnalyzer
+                                    && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                        ) {
+                            $codebase = $statements_analyzer->getCodebase();
+                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                        }
+                    }
+
+                    IssueBuffer::remove(
+                        $statements_analyzer->getFilePath(),
+                        'MixedAssignment',
+                        $first_appearance->raw_file_start
+                    );
+                }
+            }
         }
 
         if ($context->loop_scope) {

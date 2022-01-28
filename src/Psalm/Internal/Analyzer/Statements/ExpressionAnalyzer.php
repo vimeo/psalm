@@ -180,7 +180,9 @@ class ExpressionAnalyzer
                 $stmt->expr,
                 null,
                 $context,
-                $stmt->getDocComment()
+                $stmt->getDocComment(),
+                [],
+                !$from_stmt ? $stmt : null
             );
 
             if ($assignment_type === false) {

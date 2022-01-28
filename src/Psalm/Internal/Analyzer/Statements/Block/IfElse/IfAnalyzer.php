@@ -7,11 +7,10 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -26,15 +25,21 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_combine;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
+use function array_reduce;
 use function array_unique;
 use function count;
 use function in_array;
+use function preg_match;
+use function preg_quote;
+use function spl_object_id;
 use function strpos;
 use function substr;
 
@@ -54,10 +59,106 @@ class IfAnalyzer
         IfScope $if_scope,
         IfConditionalScope $if_conditional_scope,
         Context $if_context,
-        Context $old_if_context,
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
     ): ?bool {
+        $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+
+        $active_if_types = [];
+
+        $reconcilable_if_types = Algebra::getTruthsFromFormula(
+            $if_context->clauses,
+            spl_object_id($stmt->cond),
+            $cond_referenced_var_ids,
+            $active_if_types
+        );
+
+        if (array_filter(
+            $outer_context->clauses,
+            fn($clause): bool => (bool)$clause->possibilities
+        )) {
+            $omit_keys = array_reduce(
+                $outer_context->clauses,
+                /**
+                 * @param array<string> $carry
+                 * @return array<string>
+                 */
+                fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
+                []
+            );
+
+            $omit_keys = array_combine($omit_keys, $omit_keys);
+            $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
+
+            $cond_referenced_var_ids = array_diff_key(
+                $cond_referenced_var_ids,
+                $omit_keys
+            );
+        }
+
+        // if the if has an || in the conditional, we cannot easily reason about it
+        if ($reconcilable_if_types) {
+            $changed_var_ids = [];
+
+            $if_vars_in_scope_reconciled =
+                Reconciler::reconcileKeyedTypes(
+                    $reconcilable_if_types,
+                    $active_if_types,
+                    $if_context->vars_in_scope,
+                    $if_context->references_in_scope,
+                    $changed_var_ids,
+                    $cond_referenced_var_ids,
+                    $statements_analyzer,
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $if_context->inside_loop,
+                    $outer_context->check_variables
+                        ? new CodeLocation(
+                            $statements_analyzer->getSource(),
+                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                                ? $stmt->cond->expr
+                                : $stmt->cond,
+                            $outer_context->include_location
+                        ) : null
+                );
+
+            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
+
+            foreach ($reconcilable_if_types as $var_id => $_) {
+                $if_context->vars_possibly_in_scope[$var_id] = true;
+            }
+
+            if ($changed_var_ids) {
+                $if_context->clauses = Context::removeReconciledClauses($if_context->clauses, $changed_var_ids)[0];
+
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    foreach ($if_context->vars_in_scope as $var_id => $_) {
+                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                            && !array_key_exists($var_id, $changed_var_ids)
+                            && !array_key_exists($var_id, $cond_referenced_var_ids)
+                        ) {
+                            $if_context->removePossibleReference($var_id);
+                        }
+                    }
+                }
+            }
+
+            $if_scope->if_cond_changed_var_ids = $changed_var_ids;
+        }
+
+        $if_context->reconciled_expression_clauses = [];
+
+        $outer_context->vars_possibly_in_scope = array_merge(
+            $if_context->vars_possibly_in_scope,
+            $outer_context->vars_possibly_in_scope
+        );
+
+        $outer_context->referenced_var_ids = array_merge(
+            $if_context->referenced_var_ids,
+            $outer_context->referenced_var_ids
+        );
+
+        $old_if_context = clone $if_context;
+        
         $codebase = $statements_analyzer->getCodebase();
 
         $assigned_var_ids = $if_context->assigned_var_ids;
@@ -77,7 +178,7 @@ class IfAnalyzer
             $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
-        $final_actions = ScopeAnalyzer::getControlActions(
+        $if_scope->if_actions = $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             []
@@ -91,6 +192,7 @@ class IfAnalyzer
         $has_break_statement = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
 
+        $if_scope->if_actions = $final_actions;
         $if_scope->final_actions = $final_actions;
 
         /** @var array<string, int> */
@@ -127,8 +229,6 @@ class IfAnalyzer
                 $outer_context->byref_constraints[$var_id] = $byref_constraint;
             }
         }
-
-        $mic_drop = false;
 
         if (!$has_leaving_statements) {
             self::updateIfScope(
@@ -168,27 +268,13 @@ class IfAnalyzer
                         $if_conditional_scope->assigned_in_conditional_var_ids
                     );
                 }
-
-                if (!$stmt->else && !$stmt->elseifs) {
-                    $mic_drop = self::handleMicDrop(
-                        $statements_analyzer,
-                        $stmt->cond,
-                        $if_scope,
-                        $outer_context,
-                        $new_assigned_var_ids
-                    );
-
-                    $outer_context->clauses = Algebra::simplifyCNF(
-                        array_merge($outer_context->clauses, $if_scope->negated_clauses)
-                    );
-                }
             }
         }
 
         // update the parent context as necessary, but only if we can safely reason about type negation.
         // We only update vars that changed both at the start of the if block and then again by an assignment
         // in the if statement.
-        if ($if_scope->negated_types && !$mic_drop) {
+        if ($if_scope->negated_types) {
             $vars_to_update = array_intersect(
                 array_keys($pre_assignment_else_redefined_vars),
                 array_keys($if_scope->negated_types)
@@ -206,19 +292,6 @@ class IfAnalyzer
 
             if ($extra_vars_to_update) {
                 $vars_to_update = array_unique(array_merge($extra_vars_to_update, $vars_to_update));
-            }
-
-            //update $if_context vars to include the pre-assignment else vars
-            if (!$stmt->else && !$has_leaving_statements) {
-                foreach ($pre_assignment_else_redefined_vars as $var_id => $type) {
-                    if (isset($if_context->vars_in_scope[$var_id])) {
-                        $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $if_context->vars_in_scope[$var_id],
-                            $type,
-                            $codebase
-                        );
-                    }
-                }
             }
 
             $outer_context->update(
@@ -261,99 +334,6 @@ class IfAnalyzer
         );
 
         return null;
-    }
-
-    /**
-     * This handles the situation when returning inside an
-     * if block with no else or elseifs
-     *
-     * @param array<string, int>    $new_assigned_var_ids
-     */
-    private static function handleMicDrop(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $cond,
-        IfScope $if_scope,
-        Context $post_if_context,
-        array $new_assigned_var_ids
-    ): bool {
-        if (!$if_scope->negated_types) {
-            return false;
-        }
-
-        $newly_reconciled_var_ids = [];
-
-        $post_if_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
-            $if_scope->negated_types,
-            [],
-            $post_if_context->vars_in_scope,
-            $post_if_context->references_in_scope,
-            $newly_reconciled_var_ids,
-            [],
-            $statements_analyzer,
-            $statements_analyzer->getTemplateTypeMap() ?: [],
-            $post_if_context->inside_loop,
-            new CodeLocation(
-                $statements_analyzer->getSource(),
-                $cond instanceof PhpParser\Node\Expr\BooleanNot
-                    ? $cond->expr
-                    : $cond,
-                $post_if_context->include_location,
-                false
-            )
-        );
-
-        foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
-            $post_if_context->removeVarFromConflictingClauses($changed_var_id);
-        }
-
-        $newly_reconciled_var_ids += $new_assigned_var_ids;
-
-        foreach ($newly_reconciled_var_ids as $var_id => $_) {
-            $if_scope->negated_clauses = Context::filterClauses(
-                $var_id,
-                $if_scope->negated_clauses
-            );
-        }
-
-        foreach ($newly_reconciled_var_ids as $var_id => $_) {
-            $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-            if ($first_appearance
-                && isset($post_if_context->vars_in_scope[$var_id])
-                && isset($post_if_context_vars_reconciled[$var_id])
-                && $post_if_context->vars_in_scope[$var_id]->hasMixed()
-                && !$post_if_context_vars_reconciled[$var_id]->hasMixed()
-            ) {
-                if (!$post_if_context->collect_initializations
-                    && !$post_if_context->collect_mutations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                ) {
-                    $parent_source = $statements_analyzer->getSource();
-
-                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                        : null;
-
-                    if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
-                    ) {
-                        $codebase = $statements_analyzer->getCodebase();
-                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
-                    }
-                }
-
-                IssueBuffer::remove(
-                    $statements_analyzer->getFilePath(),
-                    'MixedAssignment',
-                    $first_appearance->raw_file_start
-                );
-            }
-        }
-
-        $post_if_context->vars_in_scope = $post_if_context_vars_reconciled;
-
-        return true;
     }
 
     /**

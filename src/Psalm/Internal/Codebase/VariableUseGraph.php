@@ -160,6 +160,7 @@ class VariableUseGraph extends DataFlowGraph
                 || $path->type === 'use-inside-conditional'
                 || $path->type === 'use-inside-isset'
                 || $path->type === 'arg'
+                || $path->type === 'comparison'
             ) {
                 return null;
             }

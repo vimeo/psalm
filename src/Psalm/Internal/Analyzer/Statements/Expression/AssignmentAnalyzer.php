@@ -112,7 +112,8 @@ class AssignmentAnalyzer
         ?Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
-        array $not_ignored_docblock_var_ids = []
+        array $not_ignored_docblock_var_ids = [],
+        ?PhpParser\Node\Expr $assign_expr = null
     ) {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -616,6 +617,26 @@ class AssignmentAnalyzer
                             $added_taints
                         );
                     }
+
+                    if ($assign_expr) {
+                        $new_parent_node = DataFlowNode::getForAssignment(
+                            'assignment_expr',
+                            new CodeLocation($statements_analyzer->getSource(), $assign_expr)
+                        );
+
+                        $data_flow_graph->addNode($new_parent_node);
+
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $old_parent_node) {
+                            $data_flow_graph->addPath(
+                                $old_parent_node,
+                                $new_parent_node,
+                                '=',
+                            );
+                        }
+
+                        $assign_value_type = clone $assign_value_type;
+                        $assign_value_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
+                    }
                 }
             }
         }
@@ -1083,7 +1104,7 @@ class AssignmentAnalyzer
                     $by_ref_out_type->parent_nodes += $existing_type->parent_nodes;
                 }
 
-                if (!$existing_type->isEmptyArray()) {
+                if (!$context->inside_conditional) {
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
@@ -1505,7 +1526,7 @@ class AssignmentAnalyzer
                                 $assignment_node->id => $assignment_node
                             ];
                         } else {
-                            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                            if ($data_flow_graph instanceof TaintFlowGraph
                                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                             ) {
                                 $context->vars_in_scope[$list_var_id]->parent_nodes = [];

@@ -114,14 +114,12 @@ class IfConditionalAnalyzer
 
         $outer_context->inside_conditional = true;
 
-        if ($externally_applied_if_cond_expr) {
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $externally_applied_if_cond_expr,
-                $outer_context
-            ) === false) {
-                throw new ScopeAnalysisException();
-            }
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $externally_applied_if_cond_expr,
+            $outer_context
+        ) === false) {
+            throw new ScopeAnalysisException();
         }
 
         $first_cond_assigned_var_ids = $outer_context->assigned_var_ids;
@@ -143,7 +141,10 @@ class IfConditionalAnalyzer
         }
 
         $if_conditional_context = clone $if_context;
-        $if_conditional_context->if_context = $if_context;
+
+        // here we set up a context specifically for the statements in the first `if`, which can
+        // be affected by statements in the if condition
+        $if_conditional_context->if_body_context = $if_context;
 
         if ($codebase->alter_code) {
             $if_context->branch_point = $branch_point;
@@ -236,7 +237,7 @@ class IfConditionalAnalyzer
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
      */
-    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
+    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -280,7 +281,7 @@ class IfConditionalAnalyzer
      * Returns statements that are definitely evaluated before any statements inside
      * the if block
      */
-    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
+    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
