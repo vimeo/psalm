@@ -6,9 +6,11 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -20,17 +22,24 @@ use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_combine;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
+use function array_reduce;
 use function array_unique;
 use function count;
 use function in_array;
+use function preg_match;
+use function preg_quote;
+use function spl_object_id;
 use function strpos;
 use function substr;
 
@@ -50,10 +59,106 @@ class IfAnalyzer
         IfScope $if_scope,
         IfConditionalScope $if_conditional_scope,
         Context $if_context,
-        Context $old_if_context,
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
     ): ?bool {
+        $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
+
+        $active_if_types = [];
+
+        $reconcilable_if_types = Algebra::getTruthsFromFormula(
+            $if_context->clauses,
+            spl_object_id($stmt->cond),
+            $cond_referenced_var_ids,
+            $active_if_types
+        );
+
+        if (array_filter(
+            $outer_context->clauses,
+            fn($clause): bool => (bool)$clause->possibilities
+        )) {
+            $omit_keys = array_reduce(
+                $outer_context->clauses,
+                /**
+                 * @param array<string> $carry
+                 * @return array<string>
+                 */
+                fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
+                []
+            );
+
+            $omit_keys = array_combine($omit_keys, $omit_keys);
+            $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
+
+            $cond_referenced_var_ids = array_diff_key(
+                $cond_referenced_var_ids,
+                $omit_keys
+            );
+        }
+
+        // if the if has an || in the conditional, we cannot easily reason about it
+        if ($reconcilable_if_types) {
+            $changed_var_ids = [];
+
+            $if_vars_in_scope_reconciled =
+                Reconciler::reconcileKeyedTypes(
+                    $reconcilable_if_types,
+                    $active_if_types,
+                    $if_context->vars_in_scope,
+                    $if_context->references_in_scope,
+                    $changed_var_ids,
+                    $cond_referenced_var_ids,
+                    $statements_analyzer,
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $if_context->inside_loop,
+                    $outer_context->check_variables
+                        ? new CodeLocation(
+                            $statements_analyzer->getSource(),
+                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                                ? $stmt->cond->expr
+                                : $stmt->cond,
+                            $outer_context->include_location
+                        ) : null
+                );
+
+            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
+
+            foreach ($reconcilable_if_types as $var_id => $_) {
+                $if_context->vars_possibly_in_scope[$var_id] = true;
+            }
+
+            if ($changed_var_ids) {
+                $if_context->clauses = Context::removeReconciledClauses($if_context->clauses, $changed_var_ids)[0];
+
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    foreach ($if_context->vars_in_scope as $var_id => $_) {
+                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                            && !array_key_exists($var_id, $changed_var_ids)
+                            && !array_key_exists($var_id, $cond_referenced_var_ids)
+                        ) {
+                            $if_context->removePossibleReference($var_id);
+                        }
+                    }
+                }
+            }
+
+            $if_scope->if_cond_changed_var_ids = $changed_var_ids;
+        }
+
+        $if_context->reconciled_expression_clauses = [];
+
+        $outer_context->vars_possibly_in_scope = array_merge(
+            $if_context->vars_possibly_in_scope,
+            $outer_context->vars_possibly_in_scope
+        );
+
+        $outer_context->referenced_var_ids = array_merge(
+            $if_context->referenced_var_ids,
+            $outer_context->referenced_var_ids
+        );
+
+        $old_if_context = clone $if_context;
+        
         $codebase = $statements_analyzer->getCodebase();
 
         $assigned_var_ids = $if_context->assigned_var_ids;
