@@ -547,7 +547,6 @@ class ArrayFunctionArgumentsAnalyzer
                                     ]
                                 );
                             } else {
-                                /** @psalm-suppress InvalidPropertyAssignmentValue */
                                 $array_atomic_type->count--;
                             }
                         } else {
@@ -565,7 +564,6 @@ class ArrayFunctionArgumentsAnalyzer
                                     ]
                                 );
                             } else {
-                                /** @psalm-suppress InvalidPropertyAssignmentValue */
                                 $array_atomic_type->count--;
                             }
                         } else {

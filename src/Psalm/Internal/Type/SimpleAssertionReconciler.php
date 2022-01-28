@@ -153,7 +153,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof IsGreaterThan) {
-            return self::reconcileSuperiorTo(
+            return self::reconcileIsGreaterThan(
                 $assertion,
                 $existing_var_type,
                 $inside_loop,
@@ -166,7 +166,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof IsLessThan) {
-            return self::reconcileInferiorTo(
+            return self::reconcileIsLessThan(
                 $assertion,
                 $existing_var_type,
                 $inside_loop,
@@ -1612,7 +1612,7 @@ class SimpleAssertionReconciler extends Reconciler
     /**
      * @param string[] $suppressed_issues
      */
-    private static function reconcileSuperiorTo(
+    private static function reconcileIsGreaterThan(
         IsGreaterThan $assertion,
         Union         $existing_var_type,
         bool          $inside_loop,
@@ -1622,16 +1622,18 @@ class SimpleAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array         $suppressed_issues
     ): Union {
-        $assertion_value = $assertion->value;
+        //we add 1 from the assertion value because we're on a strict operator
+        $assertion_value = $assertion->value + 1;
 
         $did_remove_type = false;
 
+        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('null');
+        }
+
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {
-                continue;
-            }
-
-            if ($assertion_value === null) {
                 continue;
             }
 
@@ -1715,7 +1717,7 @@ class SimpleAssertionReconciler extends Reconciler
     /**
      * @param string[] $suppressed_issues
      */
-    private static function reconcileInferiorTo(
+    private static function reconcileIsLessThan(
         IsLessThan    $assertion,
         Union         $existing_var_type,
         bool          $inside_loop,
@@ -1725,16 +1727,18 @@ class SimpleAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array         $suppressed_issues
     ): Union {
-        $assertion_value = $assertion->value;
+        //we remove 1 from the assertion value because we're on a strict operator
+        $assertion_value = $assertion->value - 1;
 
         $did_remove_type = false;
 
+        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+            $did_remove_type = true;
+            $existing_var_type->removeType('null');
+        }
+
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($inside_loop) {
-                continue;
-            }
-
-            if ($assertion_value === null) {
                 continue;
             }
 

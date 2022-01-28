@@ -328,6 +328,44 @@ class NegatedAssertionReconciler extends Reconciler
                         $did_remove_type = true;
                     }
                 }
+
+                $existing_range_types = $existing_var_type->getRangeInts();
+
+                if ($existing_range_types) {
+                    foreach ($existing_range_types as $int_key => $literal_type) {
+                        if ($literal_type->contains($assertion_type->value)) {
+                            $did_remove_type = true;
+                            $existing_var_type->removeType($int_key);
+                            if ($literal_type->min_bound === null
+                                || $literal_type->min_bound <= $assertion_type->value - 1
+                            ) {
+                                $existing_var_type->addType(new Type\Atomic\TIntRange(
+                                    $literal_type->min_bound,
+                                    $assertion_type->value - 1
+                                ));
+                            }
+                            if ($literal_type->max_bound === null
+                                || $literal_type->max_bound >= $assertion_type->value + 1
+                            ) {
+                                $existing_var_type->addType(new Type\Atomic\TIntRange(
+                                    $assertion_type->value + 1,
+                                    $literal_type->max_bound
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                if (isset($existing_var_type->getAtomicTypes()['int'])
+                    && get_class($existing_var_type->getAtomicTypes()['int']) === Type\Atomic\TInt::class
+                ) {
+                    $did_remove_type = true;
+                    //this may be used to generate a range containing any int except the one that was asserted against
+                    //but this is failing some tests
+                    /*$existing_var_type->removeType('int');
+                    $existing_var_type->addType(new Type\Atomic\TIntRange(null, $assertion_type->value - 1));
+                    $existing_var_type->addType(new Type\Atomic\TIntRange($assertion_type->value + 1, null));*/
+                }
             } else {
                 $scalar_var_type = clone $assertion_type;
             }
