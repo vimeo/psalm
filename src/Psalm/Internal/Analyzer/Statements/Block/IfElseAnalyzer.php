@@ -112,6 +112,7 @@ class IfElseAnalyzer
 
             $if_context = $if_conditional_scope->if_context;
 
+            // this is the context for stuff that happens after the `if` block
             $post_if_context = $if_conditional_scope->post_if_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;

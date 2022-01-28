@@ -141,7 +141,10 @@ class IfConditionalAnalyzer
         }
 
         $if_conditional_context = clone $if_context;
-        $if_conditional_context->if_context = $if_context;
+
+        // here we set up a context specifically for the statements in the first `if`, which can
+        // be affected by statements in the if condition
+        $if_conditional_context->if_body_context = $if_context;
 
         if ($codebase->alter_code) {
             $if_context->branch_point = $branch_point;

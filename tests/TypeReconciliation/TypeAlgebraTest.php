@@ -19,18 +19,16 @@ class TypeAlgebraTest extends TestCase
         return [
             'twoVarLogicSimple' => [
                 'code' => '<?php
-                    function takesString(string $s): void {}
-
-                    function foo(?string $a, ?string $b): void {
+                    function foo(?string $a, ?string $b): string {
                         if ($a !== null || $b !== null) {
                             if ($a !== null) {
-                                $c = $a;
+                                return $a;
                             } else {
-                                $c = $b;
+                                return $b;
                             }
-
-                            takesString($c);
                         }
+
+                        return "foo";
                     }',
             ],
             'threeVarLogic' => [

@@ -349,7 +349,7 @@ class Context
     /**
      * @var Context|null
      */
-    public $if_context;
+    public $if_body_context;
 
     /**
      * @var bool
