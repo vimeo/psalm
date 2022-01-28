@@ -5,8 +5,8 @@ namespace Psalm\Tests\Config\Plugin\Hook;
 use Psalm\Codebase;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
-use Psalm\Plugin\EventHandler\Event\FunctionDynamicStorageProviderEvent;
-use Psalm\Plugin\EventHandler\FunctionDynamicStorageProviderInterface;
+use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
+use Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -17,14 +17,14 @@ use function array_keys;
 use function array_map;
 use function count;
 
-class CustomArrayMapStorageProvider implements FunctionDynamicStorageProviderInterface
+class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
 {
     public static function getFunctionIds(): array
     {
         return ['custom_array_map'];
     }
 
-    public static function getFunctionStorage(FunctionDynamicStorageProviderEvent $event): ?DynamicFunctionStorage
+    public static function getFunctionStorage(DynamicFunctionStorageProviderEvent $event): ?DynamicFunctionStorage
     {
         $template_provider = $event->getTemplateProvider();
         $arg_type_inferer = $event->getArgTypeInferer();

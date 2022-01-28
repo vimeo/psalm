@@ -9,7 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileStorageProvider;
-use Psalm\Internal\Provider\FunctionDynamicStorageProvider;
+use Psalm\Internal\Provider\DynamicFunctionStorageProvider;
 use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
@@ -56,7 +56,7 @@ class Functions
     /** @var FunctionParamsProvider */
     public $params_provider;
 
-    /** @var FunctionDynamicStorageProvider */
+    /** @var DynamicFunctionStorageProvider */
     public $dynamic_storage_provider;
 
     /**
@@ -71,7 +71,7 @@ class Functions
         $this->return_type_provider = new FunctionReturnTypeProvider();
         $this->existence_provider = new FunctionExistenceProvider();
         $this->params_provider = new FunctionParamsProvider();
-        $this->dynamic_storage_provider = new FunctionDynamicStorageProvider();
+        $this->dynamic_storage_provider = new DynamicFunctionStorageProvider();
 
         self::$stubbed_functions = [];
     }

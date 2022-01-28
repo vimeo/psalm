@@ -12,8 +12,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
-use Psalm\Plugin\EventHandler\Event\FunctionDynamicStorageProviderEvent;
-use Psalm\Plugin\EventHandler\FunctionDynamicStorageProviderInterface;
+use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
+use Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface;
 use Psalm\Storage\FunctionStorage;
 
 use function strtolower;
@@ -21,16 +21,16 @@ use function strtolower;
 /**
  * @internal
  */
-final class FunctionDynamicStorageProvider
+final class DynamicFunctionStorageProvider
 {
-    /** @var array<lowercase-string, array<Closure(FunctionDynamicStorageProviderEvent): ?DynamicFunctionStorage>> */
+    /** @var array<lowercase-string, array<Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage>> */
     private static $handlers = [];
 
     /** @var array<lowercase-string, ?FunctionStorage> */
     private static $dynamic_storages = [];
 
     /**
-     * @param class-string<FunctionDynamicStorageProviderInterface> $class
+     * @param class-string<DynamicFunctionStorageProviderInterface> $class
      */
     public function registerClass(string $class): void
     {
@@ -42,7 +42,7 @@ final class FunctionDynamicStorageProvider
     }
 
     /**
-     * @param Closure(FunctionDynamicStorageProviderEvent): ?DynamicFunctionStorage $c
+     * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
      */
     public function registerClosure(string $fq_function_name, Closure $c): void
     {
@@ -76,7 +76,7 @@ final class FunctionDynamicStorageProvider
         }
 
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
-            $event = new FunctionDynamicStorageProviderEvent(
+            $event = new DynamicFunctionStorageProviderEvent(
                 new ArgTypeInferer($context, $statements_analyzer),
                 new DynamicTemplateProvider('fn-' . strtolower($function_id)),
                 $statements_analyzer,
