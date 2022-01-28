@@ -6,8 +6,6 @@ use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-use function class_exists;
-
 use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase
@@ -17,10 +15,6 @@ class MethodCallTest extends TestCase
 
     public function testExtendDocblockParamType(): void
     {
-        if (class_exists('SoapClient') === false) {
-            $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-        }
-
         $this->addFile(
             'somefile.php',
             '<?php

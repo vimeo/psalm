@@ -1,0 +1,11 @@
+<?php
+
+class GMP implements Serializable {
+    private function __construct() {}
+
+    public function __toString(): string {}
+
+    public function serialize(): string {}
+
+    public function unserialize(string $data): void {}
+}

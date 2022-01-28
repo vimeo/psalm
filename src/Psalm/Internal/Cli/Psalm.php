@@ -253,7 +253,7 @@ final class Psalm
 
         self::emitMacPcreWarning($options, $threads);
 
-        self::restart($options, $config, $threads);
+        self::restart($options, $threads);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -882,7 +882,7 @@ final class Psalm
         }
     }
 
-    private static function restart(array $options, Config $config, int $threads): void
+    private static function restart(array $options, int $threads): void
     {
         $ini_handler = new PsalmRestarter('PSALM');
 
@@ -907,10 +907,6 @@ final class Psalm
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
-
-        if ($config->load_xdebug_stub === null && PsalmRestarter::getSkippedVersion() !== '') {
-            $config->load_xdebug_stub = true;
-        }
     }
 
     private static function detectThreads(array $options, Config $config, bool $in_ci): int

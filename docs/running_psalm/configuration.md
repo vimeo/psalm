@@ -246,16 +246,6 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 ```
 When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
 
-#### loadXdebugStub
-```xml
-<psalm
-  loadXdebugStub="[bool]"
->
-```
-If not present, Psalm will only load the Xdebug stub if Psalm has unloaded the extension.
-When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
-Setting to `false` prevents the stub from loading.
-
 #### ensureArrayStringOffsetsExist
 ```xml
 <psalm
@@ -336,7 +326,7 @@ When `false`, Psalm will not consider issue at lower level than `errorLevel` as 
 #### allowNamedArgumentCalls
 
 ```xml
-<psalm 
+<psalm
   allowNamedArgumentCalls="[bool]"
 >
 ```
@@ -432,6 +422,23 @@ Optional. Same format as `<projectFiles>`. Directories Psalm should load but not
 #### &lt;fileExtensions&gt;
 Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
+#### &lt;enableExtensions&gt;
+Optional. A list of extensions to enable. By default, only extensions required by your composer.json will be enabled.
+```xml
+<enableExtensions>
+  <extension name="decimal"/>
+  <extension name="pdo"/>
+</enableExtensions>
+```
+
+#### &lt;disableExtensions&gt;
+Optional. A list of extensions to disable. By default, only extensions required by your composer.json will be enabled.
+```xml
+<disableExtensions>
+  <extension name="gmp"/>
+</disableExtensions>
+```
+
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
 
@@ -483,7 +490,7 @@ The  following configuration declares custom types for super-globals (`$GLOBALS`
 ```xml
 <globals>
   <var name="$GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
-  <var name="$_GET" type="array{data: array<string, string>}" />     
+  <var name="$_GET" type="array{data: array<string, string>}" />
 </globals>
 ```
 

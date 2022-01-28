@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PDO;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
@@ -62,7 +61,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                 $value = $first_call_arg_type->getSingleIntLiteral()->value;
 
                 switch ($value) {
-                    case PDO::FETCH_COLUMN:
+                    case 7: // PDO::FETCH_COLUMN
                         $params[] = new FunctionLikeParameter(
                             'colno',
                             false,
@@ -73,7 +72,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         );
                         break;
 
-                    case PDO::FETCH_CLASS:
+                    case 8: // PDO::FETCH_CLASS
                         $params[] = new FunctionLikeParameter(
                             'classname',
                             false,
@@ -93,7 +92,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         );
                         break;
 
-                    case PDO::FETCH_INTO:
+                    case 9: // PDO::FETCH_INTO
                         $params[] = new FunctionLikeParameter(
                             'object',
                             false,

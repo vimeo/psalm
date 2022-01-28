@@ -46,6 +46,7 @@ use UnexpectedValueException;
 use XdgBaseDir\Xdg;
 use stdClass;
 
+use function array_key_exists;
 use function array_map;
 use function array_merge;
 use function array_pad;
@@ -58,7 +59,6 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
@@ -195,15 +195,6 @@ class Config
      * @var bool
      */
     public $throw_exception = false;
-
-    /**
-     * Whether or not to load Xdebug stub
-     *
-     * @deprecated going to be removed in Psalm 5
-     *
-     * @var bool|null
-     */
-    public $load_xdebug_stub;
 
     /**
      * The directory to store PHP Parser (and other) caches
@@ -574,6 +565,34 @@ class Config
     /** @var ?int */
     public $threads;
 
+    /**
+     * @psalm-readonly-allow-private-mutation
+     * @var array{
+     *     decimal: bool,
+     *     dom: bool,
+     *     ds: bool,
+     *     geos: bool,
+     *     gmp: bool,
+     *     mongodb: bool,
+     *     mysqli: bool,
+     *     pdo: bool,
+     *     soap: bool,
+     *     xdebug: bool,
+     * }
+     */
+    public $php_extensions = [
+        "decimal" => false,
+        "dom" => false,
+        "ds" => false,
+        "geos" => false,
+        "gmp" => false,
+        "mongodb" => false,
+        "mysqli" => false,
+        "pdo" => false,
+        "soap" => false,
+        "xdebug" => false,
+    ];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -931,7 +950,6 @@ class Config
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
-            'loadXdebugStub' => 'load_xdebug_stub',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
@@ -964,6 +982,36 @@ class Config
         } else {
             $config->base_dir = $current_dir;
             $base_dir = $current_dir;
+        }
+
+        $composer_json_path = Composer::getJsonFilePath($config->base_dir);
+
+        $composer_json = null;
+        if (file_exists($composer_json_path)) {
+            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+                throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+            }
+        }
+        foreach ($config->php_extensions as $ext => $_) {
+            $config->php_extensions[$ext] = isset($composer_json["require"]["ext-$ext"]);
+        }
+
+        if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
+            foreach ($config_xml->enableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(array_key_exists($extensionName, $config->php_extensions));
+                $config->php_extensions[$extensionName] = true;
+            }
+        }
+
+        if (isset($config_xml->disableExtensions) && isset($config_xml->disableExtensions->extension)) {
+            foreach ($config_xml->disableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(array_key_exists($extensionName, $config->php_extensions));
+                $config->php_extensions[$extensionName] = false;
+            }
         }
 
         if (isset($config_xml['phpVersion'])) {
@@ -1969,7 +2017,6 @@ class Config
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DOM.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
@@ -1984,39 +2031,11 @@ class Config
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (extension_loaded('PDO')) {
-            $ext_pdo_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'pdo.phpstub';
-            $this->internal_stubs[] = $ext_pdo_path;
-        }
-
-        if (extension_loaded('soap')) {
-            $ext_soap_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'soap.phpstub';
-            $this->internal_stubs[] = $ext_soap_path;
-        }
-
-        if (extension_loaded('ds')) {
-            $ext_ds_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-ds.phpstub';
-            $this->internal_stubs[] = $ext_ds_path;
-        }
-
-        if (extension_loaded('mongodb')) {
-            $ext_mongodb_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mongodb.phpstub';
-            $this->internal_stubs[] = $ext_mongodb_path;
-        }
-
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Xdebug.phpstub';
-            $this->internal_stubs[] = $xdebug_stub_path;
-        }
-
-        if (extension_loaded('mysqli')) {
-            $ext_mysqli_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mysqli.phpstub';
-            $this->internal_stubs[] = $ext_mysqli_path;
-        }
-
-        if (extension_loaded('decimal')) {
-            $ext_decimal_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'decimal.phpstub';
-            $this->internal_stubs[] = $ext_decimal_path;
+        foreach ($this->php_extensions as $ext => $enabled) {
+            if ($enabled) {
+                $this->internal_stubs[] = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs"
+                    . DIRECTORY_SEPARATOR . "extensions" . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            }
         }
 
         foreach ($this->internal_stubs as $stub_path) {

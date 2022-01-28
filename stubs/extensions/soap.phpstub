@@ -282,3 +282,30 @@ class SoapClient  {
      public function __setSoapHeaders ($soapheaders = null) {}
 
 }
+
+class SoapFault extends Exception {
+    /**
+     * @param array|string|null $code
+     */
+    public function __construct(
+        $code,
+        string $string,
+        ?string $actor = null,
+        mixed $details = null,
+        ?string $name = null,
+        mixed $headerFault = null
+    ) {}
+}
+
+class SoapHeader {
+    public function __construct(
+        string $namespace,
+        string $name,
+        // Actually doesn't have a default, not specifying results in no SoapHeader::$data property. Specifying null
+        // results in a SoapHeader::$data property with null as the value. This probably makes no difference.
+        mixed $data = null,
+        bool $mustUnderstand = false,
+        // Same as $data, no default. The documentation specifies this as a `string` but it accepts null.
+        ?string $actor = null
+    ) {}
+}

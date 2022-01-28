@@ -3,6 +3,7 @@
 namespace Psalm\Tests\Config;
 
 use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
@@ -204,6 +205,64 @@ class ConfigFileTest extends TestCase
             $noPlugins,
             file_get_contents($this->file_path)
         );
+    }
+
+    public function testEnableExtensions(): void
+    {
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </enableExtensions>
+            </psalm>
+        '));
+
+        $config_file = new ConfigFile((string)getcwd(), $this->file_path);
+        $config = $config_file->getConfig();
+
+        $this->assertTrue($config->php_extensions["mysqli"]);
+        $this->assertTrue($config->php_extensions["pdo"]);
+    }
+
+    public function testDisableExtensions(): void
+    {
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </enableExtensions>
+                <disableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </disableExtensions>
+            </psalm>
+        '));
+
+        $config_file = new ConfigFile((string)getcwd(), $this->file_path);
+        $config = $config_file->getConfig();
+
+        $this->assertFalse($config->php_extensions["mysqli"]);
+        $this->assertFalse($config->php_extensions["pdo"]);
+    }
+
+    public function testInvalidExtension(): void
+    {
+        $this->expectException(ConfigException::class);
+
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="NotARealExtension"/>
+                </enableExtensions>
+            </psalm>
+        '));
+
+        (new ConfigFile((string)getcwd(), $this->file_path))->getConfig();
     }
 
     /**

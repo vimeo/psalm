@@ -8,8 +8,6 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-use function class_exists;
-
 use const DIRECTORY_SEPARATOR;
 
 class BinaryOperationTest extends TestCase
@@ -19,10 +17,6 @@ class BinaryOperationTest extends TestCase
 
     public function testGMPOperations(): void
     {
-        if (class_exists('GMP') === false) {
-            $this->markTestSkipped('Cannot run test, base class "GMP" does not exist!');
-        }
-
         $this->addFile(
             'somefile.php',
             '<?php
@@ -88,10 +82,6 @@ class BinaryOperationTest extends TestCase
 
     public function testDecimalOperations(): void
     {
-        if (!class_exists('Decimal\\Decimal')) {
-            $this->markTestSkipped('Cannot run test, base class "Decimal\\Decimal" does not exist!');
-        }
-
         $this->addFile(
             'somefile.php',
             '<?php
