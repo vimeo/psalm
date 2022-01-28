@@ -181,25 +181,22 @@ class AndAnalyzer
         }
 
         if ($context->if_context && !$context->inside_negation) {
-            $context->vars_in_scope = $right_context->vars_in_scope;
             $if_context = $context->if_context;
 
-            foreach ($right_context->vars_in_scope as $var_id => $type) {
-                if (!isset($if_context->vars_in_scope[$var_id])) {
-                    $if_context->vars_in_scope[$var_id] = $type;
-                } elseif (isset($context->vars_in_scope[$var_id])) {
-                    $if_context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
-                }
-            }
+            $context->vars_in_scope = $right_context->vars_in_scope;
+            $if_context->vars_in_scope = array_merge(
+                $if_context->vars_in_scope,
+                $context->vars_in_scope
+            );
 
             $if_context->referenced_var_ids = array_merge(
+                $if_context->referenced_var_ids,
                 $context->referenced_var_ids,
-                $if_context->referenced_var_ids
             );
 
             $if_context->assigned_var_ids = array_merge(
+                $if_context->assigned_var_ids,
                 $context->assigned_var_ids,
-                $if_context->assigned_var_ids
             );
 
             $if_context->reconciled_expression_clauses = array_merge(
@@ -211,8 +208,8 @@ class AndAnalyzer
             );
 
             $if_context->vars_possibly_in_scope = array_merge(
+                $if_context->vars_possibly_in_scope,
                 $context->vars_possibly_in_scope,
-                $if_context->vars_possibly_in_scope
             );
 
             $if_context->updateChecks($context);
