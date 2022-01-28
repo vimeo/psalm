@@ -721,6 +721,10 @@ class Config
             throw new ConfigException('Cannot locate config schema');
         }
 
+        // Enable user error handling
+        $prev_xml_internal_errors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
@@ -743,19 +747,17 @@ class Config
             $dom_document = self::loadDomDocument($base_dir, $old_file_contents);
         }
 
-        // Enable user error handling
-        libxml_use_internal_errors(true);
+        $dom_document->schemaValidate($schema_path); // If it returns false it will generate errors handled below
 
-        if (!$dom_document->schemaValidate($schema_path)) {
-            $errors = libxml_get_errors();
-            foreach ($errors as $error) {
-                if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
-                    throw new ConfigException(
-                        'Error on line ' . $error->line . ":\n" . '    ' . $error->message
-                    );
-                }
+        $errors = libxml_get_errors();
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev_xml_internal_errors);
+        foreach ($errors as $error) {
+            if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
+                throw new ConfigException(
+                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message
+                );
             }
-            libxml_clear_errors();
         }
     }
 

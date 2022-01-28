@@ -1531,6 +1531,7 @@ class ConfigTest extends TestCase
 
     public function testConfigFileWithXIncludeWithoutFallbackShouldThrowException(): void
     {
+        $this->expectException(ConfigException::class);
         $this->expectExceptionMessageMatches('/and no fallback was found/');
         ErrorHandler::install();
         Config::loadFromXML(
