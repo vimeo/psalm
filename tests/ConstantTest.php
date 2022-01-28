@@ -447,9 +447,9 @@ class ConstantTest extends TestCase
                             return self::C;
                         }
                     }',
-                [],
-                [],
-                '8.1',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'resolveCalculatedConstant' => [
                 'code' => '<?php
@@ -1364,9 +1364,9 @@ class ConstantTest extends TestCase
                         public const BAR="foobar";
                     }
                 ',
-                [],
-                [],
-                '8.1',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'inheritedConstDoesNotOverride' => [
                 'code' => '<?php
@@ -1822,6 +1822,25 @@ class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'OverriddenInterfaceConstant',
+            ],
+            'overrideClassConstFromInterfaceWithExtraIrrelevantInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var non-empty-string */
+                        public const BAR="baz";
+                    }
+
+                    interface Bar {}
+
+                    class Baz implements Foo, Bar
+                    {
+                        public const BAR="";
+                    }
+                ',
+                'error_message' => "LessSpecificClassConstantType",
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

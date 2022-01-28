@@ -837,6 +837,10 @@ class ClassConstAnalyzer
             }
         }
 
+        if ($parent_const_storage === null) {
+            $parent_const_storage = $interface_const_storage;
+        }
+
         foreach ($interface_overrides as $_ => $issue) {
             IssueBuffer::maybeAdd(
                 $issue,
