@@ -62,4 +62,5 @@ return [
 'proc_open' => [['shell']],
 'curl_init' => [['ssrf']],
 'curl_setopt' => [[], [], ['ssrf']],
+'getimagesize' => [['ssrf']],
 ];
