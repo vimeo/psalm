@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use LogicException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -107,6 +108,10 @@ class PluginRegistrationSocket implements RegistrationInterface
 
         if (is_subclass_of($handler, FunctionReturnTypeProviderInterface::class)) {
             $this->codebase->functions->return_type_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, DynamicFunctionStorageProviderInterface::class)) {
+            $this->codebase->functions->dynamic_storage_provider->registerClass($handler);
         }
     }
 

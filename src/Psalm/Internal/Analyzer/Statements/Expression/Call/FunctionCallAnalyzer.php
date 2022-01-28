@@ -526,9 +526,26 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $function_call_info->defined_constants = [];
         $function_call_info->global_variables = [];
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+        $dynamic_function_storage = null;
+
+        if ($codebase->functions->dynamic_storage_provider->has($function_call_info->function_id)) {
+            $dynamic_function_storage = $codebase->functions->dynamic_storage_provider->getFunctionStorage(
+                $stmt,
+                $statements_analyzer,
+                $function_call_info->function_id,
+                $context,
+                $code_location
+            );
+        }
 
         if ($function_call_info->function_exists) {
-            if (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            if ($dynamic_function_storage) {
+                $function_call_info->function_storage = $dynamic_function_storage;
+                $function_call_info->function_params = $dynamic_function_storage->params;
+                $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
+                $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
+                $function_call_info->global_variables = $dynamic_function_storage->global_variables;
+            } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
                 try {
                     $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                         $statements_analyzer,
@@ -562,15 +579,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-                ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->getArgs(),
-                    $function_call_info->function_params,
-                    $function_call_info->function_id,
-                    $function_call_info->allow_named_args,
-                    $context
-                );
-
                 $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,

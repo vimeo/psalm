@@ -92,6 +92,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
 - `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
 - `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
+- `DynamicFunctionStorageProviderInterface` - can be used to override signature for one or more functions. It means you can define variadic param list. Infer return type by input args. Define function templates. Also check out `Psalm\Plugin\DynamicFunctionStorage` to find out what api it brings for you to change function's definition.
 
 Here are a couple of example plugins:
  - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
