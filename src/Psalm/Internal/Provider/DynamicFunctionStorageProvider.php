@@ -12,13 +12,16 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
-use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
 use Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface;
+use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
 use Psalm\Storage\FunctionStorage;
 
 use function strtolower;
 
 /**
+ * For each function call analysis will be created individual FunctionStorage in plugin hook.
+ * If it is created be aware, it shadows the FunctionStorage Psalm may generate during the scanning phase.
+ *
  * @internal
  */
 final class DynamicFunctionStorageProvider
