@@ -5,7 +5,7 @@ those extensions installed at runtime. When an extension isn't already supported
 Psalm will use reflection to support it as best as possible, but it's always better to have stubs. In addition to
 allowing analysis without having the extension installed, stubs can be more accurate. The gmp and decimal extensions
 have a lot of functions that use `numeric-string` instead of `string`, and many extension like Ds, DOM, and others use
-templates. Most extensions can be improved by using Psalm features that aren't possible from reflection alone.
+templates. Most extension stubs can be improved by using Psalm features that aren't possible from reflection alone.
 
 ## Using the stub generator
 

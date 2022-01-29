@@ -67,7 +67,6 @@ class GenerateExtensionStubCommand extends Command
             return 1;
         }
 
-
         $extension_reflection = new ReflectionExtension($extension_name);
         $extension_version = $extension_reflection->getVersion();
 
