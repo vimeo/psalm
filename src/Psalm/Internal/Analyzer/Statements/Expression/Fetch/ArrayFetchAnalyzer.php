@@ -1099,10 +1099,7 @@ class ArrayFetchAnalyzer
     ): void {
         $has_array_access = true;
 
-        if ($in_assignment
-            && $type instanceof TArray
-            && $type->isEmptyArray()
-        ) {
+        if ($in_assignment && $type instanceof TArray) {
             $from_empty_array = $type->isEmptyArray();
 
             if (count($key_values) === 1) {
