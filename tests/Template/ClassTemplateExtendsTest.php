@@ -3670,7 +3670,7 @@ class ClassTemplateExtendsTest extends TestCase
                      * @template-covariant TKey
                      * @template-covariant TValue
                      *
-                     * @template-extends IteratorIterator<TKey, TValue, Traversable<TKey, TValue>>
+                     * @template-extends IteratorIterator<TKey, TValue, Iterator<TKey, TValue>>
                      */
                     abstract class MyFilterIterator extends IteratorIterator {
                          /** @return bool */
