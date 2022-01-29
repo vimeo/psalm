@@ -143,6 +143,7 @@ final class Psalm
         'php-version:',
         'generate-json-map:',
         'generate-stubs:',
+        'generate-extension-stub',
         'alter',
         'language-server',
         'refactor',
@@ -943,6 +944,12 @@ final class Psalm
             Refactor::run($argv);
             exit;
         }
+
+        if (isset($options['generate-extension-stub'])) {
+            require_once __dir__ . "/GenerateExtensionStub.php";
+            GenerateExtensionStub::run();
+            exit;
+        }
     }
 
     /**
@@ -1332,6 +1339,9 @@ final class Psalm
 
             --language-server
                 Run Psalm Language Server
+
+            --generate-extension-stub
+                Generate stubs for a PHP extension.
 
         HELP;
     }

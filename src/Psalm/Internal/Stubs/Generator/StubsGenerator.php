@@ -5,7 +5,9 @@ namespace Psalm\Internal\Stubs\Generator;
 use Psalm\Codebase;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TAssertionFalsy;
 use Psalm\Type\Atomic\TEnumCase;
@@ -51,6 +53,8 @@ use function strpos;
 
 /**
  * @internal
+ *
+ * @psalm-type NamespacedNodes=array<string, array<string, PhpParser\Node\Stmt>>
  */
 class StubsGenerator
 {
@@ -63,6 +67,7 @@ class StubsGenerator
 
         $psalm_base = dirname(__DIR__, 5);
 
+        $classes = [];
         foreach ($class_provider->getAll() as $storage) {
             if (strpos($storage->name, 'Psalm\\') === 0) {
                 continue;
@@ -78,24 +83,11 @@ class StubsGenerator
                 continue;
             }
 
-            $name_parts = explode('\\', $storage->name);
-
-            $classlike_name = array_pop($name_parts);
-            $namespace_name = implode('\\', $name_parts);
-
-            if (!isset($namespaced_nodes[$namespace_name])) {
-                $namespaced_nodes[$namespace_name] = [];
-            }
-
-            $namespaced_nodes[$namespace_name][$classlike_name] = ClassLikeStubGenerator::getClassLikeNode(
-                $codebase,
-                $storage,
-                $classlike_name
-            );
+            $classes[] = $storage;
         }
+        self::addClassLikeStubs($namespaced_nodes, $classes, $codebase);
 
-        $all_function_names = [];
-
+        $stubbed_functions = [];
         foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
             if ($function_storage->location
                 && strpos($function_storage->location->file_path, $psalm_base) === 0
@@ -103,46 +95,12 @@ class StubsGenerator
                 continue;
             }
 
-            if (!$function_storage->cased_name) {
-                throw new UnexpectedValueException('very bad');
-            }
-
-            $fq_name = $function_storage->cased_name;
-
-            $all_function_names[$fq_name] = true;
-
-            $name_parts = explode('\\', $fq_name);
-            $function_name = array_pop($name_parts);
-
-            $namespace_name = implode('\\', $name_parts);
-
-            $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
-                $function_storage,
-                $function_name,
-                $namespace_name
-            );
+            $stubbed_functions[] = $function_storage;
         }
+        self::addFunctionStubs($namespaced_nodes, $stubbed_functions);
+        self::addConstantStubs($namespaced_nodes, $codebase->getAllStubbedConstants());
 
-        foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
-            if ($type->isMixed()) {
-                continue;
-            }
-
-            $name_parts = explode('\\', $fq_name);
-            $constant_name = array_pop($name_parts);
-
-            $namespace_name = implode('\\', $name_parts);
-
-            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                [
-                    new VirtualConst(
-                        $constant_name,
-                        self::getExpressionFromType($type)
-                    )
-                ]
-            );
-        }
-
+        $file_functions = $file_constants = [];
         foreach ($file_provider->getAll() as $file_storage) {
             if (strpos($file_storage->file_path, $psalm_base) === 0) {
                 continue;
@@ -153,53 +111,26 @@ class StubsGenerator
                     continue;
                 }
 
-                $fq_name = $function_storage->cased_name;
-
-                if (isset($all_function_names[$fq_name])) {
-                    continue;
-                }
-
-                $all_function_names[$fq_name] = true;
-
-                $name_parts = explode('\\', $fq_name);
-                $function_name = array_pop($name_parts);
-
-                $namespace_name = implode('\\', $name_parts);
-
-                $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
-                    $function_storage,
-                    $function_name,
-                    $namespace_name
-                );
+                $file_functions[] = $function_storage;
             }
 
             foreach ($file_storage->constants as $fq_name => $type) {
-                if ($type->isMixed()) {
-                    continue;
-                }
-
-                if ($type->isMixed()) {
-                    continue;
-                }
-
-                $name_parts = explode('\\', $fq_name);
-                $constant_name = array_pop($name_parts);
-
-                $namespace_name = implode('\\', $name_parts);
-
-                $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                    [
-                        new VirtualConst(
-                            $constant_name,
-                            self::getExpressionFromType($type)
-                        )
-                    ]
-                );
+                $file_constants[$fq_name] = $type;
             }
         }
+        self::addFunctionStubs($namespaced_nodes, $file_functions);
+        self::addConstantStubs($namespaced_nodes, $file_constants);
 
         ksort($namespaced_nodes);
 
+        return self::printNamespacedNodes($namespaced_nodes);
+    }
+
+    /**
+     * @param NamespacedNodes $namespaced_nodes
+     */
+    public static function printNamespacedNodes(array $namespaced_nodes, ?string $file_comment = null): string
+    {
         $namespace_stmts = [];
 
         foreach ($namespaced_nodes as $namespace_name => $stmts) {
@@ -212,7 +143,11 @@ class StubsGenerator
             );
         }
 
-        $prettyPrinter = new PhpParser\PrettyPrinter\Standard;
+        if ($file_comment !== null && !empty($namespace_stmts)) {
+            $namespace_stmts[0]->setAttribute("comments", [new PhpParser\Comment($file_comment)]);
+        }
+
+        $prettyPrinter = new PhpParser\PrettyPrinter\Standard(["shortArraySyntax" => true]);
         return $prettyPrinter->prettyPrintFile($namespace_stmts);
     }
 
@@ -420,5 +355,86 @@ class StubsGenerator
         }
 
         return new VirtualString('Psalm could not infer this type');
+    }
+
+    /**
+     * @param NamespacedNodes $namespaced_nodes
+     * @param iterable<mixed, ClassLikeStorage> $classlike_storages
+     */
+    public static function addClassLikeStubs(
+        array &$namespaced_nodes,
+        iterable $classlike_storages,
+        Codebase $codebase
+    ): void {
+        foreach ($classlike_storages as $classlike_storage) {
+            $name_parts = explode('\\', $classlike_storage->name);
+
+            $classlike_name = array_pop($name_parts);
+            $namespace_name = implode('\\', $name_parts);
+
+            if (!isset($namespaced_nodes[$namespace_name])) {
+                $namespaced_nodes[$namespace_name] = [];
+            }
+
+            $namespaced_nodes[$namespace_name][$classlike_name] = ClassLikeStubGenerator::getClassLikeNode(
+                $codebase,
+                $classlike_storage,
+                $classlike_name
+            );
+        }
+    }
+
+    /**
+     * @param NamespacedNodes $namespaced_nodes
+     * @param iterable<mixed, FunctionStorage> $function_storages
+     */
+    public static function addFunctionStubs(array &$namespaced_nodes, iterable $function_storages): void
+    {
+        foreach ($function_storages as $function_storage) {
+            if (!$function_storage->cased_name) {
+                throw new UnexpectedValueException('Missing cased name for function');
+            }
+
+            $fq_name = $function_storage->cased_name;
+
+            $name_parts = explode('\\', $fq_name);
+            $function_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $namespaced_nodes[$namespace_name][$function_name] = self::getFunctionNode(
+                $function_storage,
+                $function_name,
+                $namespace_name
+            );
+        }
+    }
+
+    /**
+     * @param NamespacedNodes $namespaced_nodes
+     * @param iterable<string, Union> $constants
+     */
+    public static function addConstantStubs(array &$namespaced_nodes, iterable $constants): void
+    {
+        foreach ($constants as $const_fq_name => $const_type) {
+            if ($const_type->isMixed()) {
+                // TODO allow overriding const type with @var tag and allow mixed value constants
+                continue;
+            }
+
+            $name_parts = explode('\\', $const_fq_name);
+            $const_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $namespaced_nodes[$namespace_name][$const_name] = new StmtVirtualConst_(
+                [
+                    new VirtualConst(
+                        $const_name,
+                        self::getExpressionFromType($const_type)
+                    )
+                ]
+            );
+        }
     }
 }

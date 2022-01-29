@@ -593,7 +593,10 @@ class Config
         "xdebug" => false,
     ];
 
-    protected function __construct()
+    /**
+     * @internal
+     */
+    public function __construct()
     {
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();

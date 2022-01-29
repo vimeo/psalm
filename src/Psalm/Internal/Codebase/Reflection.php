@@ -54,11 +54,15 @@ class Reflection
      */
     private static $builtin_functions = [];
 
+    /**
+     * @var array<string, Union>
+     */
+    private static $builtin_constants = [];
+
     public function __construct(ClassLikeStorageProvider $storage_provider, Codebase $codebase)
     {
         $this->storage_provider = $storage_provider;
         $this->codebase = $codebase;
-        self::$builtin_functions = [];
     }
 
     public function registerClass(ReflectionClass $reflected_class): void
@@ -419,6 +423,16 @@ class Reflection
         return null;
     }
 
+    /**
+     * @param array|scalar|null $constant_type
+     */
+    public function registerConstant(string $constant_name, $constant_type): void
+    {
+        self::$builtin_constants[$constant_name] = new Union([
+            ConstantTypeResolver::getLiteralTypeFromScalarValue($constant_type),
+        ]);
+    }
+
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
@@ -540,8 +554,17 @@ class Reflection
         return self::$builtin_functions;
     }
 
+    /**
+     * @return array<string, Union>
+     */
+    public function getConstants(): array
+    {
+        return self::$builtin_constants;
+    }
+
     public static function clearCache(): void
     {
         self::$builtin_functions = [];
+        self::$builtin_constants = [];
     }
 }
