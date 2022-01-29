@@ -104,7 +104,7 @@ interface SeekableIterator extends Iterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Iterator<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
@@ -132,7 +132,7 @@ class IteratorIterator implements OuterIterator {
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template TIterator as Iterator<TKey, TValue>
  *
  * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
@@ -319,11 +319,11 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Traversable<TKey, TValue>
  *
  * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
-class FilterIterator extends IteratorIterator {
+abstract class FilterIterator extends IteratorIterator {
     /** @return bool */
     abstract public function accept();
 
@@ -341,7 +341,7 @@ class FilterIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Iterator<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
@@ -381,7 +381,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
@@ -530,7 +530,7 @@ class GlobIterator extends FilesystemIterator implements Countable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Iterator<TKey, TValue>
  *
  * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
@@ -556,7 +556,7 @@ class InfiniteIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Iterator<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
@@ -586,7 +586,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Iterator<TKey, TValue>
  *
  * @template-extends IteratorIterator<TKey, TValue, TIterator>
  */
@@ -1074,7 +1074,7 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as Traversable<TKey, TValue>
+ * @template TIterator as Iterator<TKey, TValue>
  *
  * @template-extends FilterIterator<TKey, TValue, TIterator>
  */
