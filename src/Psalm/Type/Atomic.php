@@ -156,6 +156,7 @@ abstract class Atomic implements TypeNode
             case 'never-return':
             case 'never-returns':
             case 'no-return':
+            case 'empty':
                 return new TNever();
 
             case 'object':
