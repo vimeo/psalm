@@ -98,7 +98,7 @@ class MethodCallReturnTypeFetcher
         if ($premixin_method_id->method_name === 'getcode'
             && $premixin_method_id->fq_class_name !== Exception::class
             && (
-                in_array(Throwable::class, $class_storage->class_implements)
+                $codebase->classImplements($premixin_method_id->fq_class_name, Throwable::class)
                 || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
             )
         ) {
