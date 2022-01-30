@@ -70,14 +70,6 @@ final class AfterFunctionLikeAnalysisEvent
         return $this->stmt;
     }
 
-    /**
-     * @deprecated Will be removed in Psalm v5.0, use getFunctionlikeStorage() instead
-     */
-    public function getClasslikeStorage(): FunctionLikeStorage
-    {
-        return $this->functionlike_storage;
-    }
-
     public function getFunctionlikeStorage(): FunctionLikeStorage
     {
         return $this->functionlike_storage;
