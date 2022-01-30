@@ -97,7 +97,11 @@ class MethodCallReturnTypeFetcher
 
         if ($premixin_method_id->method_name === 'getcode'
             && $premixin_method_id->fq_class_name !== Exception::class
-            && in_array(Throwable::class, $class_storage->class_implements)) {
+            && (
+                in_array(Throwable::class, $class_storage->class_implements)
+                || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
+            )
+        ) {
             if ($premixin_method_id->fq_class_name === PDOException::class) {
                 return Type::getString();
             } else {
