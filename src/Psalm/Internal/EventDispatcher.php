@@ -16,6 +16,7 @@ use Psalm\Plugin\EventHandler\AfterFunctionLikeAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
+use Psalm\Plugin\EventHandler\BeforeStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
@@ -30,6 +31,7 @@ use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
@@ -79,6 +81,13 @@ class EventDispatcher
      * @var list<class-string<AfterExpressionAnalysisInterface>>
      */
     public $after_expression_checks = [];
+
+    /**
+     * Static methods to be called before statement checks are processed
+     *
+     * @var list<class-string<BeforeStatementAnalysisInterface>>
+     */
+    public $before_statement_checks = [];
 
     /**
      * Static methods to be called after statement checks have completed
@@ -185,6 +194,10 @@ class EventDispatcher
             $this->after_expression_checks[] = $class;
         }
 
+        if (is_subclass_of($class, BeforeStatementAnalysisInterface::class)) {
+            $this->before_statement_checks[] = $class;
+        }
+
         if (is_subclass_of($class, AfterStatementAnalysisInterface::class)) {
             $this->after_statement_checks[] = $class;
         }
@@ -268,6 +281,16 @@ class EventDispatcher
             }
         }
 
+        return null;
+    }
+
+    public function dispatchBeforeStatementAnalysis(BeforeStatementAnalysisEvent $event): ?bool
+    {
+        foreach ($this->before_statement_checks as $handler) {
+            if ($handler::beforeStatementAnalysis($event) === false) {
+                return false;
+            }
+        }
         return null;
     }
 
