@@ -578,7 +578,7 @@ class EventDispatcher
             $file_replacements = $event->getFileReplacements();
             if ($handler::afterStatementAnalysis(
                 $event->getStmt(),
-                $event->getClasslikeStorage(),
+                $event->getFunctionlikeStorage(),
                 $event->getStatementsSource(),
                 $event->getCodebase(),
                 $file_replacements
