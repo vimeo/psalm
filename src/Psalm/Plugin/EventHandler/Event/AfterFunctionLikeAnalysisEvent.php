@@ -19,7 +19,7 @@ final class AfterFunctionLikeAnalysisEvent
     /**
      * @var FunctionLikeStorage
      */
-    private $classlike_storage;
+    private $functionlike_storage;
     /**
      * @var StatementsSource
      */
@@ -49,7 +49,7 @@ final class AfterFunctionLikeAnalysisEvent
      */
     public function __construct(
         Node\FunctionLike $stmt,
-        FunctionLikeStorage $classlike_storage,
+        FunctionLikeStorage $functionlike_storage,
         StatementsSource $statements_source,
         Codebase $codebase,
         array $file_replacements,
@@ -57,7 +57,7 @@ final class AfterFunctionLikeAnalysisEvent
         Context $context
     ) {
         $this->stmt = $stmt;
-        $this->classlike_storage = $classlike_storage;
+        $this->functionlike_storage = $functionlike_storage;
         $this->statements_source = $statements_source;
         $this->codebase = $codebase;
         $this->file_replacements = $file_replacements;
@@ -70,9 +70,17 @@ final class AfterFunctionLikeAnalysisEvent
         return $this->stmt;
     }
 
+    /**
+     * @deprecated Will be removed in Psalm v5.0, use getFunctionlikeStorage() instead
+     */
     public function getClasslikeStorage(): FunctionLikeStorage
     {
-        return $this->classlike_storage;
+        return $this->functionlike_storage;
+    }
+
+    public function getFunctionlikeStorage(): FunctionLikeStorage
+    {
+        return $this->functionlike_storage;
     }
 
     public function getStatementsSource(): StatementsSource

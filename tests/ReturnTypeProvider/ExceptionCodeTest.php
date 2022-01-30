@@ -38,15 +38,24 @@ class ExceptionCodeTest extends TestCase
             ',
             'assertions' => [],
         ];
-        yield 'Exception' => [
-            'code' => '<?php
+        yield 'CustomThrowable' => [
+            '<?php
+                interface CustomThrowable extends \Throwable {}
+
+                /** @var CustomThrowable $e */
+                $code = $e->getCode();
+            ',
+            ['$code' => 'int'],
+        ];
+        yield 'Throwable' => [
+            '<?php
                 /** @var \Throwable $e */
                 $code = $e->getCode();
             ',
             'assertions' => ['$code' => 'int|string'],
         ];
-        yield 'Throwable' => [
-            'code' => '<?php
+        yield 'Exception' => [
+            '<?php
                 /** @var \Exception $e */
                 $code = $e->getCode();
             ',
