@@ -287,7 +287,7 @@ class GeneratorTest extends TestCase
                     $iterator = new NoRewindIterator(generator());
                     ',
                 'assertions' => [
-                    '$iterator' => 'NoRewindIterator<int, string>',
+                    '$iterator' => 'NoRewindIterator<int, string, Generator<int, string, mixed, mixed>>',
                 ]
             ],
             'detectYieldInNew' => [
