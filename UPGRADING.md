@@ -209,3 +209,5 @@
    - `Psalm\PluginRegistrationSocket::getAdditionalFileExtensions` was removed
    - `Psalm\PluginRegistrationSocket::addFileExtension` was removed
    - :information_source: migration possible using `Psalm\PluginFileExtensionsSocket`
+ - [BC] Method `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getClasslikeStorage()` was removed,
+   use correct `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getFunctionlikeStorage()` instead
