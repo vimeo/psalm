@@ -371,7 +371,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a["foo"] = ["bar" => "baz"];',
                 'assertions' => [
-                    '$a' => 'non-empty-array<string, non-empty-array<string, string>>',
+                    '$a' => 'array{foo: array{bar: string}}<string, array<string, string>>',
                 ],
             ],
             'additionWithEmpty' => [

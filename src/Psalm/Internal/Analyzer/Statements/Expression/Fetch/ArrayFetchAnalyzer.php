@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -473,10 +474,10 @@ class ArrayFetchAnalyzer
 
         $key_values = [];
 
-        if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
-            || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
-        ) {
-            $key_values[] = $stmt->dim->value;
+        if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+            $key_values[] = new TLiteralString($stmt->dim->value);
+        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+            $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
             $string_literals = $stmt_dim_type->getLiteralStrings();
             $int_literals = $stmt_dim_type->getLiteralInts();
@@ -485,11 +486,11 @@ class ArrayFetchAnalyzer
 
             if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                 foreach ($string_literals as $string_literal) {
-                    $key_values[] = $string_literal->value;
+                    $key_values[] = $string_literal;
                 }
 
                 foreach ($int_literals as $int_literal) {
-                    $key_values[] = $int_literal->value;
+                    $key_values[] = $int_literal;
                 }
             }
         }
@@ -776,7 +777,8 @@ class ArrayFetchAnalyzer
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
 
                 if ($key_values) {
-                    $used_offset = "using offset value of '" . implode('|', $key_values) . "'";
+                    $used_offset = "using offset value of '" .
+                        implode('|', array_map(fn (Atomic $atomic_type) => $atomic_type->value, $key_values)) . "'";
                 }
 
                 if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
@@ -1076,7 +1078,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param TArray|TKeyedArray|TList|TClassStringMap $type
-     * @param list<array-key> $key_values
+     * @param list<TLiteralInt|TLiteralString> $key_values
      */
     private static function handleArrayAccessOnArray(
         bool $in_assignment,
@@ -1103,6 +1105,7 @@ class ArrayFetchAnalyzer
             $from_empty_array = $type->isEmptyArray();
 
             if (count($key_values) === 1) {
+                $single_atomic = $key_values[0];
                 $from_mixed_array = $type->type_params[1]->isMixed();
 
                 [$previous_key_type, $previous_value_type] = $type->type_params;
@@ -1110,8 +1113,11 @@ class ArrayFetchAnalyzer
                 // ok, type becomes an TKeyedArray
                 $array_type->removeType($type_string);
                 $type = new TKeyedArray([
-                    $key_values[0] => $from_mixed_array ? Type::getMixed() : Type::getNever()
+                    $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever()
                 ]);
+                if ($single_atomic instanceof TLiteralClassString) {
+                    $type->class_strings[$single_atomic->value] = true;
+                }
 
                 $type->sealed = $from_empty_array;
 
@@ -1132,7 +1138,7 @@ class ArrayFetchAnalyzer
             && $type->previous_value_type->isMixed()
             && count($key_values) === 1
         ) {
-            $type->properties[$key_values[0]] = Type::getMixed();
+            $type->properties[$key_values[0]->value] = Type::getMixed();
         }
 
         $offset_type = self::replaceOffsetTypeWithInts($offset_type);
@@ -1475,7 +1481,7 @@ class ArrayFetchAnalyzer
 
     /**
      * @param list<string> $expected_offset_types
-     * @param list<array-key> $key_values
+     * @param list<TLiteralString|TLiteralInt> $key_values
      */
     private static function handleArrayAccessOnKeyedArray(
         StatementsAnalyzer $statements_analyzer,
@@ -1497,31 +1503,31 @@ class ArrayFetchAnalyzer
         $generic_key_type = $type->getGenericKeyType();
 
         if (!$stmt->dim && $type->sealed && $type->is_list) {
-            $key_values[] = count($type->properties);
+            $key_values[] = new TLiteralInt(count($type->properties));
         }
 
         if ($key_values) {
             foreach ($key_values as $key_value) {
-                if (isset($type->properties[$key_value]) || $replacement_type) {
+                if (isset($type->properties[$key_value->value]) || $replacement_type) {
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
-                        $type->properties[$key_value] = Type::combineUnionTypes(
-                            $type->properties[$key_value] ?? null,
+                        $type->properties[$key_value->value] = Type::combineUnionTypes(
+                            $type->properties[$key_value->value] ?? null,
                             $replacement_type
                         );
                     }
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $type->properties[$key_value]
+                        clone $type->properties[$key_value->value]
                     );
                 } elseif ($in_assignment) {
-                    $type->properties[$key_value] = new Union([new TNever]);
+                    $type->properties[$key_value->value] = new Union([new TNever]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $type->properties[$key_value]
+                        clone $type->properties[$key_value->value]
                     );
                 } elseif ($type->previous_value_type) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
@@ -1546,7 +1552,7 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    $type->properties[$key_value] = clone $type->previous_value_type;
+                    $type->properties[$key_value->value] = clone $type->previous_value_type;
 
                     $array_access_type = clone $type->previous_value_type;
                 } elseif ($array_type->hasMixed()) {
@@ -1676,7 +1682,7 @@ class ArrayFetchAnalyzer
 
     /**
      * @param list<string> $expected_offset_types
-     * @param list<array-key> $key_values
+     * @param list<TLiteralString|TLiteralInt> $key_values
      */
     private static function handleArrayAccessOnList(
         StatementsAnalyzer $statements_analyzer,
@@ -1697,10 +1703,10 @@ class ArrayFetchAnalyzer
         if (!$in_assignment) {
             if (!$type instanceof TNonEmptyList
                 || (count($key_values) === 1
-                    && is_int($key_values[0])
-                    && $key_values[0] > 0
-                    && $key_values[0] > ($type->count - 1)
-                    && $key_values[0] > ($type->min_count - 1))
+                    && $key_values[0] instanceof TLiteralInt
+                    && $key_values[0]->value > 0
+                    && $key_values[0]->value > ($type->count - 1)
+                    && $key_values[0]->value > ($type->min_count - 1))
             ) {
                 $expected_offset_type = Type::getInt();
 
@@ -1716,8 +1722,8 @@ class ArrayFetchAnalyzer
                 }
                 $has_valid_offset = true;
             } elseif (count($key_values) === 1
-                && is_int($key_values[0])
-                && $key_values[0] < 0
+                && $key_values[0] instanceof TLiteralInt
+                && $key_values[0]->value < 0
             ) {
                 $expected_offset_types[] = 'positive-int';
                 $has_valid_offset = false;

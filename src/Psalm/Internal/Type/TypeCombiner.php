@@ -737,7 +737,7 @@ class TypeCombiner
                 $min_prop_count = count(
                     array_filter(
                         $type->properties,
-                        fn($p) => $p->possibly_undefined
+                        fn($p) => !$p->possibly_undefined
                     )
                 );
                 $combination->array_min_counts[$min_prop_count] = true;
@@ -1328,9 +1328,7 @@ class TypeCombiner
             $combination->objectlike_sealed = false;
         }
 
-        if (!$combination->array_type_params
-            || $combination->array_type_params[1]->isNever()
-        ) {
+        if (!$combination->array_type_params || $combination->array_type_params[1]->isNever()) {
             if (!$overwrite_empty_array
                 && ($combination->array_type_params
                     && ($combination->array_type_params[1]->isNever()
@@ -1383,7 +1381,13 @@ class TypeCombiner
 
                 $new_types[] = $objectlike;
             } else {
-                $new_types[] = new TArray([Type::getArrayKey(), Type::getMixed()]);
+                $key_type = $combination->objectlike_key_type ?? Type::getArrayKey();
+                $value_type = $combination->objectlike_value_type ?? Type::getMixed();
+                if ($combination->array_always_filled) {
+                    $new_types[] = new TNonEmptyArray([$key_type, $value_type]);
+                } else {
+                    $new_types[] = new TArray([$key_type, $value_type]);
+                }
             }
 
             // if we're merging an empty array with an object-like, clobber empty array
