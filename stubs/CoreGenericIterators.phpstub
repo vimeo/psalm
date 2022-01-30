@@ -104,7 +104,7 @@ interface SeekableIterator extends Iterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Traversable<TKey, TValue>
  *
  * @template-implements OuterIterator<TKey, TValue>
  *
