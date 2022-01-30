@@ -527,7 +527,16 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
 
                 $existing_var_type->removeType('array');
-            } elseif (!($array_atomic_type instanceof TArray && $array_atomic_type->isEmptyArray())) {
+            } elseif ($array_atomic_type instanceof TKeyedArray) {
+                $did_remove_type = true;
+
+                foreach ($array_atomic_type->properties as $property_type) {
+                    if (!$property_type->possibly_undefined) {
+                        $did_remove_type = false;
+                        break;
+                    }
+                }
+            } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
                 $did_remove_type = true;
 
                 if (!$min_count) {
@@ -537,15 +546,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                             new Union([new TNever()]),
                         ]
                     ));
-                }
-            } elseif ($array_atomic_type instanceof TKeyedArray) {
-                $did_remove_type = true;
-
-                foreach ($array_atomic_type->properties as $property_type) {
-                    if (!$property_type->possibly_undefined) {
-                        $did_remove_type = false;
-                        break;
-                    }
                 }
             }
 
