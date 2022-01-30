@@ -306,6 +306,7 @@ class ProjectAnalyzer
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;
 
+        $this->config->processPluginFileExtensions($this);
         $file_extensions = $this->config->getFileExtensions();
 
         foreach ($this->config->getProjectDirectories() as $dir_name) {
