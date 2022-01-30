@@ -6,7 +6,7 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Issue\CodeIssue;
 
-class BeforeAddIssueEvent
+final class BeforeAddIssueEvent
 {
     /**
      * @var CodeIssue
