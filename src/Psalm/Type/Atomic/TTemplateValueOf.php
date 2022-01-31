@@ -9,9 +9,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
- * Represents the type used when using TKeyOfArray when the type of the array is a template
+ * Represents the type used when using TValueOfArray when the type of the array is a template
  */
-class TTemplateKeyOf extends Atomic
+class TTemplateValueOf extends Atomic
 {
     /**
      * @var string
@@ -40,16 +40,16 @@ class TTemplateKeyOf extends Atomic
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'key-of<' . $this->param_name . '>';
+        return 'value-of<' . $this->param_name . '>';
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
-            return 'key-of<' . $this->param_name . '>';
+            return 'value-of<' . $this->param_name . '>';
         }
 
-        return 'key-of<' . $this->as->getId($exact) . '>';
+        return 'value-of<' . $this->as->getId($exact) . '>';
     }
 
     /**
@@ -61,7 +61,7 @@ class TTemplateKeyOf extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format
     ): string {
-        return 'key-of<' . $this->param_name . '>';
+        return 'value-of<' . $this->param_name . '>';
     }
 
     /**

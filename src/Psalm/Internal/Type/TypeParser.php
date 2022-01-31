@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfClassConstant;
+use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -59,12 +59,14 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfClassConstant;
+use Psalm\Type\Atomic\TValueOfArray;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_key_exists;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -686,53 +688,45 @@ class TypeParser
         if ($generic_type_value === 'key-of') {
             $param_name = $generic_params[0]->getId(false);
 
-            if (isset($template_type_map[$param_name])) {
-                $defining_class = array_keys($template_type_map[$param_name])[0];
-
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
                 return new TTemplateKeyOf(
                     $param_name,
                     $defining_class,
-                    $template_type_map[$param_name][$defining_class]
+                    $generic_params[0]
                 );
             }
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
-
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in key-of type');
-            }
-
-            if (!$param_union_types[0] instanceof TClassConstant) {
+            if (!TKeyOfArray::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be a class constant'
+                    'Untemplated key-of param ' . $param_name . ' should be an array'
                 );
             }
 
-            return new TKeyOfClassConstant(
-                $param_union_types[0]->fq_classlike_name,
-                $param_union_types[0]->const_name
-            );
+            return new TKeyOfArray($generic_params[0]);
         }
 
         if ($generic_type_value === 'value-of') {
             $param_name = $generic_params[0]->getId(false);
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
-
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in value-of type');
-            }
-
-            if (!$param_union_types[0] instanceof TClassConstant) {
-                throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be a class constant'
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
+                return new TTemplateValueOf(
+                    $param_name,
+                    $defining_class,
+                    $generic_params[0]
                 );
             }
 
-            return new TValueOfClassConstant(
-                $param_union_types[0]->fq_classlike_name,
-                $param_union_types[0]->const_name
-            );
+            if (!TValueOfArray::isViableTemplateType($generic_params[0])) {
+                throw new TypeParseTreeException(
+                    'Untemplated value-of param ' . $param_name . ' should be an array'
+                );
+            }
+
+            return new TValueOfArray($generic_params[0]);
         }
 
         if ($generic_type_value === 'int-mask') {
@@ -803,8 +797,8 @@ class TypeParser
             $param_type = $param_union_types[0];
 
             if (!$param_type instanceof TClassConstant
-                && !$param_type instanceof TValueOfClassConstant
-                && !$param_type instanceof TKeyOfClassConstant
+                && !$param_type instanceof TValueOfArray
+                && !$param_type instanceof TKeyOfArray
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'

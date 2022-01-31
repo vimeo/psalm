@@ -18,7 +18,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfClassConstant;
+use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -29,7 +29,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfClassConstant;
+use Psalm\Type\Atomic\TValueOfArray;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -38,6 +38,7 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_push;
 use function array_values;
 use function count;
 use function get_class;
@@ -350,52 +351,16 @@ class TypeExpander
             return [$return_type];
         }
 
-        if ($return_type instanceof TKeyOfClassConstant
-            || $return_type instanceof TValueOfClassConstant
+        if ($return_type instanceof TKeyOfArray
+            || $return_type instanceof TValueOfArray
         ) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
-            }
-
-            if ($evaluate_class_constants) {
-                if ($throw_on_unresolvable_constant
-                    && !$codebase->classOrInterfaceExists($return_type->fq_classlike_name)
-                ) {
-                    throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
-                }
-
-                try {
-                    $class_constant_type = $codebase->classlikes->getClassConstantType(
-                        $return_type->fq_classlike_name,
-                        $return_type->const_name,
-                        ReflectionProperty::IS_PRIVATE
-                    );
-                } catch (CircularReferenceException $e) {
-                    $class_constant_type = null;
-                }
-
-                if ($class_constant_type) {
-                    foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                        if ($const_type_atomic instanceof TKeyedArray
-                            || $const_type_atomic instanceof TArray
-                        ) {
-                            if ($const_type_atomic instanceof TKeyedArray) {
-                                $const_type_atomic = $const_type_atomic->getGenericArrayType();
-                            }
-
-                            if ($return_type instanceof TKeyOfClassConstant) {
-                                return array_values($const_type_atomic->type_params[0]->getAtomicTypes());
-                            }
-
-                            return array_values($const_type_atomic->type_params[1]->getAtomicTypes());
-                        }
-                    }
-                } elseif ($throw_on_unresolvable_constant) {
-                    throw new UnresolvableConstantException($return_type->fq_classlike_name, $return_type->const_name);
-                }
-            }
-
-            return [$return_type];
+            return self::expandKeyOfValueOfArray(
+                $codebase,
+                $return_type,
+                $self_class,
+                $evaluate_class_constants,
+                $throw_on_unresolvable_constant
+            );
         }
 
         if ($return_type instanceof TIntMask) {
@@ -910,5 +875,81 @@ class TypeExpander
         );
 
         return [$return_type];
+    }
+
+    /**
+     * @param TKeyOfArray|TValueOfArray $return_type
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandKeyOfValueOfArray(
+        Codebase $codebase,
+        $return_type,
+        ?string $self_class,
+        bool $evaluate_class_constants,
+        bool $throw_on_unresolvable_constant
+    ): array {
+        // Expand class constants to their atomics
+        $type_atomics = [];
+        foreach ($return_type->type->getAtomicTypes() as $type_param) {
+            if (!$evaluate_class_constants || !$type_param instanceof TClassConstant) {
+                array_push($type_atomics, $type_param);
+                continue;
+            }
+
+            if ($type_param->fq_classlike_name === 'self' && $self_class) {
+                $type_param->fq_classlike_name = $self_class;
+            }
+
+            if ($throw_on_unresolvable_constant
+                    && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
+                ) {
+                throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
+            }
+
+            try {
+                $constant_type = $codebase->classlikes->getClassConstantType(
+                    $type_param->fq_classlike_name,
+                    $type_param->const_name,
+                    ReflectionProperty::IS_PRIVATE
+                );
+            } catch (CircularReferenceException $e) {
+                return [$return_type];
+            }
+
+            if (!$constant_type
+                || (
+                    $return_type instanceof TKeyOfArray
+                    && !TKeyOfArray::isViableTemplateType($constant_type)
+                )
+                || (
+                    $return_type instanceof TValueOfArray
+                    && !TValueOfArray::isViableTemplateType($constant_type)
+                )
+            ) {
+                if ($throw_on_unresolvable_constant) {
+                    throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
+                } else {
+                    return [$return_type];
+                }
+            }
+
+            $type_atomics = array_merge(
+                $type_atomics,
+                array_values($constant_type->getAtomicTypes())
+            );
+        }
+        if ($type_atomics === []) {
+            return [$return_type];
+        }
+
+        if ($return_type instanceof TKeyOfArray) {
+            $new_return_types = TKeyOfArray::getArrayKeyType(new Union($type_atomics));
+        } else {
+            $new_return_types = TValueOfArray::getArrayValueType(new Union($type_atomics));
+        }
+        if ($new_return_types === null) {
+            return [$return_type];
+        }
+        return array_values($new_return_types->getAtomicTypes());
     }
 }

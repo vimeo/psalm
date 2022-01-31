@@ -5,7 +5,6 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallableString;
@@ -35,7 +34,6 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
@@ -261,31 +259,8 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TArrayKey
             && ($input_type_part instanceof TInt
-                || $input_type_part instanceof TString
-                || $input_type_part instanceof TTemplateKeyOf)
+                || $input_type_part instanceof TString)
         ) {
-            return true;
-        }
-
-        if ($input_type_part instanceof TTemplateKeyOf) {
-            foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TArray) {
-                    /** @var Scalar $array_key_atomic */
-                    foreach ($atomic_type->type_params[0]->getAtomicTypes() as $array_key_atomic) {
-                        if (!self::isContainedBy(
-                            $codebase,
-                            $array_key_atomic,
-                            $container_type_part,
-                            $allow_interface_equality,
-                            $allow_float_int_equality,
-                            $atomic_comparison_result
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-            }
-
             return true;
         }
 

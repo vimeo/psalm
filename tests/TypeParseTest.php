@@ -762,6 +762,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testValueOfTemplate(): void
+    {
+        $this->assertSame(
+            'value-of<T>',
+            (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]])
+        );
+    }
+
     public function testIndexedAccess(): void
     {
         $this->assertSame(
