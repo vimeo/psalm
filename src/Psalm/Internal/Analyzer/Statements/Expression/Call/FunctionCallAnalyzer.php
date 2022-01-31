@@ -484,6 +484,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $is_maybe_root_function = !$function_name instanceof PhpParser\Node\Name\FullyQualified
             && count($function_name->parts) === 1;
 
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
         if (!$function_call_info->in_call_map) {
             $predefined_functions = $codebase->config->getPredefinedFunctions();
             $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
@@ -495,11 +497,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_call_info->function_id,
                     $code_location,
                     $is_maybe_root_function
-                ) === false
-                ) {
-                    if (ArgumentsAnalyzer::analyze(
+                ) === false) {
+                    if ($args && ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->getArgs(),
+                        $args,
                         null,
                         null,
                         true,
