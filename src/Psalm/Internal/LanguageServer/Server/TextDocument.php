@@ -159,10 +159,6 @@ class TextDocument
             }
         }
 
-        $this->server->logDebug(
-            $new_content
-        );
-
         $this->codebase->addTemporaryFileChanges($file_path, $new_content);
         $this->server->queueTemporaryFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
     }
@@ -202,7 +198,7 @@ class TextDocument
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
         $this->server->logDebug(
-            'definition'
+            'textDocument/definition'
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -250,7 +246,7 @@ class TextDocument
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
         $this->server->logDebug(
-            'hover'
+            'textDocument/hover'
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -305,7 +301,7 @@ class TextDocument
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
         $this->server->logDebug(
-            'completion'
+            'textDocument/completion'
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -363,7 +359,7 @@ class TextDocument
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
         $this->server->logDebug(
-            'signatureHelp'
+            'textDocument/signatureHelp'
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -387,10 +383,6 @@ class TextDocument
             return new Success(new SignatureHelp());
         }
 
-        $this->server->logDebug(
-            'signatureHelpSuccess!'
-        );
-
         return new Success(
             new SignatureHelp(
                 [$signature_information],
@@ -409,7 +401,7 @@ class TextDocument
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
     {
         $this->server->logDebug(
-            'codeAction'
+            'textDocument/codeAction'
         );
 
         $fixers = [];

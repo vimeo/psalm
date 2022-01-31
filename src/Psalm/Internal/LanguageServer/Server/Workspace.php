@@ -53,6 +53,9 @@ class Workspace
      */
     public function didChangeWatchedFiles(array $changes): void
     {
+        $this->server->logDebug(
+            'workspace/didChangeWatchedFiles'
+        );
         foreach ($changes as $change) {
             $file_path = LanguageServer::uriToPath($change->uri);
 
@@ -84,6 +87,9 @@ class Workspace
      */
     public function didChangeConfiguration($settings): void
     {
+        $this->server->logDebug(
+            'workspace/didChangeConfiguration'
+        );
         $this->server->client->refreshConfiguration();
     }
 }
