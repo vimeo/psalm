@@ -7,6 +7,10 @@ namespace Psalm\Internal\LanguageServer\Server;
 use Amp\Promise;
 use Amp\Success;
 use InvalidArgumentException;
+use LanguageServerProtocol\CodeAction;
+use LanguageServerProtocol\CodeActionContext;
+use LanguageServerProtocol\CodeActionKind;
+use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -77,6 +81,11 @@ class TextDocument
      */
     public function didOpen(TextDocumentItem $textDocument): void
     {
+        $this->server->logDebug(
+            'textDocument/didOpen',
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -85,16 +94,23 @@ class TextDocument
 
         $this->codebase->file_provider->openFile($file_path);
 
-        $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+        $this->server->queueFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
     }
 
     /**
      * The document save notification is sent from the client to the server when the document was saved in the client
      *
      * @param TextDocumentItem $textDocument the document that was opened
+     * @param string|null $text Optional the content when saved. Depends on the includeText value
+     *                          when the save notification was requested.
      */
-    public function didSave(TextDocumentItem $textDocument): void
+    public function didSave(TextDocumentItem $textDocument, ?string $text = null): void
     {
+        $this->server->logDebug(
+            'textDocument/didSave',
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -103,7 +119,7 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
-        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
+        $this->codebase->file_provider->setOpenContents($file_path, $text);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
@@ -116,6 +132,11 @@ class TextDocument
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
+        $this->server->logDebug(
+            'textDocument/didChange',
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -138,8 +159,12 @@ class TextDocument
             }
         }
 
+        $this->server->logDebug(
+            $new_content
+        );
+
         $this->codebase->addTemporaryFileChanges($file_path, $new_content);
-        $this->server->queueTemporaryFileAnalysis($file_path, $textDocument->uri);
+        $this->server->queueTemporaryFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
     }
 
     /**
@@ -155,6 +180,11 @@ class TextDocument
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
+        $this->server->logDebug(
+            'textDocument/didClose',
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
@@ -171,6 +201,10 @@ class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->logDebug(
+            'definition'
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         try {
@@ -215,6 +249,10 @@ class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->logDebug(
+            'hover'
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         try {
@@ -266,7 +304,9 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $this->server->doAnalysis();
+        $this->server->logDebug(
+            'completion'
+        );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -322,6 +362,10 @@ class TextDocument
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        $this->server->logDebug(
+            'signatureHelp'
+        );
+
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         try {
@@ -343,9 +387,17 @@ class TextDocument
             return new Success(new SignatureHelp());
         }
 
-        return new Success(new SignatureHelp([
-            $signature_information,
-        ], 0, $argument_location[1]));
+        $this->server->logDebug(
+            'signatureHelpSuccess!'
+        );
+
+        return new Success(
+            new SignatureHelp(
+                [$signature_information],
+                0,
+                $argument_location[1]
+            )
+        );
     }
 
     /**
@@ -354,80 +406,56 @@ class TextDocument
      * either fix problems or to beautify/refactor code.
      *
      */
-    public function codeAction(TextDocumentIdentifier $textDocument, Range $range): Promise
+    public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
-        if (!$this->codebase->file_provider->isOpen($file_path)) {
-            return new Success(null);
-        }
-
-        $all_file_paths_to_analyze = [$file_path];
-        $this->codebase->analyzer->addFilesToAnalyze(
-            array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
+        $this->server->logDebug(
+            'codeAction'
         );
 
-        try {
-            $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-        } catch (UnexpectedValueException | InvalidArgumentException $e) {
-            error_log('codeAction errored on file ' . $file_path. ', Reason: '.$e->getMessage());
-            return new Success(null);
-        }
-
-        $issues = $this->server->getCurrentIssues();
-
-        if (empty($issues[$file_path])) {
-            return new Success(null);
-        }
-
-        $file_contents = $this->codebase->getFileContents($file_path);
-
-        $offsetStart = $range->start->toOffset($file_contents);
-        $offsetEnd = $range->end->toOffset($file_contents);
-
         $fixers = [];
-        foreach ($issues[$file_path] as $issue) {
-            if ($offsetStart === $issue->from && $offsetEnd === $issue->to) {
-                $snippetRange = new Range(
-                    new Position($issue->line_from-1),
-                    new Position($issue->line_to)
-                );
+        foreach($context->diagnostics as $diagnostic) {
+            if($diagnostic->source !== 'psalm') {
+                continue;
+            }
+            $snippetRange = new Range(
+                new Position($diagnostic->data->line_from-1),
+                new Position($diagnostic->data->line_to)
+            );
 
-                $indentation = '';
-                if (preg_match('/^(\s*)/', $issue->snippet, $matches)) {
-                    $indentation = $matches[1] ?? '';
-                }
+            $indentation = '';
+            if (preg_match('/^(\s*)/', $diagnostic->data->snippet, $matches)) {
+                $indentation = $matches[1] ?? '';
+            }
 
-
-                /**
-                 * Suppress Psalm because ther are bugs in how
-                 * LanguageServer's signature of WorkspaceEdit is declared:
-                 *
-                 * See:
-                 * https://github.com/felixfbecker/php-language-server-protocol
-                 * See:
-                 * https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
-                 *
-                 * @psalm-suppress InvalidArgument
-                 */
-                $edit = new WorkspaceEdit([
+            //Suppress Ability
+            $fixers["suppress.{$diagnostic->data->type}"] = new CodeAction(
+                "Suppress {$diagnostic->data->type} for this line",
+                CodeActionKind::QUICK_FIX,
+                null,
+                null,
+                null,
+                new WorkspaceEdit([
                     $textDocument->uri => [
                         new TextEdit(
                             $snippetRange,
                             "{$indentation}/**\n".
-                            "{$indentation} * @psalm-suppress {$issue->type}\n".
+                            "{$indentation} * @psalm-suppress {$diagnostic->data->type}\n".
                             "{$indentation} */\n".
-                            "{$issue->snippet}\n"
+                            "{$diagnostic->data->snippet}\n"
                         )
                     ]
-                ]);
+                ])
+            );
 
-                //Suppress Ability
-                $fixers["suppress.{$issue->type}"] = [
-                    'title' => "Suppress {$issue->type} for this line",
-                    'kind' => 'quickfix',
-                    'edit' => $edit
-                ];
-            }
+            $fixers["fixAll.{$diagnostic->data->type}"] = new CodeAction(
+                "FixAll {$diagnostic->data->type} for this file",
+                CodeActionKind::QUICK_FIX,
+                null,
+                null,
+                null,
+                null,
+                new Command("Test","test",['one'])
+            );
         }
 
         if (empty($fixers)) {

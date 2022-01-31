@@ -11,6 +11,7 @@ use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\TextDocumentIdentifier;
 use LanguageServerProtocol\TextDocumentItem;
 use Psalm\Internal\LanguageServer\ClientHandler;
+use Psalm\Internal\LanguageServer\LanguageServer;
 
 use function Amp\call;
 
@@ -29,10 +30,16 @@ class TextDocument
      */
     private $mapper;
 
-    public function __construct(ClientHandler $handler, JsonMapper $mapper)
+    /**
+     * @var LanguageServer
+     */
+    private $server;
+
+    public function __construct(ClientHandler $handler, JsonMapper $mapper, LanguageServer $server)
     {
         $this->handler = $handler;
         $this->mapper = $mapper;
+        $this->server = $server;
     }
 
     /**
@@ -40,40 +47,14 @@ class TextDocument
      *
      * @param Diagnostic[] $diagnostics
      */
-    public function publishDiagnostics(string $uri, array $diagnostics): void
+    public function publishDiagnostics(string $uri, array $diagnostics, ?int $version=null): void
     {
+        $this->server->logDebug("textDocument/publishDiagnostics");
+
         $this->handler->notify('textDocument/publishDiagnostics', [
             'uri' => $uri,
             'diagnostics' => $diagnostics,
+            'version' => $version,
         ]);
-    }
-
-    /**
-     * The content request is sent from a server to a client
-     * to request the current content of a text document identified by the URI
-     *
-     * @param TextDocumentIdentifier $textDocument The document to get the content for
-     *
-     * @return Promise<TextDocumentItem> The document's current content
-     */
-    public function xcontent(TextDocumentIdentifier $textDocument): Promise
-    {
-        return call(
-            /**
-             * @return Generator<int, Promise<object>, object, TextDocumentItem>
-             */
-            function () use ($textDocument) {
-                /** @var Promise<object> */
-                $promise = $this->handler->request(
-                    'textDocument/xcontent',
-                    ['textDocument' => $textDocument]
-                );
-
-                $result = yield $promise;
-
-                /** @var TextDocumentItem */
-                return $this->mapper->map($result, new TextDocumentItem);
-            }
-        );
     }
 }

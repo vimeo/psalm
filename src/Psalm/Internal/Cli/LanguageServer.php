@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use LanguageServerProtocol\MessageType;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -9,6 +10,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -51,12 +53,15 @@ require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
+require_once __DIR__ . '/../LanguageServer/ClientConfiguration.php';
 
 final class LanguageServer
 {
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        $clientConfiguration = new ClientConfiguration();
+
         gc_disable();
         ErrorHandler::install();
         $valid_short_options = [
@@ -67,6 +72,7 @@ final class LanguageServer
         ];
 
         $valid_long_options = [
+            'no-cache',
             'clear-cache',
             'config:',
             'find-dead-code',
@@ -161,6 +167,8 @@ Options:
 
     --clear-cache
         Clears all cache files that the language server uses for this specific project
+
+    --no-cache
 
     --use-ini-defaults
         Use PHP-provided ini defaults for memory and error display
@@ -276,14 +284,21 @@ HELP;
             exit;
         }
 
-        $providers = new Providers(
-            new FileProvider,
-            new ParserCacheProvider($config),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
-            new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
-        );
+        if (isset($options['no-cache']) || isset($options['i'])) {
+            $providers = new Providers(
+                new FileProvider
+            );
+        } else {
+            $providers = new Providers(
+                new FileProvider,
+                new ParserCacheProvider($config),
+                new FileStorageCacheProvider($config),
+                new ClassLikeStorageCacheProvider($config),
+                new FileReferenceCacheProvider($config),
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+            );
+        }
+
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
@@ -302,7 +317,7 @@ HELP;
             $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
         }
 
-        $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
+        $clientConfiguration->provideCompletion = !isset($options['enable-autocomplete'])
             || !is_string($options['enable-autocomplete'])
             || strtolower($options['enable-autocomplete']) !== 'false';
 
@@ -311,13 +326,20 @@ HELP;
         }
 
         if (isset($options['use-extended-diagnostic-codes'])) {
-            $project_analyzer->language_server_use_extended_diagnostic_codes = true;
+            $clientConfiguration->VSCodeExtendedDiagnosticCodes = true;
         }
 
         if (isset($options['verbose'])) {
-            $project_analyzer->language_server_verbose = true;
+            $clientConfiguration->logLevel = $options['verbose'] ? MessageType::LOG : MessageType::INFO;
         }
 
-        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']));
+        $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
+        $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
+
+        //Setup Project Analyzer
+        $project_analyzer->provide_completion = $clientConfiguration->provideCompletion;
+
+
+        $project_analyzer->server($clientConfiguration);
     }
 }

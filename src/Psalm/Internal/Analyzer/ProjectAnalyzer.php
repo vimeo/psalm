@@ -13,6 +13,7 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\ProtocolStreamReader;
 use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
@@ -264,13 +265,6 @@ class ProjectAnalyzer
     public $language_server_use_extended_diagnostic_codes = false;
 
     /**
-     * If this is true then the language server will send log messages to the client with additional information.
-     *
-     * @var bool
-     */
-    public $language_server_verbose = false;
-
-    /**
      * @param array<ReportOptions> $generated_report_options
      */
     public function __construct(
@@ -432,7 +426,8 @@ class ProjectAnalyzer
         );
     }
 
-    public function server(?string $address = '127.0.0.1:12345', bool $socket_server_mode = false): void
+    //public function server(?string $address = '127.0.0.1:12345', bool $socket_server_mode = false): void
+    public function server(ClientConfiguration $clientConfiguration): void
     {
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -464,9 +459,9 @@ class ProjectAnalyzer
 
         @cli_set_process_title('Psalm ' . PSALM_VERSION . ' - PHP Language Server');
 
-        if (!$socket_server_mode && $address) {
+        if (!$clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
             // Connect to a TCP server
-            $socket = stream_socket_client('tcp://' . $address, $errno, $errstr);
+            $socket = stream_socket_client('tcp://' . $clientConfiguration->TCPServerAddress, $errno, $errstr);
             if ($socket === false) {
                 fwrite(STDERR, "Could not connect to language client. Error $errno\n$errstr");
                 exit(1);
@@ -475,17 +470,18 @@ class ProjectAnalyzer
             new LanguageServer(
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
-                $this
+                $this,
+                $clientConfiguration
             );
             Loop::run();
-        } elseif ($socket_server_mode && $address) {
+        } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
             // Run a TCP Server
-            $tcpServer = stream_socket_server('tcp://' . $address, $errno, $errstr);
+            $tcpServer = stream_socket_server('tcp://' . $clientConfiguration->TCPServerAddress, $errno, $errstr);
             if ($tcpServer === false) {
-                fwrite(STDERR, "Could not listen on $address. Error $errno\n$errstr");
+                fwrite(STDERR, "Could not listen on {$clientConfiguration->TCPServerAddress}. Error $errno\n$errstr");
                 exit(1);
             }
-            fwrite(STDOUT, "Server listening on $address\n");
+            fwrite(STDOUT, "Server listening on {$clientConfiguration->TCPServerAddress}\n");
 
             $fork_available = true;
             if (!extension_loaded('pcntl')) {
@@ -527,7 +523,8 @@ class ProjectAnalyzer
                         new LanguageServer(
                             $reader,
                             new ProtocolStreamWriter($socket),
-                            $this
+                            $this,
+                            $clientConfiguration
                         );
                         // Just for safety
                         exit(0);
@@ -538,7 +535,8 @@ class ProjectAnalyzer
                     new LanguageServer(
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
-                        $this
+                        $this,
+                        $clientConfiguration
                     );
                     Loop::run();
                 }
@@ -549,7 +547,8 @@ class ProjectAnalyzer
             new LanguageServer(
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
-                $this
+                $this,
+                $clientConfiguration
             );
             Loop::run();
         }

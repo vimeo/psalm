@@ -16,10 +16,14 @@ use Amp\Success;
 use Generator;
 use InvalidArgumentException;
 use LanguageServerProtocol\ClientCapabilities;
+use LanguageServerProtocol\ClientInfo;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\DiagnosticSeverity;
+use LanguageServerProtocol\ExecuteCommandOptions;
 use LanguageServerProtocol\InitializeResult;
+use LanguageServerProtocol\LogMessage;
+use LanguageServerProtocol\MessageType;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SaveOptions;
@@ -27,6 +31,7 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
+use LanguageServerProtocol\WorkspaceFolder;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -89,6 +94,16 @@ class LanguageServer extends Dispatcher
     public $client;
 
     /**
+     * @var ClientCapabilities
+     */
+    public $clientCapabilities;
+
+    /**
+     * @var string|null
+     */
+    public $trace;
+
+    /**
      * @var ProjectAnalyzer
      */
     protected $project_analyzer;
@@ -111,7 +126,8 @@ class LanguageServer extends Dispatcher
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
-        ProjectAnalyzer $project_analyzer
+        ProjectAnalyzer $project_analyzer,
+        ClientConfiguration $clientConfiguration
     ) {
         parent::__construct($this, '/');
         $this->project_analyzer = $project_analyzer;
@@ -140,11 +156,6 @@ class LanguageServer extends Dispatcher
                     // Ignore responses, this is the handler for requests and notifications
                     if (Response::isResponse($msg->body)) {
                         return;
-                    }
-
-                    /** @psalm-suppress UndefinedPropertyFetch */
-                    if ($msg->body->method === 'textDocument/signatureHelp') {
-                        $this->doAnalysis();
                     }
 
                     $result = null;
@@ -190,13 +201,16 @@ class LanguageServer extends Dispatcher
         $this->protocolReader->on(
             'readMessageGroup',
             function (): void {
-                $this->doAnalysis();
+                //$this->verboseLog('Received message group');
+                //$this->doAnalysis();
             }
         );
 
-        $this->client = new LanguageClient($reader, $writer);
+        $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
-        $this->verboseLog("Language server has started.");
+        $this->project_analyzer->progress = new Progress($this);
+
+        $this->logInfo("Language server has started.");
     }
 
     /**
@@ -207,18 +221,37 @@ class LanguageServer extends Dispatcher
      * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
+     * @param ClientInfo|null $clientInfo Information about the client
+     * @param string|null $locale  The locale the client is currently showing the user interface
+     * in. This must not necessarily be the locale of the operating
+     * system.
+     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
+     * @param mixed $initializationOptions
+     * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
+     * @param array|null $workspaceFolders The workspace folders configured in the client when
+     * the server starts. This property is only available if the client supports workspace folders.
+     * It can be `null` if the client supports workspace folders but none are
+     * configured.
      * @psalm-return Promise<InitializeResult>
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function initialize(
         ClientCapabilities $capabilities,
+        ?int $processId = null,
+        ?ClientInfo $clientInfo = null,
+        ?string $locale = null,
         ?string $rootPath = null,
-        ?int $processId = null
+        ?string $rootUri = null,
+        $initializationOptions = null,
+        ?string $trace = null,
+        //?array $workspaceFolders = null //error in json-dispatcher
     ): Promise {
+        $this->clientCapabilities = $capabilities;
+        $this->trace = $trace;
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
-                $this->verboseLog("Initializing...");
+            function () use($capabilities) {
+                $this->logInfo("Initializing...");
                 $this->clientStatus('initializing');
 
                 // Eventually, this might block on something. Leave it as a generator.
@@ -227,15 +260,15 @@ class LanguageServer extends Dispatcher
                     yield true;
                 }
 
-                $this->verboseLog("Initializing: Getting code base...");
+                $this->logInfo("Initializing: Getting code base...");
                 $this->clientStatus('initializing', 'getting code base');
                 $codebase = $this->project_analyzer->getCodebase();
 
-                $this->verboseLog("Initializing: Scanning files...");
+                $this->logInfo("Initializing: Scanning files...");
                 $this->clientStatus('initializing', 'scanning files');
                 $codebase->scanFiles($this->project_analyzer->threads);
 
-                $this->verboseLog("Initializing: Registering stub files...");
+                $this->logInfo("Initializing: Registering stub files...");
                 $this->clientStatus('initializing', 'registering stub files');
                 $codebase->config->visitStubFiles($codebase);
 
@@ -256,6 +289,8 @@ class LanguageServer extends Dispatcher
                 }
 
                 $serverCapabilities = new ServerCapabilities();
+
+                $serverCapabilities->executeCommandProvider = new ExecuteCommandOptions(['test']);
 
                 $textDocumentSyncOptions = new TextDocumentSyncOptions();
 
@@ -284,8 +319,16 @@ class LanguageServer extends Dispatcher
                 // Support "Hover"
                 $serverCapabilities->hoverProvider = true;
                 // Support "Completion"
-                $serverCapabilities->codeActionProvider = true;
-                // Support "Code Actions"
+
+                // Support "Code Actions" if we support data
+                if(
+                    $this->clientCapabilities &&
+                    $this->clientCapabilities->textDocument &&
+                    $this->clientCapabilities->textDocument->publishDiagnostics &&
+                    $this->clientCapabilities->textDocument->publishDiagnostics->dataSupport
+                ) {
+                    $serverCapabilities->codeActionProvider = true;
+                }
 
                 if ($this->project_analyzer->provide_completion) {
                     $serverCapabilities->completionProvider = new CompletionOptions();
@@ -300,7 +343,7 @@ class LanguageServer extends Dispatcher
                 $serverCapabilities->xdefinitionProvider = false;
                 $serverCapabilities->dependenciesProvider = false;
 
-                $this->verboseLog("Initializing: Complete.");
+                $this->logInfo("Initializing: Complete.");
                 $this->clientStatus('initialized');
                 return new InitializeResult($serverCapabilities);
             }
@@ -313,66 +356,83 @@ class LanguageServer extends Dispatcher
      */
     public function initialized(): void
     {
+        $this->logInfo("Initialized.");
+        try {
+            $this->client->refreshConfiguration();
+        } catch(Throwable $e) {
+            error_log($e->getMessage());
+        }
+        $this->logInfo("Initialized. After");
+
         $this->clientStatus('running');
     }
 
-    public function queueTemporaryFileAnalysis(string $file_path, string $uri): void
+    public function queueTemporaryFileAnalysis(string $file_path, string $uri, ?int $version=null): void
     {
-        $this->onchange_paths_to_analyze[$file_path] = $uri;
+        $this->logDebug("queueTemporaryFileAnalysis", ['version' => $version, 'file_path' => $file_path, 'uri' => $uri]);
+        $this->onchange_paths_to_analyze[$version][$file_path] = $uri;
+        $this->debounceVersionedAnalysis($version);
     }
 
-    public function queueFileAnalysis(string $file_path, string $uri): void
+    public function queueFileAnalysis(string $file_path, string $uri, ?int $version=null): void
     {
-        $this->onsave_paths_to_analyze[$file_path] = $uri;
+        //$this->logDebug("queueFileAnalysis", ['version' => $version, 'file_path' => $file_path, 'uri' => $uri]);
+        $this->onsave_paths_to_analyze[$version][$file_path] = $uri;
+        $this->debounceVersionedAnalysis($version);
     }
 
-    public function doAnalysis(): void
-    {
-        $this->clientStatus('analyzing');
+    public function debounceVersionedAnalysis(?int $version=null) {
+        //$this->logDebug("debounceVersionedAnalysis", ['version' => $version]);
+        $onchange_paths_to_analyze = $this->onchange_paths_to_analyze[$version] ?? [];
+        $onsave_paths_to_analyze = $this->onsave_paths_to_analyze[$version] ?? [];
+        $all_files_to_analyze = $onchange_paths_to_analyze + $onsave_paths_to_analyze;
+
+        $this->doVersionedAnalysis('', [$all_files_to_analyze, $version]);
+    }
+
+    public function doVersionedAnalysis(string $watcherId, $data = []):void {
+        //$this->logDebug("doVersionedAnalysis");
+
+        [$all_files_to_analyze, $version] = $data;
 
         try {
-            $codebase = $this->project_analyzer->getCodebase();
 
-            $all_files_to_analyze = $this->onchange_paths_to_analyze + $this->onsave_paths_to_analyze;
 
-            if (!$all_files_to_analyze) {
+            if(empty($all_files_to_analyze)) {
+                $this->logWarning("No versioned analysis to do.");
                 return;
             }
 
-            if ($this->onsave_paths_to_analyze) {
-                $codebase->reloadFiles($this->project_analyzer, array_keys($this->onsave_paths_to_analyze));
-            }
 
-            if ($this->onchange_paths_to_analyze) {
-                $codebase->reloadFiles($this->project_analyzer, array_keys($this->onchange_paths_to_analyze));
-            }
+            /** @var array */
+            $files = $all_files_to_analyze;
 
-            $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
+            $codebase = $this->project_analyzer->getCodebase();
+            $codebase->reloadFiles(
+                $this->project_analyzer,
+                array_keys($files)
+            );
+
             $codebase->analyzer->addFilesToAnalyze(
-                array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
+                array_combine(array_keys($files), array_keys($files))
             );
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-            $this->emitIssues($all_files_to_analyze);
-
-            $this->onchange_paths_to_analyze = [];
-            $this->onsave_paths_to_analyze = [];
+            $this->emitVersionedIssues($files,$version);
+        } catch(\Throwable $e) {
+            $this->logError($e->getMessage(). $e->getLine());
         } finally {
-            // we are done, so set the status back to running
-            $this->clientStatus('running');
+            unset($this->onchange_paths_to_analyze[$version]);
+            unset($this->onsave_paths_to_analyze[$version]);
         }
+
     }
 
-    /**
-     * @param array<string, string> $uris
-     *
-     */
-    public function emitIssues(array $uris): void
-    {
+    public function emitVersionedIssues(array $files, ?int $version = null): void {
         $data = IssueBuffer::clear();
         $this->current_issues = $data;
 
-        foreach ($uris as $file_path => $uri) {
+        foreach ($files as $file_path => $uri) {
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
@@ -402,18 +462,21 @@ class LanguageServer extends Dispatcher
                         $range,
                         null,
                         $diagnostic_severity,
-                        'Psalm'
+                        'psalm'
                     );
+
+                    $diagnostic->data = [
+                        'type' => $issue_data->type,
+                        'snippet' => $issue_data->snippet,
+                        'line_from' => $issue_data->line_from,
+                        'line_to' => $issue_data->line_to
+                    ];
 
                     //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
                     $code = $issue_data->link;
 
-                    if ($this->project_analyzer->language_server_use_extended_diagnostic_codes) {
-                        // Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
-                        // Since this new functionality is not backwards compatible, we use a
-                        // configuration option so the end user must opt in to it using the cli argument.
-                        // https://github.com/microsoft/vscode/blob/1.43.0/src/vs/vscode.d.ts#L4688-L4699
-
+                    if ($this->client->clientConfiguration->VSCodeExtendedDiagnosticCodes) {
+                        //This is a Vscode violation of the spec
                         /** @psalm-suppress InvalidPropertyAssignmentValue */
                         $diagnostic->code = [
                             "value" => $code,
@@ -427,10 +490,21 @@ class LanguageServer extends Dispatcher
 
                     return $diagnostic;
                 },
-                $data[$file_path] ?? []
+                array_filter(
+                    $data[$file_path] ?? [],
+                    function (IssueData $issue_data) {
+                        if ($issue_data->severity === Config::REPORT_INFO &&
+                            $this->client->clientConfiguration->hideWarnings
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                )
             );
 
-            $this->client->textDocument->publishDiagnostics($uri, $diagnostics);
+            $this->client->textDocument->publishDiagnostics($uri, $diagnostics, $version);
         }
     }
 
@@ -443,7 +517,7 @@ class LanguageServer extends Dispatcher
     public function shutdown(): Promise
     {
         $this->clientStatus('closing');
-        $this->verboseLog("Shutting down...");
+        $this->logInfo("Shutting down...");
         $codebase = $this->project_analyzer->getCodebase();
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->updateReferenceCache(
@@ -467,27 +541,48 @@ class LanguageServer extends Dispatcher
     /**
      * Send log message to the client
      *
-     * @param string $message The log message to send to the client.
      * @psalm-param 1|2|3|4 $type
      * @param int $type The log type:
      *  - 1 = Error
      *  - 2 = Warning
      *  - 3 = Info
      *  - 4 = Log
+     * @see MessageType
+     * @param string  $message The log message to send to the client.
+     * @param mixed[] $context The log context
      */
-    public function verboseLog(string $message, int $type = 4): void
+    public function log(int $type, string $message, array $context = []): void
     {
-        if ($this->project_analyzer->language_server_verbose) {
-            try {
-                $this->client->logMessage(
-                    '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
-                    $type
-                );
-            } catch (Throwable $err) {
-                // do nothing
-            }
+        $full = $type === MessageType::LOG ? $message : \sprintf('[Psalm ' .PSALM_VERSION. ' - PHP Language Server] %s', $message);
+        if(!empty($context)) {
+            $full .= "\n" . \json_encode($context, JSON_PRETTY_PRINT);
         }
-        new Success(null);
+        try {
+            $this->client->logMessage(
+                new LogMessage(
+                    $type,
+                    $full,
+                )
+            );
+        } catch (Throwable $err) {
+            // do nothing
+        }
+    }
+
+    public function logError(string $message, array $context = []) {
+        $this->log(MessageType::ERROR, $message, $context);
+    }
+
+    public function logWarning(string $message, array $context = []) {
+        $this->log(MessageType::WARNING, $message, $context);
+    }
+
+    public function logInfo(string $message, array $context = []) {
+        $this->log(MessageType::INFO, $message, $context);
+    }
+
+    public function logDebug(string $message, array $context = []) {
+        $this->log(MessageType::LOG, $message, $context);
     }
 
     /**
@@ -501,16 +596,15 @@ class LanguageServer extends Dispatcher
     private function clientStatus(string $status, ?string $additional_info = null): void
     {
         try {
-            // here we send a notification to the client using the telemetry notification method
-            $this->client->logMessage(
-                $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
-                3,
-                'telemetry/event'
+            $this->client->event(
+                new LogMessage(
+                    MessageType::INFO,
+                    $status . (!empty($additional_info) ? ': ' . $additional_info : '')
+                )
             );
         } catch (Throwable $err) {
             // do nothing
         }
-        new Success(null);
     }
 
     /**

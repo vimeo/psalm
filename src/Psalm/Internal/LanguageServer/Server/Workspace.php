@@ -75,4 +75,15 @@ class Workspace
             }
         }
     }
+
+    /**
+     * A notification sent from the client to the server to signal the change of configuration settings.
+     *
+     * @param mixed $settings
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function didChangeConfiguration($settings): void
+    {
+        $this->server->client->refreshConfiguration();
+    }
 }
