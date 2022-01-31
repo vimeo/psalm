@@ -211,6 +211,19 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                 ['MissingPureAnnotation'],
                 true,
             ],
+            'dontAddPureIfCallableNotPure' => [
+                '<?php
+                    function pure(callable $callable): string{
+                        return $callable();
+                    }',
+                '<?php
+                    function pure(callable $callable): string{
+                        return $callable();
+                    }',
+                '7.4',
+                ['MissingPureAnnotation'],
+                true,
+            ],
         ];
     }
 }
