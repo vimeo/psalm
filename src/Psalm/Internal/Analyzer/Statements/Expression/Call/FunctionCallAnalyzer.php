@@ -644,14 +644,23 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if (!$var_type_part->is_pure && ($context->pure || $context->mutation_free)) {
-                        IssueBuffer::maybeAdd(
-                            new ImpureFunctionCall(
-                                'Cannot call an impure function from a mutation-free context',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        );
+                    if (!$var_type_part->is_pure) {
+                        if ($context->pure || $context->mutation_free) {
+                            IssueBuffer::maybeAdd(
+                                new ImpureFunctionCall(
+                                    'Cannot call an impure function from a mutation-free context',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            );
+                        }
+
+                        if (!$function_call_info->function_storage) {
+                            $function_call_info->function_storage = new FunctionStorage();
+                        }
+
+                        $function_call_info->function_storage->pure = false;
+                        $function_call_info->function_storage->mutation_free = false;
                     }
 
                     $function_call_info->function_params = $var_type_part->params;
