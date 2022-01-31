@@ -11,6 +11,10 @@ interface BeforeAddIssueInterface
     /**
      * Called before adding a code issue.
      *
+     * Note that event handlers are called in the order they were registered, and thus
+     * the handler registered earlier may prevent subsequent handlers from running by
+     * returning a boolean value.
+     *
      * @param BeforeAddIssueEvent $event
      * @return null|bool $event How and whether to continue:
      *  + `null` continues with next event handler
