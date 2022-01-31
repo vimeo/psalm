@@ -25,6 +25,7 @@ final class BeforeStatementAnalysisEvent
      * Called after a statement has been checked
      *
      * @param list<FileManipulation> $file_replacements
+     * @internal
      */
     public function __construct(
         Stmt $stmt,
