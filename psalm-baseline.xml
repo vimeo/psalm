@@ -662,6 +662,11 @@
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Issue/MethodSignatureMustProvideReturnType.php">
+    <UnusedClass occurrences="1">
+      <code>MethodSignatureMustProvideReturnType</code>
+    </UnusedClass>
+  </file>
   <file src="src/Psalm/Node/Stmt/VirtualClass.php">
     <PropertyNotSetInConstructor occurrences="1">
       <code>VirtualClass</code>
