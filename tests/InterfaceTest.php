@@ -444,7 +444,7 @@ class InterfaceTest extends TestCase
                     interface I2 extends Iterator {}
 
                     /**
-                     * @extends FilterIterator<mixed, mixed>
+                     * @extends FilterIterator<mixed, mixed, Iterator<mixed, mixed>>
                      */
                     class DedupeIterator extends FilterIterator {
                         public function __construct(I2 $i) {
