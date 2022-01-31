@@ -679,6 +679,9 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class Collection1 extends ArrayIterator{}
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class Collection2 extends Collection1{}
 
                     class Collection3 extends Collection2{}
@@ -1372,6 +1375,8 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template T
+                     * 
+                     * @psalm-suppress MissingTemplateParam
                      */
                     class C implements I {
                       /** @var array<T> */
@@ -1411,6 +1416,8 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template T2
+                     * 
+                     * @psalm-suppress MissingTemplateParam
                      */
                     class C implements I {
                       /** @var array<T2> */
@@ -2059,9 +2066,17 @@ class ClassTemplateExtendsTest extends TestCase
                         public function getIterator();
                     }
 
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @implements ICollection<TKey, TValue>
+                     */
                     class Collection implements ICollection {
-                        /** @var array */
+                        /** @var array<TKey, TValue> */
                         private $data;
+                        /**
+                         * @param array<TKey, TValue> $data
+                         */
                         public function __construct(array $data) {
                             $this->data = $data;
                         }
@@ -2070,7 +2085,6 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    /** @var ICollection<string, int> */
                     $c = new Collection(["a" => 1]);
 
                     foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }',
@@ -2233,6 +2247,11 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @template TT
+                     * 
+                     * @extends Container<TT>
+                     */
                     class MyContainer extends Container {}
 
                     $a = (new MyContainer("hello"))->getAnother();',
@@ -2608,6 +2627,9 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class AChild extends A {
                         /**
                          * @template T3
@@ -3707,6 +3729,9 @@ class ClassTemplateExtendsTest extends TestCase
                         public function foo();
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class Concrete implements Templated {
                         private array $t;
 

@@ -59,6 +59,7 @@ class MagicMethodAnnotationTest extends TestCase
                     public function find() {}
                 }
 
+                /** @psalm-suppress MissingTemplateParam */
                 class B extends A {}
 
                 class Obj {}

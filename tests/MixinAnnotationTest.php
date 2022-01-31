@@ -118,6 +118,9 @@ class MixinAnnotationTest extends TestCase
             ],
             'wrapCustomIterator' => [
                 'code' => '<?php
+                    /**
+                     * @implements Iterator<1, 2>
+                     */
                     class Subject implements Iterator {
                         /**
                          * the index method exists

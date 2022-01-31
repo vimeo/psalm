@@ -6,5 +6,8 @@ implemented by implementing either `IteratorAggregate` or `Iterator`
 ```php
 <?php
 
+/**
+ * @implements Traversable<mixed, mixed>
+ */
 final class C implements Traversable {} // will cause fatal error
 ```

@@ -725,6 +725,9 @@ class TraitTemplateTest extends TestCase
                         use T1;
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class D extends C {
                         /**
                          * @param mixed $offset

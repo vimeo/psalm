@@ -208,6 +208,9 @@ class AttributeTest extends TestCase
                     use IteratorAggregate;
                     use ReturnTypeWillChange;
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     final class EmptyCollection implements IteratorAggregate
                     {
                         #[ReturnTypeWillChange]
@@ -229,6 +232,9 @@ class AttributeTest extends TestCase
                     use IteratorAggregate;
                     use ReturnTypeWillChange;
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     final class EmptyCollection implements IteratorAggregate
                     {
                         #[ReturnTypeWillChange]

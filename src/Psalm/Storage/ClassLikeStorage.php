@@ -361,10 +361,10 @@ class ClassLikeStorage
     public $template_extended_params;
 
     /**
-     * @deprecated Will be replaced with $template_type_extends_count in Psalm v5
-     * @var ?int
+     * @var array<string, int>|null
      */
-    public $template_extended_count;
+    public $template_type_extends_count;
+
 
     /**
      * @var array<string, int>|null

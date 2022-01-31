@@ -686,6 +686,9 @@ class ForeachTest extends TestCase
             ],
             'iteratorAggregateIteration' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements IteratorAggregate
                     {
                         public function getIterator(): Iterator
@@ -790,6 +793,9 @@ class ForeachTest extends TestCase
                       public $prop = "var";
                     }
 
+                    /**
+                     * @implements IteratorAggregate<array-key, Item>
+                     */
                     class Collection implements IteratorAggregate {
                       /**
                        * @var Item[]
@@ -878,6 +884,9 @@ class ForeachTest extends TestCase
                 'code' => '<?php
                     class Value {}
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class ValueCollection implements \Countable, \IteratorAggregate {
                         /**
                          * @var Value[]
@@ -924,6 +933,9 @@ class ForeachTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class ValueCollectionIterator implements \Countable, \Iterator
                     {
                         /**

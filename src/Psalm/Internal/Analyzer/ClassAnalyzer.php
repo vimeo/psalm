@@ -39,14 +39,12 @@ use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
-use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
-use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
@@ -55,7 +53,6 @@ use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
-use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedInterface;
 use Psalm\Issue\UndefinedTrait;
@@ -87,7 +84,6 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
-use function array_search;
 use function array_values;
 use function assert;
 use function count;
@@ -586,18 +582,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $fq_trait_name_lc = strtolower($fq_trait_name);
 
-                    if (isset($storage->template_type_uses_count[$fq_trait_name_lc])) {
-                        $this->checkTemplateParams(
-                            $codebase,
-                            $storage,
-                            $trait_storage,
-                            new CodeLocation(
-                                $this,
-                                $trait
-                            ),
-                            $storage->template_type_uses_count[$fq_trait_name_lc]
-                        );
-                    }
+                    $this->checkTemplateParams(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        new CodeLocation(
+                            $this,
+                            $trait
+                        ),
+                        $storage->template_type_uses_count[$fq_trait_name_lc] ?? 0
+                    );
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -1974,178 +1968,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    private function checkTemplateParams(
-        Codebase $codebase,
-        ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
-        CodeLocation $code_location,
-        int $given_param_count
-    ): void {
-        $expected_param_count = $parent_storage->template_types === null
-            ? 0
-            : count($parent_storage->template_types);
-
-        if ($expected_param_count > $given_param_count) {
-            IssueBuffer::maybeAdd(
-                new MissingTemplateParam(
-                    $storage->name . ' has missing template params when extending ' . $parent_storage->name
-                        . ' , expecting ' . $expected_param_count,
-                    $code_location
-                ),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
-            );
-        } elseif ($expected_param_count < $given_param_count) {
-            IssueBuffer::maybeAdd(
-                new TooManyTemplateParams(
-                    $storage->name . ' has too many template params when extending ' . $parent_storage->name
-                        . ' , expecting ' . $expected_param_count,
-                    $code_location
-                ),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
-            );
-        }
-
-        $storage_param_count = ($storage->template_types ? count($storage->template_types) : 0);
-
-        if ($parent_storage->enforce_template_inheritance
-            && $expected_param_count !== $storage_param_count
-        ) {
-            if ($expected_param_count > $storage_param_count) {
-                IssueBuffer::maybeAdd(
-                    new MissingTemplateParam(
-                        $storage->name . ' requires the same number of template params as ' . $parent_storage->name
-                            . ' but saw ' . $storage_param_count,
-                        $code_location
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new TooManyTemplateParams(
-                        $storage->name . ' requires the same number of template params as ' . $parent_storage->name
-                            . ' but saw ' . $storage_param_count,
-                        $code_location
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                );
-            }
-        }
-
-        if ($parent_storage->template_types && $storage->template_extended_params) {
-            $i = 0;
-
-            $previous_extended = [];
-
-            foreach ($parent_storage->template_types as $template_name => $type_map) {
-                // declares the variables
-                foreach ($type_map as $declaring_class => $template_type) {
-                }
-
-                if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
-                    $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
-
-                    if (isset($parent_storage->template_covariants[$i])
-                        && !$parent_storage->template_covariants[$i]
-                    ) {
-                        foreach ($extended_type->getAtomicTypes() as $t) {
-                            if ($t instanceof TTemplateParam
-                                && $storage->template_types
-                                && $storage->template_covariants
-                                && ($local_offset
-                                    = array_search($t->param_name, array_keys($storage->template_types)))
-                                    !== false
-                                && !empty($storage->template_covariants[$local_offset])
-                            ) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidTemplateParam(
-                                        'Cannot extend an invariant template param ' . $template_name
-                                            . ' into a covariant context',
-                                        $code_location
-                                    ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                                );
-                            }
-                        }
-                    }
-
-                    if ($parent_storage->enforce_template_inheritance) {
-                        foreach ($extended_type->getAtomicTypes() as $t) {
-                            if (!$t instanceof TTemplateParam
-                                || !isset($storage->template_types[$t->param_name])
-                            ) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidTemplateParam(
-                                        'Cannot extend a strictly-enforced parent template param '
-                                            . $template_name
-                                            . ' with a non-template type',
-                                        $code_location
-                                    ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                                );
-                            } elseif ($storage->template_types[$t->param_name][$storage->name]->getId()
-                                !== $template_type->getId()
-                            ) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidTemplateParam(
-                                        'Cannot extend a strictly-enforced parent template param '
-                                            . $template_name
-                                            . ' with constraint ' . $template_type->getId()
-                                            . ' with a child template param ' . $t->param_name
-                                            . ' with different constraint '
-                                            . $storage->template_types[$t->param_name][$storage->name]->getId(),
-                                        $code_location
-                                    ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
-                                );
-                            }
-                        }
-                    }
-
-                    if (!$template_type->isMixed()) {
-                        $template_type_copy = clone $template_type;
-
-                        $template_result = new TemplateResult(
-                            $previous_extended ?: [],
-                            []
-                        );
-
-                        $template_type_copy = TemplateStandinTypeReplacer::replace(
-                            $template_type_copy,
-                            $template_result,
-                            $codebase,
-                            null,
-                            $extended_type,
-                            null,
-                            null
-                        );
-
-                        if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidTemplateParam(
-                                    'Extended template param ' . $template_name
-                                        . ' expects type ' . $template_type_copy->getId()
-                                        . ', type ' . $extended_type->getId() . ' given',
-                                    $code_location
-                                ),
-                                $storage->suppressed_issues + $this->getSuppressedIssues()
-                            );
-                        } else {
-                            $previous_extended[$template_name] = [
-                                $declaring_class => $extended_type
-                            ];
-                        }
-                    } else {
-                        $previous_extended[$template_name] = [
-                            $declaring_class => $extended_type
-                        ];
-                    }
-                }
-
-                $i++;
-            }
-        }
-    }
-
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
      */
@@ -2234,15 +2056,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (isset($storage->template_type_implements_count[$fq_interface_name_lc])) {
-                $this->checkTemplateParams(
-                    $codebase,
-                    $storage,
-                    $interface_storage,
-                    $code_location,
-                    $storage->template_type_implements_count[$fq_interface_name_lc]
-                );
-            }
+            $this->checkTemplateParams(
+                $codebase,
+                $storage,
+                $interface_storage,
+                $code_location,
+                $storage->template_type_implements_count[$fq_interface_name_lc] ?? 0
+            );
         }
 
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
@@ -2555,22 +2375,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($storage->template_extended_count !== null || $parent_class_storage->enforce_template_inheritance) {
-                $code_location = new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    $class_context->include_location ?? null,
-                    true
-                );
+            $code_location = new CodeLocation(
+                $this,
+                $class->name ?: $class,
+                $class_context->include_location ?? null,
+                true
+            );
 
-                $this->checkTemplateParams(
-                    $codebase,
-                    $storage,
-                    $parent_class_storage,
-                    $code_location,
-                    $storage->template_extended_count ?? 0
-                );
-            }
+            $this->checkTemplateParams(
+                $codebase,
+                $storage,
+                $parent_class_storage,
+                $code_location,
+                $storage->template_type_extends_count[$parent_fq_class_name] ?? 0
+            );
         } catch (InvalidArgumentException $e) {
             // do nothing
         }

@@ -517,6 +517,9 @@ class FunctionCallTest extends TestCase
             ],
             'iteratorToArrayWithGetIterator' => [
                 'code' => '<?php
+                    /**
+                     * @implements IteratorAggregate<int, string>
+                     */
                     class C implements IteratorAggregate {
                         /**
                          * @return Traversable<int,string>
@@ -532,9 +535,12 @@ class FunctionCallTest extends TestCase
             ],
             'iteratorToArrayWithGetIteratorReturningList' => [
                 'code' => '<?php
+                    /**
+                     * @implements IteratorAggregate<int, string>
+                     */
                     class C implements IteratorAggregate {
                         /**
-                         * @return Traversable<int,string>
+                         * @return Traversable<int, string>
                          */
                         public function getIterator() {
                             yield 1 => "1";

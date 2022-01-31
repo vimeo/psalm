@@ -480,6 +480,9 @@ class FunctionTemplateTest extends TestCase
                 'code' => '<?php
                     class Foo {}
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class SomeIterator implements IteratorAggregate
                     {
                         public function getIterator() {
