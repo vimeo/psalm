@@ -273,7 +273,7 @@ class CallAnalyzer
     public static function checkMethodArgs(
         ?MethodIdentifier $method_id,
         array $args,
-        ?TemplateResult $class_template_result,
+        TemplateResult $template_result,
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer
@@ -288,7 +288,7 @@ class CallAnalyzer
                 null,
                 true,
                 $context,
-                $class_template_result
+                $template_result
             ) !== false;
         }
 
@@ -346,7 +346,7 @@ class CallAnalyzer
             (string) $method_id,
             $method_storage->allow_named_arg_calls ?? true,
             $context,
-            $class_template_result
+            $template_result
         ) === false) {
             return false;
         }
@@ -358,17 +358,17 @@ class CallAnalyzer
             $method_params,
             $method_storage,
             $class_storage,
-            $class_template_result,
+            $template_result,
             $code_location,
             $context
         ) === false) {
             return false;
         }
 
-        if ($class_template_result) {
+        if ($template_result->template_types) {
             self::checkTemplateResult(
                 $statements_analyzer,
-                $class_template_result,
+                $template_result,
                 $code_location,
                 strtolower((string) $method_id)
             );

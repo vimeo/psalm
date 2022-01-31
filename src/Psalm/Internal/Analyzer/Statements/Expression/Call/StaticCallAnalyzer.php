@@ -229,7 +229,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             return self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer

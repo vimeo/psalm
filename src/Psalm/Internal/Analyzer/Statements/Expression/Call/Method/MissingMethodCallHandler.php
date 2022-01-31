@@ -92,7 +92,7 @@ class MissingMethodCallHandler
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
                     $stmt->getArgs(),
-                    null,
+                    new TemplateResult([], []),
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer
@@ -140,7 +140,7 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                new TemplateResult([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt),
                 $context
             );
@@ -307,7 +307,7 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                new TemplateResult([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context
             ) === false) {

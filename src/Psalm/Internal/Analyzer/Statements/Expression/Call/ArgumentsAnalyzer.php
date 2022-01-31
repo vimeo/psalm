@@ -699,7 +699,7 @@ class ArgumentsAnalyzer
         array $function_params,
         ?FunctionLikeStorage $function_storage,
         ?ClassLikeStorage $class_storage,
-        ?TemplateResult $class_template_result,
+        TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context
     ): ?bool {
@@ -775,16 +775,12 @@ class ArgumentsAnalyzer
             ? $function_params[count($function_params) - 1]
             : null;
 
-        $template_result = null;
-
         $class_generic_params = [];
 
-        if ($class_template_result) {
-            foreach ($class_template_result->lower_bounds as $template_name => $type_map) {
-                foreach ($type_map as $class => $lower_bounds) {
-                    if (count($lower_bounds) === 1) {
-                        $class_generic_params[$template_name][$class] = clone reset($lower_bounds)->type;
-                    }
+        foreach ($template_result->lower_bounds as $template_name => $type_map) {
+            foreach ($type_map as $class => $lower_bounds) {
+                if (count($lower_bounds) === 1) {
+                    $class_generic_params[$template_name][$class] = clone reset($lower_bounds)->type;
                 }
             }
         }
@@ -799,7 +795,7 @@ class ArgumentsAnalyzer
                 $calling_class_storage,
                 $function_storage,
                 $class_generic_params,
-                $class_template_result,
+                $template_result,
                 $args,
                 $function_params,
                 $last_param
@@ -1541,7 +1537,7 @@ class ArgumentsAnalyzer
         ?ClassLikeStorage $calling_class_storage,
         FunctionLikeStorage $function_storage,
         array $class_generic_params,
-        ?TemplateResult $class_template_result,
+        ?TemplateResult $template_result,
         array $args,
         array $function_params,
         ?FunctionLikeParameter $last_param
@@ -1559,11 +1555,9 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        if (!$class_template_result) {
+        if (!$template_result) {
             return new TemplateResult($template_types, []);
         }
-
-        $template_result = $class_template_result;
 
         if (!$template_result->template_types) {
             $template_result->template_types = $template_types;

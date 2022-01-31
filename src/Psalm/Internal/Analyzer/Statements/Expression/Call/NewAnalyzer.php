@@ -643,7 +643,7 @@ class NewAnalyzer extends CallAnalyzer
             if (self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer

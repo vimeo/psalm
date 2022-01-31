@@ -166,12 +166,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $set_inside_conditional = true;
         }
 
+        if (!$template_result) {
+            $template_result = new TemplateResult([], []);
+        }
+
         if (!$is_first_class_callable) {
             if (isset($function_call_info->function_storage->template_types)) {
-                if (!$template_result) {
-                    $template_result = new TemplateResult([], []);
-                }
-
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
 
@@ -208,9 +208,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $already_inferred_lower_bounds = $template_result
-            ? $template_result->lower_bounds
-            : [];
+        $already_inferred_lower_bounds = $template_result->lower_bounds;
 
         $template_result = new TemplateResult([], []);
 
