@@ -800,6 +800,7 @@ class ClosureTest extends TestCase
             ],
             'unknownFirstClassCallable' => [
                 '<?php
+                    /** @psalm-suppress UndefinedFunction */
                     unknown(...);',
             ],
         ];
