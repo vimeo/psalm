@@ -82,7 +82,7 @@ class KeyOfTemplateTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-keyOfNestedTemplates' => [
+            'keyOfNestedTemplates' => [
                 'code' => '<?php
                     /**
                      * @template TKey of int

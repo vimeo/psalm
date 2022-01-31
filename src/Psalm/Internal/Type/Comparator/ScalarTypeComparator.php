@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
-use Psalm\Type\Atomic\TKeyOfArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -35,7 +34,6 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
@@ -250,44 +248,6 @@ class ScalarTypeComparator
             && !$container_type_part instanceof TLiteralFloat
             && $allow_float_int_equality
         ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TTemplateKeyOf) {
-            if (!$input_type_part instanceof TTemplateKeyOf) {
-                return false;
-            }
-
-            return UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part->as,
-                $container_type_part->as
-            );
-        }
-
-        if ($input_type_part instanceof TTemplateKeyOf) {
-            $array_key_type = TKeyOfArray::getArrayKeyType(
-                $input_type_part->as,
-                $container_type_part instanceof TTemplateParam
-            );
-            if ($array_key_type === null) {
-                return false;
-            }
-
-            /** @var Scalar $array_key_atomic */
-            foreach ($array_key_type->getAtomicTypes() as $array_key_atomic) {
-                if (!self::isContainedBy(
-                    $codebase,
-                    $array_key_atomic,
-                    $container_type_part,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                    $atomic_comparison_result
-                )) {
-                    return false;
-                }
-            }
-
             return true;
         }
 

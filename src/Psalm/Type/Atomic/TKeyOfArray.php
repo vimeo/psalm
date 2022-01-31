@@ -79,7 +79,10 @@ class TKeyOfArray extends TArrayKey
                 if ($keep_template_params) {
                     $array_key_atomics = new Union([$atomic_type]);
                 } else {
-                    $array_key_atomics = static::getArrayKeyType($atomic_type->as);
+                    $array_key_atomics = static::getArrayKeyType(
+                        $atomic_type->as,
+                        $keep_template_params
+                    );
                     if ($array_key_atomics === null) {
                         continue;
                     }

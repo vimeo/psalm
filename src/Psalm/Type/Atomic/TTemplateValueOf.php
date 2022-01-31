@@ -2,6 +2,9 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -46,7 +49,7 @@ class TTemplateValueOf extends Atomic
             return 'value-of<' . $this->param_name . '>';
         }
 
-        return 'value-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact) . '>';
+        return 'value-of<' . $this->as->getId($exact) . '>';
     }
 
     /**
@@ -76,5 +79,16 @@ class TTemplateValueOf extends Atomic
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
+    }
+
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ): void {
+        TemplateInferredTypeReplacer::replace(
+            $this->as,
+            $template_result,
+            $codebase
+        );
     }
 }

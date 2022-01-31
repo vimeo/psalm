@@ -2,12 +2,16 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TKeyOfArray when the type of the array is a template
  */
-class TTemplateKeyOf extends TArrayKey
+class TTemplateKeyOf extends Atomic
 {
     /**
      * @var string
@@ -45,7 +49,7 @@ class TTemplateKeyOf extends TArrayKey
             return 'key-of<' . $this->param_name . '>';
         }
 
-        return 'key-of<' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact) . '>';
+        return 'key-of<' . $this->as->getId($exact) . '>';
     }
 
     /**
@@ -58,5 +62,33 @@ class TTemplateKeyOf extends TArrayKey
         bool $use_phpdoc_format
     ): string {
         return 'key-of<' . $this->param_name . '>';
+    }
+
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id
+    ): ?string {
+        return null;
+    }
+
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
+    }
+
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ): void {
+        TemplateInferredTypeReplacer::replace(
+            $this->as,
+            $template_result,
+            $codebase
+        );
     }
 }
