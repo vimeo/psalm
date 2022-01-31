@@ -39,6 +39,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
