@@ -42,7 +42,7 @@
    - `Psalm\Type\Atomic\TIntRange`
    - `Psalm\Type\Atomic\TIterable`
    - `Psalm\Type\Atomic\TKeyedArray`
-   - `Psalm\Type\Atomic\TKeyOfClassConstant`
+   - `Psalm\Type\Atomic\TKeyOfArray`
    - `Psalm\Type\Atomic\TList`
    - `Psalm\Type\Atomic\TLiteralClassString`
    - `Psalm\Type\Atomic\TLowercaseString`
@@ -64,7 +64,7 @@
    - `Psalm\Type\Atomic\TTraitString`
    - `Psalm\Type\Atomic\TTrue`
    - `Psalm\Type\Atomic\TTypeAlias`
-   - `Psalm\Type\Atomic\TValueOfClassConstant`
+   - `Psalm\Type\Atomic\TValueOfArray`
    - `Psalm\Type\Atomic\TVoid`
    - `Psalm\Type\Union`
 
@@ -92,7 +92,7 @@
    - `Psalm\Type\Atomic\TInt`
    - `Psalm\Type\Atomic\TIterable`
    - `Psalm\Type\Atomic\TKeyedArray`
-   - `Psalm\Type\Atomic\TKeyOfClassConstant`
+   - `Psalm\Type\Atomic\TKeyOfArray`
    - `Psalm\Type\Atomic\TList`
    - `Psalm\Type\Atomic\TLiteralClassString`
    - `Psalm\Type\Atomic\TMixed`
@@ -109,7 +109,7 @@
    - `Psalm\Type\Atomic\TTemplateParam`
    - `Psalm\Type\Atomic\TTraitString`
    - `Psalm\Type\Atomic\TTypeAlias`
-   - `Psalm\Type\Atomic\TValueOfClassConstant`
+   - `Psalm\Type\Atomic\TValueOfArray`
    - `Psalm\Type\Atomic\TVoid`
    - `Psalm\Type\Union`
 - While not a BC break per se, all classes / interfaces / traits / enums under
@@ -154,6 +154,9 @@
 - [BC] Atomic::getId() has now a first param $exact. Calling the method with false will return a less detailed version of the type in some cases (similarly to what __toString used to return)
 - [BC] To remove a variable from the context, Context::remove(). Calling
   `unset($context->vars_in_scope[$var_id])` can cause problems when using references.
+- [BC] `TKeyOfClassConstant` has been renamed to `TKeyOfArray`.
+- [BC] `TValueOfClassConstant` has been renamed to `TValueOfArray`.
+- [BC] `TKeyOfTemplate` base class has been changed from `Scalar` to `Atomic`.
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
