@@ -55,7 +55,8 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
+        bool $const_inference = false
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -429,6 +430,18 @@ class SimpleTypeInferer
                     }
                 }
             }
+        }
+
+        if ($const_inference && $stmt instanceof PhpParser\Node\Expr\New_) {
+            $resolved_class_name = $stmt->class->getAttribute('resolvedName');
+
+            if (!is_string($resolved_class_name)) {
+                return null;
+            }
+
+            return new Union([
+                new Type\Atomic\TNamedObject($resolved_class_name)
+            ]);
         }
 
         return null;
