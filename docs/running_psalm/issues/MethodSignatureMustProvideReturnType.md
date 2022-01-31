@@ -8,7 +8,6 @@ This issue is emitted when a method overriding a native method is defined withou
 
 ```php
 <?php
-
 class A implements JsonSerializable {
     public function jsonSerialize() {
         return ['type' => 'A'];
