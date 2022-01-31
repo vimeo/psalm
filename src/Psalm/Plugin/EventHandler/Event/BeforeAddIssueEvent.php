@@ -18,6 +18,7 @@ final class BeforeAddIssueEvent
      */
     private bool $fixable;
 
+    /** @internal */
     public function __construct(CodeIssue $issue, bool $fixable)
     {
         $this->issue = $issue;
