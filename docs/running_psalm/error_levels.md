@@ -56,7 +56,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [InvalidThrow](issues/InvalidThrow.md)
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
- - [MethodSignatureMustProvideReturnType](issues/MethodSignatureMustProvideReturnType.md)
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingFile](issues/MissingFile.md)
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)

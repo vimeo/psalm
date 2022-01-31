@@ -218,10 +218,6 @@ class DocumentationTest extends TestCase
             $this->markTestSkipped();
         }
 
-        if (strpos($error_message, 'MethodSignatureMustProvideReturnType') !== false) {
-            $php_version = '8.1';
-        }
-
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         if ($check_references) {
