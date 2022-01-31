@@ -289,6 +289,10 @@ class DocumentationTest extends TestCase
                 case 'TraitMethodSignatureMismatch':
                     continue 2;
 
+                /** @todo reinstate this test when the issue is restored */
+                case 'MethodSignatureMustProvideReturnType':
+                    continue 2;
+
                 case 'InvalidFalsableReturnType':
                     $ignored_issues = ['FalsableReturnStatement'];
                     break;
