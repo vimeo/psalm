@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="4.x-dev@64206d9c3a9723bba093beb7d1a77ee767332d8a">
+<files psalm-version="4.x-dev@603714518b3894a57b464920b906a13332f23c02">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -21,6 +21,9 @@
       <code>$matches[0]</code>
       <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
+    <PossiblyUnusedProperty occurrences="1">
+      <code>$analysis_php_version_id</code>
+    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Config.php">
     <DeprecatedMethod occurrences="3">
