@@ -231,7 +231,7 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
         bool $allow_named_args,
-        Union $arg_type,
+        Union $arg_value_type,
         int $argument_offset,
         int $unpacked_argument_offset,
         PhpParser\Node\Arg $arg,
@@ -300,8 +300,6 @@ class ArgumentAnalyzer
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
-            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
-
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $readonly_template_result,
@@ -313,8 +311,8 @@ class ArgumentAnalyzer
                 $context->calling_function_id ?: $context->calling_method_id
             );
 
-            $arg_type = TemplateStandinTypeReplacer::replace(
-                $arg_type,
+            $arg_value_type = TemplateStandinTypeReplacer::replace(
+                $arg_value_type,
                 $readonly_template_result,
                 $codebase,
                 $statements_analyzer,
@@ -326,12 +324,12 @@ class ArgumentAnalyzer
         }
 
         if ($template_result && $template_result->template_types) {
-            $arg_type_param = $arg_type;
+            $arg_type_param = $arg_value_type;
 
             if ($arg->unpack) {
                 $arg_type_param = null;
 
-                foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
+                foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
                     if ($arg_atomic_type instanceof TArray
                         || $arg_atomic_type instanceof TList
                         || $arg_atomic_type instanceof TKeyedArray
@@ -357,7 +355,7 @@ class ArgumentAnalyzer
 
                 if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
-                    $arg_type_param->parent_nodes = $arg_type->parent_nodes;
+                    $arg_type_param->parent_nodes = $arg_value_type->parent_nodes;
                 }
             }
 
@@ -429,7 +427,7 @@ class ArgumentAnalyzer
         $unpacked_atomic_array = null;
 
         if ($arg->unpack) {
-            if ($arg_type->hasMixed()) {
+            if ($arg_value_type->hasMixed()) {
                 if (!$context->collect_initializations
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -443,7 +441,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot unpack ' . $arg_type->getId() . ', expecting iterable',
+                            . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id
                     ),
@@ -461,7 +459,7 @@ class ArgumentAnalyzer
                         $arg_location,
                         $function_call_location,
                         $function_param,
-                        $arg_type,
+                        $arg_value_type,
                         $arg->value,
                         $context,
                         $specialize_taint
@@ -471,12 +469,12 @@ class ArgumentAnalyzer
                 return null;
             }
 
-            if ($arg_type->hasArray()) {
+            if ($arg_value_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|TList|TKeyedArray|TClassStringMap
                  */
-                $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
+                $unpacked_atomic_array = $arg_value_type->getAtomicTypes()['array'];
                 $arg_key_allowed = true;
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
@@ -485,40 +483,40 @@ class ArgumentAnalyzer
                     }
 
                     if ($function_param->is_variadic) {
-                        $arg_type = $unpacked_atomic_array->getGenericValueType();
+                        $arg_value_type = $unpacked_atomic_array->getGenericValueType();
                     } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
-                        $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
+                        $arg_value_type = clone $unpacked_atomic_array->properties[$function_param->name];
                     } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
-                        $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                        $arg_value_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
                         if ($function_param->default_type instanceof Union) {
-                            $arg_type = $function_param->default_type;
+                            $arg_value_type = $function_param->default_type;
                         } else {
-                            $arg_type_atomic = ConstantTypeResolver::resolve(
+                            $arg_value_type_atomic = ConstantTypeResolver::resolve(
                                 $codebase->classlikes,
                                 $function_param->default_type,
                                 $statements_analyzer
                             );
 
-                            $arg_type = new Union([$arg_type_atomic]);
+                            $arg_value_type = new Union([$arg_value_type_atomic]);
                         }
                     } else {
-                        $arg_type = Type::getMixed();
+                        $arg_value_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof TList) {
-                    $arg_type = $unpacked_atomic_array->type_param;
+                    $arg_value_type = $unpacked_atomic_array->type_param;
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
-                    $arg_type = Type::getMixed();
+                    $arg_value_type = Type::getMixed();
                 } else {
                     if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                         $arg_key_allowed = false;
                     }
-                    $arg_type = $unpacked_atomic_array->type_params[1];
+                    $arg_value_type = $unpacked_atomic_array->type_params[1];
                 }
 
                 if (!$arg_key_allowed) {
@@ -538,7 +536,7 @@ class ArgumentAnalyzer
                 $invalid_key = false;
                 $invalid_string_key = false;
                 $possibly_matches = false;
-                foreach ($arg_type->getAtomicTypes() as $atomic_type) {
+                foreach ($arg_value_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
                         $non_iterable = true;
                     } else {
@@ -567,7 +565,7 @@ class ArgumentAnalyzer
                 if ($non_iterable) {
                     IssueBuffer::maybeAdd(
                         new $issue_type(
-                            'Tried to unpack non-iterable ' . $arg_type->getId(),
+                            'Tried to unpack non-iterable ' . $arg_value_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
@@ -578,7 +576,7 @@ class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new $issue_type(
                             'Method ' . $cased_method_id
-                                . ' called with unpacked iterable ' . $arg_type->getId()
+                                . ' called with unpacked iterable ' . $arg_value_type->getId()
                                 . ' with invalid key (must be '
                                 . ($codebase->analysis_php_version_id < 8_00_00 ? 'int' : 'int|string') . ')',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
@@ -601,7 +599,7 @@ class ArgumentAnalyzer
                         IssueBuffer::maybeAdd(
                             new NamedArgumentNotAllowed(
                                 'Method ' . $cased_method_id
-                                    . ' called with named unpacked iterable ' . $arg_type->getId()
+                                    . ' called with named unpacked iterable ' . $arg_value_type->getId()
                                     . ' (iterable with string keys)',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
                                 $cased_method_id
@@ -637,7 +635,7 @@ class ArgumentAnalyzer
 
         if (self::verifyType(
             $statements_analyzer,
-            $arg_type,
+            $arg_value_type,
             $param_type,
             $fleshed_out_signature_type,
             $cased_method_id,
