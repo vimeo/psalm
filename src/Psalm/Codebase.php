@@ -409,15 +409,19 @@ class Codebase
      * @param array<string> $candidate_files
      *
      */
-    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files): void
+    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files, bool $force = false): void
     {
         $this->loadAnalyzer();
 
-        $this->file_reference_provider->loadReferenceCache(false);
+        if($force) {
+            FileReferenceProvider::clearCache();
+        }
+
+        $this->file_reference_provider->loadReferenceCache($force);
 
         FunctionLikeAnalyzer::clearCache();
 
-        if (!$this->statements_provider->parser_cache_provider) {
+        if ($force || !$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
         } else {
             $diff_files = [];

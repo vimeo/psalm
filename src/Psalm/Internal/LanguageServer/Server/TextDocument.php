@@ -439,6 +439,7 @@ class TextDocument
                 ])
             );
 
+            /*
             $fixers["fixAll.{$diagnostic->data->type}"] = new CodeAction(
                 "FixAll {$diagnostic->data->type} for this file",
                 CodeActionKind::QUICK_FIX,
@@ -455,6 +456,7 @@ class TextDocument
                     ]
                 )
             );
+            */
         }
 
         if (empty($fixers)) {

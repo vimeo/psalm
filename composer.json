@@ -29,7 +29,7 @@
         "composer/xdebug-handler": "^1.1 || ^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
-        "felixfbecker/language-server-protocol": "@dev",
+        "felixfbecker/language-server-protocol": "dev-feature/spec-3.16",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
         "openlss/lib-array2xml": "^1.0",
@@ -97,8 +97,8 @@
             "url": "examples/plugins/composer-based/echo-checker"
         },
         {
-            "type": "path",
-            "url": "/usr/src/php-language-server-protocol"
+            "type": "vcs",
+            "url": "https://github.com/tm1000/php-language-server-protocol"
         }
     ],
     "minimum-stability": "dev",

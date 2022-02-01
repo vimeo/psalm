@@ -9,7 +9,9 @@ use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\LanguageServer;
+use Psalm\Internal\Provider\FileReferenceProvider;
 
 /**
  * Provides method handlers for all workspace/* methods
@@ -57,8 +59,27 @@ class Workspace
         $this->server->logDebug(
             'workspace/didChangeWatchedFiles'
         );
+
+        $realFiles = array_map(function(FileEvent $change) {
+            return LanguageServer::uriToPath($change->uri);
+        }, $changes);
+
+        $composerLockFile = realpath(Composer::getLockFilePath($this->codebase->config->base_dir));
+        if(in_array($composerLockFile, $realFiles)) {
+            $this->server->logInfo('Composer.lock file changed. Reloading codebase');
+            FileReferenceProvider::clearCache();
+            foreach($this->codebase->file_provider->getOpenFiles() as $file) {
+                $this->server->queueFileAnalysis($file, $this->server->pathToUri($file));
+            }
+            return;
+        }
+
         foreach ($changes as $change) {
             $file_path = LanguageServer::uriToPath($change->uri);
+
+            if($composerLockFile === $file_path) {
+                continue;
+            }
 
             if ($change->type === FileChangeType::DELETED) {
                 $this->codebase->invalidateInformationForFile($file_path);
@@ -73,7 +94,7 @@ class Workspace
                 continue;
             }
 
-            //If the file is currently open then dont analyse it because its tracked by the client
+            //If the file is currently open then dont analize it because its tracked in didChange
             if (!$this->codebase->file_provider->isOpen($file_path)) {
                 $this->server->queueFileAnalysis($file_path, $change->uri);
             }
@@ -117,7 +138,8 @@ class Workspace
                 $codebase = $this->project_analyzer->getCodebase();
                 $codebase->reloadFiles(
                     $this->project_analyzer,
-                    [$file]
+                    [$file],
+                    true
                 );
 
                 $codebase->analyzer->addFilesToAnalyze(
@@ -125,7 +147,7 @@ class Workspace
                 );
                 $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-                $this->server->emitVersionedIssues([$file]);
+                $this->server->emitVersionedIssues([$file => $arguments->uri]);
             break;
         }
 

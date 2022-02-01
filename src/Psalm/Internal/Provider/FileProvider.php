@@ -94,6 +94,11 @@ class FileProvider
         unset($this->temp_files[strtolower($file_path)]);
     }
 
+    public function getOpenFiles(): array
+    {
+        return array_keys($this->open_files);
+    }
+
     public function openFile(string $file_path): void
     {
         $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);

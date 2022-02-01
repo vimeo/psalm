@@ -190,6 +190,7 @@ class LanguageServer extends Dispatcher
                      */
                     if (Request::isRequest($msg->body)) {
                         if ($error !== null) {
+                            $this->logError($error->message);
                             $responseBody = new ErrorResponse($msg->body->id, $error);
                         } else {
                             $responseBody = new SuccessResponse($msg->body->id, $result);
@@ -212,7 +213,7 @@ class LanguageServer extends Dispatcher
 
         $this->project_analyzer->progress = new Progress($this);
 
-        $this->logInfo("Language server has started.");
+        $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
 
     /**
@@ -361,14 +362,11 @@ class LanguageServer extends Dispatcher
      */
     public function initialized(): void
     {
-        $this->logInfo("Initialized.");
         try {
             $this->client->refreshConfiguration();
         } catch(Throwable $e) {
             error_log($e->getMessage());
         }
-        $this->logInfo("Initialized. After");
-
         $this->clientStatus('running');
     }
 
@@ -555,19 +553,19 @@ class LanguageServer extends Dispatcher
      */
     public function log(int $type, string $message, array $context = []): void
     {
-        $full = $type === MessageType::LOG ? $message : \sprintf('[Psalm ' .PSALM_VERSION. ' - PHP Language Server] %s', $message);
         if(!empty($context)) {
-            $full .= "\n" . \json_encode($context, JSON_PRETTY_PRINT);
+            $message .= "\n" . \json_encode($context, JSON_PRETTY_PRINT);
         }
         try {
             $this->client->logMessage(
                 new LogMessage(
                     $type,
-                    $full,
+                    $message,
                 )
             );
         } catch (Throwable $err) {
-            // do nothing
+            // do nothing as we could potentially go into a loop here is not careful
+            //TODO: Investigate if we can use error_log instead
         }
     }
 
