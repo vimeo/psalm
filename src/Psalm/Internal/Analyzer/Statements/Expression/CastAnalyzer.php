@@ -230,6 +230,7 @@ class CastAnalyzer
                     if ($type instanceof Scalar) {
                         $keyed_array = new TKeyedArray([new Union([$type])]);
                         $keyed_array->is_list = true;
+                        $keyed_array->sealed = true;
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
