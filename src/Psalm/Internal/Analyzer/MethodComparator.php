@@ -21,14 +21,12 @@ use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
-use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
-use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -37,7 +35,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
 use function in_array;
 use function strpos;
 use function strtolower;
@@ -113,29 +110,6 @@ class MethodComparator
                 $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues
-            );
-        }
-
-        if (!$guide_classlike_storage->user_defined
-            && $implementer_classlike_storage->user_defined
-            && $codebase->analysis_php_version_id >= 80100
-            && ($guide_method_storage->return_type
-                || $guide_method_storage->signature_return_type
-            )
-            && !$implementer_method_storage->signature_return_type
-            && !array_filter(
-                $implementer_method_storage->attributes,
-                function (AttributeStorage $s) {
-                    return $s->fq_class_name === 'ReturnTypeWillChange';
-                }
-            )
-        ) {
-            IssueBuffer::maybeAdd(
-                new MethodSignatureMustProvideReturnType(
-                    'Method ' . $cased_implementer_method_id . ' must have a return type signature!',
-                    $implementer_method_storage->location ?: $code_location
-                ),
-                $suppressed_issues + $implementer_classlike_storage->suppressed_issues
             );
         }
 
@@ -888,14 +862,7 @@ class MethodComparator
                 $implementer_signature_return_type,
                 $guide_signature_return_type
             )
-            : (!$implementer_signature_return_type
-                && $guide_signature_return_type->isMixed()
-                ? false
-                : UnionTypeComparator::isContainedByInPhp(
-                    $implementer_signature_return_type,
-                    $guide_signature_return_type
-                )
-            );
+            : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
             if ($codebase->php_major_version >= 8

@@ -39,6 +39,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -484,6 +485,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $is_maybe_root_function = !$function_name instanceof PhpParser\Node\Name\FullyQualified
             && count($function_name->parts) === 1;
 
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
         if (!$function_call_info->in_call_map) {
             $predefined_functions = $codebase->config->getPredefinedFunctions();
             $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
@@ -495,11 +498,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_call_info->function_id,
                     $code_location,
                     $is_maybe_root_function
-                ) === false
-                ) {
-                    if (ArgumentsAnalyzer::analyze(
+                ) === false) {
+                    if ($args && ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->getArgs(),
+                        $args,
                         null,
                         null,
                         true,
@@ -644,14 +646,23 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if (!$var_type_part->is_pure && ($context->pure || $context->mutation_free)) {
-                        IssueBuffer::maybeAdd(
-                            new ImpureFunctionCall(
-                                'Cannot call an impure function from a mutation-free context',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        );
+                    if (!$var_type_part->is_pure) {
+                        if ($context->pure || $context->mutation_free) {
+                            IssueBuffer::maybeAdd(
+                                new ImpureFunctionCall(
+                                    'Cannot call an impure function from a mutation-free context',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            );
+                        }
+
+                        if (!$function_call_info->function_storage) {
+                            $function_call_info->function_storage = new FunctionStorage();
+                        }
+
+                        $function_call_info->function_storage->pure = false;
+                        $function_call_info->function_storage->mutation_free = false;
                     }
 
                     $function_call_info->function_params = $var_type_part->params;
