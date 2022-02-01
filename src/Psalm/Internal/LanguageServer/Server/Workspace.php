@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
+use Amp\Success;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
 use Psalm\Codebase;
@@ -91,5 +92,43 @@ class Workspace
             'workspace/didChangeConfiguration'
         );
         $this->server->client->refreshConfiguration();
+    }
+
+    /**
+     * The workspace/executeCommand request is sent from the client to the server to
+     * trigger command execution on the server.
+     *
+     * @param string $command
+     * @param mixed $arguments
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function executeCommand($command, $arguments) {
+        $this->server->logDebug(
+            'workspace/executeCommand',
+            [
+                'command' => $command,
+                'arguments' => $arguments,
+            ]
+        );
+
+        switch($command) {
+            case 'psalm.analyze.uri':
+                $file = LanguageServer::uriToPath($arguments->uri);
+                $codebase = $this->project_analyzer->getCodebase();
+                $codebase->reloadFiles(
+                    $this->project_analyzer,
+                    [$file]
+                );
+
+                $codebase->analyzer->addFilesToAnalyze(
+                    [$file => $file]
+                );
+                $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+                $this->server->emitVersionedIssues([$file]);
+            break;
+        }
+
+        return new Success(null);
     }
 }

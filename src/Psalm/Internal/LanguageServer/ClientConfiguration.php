@@ -60,16 +60,6 @@ class ClientConfiguration
      */
     public $logLevel;
 
-    /**
-     * Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
-     * Since this new functionality is not backwards compatible, we use a
-     * configuration option so the end user must opt in to it using the cli argument.
-     *
-     * @var bool|null
-     * @see https://github.com/microsoft/vscode/blob/1.43.0/src/vs/vscode.d.ts#L4688-L4699
-     */
-    public $VSCodeExtendedDiagnosticCodes;
-
     public function __construct(
         bool $hideWarnings = null,
         bool $provideCompletion = null

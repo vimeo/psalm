@@ -17,11 +17,13 @@ use Generator;
 use InvalidArgumentException;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\ClientInfo;
+use LanguageServerProtocol\CodeDescription;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\DiagnosticSeverity;
 use LanguageServerProtocol\ExecuteCommandOptions;
 use LanguageServerProtocol\InitializeResult;
+use LanguageServerProtocol\InitializeResultServerInfo;
 use LanguageServerProtocol\LogMessage;
 use LanguageServerProtocol\MessageType;
 use LanguageServerProtocol\Position;
@@ -345,7 +347,10 @@ class LanguageServer extends Dispatcher
 
                 $this->logInfo("Initializing: Complete.");
                 $this->clientStatus('initialized');
-                return new InitializeResult($serverCapabilities);
+
+                $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
+
+                return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
             }
         );
     }
@@ -429,6 +434,10 @@ class LanguageServer extends Dispatcher
     }
 
     public function emitVersionedIssues(array $files, ?int $version = null): void {
+        $this->logDebug("Perform Analysis",[
+            'files' => array_keys($files),
+            'version' => $version
+        ]);
         $data = IssueBuffer::clear();
         $this->current_issues = $data;
 
@@ -472,20 +481,13 @@ class LanguageServer extends Dispatcher
                         'line_to' => $issue_data->line_to
                     ];
 
-                    //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
-                    $code = $issue_data->link;
+                    $diagnostic->code = $issue_data->shortcode;
 
-                    if ($this->client->clientConfiguration->VSCodeExtendedDiagnosticCodes) {
-                        //This is a Vscode violation of the spec
-                        /** @psalm-suppress InvalidPropertyAssignmentValue */
-                        $diagnostic->code = [
-                            "value" => $code,
-                            "target" => $issue_data->link,
-                        ];
-                    } else {
-                        // the Diagnostic constructor only takes `int` for the code, but the property can be
-                        // `int` or `string`, so we set the property directly because we want to use a `string`
-                        $diagnostic->code = $code;
+                    if ($this->clientCapabilities->textDocument &&
+                        $this->clientCapabilities->textDocument->publishDiagnostics &&
+                        $this->clientCapabilities->textDocument->publishDiagnostics->codeDescriptionSupport
+                    ) {
+                        $diagnostic->codeDescription = new CodeDescription($issue_data->link);
                     }
 
                     return $diagnostic;

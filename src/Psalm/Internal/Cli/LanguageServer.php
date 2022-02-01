@@ -186,7 +186,7 @@ Options:
     --enable-autocomplete[=BOOL]
         Enables or disables autocomplete on methods and properties. Default is true.
 
-    --use-extended-diagnostic-codes
+    --use-extended-diagnostic-codes (DEPRECATED)
         Enables sending help uri links with the code in diagnostic messages.
 
     --verbose
@@ -323,10 +323,6 @@ HELP;
 
         if ($find_unused_code) {
             $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
-        }
-
-        if (isset($options['use-extended-diagnostic-codes'])) {
-            $clientConfiguration->VSCodeExtendedDiagnosticCodes = true;
         }
 
         if (isset($options['verbose'])) {

@@ -446,7 +446,14 @@ class TextDocument
                 null,
                 null,
                 null,
-                new Command("Test","test",['one'])
+                new Command(
+                    "Fix All",
+                    "psalm.fixall",
+                    [
+                        'uri' => $textDocument->uri,
+                        'type' => $diagnostic->data->type
+                    ]
+                )
             );
         }
 
