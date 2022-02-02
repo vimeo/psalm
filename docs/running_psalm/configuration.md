@@ -489,8 +489,8 @@ The  following configuration declares custom types for super-globals (`$GLOBALS`
 
 ```xml
 <globals>
-  <var name="$GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
-  <var name="$_GET" type="array{data: array<string, string>}" />
+  <var name="GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
+  <var name="_GET" type="array{data: array<string, string>}" />
 </globals>
 ```
 
