@@ -660,7 +660,6 @@ class ArgumentAnalyzer
     /**
      * @param TKeyedArray|TArray|TList|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
-     * @psalm-suppress ComplexMethod
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
@@ -786,7 +785,7 @@ class ArgumentAnalyzer
             }
 
             if ($cased_method_id) {
-                $input_type = self::processTaintedness(
+                self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id,
@@ -877,9 +876,7 @@ class ArgumentAnalyzer
         }
 
         if ($cased_method_id) {
-            $old_input_type = $input_type;
-
-            $input_type = self::processTaintedness(
+            self::processTaintedness(
                 $statements_analyzer,
                 $cased_method_id,
                 $method_id,
@@ -893,7 +890,9 @@ class ArgumentAnalyzer
                 $specialize_taint
             );
 
-            if ($old_input_type !== $input_type) {
+            if ($function_param->assert_untainted) {
+                $input_type = clone $input_type;
+                $input_type->parent_nodes = [];
                 $replace_input_type = true;
             }
         }
@@ -1469,15 +1468,15 @@ class ArgumentAnalyzer
         Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
-        bool $specialize_taint
-    ): Union {
+        bool $specialize_taint,
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->data_flow_graph
             || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
-            return $input_type;
+            return;
         }
 
         // literal data can’t be tainted
@@ -1485,7 +1484,7 @@ class ArgumentAnalyzer
             && $input_type->isSingle()
             && $input_type->hasLiteralValue()
         ) {
-            return $input_type;
+            return;
         }
 
         // numeric types can't be tainted, neither can bool
@@ -1493,7 +1492,7 @@ class ArgumentAnalyzer
             && $input_type->isSingle()
             && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
         ) {
-            return $input_type;
+            return;
         }
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
@@ -1502,16 +1501,13 @@ class ArgumentAnalyzer
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
-            $cast_type = CastAnalyzer::castStringAttempt(
+            $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
                 false
             );
-
-            $input_type = clone $input_type;
-            $input_type->parent_nodes += $cast_type->parent_nodes;
         }
 
         if ($specialize_taint) {
@@ -1618,12 +1614,5 @@ class ArgumentAnalyzer
                 $removed_taints
             );
         }
-
-        if ($function_param->assert_untainted) {
-            $input_type = clone $input_type;
-            $input_type->parent_nodes = [];
-        }
-
-        return $input_type;
     }
 }
