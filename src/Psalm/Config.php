@@ -704,6 +704,10 @@ class Config
      */
     private static function loadDomDocument(string $base_dir, string $file_contents): DOMDocument
     {
+        if(!class_exists('DOMDocument')) {
+            throw new ConfigException('DOMDocument class not found. Have you installed the php-xml module?');
+        }
+
         $dom_document = new DOMDocument();
 
         // there's no obvious way to set xml:base for a document when loading it from string
