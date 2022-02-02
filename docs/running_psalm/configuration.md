@@ -496,11 +496,11 @@ The  following configuration declares custom types for super-globals (`$GLOBALS`
 
 The example above declares global variables as shown below
 
-* `$GLOBALS`
-  + `DB` of type `MyVendor\DatabaseConnection`
-  + `VIEW` of type `MyVendor\TemplateView`
-* `$_GET`
-  + `data` e.g. like `["id" => "123", "title" => "Nice"]`
+- `$GLOBALS`
+    - `DB` of type `MyVendor\DatabaseConnection`
+    - `VIEW` of type `MyVendor\TemplateView`
+- `$_GET`
+    - `data` e.g. like `["id" => "123", "title" => "Nice"]`
 
 ## Accessing Psalm configuration in plugins
 

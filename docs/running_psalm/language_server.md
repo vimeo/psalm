@@ -46,7 +46,7 @@ In the "Server definitions" tab you should add a definition for Psalm:
  - Select `Executable`
  - Extension: `php`
  - Path: `<path-to-php-binary>` e.g. `/usr/local/bin/php` or `C:\php\php.exe`
-    - this should be an absolute path, not just `php`
+     - this should be an absolute path, not just `php`
  - Args: `vendor/bin/psalm-language-server` (on Windows use `vendor/vimeo/psalm/psalm-language-server`, or for a 'global' install '%APPDATA%' + `\Composer\vendor\vimeo\psalm\psalm-language-server`, where the '%APPDATA%' environment variable is probably something like `C:\Users\<homedir>\AppData\Roaming\`)
 
 In the "Timeouts" tab you can adjust the initialization timeout. This is important if you have a large project. You should set the "Init" value to the number of milliseconds you allow Psalm to scan your entire project and your project's dependencies. For opening a couple of projects that use large PHP frameworks, on a high end business laptop, try `240000` milliseconds for Init.
