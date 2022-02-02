@@ -88,10 +88,6 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-        if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return;
-        }
-
         $this->codebase->file_provider->openFile($file_path);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
@@ -112,10 +108,6 @@ class TextDocument
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
-
-        if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return;
-        }
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
@@ -138,10 +130,6 @@ class TextDocument
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
-
-        if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return;
-        }
 
         if ($this->project_analyzer->onchange_line_limit === 0) {
             return;
@@ -266,7 +254,12 @@ class TextDocument
 
         [$reference, $range] = $reference_location;
 
-        $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
+        try {
+            $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
+        } catch(UnexpectedValueException $e) {
+            error_log((string) $e);
+            return new Success(null);
+        }
 
         if ($symbol_information === null) {
             return new Success(null);
@@ -305,9 +298,6 @@ class TextDocument
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
-        if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success([]);
-        }
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
@@ -315,20 +305,19 @@ class TextDocument
             $this->codebase->file_provider->openFile($file_path);
             $this->server->queueFileAnalysis($file_path, $textDocument->uri);
 
-            return new Success([]);
+            return new Success(null);
         }
 
         try {
             $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
         } catch (UnexpectedValueException $e) {
-            error_log('completion errored at ' . $position->line . ':' . $position->character.
-                ', Reason: '.$e->getMessage());
-            return new Success([]);
+            error_log((string) $e);
+            return new Success(null);
         }
 
         if (!$completion_data && !$type_context) {
             error_log('completion not found at ' . $position->line . ':' . $position->character);
-            return new Success([]);
+            return new Success(null);
         }
 
         if ($completion_data) {
@@ -403,6 +392,13 @@ class TextDocument
         $this->server->logDebug(
             'textDocument/codeAction'
         );
+
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
+
+        //Don't report code actions for files we arent watching
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success(null);
+        }
 
         $fixers = [];
         foreach($context->diagnostics as $diagnostic) {

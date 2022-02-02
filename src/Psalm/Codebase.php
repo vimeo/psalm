@@ -1017,126 +1017,121 @@ class Codebase
             return ['type' => preg_replace('/^[^:]*:/', '', $symbol)];
         }
 
-        try {
-            if (strpos($symbol, '::')) {
-                if (strpos($symbol, '()')) {
-                    $symbol = substr($symbol, 0, -2);
-
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new MethodIdentifier(...explode('::', $symbol));
-
-                    $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
-
-                    if (!$declaring_method_id) {
-                        return null;
-                    }
-
-                    $storage = $this->methods->getStorage($declaring_method_id);
-
-                    return [
-                        'type' => '<?php ' . $storage->getSignature(true),
-                        'description' => $storage->description,
-                    ];
-                }
-
-                [, $symbol_name] = explode('::', $symbol);
-
-                if (strpos($symbol, '$') !== false) {
-                    $storage = $this->properties->getStorage($symbol);
-
-                    return [
-                        'type' => '<?php ' . $storage->getInfo() . ' ' . $symbol_name,
-                        'description' => $storage->description,
-                    ];
-                }
-
-                [$fq_classlike_name, $const_name] = explode('::', $symbol);
-
-                $class_constants = $this->classlikes->getConstantsForClass(
-                    $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE
-                );
-
-                if (!isset($class_constants[$const_name])) {
-                    return null;
-                }
-
-                return [
-                    'type' => '<?php ' . $const_name,
-                    'description' => $class_constants[$const_name]->description,
-                ];
-            }
-
+        if (strpos($symbol, '::')) {
             if (strpos($symbol, '()')) {
-                $function_id = strtolower(substr($symbol, 0, -2));
-                $file_storage = $this->file_storage_provider->get($file_path);
+                $symbol = substr($symbol, 0, -2);
 
-                if (isset($file_storage->functions[$function_id])) {
-                    $function_storage = $file_storage->functions[$function_id];
+                /** @psalm-suppress ArgumentTypeCoercion */
+                $method_id = new MethodIdentifier(...explode('::', $symbol));
 
-                    return [
-                        'type' => '<?php ' . $function_storage->getSignature(true),
-                        'description' => $function_storage->description,
-                    ];
-                }
+                $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
 
-                if (!$function_id) {
+                if (!$declaring_method_id) {
                     return null;
                 }
 
-                $function = $this->functions->getStorage(null, $function_id);
-                return [
-                    'type' => '<?php ' . $function->getSignature(true),
-                    'description' => $function->description,
-                ];
-            }
+                $storage = $this->methods->getStorage($declaring_method_id);
 
-            if (strpos($symbol, '$') === 0) {
-                $type = VariableFetchAnalyzer::getGlobalType($symbol);
-                if (!$type->isMixed()) {
-                    return ['type' => '<?php ' . $type];
-                }
-            }
-
-            try {
-                $storage = $this->classlike_storage_provider->get($symbol);
                 return [
-                    'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
+                    'type' => '<?php ' . $storage->getSignature(true),
                     'description' => $storage->description,
                 ];
-            } catch (InvalidArgumentException $e) {
             }
 
-            if (strpos($symbol, '\\')) {
-                $const_name_parts = explode('\\', $symbol);
-                $const_name = array_pop($const_name_parts);
-                $namespace_name = implode('\\', $const_name_parts);
+            [, $symbol_name] = explode('::', $symbol);
 
-                $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
-                    $namespace_name,
-                    ReflectionProperty::IS_PUBLIC
-                );
-                if (isset($namespace_constants[$const_name])) {
-                    $type = $namespace_constants[$const_name];
-                    return ['type' => '<?php const ' . $symbol . ' ' . $type];
-                }
-            } else {
-                $file_storage = $this->file_storage_provider->get($file_path);
-                if (isset($file_storage->constants[$symbol])) {
-                    return ['type' => '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol]];
-                }
-                $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
+            if (strpos($symbol, '$') !== false) {
+                $storage = $this->properties->getStorage($symbol);
 
-                if ($constant) {
-                    return ['type' => '<?php const ' . $symbol . ' ' . $constant];
-                }
+                return [
+                    'type' => '<?php ' . $storage->getInfo() . ' ' . $symbol_name,
+                    'description' => $storage->description,
+                ];
             }
-            return null;
-        } catch (Exception $e) {
-            error_log($e->getMessage());
 
-            return null;
+            [$fq_classlike_name, $const_name] = explode('::', $symbol);
+
+            $class_constants = $this->classlikes->getConstantsForClass(
+                $fq_classlike_name,
+                ReflectionProperty::IS_PRIVATE
+            );
+
+            if (!isset($class_constants[$const_name])) {
+                return null;
+            }
+
+            return [
+                'type' => '<?php ' . $const_name,
+                'description' => $class_constants[$const_name]->description,
+            ];
         }
+
+        if (strpos($symbol, '()')) {
+            $function_id = strtolower(substr($symbol, 0, -2));
+            $file_storage = $this->file_storage_provider->get($file_path);
+
+            if (isset($file_storage->functions[$function_id])) {
+                $function_storage = $file_storage->functions[$function_id];
+
+                return [
+                    'type' => '<?php ' . $function_storage->getSignature(true),
+                    'description' => $function_storage->description,
+                ];
+            }
+
+            if (!$function_id) {
+                return null;
+            }
+
+            $function = $this->functions->getStorage(null, $function_id);
+            return [
+                'type' => '<?php ' . $function->getSignature(true),
+                'description' => $function->description,
+            ];
+        }
+
+        if (strpos($symbol, '$') === 0) {
+            $type = VariableFetchAnalyzer::getGlobalType($symbol);
+            if (!$type->isMixed()) {
+                return ['type' => '<?php ' . $type];
+            }
+        }
+
+        try {
+            $storage = $this->classlike_storage_provider->get($symbol);
+            return [
+                'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
+                'description' => $storage->description,
+            ];
+        } catch (InvalidArgumentException $e) {
+            //continue on as normal
+        }
+
+        if (strpos($symbol, '\\')) {
+            $const_name_parts = explode('\\', $symbol);
+            $const_name = array_pop($const_name_parts);
+            $namespace_name = implode('\\', $const_name_parts);
+
+            $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
+                $namespace_name,
+                ReflectionProperty::IS_PUBLIC
+            );
+            if (isset($namespace_constants[$const_name])) {
+                $type = $namespace_constants[$const_name];
+                return ['type' => '<?php const ' . $symbol . ' ' . $type];
+            }
+        } else {
+            $file_storage = $this->file_storage_provider->get($file_path);
+            if (isset($file_storage->constants[$symbol])) {
+                return ['type' => '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol]];
+            }
+            $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
+
+            if ($constant) {
+                return ['type' => '<?php const ' . $symbol . ' ' . $constant];
+            }
+        }
+        return null;
     }
 
     public function getSymbolLocation(string $file_path, string $symbol): ?CodeLocation

@@ -72,8 +72,8 @@ final class LanguageServer
         ];
 
         $valid_long_options = [
-            'no-cache',
             'clear-cache',
+            'clear-cache-on-boot',
             'config:',
             'find-dead-code',
             'help',
@@ -166,9 +166,10 @@ Options:
         Look for dead code
 
     --clear-cache
-        Clears all cache files that the language server uses for this specific project
+        Clears all cache files that the language server uses for this specific project (exits after)
 
-    --no-cache
+    --clear-cache-on-boot
+        Clears all cache files that the language server uses for this specific project on boot (does not exit)
 
     --use-ini-defaults
         Use PHP-provided ini defaults for memory and error display
@@ -274,31 +275,27 @@ HELP;
 
         $config->setServerMode();
 
-        if (isset($options['clear-cache'])) {
+        if (isset($options['clear-cache']) || isset($options['clear-cache-on-boot'])) {
             $cache_directory = $config->getCacheDirectory();
 
             if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
-            echo 'Cache directory deleted' . PHP_EOL;
-            exit;
+            if(!isset($options['clear-cache-on-boot'])) {
+                echo 'Cache directory deleted' . PHP_EOL;
+                exit;
+            }
         }
 
-        if (isset($options['no-cache']) || isset($options['i'])) {
-            $providers = new Providers(
-                new FileProvider
-            );
-        } else {
-            $providers = new Providers(
-                new FileProvider,
-                new ParserCacheProvider($config),
-                new FileStorageCacheProvider($config),
-                new ClassLikeStorageCacheProvider($config),
-                new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
-            );
-        }
-
+        //no-cache mode does not work in the LSP
+        $providers = new Providers(
+            new FileProvider,
+            new ParserCacheProvider($config),
+            new FileStorageCacheProvider($config),
+            new ClassLikeStorageCacheProvider($config),
+            new FileReferenceCacheProvider($config),
+            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+        );
 
         $project_analyzer = new ProjectAnalyzer(
             $config,

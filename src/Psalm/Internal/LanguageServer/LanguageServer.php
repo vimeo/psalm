@@ -365,7 +365,7 @@ class LanguageServer extends Dispatcher
         try {
             $this->client->refreshConfiguration();
         } catch(Throwable $e) {
-            error_log($e->getMessage());
+            error_log((string) $e);
         }
         $this->clientStatus('running');
     }
@@ -422,8 +422,8 @@ class LanguageServer extends Dispatcher
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $this->emitVersionedIssues($files,$version);
-        } catch(\Throwable $e) {
-            $this->logError($e->getMessage(). $e->getLine());
+        } catch(Throwable $e) {
+            error_log((string) $e);
         } finally {
             unset($this->onchange_paths_to_analyze[$version]);
             unset($this->onsave_paths_to_analyze[$version]);
@@ -440,6 +440,10 @@ class LanguageServer extends Dispatcher
         $this->current_issues = $data;
 
         foreach ($files as $file_path => $uri) {
+            //Dont report errors in files we are not watching
+            if (!$this->project_analyzer->getCodebase()->config->isInProjectDirs($file_path)) {
+                continue;
+            }
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
