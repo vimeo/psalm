@@ -167,6 +167,9 @@ class LanguageServer extends Dispatcher
                             $e
                         );
                     }
+                    if ($error !== null) {
+                        $this->logError($error->message);
+                    }
                     // Only send a Response for a Request
                     // Notifications do not send Responses
                     /**
@@ -175,7 +178,6 @@ class LanguageServer extends Dispatcher
                      */
                     if (Request::isRequest($msg->body)) {
                         if ($error !== null) {
-                            $this->logError($error->message);
                             $responseBody = new ErrorResponse($msg->body->id, $error);
                         } else {
                             $responseBody = new SuccessResponse($msg->body->id, $result);
