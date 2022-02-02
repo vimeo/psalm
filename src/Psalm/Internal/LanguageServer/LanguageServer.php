@@ -150,11 +150,15 @@ class LanguageServer extends Dispatcher
                     try {
                         // Invoke the method handler to get a result
                         /**
-                         * @var Promise
+                         * @var Promise|null
                          */
                         $dispatched = $this->dispatch($msg->body);
-                        /** @psalm-suppress MixedAssignment */
-                        $result = yield $dispatched;
+                        if(!is_null($dispatched)) {
+                            /** @psalm-suppress MixedAssignment */
+                            $result = yield $dispatched;
+                        } else {
+                            $result = null;
+                        }
                     } catch (Error $e) {
                         // If a ResponseError is thrown, send it back in the Response
                         $error = $e;
