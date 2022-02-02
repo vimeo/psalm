@@ -168,7 +168,7 @@ class TextDocument
     {
         $this->server->logDebug(
             'textDocument/didClose',
-            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+            ['uri' => $textDocument->uri]
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
