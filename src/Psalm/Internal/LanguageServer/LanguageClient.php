@@ -10,6 +10,8 @@ use LanguageServerProtocol\LogTrace;
 use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 use Psalm\Internal\LanguageServer\Client\Workspace as ClientWorkspace;
 
+use function is_null;
+
 /**
  * @internal
  */
@@ -95,16 +97,16 @@ class LanguageClient
      * The amount and content of these notifications depends on the current trace configuration.
      *
      * @param LogTrace $logTrace
-     * @return void
      */
-    public function logTrace(LogTrace $logTrace): void {
+    public function logTrace(LogTrace $logTrace): void
+    {
         //If trace is 'off', the server should not send any logTrace notification.
-        if(is_null($this->server->trace) || $this->server->trace === 'off') {
+        if (is_null($this->server->trace) || $this->server->trace === 'off') {
             return;
         }
 
         //If trace is 'messages', the server should not add the 'verbose' field in the LogTraceParams.
-        if($this->server->trace === 'messages') {
+        if ($this->server->trace === 'messages') {
             $logTrace->verbose = null;
         }
 
@@ -139,19 +141,20 @@ class LanguageClient
      * server issuing the event.
      *
      * @param LogMessage $logMessage
-     * @return void
      */
-    public function event(LogMessage $logMessage) {
+    public function event(LogMessage $logMessage): void
+    {
         $this->handler->notify(
             'telemetry/event',
             $logMessage
         );
     }
 
-    private function configurationRefreshed() {
+    private function configurationRefreshed(): void
+    {
         //do things when the config is refreshed
 
-        if(!is_null($this->clientConfiguration->provideCompletion)) {
+        if (!is_null($this->clientConfiguration->provideCompletion)) {
             //$this->server->project_analyzer->provide_completion = $this->clientConfiguration->provideCompletion;
         }
     }

@@ -7,7 +7,6 @@ use InvalidArgumentException;
 use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionItem;
 use LanguageServerProtocol\CompletionItemKind;
-use LanguageServerProtocol\InsertTextFormat;
 use LanguageServerProtocol\ParameterInformation;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
@@ -413,7 +412,7 @@ class Codebase
     {
         $this->loadAnalyzer();
 
-        if($force) {
+        if ($force) {
             FileReferenceProvider::clearCache();
         }
 
@@ -1521,8 +1520,11 @@ class Codebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForClassishThing(string $type_string, string $gap): array
-    {
+    public function getCompletionItemsForClassishThing(
+        string $type_string,
+        string $gap,
+        bool $snippets_supported = false
+    ): array {
         $completion_items = [];
 
         $type = Type::parseString($type_string);
@@ -1543,7 +1545,7 @@ class Codebase
                                 $method_storage->description,
                                 (string)$method_storage->visibility,
                                 $method_storage->cased_name,
-                                $method_storage->cased_name . (count($method_storage->params) !== 0 ? '($0)' : '()'),
+                                $method_storage->cased_name,
                                 null,
                                 null,
                                 new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
@@ -1551,7 +1553,10 @@ class Codebase
                                 2
                             );
 
-                            $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
+                            if ($snippets_supported && count($method_storage->params) > 0) {
+                                $completion_item->insertText .= '($0)';
+                                $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
+                            }
 
                             $completion_items[] = $completion_item;
                         }
@@ -1868,7 +1873,7 @@ class Codebase
 
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
-        $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version );
+        $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version);
     }
 
     public function removeTemporaryFileChanges(string $file_path): void

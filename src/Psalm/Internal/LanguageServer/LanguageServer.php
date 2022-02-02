@@ -33,7 +33,6 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
-use LanguageServerProtocol\WorkspaceFolder;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -45,12 +44,15 @@ use Throwable;
 use function Amp\asyncCoroutine;
 use function Amp\call;
 use function array_combine;
+use function array_filter;
 use function array_keys;
 use function array_map;
+use function array_reduce;
 use function array_shift;
 use function array_unshift;
 use function explode;
 use function implode;
+use function json_encode;
 use function max;
 use function parse_url;
 use function rawurlencode;
@@ -60,6 +62,8 @@ use function strpos;
 use function substr;
 use function trim;
 use function urldecode;
+
+use const JSON_PRETTY_PRINT;
 
 /**
  * @internal
@@ -153,7 +157,7 @@ class LanguageServer extends Dispatcher
                          * @var Promise|null
                          */
                         $dispatched = $this->dispatch($msg->body);
-                        if($dispatched !== null) {
+                        if ($dispatched !== null) {
                             /** @psalm-suppress MixedAssignment */
                             $result = yield $dispatched;
                         } else {
@@ -244,7 +248,7 @@ class LanguageServer extends Dispatcher
         $this->trace = $trace;
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () use($capabilities) {
+            function () use ($capabilities) {
                 $this->logInfo("Initializing...");
                 $this->clientStatus('initializing');
 
@@ -315,8 +319,7 @@ class LanguageServer extends Dispatcher
                 // Support "Completion"
 
                 // Support "Code Actions" if we support data
-                if(
-                    $this->clientCapabilities &&
+                if ($this->clientCapabilities &&
                     $this->clientCapabilities->textDocument &&
                     $this->clientCapabilities->textDocument->publishDiagnostics &&
                     $this->clientCapabilities->textDocument->publishDiagnostics->dataSupport
@@ -355,17 +358,19 @@ class LanguageServer extends Dispatcher
     {
         try {
             $this->client->refreshConfiguration();
-        } catch(Throwable $e) {
-            $this->server->logError((string) $e);
+        } catch (Throwable $e) {
+            $this->logError((string) $e);
         }
         $this->clientStatus('running');
     }
 
-    public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version=null) {
+    public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version = null): void
+    {
         $this->doVersionedAnalysis([$file_path => $uri], $version);
     }
 
-    public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version=null) {
+    public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version = null): void
+    {
         $this->doVersionedAnalysis([$file_path => $uri], $version);
     }
 
@@ -373,9 +378,31 @@ class LanguageServer extends Dispatcher
      * Queue Saved File Analysis
      * @param string $file_path
      * @param string $uri
-     * @return void
      */
-    public function queueSaveFileAnalysis(string $file_path, string $uri) {
+    public function queueSaveFileAnalysis(string $file_path, string $uri): void
+    {
+        //Always reanalzye open files because of things changing elsewhere
+        $this->doVersionedAnalysis(
+            $this->queueFileAnalysisWithOpenedFiles([$file_path => $this->pathToUri($file_path)])
+        );
+    }
+
+    public function queueFileAnalysisWithOpenedFiles(array $files = []): void
+    {
+        $opened = array_reduce(
+            $this->project_analyzer->getCodebase()->file_provider->getOpenFilesPath(),
+            function (array $opened, string $file_path) {
+                $opened[$file_path] = $this->pathToUri($file_path);
+                return $opened;
+            },
+            $files
+        );
+
+        $this->doVersionedAnalysis($opened);
+    }
+
+    public function queueClosedFileAnalysis(string $file_path, string $uri): void
+    {
         //Always reanalzye open files because of things changing elsewhere
         $opened = array_reduce(
             $this->project_analyzer->getCodebase()->file_provider->getOpenFilesPath(),
@@ -383,14 +410,16 @@ class LanguageServer extends Dispatcher
                 $opened[$file_path] = $this->pathToUri($file_path);
                 return $opened;
             },
-        [$file_path => $this->pathToUri($file_path)]);
+            [$file_path => $this->pathToUri($file_path)]
+        );
 
         $this->doVersionedAnalysis($opened);
     }
 
-    public function doVersionedAnalysis($all_files_to_analyze, ?int $version=null):void {
+    public function doVersionedAnalysis($all_files_to_analyze, ?int $version = null): void
+    {
         try {
-            if(empty($all_files_to_analyze)) {
+            if (empty($all_files_to_analyze)) {
                 $this->logWarning("No versioned analysis to do.");
                 return;
             }
@@ -410,14 +439,15 @@ class LanguageServer extends Dispatcher
             );
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-            $this->emitVersionedIssues($files,$version);
-        } catch(Throwable $e) {
+            $this->emitVersionedIssues($files, $version);
+        } catch (Throwable $e) {
             $this->server->logError((string) $e);
         }
     }
 
-    public function emitVersionedIssues(array $files, ?int $version = null): void {
-        $this->logDebug("Perform Analysis",[
+    public function emitVersionedIssues(array $files, ?int $version = null): void
+    {
+        $this->logDebug("Perform Analysis", [
             'files' => array_keys($files),
             'version' => $version
         ]);
@@ -541,8 +571,8 @@ class LanguageServer extends Dispatcher
      */
     public function log(int $type, string $message, array $context = []): void
     {
-        if(!empty($context)) {
-            $message .= "\n" . \json_encode($context, JSON_PRETTY_PRINT);
+        if (!empty($context)) {
+            $message .= "\n" . json_encode($context, JSON_PRETTY_PRINT);
         }
         try {
             $this->client->logMessage(
@@ -557,19 +587,23 @@ class LanguageServer extends Dispatcher
         }
     }
 
-    public function logError(string $message, array $context = []) {
+    public function logError(string $message, array $context = []): void
+    {
         $this->log(MessageType::ERROR, $message, $context);
     }
 
-    public function logWarning(string $message, array $context = []) {
+    public function logWarning(string $message, array $context = []): void
+    {
         $this->log(MessageType::WARNING, $message, $context);
     }
 
-    public function logInfo(string $message, array $context = []) {
+    public function logInfo(string $message, array $context = []): void
+    {
         $this->log(MessageType::INFO, $message, $context);
     }
 
-    public function logDebug(string $message, array $context = []) {
+    public function logDebug(string $message, array $context = []): void
+    {
         $this->log(MessageType::LOG, $message, $context);
     }
 

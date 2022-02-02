@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
+use Amp\Promise;
 use Amp\Success;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
@@ -12,6 +13,10 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\Provider\FileReferenceProvider;
+
+use function array_map;
+use function in_array;
+use function realpath;
 
 /**
  * Provides method handlers for all workspace/* methods
@@ -60,24 +65,22 @@ class Workspace
             'workspace/didChangeWatchedFiles'
         );
 
-        $realFiles = array_map(function(FileEvent $change) {
+        $realFiles = array_map(function (FileEvent $change) {
             return LanguageServer::uriToPath($change->uri);
         }, $changes);
 
         $composerLockFile = realpath(Composer::getLockFilePath($this->codebase->config->base_dir));
-        if(in_array($composerLockFile, $realFiles)) {
+        if (in_array($composerLockFile, $realFiles)) {
             $this->server->logInfo('Composer.lock file changed. Reloading codebase');
             FileReferenceProvider::clearCache();
-            foreach($this->codebase->file_provider->getOpenFiles() as $file) {
-                $this->server->queueFileAnalysis($file, $this->server->pathToUri($file));
-            }
+            $this->server->queueFileAnalysisWithOpenedFiles();
             return;
         }
 
         foreach ($changes as $change) {
             $file_path = LanguageServer::uriToPath($change->uri);
 
-            if($composerLockFile === $file_path) {
+            if ($composerLockFile === $file_path) {
                 continue;
             }
 
@@ -96,7 +99,7 @@ class Workspace
 
             //If the file is currently open then dont analize it because its tracked in didChange
             if (!$this->codebase->file_provider->isOpen($file_path)) {
-                $this->server->queueFileAnalysis($file_path, $change->uri);
+                $this->server->queueClosedFileAnalysis($file_path, $change->uri);
             }
         }
     }
@@ -123,7 +126,8 @@ class Workspace
      * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand($command, $arguments) {
+    public function executeCommand($command, $arguments): Promise
+    {
         $this->server->logDebug(
             'workspace/executeCommand',
             [
@@ -132,9 +136,11 @@ class Workspace
             ]
         );
 
-        switch($command) {
+        switch ($command) {
             case 'psalm.analyze.uri':
-                $file = LanguageServer::uriToPath($arguments->uri);
+                /** @var array{uri: string} */
+                $arguments = (array) $arguments;
+                $file = LanguageServer::uriToPath($arguments['uri']);
                 $codebase = $this->project_analyzer->getCodebase();
                 $codebase->reloadFiles(
                     $this->project_analyzer,
@@ -147,8 +153,8 @@ class Workspace
                 );
                 $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-                $this->server->emitVersionedIssues([$file => $arguments->uri]);
-            break;
+                $this->server->emitVersionedIssues([$file => $arguments['uri']]);
+                break;
         }
 
         return new Success(null);

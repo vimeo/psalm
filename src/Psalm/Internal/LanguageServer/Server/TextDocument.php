@@ -6,11 +6,9 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
-use InvalidArgumentException;
 use LanguageServerProtocol\CodeAction;
 use LanguageServerProtocol\CodeActionContext;
 use LanguageServerProtocol\CodeActionKind;
-use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -31,10 +29,8 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use UnexpectedValueException;
 
-use function array_combine;
 use function array_values;
 use function count;
-use function error_log;
 use function preg_match;
 use function substr_count;
 
@@ -137,7 +133,7 @@ class TextDocument
             return;
         }
 
-        if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
+        if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
         } else {
             throw new UnexpectedValueException('Not expecting partial diff');
@@ -264,7 +260,7 @@ class TextDocument
 
         try {
             $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
-        } catch(UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             $this->server->logError((string) $e);
             return new Success(null);
         }
@@ -297,7 +293,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position
-     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
+     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>|Promise<null>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -335,7 +331,12 @@ class TextDocument
             [$recent_type, $gap, $offset] = $completion_data;
 
             if ($gap === '->' || $gap === '::') {
-                $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap);
+                $snippetSupport = ($this->server->clientCapabilities->textDocument &&
+                    $this->server->clientCapabilities->textDocument->completion &&
+                    $this->server->clientCapabilities->textDocument->completion->completionItem &&
+                    $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
+                    ? true : false;
+                $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
             } elseif ($gap === '[') {
                 $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
             } else {
@@ -382,7 +383,7 @@ class TextDocument
 
         try {
             $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
-        } catch(UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $e) {
             $this->server->logError((string) $e);
             return new Success(null);
         }
@@ -420,23 +421,27 @@ class TextDocument
         }
 
         $fixers = [];
-        foreach($context->diagnostics as $diagnostic) {
-            if($diagnostic->source !== 'psalm') {
+        foreach ($context->diagnostics as $diagnostic) {
+            if ($diagnostic->source !== 'psalm') {
                 continue;
             }
+
+            /** @var array{type: string, snippet: string, line_from: int, line_to: int} */
+            $data = (array)$diagnostic->data;
+
             $snippetRange = new Range(
-                new Position($diagnostic->data->line_from-1),
-                new Position($diagnostic->data->line_to)
+                new Position($data['line_from']-1),
+                new Position($data['line_to'])
             );
 
             $indentation = '';
-            if (preg_match('/^(\s*)/', $diagnostic->data->snippet, $matches)) {
+            if (preg_match('/^(\s*)/', $data['snippet'], $matches)) {
                 $indentation = $matches[1] ?? '';
             }
 
             //Suppress Ability
-            $fixers["suppress.{$diagnostic->data->type}"] = new CodeAction(
-                "Suppress {$diagnostic->data->type} for this line",
+            $fixers["suppress.{$data['type']}"] = new CodeAction(
+                "Suppress {$data['type']} for this line",
                 CodeActionKind::QUICK_FIX,
                 null,
                 null,
@@ -446,9 +451,9 @@ class TextDocument
                         new TextEdit(
                             $snippetRange,
                             "{$indentation}/**\n".
-                            "{$indentation} * @psalm-suppress {$diagnostic->data->type}\n".
+                            "{$indentation} * @psalm-suppress {$data['type']}\n".
                             "{$indentation} */\n".
-                            "{$diagnostic->data->snippet}\n"
+                            "{$data['snippet']}\n"
                         )
                     ]
                 ])

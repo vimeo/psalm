@@ -281,7 +281,7 @@ HELP;
             if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
-            if(!isset($options['clear-cache-on-boot'])) {
+            if (!isset($options['clear-cache-on-boot'])) {
                 echo 'Cache directory deleted' . PHP_EOL;
                 exit;
             }

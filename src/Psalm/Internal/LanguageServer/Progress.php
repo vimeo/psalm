@@ -1,9 +1,7 @@
 <?php
 
-
 namespace Psalm\Internal\LanguageServer;
 
-use LanguageServerProtocol\MessageType;
 use Psalm\Progress\Progress as Base;
 
 /**
@@ -17,7 +15,8 @@ class Progress extends Base
      */
     private $server;
 
-    public function __construct(LanguageServer $server) {
+    public function __construct(LanguageServer $server)
+    {
         $this->server = $server;
     }
 

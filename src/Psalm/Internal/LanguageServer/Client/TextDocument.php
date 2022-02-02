@@ -4,16 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Client;
 
-use Amp\Promise;
-use Generator;
 use JsonMapper;
 use LanguageServerProtocol\Diagnostic;
-use LanguageServerProtocol\TextDocumentIdentifier;
-use LanguageServerProtocol\TextDocumentItem;
 use Psalm\Internal\LanguageServer\ClientHandler;
 use Psalm\Internal\LanguageServer\LanguageServer;
-
-use function Amp\call;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -47,7 +41,7 @@ class TextDocument
      *
      * @param Diagnostic[] $diagnostics
      */
-    public function publishDiagnostics(string $uri, array $diagnostics, ?int $version=null): void
+    public function publishDiagnostics(string $uri, array $diagnostics, ?int $version = null): void
     {
         $this->server->logDebug("textDocument/publishDiagnostics");
 

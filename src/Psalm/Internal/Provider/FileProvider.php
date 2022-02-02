@@ -72,11 +72,11 @@ class FileProvider
         file_put_contents($file_path, $file_contents);
     }
 
-    public function setOpenContents(string $file_path, string $file_contents): void
+    public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
         $file_path_lc = strtolower($file_path);
         if (isset($this->open_files[$file_path_lc])) {
-            $this->open_files[$file_path_lc] = $file_contents;
+            $this->open_files[$file_path_lc] = $file_contents ?? $this->getContents($file_path, true);
         }
     }
 
@@ -91,8 +91,7 @@ class FileProvider
 
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
-        if(
-            isset($this->temp_files[strtolower($file_path)]) &&
+        if (isset($this->temp_files[strtolower($file_path)]) &&
             $version !== null &&
             $this->temp_files[strtolower($file_path)]['version'] !== null &&
             $version < $this->temp_files[strtolower($file_path)]['version']

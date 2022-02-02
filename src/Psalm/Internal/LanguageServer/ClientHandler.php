@@ -13,7 +13,6 @@ use Amp\Promise;
 use Generator;
 
 use function Amp\call;
-use function error_log;
 
 /**
  * @internal
