@@ -93,8 +93,8 @@ class FileProvider
     {
         if(
             isset($this->temp_files[strtolower($file_path)]) &&
-            !is_null($version) &&
-            !is_null($this->temp_files[strtolower($file_path)]['version']) &&
+            $version !== null &&
+            $this->temp_files[strtolower($file_path)]['version'] !== null &&
             $version < $this->temp_files[strtolower($file_path)]['version']
         ) {
             return;

@@ -153,7 +153,7 @@ class LanguageServer extends Dispatcher
                          * @var Promise|null
                          */
                         $dispatched = $this->dispatch($msg->body);
-                        if(!is_null($dispatched)) {
+                        if($dispatched !== null) {
                             /** @psalm-suppress MixedAssignment */
                             $result = yield $dispatched;
                         } else {
