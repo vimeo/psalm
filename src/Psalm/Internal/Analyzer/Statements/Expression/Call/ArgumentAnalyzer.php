@@ -1468,7 +1468,7 @@ class ArgumentAnalyzer
         Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
-        bool $specialize_taint,
+        bool $specialize_taint
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
