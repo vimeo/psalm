@@ -110,21 +110,6 @@ class LanguageServer extends Dispatcher
      */
     protected $project_analyzer;
 
-    /**
-     * @var array<string, string>
-     */
-    protected $onsave_paths_to_analyze = [];
-
-    /**
-     * @var array<string, string>
-     */
-    protected $onchange_paths_to_analyze = [];
-
-    /**
-     * @var array<string, list<IssueData>>
-     */
-    protected $current_issues = [];
-
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -365,42 +350,40 @@ class LanguageServer extends Dispatcher
         try {
             $this->client->refreshConfiguration();
         } catch(Throwable $e) {
-            error_log((string) $e);
+            $this->server->logError((string) $e);
         }
         $this->clientStatus('running');
     }
 
-    public function queueTemporaryFileAnalysis(string $file_path, string $uri, ?int $version=null): void
-    {
-        $this->logDebug("queueTemporaryFileAnalysis", ['version' => $version, 'file_path' => $file_path, 'uri' => $uri]);
-        $this->onchange_paths_to_analyze[$version][$file_path] = $uri;
-        $this->debounceVersionedAnalysis($version);
+    public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version=null) {
+        $this->doVersionedAnalysis([$file_path => $uri], $version);
     }
 
-    public function queueFileAnalysis(string $file_path, string $uri, ?int $version=null): void
-    {
-        //$this->logDebug("queueFileAnalysis", ['version' => $version, 'file_path' => $file_path, 'uri' => $uri]);
-        $this->onsave_paths_to_analyze[$version][$file_path] = $uri;
-        $this->debounceVersionedAnalysis($version);
+    public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version=null) {
+        $this->doVersionedAnalysis([$file_path => $uri], $version);
     }
 
-    public function debounceVersionedAnalysis(?int $version=null) {
-        //$this->logDebug("debounceVersionedAnalysis", ['version' => $version]);
-        $onchange_paths_to_analyze = $this->onchange_paths_to_analyze[$version] ?? [];
-        $onsave_paths_to_analyze = $this->onsave_paths_to_analyze[$version] ?? [];
-        $all_files_to_analyze = $onchange_paths_to_analyze + $onsave_paths_to_analyze;
+    /**
+     * Queue Saved File Analysis
+     * @param string $file_path
+     * @param string $uri
+     * @return void
+     */
+    public function queueSaveFileAnalysis(string $file_path, string $uri) {
+        //Always reanalzye open files because of things changing elsewhere
+        $opened = array_reduce(
+            $this->project_analyzer->getCodebase()->file_provider->getOpenFilesPath(),
+            function (array $opened, string $file_path) {
+                $opened[$file_path] = $this->pathToUri($file_path);
+                return $opened;
+            },
+        [$file_path => $this->pathToUri($file_path)]);
 
-        $this->doVersionedAnalysis('', [$all_files_to_analyze, $version]);
+        $this->doVersionedAnalysis($opened);
     }
 
-    public function doVersionedAnalysis(string $watcherId, $data = []):void {
-        //$this->logDebug("doVersionedAnalysis");
-
-        [$all_files_to_analyze, $version] = $data;
-
+    public function doVersionedAnalysis($all_files_to_analyze, ?int $version=null):void {
         try {
-
-
             if(empty($all_files_to_analyze)) {
                 $this->logWarning("No versioned analysis to do.");
                 return;
@@ -423,12 +406,8 @@ class LanguageServer extends Dispatcher
 
             $this->emitVersionedIssues($files,$version);
         } catch(Throwable $e) {
-            error_log((string) $e);
-        } finally {
-            unset($this->onchange_paths_to_analyze[$version]);
-            unset($this->onsave_paths_to_analyze[$version]);
+            $this->server->logError((string) $e);
         }
-
     }
 
     public function emitVersionedIssues(array $files, ?int $version = null): void {
@@ -436,9 +415,8 @@ class LanguageServer extends Dispatcher
             'files' => array_keys($files),
             'version' => $version
         ]);
-        $data = IssueBuffer::clear();
-        $this->current_issues = $data;
 
+        $data = IssueBuffer::clear();
         foreach ($files as $file_path => $uri) {
             //Dont report errors in files we are not watching
             if (!$this->project_analyzer->getCodebase()->config->isInProjectDirs($file_path)) {
@@ -663,15 +641,5 @@ class LanguageServer extends Dispatcher
         }
 
         return $filepath;
-    }
-
-    /**
-     * Get the value of current_issues
-     *
-     * @return array<string, list<IssueData>>
-     */
-    public function getCurrentIssues(): array
-    {
-        return $this->current_issues;
     }
 }

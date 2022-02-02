@@ -88,23 +88,25 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        $this->codebase->removeTemporaryFileChanges($file_path);
         $this->codebase->file_provider->openFile($file_path);
+        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
 
-        $this->server->queueFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
+        $this->server->queueOpenFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
     }
 
     /**
      * The document save notification is sent from the client to the server when the document was saved in the client
      *
-     * @param TextDocumentItem $textDocument the document that was opened
+     * @param TextDocumentIdentifier $textDocument the document that was opened
      * @param string|null $text Optional the content when saved. Depends on the includeText value
      *                          when the save notification was requested.
      */
-    public function didSave(TextDocumentItem $textDocument, ?string $text = null): void
+    public function didSave(TextDocumentIdentifier $textDocument, ?string $text = null): void
     {
         $this->server->logDebug(
             'textDocument/didSave',
-            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+            ['uri' => (array) $textDocument]
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -113,7 +115,7 @@ class TextDocument
         $this->codebase->removeTemporaryFileChanges($file_path);
         $this->codebase->file_provider->setOpenContents($file_path, $text);
 
-        $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+        $this->server->queueSaveFileAnalysis($file_path, $textDocument->uri);
     }
 
     /**
@@ -147,8 +149,8 @@ class TextDocument
             }
         }
 
-        $this->codebase->addTemporaryFileChanges($file_path, $new_content);
-        $this->server->queueTemporaryFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
+        $this->codebase->addTemporaryFileChanges($file_path, $new_content, $textDocument->version);
+        $this->server->queueChangeFileAnalysis($file_path, $textDocument->uri, $textDocument->version);
     }
 
     /**
@@ -191,12 +193,15 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        //This currently doesnt work right with out of project files
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success(null);
+        }
+
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->codebase->file_provider->openFile($file_path);
-            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-
+            $this->server->logError((string) $e);
             return new Success(null);
         }
 
@@ -239,12 +244,15 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        //This currently doesnt work right with out of project files
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success(null);
+        }
+
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->codebase->file_provider->openFile($file_path);
-            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-
+            $this->server->logError((string) $e);
             return new Success(null);
         }
 
@@ -257,7 +265,7 @@ class TextDocument
         try {
             $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
         } catch(UnexpectedValueException $e) {
-            error_log((string) $e);
+            $this->server->logError((string) $e);
             return new Success(null);
         }
 
@@ -299,24 +307,27 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        //This currently doesnt work right with out of project files
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success(null);
+        }
+
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->codebase->file_provider->openFile($file_path);
-            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-
+            $this->server->logError((string) $e);
             return new Success(null);
         }
 
         try {
             $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
         } catch (UnexpectedValueException $e) {
-            error_log((string) $e);
+            $this->server->logError((string) $e);
             return new Success(null);
         }
 
         if (!$completion_data && !$type_context) {
-            error_log('completion not found at ' . $position->line . ':' . $position->character);
+            $this->server->logError('completion not found at ' . $position->line . ':' . $position->character);
             return new Success(null);
         }
 
@@ -353,23 +364,31 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        //This currently doesnt work right with out of project files
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return new Success(null);
+        }
+
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->codebase->file_provider->openFile($file_path);
-            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-
-            return new Success(new SignatureHelp());
+            $this->server->logError((string) $e);
+            return new Success(null);
         }
 
         if ($argument_location === null) {
-            return new Success(new SignatureHelp());
+            return new Success(null);
         }
 
-        $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
+        try {
+            $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
+        } catch(UnexpectedValueException $e) {
+            $this->server->logError((string) $e);
+            return new Success(null);
+        }
 
         if (!$signature_information) {
-            return new Success(new SignatureHelp());
+            return new Success(null);
         }
 
         return new Success(

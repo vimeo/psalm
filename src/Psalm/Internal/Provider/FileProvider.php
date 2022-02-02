@@ -31,11 +31,16 @@ class FileProvider
      */
     protected $open_files = [];
 
+    /**
+     * @var array<lowercase-string, string>
+     */
+    protected $open_files_paths = [];
+
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         $file_path_lc = strtolower($file_path);
         if (!$go_to_source && isset($this->temp_files[$file_path_lc])) {
-            return $this->temp_files[$file_path_lc];
+            return $this->temp_files[$file_path_lc]['content'];
         }
 
         if (isset($this->open_files[$file_path_lc])) {
@@ -67,11 +72,11 @@ class FileProvider
         file_put_contents($file_path, $file_contents);
     }
 
-    public function setOpenContents(string $file_path, ?string $file_contents=null): void
+    public function setOpenContents(string $file_path, string $file_contents): void
     {
         $file_path_lc = strtolower($file_path);
         if (isset($this->open_files[$file_path_lc])) {
-            $this->open_files[$file_path_lc] = $file_contents ?? $this->getContents($file_path, true);
+            $this->open_files[$file_path_lc] = $file_contents;
         }
     }
 
@@ -84,9 +89,20 @@ class FileProvider
         return (int)filemtime($file_path);
     }
 
-    public function addTemporaryFileChanges(string $file_path, string $new_content): void
+    public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
-        $this->temp_files[strtolower($file_path)] = $new_content;
+        if(
+            isset($this->temp_files[strtolower($file_path)]) &&
+            !is_null($version) &&
+            !is_null($this->temp_files[strtolower($file_path)]['version']) &&
+            $version < $this->temp_files[strtolower($file_path)]['version']
+        ) {
+            return;
+        }
+        $this->temp_files[strtolower($file_path)] = [
+            'version' => $version,
+            'content' => $new_content,
+        ];
     }
 
     public function removeTemporaryFileChanges(string $file_path): void
@@ -94,14 +110,15 @@ class FileProvider
         unset($this->temp_files[strtolower($file_path)]);
     }
 
-    public function getOpenFiles(): array
+    public function getOpenFilesPath(): array
     {
-        return array_keys($this->open_files);
+        return $this->open_files_paths;
     }
 
     public function openFile(string $file_path): void
     {
         $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);
+        $this->open_files_paths[strtolower($file_path)] = $file_path;
     }
 
     public function isOpen(string $file_path): bool
@@ -113,7 +130,7 @@ class FileProvider
     public function closeFile(string $file_path): void
     {
         $file_path_lc = strtolower($file_path);
-        unset($this->temp_files[$file_path_lc], $this->open_files[$file_path_lc]);
+        unset($this->temp_files[$file_path_lc], $this->open_files[$file_path_lc], $this->open_files_paths[$file_path_lc]);
     }
 
     public function fileExists(string $file_path): bool

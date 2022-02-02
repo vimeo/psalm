@@ -1366,12 +1366,12 @@ class Codebase
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
                     if (!$callables || !$callables[0]->params) {
-                        return null;
+                        throw $exception;
                     }
 
                     $params = $callables[0]->params;
                 } else {
-                    return null;
+                    throw $exception;
                 }
             }
         }
@@ -1866,9 +1866,9 @@ class Codebase
         );
     }
 
-    public function addTemporaryFileChanges(string $file_path, string $new_content): void
+    public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
-        $this->file_provider->addTemporaryFileChanges($file_path, $new_content);
+        $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version );
     }
 
     public function removeTemporaryFileChanges(string $file_path): void
