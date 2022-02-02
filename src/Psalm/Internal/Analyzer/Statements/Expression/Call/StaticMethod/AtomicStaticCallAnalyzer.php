@@ -481,14 +481,15 @@ class AtomicStaticCallAnalyzer
                         $class_storage->final
                     );
 
-                    $context->vars_in_scope['$tmp_mixin_var'] = $new_lhs_type;
+                    $mixin_context = clone $context;
+                    $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = $new_lhs_type;
 
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
                         $stmt_name,
-                        $context,
-                        'tmp_mixin_var',
+                        $mixin_context,
+                        '__tmp_mixin_var__',
                         true
                     );
                 }
@@ -694,17 +695,20 @@ class AtomicStaticCallAnalyzer
                 // with nonexistent method, we try to forward to instance method call for resolve pseudo method.
 
                 // Use parent type as static type for the method call
-                $context->vars_in_scope['$tmp_parent_var'] = new Union([$lhs_type_part]);
+                $tmp_context = clone $context;
+                $tmp_context->vars_in_scope['$__tmp_parent_var__'] = new Union([$lhs_type_part]);
 
                 if (self::forwardCallToInstanceMethod(
                     $statements_analyzer,
                     $stmt,
                     $stmt_name,
-                    $context,
-                    'tmp_parent_var'
+                    $tmp_context,
+                    '__tmp_parent_var__'
                 ) === false) {
                     return false;
                 }
+
+                unset($tmp_context);
 
                 // Resolve actual static return type according to caller (i.e. $this) static type
                 if (isset($context->vars_in_scope['$this'])

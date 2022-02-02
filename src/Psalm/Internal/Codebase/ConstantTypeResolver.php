@@ -137,7 +137,9 @@ class ConstantTypeResolver
                 }
 
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    return new TKeyedArray($left->properties + $right->properties);
+                    $keyed_array = new TKeyedArray($left->properties + $right->properties);
+                    $keyed_array->sealed = true;
+                    return $keyed_array;
                 }
 
                 return new TMixed;

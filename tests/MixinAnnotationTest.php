@@ -687,6 +687,30 @@ class MixinAnnotationTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement'
             ],
+            'mixinStaticCallShouldNotPolluteContext' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Foo
+                    {
+                        public function foobar(): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Foo<T>
+                     */
+                    class Bar
+                    {
+                        public function baz(): self
+                        {
+                            self::foobar();
+                            return $__tmp_mixin_var__;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable'
+            ],
         ];
     }
 }
