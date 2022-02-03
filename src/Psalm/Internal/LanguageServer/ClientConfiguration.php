@@ -45,9 +45,9 @@ class ClientConfiguration
     public $findUnusedVariables;
 
     /**
-     * Provide Completion or not
+     * Look for dead code
      *
-     * @var bool|null
+     * @var 'always'|'auto'|null
      */
     public $findUnusedCode;
 
@@ -59,6 +59,15 @@ class ClientConfiguration
      * @see MessageType
      */
     public $logLevel;
+
+    /**
+     * If added, the language server will not respond to onChange events.
+     * You can also specify a line count over which Psalm will not run on-change events.
+     *
+     * @var int|null
+     *
+     */
+    public $onchangeLineLimit;
 
     public function __construct(
         bool $hideWarnings = null,

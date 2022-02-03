@@ -4,20 +4,12 @@ namespace Psalm\Internal\Cli;
 
 use LanguageServerProtocol\MessageType;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
-use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
-use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
-use Psalm\Internal\Provider\ProjectCacheProvider;
-use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\LanguageServer\LanguageServer as LanguageServerLanguageServer;
 use Psalm\Report;
 
 use function array_key_exists;
@@ -258,8 +250,6 @@ HELP;
             }
         }
 
-        $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
-
         $config = CliUtils::initializeConfig(
             $path_to_config,
             $current_dir,
@@ -287,39 +277,20 @@ HELP;
             }
         }
 
-        //no-cache mode does not work in the LSP
-        $providers = new Providers(
-            new FileProvider,
-            new ParserCacheProvider($config),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
-            new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
-        );
-
-        $project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers
-        );
-
-        if ($config->find_unused_variables) {
-            $project_analyzer->getCodebase()->reportUnusedVariables();
-        }
-
-        if ($config->find_unused_code) {
-            $find_unused_code = 'auto';
-        }
-
         if (isset($options['disable-on-change'])) {
-            $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
+            $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
         }
 
         $clientConfiguration->provideCompletion = !isset($options['enable-autocomplete'])
             || !is_string($options['enable-autocomplete'])
             || strtolower($options['enable-autocomplete']) !== 'false';
 
+        $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
+        if ($config->find_unused_code) {
+            $find_unused_code = 'auto';
+        }
         if ($find_unused_code) {
-            $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
+            $clientConfiguration->findUnusedCode = $find_unused_code;
         }
 
         if (isset($options['verbose'])) {
@@ -329,10 +300,6 @@ HELP;
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        //Setup Project Analyzer
-        $project_analyzer->provide_completion = $clientConfiguration->provideCompletion;
-
-
-        $project_analyzer->server($clientConfiguration);
+        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir);
     }
 }

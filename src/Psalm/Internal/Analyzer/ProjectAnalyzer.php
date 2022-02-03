@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Analyzer;
 
-use Amp\Loop;
 use InvalidArgumentException;
 use LogicException;
 use Psalm\Codebase;
@@ -13,10 +12,7 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
-use Psalm\Internal\LanguageServer\ProtocolStreamReader;
-use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -64,7 +60,6 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
-use function cli_set_process_title;
 use function count;
 use function defined;
 use function dirname;
@@ -87,14 +82,9 @@ use function is_string;
 use function microtime;
 use function mkdir;
 use function number_format;
-use function pcntl_fork;
 use function preg_match;
 use function rename;
 use function shell_exec;
-use function stream_set_blocking;
-use function stream_socket_accept;
-use function stream_socket_client;
-use function stream_socket_server;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -110,8 +100,6 @@ use const PHP_OS;
 use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
-use const STDIN;
-use const STDOUT;
 
 /**
  * @internal
@@ -426,11 +414,12 @@ class ProjectAnalyzer
         );
     }
 
-    //public function server(?string $address = '127.0.0.1:12345', bool $socket_server_mode = false): void
-    public function server(ClientConfiguration $clientConfiguration): void
+    public function serverMode(LanguageServer $server): void
     {
+        $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
+        $server->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
@@ -451,106 +440,11 @@ class ProjectAnalyzer
             }
         }
 
+        $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
-        }
-
-        @cli_set_process_title('Psalm ' . PSALM_VERSION . ' - PHP Language Server');
-
-        if (!$clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
-            // Connect to a TCP server
-            $socket = stream_socket_client('tcp://' . $clientConfiguration->TCPServerAddress, $errno, $errstr);
-            if ($socket === false) {
-                fwrite(STDERR, "Could not connect to language client. Error $errno\n$errstr");
-                exit(1);
-            }
-            stream_set_blocking($socket, false);
-            new LanguageServer(
-                new ProtocolStreamReader($socket),
-                new ProtocolStreamWriter($socket),
-                $this,
-                $clientConfiguration
-            );
-            Loop::run();
-        } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
-            // Run a TCP Server
-            $tcpServer = stream_socket_server('tcp://' . $clientConfiguration->TCPServerAddress, $errno, $errstr);
-            if ($tcpServer === false) {
-                fwrite(STDERR, "Could not listen on {$clientConfiguration->TCPServerAddress}. Error $errno\n$errstr");
-                exit(1);
-            }
-            fwrite(STDOUT, "Server listening on {$clientConfiguration->TCPServerAddress}\n");
-
-            $fork_available = true;
-            if (!extension_loaded('pcntl')) {
-                fwrite(STDERR, "PCNTL is not available. Only a single connection will be accepted\n");
-                $fork_available = false;
-            }
-
-            $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
-            if (in_array('pcntl_fork', $disabled_functions)) {
-                fwrite(
-                    STDERR,
-                    "pcntl_fork() is disabled by php configuration (disable_functions directive)."
-                    . " Only a single connection will be accepted\n"
-                );
-                $fork_available = false;
-            }
-
-            while ($socket = stream_socket_accept($tcpServer, -1)) {
-                fwrite(STDOUT, "Connection accepted\n");
-                stream_set_blocking($socket, false);
-                if ($fork_available) {
-                    // If PCNTL is available, fork a child process for the connection
-                    // An exit notification will only terminate the child process
-                    $pid = pcntl_fork();
-                    if ($pid === -1) {
-                        fwrite(STDERR, "Could not fork\n");
-                        exit(1);
-                    }
-
-                    if ($pid === 0) {
-                        // Child process
-                        $reader = new ProtocolStreamReader($socket);
-                        $reader->on(
-                            'close',
-                            function (): void {
-                                fwrite(STDOUT, "Connection closed\n");
-                            }
-                        );
-                        new LanguageServer(
-                            $reader,
-                            new ProtocolStreamWriter($socket),
-                            $this,
-                            $clientConfiguration
-                        );
-                        // Just for safety
-                        exit(0);
-                    }
-                } else {
-                    // If PCNTL is not available, we only accept one connection.
-                    // An exit notification will terminate the server
-                    new LanguageServer(
-                        new ProtocolStreamReader($socket),
-                        new ProtocolStreamWriter($socket),
-                        $this,
-                        $clientConfiguration
-                    );
-                    Loop::run();
-                }
-            }
-        } else {
-            // Use STDIO
-            stream_set_blocking(STDIN, false);
-            new LanguageServer(
-                new ProtocolStreamReader(STDIN),
-                new ProtocolStreamWriter(STDOUT),
-                $this,
-                $clientConfiguration
-            );
-            Loop::run();
         }
     }
 
