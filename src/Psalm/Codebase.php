@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionItem;
 use LanguageServerProtocol\CompletionItemKind;
+use LanguageServerProtocol\InsertTextFormat;
 use LanguageServerProtocol\ParameterInformation;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
