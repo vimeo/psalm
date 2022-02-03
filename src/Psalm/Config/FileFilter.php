@@ -170,8 +170,7 @@ class FileFilter
                     }
 
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $base_dir
-                        . DIRECTORY_SEPARATOR . $directory_path
+                        'Could not resolve config path to ' . $prospective_directory_path
                     );
                 }
 
