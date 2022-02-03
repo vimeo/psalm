@@ -72,6 +72,7 @@ use function glob;
 use function implode;
 use function in_array;
 use function is_a;
+use function is_array;
 use function is_dir;
 use function is_file;
 use function is_string;
@@ -596,6 +597,13 @@ class Config
     ];
 
     /**
+     * A list of php extensions required by the project that aren't fully supported by Psalm.
+     *
+     * @var array<string, true>
+     */
+    public $php_extensions_not_supported = [];
+
+    /**
      * @var array<class-string, PluginInterface>
      */
     private $plugins = [];
@@ -995,12 +1003,24 @@ class Config
 
         $composer_json = null;
         if (file_exists($composer_json_path)) {
-            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
         }
-        foreach ($config->php_extensions as $ext => $_) {
-            $config->php_extensions[$ext] = isset($composer_json["require"]["ext-$ext"]);
+        $required_extensions = [];
+        foreach (($composer_json["require"] ?? []) as $required => $_) {
+            if (strpos($required, "ext-") === 0) {
+                $required_extensions[strtolower(substr($required, 4))] = true;
+            }
+        }
+        foreach ($required_extensions as $required_ext => $_) {
+            if (isset($config->php_extensions[$required_ext])) {
+                /** @psalm-suppress PropertyTypeCoercion isset doesn't narrow $required_ext like it should */
+                $config->php_extensions[$required_ext] = true;
+            } else {
+                $config->php_extensions_not_supported[$required_ext] = true;
+            }
         }
 
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
