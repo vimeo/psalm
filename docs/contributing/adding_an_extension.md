@@ -32,7 +32,8 @@ the stub isn't missing anything that shows up in the reflection generated stub.
 
 When adding support for a different version of an extension, diff the reflection-generated
 stubs to see what has changed between the versions and update `stubs/extensions/[extension-name-lowercase].phpstub` as
-necessary (support for multiple versions is very limited until #7512 is done).
+necessary (support for multiple versions is very limited until [#7512](https://github.com/vimeo/psalm/issues/7512) is
+done).
 
 ## Adding the extension to the supported extensions lists
 
