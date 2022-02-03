@@ -1342,6 +1342,7 @@ final class Psalm
 
             --generate-extension-stub
                 Generate stubs for a PHP extension.
+                EXPERIMENTAL: This option may be removed in a future version.
 
         HELP;
     }

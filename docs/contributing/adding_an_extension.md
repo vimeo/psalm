@@ -18,8 +18,21 @@ reflection, but keep in mind that reflection can miss a lot of useful informatio
 
 To use the extension stub generator, simply run `psalm --generate-extension-stub [extension-name]`. If you're working on
 Psalm directly, you can direct the output like `psalm --generate-extension-stub [extension-name]
->stubs/extensions/[extension-name-lowercase].phpstub`, otherwise you can copy the output into a GitHub issue or Gist to
-help us add support for the extension.
+>stubs/extensions/reflection-generated/[extension-name-lowercase]-[extension-version].phpstub`, otherwise you can copy
+the output into a GitHub issue or Gist to help us add support for the extension.
+
+## Updating stubs
+
+Generated stubs are kept for each version of an extension in `stubs/extensions/reflection-generated`.
+
+When adding a new extension, simply copy the generated stub to `stubs/extensions/[extension-name-lowercase].phpstub` and
+update as necessary with Psalm types. Alternatively, if the extension provides its own stub somewhere that includes
+things like `@throws` tags or other features reflection isn't able to provide, use that as a base, but make sure
+the stub isn't missing anything that shows up in the reflection generated stub.
+
+When adding support for a different version of an extension, diff the reflection-generated
+stubs to see what has changed between the versions and update `stubs/extensions/[extension-name-lowercase].phpstub` as
+necessary (support for multiple versions is very limited until #7512 is done).
 
 ## Adding the extension to the supported extensions lists
 

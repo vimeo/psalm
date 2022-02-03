@@ -24,3 +24,4 @@
 /.scrutinizer.yml export-ignore
 /tests export-ignore
 /vendor-bin export-ignore
+/stubs/extensions/reflection-generated export-ignore
