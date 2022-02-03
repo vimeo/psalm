@@ -331,12 +331,14 @@ class TextDocument
             [$recent_type, $gap, $offset] = $completion_data;
 
             if ($gap === '->' || $gap === '::') {
-                $snippetSupport = ($this->server->clientCapabilities->textDocument &&
+                $snippetSupport = ($this->server->clientCapabilities &&
+                    $this->server->clientCapabilities->textDocument &&
                     $this->server->clientCapabilities->textDocument->completion &&
                     $this->server->clientCapabilities->textDocument->completion->completionItem &&
                     $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
                     ? true : false;
-                $completion_items = $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
+                $completion_items =
+                    $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
             } elseif ($gap === '[') {
                 $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
             } else {

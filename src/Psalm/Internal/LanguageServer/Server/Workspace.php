@@ -6,6 +6,7 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
+use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
 use Psalm\Codebase;
@@ -14,6 +15,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\Provider\FileReferenceProvider;
 
+use function array_filter;
 use function array_map;
 use function in_array;
 use function realpath;
@@ -65,9 +67,15 @@ class Workspace
             'workspace/didChangeWatchedFiles'
         );
 
-        $realFiles = array_map(function (FileEvent $change) {
-            return LanguageServer::uriToPath($change->uri);
-        }, $changes);
+        $realFiles = array_filter(
+            array_map(function (FileEvent $change) {
+                try {
+                    return LanguageServer::uriToPath($change->uri);
+                } catch (InvalidArgumentException $e) {
+                    return null;
+                }
+            }, $changes)
+        );
 
         $composerLockFile = realpath(Composer::getLockFilePath($this->codebase->config->base_dir));
         if (in_array($composerLockFile, $realFiles)) {
