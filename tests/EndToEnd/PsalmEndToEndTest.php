@@ -20,6 +20,7 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
+use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -168,7 +169,7 @@ class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
-        $this->assertStringNotContainsString('E', $result['STDERR']);
+        $this->assertEquals(1, substr_count($result['STDERR'], 'E')); // Should only have 'E' from 'Extensions' in version message
 
         $this->assertSame(2, $result['CODE']);
 
