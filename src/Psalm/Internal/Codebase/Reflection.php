@@ -24,6 +24,7 @@ use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionType;
 use ReflectionUnionType;
+use Throwable;
 use UnexpectedValueException;
 
 use function array_map;
@@ -342,6 +343,17 @@ class Reflection
         $param_name = $param->getName();
 
         $is_optional = $param->isOptional();
+        $default_type = null;
+        if ($is_optional) {
+            try {
+                /** @psalm-suppress MixedArgument If the default value isn't resolvable from a literal we'll ignore it*/
+                $default_type = new Union([
+                    ConstantTypeResolver::getLiteralTypeFromScalarValue($param->getDefaultValue())
+                ]);
+            } catch (Throwable $_) {
+                // Ignore if it fails for some reason (doesn't work on some internal or extension parameters)
+            }
+        }
 
         $parameter = new FunctionLikeParameter(
             $param_name,
@@ -351,7 +363,8 @@ class Reflection
             null,
             $is_optional,
             $param_type->isNullable(),
-            $param->isVariadic()
+            $param->isVariadic(),
+            $default_type,
         );
 
         $parameter->signature_type = Type::getMixed();
