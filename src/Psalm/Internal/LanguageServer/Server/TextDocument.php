@@ -24,6 +24,7 @@ use LanguageServerProtocol\TextEdit;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use LanguageServerProtocol\WorkspaceEdit;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\LanguageServer;
@@ -327,30 +328,36 @@ class TextDocument
             return new Success(null);
         }
 
-        if ($completion_data) {
-            [$recent_type, $gap, $offset] = $completion_data;
+        try {
+            if ($completion_data) {
+                [$recent_type, $gap, $offset] = $completion_data;
 
-            if ($gap === '->' || $gap === '::') {
-                $snippetSupport = ($this->server->clientCapabilities &&
-                    $this->server->clientCapabilities->textDocument &&
-                    $this->server->clientCapabilities->textDocument->completion &&
-                    $this->server->clientCapabilities->textDocument->completion->completionItem &&
-                    $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
-                    ? true : false;
-                $completion_items =
-                    $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
-            } elseif ($gap === '[') {
-                $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
+                if ($gap === '->' || $gap === '::') {
+                    $snippetSupport = ($this->server->clientCapabilities &&
+                        $this->server->clientCapabilities->textDocument &&
+                        $this->server->clientCapabilities->textDocument->completion &&
+                        $this->server->clientCapabilities->textDocument->completion->completionItem &&
+                        $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
+                        ? true : false;
+                    $completion_items =
+                        $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
+                } elseif ($gap === '[') {
+                    $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
+                } else {
+                    $completion_items = $this->codebase->getCompletionItemsForPartialSymbol(
+                        $recent_type,
+                        $offset,
+                        $file_path
+                    );
+                }
             } else {
-                $completion_items = $this->codebase->getCompletionItemsForPartialSymbol(
-                    $recent_type,
-                    $offset,
-                    $file_path
-                );
+                $completion_items = $this->codebase->getCompletionItemsForType($type_context);
             }
-        } else {
-            $completion_items = $this->codebase->getCompletionItemsForType($type_context);
+        } catch (TypeParseTreeException $e) {
+            $this->server->logError((string) $e);
+            return new Success(null);
         }
+
 
         return new Success(new CompletionList($completion_items, false));
     }
