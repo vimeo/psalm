@@ -15,6 +15,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Union;
+use function dirname;
 
 class MagicConstAnalyzer
 {
@@ -87,7 +88,7 @@ class MagicConstAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                Type::getString(\dirname($statements_analyzer->getSource()->getFilePath()))
+                Type::getString(dirname($statements_analyzer->getSource()->getFilePath()))
             );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
             $statements_analyzer->node_data->setType(
