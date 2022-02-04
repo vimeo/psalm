@@ -87,7 +87,7 @@ class MagicConstAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                Type::getString(dirname($statements_analyzer->getSource()->getFilePath()))
+                Type::getString(\dirname($statements_analyzer->getSource()->getFilePath()))
             );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
             $statements_analyzer->node_data->setType(
