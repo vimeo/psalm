@@ -1,0 +1,47 @@
+name: Check backward compatibility
+
+on: pull_request
+jobs:
+  bcc:
+    name: Check backward compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
+          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+
+      - name: Cache composer cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: | 
+          composer install -o
+          composer bin bcc install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Run BCC
+        run: vendor/bin/roave-backward-compatibility-check --from="origin/$GITHUB_BASE_REF" --format=github-actions
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
