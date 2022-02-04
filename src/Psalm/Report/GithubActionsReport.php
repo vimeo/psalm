@@ -8,7 +8,7 @@ use Psalm\Report;
 use function sprintf;
 use function strtr;
 
-class GithubActionsReport extends Report
+final class GithubActionsReport extends Report
 {
     public function create(): string
     {

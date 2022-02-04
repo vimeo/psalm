@@ -10,7 +10,7 @@ use Psalm\Report;
 use function array_map;
 use function get_object_vars;
 
-class XmlReport extends Report
+final class XmlReport extends Report
 {
     public function create(): string
     {

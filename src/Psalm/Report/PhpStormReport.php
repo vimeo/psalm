@@ -9,7 +9,7 @@ use Psalm\Report;
 
 use function substr;
 
-class PhpStormReport extends Report
+final class PhpStormReport extends Report
 {
     public function create(): string
     {

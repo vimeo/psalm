@@ -6,7 +6,7 @@ use function error_reporting;
 
 use const E_ALL;
 
-class DebugProgress extends Progress
+final class DebugProgress extends Progress
 {
     public function setErrorReporting(): void
     {

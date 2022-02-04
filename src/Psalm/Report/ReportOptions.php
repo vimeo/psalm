@@ -4,7 +4,7 @@ namespace Psalm\Report;
 
 use Psalm\Report;
 
-class ReportOptions
+final class ReportOptions
 {
     /**
      * @var bool

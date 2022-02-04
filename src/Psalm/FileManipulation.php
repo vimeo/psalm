@@ -8,7 +8,7 @@ use function strrpos;
 use function substr;
 use function trim;
 
-class FileManipulation
+final class FileManipulation
 {
     /** @var int */
     public $start;

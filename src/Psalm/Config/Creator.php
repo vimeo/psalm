@@ -35,7 +35,8 @@ use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
 use const JSON_THROW_ON_ERROR;
 
-class Creator
+/** @internal */
+final class Creator
 {
     private const TEMPLATE = '<?xml version="1.0"?>
 <psalm

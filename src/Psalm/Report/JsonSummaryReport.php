@@ -5,7 +5,7 @@ namespace Psalm\Report;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
-class JsonSummaryReport extends Report
+final class JsonSummaryReport extends Report
 {
     public function create(): string
     {

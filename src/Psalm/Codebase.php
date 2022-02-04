@@ -92,7 +92,7 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
-class Codebase
+final class Codebase
 {
     /**
      * @var Config
@@ -314,6 +314,7 @@ class Codebase
      */
     public $track_unused_suppressions = false;
 
+    /** @internal */
     public function __construct(
         Config $config,
         Providers $providers,

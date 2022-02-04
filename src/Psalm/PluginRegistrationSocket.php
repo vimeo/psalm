@@ -19,7 +19,7 @@ use Psalm\Plugin\RegistrationInterface;
 use function class_exists;
 use function is_subclass_of;
 
-class PluginRegistrationSocket implements RegistrationInterface
+final class PluginRegistrationSocket implements RegistrationInterface
 {
     /** @var Config */
     private $config;

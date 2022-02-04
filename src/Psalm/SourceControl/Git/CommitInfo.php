@@ -7,7 +7,7 @@ namespace Psalm\SourceControl\Git;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
-class CommitInfo
+final class CommitInfo
 {
     /**
      * Commit ID.

@@ -16,7 +16,7 @@ use function strspn;
 use function substr;
 use function trim;
 
-class DocComment
+final class DocComment
 {
     public const PSALM_ANNOTATIONS = [
         'return', 'param', 'template', 'var', 'type',

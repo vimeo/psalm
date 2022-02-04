@@ -4,6 +4,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-class CircularReferenceException extends Exception
+final class CircularReferenceException extends Exception
 {
 }

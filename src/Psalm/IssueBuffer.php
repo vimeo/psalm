@@ -77,7 +77,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const PSALM_VERSION;
 use const STDERR;
 
-class IssueBuffer
+final class IssueBuffer
 {
     /**
      * @var array<string, list<IssueData>>

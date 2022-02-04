@@ -14,7 +14,7 @@ use function max;
  *
  * https://docs.sonarqube.org/latest/analysis/generic-issue/
  */
-class SonarqubeReport extends Report
+final class SonarqubeReport extends Report
 {
     public function create(): string
     {

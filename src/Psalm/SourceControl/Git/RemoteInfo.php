@@ -7,7 +7,7 @@ namespace Psalm\SourceControl\Git;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
-class RemoteInfo
+final class RemoteInfo
 {
     /**
      * Remote name.
