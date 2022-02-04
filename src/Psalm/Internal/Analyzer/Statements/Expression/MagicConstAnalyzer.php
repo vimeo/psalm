@@ -15,6 +15,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Union;
+
 use function dirname;
 
 class MagicConstAnalyzer
