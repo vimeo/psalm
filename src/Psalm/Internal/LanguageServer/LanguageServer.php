@@ -140,9 +140,12 @@ class LanguageServer extends Dispatcher
         ProtocolReader $reader,
         ProtocolWriter $writer,
         ProjectAnalyzer $project_analyzer,
-        ClientConfiguration $clientConfiguration
+        ClientConfiguration $clientConfiguration,
+        Progress $progress
     ) {
         parent::__construct($this, '/');
+
+        $progress->setServer($this);
 
         $this->project_analyzer = $project_analyzer;
 
@@ -229,8 +232,6 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
-        $this->project_analyzer->progress = new Progress($this);
-
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
 
@@ -239,6 +240,7 @@ class LanguageServer extends Dispatcher
      */
     public static function run(Config $config, ClientConfiguration $clientConfiguration, string $base_dir): void
     {
+        $progress = new Progress();
         //no-cache mode does not work in the LSP
         $providers = new Providers(
             new FileProvider,
@@ -251,7 +253,11 @@ class LanguageServer extends Dispatcher
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
+            null,
+            [],
+            1,
+            $progress
         );
 
         if ($config->find_unused_variables) {
@@ -283,7 +289,8 @@ class LanguageServer extends Dispatcher
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
                 $project_analyzer,
-                $clientConfiguration
+                $clientConfiguration,
+                $progress
             );
             Loop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -336,7 +343,8 @@ class LanguageServer extends Dispatcher
                             $reader,
                             new ProtocolStreamWriter($socket),
                             $project_analyzer,
-                            $clientConfiguration
+                            $clientConfiguration,
+                            $progress
                         );
                         // Just for safety
                         exit(0);
@@ -348,7 +356,8 @@ class LanguageServer extends Dispatcher
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
                         $project_analyzer,
-                        $clientConfiguration
+                        $clientConfiguration,
+                        $progress
                     );
                     Loop::run();
                 }
@@ -360,7 +369,8 @@ class LanguageServer extends Dispatcher
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
                 $project_analyzer,
-                $clientConfiguration
+                $clientConfiguration,
+                $progress
             );
             Loop::run();
         }
