@@ -239,7 +239,7 @@ class IncludeAnalyzer
                 $source->getSuppressedIssues()
             );
         } else {
-            $var_id = ExpressionIdentifier::getArrayVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();

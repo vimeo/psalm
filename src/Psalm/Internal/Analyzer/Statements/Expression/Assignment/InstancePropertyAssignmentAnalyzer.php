@@ -467,13 +467,13 @@ class InstancePropertyAssignmentAnalyzer
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
                 $statements_analyzer
             );
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer
@@ -541,7 +541,7 @@ class InstancePropertyAssignmentAnalyzer
                 return;
             }
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer

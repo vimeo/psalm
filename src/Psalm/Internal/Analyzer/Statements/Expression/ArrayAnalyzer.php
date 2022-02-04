@@ -467,7 +467,7 @@ class ArrayAnalyzer
         }
 
         if ($item->byRef) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $item->value,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer

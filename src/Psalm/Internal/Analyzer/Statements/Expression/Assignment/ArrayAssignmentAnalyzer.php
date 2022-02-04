@@ -145,7 +145,7 @@ class ArrayAssignmentAnalyzer
         $current_dim = $stmt->dim;
 
         // gets a variable id that *may* contain array keys
-        $root_var_id = ExpressionIdentifier::getArrayVarId(
+        $root_var_id = ExpressionIdentifier::getExtendedVarId(
             $root_array_expr,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -750,7 +750,7 @@ class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt->var, $child_stmt_var_type);
             }
 
-            $array_var_id = $root_var_id . implode('', $var_id_additions);
+            $extended_var_id = $root_var_id . implode('', $var_id_additions);
 
             if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
                 $child_stmt_var_type = clone $context->vars_in_scope[$parent_var_id];
@@ -765,7 +765,7 @@ class ArrayAssignmentAnalyzer
                 $array_type,
                 $child_stmt_dim_type ?? Type::getInt(),
                 true,
-                $array_var_id,
+                $extended_var_id,
                 $context,
                 $assign_value,
                 $child_stmts ? null : $assignment_type
@@ -806,7 +806,7 @@ class ArrayAssignmentAnalyzer
                         $child_stmt,
                         $array_type,
                         $assignment_type,
-                        ExpressionIdentifier::getArrayVarId(
+                        ExpressionIdentifier::getExtendedVarId(
                             $child_stmt->var,
                             $statements_analyzer->getFQCLN(),
                             $statements_analyzer
@@ -819,7 +819,7 @@ class ArrayAssignmentAnalyzer
             $current_type = $child_stmt_type;
             $current_dim = $child_stmt->dim;
 
-            $parent_var_id = $array_var_id;
+            $parent_var_id = $extended_var_id;
         }
 
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -845,17 +845,17 @@ class ArrayAssignmentAnalyzer
             && ($child_stmt_var_type = $statements_analyzer->node_data->getType($child_stmt->var))
             && !$child_stmt_var_type->hasObjectType()
         ) {
-            $array_var_id = $root_var_id . implode('', $var_id_additions);
+            $extended_var_id = $root_var_id . implode('', $var_id_additions);
             $parent_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
 
-            if (isset($context->vars_in_scope[$array_var_id])
-                && !$context->vars_in_scope[$array_var_id]->possibly_undefined
+            if (isset($context->vars_in_scope[$extended_var_id])
+                && !$context->vars_in_scope[$extended_var_id]->possibly_undefined
             ) {
                 $offset_already_existed = true;
             }
 
-            $context->vars_in_scope[$array_var_id] = clone $assignment_type;
-            $context->possibly_assigned_var_ids[$array_var_id] = true;
+            $context->vars_in_scope[$extended_var_id] = clone $assignment_type;
+            $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
         // only update as many child stmts are we were able to process above
@@ -941,10 +941,10 @@ class ArrayAssignmentAnalyzer
             $parent_array_var_id = null;
 
             if ($root_var_id) {
-                $array_var_id = $root_var_id . implode('', $var_id_additions);
+                $extended_var_id = $root_var_id . implode('', $var_id_additions);
                 $parent_array_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
-                $context->vars_in_scope[$array_var_id] = clone $child_stmt_type;
-                $context->possibly_assigned_var_ids[$array_var_id] = true;
+                $context->vars_in_scope[$extended_var_id] = clone $child_stmt_type;
+                $context->possibly_assigned_var_ids[$extended_var_id] = true;
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -1015,7 +1015,7 @@ class ArrayAssignmentAnalyzer
         if ($child_stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch
             && $child_stmt->dim->name instanceof PhpParser\Node\Identifier
         ) {
-            $object_id = ExpressionIdentifier::getArrayVarId(
+            $object_id = ExpressionIdentifier::getExtendedVarId(
                 $child_stmt->dim->var,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer

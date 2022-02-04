@@ -105,7 +105,7 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context
     ): bool {
-        $array_var_id = ExpressionIdentifier::getArrayVarId(
+        $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -130,7 +130,7 @@ class ArrayFetchAnalyzer
             $context->inside_general_use = $was_inside_general_use;
         }
 
-        $keyed_array_var_id = ExpressionIdentifier::getArrayVarId(
+        $keyed_array_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -142,7 +142,7 @@ class ArrayFetchAnalyzer
         if ($stmt->dim) {
             $used_key_type = $statements_analyzer->node_data->getType($stmt->dim) ?? Type::getMixed();
 
-            $dim_var_id = ExpressionIdentifier::getArrayVarId(
+            $dim_var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->dim,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -195,7 +195,7 @@ class ArrayFetchAnalyzer
                 if (!$context->inside_isset) {
                     IssueBuffer::maybeAdd(
                         new NullArrayAccess(
-                            'Cannot access array value on null variable ' . $array_var_id,
+                            'Cannot access array value on null variable ' . $extended_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -217,7 +217,7 @@ class ArrayFetchAnalyzer
                 $stmt_var_type,
                 $used_key_type,
                 false,
-                $array_var_id,
+                $extended_var_id,
                 $context,
                 null
             );
@@ -459,7 +459,7 @@ class ArrayFetchAnalyzer
         Union $array_type,
         Union $offset_type,
         bool $in_assignment,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
         Union $replacement_type = null
@@ -500,7 +500,7 @@ class ArrayFetchAnalyzer
         if ($offset_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullArrayOffset(
-                    'Cannot access value on variable ' . $array_var_id . ' using null offset',
+                    'Cannot access value on variable ' . $extended_var_id . ' using null offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -516,7 +516,7 @@ class ArrayFetchAnalyzer
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
-                        'Cannot access value on variable ' . $array_var_id
+                        'Cannot access value on variable ' . $extended_var_id
                             . ' using possibly null offset ' . $offset_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
@@ -562,7 +562,7 @@ class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $codebase,
                         $in_assignment,
-                        $array_var_id,
+                        $extended_var_id,
                         $stmt,
                         $array_access_type,
                         $type
@@ -587,7 +587,7 @@ class ArrayFetchAnalyzer
                     } else {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAssignment(
-                                'Cannot access array value on possibly null variable ' . $array_var_id .
+                                'Cannot access array value on possibly null variable ' . $extended_var_id .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
@@ -600,7 +600,7 @@ class ArrayFetchAnalyzer
                     if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
-                                'Cannot access array value on possibly null variable ' . $array_var_id .
+                                'Cannot access array value on possibly null variable ' . $extended_var_id .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
@@ -630,7 +630,7 @@ class ArrayFetchAnalyzer
                     $offset_type,
                     $original_type,
                     $codebase,
-                    $array_var_id,
+                    $extended_var_id,
                     $context,
                     $statements_analyzer,
                     $expected_offset_types,
@@ -696,7 +696,7 @@ class ArrayFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
+                            $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -708,7 +708,7 @@ class ArrayFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
+                            $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -722,7 +722,7 @@ class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
+                            $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -731,7 +731,7 @@ class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $array_var_id . ' of type ' . $non_array_types[0],
+                            $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -755,7 +755,7 @@ class ArrayFetchAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
-                    'Cannot access value on variable ' . $array_var_id . ' using mixed offset',
+                    'Cannot access value on variable ' . $extended_var_id . ' using mixed offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -787,7 +787,7 @@ class ArrayFetchAnalyzer
                     if (!$context->inside_unset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
-                                'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
+                                'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
                                     . ', expecting ' . $invalid_offset_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
@@ -836,7 +836,7 @@ class ArrayFetchAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
+                            'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
@@ -865,7 +865,7 @@ class ArrayFetchAnalyzer
     private static function checkLiteralIntArrayOffset(
         Union $offset_type,
         Union $expected_offset_type,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer
@@ -878,15 +878,15 @@ class ArrayFetchAnalyzer
             $found_match = false;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($array_var_id
+                if ($extended_var_id
                     && $offset_type_part instanceof TLiteralInt
                     && isset(
                         $context->vars_in_scope[
-                            $array_var_id . '[' . $offset_type_part->value . ']'
+                            $extended_var_id . '[' . $offset_type_part->value . ']'
                         ]
                     )
                     && !$context->vars_in_scope[
-                            $array_var_id . '[' . $offset_type_part->value . ']'
+                            $extended_var_id . '[' . $offset_type_part->value . ']'
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
@@ -913,7 +913,7 @@ class ArrayFetchAnalyzer
     private static function checkLiteralStringArrayOffset(
         Union $offset_type,
         Union $expected_offset_type,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer
@@ -926,15 +926,15 @@ class ArrayFetchAnalyzer
             $found_match = false;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($array_var_id
+                if ($extended_var_id
                     && $offset_type_part instanceof TLiteralString
                     && isset(
                         $context->vars_in_scope[
-                            $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                            $extended_var_id . '[\'' . $offset_type_part->value . '\']'
                         ]
                     )
                     && !$context->vars_in_scope[
-                            $array_var_id . '[\'' . $offset_type_part->value . '\']'
+                            $extended_var_id . '[\'' . $offset_type_part->value . '\']'
                         ]->possibly_undefined
                 ) {
                     $found_match = true;
@@ -1007,7 +1007,7 @@ class ArrayFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         bool $in_assignment,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
         Atomic $type
@@ -1026,7 +1026,7 @@ class ArrayFetchAnalyzer
             if ($in_assignment) {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
-                        'Cannot access array value on mixed variable ' . $array_var_id,
+                        'Cannot access array value on mixed variable ' . $extended_var_id,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -1034,7 +1034,7 @@ class ArrayFetchAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAccess(
-                        'Cannot access array value on mixed variable ' . $array_var_id,
+                        'Cannot access array value on mixed variable ' . $extended_var_id,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
@@ -1091,7 +1091,7 @@ class ArrayFetchAnalyzer
         Union &$offset_type,
         Atomic $original_type,
         Codebase $codebase,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
         array &$expected_offset_types,
@@ -1158,7 +1158,7 @@ class ArrayFetchAnalyzer
                 $context,
                 $stmt,
                 $array_type,
-                $array_var_id,
+                $extended_var_id,
                 $type,
                 $offset_type,
                 $in_assignment,
@@ -1175,7 +1175,7 @@ class ArrayFetchAnalyzer
                 $stmt,
                 $type,
                 $offset_type,
-                $array_var_id,
+                $extended_var_id,
                 $key_values,
                 $context,
                 $in_assignment,
@@ -1202,7 +1202,7 @@ class ArrayFetchAnalyzer
                 $in_assignment,
                 $stmt,
                 $offset_type,
-                $array_var_id,
+                $extended_var_id,
                 $context,
                 $type,
                 $array_type,
@@ -1226,7 +1226,7 @@ class ArrayFetchAnalyzer
         Context $context,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Union $array_type,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         TArray $type,
         Union $offset_type,
         bool $in_assignment,
@@ -1294,7 +1294,7 @@ class ArrayFetchAnalyzer
                         self::checkLiteralStringArrayOffset(
                             $offset_type,
                             $expected_offset_type,
-                            $array_var_id,
+                            $extended_var_id,
                             $stmt,
                             $context,
                             $statements_analyzer
@@ -1308,7 +1308,7 @@ class ArrayFetchAnalyzer
                     self::checkLiteralIntArrayOffset(
                         $offset_type,
                         $expected_offset_type,
-                        $array_var_id,
+                        $extended_var_id,
                         $stmt,
                         $context,
                         $statements_analyzer
@@ -1371,7 +1371,7 @@ class ArrayFetchAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new EmptyArrayAccess(
-                    'Cannot access value on empty array variable ' . $array_var_id,
+                    'Cannot access value on empty array variable ' . $extended_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -1492,7 +1492,7 @@ class ArrayFetchAnalyzer
         bool $in_assignment,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Union $offset_type,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         Context $context,
         TKeyedArray $type,
         Union $array_type,
@@ -1534,7 +1534,7 @@ class ArrayFetchAnalyzer
                         self::checkLiteralStringArrayOffset(
                             $offset_type,
                             $type->getGenericKeyType(),
-                            $array_var_id,
+                            $extended_var_id,
                             $stmt,
                             $context,
                             $statements_analyzer
@@ -1545,7 +1545,7 @@ class ArrayFetchAnalyzer
                         self::checkLiteralIntArrayOffset(
                             $offset_type,
                             $type->getGenericKeyType(),
-                            $array_var_id,
+                            $extended_var_id,
                             $stmt,
                             $context,
                             $statements_analyzer
@@ -1690,7 +1690,7 @@ class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         TList $type,
         Union $offset_type,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         array $key_values,
         Context $context,
         bool $in_assignment,
@@ -1714,7 +1714,7 @@ class ArrayFetchAnalyzer
                     self::checkLiteralIntArrayOffset(
                         $offset_type,
                         $expected_offset_type,
-                        $array_var_id,
+                        $extended_var_id,
                         $stmt,
                         $context,
                         $statements_analyzer

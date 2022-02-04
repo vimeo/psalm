@@ -91,7 +91,7 @@ class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+        $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer

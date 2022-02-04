@@ -475,7 +475,7 @@ class ForeachAnalyzer
                     }
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
                 } elseif ($iterator_atomic_type instanceof TList) {
-                    $list_var_id = ExpressionIdentifier::getArrayVarId(
+                    $list_var_id = ExpressionIdentifier::getExtendedVarId(
                         $expr,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer

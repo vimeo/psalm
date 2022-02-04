@@ -98,17 +98,17 @@ class ExpressionIdentifier
         return null;
     }
 
-    public static function getArrayVarId(
+    public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
         ?FileSource $source = null
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return self::getArrayVarId($stmt->var, $this_class_name, $source);
+            return self::getExtendedVarId($stmt->var, $this_class_name, $source);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
+            $root_var_id = self::getExtendedVarId($stmt->var, $this_class_name, $source);
 
             $offset = null;
 
@@ -126,7 +126,7 @@ class ExpressionIdentifier
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ConstFetch) {
                     $offset = implode('\\', $stmt->dim->name->parts);
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch) {
-                    $object_id = self::getArrayVarId($stmt->dim->var, $this_class_name, $source);
+                    $object_id = self::getExtendedVarId($stmt->dim->var, $this_class_name, $source);
 
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
@@ -166,7 +166,7 @@ class ExpressionIdentifier
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            $object_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
+            $object_id = self::getExtendedVarId($stmt->var, $this_class_name, $source);
 
             if (!$object_id) {
                 return null;
@@ -208,7 +208,7 @@ class ExpressionIdentifier
             $config = Config::getInstance();
 
             if ($config->memoize_method_calls || $stmt->getAttribute('memoizable', false)) {
-                $lhs_var_name = self::getArrayVarId(
+                $lhs_var_name = self::getExtendedVarId(
                     $stmt->var,
                     $this_class_name,
                     $source

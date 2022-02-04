@@ -408,7 +408,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
-                    ExpressionIdentifier::getArrayVarId($stmt->var, null, $statements_analyzer),
+                    ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
                     $method_storage->assertions,
                     $args,
                     $template_result,

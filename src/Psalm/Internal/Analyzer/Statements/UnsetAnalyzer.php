@@ -39,7 +39,7 @@ class UnsetAnalyzer
 
             $context->inside_general_use = $was_inside_general_use;
 
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -51,7 +51,7 @@ class UnsetAnalyzer
             }
 
             if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch && $var->dim) {
-                $root_var_id = ExpressionIdentifier::getArrayVarId(
+                $root_var_id = ExpressionIdentifier::getExtendedVarId(
                     $var->var,
                     $statements_analyzer->getFQCLN(),
                     $statements_analyzer

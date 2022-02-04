@@ -45,7 +45,7 @@ class StaticPropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context
     ): ?bool {
-        $var_id = ExpressionIdentifier::getArrayVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $context->self,
             $statements_analyzer

@@ -670,7 +670,7 @@ class CallAnalyzer
 
                 $arg_value = $args[$var_possibilities->var_id]->value;
 
-                $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $statements_analyzer);
+                $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
 
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
@@ -716,7 +716,7 @@ class CallAnalyzer
                 /** @var PhpParser\Node\Expr\Variable $arg_value */
                 $arg_value = $args[$var_id]->value;
 
-                $arg_var_id = ExpressionIdentifier::getArrayVarId($arg_value, null, $statements_analyzer);
+                $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
 
                 if (!$arg_var_id) {
                     IssueBuffer::add(

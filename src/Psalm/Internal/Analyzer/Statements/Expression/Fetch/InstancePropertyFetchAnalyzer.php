@@ -70,13 +70,13 @@ class InstancePropertyFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $stmt_var_id = ExpressionIdentifier::getArrayVarId(
+        $stmt_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
 
-        $var_id = ExpressionIdentifier::getArrayVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer

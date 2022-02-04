@@ -314,7 +314,7 @@ class MethodCallReturnTypeFetcher
 
         $is_declaring = (string) $declaring_method_id === (string) $method_id;
 
-        $var_id = ExpressionIdentifier::getArrayVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $var_expr,
             null,
             $statements_analyzer

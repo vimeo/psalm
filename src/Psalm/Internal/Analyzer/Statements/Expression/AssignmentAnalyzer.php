@@ -122,7 +122,7 @@ class AssignmentAnalyzer
         );
 
         // gets a variable id that *may* contain array keys
-        $array_var_id = ExpressionIdentifier::getArrayVarId(
+        $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $assign_var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -207,10 +207,10 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($array_var_id) {
-            unset($context->referenced_var_ids[$array_var_id]);
-            $context->assigned_var_ids[$array_var_id] = (int) $assign_var->getAttribute('startFilePos');
-            $context->possibly_assigned_var_ids[$array_var_id] = true;
+        if ($extended_var_id) {
+            unset($context->referenced_var_ids[$extended_var_id]);
+            $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
+            $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
         if ($assign_value) {
@@ -246,10 +246,10 @@ class AssignmentAnalyzer
                 $context->inside_general_use = $was_inside_general_use;
 
                 if ($var_id) {
-                    if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
+                    if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
                         $context->removeDescendents(
-                            $array_var_id,
-                            $context->vars_in_scope[$array_var_id],
+                            $extended_var_id,
+                            $context->vars_in_scope[$extended_var_id],
                             $assign_value_type
                         );
                     }
@@ -270,8 +270,8 @@ class AssignmentAnalyzer
 
             if ($codebase->find_unused_variables
                 && $temp_assign_value_type
-                && $array_var_id
-                && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$array_var_id]))
+                && $extended_var_id
+                && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
                 && !$comment_type->isMixed()
             ) {
@@ -282,7 +282,7 @@ class AssignmentAnalyzer
                 } elseif (IssueBuffer::accepts(
                     new UnnecessaryVarAnnotation(
                         'The @var ' . $comment_type . ' annotation for '
-                            . $array_var_id . ' is unnecessary',
+                            . $extended_var_id . ' is unnecessary',
                         $comment_type_location
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -314,9 +314,9 @@ class AssignmentAnalyzer
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             && !$assign_value_type->parent_nodes
         ) {
-            if ($array_var_id) {
+            if ($extended_var_id) {
                 $assignment_node = DataFlowNode::getForAssignment(
-                    $array_var_id,
+                    $extended_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $assign_var)
                 );
             } else {
@@ -328,12 +328,12 @@ class AssignmentAnalyzer
             ];
         }
 
-        if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {
-            if ($context->vars_in_scope[$array_var_id]->by_ref) {
+        if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
+            if ($context->vars_in_scope[$extended_var_id]->by_ref) {
                 if ($context->mutation_free) {
                     IssueBuffer::maybeAdd(
                         new ImpureByReferenceAssignment(
-                            'Variable ' . $array_var_id . ' cannot be assigned to as it is passed by reference',
+                            'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         )
                     );
@@ -349,8 +349,8 @@ class AssignmentAnalyzer
 
             // removes dependent vars from $context
             $context->removeDescendents(
-                $array_var_id,
-                $context->vars_in_scope[$array_var_id],
+                $extended_var_id,
+                $context->vars_in_scope[$extended_var_id],
                 $assign_value_type,
                 $statements_analyzer
             );
@@ -506,7 +506,7 @@ class AssignmentAnalyzer
                 $assign_value_type,
                 $context,
                 $doc_comment,
-                $array_var_id,
+                $extended_var_id,
                 $var_comments,
                 $removed_taints
             );
@@ -880,13 +880,13 @@ class AssignmentAnalyzer
     ): bool {
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, false, null, true);
 
-        $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+        $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
 
-        $rhs_var_id = ExpressionIdentifier::getArrayVarId(
+        $rhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->expr,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -1152,7 +1152,7 @@ class AssignmentAnalyzer
         Union $assign_value_type,
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
-        ?string $array_var_id,
+        ?string $extended_var_id,
         array $var_comments,
         array $removed_taints
     ): void {
@@ -1202,7 +1202,7 @@ class AssignmentAnalyzer
                 $offset_value = $assign_var_item->key->value;
             }
 
-            $list_var_id = ExpressionIdentifier::getArrayVarId(
+            $list_var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer
@@ -1238,7 +1238,7 @@ class AssignmentAnalyzer
                         if ($statements_analyzer->data_flow_graph
                             && $assign_value
                         ) {
-                            $assign_value_id = ExpressionIdentifier::getArrayVarId(
+                            $assign_value_id = ExpressionIdentifier::getExtendedVarId(
                                 $assign_value,
                                 $statements_analyzer->getFQCLN(),
                                 $statements_analyzer
@@ -1287,7 +1287,7 @@ class AssignmentAnalyzer
                 if ($assign_value_atomic_type instanceof TMixed) {
                     IssueBuffer::maybeAdd(
                         new MixedArrayAccess(
-                            'Cannot access array value on mixed variable ' . $array_var_id,
+                            'Cannot access array value on mixed variable ' . $extended_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -1305,7 +1305,7 @@ class AssignmentAnalyzer
                         } elseif (IssueBuffer::accepts(
                             new PossiblyInvalidArrayAccess(
                                 'Cannot access array value on non-array variable '
-                                . $array_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                                . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $var)
                             ),
                             $statements_analyzer->getSuppressedIssues()
@@ -1317,7 +1317,7 @@ class AssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new InvalidArrayAccess(
                                 'Cannot access array value on non-array variable '
-                                . $array_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                                . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $var)
                             ),
                             $statements_analyzer->getSuppressedIssues()
@@ -1477,7 +1477,7 @@ class AssignmentAnalyzer
                 if ($has_null) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullArrayAccess(
-                            'Cannot access array value on null variable ' . $array_var_id,
+                            'Cannot access array value on null variable ' . $extended_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $var)
                         ),
                         $statements_analyzer->getSuppressedIssues()

@@ -803,13 +803,13 @@ class AtomicPropertyFetchAnalyzer
         }
 
         if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
                 $statements_analyzer
             );
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer
@@ -864,7 +864,7 @@ class AtomicPropertyFetchAnalyzer
                 $type->parent_nodes = [$property_node->id => $property_node];
             }
         } else {
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer

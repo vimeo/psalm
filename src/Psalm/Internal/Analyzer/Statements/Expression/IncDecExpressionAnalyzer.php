@@ -77,7 +77,7 @@ class IncDecExpressionAnalyzer
                 'inc'
             );
 
-            $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->var, null);
 
             $codebase = $statements_analyzer->getCodebase();
 
