@@ -84,10 +84,16 @@ class MagicConstAnalyzer
             } else {
                 $statements_analyzer->node_data->setType($stmt, new Union([new TCallableString]));
             }
-        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File
-            || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
-        ) {
-            $statements_analyzer->node_data->setType($stmt, new Union([new TNonEmptyString()]));
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getString(dirname($statements_analyzer->getSource()->getFilePath()))
+            );
+        } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getString($statements_analyzer->getSource()->getFilePath())
+            );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_) {
             if ($statements_analyzer->getSource() instanceof TraitAnalyzer) {
                 $statements_analyzer->node_data->setType($stmt, new Union([new TNonEmptyString()]));
