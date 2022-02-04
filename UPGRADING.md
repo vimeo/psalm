@@ -158,6 +158,70 @@
 - [BC] `TKeyOfClassConstant` has been renamed to `TKeyOfArray`.
 - [BC] `TValueOfClassConstant` has been renamed to `TValueOfArray`.
 - [BC] `TKeyOfTemplate` base class has been changed from `Scalar` to `Atomic`.
+- [BC] Class `Psalm\FileManipulation` became final
+- [BC] Class `Psalm\Context` became final
+- [BC] `Psalm\Context#__construct()` was marked `@internal`
+- [BC] Class `Psalm\PluginRegistrationSocket` became final
+- [BC] Class `Psalm\PluginFileExtensionsSocket` became final
+- [BC] Class `Psalm\Config\IssueHandler` became final
+- [BC] `Psalm\Config\IssueHandler` was marked `@internal`
+- [BC] Class `Psalm\Config\ProjectFileFilter` became final
+- [BC] `Psalm\Config\ProjectFileFilter` was marked `@internal`
+- [BC] Class `Psalm\Config\Creator` became final
+- [BC] `Psalm\Config\Creator` was marked `@internal`
+- [BC] Class `Psalm\Config\TaintAnalysisFileFilter` became final
+- [BC] `Psalm\Config\TaintAnalysisFileFilter` was marked `@internal`
+- [BC] Class `Psalm\Config\ErrorLevelFileFilter` became final
+- [BC] `Psalm\Config\ErrorLevelFileFilter` was marked `@internal`
+- [BC] Class `Psalm\FileBasedPluginAdapter` became final
+- [BC] `Psalm\FileBasedPluginAdapter` was marked `@internal`
+- [BC] Class `Psalm\Exception\InvalidMethodOverrideException` became final
+- [BC] Class `Psalm\Exception\UnpopulatedClasslikeException` became final
+- [BC] Class `Psalm\Exception\ConfigNotFoundException` became final
+- [BC] Class `Psalm\Exception\TypeParseTreeException` became final
+- [BC] Class `Psalm\Exception\ComplicatedExpressionException` became final
+- [BC] Class `Psalm\Exception\ScopeAnalysisException` became final
+- [BC] Class `Psalm\Exception\InvalidClasslikeOverrideException` became final
+- [BC] Class `Psalm\Exception\CircularReferenceException` became final
+- [BC] Class `Psalm\Exception\UnsupportedIssueToFixException` became final
+- [BC] Class `Psalm\Exception\CodeException` became final
+- [BC] Class `Psalm\Exception\RefactorException` became final
+- [BC] Class `Psalm\Exception\UnpreparedAnalysisException` became final
+- [BC] Class `Psalm\Exception\IncorrectDocblockException` became final
+- [BC] Class `Psalm\Exception\UnanalyzedFileException` became final
+- [BC] Class `Psalm\Exception\UnresolvableConstantException` became final
+- [BC] Class `Psalm\Exception\FileIncludeException` became final
+- [BC] Class `Psalm\Exception\ConfigCreationException` became final
+- [BC] Class `Psalm\Aliases` became final
+- [BC] `Psalm\Aliases#__construct()` was marked `@internal`
+- [BC] Class `Psalm\Codebase` became final
+- [BC] `Psalm\Codebase#__construct()` was marked `@internal`
+- [BC] Class `Psalm\Progress\VoidProgress` became final
+- [BC] Class `Psalm\Progress\DebugProgress` became final
+- [BC] Class `Psalm\Report\JsonReport` became final
+- [BC] Class `Psalm\Report\SonarqubeReport` became final
+- [BC] Class `Psalm\Report\CodeClimateReport` became final
+- [BC] Class `Psalm\Report\CheckstyleReport` became final
+- [BC] Class `Psalm\Report\JsonSummaryReport` became final
+- [BC] Class `Psalm\Report\XmlReport` became final
+- [BC] Class `Psalm\Report\EmacsReport` became final
+- [BC] Class `Psalm\Report\ConsoleReport` became final
+- [BC] Class `Psalm\Report\ReportOptions` became final
+- [BC] Class `Psalm\Report\PylintReport` became final
+- [BC] Class `Psalm\Report\JunitReport` became final
+- [BC] Class `Psalm\Report\CompactReport` became final
+- [BC] Class `Psalm\Report\GithubActionsReport` became final
+- [BC] Class `Psalm\Report\TextReport` became final
+- [BC] Class `Psalm\Report\SarifReport` became final
+- [BC] Class `Psalm\Report\PhpStormReport` became final
+- [BC] Class `Psalm\Plugin\Shepherd` became final
+- [BC] Class `Psalm\IssueBuffer` became final
+- [BC] Class `Psalm\SourceControl\Git\RemoteInfo` became final
+- [BC] Class `Psalm\SourceControl\Git\CommitInfo` became final
+- [BC] Class `Psalm\SourceControl\Git\GitInfo` became final
+- [BC] Class `Psalm\ErrorBaseline` became final
+- [BC] `Psalm\Config#__construct()` was marked `@internal`
+- [BC] Class `Psalm\DocComment` became final
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
