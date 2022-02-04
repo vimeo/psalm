@@ -929,6 +929,12 @@ class AssignmentAnalyzer
             return false;
         }
 
+        if (!isset($context->vars_in_scope[$rhs_var_id])) {
+            // Sometimes the $rhs_var_id isn't set in $vars_in_scope, for example if it's an unknown array offset.
+            $context->vars_in_scope[$rhs_var_id] = $statements_analyzer->node_data->getType($stmt->expr)
+                ?? Type::getMixed();
+        }
+
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count
             $reference_count = &$context->referenced_counts[$context->references_in_scope[$lhs_var_id]];
