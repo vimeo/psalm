@@ -218,6 +218,35 @@ class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'dontCrashOnReferenceToMixedVariableArrayOffset' => [
+                'code' => '<?php
+                    function func(&$a): void
+                    {
+                        $_ = &$a["f"];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MissingParamType'],
+            ],
+            'dontCrashOnReferenceToArrayUnknownOffset' => [
+                'code' => '<?php
+                    function func(array &$a): void
+                    {
+                        $_ = &$a["f"];
+                    }
+                ',
+                'assertions' => [],
+            ],
+            'dontCrashOnReferenceToArrayMixedOffset' => [
+                'code' => '<?php
+                    /** @param array{f: mixed} $a */
+                    function func(array &$a): void
+                    {
+                        $_ = &$a["f"];
+                    }
+                ',
+                'assertions' => [],
+            ],
         ];
     }
 
