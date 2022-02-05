@@ -4,7 +4,7 @@ namespace Psalm\Exception;
 
 use Exception;
 
-class UnresolvableConstantException extends Exception
+final class UnresolvableConstantException extends Exception
 {
     /**
      * @var string

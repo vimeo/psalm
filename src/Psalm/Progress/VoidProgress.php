@@ -2,7 +2,7 @@
 
 namespace Psalm\Progress;
 
-class VoidProgress extends Progress
+final class VoidProgress extends Progress
 {
     public function write(string $message): void
     {

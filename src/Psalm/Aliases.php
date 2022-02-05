@@ -2,7 +2,7 @@
 
 namespace Psalm;
 
-class Aliases
+final class Aliases
 {
     /**
      * @var array<lowercase-string, string>
@@ -53,6 +53,7 @@ class Aliases
      * @param array<lowercase-string, string> $uses_flipped
      * @param array<lowercase-string, string> $functions_flipped
      * @param array<string, string> $constants_flipped
+     * @internal
      */
     public function __construct(
         ?string $namespace = null,

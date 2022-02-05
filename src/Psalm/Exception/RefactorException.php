@@ -4,6 +4,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-class RefactorException extends Exception
+final class RefactorException extends Exception
 {
 }

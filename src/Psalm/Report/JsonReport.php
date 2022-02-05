@@ -8,7 +8,7 @@ use Psalm\Report;
 use function array_map;
 use function array_values;
 
-class JsonReport extends Report
+final class JsonReport extends Report
 {
     public function create(): string
     {

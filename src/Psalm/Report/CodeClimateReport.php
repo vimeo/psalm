@@ -20,7 +20,7 @@ use function md5;
  *
  * @author Olivier Doucet <webmaster@ajeux.com>
  */
-class CodeClimateReport extends Report
+final class CodeClimateReport extends Report
 {
     public function create(): string
     {

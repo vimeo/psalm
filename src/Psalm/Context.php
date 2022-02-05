@@ -31,7 +31,7 @@ use function strtolower;
 
 use const JSON_THROW_ON_ERROR;
 
-class Context
+final class Context
 {
     /**
      * @var array<string, Union>
@@ -413,6 +413,7 @@ class Context
      */
     public $parent_remove_vars = [];
 
+    /** @internal */
     public function __construct(?string $self = null)
     {
         $this->self = $self;

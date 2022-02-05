@@ -16,7 +16,8 @@ use function substr;
 
 use const SCANDIR_SORT_NONE;
 
-class IssueHandler
+/** @internal */
+final class IssueHandler
 {
     /**
      * @var string

@@ -8,7 +8,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class PylintReport extends Report
+final class PylintReport extends Report
 {
     public function create(): string
     {

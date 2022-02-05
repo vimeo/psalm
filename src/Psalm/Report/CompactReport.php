@@ -13,7 +13,7 @@ use function str_split;
 use function strlen;
 use function strtoupper;
 
-class CompactReport extends Report
+final class CompactReport extends Report
 {
     /**
      * @psalm-suppress PossiblyNullReference

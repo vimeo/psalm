@@ -12,7 +12,7 @@ use function in_array;
 use function is_a;
 use function sprintf;
 
-class PluginFileExtensionsSocket implements FileExtensionsInterface
+final class PluginFileExtensionsSocket implements FileExtensionsInterface
 {
     /**
      * @var Config

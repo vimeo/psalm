@@ -34,7 +34,7 @@ use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const STDERR;
 
-class Shepherd implements AfterAnalysisInterface
+final class Shepherd implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete

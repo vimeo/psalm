@@ -608,6 +608,7 @@ class Config
      */
     private $plugins = [];
 
+    /** @internal */
     protected function __construct()
     {
         self::$instance = $this;

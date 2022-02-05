@@ -2,6 +2,6 @@
 
 namespace Psalm\Exception;
 
-class ConfigNotFoundException extends ConfigException
+final class ConfigNotFoundException extends ConfigException
 {
 }
