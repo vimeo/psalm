@@ -102,6 +102,7 @@ class TestCase extends BaseTestCase
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
+
     /**
      * @param string $file_path
      * @param string $contents
