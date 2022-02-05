@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-class MissingConstructor extends CodeIssue
+final class MissingConstructor extends CodeIssue
 {
     public const ERROR_LEVEL = 2;
     public const SHORTCODE = 73;

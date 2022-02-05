@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class TaintedSSRF extends TaintedInput
+final class TaintedSSRF extends TaintedInput
 {
     public const SHORTCODE = 253;
 }

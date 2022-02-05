@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class UnusedClass extends ClassIssue
+final class UnusedClass extends ClassIssue
 {
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 75;

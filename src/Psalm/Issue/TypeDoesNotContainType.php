@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-class TypeDoesNotContainType extends CodeIssue
+final class TypeDoesNotContainType extends CodeIssue
 {
     public const ERROR_LEVEL = 4;
     public const SHORTCODE = 56;
