@@ -96,7 +96,7 @@ interface SeekableIterator extends Iterator {
      * @param int $position The position to seek to.
      * @return void
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function seek($position);
 }
@@ -355,7 +355,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     const TOSTRING_USE_CURRENT = 4 ;
     const TOSTRING_USE_INNER = 8 ;
     const FULL_CACHE = 256 ;
-    
+
     /**
      * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags

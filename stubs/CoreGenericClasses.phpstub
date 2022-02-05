@@ -81,7 +81,7 @@ interface ArrayAccess {
      * @return bool true on success or false on failure.
      *              The return value will be casted to boolean if non-boolean was returned.
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetExists($offset);
 
@@ -93,7 +93,7 @@ interface ArrayAccess {
      * @return TValue|null Can return all value types.
      * @psalm-ignore-nullable-return
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetGet($offset);
 
@@ -105,7 +105,7 @@ interface ArrayAccess {
      * @param TValue $value The value to set.
      * @return void
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetSet($offset, $value);
 
@@ -116,7 +116,7 @@ interface ArrayAccess {
      * @param TKey $offset The offset to unset.
      * @return void
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetUnset($offset);
 }
@@ -150,7 +150,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param string $iterator_class Specify the class that will be used for iteration of the ArrayObject object. ArrayIterator is the default class used.
      * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function __construct($input = null, $flags = 0, $iterator_class = "ArrayIterator") { }
 
@@ -161,7 +161,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param TKey $index The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetExists($index) { }
 
@@ -172,7 +172,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param TKey $index The index with the value.
      * @return TValue The value at the specified index or false.
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetGet($index) { }
 
@@ -184,7 +184,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param TValue $newval The new value for the index.
      * @return void
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetSet($index, $newval) { }
 
@@ -195,7 +195,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param TKey $index The index being unset.
      * @return void
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function offsetUnset($index) { }
 
@@ -206,7 +206,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param TValue $value The value being appended.
      * @return void
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function append($value) { }
 
@@ -217,7 +217,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return array<TKey, TValue>  a copy of the array. When the ArrayObject refers to an object
      *                              an array of the public properties of that object will be returned.
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function getArrayCopy() { }
 
@@ -228,7 +228,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return int The number of public properties in the ArrayObject.
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function count() { }
 
@@ -238,7 +238,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return int the behavior flags of the ArrayObject.
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function getFlags() { }
 
@@ -278,7 +278,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param int $flags The new ArrayObject behavior.
      * @return void
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function setFlags($flags) { }
 
@@ -288,7 +288,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function asort() { }
 
@@ -298,7 +298,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function ksort() { }
 
@@ -316,7 +316,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param callable(TValue, TValue):int $cmp_function
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function uasort($cmp_function) { }
 
@@ -334,7 +334,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param callable(TKey, TKey):int $cmp_function The callable comparison function.
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function uksort($cmp_function) { }
 
@@ -344,7 +344,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function natsort() { }
 
@@ -354,7 +354,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return void
      *
-     * @since 5.2.0
+     * @since PHP-5.2.0
      */
     public function natcasesort() { }
 
@@ -365,7 +365,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param string $serialized  The serialized ArrayObject
      * @return void The unserialized ArrayObject
      *
-     * @since 5.3.0
+     * @since PHP-5.3.0
      */
     public function unserialize($serialized) { }
 
@@ -375,7 +375,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return string The serialized representation of the ArrayObject.
      *
-     * @since 5.3.0
+     * @since PHP-5.3.0
      */
     public function serialize() { }
 
@@ -385,7 +385,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @return ArrayIterator<TKey, TValue> An iterator from an ArrayObject.
      *
-     * @since 5.0.0
+     * @since PHP-5.0.0
      */
     public function getIterator() { }
 
@@ -396,7 +396,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param mixed $input The new array or object to exchange with the current array.
      * @return array the old array.
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function exchangeArray($input) { }
 
@@ -408,7 +408,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
      * @return void
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function setIteratorClass($iterator_class) { }
 
@@ -419,7 +419,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return string the iterator class name that is used to iterate over this object.
      * @psalm-return class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>>
      *
-     * @since 5.1.0
+     * @since PHP-5.1.0
      */
     public function getIteratorClass() { }
 }
@@ -464,7 +464,7 @@ final class WeakReference
  * @implements IteratorAggregate<TKey,TVal>
  * @implements Traversable<TKey,TVal>
  *
- * @since 8.0.0
+ * @since PHP-8.0.0
  */
 final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traversable
 {
