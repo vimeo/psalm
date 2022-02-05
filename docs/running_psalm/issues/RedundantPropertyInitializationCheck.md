@@ -1,6 +1,16 @@
 # RedundantPropertyInitializationCheck
 
-Emitted when checking `isset()` on a non-nullable property. This issue indicate a redundant check for projects that initialize their properties in constructor.
+Unitialized properties are statically hard to analyze. To prevent mistakes, Psalm will enforce that all properties should be initialized.
+
+It does that through [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md) and [MissingConstructor](issues/MissingConstructor.md).
+
+Psalm will then assume every property in the codebase is initialized.
+
+Doing that allows it to report missing initializations as well as this issue.
+
+This issue is emitted when checking `isset()` on a non-nullable property. Because every property is assumed to be initialized, this check is redundant
+
+If your project rely on having uninitialized properties, it is advised to suppress this issue, as well as [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md) and [MissingConstructor](issues/MissingConstructor.md).
 
 ```php
 <?php
