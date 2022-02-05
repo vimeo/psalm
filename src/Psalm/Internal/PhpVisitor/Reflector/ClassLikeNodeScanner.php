@@ -31,6 +31,7 @@ use Psalm\Internal\Codebase\PropertyMap;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -41,6 +42,7 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
+use Psalm\Issue\DuplicateProperty;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
 use Psalm\Issue\InvalidTypeImport;
@@ -62,6 +64,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use RuntimeException;
+use Throwable;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -74,7 +77,7 @@ use function count;
 use function explode;
 use function get_class;
 use function implode;
-use function preg_match;
+use function in_array;
 use function preg_replace;
 use function preg_split;
 use function str_replace;
@@ -386,14 +389,14 @@ class ClassLikeNodeScanner
             }
         }
 
-        foreach ($node->getComments() as $comment) {
-            if (!$comment instanceof PhpParser\Comment\Doc) {
+        foreach ($node->getComments() as $doc_comment) {
+            if (!$doc_comment instanceof PhpParser\Comment\Doc) {
                 continue;
             }
 
             try {
                 $type_aliases = self::getTypeAliasesFromComment(
-                    $comment,
+                    $doc_comment,
                     $this->aliases,
                     $this->type_aliases,
                     $fq_classlike_name
@@ -889,10 +892,10 @@ class ClassLikeNodeScanner
         }
 
         if ($node_comment = $node->getDocComment()) {
-            $comments = DocComment::parsePreservingLength($node_comment);
+            $parsed_docblock = DocComment::parsePreservingLength($node_comment);
 
-            if (isset($comments->combined_tags['use'])) {
-                foreach ($comments->combined_tags['use'] as $template_line) {
+            if (isset($parsed_docblock->combined_tags['use'])) {
+                foreach ($parsed_docblock->combined_tags['use'] as $template_line) {
                     $this->useTemplatedType(
                         $storage,
                         $node,
@@ -901,10 +904,10 @@ class ClassLikeNodeScanner
                 }
             }
 
-            if (isset($comments->tags['template-extends'])
-                || isset($comments->tags['extends'])
-                || isset($comments->tags['template-implements'])
-                || isset($comments->tags['implements'])
+            if (isset($parsed_docblock->tags['template-extends'])
+                || isset($parsed_docblock->tags['extends'])
+                || isset($parsed_docblock->tags['template-implements'])
+                || isset($parsed_docblock->tags['implements'])
             ) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     'You must use @use or @template-use to parameterize traits',
@@ -989,7 +992,7 @@ class ClassLikeNodeScanner
             $extended_type_parameters = [];
 
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
-            
+
             foreach ($atomic_type->type_params as $type_param) {
                 $extended_type_parameters[] = $type_param;
             }
@@ -1207,41 +1210,72 @@ class ClassLikeNodeScanner
     ): void {
         $existing_constants = $storage->constants;
 
-        $comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
         $var_comment = null;
         $deprecated = false;
         $description = null;
         $config = $this->config;
+        $since_version = null;
+        $parsed_docblock = null;
 
-        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parsePreservingLength($comment);
-
-            if (isset($comments->tags['deprecated'])) {
-                $deprecated = true;
+        if ($doc_comment && $doc_comment->getText()) {
+            $docblock_exceptions = [];
+            try {
+                $parsed_docblock = DocComment::parsePreservingLength($doc_comment);
+            } catch (Throwable $e) {
+                $docblock_exceptions[] = $e;
             }
 
-            $description = $comments->description;
+            if ($parsed_docblock !== null) {
+                if (isset($parsed_docblock->tags['deprecated'])) {
+                    $deprecated = true;
+                }
 
-            try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $comment,
-                    $this->file_scanner,
-                    $this->aliases,
-                    [],
-                    $this->type_aliases
-                );
+                $description = $parsed_docblock->description;
 
-                $var_comment = array_pop($var_comments);
-            } catch (IncorrectDocblockException $e) {
-                $storage->docblock_issues[] = new MissingDocblockType(
-                    $e->getMessage(),
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                );
-            } catch (DocblockParseException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage(),
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                );
+                if ($config->use_docblock_types || $config->use_docblock_property_types) {
+                    try {
+                        $var_comments = CommentAnalyzer::arrayToDocblocks(
+                            $doc_comment,
+                            $parsed_docblock,
+                            $this->file_scanner,
+                            $this->aliases,
+                            [],
+                            $this->type_aliases
+                        );
+
+                        $var_comment = array_pop($var_comments);
+                    } catch (Throwable $e) {
+                        $docblock_exceptions[] = $e;
+                    }
+                }
+
+                try {
+                    $since_version = DocblockParser::parseSincePhpVersion($parsed_docblock);
+                } catch (Throwable $e) {
+                    $docblock_exceptions[] = $e;
+                }
+            }
+
+            foreach ($docblock_exceptions as $e) {
+                if ($e instanceof IncorrectDocblockException) {
+                    $storage->docblock_issues[] = new MissingDocblockType(
+                        $e->getMessage(),
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
+                } elseif ($e instanceof DocblockParseException) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage(),
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
+                } else {
+                    throw $e;
+                }
+            }
+
+            if ($since_version !== null && $since_version > $this->codebase->analysis_php_version_id) {
+                // Skip constant based on @since PHP tag
+                return;
             }
         }
 
@@ -1249,14 +1283,15 @@ class ClassLikeNodeScanner
             if (isset($storage->constants[$const->name->name])
                 || isset($storage->enum_cases[$const->name->name])
             ) {
-                if (IssueBuffer::accepts(new DuplicateConstant(
-                    'Constant names should be unique',
-                    new CodeLocation($this->file_scanner, $const),
-                    $fq_classlike_name
-                ))) {
-                    // fall through
+                // Stubs use the last applicable declaration
+                if (!$this->codebase->register_stub_files) {
+                    IssueBuffer::maybeAdd(new DuplicateConstant(
+                        'Constant names should be unique',
+                        new CodeLocation($this->file_scanner, $const),
+                        $fq_classlike_name
+                    ));
+                    continue;
                 }
-                continue;
             }
 
             $inferred_type = SimpleTypeInferer::infer(
@@ -1426,11 +1461,11 @@ class ClassLikeNodeScanner
                 }
             }
 
-            $comment = $stmt->getDocComment();
-            if ($comment) {
-                $comments = DocComment::parsePreservingLength($comment);
+            $doc_comment = $stmt->getDocComment();
+            if ($doc_comment) {
+                $parsed_docblock = DocComment::parsePreservingLength($doc_comment);
 
-                if (isset($comments->tags['deprecated'])) {
+                if (isset($parsed_docblock->tags['deprecated'])) {
                     $case->deprecated = true;
                 }
             }
@@ -1481,45 +1516,80 @@ class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name
     ): void {
-        $comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment();
         $var_comment = null;
+        $parsed_docblock = null;
+        $since_version = null;
 
         $property_is_initialized = false;
 
         $existing_constants = $storage->constants;
 
-        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            if (preg_match('/[ \t\*]+@psalm-suppress[ \t]+PropertyNotSetInConstructor/', (string)$comment)) {
-                $property_is_initialized = true;
-            }
-
-            if (preg_match('/[ \t\*]+@property[ \t]+/', (string)$comment)) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    '@property is valid only in docblocks for class',
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                );
-            }
+        if ($doc_comment && $doc_comment->getText()) {
+            $docblock_exceptions = [];
 
             try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $comment,
-                    $this->file_scanner,
-                    $this->aliases,
-                    !$stmt->isStatic() ? $this->class_template_types : [],
-                    $this->type_aliases
-                );
+                $parsed_docblock = DocComment::parsePreservingLength($doc_comment);
+            } catch (Throwable $e) {
+                $docblock_exceptions[] = $e;
+            }
 
-                $var_comment = array_pop($var_comments);
-            } catch (IncorrectDocblockException $e) {
-                $storage->docblock_issues[] = new MissingDocblockType(
-                    $e->getMessage(),
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                );
-            } catch (DocblockParseException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage(),
-                    new CodeLocation($this->file_scanner, $stmt, null, true)
-                );
+            if ($parsed_docblock !== null) {
+                if (isset($parsed_docblock->tags["psalm-suppress"])
+                    && in_array("PropertyNotSetInConstructor", $parsed_docblock->tags["psalm-suppress"])
+                ) {
+                    $property_is_initialized = true;
+                }
+
+                if (isset($parsed_docblock->tags["property"])) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@property is valid only in docblocks for class',
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
+                }
+
+                if ($config->use_docblock_types || $config->use_docblock_property_types) {
+                    try {
+                        $var_comments = CommentAnalyzer::getTypeFromComment(
+                            $doc_comment,
+                            $this->file_scanner,
+                            $this->aliases,
+                            !$stmt->isStatic() ? $this->class_template_types : [],
+                            $this->type_aliases
+                        );
+
+                        $var_comment = array_pop($var_comments);
+                    } catch (Throwable $e) {
+                        $docblock_exceptions[] = $e;
+                    }
+                }
+
+                try {
+                    $since_version = DocblockParser::parseSincePhpVersion($parsed_docblock);
+                } catch (Throwable $e) {
+                    $docblock_exceptions[] = $e;
+                }
+            }
+
+            foreach ($docblock_exceptions as $e) {
+                if ($e instanceof IncorrectDocblockException) {
+                    $storage->docblock_issues[] = new MissingDocblockType(
+                        $e->getMessage(),
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
+                } elseif ($e instanceof DocblockParseException) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage(),
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    );
+                } else {
+                    throw $e;
+                }
+            }
+
+            if ($since_version !== null && $since_version > $this->codebase->analysis_php_version_id) {
+                // Skip property based on @since PHP tag
+                return;
             }
         }
 
@@ -1557,6 +1627,18 @@ class ClassLikeNodeScanner
         }
 
         foreach ($stmt->props as $property) {
+            if (isset($storage->properties[$property->name->name])) {
+                // Stubs use the last applicable declaration
+                if (!$this->codebase->register_stub_files) {
+                    IssueBuffer::maybeAdd(new DuplicateProperty(
+                        'Property names should be unique',
+                        new CodeLocation($this->file_scanner, $property),
+                        $fq_classlike_name
+                    ));
+                    continue;
+                }
+            }
+
             $doc_var_location = null;
 
             $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
@@ -1697,17 +1779,17 @@ class ClassLikeNodeScanner
     }
 
     /**
-     * @param ClassLikeDocblockComment $comment
+     * @param ClassLikeDocblockComment $doc_comment
      * @param string $fq_classlike_name
      *
      * @return array<string, LinkableTypeAlias>
      */
-    private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name): array
+    private function getImportedTypeAliases(ClassLikeDocblockComment $doc_comment, string $fq_classlike_name): array
     {
         /** @var array<string, LinkableTypeAlias> $results */
         $results = [];
 
-        foreach ($comment->imported_types as $import_type_entry) {
+        foreach ($doc_comment->imported_types as $import_type_entry) {
             $imported_type_data = $import_type_entry['parts'];
             $location = new DocblockTypeLocation(
                 $this->file_scanner,
@@ -1792,12 +1874,12 @@ class ClassLikeNodeScanner
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function getTypeAliasesFromComment(
-        PhpParser\Comment\Doc $comment,
+        PhpParser\Comment\Doc $doc_comment,
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln
     ): array {
-        $parsed_docblock = DocComment::parsePreservingLength($comment);
+        $parsed_docblock = DocComment::parsePreservingLength($doc_comment);
 
         if (!isset($parsed_docblock->tags['psalm-type']) && !isset($parsed_docblock->tags['phpstan-type'])) {
             return [];

@@ -165,7 +165,7 @@ class Codebase
     public $register_autoload_files = false;
 
     /**
-     * Whether to log functions just at the file level or globally (for stubs)
+     * Whether the current analysis is taking place in stub files.
      *
      * @var bool
      */

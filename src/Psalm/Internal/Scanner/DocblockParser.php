@@ -2,11 +2,15 @@
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Exception\DocblockParseException;
+
+use function assert;
 use function explode;
 use function implode;
 use function min;
 use function preg_match;
 use function preg_replace;
+use function reset;
 use function rtrim;
 use function str_replace;
 use function strlen;
@@ -257,5 +261,28 @@ class DocblockParser
                 = ($docblock->tags['param-out'] ?? [])
                 + ($docblock->tags['psalm-param-out'] ?? []);
         }
+    }
+
+    /**
+     * @throws DocblockParseException if the @since PHP tag is malformed
+     */
+    public static function parseSincePhpVersion(ParsedDocblock $docblock): ?int
+    {
+        if (!isset($docblock->tags['since'])) {
+            return null;
+        }
+        $since = trim(reset($docblock->tags['since']));
+        if (strpos($since, "PHP-") !== 0) {
+            return null;
+        }
+        if (!preg_match('/^PHP-([4578])\.(\d{1,2})(?:\.(\d{1,2}))?$/', $since, $matches)) {
+            throw new DocblockParseException("Malformed '@since PHP' tag");
+        }
+
+        assert(isset($matches[1], $matches[2]));
+        return ((int) $matches[1]) * 1_00_00
+            + ((int) $matches[2]) * 1_00
+            + ((int) ($matches[3] ?? 0))
+        ;
     }
 }

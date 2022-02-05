@@ -7,6 +7,7 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
@@ -343,15 +344,7 @@ class FunctionLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['since'])) {
-            $since = trim(reset($parsed_docblock->tags['since']));
-            if (preg_match('/^[4578]\.\d(\.\d+)?$/', $since)) {
-                $since_parts = explode('.', $since);
-
-                $info->since_php_major_version = (int)$since_parts[0];
-                $info->since_php_minor_version = (int)$since_parts[1];
-            }
-        }
+        $info->since_php_version = DocblockParser::parseSincePhpVersion($parsed_docblock);
 
         if (isset($parsed_docblock->tags['deprecated'])) {
             $info->deprecated = true;

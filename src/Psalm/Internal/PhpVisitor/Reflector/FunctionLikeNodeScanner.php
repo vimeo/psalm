@@ -470,6 +470,7 @@ class FunctionLikeNodeScanner
         }
 
         if ($doc_comment) {
+            $docblock_info = null;
             try {
                 $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
             } catch (IncorrectDocblockException $e) {
@@ -477,30 +478,19 @@ class FunctionLikeNodeScanner
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
                     new CodeLocation($this->file_scanner, $stmt, null, true)
                 );
-
-                $docblock_info = null;
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
                     new CodeLocation($this->file_scanner, $stmt, null, true)
                 );
-
-                $docblock_info = null;
             }
 
             if ($docblock_info) {
-                if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                    $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
-                        return false;
-                    }
-
-                    if ($docblock_info->since_php_major_version === $analysis_major_php_version
-                        && $docblock_info->since_php_minor_version > $analysis_minor_php_version
-                    ) {
-                        return false;
-                    }
+                if (!$this->aliases->namespace
+                    && $docblock_info->since_php_version !== null
+                    && $docblock_info->since_php_version > $this->codebase->analysis_php_version_id
+                ) {
+                    return false;
                 }
 
                 if ($stmt instanceof PhpParser\Node\Expr\Closure
@@ -1018,7 +1008,26 @@ class FunctionLikeNodeScanner
 
             $classlike_storage = $this->classlike_storage;
 
-            $storage = null;
+            $storage = $this->storage = new MethodStorage();
+
+            // skip methods based on @since docblock tag
+            $doc_comment = $stmt->getDocComment();
+
+            if ($doc_comment) {
+                $docblock_info = null;
+                try {
+                    $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
+                } catch (IncorrectDocblockException|DocblockParseException $e) {
+                }
+                if ($docblock_info) {
+                    if (!$this->aliases->namespace
+                        && $docblock_info->since_php_version !== null
+                        && $docblock_info->since_php_version > $this->codebase->analysis_php_version_id
+                    ) {
+                        return false;
+                    }
+                }
+            }
 
             if (isset($classlike_storage->methods[$method_name_lc])) {
                 if (!$this->codebase->register_stub_files) {
@@ -1041,38 +1050,7 @@ class FunctionLikeNodeScanner
                     return false;
                 }
 
-                // skip methods based on @since docblock tag
-                $doc_comment = $stmt->getDocComment();
-
-                if ($doc_comment) {
-                    $docblock_info = null;
-                    try {
-                        $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
-                    } catch (IncorrectDocblockException|DocblockParseException $e) {
-                    }
-                    if ($docblock_info) {
-                        if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                            $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                            $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                            if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
-                                return false;
-                            }
-
-                            if ($docblock_info->since_php_major_version === $analysis_major_php_version
-                                && $docblock_info->since_php_minor_version > $analysis_minor_php_version
-                            ) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-
                 $is_functionlike_override = true;
-                $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
-            }
-
-            if (!$storage) {
-                $storage = $this->storage = new MethodStorage();
             }
 
             $storage->stubbed = $this->codebase->register_stub_files;

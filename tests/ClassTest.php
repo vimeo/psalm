@@ -644,7 +644,7 @@ class ClassTest extends TestCase
                     /**
                      * @template TKey
                      * @template TValue
-                     * 
+                     *
                      * @implements Traversable<TKey, TValue>
                      */
                     abstract class C implements Traversable {}
@@ -1003,6 +1003,17 @@ class ClassTest extends TestCase
                     }
                 ',
                 'error_message' => 'MissingTemplateParam',
+            ],
+
+            'duplicateProperty' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $bar = 1;
+                        public int $bar = 2;
+                    }
+                ',
+                'error_message' => 'DuplicateProperty',
             ],
         ];
     }
