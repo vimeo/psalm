@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
-class MixedArgument extends ArgumentIssue implements MixedIssue
+final class MixedArgument extends ArgumentIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;
     public const SHORTCODE = 30;

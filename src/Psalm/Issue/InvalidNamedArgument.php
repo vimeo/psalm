@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class InvalidNamedArgument extends ArgumentIssue
+final class InvalidNamedArgument extends ArgumentIssue
 {
     public const ERROR_LEVEL = 6;
     public const SHORTCODE = 238;

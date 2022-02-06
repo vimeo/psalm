@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-class MixedPropertyTypeCoercion extends PropertyIssue implements MixedIssue
+final class MixedPropertyTypeCoercion extends PropertyIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;
     public const SHORTCODE = 196;

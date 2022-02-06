@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class DuplicateEnumCase extends ClassIssue
+final class DuplicateEnumCase extends ClassIssue
 {
     public const ERROR_LEVEL = -1;
     public const SHORTCODE = 277;

@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class PossiblyUndefinedArrayOffset extends CodeIssue
+final class PossiblyUndefinedArrayOffset extends CodeIssue
 {
     public const ERROR_LEVEL = 3;
     public const SHORTCODE = 167;

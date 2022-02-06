@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class UncaughtThrowInGlobalScope extends CodeIssue
+final class UncaughtThrowInGlobalScope extends CodeIssue
 {
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 191;
