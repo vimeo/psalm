@@ -507,6 +507,59 @@
 	- [BC] Class `Psalm\Issue\ParseError` became final
 	- [BC] Class `Psalm\Issue\PossiblyUndefinedStringArrayOffset` became final
 	- [BC] Class `Psalm\Issue\ExtensionRequirementViolation` became final
+ - Storage classes became final:
+	- [BC] Class `Psalm\Storage\MethodStorage` became final
+	- [BC] Class `Psalm\Storage\AttributeStorage` became final
+	- [BC] Class `Psalm\Storage\FileStorage` became final
+	- [BC] Class `Psalm\Storage\PropertyStorage` became final
+	- [BC] Class `Psalm\Storage\FunctionStorage` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasArrayKey` became final
+	- [BC] Class `Psalm\Storage\Assertion\Truthy` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsAClass` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasAtLeastCount` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasMethod` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasIntOrStringArrayAccess` became final
+	- [BC] Class `Psalm\Storage\Assertion\DoesNotHaveMethod` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsLessThanOrEqualTo` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotAClass` became final
+	- [BC] Class `Psalm\Storage\Assertion\ArrayKeyDoesNotExist` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotIdentical` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsClassEqual` became final
+	- [BC] Class `Psalm\Storage\Assertion\NotNonEmptyCountable` became final
+	- [BC] Class `Psalm\Storage\Assertion\Any` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsLooselyEqual` became final
+	- [BC] Class `Psalm\Storage\Assertion\NonEmpty` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsGreaterThanOrEqualTo` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasStringArrayAccess` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsClassNotEqual` became final
+	- [BC] Class `Psalm\Storage\Assertion\HasExactCount` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotCountable` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsIdentical` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsType` became final
+	- [BC] Class `Psalm\Storage\Assertion\NotNestedAssertions` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsGreaterThan` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsIsset` became final
+	- [BC] Class `Psalm\Storage\Assertion\Empty_` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotType` became final
+	- [BC] Class `Psalm\Storage\Assertion\ArrayKeyExists` became final
+	- [BC] Class `Psalm\Storage\Assertion\DoesNotHaveAtLeastCount` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotIsset` became final
+	- [BC] Class `Psalm\Storage\Assertion\NonEmptyCountable` became final
+	- [BC] Class `Psalm\Storage\Assertion\NestedAssertions` became final
+	- [BC] Class `Psalm\Storage\Assertion\Falsy` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsNotLooselyEqual` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsEqualIsset` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsLessThan` became final
+	- [BC] Class `Psalm\Storage\Assertion\DoesNotHaveExactCount` became final
+	- [BC] Class `Psalm\Storage\Assertion\IsCountable` became final
+	- [BC] Class `Psalm\Storage\Assertion\NotInArray` became final
+	- [BC] Class `Psalm\Storage\Assertion\InArray` became final
+	- [BC] Class `Psalm\Storage\FunctionLikeParameter` became final
+	- [BC] Class `Psalm\Storage\Possibilities` became final
+	- [BC] Class `Psalm\Storage\ClassConstantStorage` became final
+	- [BC] Class `Psalm\Storage\ClassLikeStorage` became final
+	- [BC] Class `Psalm\Storage\AttributeArg` became final
+	- [BC] Class `Psalm\Storage\EnumCaseStorage` became final
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
@@ -564,4 +617,3 @@
    - :information_source: migration possible using `Psalm\PluginFileExtensionsSocket`
  - [BC] Method `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getClasslikeStorage()` was removed,
    use correct `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getFunctionlikeStorage()` instead
-
