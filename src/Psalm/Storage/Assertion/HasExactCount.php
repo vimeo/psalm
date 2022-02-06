@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class HasExactCount extends Assertion
+final class HasExactCount extends Assertion
 {
     /** @var positive-int */
     public $count;

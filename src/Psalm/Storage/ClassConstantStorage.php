@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @psalm-suppress PossiblyUnusedProperty
  */
-class ClassConstantStorage
+final class ClassConstantStorage
 {
     use CustomMetadataTrait;
 

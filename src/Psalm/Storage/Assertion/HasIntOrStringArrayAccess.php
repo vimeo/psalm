@@ -5,7 +5,7 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use UnexpectedValueException;
 
-class HasIntOrStringArrayAccess extends Assertion
+final class HasIntOrStringArrayAccess extends Assertion
 {
     /** @psalm-mutation-free */
     public function getNegation(): Assertion

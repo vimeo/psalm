@@ -5,7 +5,7 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Atomic;
 
-class IsType extends Assertion
+final class IsType extends Assertion
 {
     public Atomic $type;
 

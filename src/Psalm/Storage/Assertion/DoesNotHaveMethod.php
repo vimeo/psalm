@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class DoesNotHaveMethod extends Assertion
+final class DoesNotHaveMethod extends Assertion
 {
     public string $method;
 

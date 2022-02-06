@@ -5,7 +5,7 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
-class NotInArray extends Assertion
+final class NotInArray extends Assertion
 {
     public Union $type;
 

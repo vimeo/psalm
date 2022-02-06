@@ -5,7 +5,7 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use UnexpectedValueException;
 
-class HasArrayKey extends Assertion
+final class HasArrayKey extends Assertion
 {
     public $key;
 

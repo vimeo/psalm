@@ -7,7 +7,7 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 
-class FileStorage
+final class FileStorage
 {
     use CustomMetadataTrait;
 

@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
-class FunctionLikeParameter
+final class FunctionLikeParameter
 {
     use CustomMetadataTrait;
 
