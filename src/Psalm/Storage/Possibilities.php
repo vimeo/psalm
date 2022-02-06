@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 use function is_string;
 use function str_replace;
 
-class Possibilities
+final class Possibilities
 {
     /**
      * @var list<Assertion> the rule being asserted

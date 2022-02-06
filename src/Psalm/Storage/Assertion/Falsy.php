@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class Falsy extends Assertion
+final class Falsy extends Assertion
 {
     /** @psalm-mutation-free */
     public function getNegation(): Assertion

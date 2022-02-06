@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class ArrayKeyExists extends Assertion
+final class ArrayKeyExists extends Assertion
 {
     /** @psalm-mutation-free */
     public function getNegation(): Assertion

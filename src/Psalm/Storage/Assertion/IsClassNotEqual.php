@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class IsClassNotEqual extends Assertion
+final class IsClassNotEqual extends Assertion
 {
     public string $type;
 

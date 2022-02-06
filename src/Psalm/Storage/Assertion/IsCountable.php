@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class IsCountable extends Assertion
+final class IsCountable extends Assertion
 {
     /** @psalm-mutation-free */
     public function getNegation(): Assertion

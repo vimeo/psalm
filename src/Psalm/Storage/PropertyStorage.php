@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Union;
 
-class PropertyStorage
+final class PropertyStorage
 {
     use CustomMetadataTrait;
 

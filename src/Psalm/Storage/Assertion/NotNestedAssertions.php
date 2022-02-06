@@ -8,7 +8,7 @@ use function json_encode;
 
 use const JSON_THROW_ON_ERROR;
 
-class NotNestedAssertions extends Assertion
+final class NotNestedAssertions extends Assertion
 {
     /** @var array<string, list<list<Assertion>>> */
     public array $assertions;

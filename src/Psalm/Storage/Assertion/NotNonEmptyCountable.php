@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class NotNonEmptyCountable extends Assertion
+final class NotNonEmptyCountable extends Assertion
 {
     /** @psalm-mutation-free */
     public function getNegation(): Assertion

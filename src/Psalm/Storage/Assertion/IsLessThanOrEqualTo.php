@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class IsLessThanOrEqualTo extends Assertion
+final class IsLessThanOrEqualTo extends Assertion
 {
     public int $value;
 

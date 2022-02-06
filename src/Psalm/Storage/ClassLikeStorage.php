@@ -11,7 +11,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-class ClassLikeStorage
+final class ClassLikeStorage
 {
     use CustomMetadataTrait;
 

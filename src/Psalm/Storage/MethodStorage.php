@@ -4,7 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\Type\Union;
 
-class MethodStorage extends FunctionLikeStorage
+final class MethodStorage extends FunctionLikeStorage
 {
     /**
      * @var bool

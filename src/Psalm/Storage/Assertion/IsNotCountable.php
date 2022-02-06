@@ -4,7 +4,7 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
-class IsNotCountable extends Assertion
+final class IsNotCountable extends Assertion
 {
     public $is_negatable;
 

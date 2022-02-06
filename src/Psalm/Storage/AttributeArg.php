@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
-class AttributeArg
+final class AttributeArg
 {
     /**
      * @var ?string
