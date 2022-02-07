@@ -29,7 +29,7 @@
         "composer/xdebug-handler": "^1.1 || ^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
-        "felixfbecker/language-server-protocol": "dev-feature/spec-3.16-zobo as 1.5.1",
+        "felixfbecker/language-server-protocol": "dev-feature/spec-3.16 as 1.5.1",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
         "openlss/lib-array2xml": "^1.0",
