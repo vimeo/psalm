@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\New_;
 use Psalm\Node\VirtualNode;
 
-class VirtualNew extends New_ implements VirtualNode
+final class VirtualNew extends New_ implements VirtualNode
 {
 
 }

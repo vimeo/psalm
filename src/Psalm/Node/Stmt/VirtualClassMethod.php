@@ -7,7 +7,7 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Node\VirtualNode;
 
-class VirtualClassMethod extends ClassMethod implements VirtualNode
+final class VirtualClassMethod extends ClassMethod implements VirtualNode
 {
 
 }

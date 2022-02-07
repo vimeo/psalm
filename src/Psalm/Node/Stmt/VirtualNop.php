@@ -8,7 +8,7 @@ use PhpParser\Node\Stmt\Nop;
 use Psalm\Node\VirtualNode;
 
 /** Nop/empty statement (;). */
-class VirtualNop extends Nop implements VirtualNode
+final class VirtualNop extends Nop implements VirtualNode
 {
 
 }

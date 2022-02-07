@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\UnaryMinus;
 use Psalm\Node\VirtualNode;
 
-class VirtualUnaryMinus extends UnaryMinus implements VirtualNode
+final class VirtualUnaryMinus extends UnaryMinus implements VirtualNode
 {
 
 }

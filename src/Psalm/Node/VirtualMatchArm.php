@@ -6,7 +6,7 @@ namespace Psalm\Node;
 
 use PhpParser\Node\MatchArm;
 
-class VirtualMatchArm extends MatchArm implements VirtualNode
+final class VirtualMatchArm extends MatchArm implements VirtualNode
 {
 
 }

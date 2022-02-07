@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\MethodCall;
 use Psalm\Node\VirtualNode;
 
-class VirtualMethodCall extends MethodCall implements VirtualNode
+final class VirtualMethodCall extends MethodCall implements VirtualNode
 {
 
 }

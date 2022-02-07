@@ -7,7 +7,7 @@ namespace Psalm\Node\Scalar;
 use PhpParser\Node\Scalar\Encapsed;
 use Psalm\Node\VirtualNode;
 
-class VirtualEncapsed extends Encapsed implements VirtualNode
+final class VirtualEncapsed extends Encapsed implements VirtualNode
 {
 
 }

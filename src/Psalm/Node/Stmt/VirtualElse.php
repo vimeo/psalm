@@ -7,7 +7,7 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Else_;
 use Psalm\Node\VirtualNode;
 
-class VirtualElse extends Else_ implements VirtualNode
+final class VirtualElse extends Else_ implements VirtualNode
 {
 
 }
