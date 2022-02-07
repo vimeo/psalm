@@ -17,6 +17,14 @@ class VersionDependentTest extends TestCase
         $this->addStubFile(
             'versionDependentCode.php',
             '<?php
+                /** @since PHP-7.0 */
+                function takesStringUntil8(string $param): void {}
+
+                /** @since PHP-8.0 */
+                function takesStringUntil8(): void {}
+
+                /** @since PHP-8.0 */
+                function existsAfter8(): void {}
 
                 class VersionDependent
                 {
@@ -77,6 +85,30 @@ class VersionDependentTest extends TestCase
      */
     public function providerValidCodeParse(): iterable
     {
+        yield 'functionChangedOld' => [
+            'code' => '<?php
+                takesStringUntil8("");
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'functionChangedNew' => [
+            'code' => '<?php
+                takesStringUntil8();
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'functionAdded' => [
+            'code' => '<?php
+                existsAfter8();
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
         yield 'methodChangedOld' => [
             'code' => '<?php
                 (new VersionDependent())->takesStringUntil8("");
@@ -164,6 +196,30 @@ class VersionDependentTest extends TestCase
      */
     public function providerInvalidCodeParse(): iterable
     {
+        yield 'functionChangedOld' => [
+            'code' => '<?php
+                takesStringUntil8();
+            ',
+            'error_message' => 'TooFewArguments',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'functionChangedNew' => [
+            'code' => '<?php
+                takesStringUntil8("");
+            ',
+            'error_message' => 'TooManyArguments',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'functionAdded' => [
+            'code' => '<?php
+                existsAfter8();
+            ',
+            'error_message' => 'UndefinedFunction',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
         yield 'methodChangedOld' => [
             'code' => '<?php
                 (new VersionDependent())->takesStringUntil8();

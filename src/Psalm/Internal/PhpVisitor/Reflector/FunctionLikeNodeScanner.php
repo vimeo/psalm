@@ -935,10 +935,36 @@ class FunctionLikeNodeScanner
 
             $storage = $this->storage = new FunctionStorage();
 
-            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+            // skip functions based on @since docblock tag
+            $doc_comment = $stmt->getDocComment();
+
+            if ($doc_comment) {
+                $docblock_info = null;
+                try {
+                    $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
+                } catch (IncorrectDocblockException|DocblockParseException $e) {
+                }
+                if ($docblock_info) {
+                    if (!$this->aliases->namespace
+                        && $docblock_info->since_php_version !== null
+                        && $docblock_info->since_php_version > $this->codebase->analysis_php_version_id
+                    ) {
+                        return false;
+                    }
+                }
+            }
+
+            if ($this->codebase->register_stub_files) {
+                $this->file_storage->functions[$function_id] = $storage;
+                $this->codebase->functions->addGlobalFunction(
+                    $function_id,
+                    $storage,
+                );
+
+                return [$function_id, $storage, null, null, null, null, false, null, false];
+            } elseif ($this->codebase->register_autoload_files) {
                 if (isset($this->file_storage->functions[$function_id])
-                    && ($this->codebase->register_stub_files
-                        || !$this->codebase->functions->hasStubbedFunction($function_id))
+                    && !$this->codebase->functions->hasStubbedFunction($function_id)
                 ) {
                     $this->codebase->functions->addGlobalFunction(
                         $function_id,
@@ -1030,6 +1056,7 @@ class FunctionLikeNodeScanner
             }
 
             if (isset($classlike_storage->methods[$method_name_lc])) {
+                // Stubs use the last applicable declaration
                 if (!$this->codebase->register_stub_files) {
                     $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
 
