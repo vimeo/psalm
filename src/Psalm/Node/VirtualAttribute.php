@@ -6,7 +6,7 @@ namespace Psalm\Node;
 
 use PhpParser\Node\Attribute;
 
-class VirtualAttribute extends Attribute implements VirtualNode
+final class VirtualAttribute extends Attribute implements VirtualNode
 {
 
 }

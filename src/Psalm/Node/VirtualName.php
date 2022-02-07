@@ -6,7 +6,7 @@ namespace Psalm\Node;
 
 use PhpParser\Node\Name;
 
-class VirtualName extends Name implements VirtualNode
+final class VirtualName extends Name implements VirtualNode
 {
 
 }

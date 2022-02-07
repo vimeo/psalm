@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\Coalesce;
 use Psalm\Node\VirtualNode;
 
-class VirtualCoalesce extends Coalesce implements VirtualNode
+final class VirtualCoalesce extends Coalesce implements VirtualNode
 {
 
 }

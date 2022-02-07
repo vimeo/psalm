@@ -7,7 +7,7 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\TryCatch;
 use Psalm\Node\VirtualNode;
 
-class VirtualTryCatch extends TryCatch implements VirtualNode
+final class VirtualTryCatch extends TryCatch implements VirtualNode
 {
 
 }

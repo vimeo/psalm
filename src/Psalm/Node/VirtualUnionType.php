@@ -6,7 +6,7 @@ namespace Psalm\Node;
 
 use PhpParser\Node\UnionType;
 
-class VirtualUnionType extends UnionType implements VirtualNode
+final class VirtualUnionType extends UnionType implements VirtualNode
 {
 
 }

@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\ShiftRight;
 use Psalm\Node\VirtualNode;
 
-class VirtualShiftRight extends ShiftRight implements VirtualNode
+final class VirtualShiftRight extends ShiftRight implements VirtualNode
 {
 
 }

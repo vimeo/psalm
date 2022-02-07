@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\Cast;
 use PhpParser\Node\Expr\Cast\Int_;
 use Psalm\Node\VirtualNode;
 
-class VirtualInt extends Int_ implements VirtualNode
+final class VirtualInt extends Int_ implements VirtualNode
 {
 
 }

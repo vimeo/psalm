@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use Psalm\Node\VirtualNode;
 
-class VirtualArrayDimFetch extends ArrayDimFetch implements VirtualNode
+final class VirtualArrayDimFetch extends ArrayDimFetch implements VirtualNode
 {
 
 }

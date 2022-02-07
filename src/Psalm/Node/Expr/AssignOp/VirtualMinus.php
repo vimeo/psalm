@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\Minus;
 use Psalm\Node\VirtualNode;
 
-class VirtualMinus extends Minus implements VirtualNode
+final class VirtualMinus extends Minus implements VirtualNode
 {
 
 }

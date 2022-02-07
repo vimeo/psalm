@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Pow;
 use Psalm\Node\VirtualNode;
 
-class VirtualPow extends Pow implements VirtualNode
+final class VirtualPow extends Pow implements VirtualNode
 {
 
 }

@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\Ternary;
 use Psalm\Node\VirtualNode;
 
-class VirtualTernary extends Ternary implements VirtualNode
+final class VirtualTernary extends Ternary implements VirtualNode
 {
 
 }
