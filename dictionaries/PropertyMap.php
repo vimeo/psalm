@@ -39,10 +39,6 @@ return [
         'boost' => 'float',
         'values' => 'array',
     ],
-    'domprocessinginstruction' => [
-        'target' => 'string',
-        'data' => 'string',
-    ],
     'recursivearrayiterator' => [
         'name' => 'string',
     ],
@@ -53,17 +49,6 @@ return [
     'mongocursor' => [
         'slaveokay' => 'boolean',
         'timeout' => 'integer',
-    ],
-    'domxpath' => [
-        'document' => 'DOMDocument',
-    ],
-    'domentity' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'notationName' => 'string',
-        'actualEncoding' => 'string',
-        'encoding' => 'string',
-        'version' => 'string',
     ],
     'splminheap' => [
         'name' => 'string',
@@ -121,16 +106,7 @@ return [
         'file' => 'string',
         'line' => 'int',
     ],
-    'domexception' => [
-        'code' => 'int',
-    ],
-    'domentityreference' => [
-        'name' => 'string',
-    ],
     'spldoublylinkedlist' => [
-        'name' => 'string',
-    ],
-    'domdocumentfragment' => [
         'name' => 'string',
     ],
     'collator' => [
@@ -141,10 +117,6 @@ return [
     ],
     'pdostatement' => [
         'querystring' => 'string',
-    ],
-    'domnotation' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
     ],
     'snmpexception' => [
         'code' => 'string',
@@ -165,9 +137,6 @@ return [
     'splheap' => [
         'name' => 'string',
     ],
-    'domnodelist' => [
-        'length' => 'int',
-    ],
     'mongodb' => [
         'w' => 'integer',
         'wtimeout' => 'integer',
@@ -179,32 +148,6 @@ return [
         'connected' => 'boolean',
         'status' => 'string',
     ],
-    'domdocument' => [
-        'actualEncoding' => 'string',
-        'config' => 'null',
-        'doctype' => 'DOMDocumentType',
-        'documentElement' => 'DOMElement',
-        'documentURI' => 'string',
-        'encoding' => 'string',
-        'firstElementChild' => 'DOMElement|null',
-        'formatOutput' => 'bool',
-        'childElementCount' => 'int',
-        'implementation' => 'DOMImplementation',
-        'lastElementChild' => 'DOMElement|null',
-        'preserveWhiteSpace' => 'bool',
-        'recover' => 'bool',
-        'resolveExternals' => 'bool',
-        'standalone' => 'bool',
-        'strictErrorChecking' => 'bool',
-        'substituteEntities' => 'bool',
-        'validateOnParse' => 'bool',
-        'version' => 'string',
-        'xmlEncoding' => 'string',
-        'xmlStandalone' => 'bool',
-        'xmlVersion' => 'string',
-        'ownerDocument' => 'null',
-        'parentNode' => 'null',
-    ],
     'libxmlerror' => [
         'level' => 'int',
         'code' => 'int',
@@ -212,9 +155,6 @@ return [
         'message' => 'string',
         'file' => 'string',
         'line' => 'int',
-    ],
-    'domimplementation' => [
-        'name' => 'string',
     ],
     'normalizer' => [
         'name' => 'string',
@@ -225,23 +165,11 @@ return [
     'event' => [
         'pending' => 'bool',
     ],
-    'domdocumenttype' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'name' => 'string',
-        'entities' => 'DOMNamedNodeMap',
-        'notations' => 'DOMNamedNodeMap',
-        'internalSubset' => 'string',
-    ],
     'errorexception' => [
         'severity' => 'int',
     ],
     'recursivedirectoryiterator' => [
         'name' => 'string',
-    ],
-    'domcharacterdata' => [
-        'data' => 'string',
-        'length' => 'int',
     ],
     'mongocollection' => [
         'db' => 'MongoDB',
@@ -315,16 +243,6 @@ return [
     'regexiterator' => [
         'name' => 'string',
     ],
-    'domelement' => [
-        'schemaTypeInfo' => 'bool',
-        'tagName' => 'string',
-        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
-        'childElementCount' => 'int',
-        'firstElementChild' => 'DOMElement|null',
-        'lastElementChild' => 'DOMElement|null',
-        'nextElementSibling' => 'DOMElement|null',
-        'previousElementSibling' => 'DOMElement|null',
-    ],
     'tidynode' => [
         'value' => 'string',
         'name' => 'string',
@@ -351,9 +269,6 @@ return [
         'http-raw-response' => 'string',
         'http-digested-response' => 'string',
     ],
-    'domnamednodemap' => [
-        'length' => 'int',
-    ],
     'splstack' => [
         'name' => 'string',
     ],
@@ -367,31 +282,6 @@ return [
     'pdoexception' => [
         'errorinfo' => 'array',
         'code' => 'string',
-    ],
-    'domnode' => [
-        'nodeName' => 'string',
-        'nodeValue' => 'string|null',
-        'nodeType' => 'int',
-        'parentNode' => 'DOMNode|null',
-        'childNodes' => 'DomNodeList<DomNode>',
-        'firstChild' => 'DOMNode|null',
-        'lastChild' => 'DOMNode|null',
-        'previousSibling' => 'DOMNode|null',
-        'nextSibling' => 'DOMNode|null',
-        'attributes' => 'null',
-        'ownerDocument' => 'DOMDocument|null',
-        'namespaceURI' => 'string|null',
-        'prefix' => 'string',
-        'localName' => 'string',
-        'baseURI' => 'string|null',
-        'textContent' => 'string',
-    ],
-    'domattr' => [
-        'name' => 'string',
-        'ownerElement' => 'DOMElement',
-        'schemaTypeInfo' => 'bool',
-        'specified' => 'bool',
-        'value' => 'string',
     ],
     'simplexmliterator' => [
         'name' => 'string',
@@ -430,9 +320,6 @@ return [
         'priority' => 'integer',
         'input' => 'EventBuffer',
         'output' => 'EventBuffer',
-    ],
-    'domtext' => [
-        'wholeText' => 'string',
     ],
     'exception' => [
         'message' => 'string',

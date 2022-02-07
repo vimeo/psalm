@@ -309,10 +309,6 @@ return [
       'old' => ['string|false', 'object'=>'DateTimeInterface', 'format'=>'string'],
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
     ],
-    'dom_import_simplexml' => [
-        'old' => ['DOMElement|null', 'node'=>'SimpleXMLElement'],
-        'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
-    ],
     'explode' => [
       'old' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
       'new' => ['list<string>', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
