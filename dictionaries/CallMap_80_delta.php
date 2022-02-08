@@ -1610,12 +1610,5 @@ return [
     'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
-    'SimpleXMLIterator::rewind' => ['void'],
-    'SimpleXMLIterator::valid' => ['bool'],
-    'SimpleXMLIterator::current' => ['?SimpleXMLIterator'],
-    'SimpleXMLIterator::key' => ['string|false'],
-    'SimpleXMLIterator::next' => ['void'],
-    'SimpleXMLIterator::hasChildren' => ['bool'],
-    'SimpleXMLIterator::getChildren' => ['SimpleXMLIterator'],
   ],
 ];

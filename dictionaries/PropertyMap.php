@@ -283,9 +283,6 @@ return [
         'errorinfo' => 'array',
         'code' => 'string',
     ],
-    'simplexmliterator' => [
-        'name' => 'string',
-    ],
     'snmp' => [
         'max-oids' => 'int',
         'valueretrieval' => 'int',

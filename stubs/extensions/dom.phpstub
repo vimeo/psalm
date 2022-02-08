@@ -542,6 +542,7 @@ class DOMNodeList implements IteratorAggregate, Countable
 
     public function count(): int {}
 
+    /** @return Iterator<int, TNode> */
     public function getIterator() : Iterator {}
 
     /**
@@ -600,6 +601,7 @@ class DOMNamedNodeMap implements IteratorAggregate, Countable
 
     public function count(): int {}
 
+    /** @return Iterator<string, TNode> */
     public function getIterator() : Iterator {}
 }
 
