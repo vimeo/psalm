@@ -25,7 +25,6 @@ use function array_merge;
 use function array_unique;
 use function in_array;
 use function spl_object_id;
-use function strpos;
 
 /**
  * @internal
@@ -152,13 +151,11 @@ class LoopAnalyzer
                 $loop_parent_context->vars_possibly_in_scope
             );
         } else {
-            $pre_outer_context = clone $loop_parent_context;
+            $original_parent_context = clone $loop_parent_context;
 
             $analyzer = $statements_analyzer->getCodebase()->analyzer;
 
             $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_analyzer->getFilePath());
-
-            $pre_condition_vars_in_scope = $loop_context->vars_in_scope;
 
             IssueBuffer::startRecording();
 
@@ -190,7 +187,7 @@ class LoopAnalyzer
 
             $statements_analyzer->analyze($stmts, $continue_context);
 
-            self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $pre_outer_context);
+            self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
 
             $continue_context->protected_var_ids = $original_protected_var_ids;
 
@@ -241,14 +238,14 @@ class LoopAnalyzer
                         ) {
                             $has_changes = true;
                         }
-                    } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
-                        if (!$type->equals($pre_outer_context->vars_in_scope[$var_id])) {
+                    } elseif (isset($original_parent_context->vars_in_scope[$var_id])) {
+                        if (!$type->equals($original_parent_context->vars_in_scope[$var_id])) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
                             $continue_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $continue_context->vars_in_scope[$var_id],
-                                $pre_outer_context->vars_in_scope[$var_id]
+                                $original_parent_context->vars_in_scope[$var_id]
                             );
 
                             // if there's a change, invalidate related clauses
@@ -308,16 +305,6 @@ class LoopAnalyzer
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
-                foreach ($pre_loop_context->vars_in_scope as $var_id => $_) {
-                    if (!isset($pre_condition_vars_in_scope[$var_id])
-                        && isset($continue_context->vars_in_scope[$var_id])
-                        && strpos($var_id, '->') === false
-                        && strpos($var_id, '[') === false
-                    ) {
-                        $continue_context->vars_in_scope[$var_id]->possibly_undefined = true;
-                    }
-                }
-
                 if (!$is_do) {
                     foreach ($pre_conditions as $condition_offset => $pre_condition) {
                         self::applyPreConditionToLoopContext(
@@ -362,7 +349,7 @@ class LoopAnalyzer
 
                 $statements_analyzer->analyze($stmts, $continue_context);
 
-                self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $pre_outer_context);
+                self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
 
                 $continue_context->protected_var_ids = $original_protected_var_ids;
 
@@ -402,6 +389,8 @@ class LoopAnalyzer
                     IssueBuffer::bubbleUp($recorded_issue);
                 }
             }
+
+            $pre_outer_context = $original_parent_context;
         }
 
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
