@@ -120,9 +120,6 @@ class LoopAnalyzer
 
             $continue_context->loop_scope = $loop_scope;
 
-            $old_referenced_var_ids = $continue_context->referenced_var_ids;
-            $continue_context->referenced_var_ids = [];
-
             foreach ($pre_conditions as $condition_offset => $pre_condition) {
                 self::applyPreConditionToLoopContext(
                     $statements_analyzer,
@@ -149,8 +146,6 @@ class LoopAnalyzer
                     return false;
                 }
             }
-
-            $continue_context->referenced_var_ids = $old_referenced_var_ids + $continue_context->referenced_var_ids;
 
             $loop_parent_context->vars_possibly_in_scope = array_merge(
                 $continue_context->vars_possibly_in_scope,
@@ -191,9 +186,6 @@ class LoopAnalyzer
 
             $continue_context->loop_scope = $loop_scope;
 
-            $old_referenced_var_ids = $continue_context->referenced_var_ids;
-            $continue_context->referenced_var_ids = [];
-
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_analyzer->analyze($stmts, $continue_context);
@@ -227,11 +219,6 @@ class LoopAnalyzer
                     return false;
                 }
             }
-
-            $continue_context->referenced_var_ids = array_intersect_key(
-                $old_referenced_var_ids,
-                $continue_context->referenced_var_ids
-            );
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
