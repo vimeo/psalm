@@ -395,7 +395,11 @@ class LoopAnalyzer
                 }
 
                 foreach ($post_expressions as $post_expression) {
-                    if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $continue_context) === false) {
+                    if (ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $post_expression,
+                        $continue_context
+                    ) === false) {
                         return false;
                     }
                 }
