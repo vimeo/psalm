@@ -1,43 +1,66 @@
 <?php
 
-const XDEBUG_TRACE_APPEND = 1;
-const XDEBUG_TRACE_COMPUTERIZED = 2;
-const XDEBUG_TRACE_HTML = 4;
-const XDEBUG_TRACE_NAKED_FILENAME = 8;
-const XDEBUG_CC_UNUSED = 1;
-const XDEBUG_CC_DEAD_CODE = 2;
-const XDEBUG_CC_BRANCH_CHECK = 4;
 const XDEBUG_STACK_NO_DESC = 1;
 const XDEBUG_FILTER_TRACING = 256;
 const XDEBUG_FILTER_CODE_COVERAGE = 512;
 const XDEBUG_FILTER_NONE = 0;
-const XDEBUG_PATH_WHITELIST = 1;
-const XDEBUG_PATH_BLACKLIST = 2;
-const XDEBUG_NAMESPACE_WHITELIST = 17;
-const XDEBUG_NAMESPACE_BLACKLIST = 18;
-
-function xdebug_code_coverage_started() : bool
-{
-}
-
+const XDEBUG_PATH_INCLUDE = 1;
+const XDEBUG_PATH_EXCLUDE = 2;
+const XDEBUG_NAMESPACE_INCLUDE = 17;
+const XDEBUG_NAMESPACE_EXCLUDE = 18;
+function xdebug_break(): bool {}
+function xdebug_call_class(int $depth = 2): mixed {}
+function xdebug_call_file(int $depth = 2): mixed {}
+function xdebug_call_function(int $depth = 2): mixed {}
+function xdebug_call_line(int $depth = 2): mixed {}
+function xdebug_code_coverage_started(): bool {}
+/** @since 3.1 */
+function xdebug_connect_to_client(): bool {}
+function xdebug_debug_zval(string ...$varname): void {}
+function xdebug_debug_zval_stdout(string ...$varname): void {}
+function xdebug_dump_superglobals(): void {}
+/** @return array<string, array<int, 1|-1|-2>>|array<string, array{lines: array<int, 1|-1|-2>, functions: array}> */
+function xdebug_get_code_coverage(): array {}
+function xdebug_get_collected_errors(bool $emptyList = false): array {}
+function xdebug_get_function_count(): int {}
+/** @return list<array> */
+function xdebug_get_function_stack(): array {}
+function xdebug_get_gc_run_count(): int {}
+function xdebug_get_gc_total_collected_roots(): int {}
+function xdebug_get_gcstats_filename(): mixed {}
+/** @return list<string> */
+function xdebug_get_headers(): array {}
+function xdebug_get_monitored_functions(): array {}
+/** @return string|false */
+function xdebug_get_profiler_filename() {}
+function xdebug_get_stack_depth(): int {}
+function xdebug_get_tracefile_name(): ?string {}
+function xdebug_info(): mixed {}
+/** @since 3.1 */
+function xdebug_info(string $category = null): mixed {}
+function xdebug_is_debugger_active(): bool {}
+function xdebug_memory_usage(): int {}
+/** @since 3.1 */
+function xdebug_notify(mixed $data) {}
+function xdebug_peak_memory_usage(): int {}
+function xdebug_print_function_stack(string $message = 'user triggered', int $options = 0): void {}
 /**
-* @return array<string, array<int, int>>
-*/
-function xdebug_get_code_coverage() : array
-{
-}
-
-/**
-* @param array<int, string> $configuration
-*/
-function xdebug_set_filter(int $group, int $list_type, array $configuration) : array
-{
-}
-
-function xdebug_start_code_coverage(int $options) : void
-{
-}
-
-function xdebug_stop_code_coverage(int $cleanup = 1) : void
-{
-}
+ * @param XDEBUG_FILTER_CODE_COVERAGE|XDEBUG_FILTER_STACK|XDEBUG_FILTER_TRACING $group
+ * @param XDEBUG_PATH_INCLUDE|XDEBUG_PATH_EXCLUDE|XDEBUG_NAMESPACE_INCLUDE|XDEBUG_NAMESPACE_EXCLUDE|XDEBUG_FILTER_NONE $listType
+ */
+function xdebug_set_filter(int $group, int $listType, array $configuration): void {}
+function xdebug_start_code_coverage(int $options = 0): void {}
+function xdebug_start_error_collection(): void {}
+/** @param array<array-key, string> $listOfFunctionsToMonitor */
+function xdebug_start_function_monitor(array $listOfFunctionsToMonitor): void {}
+function xdebug_start_gcstats(?string $gcstatsFile = null): mixed {}
+function xdebug_start_trace(?string $traceFile = null, int $options = 0): ?string {}
+function xdebug_stop_code_coverage(bool $cleanUp = true): void {}
+function xdebug_stop_error_collection(): void {}
+function xdebug_stop_function_monitor(): void {}
+/** @return string|false */
+function xdebug_stop_gcstats() {}
+/** @return string|false */
+function xdebug_stop_trace() {}
+function xdebug_time_index(): float {}
+function xdebug_var_dump(mixed ...$variable): void {}
