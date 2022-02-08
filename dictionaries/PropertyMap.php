@@ -53,9 +53,6 @@ return [
     'splminheap' => [
         'name' => 'string',
     ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
-    ],
     'ziparchive' => [
         'status' => 'int',
         'statusSys' => 'int',
