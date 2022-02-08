@@ -1,11 +1,390 @@
 <?php
 
-class GMP implements Serializable {
-    private function __construct() {}
+const GMP_ROUND_ZERO = 0;
+const GMP_ROUND_PLUSINF = 1;
+const GMP_ROUND_MINUSINF = 2;
+/** @var string */
+const GMP_VERSION = "6.1.2";
+const GMP_MSW_FIRST = 1;
+const GMP_LSW_FIRST = 2;
+const GMP_LITTLE_ENDIAN = 4;
+const GMP_BIG_ENDIAN = 8;
+const GMP_NATIVE_ENDIAN = 16;
 
-    public function __toString(): string {}
+/**
+ * @param numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_init(string|int $num, int $base = 0): GMP {}
 
-    public function serialize(): string {}
+/**
+ * @return GMP|false
+ * @psalm-pure
+ */
+function gmp_import(string $data, int $word_size = 1, int $flags = 17) {}
 
-    public function unserialize(string $data): void {}
+/**
+ * @psalm-pure
+ * @since PHP-8.0
+ */
+function gmp_import(string $data, int $word_size = 1, int $flags = 17): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return string|false
+ * @psalm-pure
+ */
+function gmp_export(GMP|string|int $num, int $word_size = 1, int $flags = 17) {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ * @since PHP-8.0
+ */
+function gmp_export(GMP|string|int $num, int $word_size = 1, int $flags = 17): string {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_intval(GMP|string|int $num): int {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return numeric-string
+ * @psalm-pure
+ */
+function gmp_strval(GMP|string|int $num, int $base = 10): string {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_add(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_sub(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_mul(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @param GMP_ROUND_ZERO|GMP_ROUND_PLUSINF|GMP_ROUND_MINUSINF $rounding_mode
+ * @return array{GMP, GMP}
+ * @psalm-pure
+ */
+function gmp_div_qr(GMP|string|int $num1, GMP|string|int $num2, int $rounding_mode = 0): array {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @param GMP_ROUND_ZERO|GMP_ROUND_PLUSINF|GMP_ROUND_MINUSINF $rounding_mode
+ * @psalm-pure
+ */
+function gmp_div_q(GMP|string|int $num1, GMP|string|int $num2, int $rounding_mode = 0): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @param GMP_ROUND_ZERO|GMP_ROUND_PLUSINF|GMP_ROUND_MINUSINF $rounding_mode
+ * @psalm-pure
+ */
+function gmp_div_r(GMP|string|int $num1, GMP|string|int $num2, int $rounding_mode = 0): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @param GMP_ROUND_ZERO|GMP_ROUND_PLUSINF|GMP_ROUND_MINUSINF $rounding_mode
+ * @psalm-pure
+ * @alias gmp_div_q
+ */
+function gmp_div(GMP|string|int $num1, GMP|string|int $num2, int $rounding_mode = 0): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_mod(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_divexact(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_neg(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_abs(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_fact(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_sqrt(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return array{GMP, GMP}
+ * @psalm-pure
+ */
+function gmp_sqrtrem(GMP|string|int $num): array {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ * @since PHP-5.6
+ */
+function gmp_root(GMP|string|int $num, int $nth): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return array{GMP, GMP}
+ * @psalm-pure
+ * @since PHP-5.6
+ */
+function gmp_rootrem(GMP|string|int $num, int $nth): array {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_pow(GMP|string|int $num, int $exponent): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @param GMP|numeric-string|int $exponent
+ * @param GMP|numeric-string|int $modulus
+ * @psalm-pure
+ */
+function gmp_powm(GMP|string|int $num, GMP|string|int $exponent, GMP|string|int $modulus): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_perfect_square(GMP|string|int $num): bool {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ * @since PHP-7.3
+ */
+function gmp_perfect_power(GMP|string|int $num): bool {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return 0|1|2
+ * @psalm-pure
+ */
+function gmp_prob_prime(GMP|string|int $num, int $repetitions = 10): int {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_gcd(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @return array{g: GMP, s: GMP, t: GMP}
+ * @psalm-pure
+ */
+function gmp_gcdext(GMP|string|int $num1, GMP|string|int $num2): array {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ * @since PHP-7.3
+ */
+function gmp_lcm(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @return GMP|false
+ * @psalm-pure
+ */
+function gmp_invert(GMP|string|int $num1, GMP|string|int $num2) {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_jacobi(GMP|string|int $num1, GMP|string|int $num2): int {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_legendre(GMP|string|int $num1, GMP|string|int $num2): int {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ * @since PHP-7.3
+ */
+function gmp_kronecker(GMP|string|int $num1, GMP|string|int $num2): int {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_cmp(GMP|string|int $num1, GMP|string|int $num2): int {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @return -1|0|1
+ * @psalm-pure
+ */
+function gmp_sign(GMP|string|int $num): int {}
+
+/**
+ * @param GMP|numeric-string|int $seed
+ * @since PHP-7.0
+ */
+function gmp_random_seed(GMP|string|int $seed): void {}
+
+/**
+ * @since PHP-5.6.3
+ */
+function gmp_random_bits(int $bits): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $min
+ * @param GMP|numeric-string|int $max
+ * @throws \Error if $max is less than $min
+ * @since PHP-5.6.3
+ */
+function gmp_random_range(GMP|string|int $min, GMP|string|int $max): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_and(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_or(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_com(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @param GMP|numeric-string|int $num2
+ * @psalm-pure
+ */
+function gmp_xor(GMP|string|int $num1, GMP|string|int $num2): GMP {}
+
+/**
+ * @param int<0, max> $index
+ */
+function gmp_setbit(GMP $num, int $index, bool $value = true): void {}
+
+/**
+ * @param int<0, max> $index
+ */
+function gmp_clrbit(GMP $num, int $index): void {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @param int<0, max> $index
+ * @psalm-pure
+ * @since PHP-5.3
+ */
+function gmp_testbit(GMP|string|int $num, int $index): bool {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @return int<0, max>
+ * @psalm-pure
+ */
+function gmp_scan0(GMP|string|int $num1, int $start): int {}
+
+/**
+ * @param GMP|numeric-string|int $num1
+ * @return int<-1, max>
+ * @psalm-pure
+ */
+function gmp_scan1(GMP|string|int $num1, int $start): int {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_popcount(GMP|string|int $num): int {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ */
+function gmp_hamdist(GMP|string|int $num1, GMP|string|int $num2): int {}
+
+/**
+ * @param GMP|numeric-string|int $num
+ * @psalm-pure
+ * @since PHP-5.2
+ */
+function gmp_nextprime(GMP|string|int $num): GMP {}
+
+/**
+ * @param GMP|numeric-string|int $n
+ * @param int<0, max> $k
+ * @psalm-pure
+ * @since PHP-7.3
+ */
+function gmp_binomial(GMP|string|int $n, int $k): GMP {}
+
+/** @psalm-immutable */
+class GMP
+{
+    public function __serialize() : array
+    {
+    }
+
+    public function __unserialize(array $data) : void
+    {
+    }
 }

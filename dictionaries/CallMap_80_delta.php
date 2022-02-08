@@ -321,10 +321,6 @@ return [
       'old' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
       'new' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
     ],
-    'gmp_binomial' => [
-      'old' => ['GMP|false', 'n'=>'GMP|string|int', 'k'=>'int'],
-      'new' => ['GMP', 'n'=>'GMP|string|int', 'k'=>'int'],
-    ],
     'gmstrftime' => [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
@@ -1602,7 +1598,6 @@ return [
     'SplFileObject::fgetss' => ['string|false', 'allowable_tags='=>'string'],
     'create_function' => ['string', 'args'=>'string', 'code'=>'string'],
     'each' => ['array{0:int|string,key:int|string,1:mixed,value:mixed}', '&r_arr'=>'array'],
-    'gmp_random' => ['GMP', 'limiter='=>'int'],
     'gzgetss' => ['string|false', 'zp'=>'resource', 'length'=>'int', 'allowable_tags='=>'string'],
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
