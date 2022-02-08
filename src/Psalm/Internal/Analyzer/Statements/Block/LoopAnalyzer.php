@@ -100,18 +100,10 @@ class LoopAnalyzer
 
         $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
-        $has_continue = in_array(ScopeAnalyzer::ACTION_CONTINUE, $final_actions, true);
-
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
-        }
-
-        if ($has_continue) {
-            // this intuitively feels right to me – if there's a continue statement,
-            // maybe more assignment intrigue is possible
-            $assignment_depth++;
         }
 
         $pre_outer_context = $loop_scope->loop_parent_context;
@@ -142,7 +134,7 @@ class LoopAnalyzer
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_analyzer->analyze($stmts, $inner_context);
-            self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
+            self::updateLoopScopeContexts($loop_scope, $inner_context, $loop_scope->loop_parent_context);
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze(
@@ -203,7 +195,7 @@ class LoopAnalyzer
 
             $statements_analyzer->analyze($stmts, $inner_context);
 
-            self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
+            self::updateLoopScopeContexts($loop_scope, $inner_context, $pre_outer_context);
 
             $inner_context->protected_var_ids = $original_protected_var_ids;
 
@@ -380,7 +372,7 @@ class LoopAnalyzer
 
                 $statements_analyzer->analyze($stmts, $inner_context);
 
-                self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
+                self::updateLoopScopeContexts($loop_scope, $inner_context, $pre_outer_context);
 
                 $inner_context->protected_var_ids = $original_protected_var_ids;
 
@@ -567,6 +559,7 @@ class LoopAnalyzer
 
     private static function updateLoopScopeContexts(
         LoopScope $loop_scope,
+        Context $loop_context,
         Context $pre_outer_context
     ): void {
         $updated_loop_vars = [];
@@ -575,21 +568,20 @@ class LoopAnalyzer
             $loop_scope->loop_context->vars_in_scope = $pre_outer_context->vars_in_scope;
         } else {
             foreach ($loop_scope->redefined_loop_vars as $var => $type) {
-                $loop_scope->loop_context->vars_in_scope[$var] = $type;
+                $loop_context->vars_in_scope[$var] = $type;
                 $updated_loop_vars[$var] = true;
             }
 
             if ($loop_scope->possibly_redefined_loop_vars) {
                 foreach ($loop_scope->possibly_redefined_loop_vars as $var => $type) {
-                    if ($loop_scope->loop_context->hasVariable($var)) {
+                    if ($loop_context->hasVariable($var)) {
                         if (!isset($updated_loop_vars[$var])) {
-                            $loop_scope->loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
-                                $loop_scope->loop_context->vars_in_scope[$var],
+                            $loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                                $loop_context->vars_in_scope[$var],
                                 $type
                             );
                         } else {
-                            $loop_scope->loop_context->vars_in_scope[$var]->parent_nodes
-                                += $type->parent_nodes;
+                            $loop_context->vars_in_scope[$var]->parent_nodes += $type->parent_nodes;
                         }
                     }
                 }
