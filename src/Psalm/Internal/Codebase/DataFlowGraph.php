@@ -71,7 +71,9 @@ abstract class DataFlowGraph
 
         // arraykey-fetch requires a matching arraykey-assignment at the same level
         // otherwise the tainting is not valid
-        if (strpos($path_type, $expression_type . '-fetch-') === 0 || $path_type === 'arraykey-fetch') {
+        if (strpos($path_type, $expression_type . '-fetch-') === 0
+            || ($path_type === 'arraykey-fetch' && $expression_type === 'arrayvalue')
+        ) {
             $fetch_nesting = 0;
 
             $previous_path_types = array_reverse($previous_path_types);
