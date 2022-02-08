@@ -7,6 +7,9 @@ executors:
   php-80:
     docker:
       - image: thecodingmachine/php:8.0-v4-cli
+  php-81:
+    docker:
+      - image: thecodingmachine/php:8.1-v4-cli
 jobs:
   "Code Style Analysis":
     executor: php-74
