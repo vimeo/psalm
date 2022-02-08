@@ -800,6 +800,20 @@ class IntRangeTest extends TestCase
 
                 ],
             ],
+            'arraykeyCanBeRange' => [
+                'code' => '<?php
+                    /**
+                     * @param array-key $key
+                     * @param positive-int $expected
+                     */
+                    function matches($key, int $expected): bool {
+                        if ($key !== $expected) {
+                            return false;
+                        }
+
+                        return true;
+                    }'
+            ]
         ];
     }
 

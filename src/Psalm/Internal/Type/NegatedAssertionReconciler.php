@@ -181,6 +181,7 @@ class NegatedAssertionReconciler extends Reconciler
             ));
         } elseif ($assertion_type instanceof TInt
             && isset($existing_var_type->getAtomicTypes()['array-key'])
+            && !$is_equality
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
