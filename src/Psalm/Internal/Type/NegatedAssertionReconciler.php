@@ -179,7 +179,7 @@ class NegatedAssertionReconciler extends Reconciler
                     clone $iterable->type_params[1],
                 ]
             ));
-        } elseif ($assertion_type instanceof TInt
+        } elseif (get_class($assertion_type) === TInt::class
             && isset($existing_var_type->getAtomicTypes()['array-key'])
         ) {
             $existing_var_type->removeType('array-key');
