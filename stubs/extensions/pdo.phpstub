@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @return list<string>
+ */
+function pdo_drivers(): array {}
+
 class PDO
 {
     public const PARAM_NULL = 0;
@@ -8,10 +13,13 @@ class PDO
     public const PARAM_LOB = 3;
     public const PARAM_STMT = 4;
     public const PARAM_BOOL = 5;
-    // public const PARAM_STR_NATL = 1073741824; since 7.2
-    // public const PARAM_STR_CHAR = 536870912; since 7.2
     public const PARAM_INPUT_OUTPUT = 2147483648;
-    // public const FETCH_DEFAULT = 0; since 8.0.7
+    /** @since PHP-7.2 */
+    public const PARAM_STR_NATL = 1073741824;
+    /** @since PHP-7.2 */
+    public const PARAM_STR_CHAR = 536870912;
+    /** @since PHP-8.0.7 */
+    public const FETCH_DEFAULT = 0;
     public const FETCH_LAZY = 1;
     public const FETCH_ASSOC = 2;
     public const FETCH_NAMED = 11;
@@ -27,7 +35,8 @@ class PDO
     public const FETCH_UNIQUE = 196608;
     public const FETCH_KEY_PAIR = 12;
     public const FETCH_CLASSTYPE = 262144;
-    public const FETCH_SERIALIZE = 524288; // Deprecated 8.1
+    /** @deprecated PHP-8.1 */
+    public const FETCH_SERIALIZE = 524288;
     public const FETCH_PROPS_LATE = 1048576;
     public const ATTR_AUTOCOMMIT = 0;
     public const ATTR_PREFETCH = 1;
@@ -50,7 +59,8 @@ class PDO
     public const ATTR_MAX_COLUMN_LEN = 18;
     public const ATTR_DEFAULT_FETCH_MODE = 19;
     public const ATTR_EMULATE_PREPARES = 20;
-    // public const ATTR_DEFAULT_STR_PARAM = 21; since 7.2
+    /** @since PHP-7.2 */
+    public const ATTR_DEFAULT_STR_PARAM = 21;
     public const ERRMODE_SILENT = 0;
     public const ERRMODE_WARNING = 1;
     public const ERRMODE_EXCEPTION = 2;
@@ -68,7 +78,7 @@ class PDO
     public const FETCH_ORI_REL = 5;
     public const CURSOR_FWDONLY = 0;
     public const CURSOR_SCROLL = 1;
-    public const ERR_NONE = 00000;
+    public const ERR_NONE = '00000';
     public const PARAM_EVT_ALLOC = 0;
     public const PARAM_EVT_FREE = 1;
     public const PARAM_EVT_EXEC_PRE = 2;
@@ -76,8 +86,10 @@ class PDO
     public const PARAM_EVT_FETCH_PRE = 4;
     public const PARAM_EVT_FETCH_POST = 5;
     public const PARAM_EVT_NORMALIZE = 6;
-    // public const SQLITE_DETERMINISTIC = ???; since 7.1.4 with pdo_sqlite
 
+    /**
+     * @throws PDOException if the attempt to connect to the requested database fails.
+     */
     public function __construct(
         string $dsn,
         ?string $username = null,
@@ -85,12 +97,24 @@ class PDO
         ?array $options = null
     ) {}
 
+    /**
+     * @throws PDOException if there is already a transaction started or the driver does not support transactions.
+     */
     public function beginTransaction(): bool {}
 
+    /**
+     * @throws PDOException if there is no active transaction.
+     */
     public function commit(): bool {}
 
+    /**
+     * @return non-empty-string|null
+     */
     public function errorCode(): ?string {}
 
+    /**
+     * @return array{non-empty-string|null, mixed, mixed}
+     */
     public function errorInfo(): array {}
 
     /**
@@ -100,9 +124,15 @@ class PDO
      */
     public function exec(string $statement) {}
 
-    /** @return bool|int|string|array|null */
+    /**
+     * @param self::ATTR_* $attribute
+     * @return bool|int|string|array|null
+     */
     public function getAttribute(int $attribute) {}
 
+    /**
+     * @return list<string>
+     */
     public static function getAvailableDrivers(): array {}
 
     public function inTransaction(): bool {}
@@ -120,6 +150,7 @@ class PDO
     /**
      * @psalm-taint-sink sql $query
      *
+     * @param PDO::FETCH_* $fetchMode
      * @return PDOStatement|false
      */
     public function query(string $query, ?int $fetchMode = null) {}
@@ -129,27 +160,142 @@ class PDO
      */
     public function quote(string $string, int $type = PDO::PARAM_STR) {}
 
+    /**
+     * @throws PDOException if there is no active transaction.
+     */
     public function rollBack(): bool {}
 
+    /**
+     * @param self::ATTR_* $attribute
+     */
     public function setAttribute(int $attribute, mixed $value): bool {}
+}
+
+class PDOStatement implements Traversable
+{
 }
 
 /**
  * @template TValue
  *
- * @template-implements Traversable<int, TValue>
+ * @implements Traversable<int, TValue>
  */
 class PDOStatement implements Traversable
 {
     /**
-     * @psalm-taint-sink callable $class
-     *
+     * @var string
+     * @readonly
+     */
+    public $queryString;
+
+    /**
+     * @param PDO::PARAM_* $type
+     */
+    public function bindColumn(int|string $column, mixed &$var, int $type = PDO::PARAM_STR, int $maxLength = 0, mixed $driverOptions = null): bool {}
+
+    /**
+     * @param PDO::PARAM_* $type
+     */
+    public function bindParam(int|string $param, mixed &$var, int $type = PDO::PARAM_STR, int $maxLength = 0, mixed $driverOptions = null): bool {}
+
+    /**
+     * @param PDO::PARAM_* $type
+     */
+    public function bindValue(int|string $param, mixed $value, int $type = PDO::PARAM_STR): bool {}
+
+    public function closeCursor(): bool {}
+
+    public function columnCount(): int {}
+
+    /**
+     * @return null|false
+     */
+    public function debugDumpParams(): ?bool {}
+
+    /**
+     * @return non-empty-string|null
+     */
+    public function errorCode(): ?string {}
+
+    /**
+     * @return array{non-empty-string|null, mixed, mixed}
+     */
+    public function errorInfo(): array {}
+
+    public function execute(?array $params = null): bool {}
+
+    /**
+     * @param PDO::FETCH_* $mode
+     * @param PDO::FETCH_ORI_* $cursorOrientation
+     */
+    public function fetch(int $mode = PDO::FETCH_DEFAULT, int $cursorOrientation = PDO::FETCH_ORI_NEXT, int $cursorOffset = 0): mixed {}
+
+    /**
+     * @param PDO::FETCH_* $mode
+     * @param int|class-string|callable $args
+     * @return array|false
+     */
+    public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed $args, ?array $constructorArgs = null) {}
+
+    /**
+     * @param PDO::FETCH_* $mode
+     * @param int|class-string|callable $args
+     * @since PHP-8.0
+     */
+    public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed $args, ?array $constructorArgs = null): array {}
+
+    public function fetchColumn(int $column = 0): mixed {}
+
+    /**
      * @template T of object
      * @param class-string<T> $class
      * @param array $ctorArgs
      * @return false|T
      */
-    public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
+    public function fetchObject($class = stdclass::class, array $ctorArgs = []) {}
+
+    /**
+     * @param PDO::ATTR_* $name
+     */
+    public function getAttribute(int $name): mixed {}
+
+    /**
+     * @return false|array{
+     *     native_type: non-empty-string,
+     *     flags: mixed,
+     *     name: string,
+     *     table: string,
+     *     len: int,
+     *     precision: int,
+     *     pdo_type: PDO::PARAM_*,
+     * }
+     */
+    public function getColumnMeta(int $column) {}
+
+    public function nextRowset(): bool {}
+
+    public function rowCount(): int {}
+
+    /**
+     * @param PDO::ATTR_* $attribute
+     */
+    public function setAttribute(int $attribute, mixed $value): bool {}
+
+    /**
+     * @param PDO::FETCH_* $mode
+     * @param int|class-string|object $args
+     * @return array|false
+     */
+    public function setFetchMode(int $mode, mixed $args, ?array $constructorArgs = null): bool {}
+}
+
+/**
+ * @since PHP-8.0
+ * @implements IteratorAggregate<int, TValue>
+ */
+class PDOStatement implements IteratorAggregate
+{
+    public function getIterator(): Iterator {}
 }
 
  class PDOException extends RuntimeException {
