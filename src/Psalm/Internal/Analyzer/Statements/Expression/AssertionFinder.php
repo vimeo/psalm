@@ -1782,7 +1782,7 @@ class AssertionFinder
     }
 
     /**
-     * @param Identical|Equal|Smaller|SmallerOrEqual|NotIdentical|NotEqual $conditional
+     * @param Identical|Equal|NotIdentical|NotEqual $conditional
      * @return false|int
      */
     protected static function hasTypedValueComparison(
