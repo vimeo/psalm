@@ -11,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * Represents the type used when using TKeyOfArray when the type of the array is a template
  */
-class TTemplateKeyOf extends Atomic
+final class TTemplateKeyOf extends Atomic
 {
     /**
      * @var string

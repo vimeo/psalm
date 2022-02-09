@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
  */
-class TCallableString extends TNonFalsyString
+final class TCallableString extends TNonFalsyString
 {
 
     public function getKey(bool $include_extra = true): string

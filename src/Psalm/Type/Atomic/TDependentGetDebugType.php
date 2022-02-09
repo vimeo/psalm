@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Represents a string whose value is that of a type found by get_debug_type($var)
  */
-class TDependentGetDebugType extends TString implements DependentType
+final class TDependentGetDebugType extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to

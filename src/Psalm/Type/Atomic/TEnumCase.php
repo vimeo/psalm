@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes an enum with a specific value
  */
-class TEnumCase extends TNamedObject
+final class TEnumCase extends TNamedObject
 {
     /**
      * @var string

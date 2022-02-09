@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes an object-like array that is _also_ `callable`.
  */
-class TCallableKeyedArray extends TKeyedArray
+final class TCallableKeyedArray extends TKeyedArray
 {
     public const KEY = 'callable-array';
 

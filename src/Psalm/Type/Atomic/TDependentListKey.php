@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Represents a list key created from foreach ($list as $key => $value)
  */
-class TDependentListKey extends TInt implements DependentType
+final class TDependentListKey extends TInt implements DependentType
 {
     /**
      * Used to hold information as to what list variable this refers to

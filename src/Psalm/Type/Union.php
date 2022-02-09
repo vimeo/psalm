@@ -54,7 +54,7 @@ use function reset;
 use function sort;
 use function strpos;
 
-class Union implements TypeNode
+final class Union implements TypeNode
 {
     /**
      * @var non-empty-array<string, Atomic>

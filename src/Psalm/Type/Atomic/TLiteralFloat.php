@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a floating point value where the exact numeric value is known.
  */
-class TLiteralFloat extends TFloat
+final class TLiteralFloat extends TFloat
 {
     /** @var float */
     public $value;

@@ -8,7 +8,7 @@ use Psalm\Type\Union;
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
  */
-class TDependentGetClass extends TString implements DependentType
+final class TDependentGetClass extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to

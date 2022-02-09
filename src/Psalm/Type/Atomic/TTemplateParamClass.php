@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
  */
-class TTemplateParamClass extends TClassString
+final class TTemplateParamClass extends TClassString
 {
     /**
      * @var string

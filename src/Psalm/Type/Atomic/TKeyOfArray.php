@@ -11,7 +11,7 @@ use function array_values;
 /**
  * Represents an offset of an array.
  */
-class TKeyOfArray extends TArrayKey
+final class TKeyOfArray extends TArrayKey
 {
     /** @var Union */
     public $type;

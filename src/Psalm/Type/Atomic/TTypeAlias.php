@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 
-class TTypeAlias extends Atomic
+final class TTypeAlias extends Atomic
 {
     /**
      * @var array<string, TTypeAlias>|null

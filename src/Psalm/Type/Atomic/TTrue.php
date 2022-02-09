@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes the `true` value type
  */
-class TTrue extends TBool
+final class TTrue extends TBool
 {
     public function getKey(bool $include_extra = true): string
     {

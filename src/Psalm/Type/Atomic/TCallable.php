@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Denotes the `callable` type. Can result from an `is_callable` check.
  */
-class TCallable extends Atomic
+final class TCallable extends Atomic
 {
     use CallableTrait;
 
