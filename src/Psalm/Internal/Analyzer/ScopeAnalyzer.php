@@ -28,43 +28,6 @@ class ScopeAnalyzer
     public const ACTION_RETURN = 'RETURN';
 
     /**
-     * @param array<PhpParser\Node\Stmt>   $stmts
-     *
-     */
-    public static function doesEverBreak(array $stmts): bool
-    {
-        if (empty($stmts)) {
-            return false;
-        }
-
-        for ($i = count($stmts) - 1; $i >= 0; --$i) {
-            $stmt = $stmts[$i];
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                return true;
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                if (self::doesEverBreak($stmt->stmts)) {
-                    return true;
-                }
-
-                if ($stmt->else && self::doesEverBreak($stmt->else->stmts)) {
-                    return true;
-                }
-
-                foreach ($stmt->elseifs as $elseif) {
-                    if (self::doesEverBreak($elseif->stmts)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * @param array<PhpParser\Node> $stmts
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false

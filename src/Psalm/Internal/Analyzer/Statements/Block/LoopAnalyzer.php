@@ -459,7 +459,7 @@ class LoopAnalyzer
             }
         }
 
-        if ($pre_conditions && $pre_condition_clauses && !ScopeAnalyzer::doesEverBreak($stmts)) {
+        if ($pre_conditions && $pre_condition_clauses && !$does_sometimes_break) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
 
