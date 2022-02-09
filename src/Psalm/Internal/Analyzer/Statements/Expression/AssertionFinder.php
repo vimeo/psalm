@@ -378,19 +378,6 @@ class AssertionFinder
             );
         }
 
-        $true_position = self::hasTrueVariable($conditional);
-
-        if ($true_position) {
-            return self::getTrueEqualityAssertions(
-                $conditional,
-                $this_class_name,
-                $source,
-                $codebase,
-                $cache,
-                $true_position
-            );
-        }
-
         $false_position = self::hasFalseVariable($conditional);
 
         if ($false_position) {
@@ -399,9 +386,23 @@ class AssertionFinder
                 $this_class_name,
                 $source,
                 $codebase,
+                $false_position,
                 $cache,
-                $inside_conditional,
-                $false_position
+                $inside_conditional
+            );
+        }
+
+        $true_position = self::hasTrueVariable($conditional);
+
+        if ($true_position) {
+            return self::getTrueEqualityAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $codebase,
+                $true_position,
+                $cache,
+                $inside_conditional
             );
         }
 
@@ -439,9 +440,7 @@ class AssertionFinder
             );
         }
 
-        if (!$source instanceof StatementsAnalyzer) {
-            return [];
-        }
+
 
         $count = null;
         $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
@@ -464,22 +463,24 @@ class AssertionFinder
                 $source
             );
 
-            $var_type = $source->node_data->getType($conditional->left);
-            $other_type = $source->node_data->getType($conditional->right);
+            if ($source instanceof StatementsAnalyzer) {
+                $var_type = $source->node_data->getType($conditional->left);
+                $other_type = $source->node_data->getType($conditional->right);
 
-            if ($codebase
-                && $other_type
-                && $var_type
-                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            ) {
-                self::handleParadoxicalAssertions(
-                    $source,
-                    $var_type,
-                    $this_class_name,
-                    $other_type,
-                    $codebase,
-                    $conditional
-                );
+                if ($codebase
+                    && $other_type
+                    && $var_type
+                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                ) {
+                    self::handleParadoxicalAssertions(
+                        $source,
+                        $var_type,
+                        $this_class_name,
+                        $other_type,
+                        $codebase,
+                        $conditional
+                    );
+                }
             }
 
             if ($var_name) {
@@ -491,6 +492,10 @@ class AssertionFinder
             }
 
             return $if_types ? [$if_types] : [];
+        }
+
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
         }
 
         $getclass_position = self::hasGetClassCheck($conditional, $source);
@@ -601,12 +606,12 @@ class AssertionFinder
         if ($false_position) {
             return self::getFalseInequalityAssertions(
                 $conditional,
-                $cache,
                 $this_class_name,
                 $source,
-                $inside_conditional,
                 $codebase,
-                $false_position
+                $false_position,
+                $cache,
+                $inside_conditional
             );
         }
 
@@ -614,46 +619,14 @@ class AssertionFinder
 
         if ($true_position) {
             return self::getTrueInequalityAssertions(
-                $true_position,
                 $conditional,
                 $this_class_name,
                 $source,
                 $codebase,
+                $true_position,
                 $cache,
                 $inside_conditional
             );
-        }
-
-        $count = null;
-        $count_inequality_position = self::hasCountEqualityCheck($conditional, $count);
-
-        if ($count_inequality_position) {
-            $if_types = [];
-
-            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } elseif ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
-                $this_class_name,
-                $source
-            );
-
-            if ($var_name) {
-                if ($count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveExactCount($count)]];
-                } else {
-                    $if_types[$var_name] = [[new NonEmptyCountable(true)]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         $empty_array_position = self::hasEmptyArrayVariable($conditional);
@@ -688,6 +661,58 @@ class AssertionFinder
                 $source,
                 $get_debug_type_position
             );
+        }
+
+        $count = null;
+        $count_inequality_position = self::hasCountEqualityCheck($conditional, $count);
+
+        if ($count_inequality_position) {
+            $if_types = [];
+
+            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
+                $count_expr = $conditional->left;
+            } elseif ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
+                $count_expr = $conditional->right;
+            } else {
+                throw new UnexpectedValueException('$count_inequality_position value');
+            }
+
+            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $var_name = ExpressionIdentifier::getExtendedVarId(
+                $count_expr->getArgs()[0]->value,
+                $this_class_name,
+                $source
+            );
+
+            if ($source instanceof StatementsAnalyzer) {
+                $var_type = $source->node_data->getType($conditional->left);
+                $other_type = $source->node_data->getType($conditional->right);
+
+                if ($codebase
+                    && $other_type
+                    && $var_type
+                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                ) {
+                    self::handleParadoxicalAssertions(
+                        $source,
+                        $var_type,
+                        $this_class_name,
+                        $other_type,
+                        $codebase,
+                        $conditional
+                    );
+                }
+            }
+
+            if ($var_name) {
+                if ($count > 0) {
+                    $if_types[$var_name] = [[new DoesNotHaveExactCount($count)]];
+                } else {
+                    $if_types[$var_name] = [[new NonEmptyCountable(true)]];
+                }
+            }
+
+            return $if_types ? [$if_types] : [];
         }
 
         if (!$source instanceof StatementsAnalyzer) {
@@ -2118,12 +2143,12 @@ class AssertionFinder
      */
     private static function getFalseInequalityAssertions(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        bool $cache,
         ?string $this_class_name,
         FileSource $source,
-        bool $inside_conditional,
         ?Codebase $codebase,
-        int $false_position
+        int $false_position,
+        bool $cache,
+        bool $inside_conditional
     ): array {
         $if_types = [];
 
@@ -2235,11 +2260,11 @@ class AssertionFinder
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getTrueInequalityAssertions(
-        int $true_position,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
+        int $true_position,
         bool $cache,
         bool $inside_conditional
     ): array {
@@ -2811,8 +2836,9 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
+        int $true_position,
         bool $cache,
-        int $true_position
+        bool $inside_conditional
     ): array {
         $if_types = [];
 
@@ -2861,7 +2887,8 @@ class AssertionFinder
                         $source,
                         $codebase,
                         false,
-                        $cache
+                        $cache,
+                        $inside_conditional
                     );
 
                     if ($source instanceof StatementsAnalyzer && $cache) {
@@ -2935,9 +2962,9 @@ class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
+        int $false_position,
         bool $cache,
-        bool $inside_conditional,
-        int $false_position
+        bool $inside_conditional
     ): array {
         $if_types = [];
 
