@@ -691,7 +691,7 @@ class IssueBuffer
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
             } else {
-                self::printSuccessMessage();
+                self::printSuccessMessage($project_analyzer);
             }
 
             $show_info = $project_analyzer->stdout_report_options->show_info;
@@ -782,8 +782,12 @@ class IssueBuffer
         }
     }
 
-    public static function printSuccessMessage(): void
+    public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
     {
+        if (!$project_analyzer->stdout_report_options) {
+            throw new UnexpectedValueException('Cannot print success message without stdout report options');
+        }
+
         // this message will be printed
         $message = "No errors found!";
 
@@ -808,9 +812,15 @@ class IssueBuffer
         // text style, 1 = bold
         $style = "1";
 
-        echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
-        echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
-        echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
+        if ($project_analyzer->stdout_report_options->use_color) {
+            echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
+            echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
+            echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
+        } else {
+            echo "\n";
+            echo "$messageWithPadding\n";
+            echo "\n";
+        }
     }
 
     /**

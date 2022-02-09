@@ -113,8 +113,10 @@ class IssueBufferTest extends TestCase
 
     public function testPrintSuccessMessageWorks(): void
     {
+        $project_analyzer = $this->createMock(ProjectAnalyzer::class);
+        $project_analyzer->stdout_report_options = new ReportOptions;
         ob_start();
-        IssueBuffer::printSuccessMessage();
+        IssueBuffer::printSuccessMessage($project_analyzer);
         $output = ob_get_clean();
 
         $this->assertStringContainsString('No errors found!', $output);
