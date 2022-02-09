@@ -290,6 +290,211 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertionInsideWhileOne(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    public array $a = [];
+                    public array $b = [];
+                    public array $c = [];
+
+                    public function one(): bool {
+                        $has_changes = false;
+
+                        while ($this->a) {
+                            $has_changes = true;
+                            $this->alter();
+                        }
+
+                        return $has_changes;
+                    }
+
+                    public function alter() : void {
+                        if (rand(0, 1)) {
+                            array_pop($this->a);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->b);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->c);
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAssertionInsideWhileTwo(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    public array $a = [];
+                    public array $b = [];
+
+                    public function two(): bool {
+                        $has_changes = false;
+
+                        while ($this->a || $this->b) {
+                            $has_changes = true;
+                            $this->alter();
+                        }
+
+                        return $has_changes;
+                    }
+                        
+                    public function alter() : void {
+                        if (rand(0, 1)) {
+                            array_pop($this->a);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->b);
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAssertionInsideWhileThree(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    public array $a = [];
+                    public array $b = [];
+                    public array $c = [];
+
+                    public function three(): bool {
+                        $has_changes = false;
+
+                        while ($this->a || $this->b || $this->c) {
+                            $has_changes = true;
+                            $this->alter();
+                        }
+
+                        return $has_changes;
+                    }
+
+                    public function alter() : void {
+                        if (rand(0, 1)) {
+                            array_pop($this->a);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->b);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->c);
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAssertionInsideWhileFour(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    public array $a = [];
+                    public array $b = [];
+                    public array $c = [];
+
+                    public function four(): bool {
+                        $has_changes = false;
+
+                        while (($this->a && $this->b) || $this->c) {
+                            $has_changes = true;
+                            $this->alter();
+                        }
+
+                        return $has_changes;
+                    }
+
+                    public function alter() : void {
+                        if (rand(0, 1)) {
+                            array_pop($this->a);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->b);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->c);
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAssertionInsideWhileFive(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {
+                    public array $a = [];
+                    public array $b = [];
+                    public array $c = [];
+
+                    public function five(): bool {
+                        $has_changes = false;
+
+                        while ($this->a || ($this->b && $this->c)) {
+                            $has_changes = true;
+                            $this->alter();
+                        }
+
+                        return $has_changes;
+                    }
+
+                    public function alter() : void {
+                        if (rand(0, 1)) {
+                            array_pop($this->a);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->b);
+                        }
+
+                        if (rand(0, 1)) {
+                            array_pop($this->c);
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testUniversalObjectCrates(): void
     {
         Config::getInstance()->addUniversalObjectCrate(DateTime::class);

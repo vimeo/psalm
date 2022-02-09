@@ -157,6 +157,9 @@ class LoopAnalyzer
 
             $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_analyzer->getFilePath());
 
+            // record all the vars that existed before we did the first pass through the loop
+            $pre_loop_context = clone $loop_context;
+
             IssueBuffer::startRecording();
 
             if (!$is_do) {
@@ -171,9 +174,6 @@ class LoopAnalyzer
                     );
                 }
             }
-
-            // record all the vars that existed before we did the first pass through the loop
-            $pre_loop_context = clone $loop_context;
 
             $continue_context = clone $loop_context;
 
@@ -597,18 +597,6 @@ class LoopAnalyzer
 
         $loop_context->inside_conditional = true;
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-        }
-
         if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
             $loop_context->inside_conditional = $was_inside_conditional;
 
@@ -631,7 +619,8 @@ class LoopAnalyzer
         $reconcilable_while_types = Algebra::getTruthsFromFormula(
             $loop_context->clauses,
             spl_object_id($pre_condition),
-            $new_referenced_var_ids
+            $new_referenced_var_ids,
+            $active_while_types
         );
 
         $changed_var_ids = [];
@@ -651,16 +640,6 @@ class LoopAnalyzer
             );
 
             $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
-        }
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         if ($is_do) {
