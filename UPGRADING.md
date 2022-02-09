@@ -723,6 +723,62 @@
     - [BC] Class `Psalm\Node\Scalar\VirtualString` became final
     - [BC] Class `Psalm\Node\Scalar\VirtualEncapsed` became final
     - [BC] Class `Psalm\Node\VirtualConst` became final
+ - Type nodes became final
+    - [BC] Class `Psalm\Type\TaintKindGroup` became final
+    - [BC] Class `Psalm\Type\Atomic\TNumericString` became final
+    - [BC] Class `Psalm\Type\Atomic\TClassStringMap` became final
+    - [BC] Class `Psalm\Type\Atomic\TEmptyNumeric` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallableObject` became final
+    - [BC] Class `Psalm\Type\Atomic\TSingleLetter` became final
+    - [BC] Class `Psalm\Type\Atomic\TClosedResource` became final
+    - [BC] Class `Psalm\Type\Atomic\TIntMaskOf` became final
+    - [BC] Class `Psalm\Type\Atomic\TNonEmptyScalar` became final
+    - [BC] Class `Psalm\Type\Atomic\TLowercaseString` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallable` became final
+    - [BC] Class `Psalm\Type\Atomic\TFalse` became final
+    - [BC] Class `Psalm\Type\Atomic\TIterable` became final
+    - [BC] Class `Psalm\Type\Atomic\TTraitString` became final
+    - [BC] Class `Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString` became final
+    - [BC] Class `Psalm\Type\Atomic\TLiteralInt` became final
+    - [BC] Class `Psalm\Type\Atomic\TTrue` became final
+    - [BC] Class `Psalm\Type\Atomic\TDependentGetClass` became final
+    - [BC] Class `Psalm\Type\Atomic\TValueOfArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TGenericObject` became final
+    - [BC] Class `Psalm\Type\Atomic\TNonEmptyLowercaseString` became final
+    - [BC] Class `Psalm\Type\Atomic\TEnumCase` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallableKeyedArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TDependentGetDebugType` became final
+    - [BC] Class `Psalm\Type\Atomic\TKeyOfArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TNonspecificLiteralInt` became final
+    - [BC] Class `Psalm\Type\Atomic\TObjectWithProperties` became final
+    - [BC] Class `Psalm\Type\Atomic\TTemplateValueOf` became final
+    - [BC] Class `Psalm\Type\Atomic\TDependentListKey` became final
+    - [BC] Class `Psalm\Type\Atomic\TConditional` became final
+    - [BC] Class `Psalm\Type\Atomic\TIntRange` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallableString` became final
+    - [BC] Class `Psalm\Type\Atomic\TClosure` became final
+    - [BC] Class `Psalm\Type\Atomic\TTypeAlias` became final
+    - [BC] Class `Psalm\Type\Atomic\TAnonymousClassInstance` became final
+    - [BC] Class `Psalm\Type\Atomic\TIntMask` became final
+    - [BC] Class `Psalm\Type\Atomic\TTemplateKeyOf` became final
+    - [BC] Class `Psalm\Type\Atomic\TDependentGetType` became final
+    - [BC] Class `Psalm\Type\Atomic\TLiteralFloat` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallableArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TNonEmptyMixed` became final
+    - [BC] Class `Psalm\Type\Atomic\TTemplateParamClass` became final
+    - [BC] Class `Psalm\Type\Atomic\TTemplateIndexedAccess` became final
+    - [BC] Class `Psalm\Type\Atomic\TEmptyScalar` became final
+    - [BC] Class `Psalm\Type\Atomic\TNever` became final
+    - [BC] Class `Psalm\Type\Atomic\TNull` became final
+    - [BC] Class `Psalm\Type\Atomic\TTemplateParam` became final
+    - [BC] Class `Psalm\Type\Atomic\TLiteralClassString` became final
+    - [BC] Class `Psalm\Type\Atomic\TResource` became final
+    - [BC] Class `Psalm\Type\Atomic\TVoid` became final
+    - [BC] Class `Psalm\Type\Atomic\TCallableList` became final
+    - [BC] Class `Psalm\Type\Atomic\TEmptyMixed` became final
+    - [BC] Class `Psalm\Type\Atomic\TClassConstant` became final
+    - [BC] Class `Psalm\Type\TaintKind` became final
+    - [BC] Class `Psalm\Type\Union` became final
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
