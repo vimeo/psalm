@@ -2009,6 +2009,12 @@ class Config
             $this->internal_stubs[] = $ext_decimal_path;
         }
 
+        // phpredis
+        if (extension_loaded('redis')) {
+            $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
+            $this->internal_stubs[] = $ext_phpredis_path;
+        }
+
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
                 throw new UnexpectedValueException('Cannot locate ' . $stub_path);
