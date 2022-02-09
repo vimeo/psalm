@@ -2403,6 +2403,37 @@ class TaintTest extends TestCase
                     'TaintedInclude{ require $second; }',
                 ],
             ],
+            'taintedMysqli' => [
+                'code' => '<?php
+                    /** @var mysqli */
+                    $mysql = mysqli_connect();
+                    assert(isset($_GET["query"]) && is_string($_GET["query"]));
+                    mysqli_query($mysql, $_GET["query"]);
+                    $mysql->query($_GET["query"]);
+                    mysqli_real_query($mysql, $_GET["query"]);
+                    $mysql->real_query($_GET["query"]);
+                    mysqli_multi_query($mysql, $_GET["query"]);
+                    $mysql->multi_query($_GET["query"]);
+                    $mysql->prepare($_GET["query"]);
+                    mysqli_prepare($mysql, $_GET["query"]);
+                    $stmt = new mysqli_stmt($mysql, $_GET["query"]);
+                    $stmt->prepare($_GET["query"]);
+                    mysqli_stmt_prepare($stmt, $_GET["query"]);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedSql{ $mysql->multi_query($_GET["query"]); }',
+                    'TaintedSql{ $mysql->prepare($_GET["query"]); }',
+                    'TaintedSql{ $mysql->query($_GET["query"]); }',
+                    'TaintedSql{ $mysql->real_query($_GET["query"]); }',
+                    'TaintedSql{ mysqli_multi_query($mysql, $_GET["query"]); }',
+                    'TaintedSql{ mysqli_prepare($mysql, $_GET["query"]); }',
+                    'TaintedSql{ mysqli_query($mysql, $_GET["query"]); }',
+                    'TaintedSql{ mysqli_real_query($mysql, $_GET["query"]); }',
+                    'TaintedSql{ $stmt = new mysqli_stmt($mysql, $_GET["query"]); }',
+                    'TaintedSql{ $stmt->prepare($_GET["query"]); }',
+                    'TaintedSql{ mysqli_stmt_prepare($stmt, $_GET["query"]); }',
+                ],
+            ],
         ];
     }
 }
