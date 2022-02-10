@@ -14,6 +14,8 @@ I've also put together [a list of Psalm’s complexities](what_makes_psalm_compl
 
 Are you looking for low-hanging fruit? Here are some [GitHub issues](https://github.com/vimeo/psalm/issues?q=is%3Aissue+is%3Aopen+label%3A%22easy+problems%22) that shouldn't be too difficult to resolve.
 
+[Adding support for an extension](adding_an_extension.md) is another easy way to get started.
+
 ### Don’t be afraid!
 
 One great thing about working on Psalm is that it’s _very_ hard to introduce any sort of type error in Psalm’s codebase. There are almost 5,000 PHPUnit tests, so the risk of you messing up (without the CI system noticing) is very small.
