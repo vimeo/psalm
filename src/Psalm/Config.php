@@ -40,6 +40,9 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use ReflectionClass;
+use ReflectionFunctionAbstract;
+use Reflector;
 use SimpleXMLElement;
 use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
@@ -580,6 +583,10 @@ class Config
      *     mongodb: bool,
      *     mysqli: bool,
      *     pdo: bool,
+     *     pdo_mysql: bool,
+     *     pdo_pgsql: bool,
+     *     pdo_sqlite: bool,
+     *     simplexml: bool,
      *     soap: bool,
      *     xdebug: bool,
      * }
@@ -593,6 +600,10 @@ class Config
         "mongodb" => false,
         "mysqli" => false,
         "pdo" => false,
+        "pdo_mysql" => false,
+        "pdo_pgsql" => false,
+        "pdo_sqlite" => false,
+        "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
     ];
@@ -2441,5 +2452,16 @@ class Config
     public function getUniversalObjectCrates(): array
     {
         return array_map('strtolower', $this->universal_object_crates);
+    }
+
+    /**
+     * @internal
+     *
+     * @param ReflectionClass|ReflectionFunctionAbstract $reflection
+     */
+    public function isReflectionFromSupportedExtension($reflection): bool
+    {
+        $extension = $reflection->getExtension();
+        return $extension !== null && isset($this->php_extensions[strtolower($extension->getName())]);
     }
 }

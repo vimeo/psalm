@@ -691,6 +691,10 @@
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="pdo_mysql"/>
+            <xs:enumeration value="pdo_pgsql"/>
+            <xs:enumeration value="pdo_sqlite"/>
+            <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
         </xs:restriction>
