@@ -7,12 +7,19 @@ function pdo_drivers(): array {}
 
 class PDO
 {
+    /** @since PHP-7.1.4 */
     public const SQLITE_DETERMINISTIC = 2048;
+    /** @since PHP-7.3 */
     public const SQLITE_ATTR_OPEN_FLAGS = 1000;
+    /** @since PHP-7.3 */
     public const SQLITE_OPEN_READONLY = 1;
+    /** @since PHP-7.3 */
     public const SQLITE_OPEN_READWRITE = 2;
+    /** @since PHP-7.3 */
     public const SQLITE_OPEN_CREATE = 4;
+    /** @since PHP-7.4 */
     public const SQLITE_ATTR_READONLY_STATEMENT = 1001;
+    /** @since PHP-7.4 */
     public const SQLITE_ATTR_EXTENDED_RESULT_CODES = 1002;
 
     /**
