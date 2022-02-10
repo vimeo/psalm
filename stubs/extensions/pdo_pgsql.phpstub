@@ -45,8 +45,9 @@ class PDO
 
     /**
      * @param PDO::FETCH_* $result_type
+     * @return array{message:string,pid:int,payload?:string}|false
      */
-    public function pgsqlGetNotify(int $result_type = PDO::FETCH_USE_DEFAULT, int $ms_timeout = 0): array {}
+    public function pgsqlGetNotify(int $result_type = PDO::FETCH_USE_DEFAULT, int $ms_timeout = 0) {}
 
     public function pgsqlGetPid(): int {}
 

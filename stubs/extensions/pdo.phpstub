@@ -113,7 +113,7 @@ class PDO
     public function errorCode(): ?string {}
 
     /**
-     * @return array{non-empty-string|null, mixed, mixed}
+     * @return array{non-empty-string|null, int|null, string|null}
      */
     public function errorInfo(): array {}
 
@@ -151,11 +151,13 @@ class PDO
      * @psalm-taint-sink sql $query
      *
      * @param PDO::FETCH_* $fetchMode
+     * @param int|class-string|object $args
      * @return PDOStatement|false
      */
-    public function query(string $query, ?int $fetchMode = null) {}
+    public function query(string $query, ?int $fetchMode = null, mixed $args = null, ?array $constructorArgs = null) {}
 
     /**
+     * @param self::PARAM_* $type
      * @return string|false
      */
     public function quote(string $string, int $type = PDO::PARAM_STR) {}
@@ -169,10 +171,10 @@ class PDO
      * @param self::ATTR_* $attribute
      */
     public function setAttribute(int $attribute, mixed $value): bool {}
-}
 
-class PDOStatement implements Traversable
-{
+    final public function __sleep(): array {}
+
+    final public function __wakeup(): void {}
 }
 
 /**
@@ -207,18 +209,24 @@ class PDOStatement implements Traversable
 
     public function columnCount(): int {}
 
+    public function debugDumpParams(): void {}
+
     /**
      * @return null|false
+     * @since PHP-8.0
      */
     public function debugDumpParams(): ?bool {}
 
+    public function errorCode(): string {}
+
     /**
      * @return non-empty-string|null
+     * @since PHP-8.0
      */
     public function errorCode(): ?string {}
 
     /**
-     * @return array{non-empty-string|null, mixed, mixed}
+     * @return array{non-empty-string|null, int|null, string|null}
      */
     public function errorInfo(): array {}
 
@@ -287,6 +295,11 @@ class PDOStatement implements Traversable
      * @return array|false
      */
     public function setFetchMode(int $mode, mixed $args, ?array $constructorArgs = null): bool {}
+
+    /** @return list<string> */
+    final public function __sleep(): array {}
+
+    final public function __wakeup(): void {}
 }
 
 /**

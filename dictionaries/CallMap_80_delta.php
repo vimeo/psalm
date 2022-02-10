@@ -49,50 +49,6 @@ return [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
     ],
-    'PDOStatement::bindColumn' => [
-      'old' => ['bool', 'column'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'column'=>'mixed', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindParam' => [
-      'old' => ['bool', 'paramno'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'param,'=>'string|int', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindValue' => [
-      'old' => ['bool', 'paramno'=>'mixed', 'param'=>'mixed', 'type='=>'int'],
-      'new' => ['bool', 'param'=>'string|int', 'value'=>'mixed', 'type='=>'int'],
-    ],
-    'PDOStatement::debugDumpParams' => [
-      'old' => ['void'],
-      'new' => ['bool|null'],
-    ],
-    'PDOStatement::errorCode' => [
-      'old' => ['string'],
-      'new' => ['string|null'],
-    ],
-    'PDOStatement::execute' => [
-      'old' => ['bool', 'bound_input_params='=>'?array'],
-      'new' => ['bool', 'params='=>'?array'],
-    ],
-    'PDOStatement::fetch' => [
-      'old' => ['mixed', 'how='=>'int', 'orientation='=>'int', 'offset='=>'int'],
-      'new' => ['mixed', 'mode='=>'int', 'cursorOrientation='=>'int', 'cursorOffset='=>'int'],
-    ],
-    'PDOStatement::fetchAll' => [
-      'old' => ['array|false', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'?array'],
-      'new' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
-    ],
-    'PDOStatement::fetchColumn' => [
-      'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
-      'new' => ['mixed', 'column='=>'int'],
-    ],
-    'PDOStatement::fetchObject' => [
-      'old' => ['object|false', 'class_name='=>'string', 'ctor_args='=>'array'],
-      'new' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
-    ],
-    'PDOStatement::setFetchMode' => [
-      'old' => ['bool', 'mode'=>'int'],
-      'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
-    ],
     'Phar::getMetadata' => [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
@@ -1591,9 +1547,6 @@ return [
     ],
   ],
   'removed' => [
-    'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
-    'PDOStatement::setFetchMode\'2' => ['bool', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
-    'PDOStatement::setFetchMode\'3' => ['bool', 'fetch_into'=>'int', 'object'=>'object'],
     'ReflectionType::isBuiltin' => ['bool'],
     'SplFileObject::fgetss' => ['string|false', 'allowable_tags='=>'string'],
     'create_function' => ['string', 'args'=>'string', 'code'=>'string'],

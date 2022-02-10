@@ -112,9 +112,6 @@ return [
     'streamwrapper' => [
         'context' => 'resource',
     ],
-    'pdostatement' => [
-        'querystring' => 'string',
-    ],
     'snmpexception' => [
         'code' => 'string',
     ],
@@ -176,61 +173,6 @@ return [
     'mongoint64' => [
         'value' => 'string',
     ],
-    'mysqli' => [
-        'affected_rows' => 'int',
-        'client_info' => 'string',
-        'client_version' => 'int',
-        'connect_errno' => 'int',
-        'connect_error' => '?string',
-        'errno' => 'int',
-        'error' => 'string',
-        'error_list' => 'array',
-        'field_count' => 'int',
-        'host_info' => 'string',
-        'info' => 'string',
-        'insert_id' => 'int|string',
-        'protocol_version' => 'string',
-        'server_info' => 'string',
-        'server_version' => 'int',
-        'sqlstate' => 'string',
-        'thread_id' => 'int',
-        'warning_count' => 'int',
-    ],
-    'mysqli_driver' => [
-        'client_info' => 'string',
-        'client_version' => 'string',
-        'driver_version' => 'string',
-        'embedded' => 'string',
-        'reconnect' => 'bool',
-        'report_mode' => 'int'
-    ],
-    'mysqli_result' => [
-        'current_field'  => 'int',
-        'field_count' => 'int',
-        'lengths' => 'array|null',
-        'num_rows' => 'int',
-        'type' => 'mixed',
-    ],
-    'mysqli_sql_exception' => [
-        'sqlstate' => 'string'
-    ],
-    'mysqli_stmt' => [
-        'affected_rows' => 'int',
-        'errno' => 'int',
-        'error' => 'string',
-        'error_list' => 'array',
-        'field_count' => 'int',
-        'id' => 'mixed',
-        'insert_id' => 'int',
-        'num_rows' => 'int',
-        'param_count' => 'int',
-        'sqlstate' => 'string',
-    ],
-    'mysqli_warning' => [
-        'errno' => 'int',
-        'message' => 'string',
-        'sqlstate' => 'string',
-    ],
     'eventlistener' => [
         'fd' => 'int',
     ],
@@ -275,10 +217,6 @@ return [
     'eventsslcontext' => [
         'local-cert' => 'string',
         'local-pk' => 'string',
-    ],
-    'pdoexception' => [
-        'errorinfo' => 'array',
-        'code' => 'string',
     ],
     'snmp' => [
         'max-oids' => 'int',
@@ -406,14 +344,5 @@ return [
         'offset' => 'int',
         'timestamp' => 'int',
         'headers' => 'array<string, string>|null',
-    ],
-    'soapfault' => [
-        'faultcode' => 'string|null',
-        'faultcodens' => 'string|null',
-        'faultstring' => 'string',
-        'faultactor' => 'string|null',
-        'detail' => 'mixed|null',
-        '_name' => 'string',
-        'headerfault' => 'mixed|null',
     ],
 ];
