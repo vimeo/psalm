@@ -43,15 +43,14 @@ class JsonOutputTest extends TestCase
 
     /**
      * @dataProvider providerTestJsonOutputErrors
-     *
-     * @param string $code
-     * @param string $message
-     * @param int $line_number
-     * @param string $error
-     *
      */
-    public function testJsonOutputErrors($code, $error_count, $message, $line_number, $error): void
-    {
+    public function testJsonOutputErrors(
+        string $code,
+        int $error_count,
+        string $message,
+        int $line_number,
+        string $error
+    ): void {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
         $all_issue_data = IssueBuffer::getIssuesData()['somefile.php'];
