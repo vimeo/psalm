@@ -76,6 +76,37 @@ class VersionDependentTest extends TestCase
                      */
                     public function existsAfter8() {}
                 }
+
+                /** @since PHP-8.0 */
+                class ExistsAfter8 {}
+
+                interface Foo {}
+
+                class ClassImplementsFooAfter8 {}
+
+                /** @since PHP-8.0 */
+                class ClassImplementsFooAfter8 implements Foo {}
+
+                class ClassImplementsFooUntil8 implements Foo {}
+
+                /** @since PHP-8.0 */
+                class ClassImplementsFooUntil8 {}
+
+                interface InterfaceExtendsFooAfter8 {}
+
+                /** @since PHP-8.0 */
+                interface InterfaceExtendsFooAfter8 extends Foo {}
+
+                class ImplementsInterfaceExtendsFooAfter8 implements InterfaceExtendsFooAfter8 {}
+
+                interface InterfaceExtendsFooUntil8 extends Foo {}
+
+                /** @since PHP-8.0 */
+                interface InterfaceExtendsFooUntil8 {}
+
+                class ImplementsInterfaceExtendsFooUntil8 implements InterfaceExtendsFooUntil8 {}
+
+                function takesFoo(Foo $foo): void {}
             '
         );
     }
@@ -189,6 +220,50 @@ class VersionDependentTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.0',
         ];
+        yield 'classAdded' => [
+            'code' => '<?php
+                $foo = new ExistsAfter8();
+            ',
+            'assertions' => ['$foo' => 'ExistsAfter8'],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'classAddsInterfaceNew' => [
+            'code' => '<?php
+                $foo = new ClassImplementsFooAfter8();
+                takesFoo($foo);
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'classRemovesInterfaceOld' => [
+            'code' => '<?php
+                $foo = new ClassImplementsFooUntil8();
+                takesFoo($foo);
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'interfaceAddsParentNew' => [
+            'code' => '<?php
+                $foo = new ImplementsInterfaceExtendsFooAfter8();
+                takesFoo($foo);
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'interfaceAddsParentOld' => [
+            'code' => '<?php
+                $foo = new ImplementsInterfaceExtendsFooUntil8();
+                takesFoo($foo);
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
     }
 
     /**
@@ -267,6 +342,50 @@ class VersionDependentTest extends TestCase
             'error_message' => 'UndefinedPropertyFetch',
             'ignored_issues' => [],
             'php_version' => '7.4',
+        ];
+        yield 'classAdded' => [
+            'code' => '<?php
+                $foo = new ExistsAfter8();
+            ',
+            'error_message' => 'UndefinedClass',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'classAddsInterfaceOld' => [
+            'code' => '<?php
+                $foo = new ClassImplementsFooAfter8();
+                takesFoo($foo);
+            ',
+            'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'classRemovesInterfaceNew' => [
+            'code' => '<?php
+                $foo = new ClassImplementsFooUntil8();
+                takesFoo($foo);
+            ',
+            'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+        yield 'interfaceAddsParentOld' => [
+            'code' => '<?php
+                $foo = new ImplementsInterfaceExtendsFooAfter8();
+                takesFoo($foo);
+            ',
+            'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'interfaceAddsParentNew' => [
+            'code' => '<?php
+                $foo = new ImplementsInterfaceExtendsFooUntil8();
+                takesFoo($foo);
+            ',
+            'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
     }
 }

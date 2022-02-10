@@ -144,4 +144,9 @@ class ClassLikeDocblockComment
      * @var ?string
      */
     public $description;
+
+    /**
+     * @var int|null
+     */
+    public $since_php_version = null;
 }

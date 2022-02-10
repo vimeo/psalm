@@ -73,6 +73,7 @@ use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function get_class;
@@ -190,69 +191,99 @@ class ClassLikeNodeScanner
             $fq_classlike_name =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name;
 
-            $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
             $class_name = $node->name->name;
-
-            if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
-                $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
-
-                if (!$this->codebase->register_stub_files) {
-                    if (!$duplicate_storage->stmt_location
-                        || $duplicate_storage->stmt_location->file_path !== $this->file_path
-                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new DuplicateClass(
-                                'Class ' . $fq_classlike_name . ' has already been defined'
-                                    . ($duplicate_storage->location
-                                        ? ' in ' . $duplicate_storage->location->file_path
-                                        : ''),
-                                $name_location
-                            )
-                        )) {
-                        }
-
-                        $this->file_storage->has_visitor_issues = true;
-
-                        $duplicate_storage->has_visitor_issues = true;
-
-                        return false;
-                    }
-                } elseif (!$duplicate_storage->location
-                    || $duplicate_storage->location->file_path !== $this->file_path
-                    || $class_location->getHash() !== $duplicate_storage->location->getHash()
-                ) {
-                    $is_classlike_overridden = true;
-                    // we're overwriting some methods
-                    $storage = $this->storage = $duplicate_storage;
-                    $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
-                    $storage->populated = false;
-                    $storage->class_implements = []; // we do this because reflection reports
-                    $storage->parent_interfaces = [];
-                    $storage->stubbed = true;
-                    $storage->aliases = $this->aliases;
-
-                    foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
-                        try {
-                            $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
-                        } catch (InvalidArgumentException $exception) {
-                            continue;
-                        }
-                        $dependent_storage->populated = false;
-                        $this->codebase->classlike_storage_provider->makeNew($dependent_name_lc);
-                    }
-                }
-            }
         }
 
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        $docblock_info = null;
+        $doc_comment = $node->getDocComment();
+        $docblock_issues = [];
+        if ($doc_comment) {
+            try {
+                $docblock_info = ClassLikeDocblockParser::parse(
+                    $node,
+                    $doc_comment,
+                    $this->aliases
+                );
+
+                $this->type_aliases += $this->getImportedTypeAliases($docblock_info, $fq_classlike_name);
+            } catch (DocblockParseException $e) {
+                $docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                    $name_location ?? $class_location
+                );
+            }
+
+            if ($docblock_info
+                && $docblock_info->since_php_version !== null
+                && $docblock_info->since_php_version > $this->codebase->analysis_php_version_id
+            ) {
+                return false;
+            }
+        }
+
+        if ($node->name !== null && $this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
+            assert($name_location !== null);
+
+            $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
+
+            if (!$this->codebase->register_stub_files) {
+                if (!$duplicate_storage->stmt_location
+                    || $duplicate_storage->stmt_location->file_path !== $this->file_path
+                    || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateClass(
+                            'Class ' . $fq_classlike_name . ' has already been defined'
+                                . ($duplicate_storage->location
+                                    ? ' in ' . $duplicate_storage->location->file_path
+                                    : ''),
+                            $name_location
+                        )
+                    )) {
+                    }
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_storage->has_visitor_issues = true;
+
+                    return false;
+                }
+            } elseif (!$duplicate_storage->location
+                || $duplicate_storage->location->file_path !== $this->file_path
+                || $class_location->getHash() !== $duplicate_storage->location->getHash()
+            ) {
+                $is_classlike_overridden = true;
+                // we're overwriting some methods
+                $storage = $this->storage = $duplicate_storage;
+                $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
+                $storage->populated = false;
+                $storage->class_implements = []; // we do this because reflection reports
+                $storage->parent_interfaces = [];
+                $storage->stubbed = true;
+                $storage->aliases = $this->aliases;
+
+                foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
+                    try {
+                        $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
+                    } catch (InvalidArgumentException $exception) {
+                        continue;
+                    }
+                    $dependent_storage->populated = false;
+                    $this->codebase->classlike_storage_provider->makeNew($dependent_name_lc);
+                }
+            }
+        }
 
         $this->file_storage->classlikes_in_file[$fq_classlike_name_lc] = $fq_classlike_name;
 
         if (!$storage) {
             $this->storage = $storage = $this->codebase->classlike_storage_provider->create($fq_classlike_name);
         }
+
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_issues];
 
         if ($class_name
             && isset($this->aliases->uses[strtolower($class_name)])
@@ -367,25 +398,6 @@ class ClassLikeNodeScanner
                 $storage->class_implements[$interface_fqcln_lc] = $interface_fqcln;
                 $storage->direct_class_interfaces[$interface_fqcln_lc] = $interface_fqcln;
                 $this->file_storage->required_interfaces[$interface_fqcln_lc] = $interface_fqcln;
-            }
-        }
-
-        $docblock_info = null;
-        $doc_comment = $node->getDocComment();
-        if ($doc_comment) {
-            try {
-                $docblock_info = ClassLikeDocblockParser::parse(
-                    $node,
-                    $doc_comment,
-                    $this->aliases
-                );
-
-                $this->type_aliases += $this->getImportedTypeAliases($docblock_info, $fq_classlike_name);
-            } catch (DocblockParseException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
-                    $name_location ?? $class_location
-                );
             }
         }
 

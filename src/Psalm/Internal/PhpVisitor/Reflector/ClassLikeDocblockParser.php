@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Type\ParseTree\MethodParamTree;
 use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
@@ -60,6 +61,8 @@ class ClassLikeDocblockParser
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
         $info = new ClassLikeDocblockComment();
+
+        $info->since_php_version = DocblockParser::parseSincePhpVersion($parsed_docblock);
 
         $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
