@@ -50,11 +50,13 @@ class JsonOutputTest extends TestCase
      * @param string $error
      *
      */
-    public function testJsonOutputErrors($code, $message, $line_number, $error): void
+    public function testJsonOutputErrors($code, $error_count, $message, $line_number, $error): void
     {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
-        $issue_data = IssueBuffer::getIssuesData()['somefile.php'][0];
+        $all_issue_data = IssueBuffer::getIssuesData()['somefile.php'];
+        $this->assertCount($error_count, $all_issue_data);
+        $issue_data = $all_issue_data[0];
 
         $this->assertSame('somefile.php', $issue_data->file_path);
         $this->assertSame('error', $issue_data->severity);
@@ -67,7 +69,7 @@ class JsonOutputTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,message:string,line:int,error:string}>
+     * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
      */
     public function providerTestJsonOutputErrors(): array
     {
@@ -77,6 +79,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(int $a): string {
                         return $a + 1;
                     }',
+                'error_count' => 2,
                 'message' => "The inferred type 'int' does not match the declared return type 'string' for fooFoo",
                 'line' => 3,
                 'error' => '$a + 1',
@@ -86,6 +89,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
+                'error_count' => 5,
                 'message' => 'Cannot find referenced variable $b',
                 'line' => 3,
                 'error' => '$b',
@@ -95,6 +99,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
+                'error_count' => 3,
                 'message' => 'Class, interface or enum named Badger\\Bodger does not exist',
                 'line' => 2,
                 'error' => 'Badger\\Bodger',
@@ -104,6 +109,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
+                'error_count' => 1,
                 'message' => "Method fooFoo does not have a return type, expecting 'hello'",
                 'line' => 2,
                 'error' => 'fooFoo',
@@ -116,6 +122,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo() {
                         return "hello";
                     }',
+                'error_count' => 2,
                 'message' => "The inferred type ''hello'' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
                 'error' => '"hello"',
@@ -125,9 +132,22 @@ class JsonOutputTest extends TestCase
                     $a = $_GET["hello"];
                     assert(is_int($a));
                     if (is_int($a)) {}',
+                'error_count' => 1,
                 'message' => 'Docblock-defined type int for $a is always int',
                 'line' => 4,
                 'error' => 'is_int($a)',
+            ],
+            'singleIssueForTypeDifference' => [
+                'code' => '<?php
+                    function fooFoo(?string $a, ?string $b): void {
+                        if ($a || $b) {
+                            if ($a || $b) {}
+                        }
+                    }',
+                'error_count' => 1,
+                'message' => 'Operand of type non-falsy-string is always true',
+                'line' => 4,
+                'error' => '$b',
             ],
         ];
     }

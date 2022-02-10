@@ -335,7 +335,7 @@ class IfConditionalAnalyzer
                         new DocblockTypeContradiction(
                             'Operand of type ' . $type->getId() . ' is always false',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'false falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -344,7 +344,7 @@ class IfConditionalAnalyzer
                         new TypeDoesNotContainType(
                             'Operand of type ' . $type->getId() . ' is always false',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'false falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -357,7 +357,7 @@ class IfConditionalAnalyzer
                         new RedundantConditionGivenDocblockType(
                             'Operand of type ' . $type->getId() . ' is always true',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'true falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -366,7 +366,7 @@ class IfConditionalAnalyzer
                         new RedundantCondition(
                             'Operand of type ' . $type->getId() . ' is always true',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'true falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
