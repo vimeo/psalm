@@ -1,0 +1,61 @@
+<?php
+
+class PDO
+{
+    public const PGSQL_ATTR_DISABLE_PREPARES = 1000;
+    public const PGSQL_TRANSACTION_IDLE = 0;
+    public const PGSQL_TRANSACTION_ACTIVE = 1;
+    public const PGSQL_TRANSACTION_INTRANS = 2;
+    public const PGSQL_TRANSACTION_INERROR = 3;
+    public const PGSQL_TRANSACTION_UNKNOWN = 4;
+
+    public function pgsqlCopyFromArray(
+        string $table_name,
+        array $rows,
+        string $delimiter = "\t",
+        string $null_as = "\\\\N",
+        string $fields = ""
+    ): bool {}
+
+    public function pgsqlCopyFromFile(
+        string $table_name,
+        string $filename,
+        string $delimiter = "\t",
+        string $null_as = "\\\\N",
+        string $fields = ""
+    ): bool {}
+
+    /**
+     * @return array|false
+     */
+    public function pgsqlCopyToArray(
+        string $table_name,
+        string $delimiter = "\t",
+        string $null_as = "\\\\N",
+        string $fields = ""
+    ) {}
+
+    public function pgsqlCopyToFile(
+        string $table_name,
+        string $filename,
+        string $delimiter = "\t",
+        string $null_as = "\\\\N",
+        string $fields = ""
+    ): bool {}
+
+    /**
+     * @param PDO::FETCH_* $result_type
+     */
+    public function pgsqlGetNotify(int $result_type = PDO::FETCH_USE_DEFAULT, int $ms_timeout = 0): array {}
+
+    public function pgsqlGetPid(): int {}
+
+    public function pgsqlLOBCreate(): string {}
+
+    /**
+     * @return resource|false
+     */
+    public function pgsqlLOBOpen(string $oid, string $mode = "rb") {}
+
+    public function pgsqlLOBUnlink(string $oid): bool {}
+}
