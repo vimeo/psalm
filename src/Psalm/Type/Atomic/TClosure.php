@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Represents a closure where we know the return type and params
  */
-class TClosure extends TNamedObject
+final class TClosure extends TNamedObject
 {
     use CallableTrait;
 

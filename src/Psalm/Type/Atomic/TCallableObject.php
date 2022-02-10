@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
  */
-class TCallableObject extends TObject
+final class TCallableObject extends TObject
 {
     public function getKey(bool $include_extra = true): string
     {

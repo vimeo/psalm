@@ -8,7 +8,7 @@ use function min;
 /**
  * Denotes an interval of integers between two bounds
  */
-class TIntRange extends TInt
+final class TIntRange extends TInt
 {
     public const BOUND_MIN = 'min';
     public const BOUND_MAX = 'max';

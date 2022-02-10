@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes an integer value where the exact numeric value is known.
  */
-class TLiteralInt extends TInt
+final class TLiteralInt extends TInt
 {
     /** @var int */
     public $value;

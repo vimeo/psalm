@@ -20,7 +20,7 @@ use function implode;
 /**
  * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.
  */
-class TObjectWithProperties extends TObject
+final class TObjectWithProperties extends TObject
 {
     use HasIntersectionTrait;
 

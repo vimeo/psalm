@@ -14,7 +14,7 @@ use function substr;
 /**
  * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
  */
-class TGenericObject extends TNamedObject
+final class TGenericObject extends TNamedObject
 {
     use GenericTrait;
 

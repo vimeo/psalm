@@ -11,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * Represents the type used when using TValueOfArray when the type of the array is a template
  */
-class TTemplateValueOf extends Atomic
+final class TTemplateValueOf extends Atomic
 {
     /**
      * @var string

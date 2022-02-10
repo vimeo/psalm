@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
  */
-class TAnonymousClassInstance extends TNamedObject
+final class TAnonymousClassInstance extends TNamedObject
 {
     /**
      * @var string|null

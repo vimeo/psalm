@@ -14,7 +14,7 @@ use function substr;
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
  */
-class TIterable extends Atomic
+final class TIterable extends Atomic
 {
     use HasIntersectionTrait;
     use GenericTrait;

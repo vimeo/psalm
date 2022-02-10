@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a `scalar` type that is also empty.
  */
-class TEmptyScalar extends TScalar
+final class TEmptyScalar extends TScalar
 {
     public function getId(bool $exact = true, bool $nested = false): string
     {

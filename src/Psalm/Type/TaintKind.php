@@ -5,7 +5,7 @@ namespace Psalm\Type;
 /**
  * An Enum class holding all the taint types that Psalm recognises
  */
-class TaintKind
+final class TaintKind
 {
     public const INPUT_CALLABLE = 'callable';
     public const INPUT_UNSERIALIZE = 'unserialize';

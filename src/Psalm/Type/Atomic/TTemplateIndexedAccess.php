@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
-class TTemplateIndexedAccess extends Atomic
+final class TTemplateIndexedAccess extends Atomic
 {
     /**
      * @var string

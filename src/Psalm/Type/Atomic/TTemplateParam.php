@@ -13,7 +13,7 @@ use function implode;
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
  */
-class TTemplateParam extends Atomic
+final class TTemplateParam extends Atomic
 {
     use HasIntersectionTrait;
 

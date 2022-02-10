@@ -11,7 +11,7 @@ use function array_values;
 /**
  * Represents a value of an array.
  */
-class TValueOfArray extends Atomic
+final class TValueOfArray extends Atomic
 {
     /** @var Union */
     public $type;

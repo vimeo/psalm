@@ -5,7 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes a string that's also a numeric value e.g. `"5"`. It can result from `is_string($s) && is_numeric($s)`.
  */
-class TNumericString extends TNonEmptyString
+final class TNumericString extends TNonEmptyString
 {
     public function getId(bool $exact = true, bool $nested = false): string
     {

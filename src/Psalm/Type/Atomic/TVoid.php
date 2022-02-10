@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Denotes the `void` type, normally just used to annotate a function/method that returns nothing
  */
-class TVoid extends Atomic
+final class TVoid extends Atomic
 {
     public function getKey(bool $include_extra = true): string
     {

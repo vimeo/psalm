@@ -8,7 +8,7 @@ use Psalm\Type\Atomic;
 /**
  * Denotes a class constant whose value might not yet be known.
  */
-class TClassConstant extends Atomic
+final class TClassConstant extends Atomic
 {
     /** @var string */
     public $fq_classlike_name;
