@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @return list<string>
+ */
+function pdo_drivers(): array {}
+
+class PDO
+{
+    public const SQLITE_DETERMINISTIC = 2048;
+    public const SQLITE_ATTR_OPEN_FLAGS = 1000;
+    public const SQLITE_OPEN_READONLY = 1;
+    public const SQLITE_OPEN_READWRITE = 2;
+    public const SQLITE_OPEN_CREATE = 4;
+    public const SQLITE_ATTR_READONLY_STATEMENT = 1001;
+    public const SQLITE_ATTR_EXTENDED_RESULT_CODES = 1002;
+
+    /**
+     * This is currently commented out because it is marked as experimental.
+     *
+     * @param callable(mixed, int, mixed, mixed...): mixed $step_func
+     * @param callable(mixed, int): mixed $finalize_func
+     */
+    // public function sqliteCreateAggregate(
+    //     string $function_name,
+    //     callable $step_func,
+    //     callable $finalize_func,
+    //     int $num_args = ?
+    // ): bool {}
+
+    /**
+     * This is currently commented out because it is marked as experimental.
+     *
+     * @param callable(string, string): int $callback
+     */
+    // public function sqliteCreateCollation(string $name, callable $callback): bool {}
+
+    /**
+     * This is currently commented out because it is marked as experimental.
+     *
+     * @param callable(mixed, mixed...): mixed $callback
+     */
+    // public function sqliteCreateFunction(
+    //     string $function_name,
+    //     callable $callback,
+    //     int $num_args = -1,
+    //     int $flags = 0
+    // ): bool {}
+}
