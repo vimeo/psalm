@@ -313,7 +313,7 @@ class InArrayTest extends TestCase
 
                         return $x;
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
             ],
             'assertNegatedInArrayOfNotIntersectingTypeTriggersRedundantCondition' => [
                 'code' => '<?php
@@ -329,7 +329,7 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type true is always true',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type true is always truthy',
             ],
             'assertInArrayOfNotIntersectingTypeTriggersDocblockTypeContradiction' => [
                 'code' => '<?php
@@ -345,7 +345,7 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
             ],
             'assertInArrayOfNotIntersectingTypeReturnsTriggersDocblockTypeContradiction' => [
                 'code' => '<?php
@@ -361,7 +361,7 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
                 'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [

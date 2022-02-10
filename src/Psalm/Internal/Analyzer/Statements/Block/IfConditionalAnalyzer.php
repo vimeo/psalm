@@ -333,7 +333,7 @@ class IfConditionalAnalyzer
                 if ($type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
-                            'Operand of type ' . $type->getId() . ' is always false',
+                            'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
                             $type->getId() . ' falsy'
                         ),
@@ -342,7 +342,7 @@ class IfConditionalAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
-                            'Operand of type ' . $type->getId() . ' is always false',
+                            'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
                             $type->getId() . ' falsy'
                         ),
@@ -355,7 +355,7 @@ class IfConditionalAnalyzer
                 if ($type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
-                            'Operand of type ' . $type->getId() . ' is always true',
+                            'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
                             $type->getId() . ' falsy'
                         ),
@@ -364,7 +364,7 @@ class IfConditionalAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantCondition(
-                            'Operand of type ' . $type->getId() . ' is always true',
+                            'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
                             $type->getId() . ' falsy'
                         ),

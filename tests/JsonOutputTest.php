@@ -144,7 +144,7 @@ class JsonOutputTest extends TestCase
                         }
                     }',
                 'error_count' => 1,
-                'message' => 'Operand of type non-falsy-string is always true',
+                'message' => 'Operand of type non-falsy-string is always truthy',
                 'line' => 4,
                 'error' => '$b',
             ],
