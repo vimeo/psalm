@@ -9,6 +9,7 @@ use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -16,6 +17,7 @@ use function array_pop;
 use function array_unique;
 use function array_values;
 use function count;
+use function in_array;
 use function mt_rand;
 
 /**
@@ -238,11 +240,90 @@ class Algebra
             }
 
             if (!$is_redundant) {
-                $simplified_clauses[] = $clause_a;
+                $simplified_clauses[$clause_a->hash] = $clause_a;
             }
         }
 
-        return $simplified_clauses;
+        $clause_count = count($simplified_clauses);
+
+        // simplify (A || X) && (!A || Y) && (X || Y)
+        // to
+        // simplify (A || X) && (!A || Y)
+        // where X and Y are sets of orred terms
+        if ($clause_count > 2 && $clause_count < 256) {
+            $clauses = array_values($simplified_clauses);
+            for ($i = 0; $i < $clause_count; $i++) {
+                $clause_a = $clauses[$i];
+                for ($k = $i + 1; $k < $clause_count; $k++) {
+                    $clause_b = $clauses[$k];
+                    $common_keys = array_keys(
+                        array_intersect_key($clause_a->possibilities, $clause_b->possibilities)
+                    );
+                    if ($common_keys) {
+                        $common_negated_keys = [];
+                        foreach ($common_keys as $common_key) {
+                            if (count($clause_a->possibilities[$common_key]) === 1
+                                && count($clause_b->possibilities[$common_key]) === 1
+                                && $clause_a->possibilities[$common_key][0]->isNegationOf(
+                                    $clause_b->possibilities[$common_key][0]
+                                )
+                            ) {
+                                $common_negated_keys[] = $common_key;
+                            }
+                        }
+
+                        if ($common_negated_keys) {
+                            $new_possibilities = [];
+
+                            foreach ($clause_a->possibilities as $var_id => $possibilities) {
+                                if (in_array($var_id, $common_negated_keys, true)) {
+                                    continue;
+                                }
+
+                                if (!isset($new_possibilities[$var_id])) {
+                                    $new_possibilities[$var_id] = $possibilities;
+                                } else {
+                                    $new_possibilities[$var_id] = array_merge(
+                                        $new_possibilities[$var_id],
+                                        $possibilities,
+                                    );
+                                }
+                            }
+
+                            foreach ($clause_b->possibilities as $var_id => $possibilities) {
+                                if (in_array($var_id, $common_negated_keys, true)) {
+                                    continue;
+                                }
+
+                                if (!isset($new_possibilities[$var_id])) {
+                                    $new_possibilities[$var_id] = $possibilities;
+                                } else {
+                                    $new_possibilities[$var_id] = array_merge(
+                                        $new_possibilities[$var_id],
+                                        $possibilities,
+                                    );
+                                }
+                            }
+
+                            /** @psalm-suppress MixedArgumentTypeCoercion due I think to Psalm bug */
+                            $conflict_clause = (new Clause(
+                                $new_possibilities,
+                                $clause_a->creating_conditional_id,
+                                $clause_a->creating_conditional_id,
+                                false,
+                                true,
+                                true,
+                                []
+                            ))->makeUnique();
+
+                            unset($simplified_clauses[$conflict_clause->hash]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return array_values($simplified_clauses);
     }
 
     /**
