@@ -56,6 +56,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -2187,7 +2188,11 @@ class Config
 
     public function collectPredefinedConstants(): void
     {
-        $this->predefined_constants = get_defined_constants();
+        $predefined_constants = get_defined_constants(true);
+        foreach (self::SUPPORTED_EXTENSIONS as $ext_name) {
+            unset($predefined_constants[$ext_name]);
+        }
+        $this->predefined_constants = array_merge(...array_values($predefined_constants));
     }
 
     /**
