@@ -584,6 +584,9 @@ class Config
      */
     public $internal_stubs = [];
 
+    /** @var ?int */
+    public $threads;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -1239,6 +1242,10 @@ class Config
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
+        }
+
+        if (isset($config_xml->threads)) {
+            $config->threads = (int)$config_xml->threads;
         }
 
         return $config;
