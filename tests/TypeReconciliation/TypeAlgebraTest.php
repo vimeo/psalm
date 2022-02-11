@@ -1160,6 +1160,26 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
+            'combineTwoOrredClausesWithUnnecessaryTerm' => [
+                'code' => '<?php
+                    function foo(bool $a, bool $b, bool $c): void {
+                        if (($a && $b) || (!$a && $c)) {
+                            //
+                        } else {
+                            if ($c) {}
+                        }
+                    }'
+            ],
+            'combineTwoOrredClausesWithMoreComplexUnnecessaryTerm' => [
+                'code' => '<?php
+                    function foo(bool $a, bool $b, bool $c): void {
+                        if ((!$a && !$b) || ($a && $b) || ($a && $c)) {
+                            throw new \Exception();
+                        }
+
+                        if ($a) {}
+                    }'
+            ],
         ];
     }
 

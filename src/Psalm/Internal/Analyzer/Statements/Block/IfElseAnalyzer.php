@@ -172,14 +172,13 @@ class IfElseAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        // if we have assignments in the if, we may have duplicate clauses
-        if ($assigned_in_conditional_var_ids) {
-            $if_clauses = Algebra::simplifyCNF($if_clauses);
-        }
+        $if_clauses = Algebra::simplifyCNF($if_clauses);
 
         $if_context_clauses = array_merge($entry_clauses, $if_clauses);
 
-        $if_context->clauses = Algebra::simplifyCNF($if_context_clauses);
+        $if_context->clauses = $entry_clauses
+            ? Algebra::simplifyCNF($if_context_clauses)
+            : $if_context_clauses;
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
