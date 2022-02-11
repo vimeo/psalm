@@ -1550,7 +1550,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
             ],
-            'noMixedTypehintInDescendant' => [
+            'SKIPPED-noMixedTypehintInDescendant' => [
                 'code' => '<?php
                     class a {
                         public function test(): mixed {
