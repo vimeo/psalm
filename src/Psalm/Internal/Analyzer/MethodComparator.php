@@ -888,7 +888,10 @@ class MethodComparator
             )
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
-        if (!$is_contained_by) {
+        if (!$is_contained_by
+            // Ignore `mixed` signature for PHP < 8.0
+            && ($codebase->analysis_php_version_id >= 8_00_00 || !$guide_signature_return_type->isMixed())
+        ) {
             if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)

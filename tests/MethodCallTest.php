@@ -15,6 +15,8 @@ class MethodCallTest extends TestCase
 
     public function testExtendDocblockParamType(): void
     {
+        $this->testConfig->enableExtension("soap");
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -201,7 +203,12 @@ class MethodCallTest extends TestCase
         return [
             'notInCallMapTest' => [
                 'code' => '<?php
-                    new DOMImplementation();',
+                    new DOMImplementation();
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'parentStaticCall' => [
                 'code' => '<?php
@@ -329,7 +336,12 @@ class MethodCallTest extends TestCase
                     if ($node instanceof DOMElement) {
                         $newnode = $doc->appendChild($node);
                         $newnode->setAttribute("bar", "baz");
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'nonStaticSelfCall' => [
                 'code' => '<?php
@@ -350,11 +362,15 @@ class MethodCallTest extends TestCase
                 'code' => '<?php
                     $xml = new SimpleXMLElement("<a><b></b></a>");
                     $a = $xml->asXML();
-                    $b = $xml->asXML("foo.xml");',
+                    $b = $xml->asXML("foo.xml");
+                ',
                 'assertions' => [
                     '$a' => 'false|string',
                     '$b' => 'bool',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'datetimeformatNotFalse' => [
                 'code' => '<?php
@@ -377,7 +393,12 @@ class MethodCallTest extends TestCase
                             return null;
                         }
                         return $b->getAttribute("bat");
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'domElementIteratorOrEmptyArray' => [
                 'code' => '<?php
@@ -390,7 +411,12 @@ class MethodCallTest extends TestCase
                         foreach ($elements as $element) {
                             $element->getElementsByTagName("bat");
                         }
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'reflectionParameter' => [
                 'code' => '<?php
@@ -422,7 +448,12 @@ class MethodCallTest extends TestCase
                     }
 
                     $db = new PDO("sqlite:sqlitedb");
-                    $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
+                    $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo', 'pdo_sqlite'],
             ],
             'dontConvertedMaybeMixedAfterCall' => [
                 'code' => '<?php
@@ -514,7 +545,12 @@ class MethodCallTest extends TestCase
                     $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
                     $stmt->execute();
                     /** @psalm-suppress MixedAssignment */
-                    $a = $stmt->fetch();',
+                    $a = $stmt->fetch();
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'datePeriodConstructor' => [
                 'code' => '<?php
@@ -619,7 +655,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_ASSOC);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchBoth' => [
                 'code' => '<?php
@@ -629,7 +670,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_BOTH);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchBound' => [
                 'code' => '<?php
@@ -639,7 +685,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_BOUND);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchClass' => [
                 'code' => '<?php
@@ -649,7 +700,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_CLASS);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchLazy' => [
                 'code' => '<?php
@@ -659,7 +715,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_LAZY);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchNamed' => [
                 'code' => '<?php
@@ -669,7 +730,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_NAMED);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchNum' => [
                 'code' => '<?php
@@ -679,7 +745,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_NUM);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'pdoStatementFetchObj' => [
                 'code' => '<?php
@@ -689,7 +760,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_OBJ);
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'dateTimeSecondArg' => [
                 'code' => '<?php
@@ -814,7 +890,12 @@ class MethodCallTest extends TestCase
             'pdoQueryTwoArgs' => [
                 'code' => '<?php
                     $pdo = new PDO("test");
-                    $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);'
+                    $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'unchainedInferredMutationFreeMethodCallMemoize' => [
                 'code' => '<?php

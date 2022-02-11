@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
@@ -17,13 +18,18 @@ use const DIRECTORY_SEPARATOR;
 class TaintTest extends TestCase
 {
     /**
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      * @dataProvider providerValidCodeParse
      */
-    public function testValidCode(string $code): void
+    public function testValidCode(string $code, array $required_extensions = []): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         $file_path = self::$src_dir_path . 'somefile.php';
@@ -41,12 +47,17 @@ class TaintTest extends TestCase
     }
 
     /**
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      * @dataProvider providerInvalidCodeParse
      */
-    public function testInvalidCode(string $code, string $error_message): void
+    public function testInvalidCode(string $code, string $error_message, array $required_extensions = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         $this->expectException(CodeException::class);
@@ -65,7 +76,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code:string, required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerValidCodeParse(): array
     {
@@ -712,7 +723,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string, required_extensions?: list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -734,6 +745,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputFromFunctionReturnType' => [
                 'code' => '<?php
@@ -841,6 +853,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputFromReturnTypeWithBranch' => [
                 'code' => '<?php
@@ -867,6 +880,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'sinkAnnotation' => [
                 'code' => '<?php
@@ -914,6 +928,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> A::getUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:63) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:13:53) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:69) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40) -> PDO::exec#1',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputToParam' => [
                 'code' => '<?php
@@ -934,6 +949,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputToParamAfterAssignment' => [
                 'code' => '<?php
@@ -955,6 +971,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputToParamAlternatePath' => [
                 'code' => '<?php
@@ -984,6 +1001,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> call to A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:58) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:66) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:78) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33) -> $userId2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:85) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44) -> PDO::exec#1',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInParentLoader' => [
                 'code' => '<?php
@@ -1015,6 +1033,7 @@ class TaintTest extends TestCase
 
                     (new C)->foo((string) $_GET["user_id"]);',
                 'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> AGrandChild::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:76) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputFromProperty' => [
                 'code' => '<?php
@@ -1039,6 +1058,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputFromPropertyViaMixin' => [
                 'code' => '<?php
@@ -1084,6 +1104,7 @@ class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintedInputViaStaticFunction' => [
                 'code' => '<?php
@@ -1405,6 +1426,7 @@ class TaintTest extends TestCase
                     $userObj = new User((string) $_GET["user_id"]);
                     UserUpdater::doDelete(new PDO(), $userObj);',
                 'error_message' => 'TaintedSql',
+                'required_extensions' => ['pdo'],
             ],
             'taintPropertyPassingObjectSettingValueLater' => [
                 'code' => '<?php
@@ -2312,13 +2334,18 @@ class TaintTest extends TestCase
     /**
      * @param string $code
      * @param list<string> $expectedIssuesTypes
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      * @test
      * @dataProvider multipleTaintIssuesAreDetectedDataProvider
      */
-    public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
+    public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes, array $required_extensions = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         // disables issue exceptions - we need all, not just the first
@@ -2337,7 +2364,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, expectedIssueTypes: list<string>}>
+     * @return array<string, array{code: string, expectedIssueTypes: list<string>, required_extensions?: list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function multipleTaintIssuesAreDetectedDataProvider(): array
     {
@@ -2433,6 +2460,7 @@ class TaintTest extends TestCase
                     'TaintedSql{ $stmt->prepare($_GET["query"]); }',
                     'TaintedSql{ mysqli_stmt_prepare($stmt, $_GET["query"]); }',
                 ],
+                'required_extensions' => ['mysqli'],
             ],
         ];
     }

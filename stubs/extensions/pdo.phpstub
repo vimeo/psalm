@@ -121,6 +121,7 @@ class PDO
      * @psalm-taint-sink sql $statement
      *
      * @return int|false
+     * @psalm-ignore-falsable-return
      */
     public function exec(string $statement) {}
 
@@ -137,13 +138,17 @@ class PDO
 
     public function inTransaction(): bool {}
 
-    /** @return string|false */
+    /**
+     * @return string|false
+     * @psalm-ignore-falsable-return
+     */
     public function lastInsertId(?string $name = null) {}
 
     /**
      * @psalm-taint-sink sql $query
      *
      * @return PDOStatement|false
+     * @psalm-ignore-falsable-return
      */
     public function prepare(string $query, array $options = []) {}
 
@@ -153,12 +158,14 @@ class PDO
      * @param PDO::FETCH_* $fetchMode
      * @param int|class-string|object $args
      * @return PDOStatement|false
+     * @psalm-ignore-falsable-return
      */
     public function query(string $query, ?int $fetchMode = null, mixed $args = null, ?array $constructorArgs = null) {}
 
     /**
      * @param self::PARAM_* $type
      * @return string|false
+     * @psalm-ignore-falsable-return
      */
     public function quote(string $string, int $type = PDO::PARAM_STR) {}
 
@@ -242,6 +249,7 @@ class PDOStatement implements Traversable
      * @param PDO::FETCH_* $mode
      * @param int|class-string|callable $args
      * @return array|false
+     * @psalm-ignore-falsable-return
      */
     public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed $args, ?array $constructorArgs = null) {}
 
@@ -259,6 +267,7 @@ class PDOStatement implements Traversable
      * @param class-string<T> $class
      * @param array $ctorArgs
      * @return false|T
+     * @psalm-ignore-falsable-return
      */
     public function fetchObject($class = stdclass::class, array $ctorArgs = []) {}
 
@@ -277,6 +286,7 @@ class PDOStatement implements Traversable
      *     precision: int,
      *     pdo_type: PDO::PARAM_*,
      * }
+     * @psalm-ignore-falsable-return
      */
     public function getColumnMeta(int $column) {}
 
@@ -293,6 +303,7 @@ class PDOStatement implements Traversable
      * @param PDO::FETCH_* $mode
      * @param int|class-string|object $args
      * @return array|false
+     * @psalm-ignore-falsable-return
      */
     public function setFetchMode(int $mode, mixed $args, ?array $constructorArgs = null): bool {}
 

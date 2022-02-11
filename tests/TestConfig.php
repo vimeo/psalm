@@ -21,7 +21,7 @@ class TestConfig extends Config
         parent::__construct();
 
         foreach ($this->php_extensions as $ext => $_enabled) {
-            $this->php_extensions[$ext] = true;
+            $this->php_extensions[$ext] = false;
         }
 
         $this->throw_exception = true;
@@ -69,5 +69,13 @@ class TestConfig extends Config
     public function getProjectDirectories(): array
     {
         return [];
+    }
+
+    /**
+     * @param value-of<self::SUPPORTED_EXTENSIONS> $extension
+     */
+    public function enableExtension(string $extension): void
+    {
+        $this->php_extensions[$extension] = true;
     }
 }

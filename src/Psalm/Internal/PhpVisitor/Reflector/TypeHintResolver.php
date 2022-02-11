@@ -157,11 +157,16 @@ class TypeHintResolver
             }
         }
 
-        $type = Type::parseString(
-            $fq_type_string,
-            $analysis_php_version_id,
-            []
-        );
+        if ($codebase->register_stub_files && $fq_type_string === "mixed") {
+            // Allow using PHP 8 stubs that use `mixed` with PHP 7
+            $type = Type::getMixed();
+        } else {
+            $type = Type::parseString(
+                $fq_type_string,
+                $analysis_php_version_id,
+                []
+            );
+        }
 
         if ($type_string) {
             $atomic_type = $type->getSingleAtomic();

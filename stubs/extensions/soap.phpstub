@@ -94,7 +94,8 @@ function is_soap_fault(mixed $object): bool {}
  * or non-WSDL mode.
  * @link https://php.net/manual/en/class.soapclient.php
  */
-class SoapClient  {
+class SoapClient
+{
     /**
      * @var ?string
      */
@@ -439,7 +440,7 @@ class SoapClient  {
      * option set to <b>FALSE</b>, a SoapFault object will be returned.
      * @since PHP-5.0.1
      */
-    public function __soapCall(string $name, array $args, ?array $options = null, $inputHeaders = null, &$outputHeaders = null): mixed {}
+    public function __soapCall(string $name, array $args, ?array $options = null, $inputHeaders = null, ?array &$outputHeaders = null): mixed {}
 
     /**
      * Returns last SOAP request

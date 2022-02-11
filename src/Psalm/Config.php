@@ -42,7 +42,6 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use ReflectionClass;
 use ReflectionFunctionAbstract;
-use Reflector;
 use SimpleXMLElement;
 use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
@@ -163,6 +162,26 @@ class Config
         'MixedArgumentTypeCoercion',
         'MixedPropertyTypeCoercion',
         'MixedReturnTypeCoercion',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    public const SUPPORTED_EXTENSIONS = [
+        "decimal",
+        "dom",
+        "ds",
+        "geos",
+        "gmp",
+        "mongodb",
+        "mysqli",
+        "pdo",
+        "pdo_mysql",
+        "pdo_pgsql",
+        "pdo_sqlite",
+        "simplexml",
+        "soap",
+        "xdebug",
     ];
 
     /**
@@ -574,22 +593,7 @@ class Config
 
     /**
      * @psalm-readonly-allow-private-mutation
-     * @var array{
-     *     decimal: bool,
-     *     dom: bool,
-     *     ds: bool,
-     *     geos: bool,
-     *     gmp: bool,
-     *     mongodb: bool,
-     *     mysqli: bool,
-     *     pdo: bool,
-     *     pdo_mysql: bool,
-     *     pdo_pgsql: bool,
-     *     pdo_sqlite: bool,
-     *     simplexml: bool,
-     *     soap: bool,
-     *     xdebug: bool,
-     * }
+     * @var array<value-of<self::SUPPORTED_EXTENSIONS>, bool>
      */
     public $php_extensions = [
         "decimal" => false,

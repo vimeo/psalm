@@ -431,7 +431,7 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -574,10 +574,14 @@ class ArrayAccessTest extends TestCase
                 'code' => '<?php
                     $doc = new DOMDocument();
                     $doc->loadXML("<node key=\"value\"/>");
-                    $e = $doc->getElementsByTagName("node")[0];',
+                    $e = $doc->getElementsByTagName("node")[0];
+                ',
                 'assertions' => [
                     '$e' => 'DOMElement|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'getOnArrayAcccess' => [
                 'code' => '<?php
@@ -931,15 +935,27 @@ class ArrayAccessTest extends TestCase
                 'code' => '<?php
                     function foo(SimpleXMLElement $s) : SimpleXMLElement {
                         return $s["a"];
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'simpleXmlArrayFetchChildren' => [
                 'code' => '<?php
                     function iterator(SimpleXMLElement $xml): iterable {
-                        foreach ($xml->children() as $img) {
+                        $children = $xml->children();
+                        assert($children !== null);
+                        foreach ($children as $img) {
                             yield $img["src"] ?? "";
                         }
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'assertOnArrayAccess' => [
                 'code' => '<?php
@@ -1117,7 +1133,7 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1354,6 +1370,9 @@ class ArrayAccessTest extends TestCase
                         if ($b === "hello" || $b === "1") {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'undefinedTKeyedArrayOffset' => [
                 'code' => '<?php

@@ -40,8 +40,8 @@ class ProjectCheckerTest extends TestCase
     /** @var ProjectAnalyzer */
     protected $project_analyzer;
 
-    private const EXPECTED_OUTPUT = "Target PHP version: 8.1 (set by tests) Extensions enabled: dom (unsupported "
-        . "extensions: simplexml, ctype, json, libxml, mbstring, tokenizer)\n"
+    private const EXPECTED_OUTPUT = "Target PHP version: 8.1 (set by tests) Extensions enabled: dom, simplexml "
+        . "(unsupported extensions: ctype, json, libxml, mbstring, tokenizer)\n"
         . "Scanning files...\n"
         . "Analyzing files...\n"
         . "\n"

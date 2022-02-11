@@ -1144,7 +1144,12 @@ class FunctionCallTest extends TestCase
             'countableSimpleXmlElement' => [
                 'code' => '<?php
                     $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><a><b></b><b></b></a>");
-                    echo count($xml);',
+                    echo count($xml);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'countableCallableArray' => [
                 'code' => '<?php

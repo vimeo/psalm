@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Exception;
-use PDOException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -105,7 +104,7 @@ class MethodCallReturnTypeFetcher
                 || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
             )
         ) {
-            if ($premixin_method_id->fq_class_name === PDOException::class) {
+            if ($premixin_method_id->fq_class_name === "PDOException") {
                 return Type::getString();
             } else {
                 return Type::getInt();

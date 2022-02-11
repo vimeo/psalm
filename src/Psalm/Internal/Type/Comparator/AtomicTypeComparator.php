@@ -593,12 +593,10 @@ class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methods->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring'
-                        )
-                    )) {
+                    if ($codebase->methods->methodExists(new MethodIdentifier($input_type_part->value, '__tostring'))
+                        // GMP can cast to string but doesn't actually have __toString
+                        || strtolower($input_type_part->value) === "gmp"
+                    ) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }

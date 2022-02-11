@@ -15,10 +15,13 @@ use function version_compare;
 use const PHP_OS;
 use const PHP_VERSION;
 
+/**
+ * @psalm-require-extends \Psalm\Tests\TestCase
+ */
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     abstract public function providerValidCodeParse(): iterable;
 
@@ -28,6 +31,7 @@ trait ValidCodeAnalysisTestTrait
      * @param string $code
      * @param array<string, string> $assertions
      * @param list<string> $error_levels
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      *
      * @small
      */
@@ -35,7 +39,8 @@ trait ValidCodeAnalysisTestTrait
         $code,
         $assertions = [],
         $error_levels = [],
-        string $php_version = '7.3'
+        string $php_version = '7.3',
+        array $required_extensions = []
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
@@ -44,6 +49,10 @@ trait ValidCodeAnalysisTestTrait
             }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         foreach ($error_levels as $error_level) {

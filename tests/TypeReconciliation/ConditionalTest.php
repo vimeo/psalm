@@ -1532,7 +1532,12 @@ class ConditionalTest extends TestCase
                         }
 
                         if (isset($e->bar)) {}
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'assertArrayOffsetToTraversable' => [
                 'code' => '<?php
@@ -2755,7 +2760,12 @@ class ConditionalTest extends TestCase
 
                     if (!$n) {
                         echo "false";
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'nullIsFalsyEvenInTemplate' => [
                 'code' => '<?php
@@ -2838,7 +2848,12 @@ class ConditionalTest extends TestCase
 
                     if (!$n) {
                         echo "false";
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
         ];
     }

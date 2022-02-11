@@ -66,6 +66,8 @@ class BinaryOperationTest extends TestCase
             '$t' => 'GMP',
         ];
 
+        $this->testConfig->enableExtension('gmp');
+
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
@@ -130,6 +132,8 @@ class BinaryOperationTest extends TestCase
             '$s' => 'Decimal\\Decimal',
             '$t' => 'Decimal\\Decimal',
         ];
+
+        $this->testConfig->enableExtension('decimal');
 
         $context = new Context();
 

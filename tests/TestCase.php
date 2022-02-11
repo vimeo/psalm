@@ -3,7 +3,6 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -39,7 +38,7 @@ class TestCase extends BaseTestCase
     /** @var FakeFileProvider */
     protected $file_provider;
 
-    /** @var Config */
+    /** @var TestConfig */
     protected $testConfig;
 
     public static function setUpBeforeClass(): void
@@ -58,7 +57,7 @@ class TestCase extends BaseTestCase
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
-    protected function makeConfig(): Config
+    protected function makeConfig(): TestConfig
     {
         return new TestConfig();
     }
