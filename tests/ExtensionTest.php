@@ -46,6 +46,26 @@ class ExtensionTest extends TestCase
             ',
             'error_message' => 'UndefinedConstant',
         ];
+
+        // Additional tests that aren't double checked by providerValidCodeParse
+        yield 'SKIPPED-defineFunctionWithSameNameAsExtensionFunction' => [
+            'code' => '<?php
+                function simplexml_load_file(): void {}
+            ',
+            'error_message' => 'DuplicateFunction',
+            'ignored_issues' => [],
+            'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+            'required_extensions' => ['simplexml'],
+        ];
+        yield 'SKIPPED-defineConstantWithSameNameAsExtensionConstant' => [ // https://github.com/vimeo/psalm/issues/7646
+            'code' => '<?php
+                const XML_ELEMENT_NODE = 1;
+            ',
+            'error_message' => 'DuplicateFunction',
+            'ignored_issues' => [],
+            'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+            'required_extensions' => ['dom'],
+        ];
     }
 
     /**
@@ -58,6 +78,9 @@ class ExtensionTest extends TestCase
         // fail. Otherwise, the invalid code test will continue to succeed but won't actually be testing what it's
         // supposed to.
         foreach ($this->providerInvalidCodeParse() as $name => $test) {
+            if (isset($test['required_extensions'])) {
+                continue;
+            }
             yield $name => [
                 'code' => $test['code'],
                 'assertions' => [],
@@ -66,5 +89,16 @@ class ExtensionTest extends TestCase
                 'required_extensions' => ['dom', 'simplexml'],
             ];
         }
+
+        yield 'defineFunctionWithSameNameAsExtensionFunction' => [
+            'code' => '<?php
+                function simplexml_load_file(): void {}
+            ',
+        ];
+        yield 'defineConstantWithSameNameAsExtensionConstant' => [
+            'code' => '<?php
+                const XML_ELEMENT_NODE = 1;
+            ',
+        ];
     }
 }

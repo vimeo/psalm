@@ -3,6 +3,7 @@
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
+use Psalm\Config;
 use ReflectionClass;
 use Throwable;
 
@@ -24,9 +25,15 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
 
     private $fq_trait_name;
 
-    public function __construct(string $fq_trait_name)
+    /**
+     * @var Config
+     */
+    private $config;
+
+    public function __construct(string $fq_trait_name, Config $config)
     {
         $this->fq_trait_name = $fq_trait_name;
+        $this->config = $config;
     }
 
     public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true): ?int
@@ -71,6 +78,10 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
 
         try {
             $reflection_trait = new ReflectionClass($this->fq_trait_name);
+
+            if ($this->config->isReflectionFromSupportedExtension($reflection_trait)) {
+                return null;
+            }
         } catch (Throwable $t) {
             return null;
         }

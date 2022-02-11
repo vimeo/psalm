@@ -994,7 +994,9 @@ class FunctionLikeNodeScanner
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $reflection_function = new ReflectionFunction($function_id);
 
-                    if ($reflection_function->getFileName() !== $this->file_path) {
+                    if ($reflection_function->getFileName() !== $this->file_path
+                        && !$this->config->isReflectionFromSupportedExtension($reflection_function)
+                    ) {
                         IssueBuffer::maybeAdd(
                             new DuplicateFunction(
                                 'Method ' . $function_id . ' has already been defined as a core function',
