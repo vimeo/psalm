@@ -211,6 +211,19 @@ class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureIfCallableNotPure' => [
+                'input' => '<?php
+                    function pure(callable $callable): string{
+                        return $callable();
+                    }',
+                'output' => '<?php
+                    function pure(callable $callable): string{
+                        return $callable();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

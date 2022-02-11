@@ -17,6 +17,9 @@
       <code>$matches[0]</code>
       <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
+    <PossiblyUnusedProperty occurrences="1">
+      <code>$analysis_php_version_id</code>
+    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -316,6 +319,11 @@
       <code>array_keys($template_type_map[$param_name])[0]</code>
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Issue/MethodSignatureMustProvideReturnType.php">
+    <UnusedClass occurrences="1">
+      <code>MethodSignatureMustProvideReturnType</code>
+    </UnusedClass>
   </file>
   <file src="src/Psalm/Node/Stmt/VirtualClass.php">
     <PropertyNotSetInConstructor occurrences="1">

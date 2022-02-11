@@ -886,14 +886,7 @@ class MethodComparator
                 $implementer_signature_return_type,
                 $guide_signature_return_type
             )
-            : (!$implementer_signature_return_type
-                && $guide_signature_return_type->isMixed()
-                ? false
-                : UnionTypeComparator::isContainedByInPhp(
-                    $implementer_signature_return_type,
-                    $guide_signature_return_type
-                )
-            );
+            : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
             if ($codebase->analysis_php_version_id >= 8_00_00

@@ -2,8 +2,13 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 class ConstantTest extends TestCase
 {
@@ -41,6 +46,42 @@ class ConstantTest extends TestCase
 
     //     $this->analyzeFile($file_path, new Context());
     // }
+
+    public function testUseObjectConstant(): void
+    {
+        $file1 = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                namespace Foo;
+
+                final class Bar {}
+                const bar = new Bar();
+            '
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                namespace Baz;
+
+                use Foo\Bar;
+                use const Foo\bar;
+
+                require("tests/file1.php");
+
+                function bar(): Bar
+                {
+                    return bar;
+                }
+            '
+        );
+
+        $this->analyzeFile($file1, new Context());
+        $this->analyzeFile($file2, new Context());
+    }
 
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>, php_version?: string}>

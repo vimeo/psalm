@@ -433,6 +433,18 @@ class SimpleTypeInferer
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\New_) {
+            $resolved_class_name = $stmt->class->getAttribute('resolvedName');
+
+            if (!is_string($resolved_class_name)) {
+                return null;
+            }
+
+            return new Union([
+                new Type\Atomic\TNamedObject($resolved_class_name)
+            ]);
+        }
+
         return null;
     }
 

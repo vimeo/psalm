@@ -798,6 +798,11 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'unknownFirstClassCallable' => [
+                'code' => '<?php
+                    /** @psalm-suppress UndefinedFunction */
+                    unknown(...);',
+            ],
         ];
     }
 

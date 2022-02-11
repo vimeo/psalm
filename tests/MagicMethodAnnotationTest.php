@@ -934,7 +934,7 @@ class MagicMethodAnnotationTest extends TestCase
                     /** @var D<B> $d */
                     $d = new D();
                     $e = $d->get();',
-                [
+                'assertions' => [
                     '$b' => 'B',
                     '$c' => 'B',
                     '$e' => 'B',
@@ -1120,6 +1120,29 @@ class MagicMethodAnnotationTest extends TestCase
                     class C {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'magicParentCallShouldNotPolluteContext' => [
+                'code' => '<?php
+                    /**
+                     * @method baz(): Foo
+                     */
+                    class Foo
+                    {
+                        public function __call()
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Bar extends Foo
+                    {
+                        public function baz(): Foo
+                        {
+                            parent::baz();
+                            return $__tmp_parent_var__;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ]
         ];
     }
 

@@ -15941,7 +15941,7 @@ return [
     'trader_wclprice' => ['array', 'high'=>'array', 'low'=>'array', 'close'=>'array'],
     'trader_willr' => ['array', 'high'=>'array', 'low'=>'array', 'close'=>'array', 'timePeriod='=>'int'],
     'trader_wma' => ['array', 'real'=>'array', 'timePeriod='=>'int'],
-    'trait_exists' => ['?bool', 'trait'=>'string', 'autoload='=>'bool'],
+    'trait_exists' => ['bool', 'trait'=>'string', 'autoload='=>'bool'],
     'transliterator_create' => ['?Transliterator', 'id'=>'string', 'direction='=>'int'],
     'transliterator_create_from_rules' => ['?Transliterator', 'rules'=>'string', 'direction='=>'int'],
     'transliterator_create_inverse' => ['Transliterator', 'transliterator'=>'Transliterator'],
