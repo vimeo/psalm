@@ -764,7 +764,6 @@ class Config
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
 
-        /** @var DOMElement|null */
         $psalm_node = $psalm_nodes->item(0);
 
         if (!$psalm_node) {
