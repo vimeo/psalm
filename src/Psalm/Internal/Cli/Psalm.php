@@ -246,7 +246,7 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::useThreads($options, $config, $in_ci, $config);
+        $threads = self::detectThreads($options, $config, $in_ci);
 
         self::emitMacPcreWarning($options, $threads);
 
@@ -1171,26 +1171,5 @@ final class Psalm
                 )
             );
         }
-    }
-
-    private static function useThreads(array $options, bool $in_ci, Config $config): int
-    {
-        $threads = self::detectThreads($options, $in_ci);
-
-        if ($config->threads && $config->threads<$threads) {
-            $threads = $config->threads;
-        }
-
-        return $threads;
-    }
-
-    private static function useThreads(array $options, bool $in_ci, Config $config): int{
-        $threads = self::detectThreads($options, $in_ci);
-
-        if ($config->threads && $config->threads<$threads) {
-            $threads = $config->threads;
-        }
-
-        return $threads;
     }
 }
