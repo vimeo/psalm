@@ -38,26 +38,27 @@ class VersionDependentTest extends TestCase
                     public const STRING_7_INT_8 = 1;
 
                     /**
-                     * @since PHP-8.0
                      * @var int
+                     * @since 3.0 (library version)
+                     * @since PHP-8.0 Some extra comment about something
                      */
                     public $exists_after_8 = 1;
 
                     /**
-                     * @since PHP-7.0
                      * @var string
+                     * @since PHP-7.0
                      */
                     public $string_7_int_8 = "";
 
                     /**
-                     * @since PHP-8.0
                      * @var int
+                     * @since PHP-8.0
                      */
                     public $string_7_int_8 = 1;
 
                     /**
-                     * @since PHP-8.0
                      * @var int
+                     * @since PHP-8.0
                      */
                     public static $static_exists_after_8 = 1;
 
@@ -82,6 +83,7 @@ class VersionDependentTest extends TestCase
 
                 interface Foo {}
 
+                /** @since 3.0 (library version) */
                 class ClassImplementsFooAfter8 {}
 
                 /** @since PHP-8.0 */
