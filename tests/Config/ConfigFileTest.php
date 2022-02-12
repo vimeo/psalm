@@ -175,9 +175,7 @@ class ConfigFileTest extends TestCase
     {
         $noPlugins = trim('
             <?xml version="1.0"?>
-            <psalm
-                totallyTyped="false"
-            >
+            <psalm>
                 <plugins>
                     <pluginClass class="d\e\f"/>
                 </plugins>
@@ -186,9 +184,7 @@ class ConfigFileTest extends TestCase
 
         $abcEnabled = trim('
             <?xml version="1.0"?>
-            <psalm
-                totallyTyped="false"
-            >
+            <psalm>
                 <plugins>
                     <pluginClass class="a\b\c"/>
                     <pluginClass class="d\e\f"/>
