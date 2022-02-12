@@ -61,6 +61,7 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
+use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
