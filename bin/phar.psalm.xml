@@ -2,7 +2,7 @@
 <psalm
     name="Psalm for Psalm"
     useDocblockTypes="true"
-    totallyTyped="true"
+    errorLevel=1
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
     throwExceptionOnError="0"
