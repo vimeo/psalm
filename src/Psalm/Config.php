@@ -814,7 +814,9 @@ class Config
         $deprecated_attributes = [
             'allowCoercionFromStringToClassConst',
             'allowPhpStormGenerics',
-            'forbidEcho'
+            'forbidEcho',
+            'loadXdebugStub',
+            'totallyTyped'
         ];
 
         $deprecated_elements = [
