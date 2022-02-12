@@ -18,6 +18,7 @@
         "ext-SimpleXML": "*",
         "ext-ctype": "*",
         "ext-dom": "*",
+        "ext-filter": "*",
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
