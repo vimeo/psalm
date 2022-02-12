@@ -7,7 +7,7 @@ use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
-use DomElement;
+use DOMElement;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -764,7 +764,6 @@ class Config
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
 
-        /** @var DomElement|null */
         $psalm_node = $psalm_nodes->item(0);
 
         if (!$psalm_node) {
@@ -853,7 +852,7 @@ class Config
     }
 
     private static function processDeprecatedElement(
-        DomElement $deprecated_element_xml,
+        DOMElement $deprecated_element_xml,
         string $file_contents,
         self $config,
         string $config_path
