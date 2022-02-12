@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -15,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -27,6 +29,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
 use function in_array;
 use function preg_match;
 use function preg_quote;
@@ -56,6 +59,7 @@ class TernaryAnalyzer
                 $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
             );
 
+            // this is the context for stuff that happens within the first operand of the ternary
             $if_context = $if_conditional_scope->if_context;
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
@@ -64,18 +68,20 @@ class TernaryAnalyzer
             return false;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        $cond_id = spl_object_id($stmt->cond);
+        $cond_object_id = spl_object_id($stmt->cond);
 
         $if_clauses = FormulaGenerator::getFormula(
-            $cond_id,
-            $cond_id,
+            $cond_object_id,
+            $cond_object_id,
             $stmt->cond,
             $context->self,
             $statements_analyzer,
             $codebase
         );
+
+        if (count($if_clauses) > 200) {
+            $if_clauses = [];
+        }
 
         $mixed_var_ids = [];
 
@@ -95,7 +101,7 @@ class TernaryAnalyzer
             /**
              * @return Clause
              */
-            function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
+            function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
                 $keys = array_keys($c->possibilities);
 
                 $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -103,7 +109,7 @@ class TernaryAnalyzer
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
                         if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_id, $cond_id, true);
+                            return new Clause([], $cond_object_id, $cond_object_id, true);
                         }
                     }
                 }
@@ -112,6 +118,8 @@ class TernaryAnalyzer
             },
             $if_clauses
         );
+
+        $entry_clauses = $context->clauses;
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
@@ -122,34 +130,58 @@ class TernaryAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $ternary_clauses = array_merge($context->clauses, $if_clauses);
+        $if_clauses = Algebra::simplifyCNF($if_clauses);
+
+        $ternary_context_clauses = array_merge($entry_clauses, $if_clauses);
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
 
-            $ternary_clauses = array_values(
+            $ternary_context_clauses = array_values(
                 array_filter(
-                    $ternary_clauses,
+                    $ternary_context_clauses,
                     fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
+
+            if (count($if_context->clauses) === 1
+                && $if_context->clauses[0]->wedge
+                && !$if_context->clauses[0]->possibilities
+            ) {
+                $if_context->clauses = [];
+                $if_context->reconciled_expression_clauses = [];
+            }
         }
 
-        $ternary_clauses = Algebra::simplifyCNF($ternary_clauses);
+        try {
+            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+        } catch (ComplicatedExpressionException $e) {
+            try {
+                $if_scope->negated_clauses = FormulaGenerator::getFormula(
+                    $cond_object_id,
+                    $cond_object_id,
+                    new VirtualBooleanNot($stmt->cond),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    false
+                );
+            } catch (ComplicatedExpressionException $e) {
+                $if_scope->negated_clauses = [];
+            }
+        }
 
-        $negated_clauses = Algebra::negateFormula($if_clauses);
-
-        $negated_if_types = Algebra::getTruthsFromFormula(
+        $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $negated_clauses)
+                array_merge($context->clauses, $if_scope->negated_clauses)
             )
         );
 
         $active_if_types = [];
 
         $reconcilable_if_types = Algebra::getTruthsFromFormula(
-            $ternary_clauses,
-            $cond_id,
+            $ternary_context_clauses,
+            $cond_object_id,
             $cond_referenced_var_ids,
             $active_if_types
         );
@@ -189,16 +221,16 @@ class TernaryAnalyzer
         $t_else_context->clauses = Algebra::simplifyCNF(
             array_merge(
                 $t_else_context->clauses,
-                $negated_clauses
+                $if_scope->negated_clauses
             )
         );
 
-        if ($negated_if_types) {
-            $changed_var_ids = [];
+        $changed_var_ids = [];
 
-            $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-                $negated_if_types,
-                $negated_if_types,
+        if ($if_scope->negated_types) {
+            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
+                $if_scope->negated_types,
+                $if_scope->negated_types,
                 $t_else_context->vars_in_scope,
                 $t_else_context->references_in_scope,
                 $changed_var_ids,
@@ -209,7 +241,7 @@ class TernaryAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );
 
-            $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
+            $t_else_context->vars_in_scope = $else_vars_reconciled;
 
             $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
         }
