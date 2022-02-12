@@ -1111,18 +1111,6 @@ class Config
             }
 
             $config->level = $attribute_text;
-        } elseif (isset($config_xml['totallyTyped'])) {
-            $totally_typed = (string) $config_xml['totallyTyped'];
-
-            if ($totally_typed === 'true' || $totally_typed === '1') {
-                $config->level = 1;
-            } else {
-                $config->level = 2;
-
-                if ($config->show_mixed_issues === null) {
-                    $config->show_mixed_issues = false;
-                }
-            }
         } else {
             $config->level = 2;
         }

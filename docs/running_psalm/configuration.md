@@ -58,15 +58,7 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
 
 #### totallyTyped
 
-```xml
-<psalm
-  totallyTyped="[bool]"
-/>
-```
-
-\(Deprecated\) Setting `totallyTyped` to `"true"` is equivalent to setting `errorLevel` to `"1"`. Setting `totallyTyped` to `"false"` is equivalent to setting `errorLevel` to `"2"` and `reportMixedIssues` to `"false"`
-
-
+\(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
 
 #### resolveFromConfigFile
 
