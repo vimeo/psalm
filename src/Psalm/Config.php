@@ -1790,11 +1790,22 @@ class Config
 
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
+        $level = null;
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+            $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+
+            if ($level === null && $issue_type === 'UndefinedFunction') {
+                // undefined functions trigger global namespace fallback
+                // so we should also check reporting levels for the symbol in global scope
+                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                if ($root_function_id !== $function_id) {
+                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
+                    $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
+                }
+            }
         }
 
-        return null;
+        return $level;
     }
 
     public function getReportingLevelForArgument(string $issue_type, string $function_id): ?string
