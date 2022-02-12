@@ -58,7 +58,9 @@
     },
     "suggest": {
         "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
-        "ext-curl": "In order to send data to shepherd"
+        "ext-curl": "In order to send data to shepherd",
+        "ext-pcntl": "In order to run psalm-language-server",
+        "ext-posix": "In order to run psalm-language-server"
     },
     "config": {
         "allow-plugins": {
