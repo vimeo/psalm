@@ -23,7 +23,6 @@
 /psalm.xml.dist export-ignore
 /README.md export-ignore
 /scoper.inc.php export-ignore
-/.scrutinizer.yml export-ignore
 /tests export-ignore
 /vendor-bin export-ignore
 
