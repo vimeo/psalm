@@ -109,6 +109,13 @@ class Context
     public $inside_assignment = false;
 
     /**
+     * Whether or not we're inside a try block.
+     *
+     * @var bool
+     */
+    public $inside_try = false;
+
+    /**
      * @var null|CodeLocation
      */
     public $include_location;
