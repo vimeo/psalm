@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -334,6 +335,11 @@ class TypeCombiner
         }
 
         if ($combination->named_object_types !== null) {
+            foreach ($combination->value_types as $key => $atomic_type) {
+                if ($atomic_type instanceof TEnumCase && isset($combination->named_object_types[$atomic_type->value])) {
+                    unset($combination->value_types[$key]);
+                }
+            }
             $combination->value_types += $combination->named_object_types;
         }
 
