@@ -79,7 +79,8 @@ class MatchAnalyzer
                 && $stmt->cond->name instanceof PhpParser\Node\Name
                 && ($stmt->cond->name->parts === ['get_class']
                     || $stmt->cond->name->parts === ['gettype']
-                    || $stmt->cond->name->parts === ['get_debug_type'])
+                    || $stmt->cond->name->parts === ['get_debug_type']
+                    || $stmt->cond->name->parts === ['count'])
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];
