@@ -16,7 +16,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -162,6 +161,14 @@ class NegatedAssertionReconciler extends Reconciler
             return $existing_var_type;
         }
 
+        if (!$is_equality && $assertion_type instanceof TNamedObject) {
+            foreach ($existing_var_type->getAtomicTypes() as $key => $type) {
+                if ($type instanceof TEnumCase && $type->value === $assertion_type->value) {
+                    $existing_var_type->removeType($key);
+                }
+            }
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assertion_type instanceof TNamedObject
@@ -291,7 +298,9 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return new Union([new TEmptyMixed]);
+            return $existing_var_type->from_docblock
+                ? Type::getMixed()
+                : Type::getNever();
         }
 
         return $existing_var_type;
