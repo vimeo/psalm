@@ -86,9 +86,11 @@ class TryAnalyzer
 
         $old_referenced_var_ids = $try_context->referenced_var_ids;
 
+        $context->inside_try = true;
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
+        $context->inside_try = false;
 
         if ($try_context->finally_scope) {
             foreach ($context->vars_in_scope as $var_id => $type) {

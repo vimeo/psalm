@@ -2436,6 +2436,28 @@ class UnusedVariableTest extends TestCase
                         $a = false;
                     }'
             ],
+            'usedInCatchIsAlwaysUsedInTry' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        $step = 1;
+                        $step = 2;
+                    } catch (Throwable $_) {
+                        echo $step;
+                    }
+                ',
+            ],
+            'usedInFinallyIsAlwaysUsedInTry' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        $step = 1;
+                        $step = 2;
+                    } finally {
+                        echo $step;
+                    }
+                ',
+            ],
         ];
     }
 
