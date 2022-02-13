@@ -2458,6 +2458,21 @@ class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'usedInFinallyIsAlwaysUsedInTryWithNestedTry' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        try {
+                            $step = 1;
+                        } finally {
+                        }
+                        $step = 2;
+                        $step = 3;
+                    } finally {
+                        echo $step;
+                    }
+                ',
+            ],
         ];
     }
 
@@ -3437,6 +3452,49 @@ class UnusedVariableTest extends TestCase
                         takesArrayOfString($arr);
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, parent type array{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
+            ],
+            'warnAboutUnusedVariableInTryReassignedInCatch' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        $step = 1;
+                        $step = 2;
+                    } catch (Throwable $_) {
+                        $step = 3;
+                        echo $step;
+                    }
+                ',
+                'error_message' => 'UnusedVariable',
+            ],
+            'warnAboutUnusedVariableInTryReassignedInFinally' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        $step = 1;
+                        $step = 2;
+                    } finally {
+                        $step = 3;
+                        echo $step;
+                    }
+                ',
+                'error_message' => 'UnusedVariable',
+            ],
+            'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
+                '<?php
+                    $step = 0;
+                    try {
+                        $step = 1; // Unused
+                        $step = 2;
+                        try {
+                            $step = 3;
+                            $step = 4;
+                        } finally {
+                            echo $step;
+                        }
+                    } finally {
+                    }
+                ',
+                'error_message' => 'UnusedVariable',
             ],
         ];
     }
