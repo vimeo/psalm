@@ -298,7 +298,9 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return Type::getNever();
+            return $existing_var_type->from_docblock
+                ? Type::getMixed()
+                : Type::getNever();
         }
 
         return $existing_var_type;
