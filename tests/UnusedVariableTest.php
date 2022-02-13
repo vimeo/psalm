@@ -2463,7 +2463,7 @@ class UnusedVariableTest extends TestCase
                     }'
             ],
             'usedInCatchIsAlwaysUsedInTry' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         $step = 1;
@@ -2474,7 +2474,7 @@ class UnusedVariableTest extends TestCase
                 ',
             ],
             'usedInFinallyIsAlwaysUsedInTry' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         $step = 1;
@@ -2485,7 +2485,7 @@ class UnusedVariableTest extends TestCase
                 ',
             ],
             'usedInFinallyIsAlwaysUsedInTryWithNestedTry' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         try {
@@ -3568,7 +3568,7 @@ class UnusedVariableTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, parent type array{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
             ],
             'warnAboutUnusedVariableInTryReassignedInCatch' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         $step = 1;
@@ -3581,7 +3581,7 @@ class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
             ],
             'warnAboutUnusedVariableInTryReassignedInFinally' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         $step = 1;
@@ -3594,7 +3594,7 @@ class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
             ],
             'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
-                '<?php
+                'code' => '<?php
                     $step = 0;
                     try {
                         $step = 1; // Unused

@@ -2286,7 +2286,7 @@ class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintEscapedInTryMightNotWork' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-taint-escape html */
                     function escapeHtml(string $arg): string
                     {
