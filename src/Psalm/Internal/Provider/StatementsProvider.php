@@ -21,7 +21,7 @@ use Psalm\Progress\VoidProgress;
 use Throwable;
 
 use function abs;
-use function array_flip;
+use function array_fill_keys;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
@@ -216,15 +216,8 @@ class StatementsProvider
                         $file_contents
                     );
 
-                $unchanged_members = array_map(
-                    fn(int $_): bool => true,
-                    array_flip($unchanged_members)
-                );
-
-                $unchanged_signature_members = array_map(
-                    fn(int $_): bool => true,
-                    array_flip($unchanged_signature_members)
-                );
+                $unchanged_members = array_fill_keys($unchanged_members, true);
+                $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
 
                 $file_path_hash = md5($file_path);
 
@@ -239,15 +232,7 @@ class StatementsProvider
                     $changed_members
                 );
 
-                $changed_members = array_map(
-                    /**
-                     * @param int $_
-                     *
-                     * @return bool
-                     */
-                    fn($_): bool => true,
-                    array_flip($changed_members)
-                );
+                $changed_members = array_fill_keys($changed_members, true);
 
                 if (isset($this->unchanged_members[$file_path])) {
                     $this->unchanged_members[$file_path] = array_intersect_key(
