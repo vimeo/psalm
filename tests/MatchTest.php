@@ -82,6 +82,22 @@ class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
+            'MatchWithCount' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-array
+                     */
+                    function test(array $array): array
+                    {
+                        return match (\count($array)) {
+                            0 => throw new \InvalidArgumentException,
+                            default => $array,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
         ];
     }
 
