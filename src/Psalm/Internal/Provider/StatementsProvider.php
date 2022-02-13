@@ -155,10 +155,6 @@ class StatementsProvider
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 
-            if ($existing_statements && !$existing_statements[0] instanceof PhpParser\Node\Stmt) {
-                $existing_statements = null;
-            }
-
             $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
 
             // this happens after editing temporary file
