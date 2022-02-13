@@ -1382,7 +1382,7 @@ return [
     'Error::getTrace' => ['list<array<string,mixed>>'],
     'Error::getTraceAsString' => ['string'],
     'ErrorException::__clone' => ['void'],
-    'ErrorException::__construct' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'lineno='=>'int', 'previous='=>'?Throwable|?ErrorException'],
+    'ErrorException::__construct' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable|?ErrorException'],
     'ErrorException::__toString' => ['string'],
     'ErrorException::getCode' => ['int'],
     'ErrorException::getFile' => ['string'],
