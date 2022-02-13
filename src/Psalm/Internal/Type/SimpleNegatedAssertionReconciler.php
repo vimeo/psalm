@@ -494,7 +494,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -636,7 +638,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -704,7 +708,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -758,7 +764,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 2;
 
-            return Type::getNever();
+            return $existing_var_type->from_docblock
+                ? Type::getMixed()
+                : Type::getNever();
         }
 
         if (!$did_remove_type) {
@@ -974,7 +982,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1077,7 +1087,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1169,7 +1181,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1271,7 +1285,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1368,7 +1384,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1474,7 +1492,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1577,7 +1597,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1645,7 +1667,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
