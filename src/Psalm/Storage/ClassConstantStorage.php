@@ -59,6 +59,11 @@ final class ClassConstantStorage
     public $deprecated = false;
 
     /**
+     * @var bool
+     */
+    public $final = false;
+
+    /**
      * @var list<AttributeStorage>
      */
     public $attributes = [];

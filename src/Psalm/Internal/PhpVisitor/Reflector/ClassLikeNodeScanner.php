@@ -989,7 +989,7 @@ class ClassLikeNodeScanner
             $extended_type_parameters = [];
 
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
-            
+
             foreach ($atomic_type->type_params as $type_param) {
                 $extended_type_parameters[] = $type_param;
             }
@@ -1340,6 +1340,7 @@ class ClassLikeNodeScanner
             }
 
             $constant_storage->description = $description;
+            $constant_storage->final = $stmt->isFinal();
 
             foreach ($stmt->attrGroups as $attr_group) {
                 foreach ($attr_group->attrs as $attr) {

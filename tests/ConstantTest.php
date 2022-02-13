@@ -1879,9 +1879,57 @@ class ConstantTest extends TestCase
                         public const BAR="";
                     }
                 ',
-                'error_message' => "LessSpecificClassConstantType",
+                'error_message' => "InvalidClassConstantType",
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'overrideFinalClassConstFromExtendedClass' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        final public const BAR="baz";
+                    }
+
+                    class Baz extends Foo
+                    {
+                        /** @var string */
+                        public const BAR="foobar";
+                    }
+                ',
+                'error_message' => "OverriddenFinalConstant",
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'overrideFinalClassConstFromImplementedInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        /** @var string */
+                        final public const BAR="baz";
+                    }
+
+                    class Baz implements Foo
+                    {
+                        /** @var string */
+                        public const BAR="foobar";
+                    }
+                ',
+                'error_message' => "OverriddenFinalConstant",
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'finalConstantIsIllegalBefore8.1' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var string */
+                        final public const BAR="baz";
+                    }
+                ',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -23,11 +23,14 @@ use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InvalidClassConstantType;
 use Psalm\Issue\InvalidConstantAssignmentValue;
 use Psalm\Issue\LessSpecificClassConstantType;
 use Psalm\Issue\NonStaticSelfCall;
+use Psalm\Issue\OverriddenFinalConstant;
 use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassConstantStorage;
@@ -721,18 +724,23 @@ class ClassConstAnalyzer
         Codebase $codebase
     ): void {
         foreach ($class_storage->constants as $const_name => $const_storage) {
-            // Check covariance
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
                 $class_storage,
                 $const_storage,
                 $const_name,
                 $codebase
             );
+
+            $type_location = $const_storage->location ?? $const_storage->stmt_location;
+            if ($type_location === null) {
+                continue;
+            }
+
             if ($parent_const_storage !== null) {
                 assert($parent_classlike_storage !== null);
-                $location = $const_storage->type_location ?? $const_storage->stmt_location;
-                if ($location !== null
-                    && $const_storage->type !== null
+
+                // Check covariance
+                if ($const_storage->type !== null
                     && $parent_const_storage->type !== null
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
@@ -740,14 +748,60 @@ class ClassConstAnalyzer
                         $parent_const_storage->type
                     )
                 ) {
+                    if (UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $parent_const_storage->type,
+                        $const_storage->type,
+                    )) {
+                        // Contravariant
+                        IssueBuffer::maybeAdd(
+                            new LessSpecificClassConstantType(
+                                "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
+                                    . "{$const_name} is more general than the type "
+                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "{$parent_classlike_storage->name}::{$const_name}",
+                                $type_location,
+                                "{$class_storage->name}::{$const_name}"
+                            ),
+                            $const_storage->suppressed_issues
+                        );
+                    } else {
+                        // Completely different
+                        IssueBuffer::maybeAdd(
+                            new InvalidClassConstantType(
+                                "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
+                                    . "{$const_name} does not satisfy the type "
+                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "{$parent_classlike_storage->name}::{$const_name}",
+                                $type_location,
+                                "{$class_storage->name}::{$const_name}"
+                            ),
+                            $const_storage->suppressed_issues
+                        );
+                    }
+                }
+
+                // Check overridden final
+                if ($parent_const_storage->final) {
                     IssueBuffer::maybeAdd(
-                        new LessSpecificClassConstantType(
-                            "The type '{$const_storage->type->getId()}' for {$class_storage->name}::"
-                                . "{$const_name} is more general than the type "
-                                . "'{$parent_const_storage->type->getId()}' inherited from "
-                                . "{$parent_classlike_storage->name}::{$const_name}",
-                            $location,
+                        new OverriddenFinalConstant(
+                            "{$const_name} cannot be overridden because it is marked as final in "
+                                . $parent_classlike_storage->name,
+                            $type_location,
                             "{$class_storage->name}::{$const_name}"
+                        ),
+                        $const_storage->suppressed_issues
+                    );
+                }
+            }
+
+            if ($const_storage->stmt_location !== null) {
+                // Check final in PHP < 8.1
+                if ($codebase->analysis_php_version_id < 8_01_00 && $const_storage->final) {
+                    IssueBuffer::maybeAdd(
+                        new ParseError(
+                            "Class constants cannot be marked final before PHP 8.1",
+                            $const_storage->stmt_location,
                         ),
                         $const_storage->suppressed_issues
                     );
