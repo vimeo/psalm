@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -806,7 +807,9 @@ class SimpleAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? new Union([new TEmptyMixed()])
+            : Type::getNever();
     }
 
     /**
@@ -899,7 +902,7 @@ class SimpleAssertionReconciler extends Reconciler
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return $existing_var_type->from_docblock
-            ? Type::getMixed()
+            ? new Union([new TEmptyMixed()])
             : Type::getNever();
     }
 
@@ -995,7 +998,7 @@ class SimpleAssertionReconciler extends Reconciler
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return $existing_var_type->from_docblock
-            ? Type::getMixed()
+            ? new Union([new TEmptyMixed()])
             : Type::getNever();
     }
 
@@ -1471,7 +1474,9 @@ class SimpleAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1532,7 +1537,9 @@ class SimpleAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -1574,7 +1581,9 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return Type::getMixed();
+            return $existing_var_type->from_docblock
+                ? Type::getMixed()
+                : Type::getNever();
         }
 
         return $intersection;
@@ -2325,7 +2334,9 @@ class SimpleAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getMixed();
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
     }
 
     /**
@@ -2544,7 +2555,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($matched_class_constant_types === []) {
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
-            return Type::getMixed();
+            return Type::getNever();
         }
 
         return TypeCombiner::combine($matched_class_constant_types, $codebase);
