@@ -256,7 +256,7 @@ return [
         'client_info' => 'string',
         'client_version' => 'int',
         'connect_errno' => 'int',
-        'connect_error' => 'string',
+        'connect_error' => '?string',
         'errno' => 'int',
         'error' => 'string',
         'error_list' => 'array',

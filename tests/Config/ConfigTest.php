@@ -355,6 +355,36 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
+    public function testGlobalUndefinedFunctionSuppression(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <UndefinedFunction>
+                            <errorLevel type="suppress">
+                                <referencedFunction name="zzz"/>
+                            </errorLevel>
+                        </UndefinedFunction>
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFunction('UndefinedFunction', 'Some\Namespace\zzz')
+        );
+    }
+
     public function testMultipleIssueHandlers(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
