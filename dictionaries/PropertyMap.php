@@ -366,7 +366,7 @@ return [
     ],
     'pdoexception' => [
         'errorinfo' => 'array',
-        'code' => 'string',
+        'code' => 'int|string',
     ],
     'domnode' => [
         'nodeName' => 'string',
