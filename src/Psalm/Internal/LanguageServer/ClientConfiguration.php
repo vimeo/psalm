@@ -105,7 +105,7 @@ class ClientConfiguration
     public $onchangeLineLimit;
 
     public function __construct(
-        bool $hideWarnings = null,
+        bool $hideWarnings = true,
         bool $provideCompletion = null,
         bool $provideDefinition = null,
         bool $provideHover = null,

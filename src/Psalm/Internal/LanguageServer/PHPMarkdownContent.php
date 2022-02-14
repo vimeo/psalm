@@ -9,11 +9,18 @@ use LanguageServerProtocol\MarkupKind;
 
 class PHPMarkdownContent extends MarkupContent
 {
-    public function __construct(string $title, string $code, ?string $description = '')
+    public function __construct(string $code, ?string $title = null, ?string $description = null)
     {
+        $markdown = '';
+        if ($title !== null) {
+            $markdown = "**$title**\n\n$markdown";
+        }
+        if ($description !== null) {
+            $markdown = "$description\n$markdown";
+        }
         parent::__construct(
             MarkupKind::MARKDOWN,
-            "**$title**\n\n$description\n```php\n<?php\n$code\n```"
+            "$markdown```php\n<?php\n$code\n```"
         );
     }
 }

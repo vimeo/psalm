@@ -262,8 +262,6 @@ class TextDocument
             return new Success(null);
         }
 
-        $this->server->logDebug('hover', ['reference' => $reference]);
-
         try {
             $markup = $this->codebase->getMarkupContentForSymbol($reference);
         } catch (UnexpectedValueException $e) {

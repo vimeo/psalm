@@ -10,12 +10,13 @@ use LanguageServerProtocol\Command;
 use LanguageServerProtocol\CompletionItem;
 use LanguageServerProtocol\CompletionItemKind;
 use LanguageServerProtocol\InsertTextFormat;
-use LanguageServerProtocol\MarkupContent;
 use LanguageServerProtocol\ParameterInformation;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
+use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Codebase as PsalmCodebase;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -26,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -33,9 +35,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
-use Psalm\Type;
-use Psalm\CodeLocation\Raw;
-use Psalm\CodeLocation;
 use ReflectionProperty;
 use UnexpectedValueException;
 
@@ -126,9 +125,9 @@ class Codebase extends PsalmCodebase
      */
     public function getMarkupContentForSymbol(Reference $reference): ?PHPMarkdownContent
     {
+        //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
             return new PHPMarkdownContent(
-                '?1',
                 preg_replace('/^[^:]*:/', '', $reference->symbol)
             );
         }
@@ -151,8 +150,8 @@ class Codebase extends PsalmCodebase
                 $storage = $this->methods->getStorage($declaring_method_id);
 
                 return new PHPMarkdownContent(
-                    "{$storage->defining_fqcln}::{$storage->cased_name}",
                     $storage->getHoverMarkdown(),
+                    "{$storage->defining_fqcln}::{$storage->cased_name}",
                     $storage->description
                 );
             }
@@ -164,8 +163,8 @@ class Codebase extends PsalmCodebase
                 $storage = $this->properties->getStorage($reference->symbol);
 
                 return new PHPMarkdownContent(
-                    $reference->symbol,
                     "{$storage->getInfo()} {$symbol_name}",
+                    $reference->symbol,
                     $storage->description
                 );
             }
@@ -183,8 +182,8 @@ class Codebase extends PsalmCodebase
 
             //Class Constant
             return new PHPMarkdownContent(
-                $fq_classlike_name.'::'.$const_name,
                 $class_constants[$const_name]->getHoverMarkdown($const_name),
+                $fq_classlike_name.'::'.$const_name,
                 $class_constants[$const_name]->description
             );
         }
@@ -198,8 +197,8 @@ class Codebase extends PsalmCodebase
                 $function_storage = $file_storage->functions[$function_id];
 
                 return new PHPMarkdownContent(
-                    $function_id,
                     $function_storage->getHoverMarkdown(),
+                    $function_id,
                     $function_storage->description
                 );
             }
@@ -211,8 +210,8 @@ class Codebase extends PsalmCodebase
             $function = $this->functions->getStorage(null, $function_id);
 
             return new PHPMarkdownContent(
-                $function_id,
                 $function->getHoverMarkdown(),
+                $function_id,
                 $function->description
             );
         }
@@ -222,8 +221,8 @@ class Codebase extends PsalmCodebase
             $type = VariableFetchAnalyzer::getGlobalType($reference->symbol);
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
-                    $reference->symbol,
-                    (string) $type
+                    (string) $type,
+                    $reference->symbol
                 );
             }
         }
@@ -231,8 +230,8 @@ class Codebase extends PsalmCodebase
         try {
             $storage = $this->classlike_storage_provider->get($reference->symbol);
             return new PHPMarkdownContent(
-                $storage->name,
                 ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
+                $storage->name,
                 $storage->description
             );
         } catch (InvalidArgumentException $e) {
@@ -252,8 +251,8 @@ class Codebase extends PsalmCodebase
             if (isset($namespace_constants[$const_name])) {
                 $type = $namespace_constants[$const_name];
                 return new PHPMarkdownContent(
-                    $reference->symbol,
-                    $reference->symbol . ' ' . $type
+                    $reference->symbol . ' ' . $type,
+                    $reference->symbol
                 );
             }
         } else {
@@ -261,8 +260,8 @@ class Codebase extends PsalmCodebase
             // ?
             if (isset($file_storage->constants[$reference->symbol])) {
                 return new PHPMarkdownContent(
-                    $reference->symbol,
-                    'const' . $reference->symbol . ' ' . $file_storage->constants[$reference->symbol]
+                    'const' . $reference->symbol . ' ' . $file_storage->constants[$reference->symbol],
+                    $reference->symbol
                 );
             }
             $type = ConstFetchAnalyzer::getGlobalConstType($this, $reference->symbol, $reference->symbol);
@@ -270,8 +269,8 @@ class Codebase extends PsalmCodebase
             //Global Constant
             if ($type) {
                 return new PHPMarkdownContent(
-                    $reference->symbol,
-                    'const ' . $reference->symbol . ' ' . $type
+                    'const ' . $reference->symbol . ' ' . $type,
+                    $reference->symbol
                 );
             }
         }

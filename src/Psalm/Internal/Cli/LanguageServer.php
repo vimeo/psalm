@@ -81,6 +81,7 @@ final class LanguageServer
             'enable-provide-hover::',
             'enable-provide-signature-help::',
             'enable-provide-definition::',
+            'show-diagnostic-warnings::',
             'use-extended-diagnostic-codes',
             'verbose'
         ];
@@ -198,6 +199,9 @@ Options:
 
     --enable-provide-definition[=BOOL]
         Enables or disables providing definition. Default is true.
+
+    --show-diagnostic-warnings[=BOOL]
+        Enables or disables showing diagnostic warnings. Default is true.
 
     --use-extended-diagnostic-codes (DEPRECATED)
         Enables sending help uri links with the code in diagnostic messages.
@@ -324,6 +328,12 @@ HELP;
         $clientConfiguration->provideCompletion = !isset($options['enable-autocomplete'])
             || !is_string($options['enable-autocomplete'])
             || strtolower($options['enable-autocomplete']) !== 'false';
+
+        $clientConfiguration->hideWarnings = !(
+            !isset($options['show-diagnostic-warnings'])
+            || !is_string($options['show-diagnostic-warnings'])
+            || strtolower($options['show-diagnostic-warnings']) !== 'false'
+        );
 
         $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
         if ($config->find_unused_code) {
