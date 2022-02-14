@@ -70,21 +70,29 @@ trait ValidCodeAnalysisTestTrait
         $this->analyzeFile($file_path, $context);
 
         $actual_vars = [];
-        foreach ($assertions as $var => $_) {
+        foreach ($assertions as $expr => $_) {
             $exact = false;
 
+            $var = $expr;
             if ($var && strpos($var, '===') === strlen($var) - 3) {
                 $var = substr($var, 0, -3);
                 $exact = true;
             }
+            if ($var && strpos($var, '?') === strlen($var) - 1) {
+                $var = substr($var, 0, -1);
+            }
 
             if (isset($context->vars_in_scope[$var])) {
                 $value = $context->vars_in_scope[$var]->getId($exact);
-                if ($exact) {
-                    $actual_vars[$var . '==='] = $value;
-                } else {
-                    $actual_vars[$var] = $value;
+
+                $actual_expr = $var;
+                if ($context->vars_in_scope[$var]->possibly_undefined) {
+                    $actual_expr .= "?";
                 }
+                if ($exact) {
+                    $actual_expr .= '===';
+                }
+                $actual_vars[$actual_expr] = $value;
             }
         }
 

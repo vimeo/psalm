@@ -37,14 +37,14 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                             try {
                                 $c = false;
                                 $d = null;
-                            } catch (Exception $e) {}
+                            } catch (Exception $_) {}
                         }
                     }',
                 'output' => '<?php
                     class A {
                         public function foo() : void {
                             try {
-                            } catch (Exception $e) {}
+                            } catch (Exception $_) {}
                         }
                     }',
                 'php_version' => '7.1',
@@ -631,7 +631,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                     function foo(S $a) {
                         try {
                             $b = (string) $a;
-                        } catch(Exception $e){
+                        } catch(Exception $_){
                             // this class is not stringable
                         }
                     }',
@@ -651,7 +651,7 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                     function foo(S $a) {
                         try {
                             (string) $a;
-                        } catch(Exception $e){
+                        } catch(Exception $_){
                             // this class is not stringable
                         }
                     }',
@@ -675,6 +675,77 @@ class UnusedVariableManipulationTest extends FileManipulationTestCase
                     };
                     $a();',
                 'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedException7.4' => [
+                'input' => '<?php
+                    try {
+                    } catch (Exception
+                        $e) {
+                    }
+                ',
+                'output' => '<?php
+                    try {
+                    } catch (Exception
+                        $_) {
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedException8.0' => [
+                'input' => '<?php
+                    try {
+                    } catch (Exception
+                        $e) {
+                    }
+                ',
+                'output' => '<?php
+                    try {
+                    } catch (Exception) {
+                    }
+                ',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'nonsensicalReferenceExceptionNotRemoved' => [
+                'input' => '<?php
+                    $e = 1;
+                    try {
+                    } catch (Exception &$e) {
+                    }
+                    var_dump($e);
+                ',
+                'output' => '<?php
+                    $e = 1;
+                    try {
+                    } catch (Exception &$e) {
+                    }
+                    var_dump($e);
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedExceptionInIf' => [
+                'input' => '<?php
+                    if (random_int(0, 1)) {
+                        try {
+                        } catch (Exception $e) {
+                        }
+                    }
+                ',
+                'output' => '<?php
+                    if (random_int(0, 1)) {
+                        try {
+                        } catch (Exception) {
+                        }
+                    }
+                ',
+                'php_version' => '8.0',
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],

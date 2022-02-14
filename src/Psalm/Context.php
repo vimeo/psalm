@@ -6,8 +6,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
-use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\TryCatchScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
@@ -154,13 +154,6 @@ final class Context
      * @var bool
      */
     public $inside_assignment = false;
-
-    /**
-     * Whether or not we're inside a try block.
-     *
-     * @var bool
-     */
-    public $inside_try = false;
 
     /**
      * @var null|CodeLocation
@@ -349,9 +342,9 @@ final class Context
     public $case_scope;
 
     /**
-     * @var FinallyScope|null
+     * @var TryCatchScope|null
      */
-    public $finally_scope;
+    public $try_catch_scope = null;
 
     /**
      * @var Context|null
@@ -439,6 +432,23 @@ final class Context
 
         foreach ($this->constants as &$constant) {
             $constant = clone $constant;
+        }
+    }
+
+    /**
+     * $vars_in_scope isn't normally cloned, but sometimes this is needed.
+     */
+    public function cloneVarsInScope(): void
+    {
+        // New array is required: https://3v4l.org/ggfb9 https://3v4l.org/EfsTZ
+        // References are weird...
+        $old_vars_in_scope = $this->vars_in_scope;
+        $this->vars_in_scope = [];
+        foreach ($old_vars_in_scope as $var_id => $var_type) {
+            $this->vars_in_scope[$var_id] = clone $var_type;
+        }
+        foreach ($this->references_in_scope as $reference_id => $referenced_id) {
+            $this->vars_in_scope[$reference_id] = &$this->vars_in_scope[$referenced_id];
         }
     }
 

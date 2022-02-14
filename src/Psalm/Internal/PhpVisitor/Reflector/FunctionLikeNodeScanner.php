@@ -1048,7 +1048,7 @@ class FunctionLikeNodeScanner
                     $docblock_info = null;
                     try {
                         $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
-                    } catch (IncorrectDocblockException|DocblockParseException $e) {
+                    } catch (DocblockParseException $e) {
                     }
                     if ($docblock_info) {
                         if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {

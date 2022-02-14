@@ -595,6 +595,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('null');
         }
 
+        if ($existing_var_type->possibly_undefined) {
+            $did_remove_type = true;
+            $existing_var_type->possibly_undefined = false;
+            $existing_var_type->possibly_undefined_from_try = false;
+        }
+
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
                 $type->as = self::reconcileNull(

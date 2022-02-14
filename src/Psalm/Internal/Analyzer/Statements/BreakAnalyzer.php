@@ -16,7 +16,7 @@ use function end;
 class BreakAnalyzer
 {
     public static function analyze(
-        StatementsAnalyzer $statements_analyzer,
+        StatementsAnalyzer $_statements_analyzer,
         PhpParser\Node\Stmt\Break_ $stmt,
         Context $context
     ): void {
@@ -52,22 +52,6 @@ class BreakAnalyzer
                             $type,
                             $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null
                         );
-                    }
-                }
-            }
-
-            if ($context->finally_scope) {
-                foreach ($context->vars_in_scope as $var_id => $type) {
-                    if (isset($context->finally_scope->vars_in_scope[$var_id])) {
-                        $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $context->finally_scope->vars_in_scope[$var_id],
-                            $type,
-                            $statements_analyzer->getCodebase()
-                        );
-                    } else {
-                        $context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type->possibly_undefined = true;
-                        $type->possibly_undefined_from_try = true;
                     }
                 }
             }

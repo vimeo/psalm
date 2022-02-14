@@ -44,8 +44,7 @@ class TryCatchTest extends TestCase
                 'code' => '<?php
                     try {
                         $worked = true;
-                    }
-                    catch (\Exception $e) {
+                    } catch (\Throwable $e) {
                         $worked = false;
                     }',
                 'assertions' => [
@@ -142,7 +141,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $var = test();
-                    } catch (Exception $e) {
+                    } catch (Throwable $e) {
                         return;
                     }
 
@@ -160,7 +159,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $var = test();
-                    } catch (Exception $e) {
+                    } catch (Throwable $e) {
                         $var = "bad";
                     }
 
@@ -258,7 +257,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $str = "a";
-                    } catch (Exception $e) {
+                    } catch (Throwable $e) {
                         example();
                     }
                     ord($str);',
@@ -368,13 +367,6 @@ class TryCatchTest extends TestCase
                             echo $var;
                         }
                     }'
-            ],
-            'suppressUndefinedVarInFinally' => [
-                'code' => '<?php
-                    try {} finally {
-                        /** @psalm-suppress UndefinedGlobalVariable, MixedPropertyAssignment */
-                        $event->end = null;
-                    }',
             ],
             'returnsInTry' => [
                 'code' => '<?php
@@ -490,6 +482,597 @@ class TryCatchTest extends TestCase
                     } finally {
                         if (isset($exception)) {}
                     }'
+            ],
+            'unionAssignmentsFromTryAndCatch' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class D {}
+
+                    $foo = new A();
+                    try {
+                        $foo = new B();
+                        $one = $foo;
+                        $foo = new C();
+                        $two = $foo;
+                    } catch (Exception $_) {
+                        $foo = new D();
+                        $three = $foo;
+                    }
+                    $four = $foo;
+                ',
+                'assertions' => [
+                    '$one?' => 'B',
+                    '$two?' => 'C',
+                    '$three?' => 'D',
+                    '$four' => 'C|D',
+                ],
+            ],
+            'unionAssignmentsFromTryAndMultipleCatch' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class D {}
+                    class E {}
+
+                    $foo = new A();
+                    try {
+                        $foo = new B();
+                        $one = $foo;
+                        $foo = new C();
+                        $two = $foo;
+                    } catch (RuntimeException $_) {
+                        $foo = new D();
+                        $three = $foo;
+                    } catch (Error $_) {
+                        $foo = new E();
+                        $four = $foo;
+                    } catch (InvalidArgumentException $_) {
+                        $five = $foo;
+                    }
+                    $six = $foo;
+                ',
+                'assertions' => [
+                    '$one?' => 'B',
+                    '$two?' => 'C',
+                    '$three?' => 'D',
+                    '$four?' => 'E',
+                    '$five?' => 'A|B|C',
+                    '$six' => 'A|B|C|D|E',
+                ],
+            ],
+            'unionAssignmentsWithMultipleNestedTry' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                        $foo = 3;
+                    } catch (Exception $_) {
+                        $foo = 4;
+                        try {
+                            $foo = 5;
+                            $foo = 6;
+                        } catch (Exception $_) {
+                            $foo = 7;
+                        }
+                        $one = $foo;
+                    } catch (Error $_) {
+                        try {
+                            $foo = 8;
+                            $foo = 9;
+                        } catch (Exception $_) {
+                            $foo = 10;
+                            try {
+                                $foo = 11;
+                                $foo = 12;
+                            } catch (Exception $_) {
+                                $foo = 13;
+                            } catch (Throwable $_) {
+                            } finally {
+                                $two = $foo;
+                                $foo = 14;
+                            }
+                            $three = $foo;
+                        }
+                        $four = $foo;
+                    } finally {
+                        $five = $foo;
+                        /** @psalm-check-type $five = 1|2|3|6|7|9|14 */;
+                    }
+                ',
+                'assertions' => [
+                    '$one?===' => '6|7',
+                    '$two?===' => '10|11|12|13',
+                    '$three?===' => '14',
+                    '$four?===' => '9|14',
+                    '$five===' => '3|6|7|9|14',
+                ],
+            ],
+            'finallyOverridesTryAndCatch' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class D {}
+                    class E {}
+
+                    $foo = new A();
+                    try {
+                        $foo = new B();
+                        $one = $foo;
+                        $foo = new C();
+                        $two = $foo;
+                    } catch (Exception $_) {
+                        $foo = new D();
+                        $three = $foo;
+                    } finally {
+                        $foo = new E();
+                        $four = $foo;
+                    }
+                    $five = $foo;
+                ',
+                'assertions' => [
+                    '$one?' => 'B',
+                    '$two?' => 'C',
+                    '$three?' => 'D',
+                    '$four' => 'E',
+                    '$five' => 'E',
+                ],
+            ],
+            'unsetInTry' => [
+                'code' => '<?php
+                    $one = 1;
+                    try {
+                        $two = 2;
+                        unset($one);
+                    } catch (Exception $_) {
+                    }
+                ',
+                'assertions' => [
+                    '$one?===' => '1',
+                    '$two?===' => '2',
+                ],
+            ],
+            'unsetThenReassignedInTry' => [
+                'code' => '<?php
+                    $one = 1;
+                    try {
+                        $two = 2;
+                        unset($one);
+                        $one = 3;
+                    } catch (Exception $_) {
+                    }
+                ',
+                'assertions' => [
+                    '$one?===' => '1|3',
+                    '$two?===' => '2',
+                ],
+            ],
+            'unsetThenReassignedInFinally' => [
+                'code' => '<?php
+                    $one = 1;
+                    try {
+                        $two = 2;
+                        unset($one);
+                    } catch (Exception $_) {
+                    } finally {
+                        $one = 3;
+                    }
+                ',
+                'assertions' => [
+                    '$one===' => '3',
+                    '$two?===' => '2',
+                ],
+            ],
+            'unsetInCatch' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                    } catch (Exception $_) {
+                        unset($foo);
+                    }
+                ',
+                'assertions' => [
+                    '$foo?===' => '1|2',
+                ],
+            ],
+            'unsetThenReassignedInCatch' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                    } catch (Exception $_) {
+                        unset($foo);
+                        $foo = 3;
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '2|3',
+                ],
+            ],
+            'unsetThenMaybeReassignedInCatch' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                    } catch (Exception $_) {
+                        unset($foo);
+                        try {
+                            $foo = 3;
+                        } catch (Exception $_) {
+                        }
+                    }
+                ',
+                'assertions' => [
+                    '$foo?===' => '1|2|3',
+                ],
+            ],
+            'unsetInNestedCatch' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                    } catch (Exception $_) {
+                        try {
+                            unset($foo);
+                        } catch (Exception $_) {
+                        }
+                    }
+                ',
+                'assertions' => [
+                    '$foo?===' => '1|2',
+                ],
+            ],
+            'unsetInReturningCatch' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                    } catch (Exception $_) {
+                        unset($foo);
+                        return;
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '1|2',
+                ],
+            ],
+            'possiblyUndefinedBeforeTryIsStillPossiblyUndefined' => [
+                'code' => '<?php
+                    if (random_int(0, 1)) {
+                        $maybeUnset = 1;
+                    }
+
+                    try {
+                        $maybeUnset = 1;
+                    } catch (Exception $_) {
+                    }
+                ',
+                'assertions' => [
+                    '$maybeUnset?===' => '1',
+                ],
+            ],
+            'catchVarShadowsExistingVar' => [
+                'code' => '<?php
+                    $var = 1;
+                    try {
+                        $var = 2;
+                        $one = $var;
+                    } catch (Exception $var) {
+                        $two = $var;
+                    }
+                    $three = $var;
+                ',
+                'assertions' => [
+                    '$one?===' => '2',
+                    '$two?' => 'Exception',
+                    '$three===' => '2|Exception',
+                ],
+            ],
+            'tryInCatchResolvesTypeCorrectly' => [
+                'code' => '<?php
+                    $var = 1;
+                    try {
+                        $var = 2;
+                    } catch (Exception $_) {
+                        try {
+                            $var = 3;
+                        } catch (Exception $_) {
+                        }
+                    }
+                ',
+                'assertions' => [
+                    '$var===' => '1|2|3',
+                ],
+            ],
+            'tryInFinallyResolvesTypeCorrectly' => [
+                'code' => '<?php
+                    $var = 1;
+                    try {
+                        $var = 2;
+                    } catch (Exception $_) {
+                    } finally {
+                        try {
+                            $var = 3;
+                        } catch (Exception $_) {
+                        }
+                    }
+                ',
+                'assertions' => [
+                    '$var===' => '1|2|3',
+                ],
+            ],
+            'noCatchResolvesTypeCorrectly' => [
+                'code' => '<?php
+                    try {
+                        $foo = 1;
+                        $foo = 2;
+                        $foo = 3;
+                        $bar = 1;
+                        $bar = 2;
+                    } finally {
+                        $bar = 3;
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '3',
+                    '$bar===' => '3',
+                ],
+            ],
+            'universalCatchNarrowsTypeInFinally' => [
+                'code' => '<?php
+                    try {
+                        $var = 1;
+                        $var = 2;
+                        $var = 3;
+                    } catch (Exception $_) {
+                        $var = 4;
+                        $var = 5;
+                    } catch (Throwable $_) {
+                        $var = 6;
+                        $var = 7;
+                    } finally {
+                        // Since an exception will always be caught and $var will be changed, $var can only be 3|5|7.
+                        /** @psalm-check-type $var = 3|5|7 */;
+                    }
+                ',
+                'assertions' => [
+                    '$var===' => '3|5|7',
+                ]
+            ],
+            'nonUniversalCatchDoesntNarrowTypeInFinally' => [
+                'code' => '<?php
+                    try {
+                        $var = 1;
+                        $var = 2;
+                        $var = 3;
+                    } catch (InvalidArgumentException $_) {
+                        $var = 4;
+                        $var = 5;
+                    } catch (RuntimeException $_) {
+                        $var = 6;
+                        $var = 7;
+                    } finally {
+                        // $var could be 1 or 2 if SomeOtherException is thrown
+                        /** @psalm-check-type $var? = 1|2|3|5|7 */;
+                    }
+                ',
+                'assertions' => [
+                    '$var===' => '3|5|7',
+                ]
+            ],
+            'createByRefInIfInTry' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $var
+                     * @param-out int $var
+                     */
+                    function assignToInt(&$var): void
+                    {
+                        $var = 1;
+                    }
+
+                    try {
+                        if (assignToInt($test)) {
+                        }
+                    } catch (Exception $_) {
+                    }
+                ',
+                'assertions' => [
+                    '$test?' => 'int',
+                ],
+            ],
+            'extractInTry' => [
+                'code' => '<?php
+                    $foo = 1;
+                    $bar = "baz";
+                    try {
+                        extract([]); // extract overrides all variables with `mixed`.
+                    } catch (Exception $_) {
+                    }
+                ',
+                'assertions' => [
+                    '$foo' => 'int|mixed',
+                    '$bar' => 'mixed|string',
+                ],
+            ],
+            'returnInSomeCatches' => [
+                'code' => '<?php
+                    try {
+                        $foo = 1;
+                    } catch (RuntimeException $_) {
+                        return;
+                    } catch (InvalidArgumentException $_) {
+                        $foo = 2;
+                    } catch (Throwable $_) {
+                        return;
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '1|2',
+                ],
+            ],
+            'tryVariableMightBeDefinedWhenTryLeavesScope' => [
+                'code' => '<?php
+                    try {
+                        $foo = 1;
+                        return;
+                    } catch (Exception $_) {
+                        $bar = 2;
+                    }
+                ',
+                'assertions' => [
+                    '$foo?===' => '1',
+                    '$bar===' => '2',
+                ],
+            ],
+            'variableOverriddenByAllCatchesWhenTryLeavesScope' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                        return;
+                    } catch (InvalidArgumentException $_) {
+                        $foo = 3;
+                    } catch (RuntimeException $_) {
+                        $foo = 4;
+                    } finally {
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '3|4',
+                ],
+            ],
+            'variableOverriddenBySomeCatchesWhenTryLeavesScope' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                        return;
+                    } catch (InvalidArgumentException $_) {
+                        $foo = 3;
+                    } catch (RuntimeException $_) {
+                        $foo = 4;
+                    } catch (LogicException $_) {
+                    } finally {
+                    }
+                ',
+                'assertions' => [
+                    '$foo===' => '1|2|3|4',
+                ],
+            ],
+            'variableOverriddenByCatchesThenOverriddenByFinallyWhenTryLeavesScope' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo = 2;
+                        return;
+                    } catch (InvalidArgumentException $_) {
+                        $foo = 3;
+                    } catch (RuntimeException $_) {
+                        $foo = 4;
+                    } finally {
+                        $one = $foo;
+                        /** @psalm-check-type $one = 1|2|3|4 */;
+                        $foo = 5;
+                    }
+                    $two = $foo;
+                ',
+                'assertions' => [
+                    '$one===' => '3|4',
+                    '$two===' => '5',
+                ],
+            ],
+            'variableModifiedInTryWithoutReassignment' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                        $foo += 1;
+                        $foo += 1;
+                    } finally {
+                        /** @psalm-check-type $foo = 1|2|3 */;
+                        $one = $foo;
+                    }
+                    $two = $foo;
+                ',
+                'assertions' => [
+                    '$one===' => '3',
+                    '$two===' => '3',
+                ],
+            ],
+            'variableSetInNonLeavingCatchesButPossiblyChangedInFinally' => [
+                'code' => '<?php
+                    try {
+                        $foo = 1;
+                        $foo = 2;
+                    } catch (InvalidArgumentException $_) {
+                        $foo = 3;
+                    } catch (RuntimeException $_) {
+                        return;
+                    } finally {
+                        $one = $foo ?? 4;
+                        /** @psalm-check-type $one = 1|2|3|4 */;
+                        if (random_int(0, 1)) {
+                            $foo = 5;
+                        }
+                    }
+                ',
+                'assertions' => [
+                    '$one===' => '2|3|4',
+                    '$foo===' => '2|3|5',
+                ],
+            ],
+            'SKIPPED-finallyRunsEvenIfExceptionIsThrownInCatch' => [
+                'code' => '<?php
+                    try {
+                        maybeThrow();
+                        $foo = 1;
+                        maybeThrow();
+                        $foo = 2;
+                        maybeThrow();
+                    } catch (Exception $_) {
+                        // Even if an exception is thrown at any point in this block, the `finally` still runs.
+                        maybeThrow();
+                        $foo = $foo ?? 10;
+                        maybeThrow();
+                        $foo += 1;
+                        maybeThrow();
+                        $foo += 1;
+                        maybeThrow();
+                        $foo += 1;
+                        maybeThrow();
+                    } finally {
+                        /** @psalm-check-type $foo? = 1|2|3|4|5|10|11|12|13 */;
+                    }
+
+                    /** @throws Exception */
+                    function maybeThrow(): void {}
+                ',
+                'assertions' => [
+                    '$foo===' => '2|4|5|13',
+                ],
+            ],
+            'SKIPPED-finallyRunsEvenIfExceptionIsThrownInCatchCorrectlyDetectsPossiblyUnset' => [
+                'code' => '<?php
+                    $foo = 1;
+                    try {
+                    } catch (Exception $_) {
+                        unset($foo);
+                        maybeThrow();
+                        $foo = 2;
+                    } finally {
+                        /** @psalm-check-type $foo? = 1|2 */;
+                    }
+
+                    /** @throws Exception */
+                    function maybeThrow(): void {}
+                ',
+                'assertions' => [
+                    '$foo===' => '1|2',
+                ],
             ],
         ];
     }
@@ -632,6 +1215,69 @@ class TryCatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition'
+            ],
+            'assignmentInTryAndCatchDoesntGuaranteeAssignment' => [
+                'code' => '<?php
+                    interface SomeException extends Throwable {}
+
+                    try {
+                        $a = 1;
+                    } catch (SomeException $_) {
+                        $a = 2;
+                    } catch (Throwable $_) {
+                    }
+
+                    // What if SomeOtherException was thrown?
+                    echo $a;
+                ',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'redundantCatch' => [
+                'code' => '<?php
+                    try {
+                    } catch (Throwable $_) {
+                    } catch (Exception $_) {
+                    }
+                ',
+                'error_message' => 'RedundantCatch',
+            ],
+            'redundantCatchSameStatement' => [
+                'code' => '<?php
+                    try {
+                    } catch (Throwable|Exception $_) {
+                    }
+                ',
+                'error_message' => 'RedundantCatch',
+            ],
+            'redundantCatchSameStatementChildFirst' => [
+                'code' => '<?php
+                    try {
+                    } catch (Exception|Throwable $_) {
+                    }
+                ',
+                'error_message' => 'RedundantCatch',
+            ],
+            'missingCatchVariablePhp7' => [
+                'code' => '<?php
+                    try {
+                    } catch (Throwable) {
+                    }
+                ',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'unsetInFinally' => [
+                'code' => '<?php
+                    $one = 1;
+                    try {
+                    } catch (Exception $_) {
+                    } finally {
+                        unset($one);
+                    }
+                    echo $one;
+                ',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
         ];
     }

@@ -444,7 +444,7 @@ class UnusedVariableTest extends TestCase
                     function callDangerous(): void {
                         try {
                             $s = dangerous();
-                        } catch (Exception $e) {
+                        } catch (Throwable $e) {
                             echo $e->getMessage();
                             $s = "hello";
                         }
@@ -470,7 +470,7 @@ class UnusedVariableTest extends TestCase
                         } else {
                             try {
                                 $t = dangerous();
-                            } catch (Exception $e) {
+                            } catch (Throwable $e) {
                                 echo $e->getMessage();
                                 $t = "hello";
                             }
@@ -500,7 +500,7 @@ class UnusedVariableTest extends TestCase
                         } catch (E1 $e) {
                             echo $e->getMessage();
                             $s = false;
-                        } catch (Exception $e) {
+                        } catch (Throwable $_) {
                             return;
                         }
 
@@ -592,7 +592,7 @@ class UnusedVariableTest extends TestCase
                             if (!$s) {
                                 echo "Failed to get string\n";
                             }
-                        } catch (Exception $e) {
+                        } catch (Throwable $_) {
                             $s = "fallback";
                         }
                         printf("s is %s\n", $s);
@@ -1008,7 +1008,7 @@ class UnusedVariableTest extends TestCase
                         $foo = rand(0, 1);
 
                         if ($foo) {}
-                    } catch (Exception $e) {}
+                    } catch (Exception $_) {}
 
                     if ($foo) {}',
             ],
@@ -1040,7 +1040,7 @@ class UnusedVariableTest extends TestCase
                     try {
                         $stream = getStream();
                         \file_put_contents("./foobar", $stream);
-                    } catch (\Exception $e) {
+                    } catch (\Exception $_) {
                         throw new \Exception("Something went wrong");
                     } finally {
                         if ($stream) {
@@ -1158,7 +1158,7 @@ class UnusedVariableTest extends TestCase
 
                     try {
                         // do nothing
-                    } catch (\Exception $exception) {
+                    } catch (\Exception $_) {
                         $path = "hello";
                     }
 
@@ -1211,7 +1211,7 @@ class UnusedVariableTest extends TestCase
                         try {
                             $b = maybeThrows();
                             echo $b;
-                        } catch (\Exception $e) {}
+                        } catch (\Exception $_) {}
 
                         echo $b;
                     }'
@@ -1228,7 +1228,7 @@ class UnusedVariableTest extends TestCase
                         try {
                             $b = maybeThrows();
                             echo $b;
-                        } catch (\Exception $e) {}
+                        } catch (\Exception $_) {}
 
                         echo $b;
                     }'
@@ -1241,7 +1241,7 @@ class UnusedVariableTest extends TestCase
                         while (!$done) {
                             try {
                                 $done = true;
-                            } catch (\Exception $e) {
+                            } catch (\Exception $_) {
                             }
                         }
                     }',
@@ -1264,7 +1264,7 @@ class UnusedVariableTest extends TestCase
                         try {
                             $a = "hello";
                             echo $a;
-                        } catch (Exception $e) {
+                        } catch (Exception $_) {
                             return $a;
                         }
 
@@ -1284,7 +1284,7 @@ class UnusedVariableTest extends TestCase
                         try {
                             // do something dangerous
                             $a = 5;
-                        } catch (Exception $e) {
+                        } catch (Exception $_) {
                             $a = 4;
                             throw new Exception("bad");
                         } finally {
@@ -1306,7 +1306,7 @@ class UnusedVariableTest extends TestCase
                     try {
                         foo();
                         $a = "hello";
-                    } catch (\Exception $e) {
+                    } catch (\Exception $_) {
                         echo $a;
                     }
 
@@ -2601,6 +2601,16 @@ class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'allowUnusedCatchCheckedLater' => [
+                'code' => '<?php
+                    try {
+                    } catch (Throwable $e) {
+                    }
+
+                    if (isset($e)) {
+                    }
+                ',
+            ],
         ];
     }
 
@@ -2879,7 +2889,7 @@ class UnusedVariableTest extends TestCase
                         } else {
                             try {
                                 $t = dangerous();
-                            } catch (Exception $e) {
+                            } catch (Throwable $e) {
                                 echo $e->getMessage();
                                 $t = "hello";
                             }
@@ -3607,7 +3617,7 @@ class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
+            'warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
                 'code' => '<?php
                     $step = 0;
                     try {
@@ -3620,6 +3630,14 @@ class UnusedVariableTest extends TestCase
                             echo $step;
                         }
                     } finally {
+                    }
+                ',
+                'error_message' => 'UnusedVariable',
+            ],
+            'warnAboutUnusedCatch' => [
+                'code' => '<?php
+                    try {
+                    } catch (Throwable $e) {
                     }
                 ',
                 'error_message' => 'UnusedVariable',
