@@ -315,6 +315,14 @@ class AssignmentAnalyzer
             $assign_value_type->parent_nodes = [
                 $assignment_node->id => $assignment_node
             ];
+
+            if ($context->inside_try) {
+                // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
+                // point this is a workaround to ensure that use of a variable also uses all previous assignments.
+                if (isset($context->vars_in_scope[$array_var_id])) {
+                    $assign_value_type->parent_nodes += $context->vars_in_scope[$array_var_id]->parent_nodes;
+                }
+            }
         }
 
         if ($array_var_id && isset($context->vars_in_scope[$array_var_id])) {

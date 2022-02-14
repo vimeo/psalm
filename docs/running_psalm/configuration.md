@@ -416,6 +416,13 @@ Whether or not to allow `require`/`include` calls in your PHP. Defaults to `true
 ```
 Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
 
+#### threads
+```xml
+<psalm
+        threads="[int]"
+>
+```
+Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
 ## Project settings
 

@@ -584,6 +584,9 @@ class Config
      */
     public $internal_stubs = [];
 
+    /** @var ?int */
+    public $threads;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -811,7 +814,9 @@ class Config
         $deprecated_attributes = [
             'allowCoercionFromStringToClassConst',
             'allowPhpStormGenerics',
-            'forbidEcho'
+            'forbidEcho',
+            'loadXdebugStub',
+            'totallyTyped'
         ];
 
         $deprecated_elements = [
@@ -1239,6 +1244,10 @@ class Config
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
+        }
+
+        if (isset($config_xml->threads)) {
+            $config->threads = (int)$config_xml->threads;
         }
 
         return $config;
@@ -1781,11 +1790,22 @@ class Config
 
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
+        $level = null;
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+            $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+
+            if ($level === null && $issue_type === 'UndefinedFunction') {
+                // undefined functions trigger global namespace fallback
+                // so we should also check reporting levels for the symbol in global scope
+                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                if ($root_function_id !== $function_id) {
+                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
+                    $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
+                }
+            }
         }
 
-        return null;
+        return $level;
     }
 
     public function getReportingLevelForArgument(string $issue_type, string $function_id): ?string
@@ -2007,6 +2027,12 @@ class Config
         if (extension_loaded('decimal')) {
             $ext_decimal_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'decimal.phpstub';
             $this->internal_stubs[] = $ext_decimal_path;
+        }
+
+        // phpredis
+        if (extension_loaded('redis')) {
+            $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
+            $this->internal_stubs[] = $ext_phpredis_path;
         }
 
         foreach ($this->internal_stubs as $stub_path) {
