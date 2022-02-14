@@ -136,10 +136,16 @@ class LanguageServer extends Dispatcher
      */
     protected $project_analyzer;
 
+    /**
+     * @var Codebase
+     */
+    protected $codebase;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
         ProjectAnalyzer $project_analyzer,
+        Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress
     ) {
@@ -148,6 +154,8 @@ class LanguageServer extends Dispatcher
         $progress->setServer($this);
 
         $this->project_analyzer = $project_analyzer;
+
+        $this->codebase = $codebase;
 
         $this->protocolWriter = $writer;
 
@@ -241,6 +249,7 @@ class LanguageServer extends Dispatcher
     public static function run(Config $config, ClientConfiguration $clientConfiguration, string $base_dir): void
     {
         $progress = new Progress();
+
         //no-cache mode does not work in the LSP
         $providers = new Providers(
             new FileProvider,
@@ -251,25 +260,32 @@ class LanguageServer extends Dispatcher
             new ProjectCacheProvider(Composer::getLockFilePath($base_dir))
         );
 
+        $codebase = new Codebase(
+            $config,
+            $providers,
+            $progress
+        );
+
+        if ($config->find_unused_variables) {
+            $codebase->reportUnusedVariables();
+        }
+
+        if ($clientConfiguration->findUnusedCode) {
+            $codebase->reportUnusedCode($clientConfiguration->findUnusedCode);
+        }
+
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             null,
             [],
             1,
-            $progress
+            $progress,
+            $codebase
         );
-
-        if ($config->find_unused_variables) {
-            $project_analyzer->getCodebase()->reportUnusedVariables();
-        }
 
         if ($clientConfiguration->onchangeLineLimit) {
             $project_analyzer->onchange_line_limit = $clientConfiguration->onchangeLineLimit;
-        }
-
-        if ($clientConfiguration->findUnusedCode) {
-            $project_analyzer->getCodebase()->reportUnusedCode($clientConfiguration->findUnusedCode);
         }
 
         //Setup Project Analyzer
@@ -289,6 +305,7 @@ class LanguageServer extends Dispatcher
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
                 $project_analyzer,
+                $codebase,
                 $clientConfiguration,
                 $progress
             );
@@ -343,6 +360,7 @@ class LanguageServer extends Dispatcher
                             $reader,
                             new ProtocolStreamWriter($socket),
                             $project_analyzer,
+                            $codebase,
                             $clientConfiguration,
                             $progress
                         );
@@ -356,6 +374,7 @@ class LanguageServer extends Dispatcher
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
                         $project_analyzer,
+                        $codebase,
                         $clientConfiguration,
                         $progress
                     );
@@ -369,6 +388,7 @@ class LanguageServer extends Dispatcher
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
                 $project_analyzer,
+                $codebase,
                 $clientConfiguration,
                 $progress
             );
@@ -426,20 +446,19 @@ class LanguageServer extends Dispatcher
 
                 $this->logInfo("Initializing: Getting code base...");
                 $this->clientStatus('initializing', 'getting code base');
-                $codebase = $this->project_analyzer->getCodebase();
 
                 $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
                 $this->clientStatus('initializing', 'scanning files');
-                $codebase->scanFiles($this->project_analyzer->threads);
+                $this->codebase->scanFiles($this->project_analyzer->threads);
 
                 $this->logInfo("Initializing: Registering stub files...");
                 $this->clientStatus('initializing', 'registering stub files');
-                $codebase->config->visitStubFiles($codebase, $this->project_analyzer->progress);
+                $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new ServerTextDocument(
                         $this,
-                        $codebase,
+                        $this->codebase,
                         $this->project_analyzer
                     );
                 }
@@ -447,7 +466,7 @@ class LanguageServer extends Dispatcher
                 if ($this->workspace === null) {
                     $this->workspace = new ServerWorkspace(
                         $this,
-                        $codebase,
+                        $this->codebase,
                         $this->project_analyzer
                     );
                 }
@@ -676,16 +695,15 @@ class LanguageServer extends Dispatcher
                 return;
             }
 
-            $codebase = $this->project_analyzer->getCodebase();
-            $codebase->reloadFiles(
+            $this->codebase->reloadFiles(
                 $this->project_analyzer,
                 array_keys($files)
             );
 
-            $codebase->analyzer->addFilesToAnalyze(
+            $this->codebase->analyzer->addFilesToAnalyze(
                 array_combine(array_keys($files), array_keys($files))
             );
-            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+            $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $this->emitVersionedIssues($files, $version);
         } catch (Throwable $e) {

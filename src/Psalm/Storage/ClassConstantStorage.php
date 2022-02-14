@@ -59,4 +59,35 @@ class ClassConstantStorage
         $this->location = $location;
         $this->type = $type;
     }
+
+    /**
+     * Used in the Language Server
+     */
+    public function getHoverMarkdown(string $const): string
+    {
+        switch ($this->visibility) {
+            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
+                $visibility_text = 'private';
+                break;
+
+            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
+                $visibility_text = 'protected';
+                break;
+
+            default:
+                $visibility_text = 'public';
+        }
+
+        $value = '';
+        if ($this->type) {
+            $types = $this->type->getAtomicTypes();
+            $type = array_values($types)[0];
+            if (property_exists($type, 'value')) {
+                $value = " = {$type->value};";
+            }
+        }
+
+
+        return "$visibility_text const $const$value";
+    }
 }

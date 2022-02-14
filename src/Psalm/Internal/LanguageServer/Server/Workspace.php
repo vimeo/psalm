@@ -9,9 +9,9 @@ use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\Provider\FileReferenceProvider;
 
@@ -149,17 +149,16 @@ class Workspace
                 /** @var array{uri: string} */
                 $arguments = (array) $arguments;
                 $file = LanguageServer::uriToPath($arguments['uri']);
-                $codebase = $this->project_analyzer->getCodebase();
-                $codebase->reloadFiles(
+                $this->codebase->reloadFiles(
                     $this->project_analyzer,
                     [$file],
                     true
                 );
 
-                $codebase->analyzer->addFilesToAnalyze(
+                $this->codebase->analyzer->addFilesToAnalyze(
                     [$file => $file]
                 );
-                $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+                $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
                 $this->server->emitVersionedIssues([$file => $arguments['uri']]);
                 break;

@@ -12,8 +12,6 @@ use LanguageServerProtocol\CodeActionKind;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
-use LanguageServerProtocol\MarkupContent;
-use LanguageServerProtocol\MarkupKind;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureHelp;
@@ -23,10 +21,10 @@ use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\TextEdit;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use LanguageServerProtocol\WorkspaceEdit;
-use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use UnexpectedValueException;
 
@@ -184,6 +182,10 @@ class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        if (!$this->server->client->clientConfiguration->provideDefinition) {
+            return new Success(null);
+        }
+
         $this->server->logDebug(
             'textDocument/definition'
         );
@@ -196,19 +198,18 @@ class TextDocument
         }
 
         try {
-            $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+            $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logError((string) $e);
             return new Success(null);
         }
 
-        if ($reference_location === null) {
+        if ($reference === null) {
             return new Success(null);
         }
 
-        [$reference] = $reference_location;
 
-        $code_location = $this->codebase->getSymbolLocation($file_path, $reference);
+        $code_location = $this->codebase->getSymbolLocation($reference);
 
         if (!$code_location) {
             return new Success(null);
@@ -235,6 +236,10 @@ class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        if (!$this->server->client->clientConfiguration->provideHover) {
+            return new Success(null);
+        }
+
         $this->server->logDebug(
             'textDocument/hover'
         );
@@ -247,39 +252,30 @@ class TextDocument
         }
 
         try {
-            $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+            $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logError((string) $e);
             return new Success(null);
         }
 
-        if ($reference_location === null) {
+        if ($reference === null) {
             return new Success(null);
         }
 
-        [$reference, $range] = $reference_location;
+        $this->server->logDebug('hover', ['reference' => $reference]);
 
         try {
-            $symbol_information = $this->codebase->getSymbolInformation($file_path, $reference);
+            $markup = $this->codebase->getMarkupContentForSymbol($reference);
         } catch (UnexpectedValueException $e) {
             $this->server->logError((string) $e);
             return new Success(null);
         }
 
-        if ($symbol_information === null) {
+        if ($markup === null) {
             return new Success(null);
         }
 
-        $content = "```php\n" . $symbol_information['type'] . "\n```";
-        if (isset($symbol_information['description'])) {
-            $content .= "\n---\n" . $symbol_information['description'];
-        }
-        $contents = new MarkupContent(
-            MarkupKind::MARKDOWN,
-            $content
-        );
-
-        return new Success(new Hover($contents, $range));
+        return new Success(new Hover($markup, $reference->range));
     }
 
     /**
@@ -298,6 +294,10 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        if (!$this->server->client->clientConfiguration->provideCompletion) {
+            return new Success(null);
+        }
+
         $this->server->logDebug(
             'textDocument/completion'
         );
@@ -368,6 +368,10 @@ class TextDocument
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
+        if (!$this->server->client->clientConfiguration->provideSignatureHelp) {
+            return new Success(null);
+        }
+
         $this->server->logDebug(
             'textDocument/signatureHelp'
         );
@@ -418,6 +422,10 @@ class TextDocument
      */
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
     {
+        if (!$this->server->client->clientConfiguration->provideCodeActions) {
+            return new Success(null);
+        }
+
         $this->server->logDebug(
             'textDocument/codeAction'
         );

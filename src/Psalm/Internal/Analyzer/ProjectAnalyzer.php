@@ -261,10 +261,19 @@ class ProjectAnalyzer
         ?ReportOptions $stdout_report_options = null,
         array $generated_report_options = [],
         int $threads = 1,
-        ?Progress $progress = null
+        ?Progress $progress = null,
+        ?Codebase $codebase = null
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
+        }
+
+        if ($codebase === null) {
+            $codebase = new Codebase(
+                $config,
+                $providers,
+                $progress
+            );
         }
 
         $this->parser_cache_provider = $providers->parser_cache_provider;
@@ -279,11 +288,7 @@ class ProjectAnalyzer
 
         $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
 
-        $this->codebase = new Codebase(
-            $config,
-            $providers,
-            $progress
-        );
+        $this->codebase = $codebase;
 
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;

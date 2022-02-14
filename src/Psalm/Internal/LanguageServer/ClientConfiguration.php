@@ -38,6 +38,41 @@ class ClientConfiguration
     public $provideCompletion;
 
     /**
+     * Provide GoTo Definitions or not
+     *
+     * @var bool|null
+     */
+    public $provideDefinition;
+
+    /**
+     * Provide Hover Requests or not
+     *
+     * @var bool|null
+     */
+    public $provideHover;
+
+    /**
+     * Provide Signature Help or not
+     *
+     * @var bool|null
+     */
+    public $provideSignatureHelp;
+
+    /**
+     * Provide Code Actions or not
+     *
+     * @var bool|null
+     */
+    public $provideCodeActions;
+
+    /**
+     * Provide Diagnostics or not
+     *
+     * @var bool|null
+     */
+    public $provideDiagnostics;
+
+    /**
      * Provide Completion or not
      *
      * @var bool|null
@@ -71,9 +106,17 @@ class ClientConfiguration
 
     public function __construct(
         bool $hideWarnings = null,
-        bool $provideCompletion = null
+        bool $provideCompletion = null,
+        bool $provideDefinition = null,
+        bool $provideHover = null,
+        bool $provideSignatureHelp = null,
+        bool $provideCodeActions = null,
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;
+        $this->provideDefinition = $provideDefinition;
+        $this->provideHover = $provideHover;
+        $this->provideSignatureHelp = $provideSignatureHelp;
+        $this->provideCodeActions = $provideCodeActions;
     }
 }

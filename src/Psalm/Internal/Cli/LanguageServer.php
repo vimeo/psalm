@@ -76,6 +76,11 @@ final class LanguageServer
             'tcp-server',
             'disable-on-change::',
             'enable-autocomplete::',
+            'enable-code-actions::',
+            'enable-provide-diagnostics::',
+            'enable-provide-hover::',
+            'enable-provide-signature-help::',
+            'enable-provide-definition::',
             'use-extended-diagnostic-codes',
             'verbose'
         ];
@@ -176,8 +181,23 @@ Options:
         If added, the language server will not respond to onChange events.
         You can also specify a line count over which Psalm will not run on-change events.
 
+    --enable-code-actions[=BOOL]
+        Enables or disables code actions. Default is true.
+
+    --enable-provide-diagnostics[=BOOL]
+        Enables or disables providing diagnostics. Default is true.
+
     --enable-autocomplete[=BOOL]
         Enables or disables autocomplete on methods and properties. Default is true.
+
+    --enable-provide-hover[=BOOL]
+        Enables or disables providing hover. Default is true.
+
+    --enable-provide-signature-help[=BOOL]
+        Enables or disables providing signature help. Default is true.
+
+    --enable-provide-definition[=BOOL]
+        Enables or disables providing definition. Default is true.
 
     --use-extended-diagnostic-codes (DEPRECATED)
         Enables sending help uri links with the code in diagnostic messages.
@@ -280,6 +300,26 @@ HELP;
         if (isset($options['disable-on-change'])) {
             $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
         }
+
+        $clientConfiguration->provideDefinition = !isset($options['enable-provide-definition'])
+            || !is_string($options['enable-provide-definition'])
+            || strtolower($options['enable-provide-definition']) !== 'false';
+
+        $clientConfiguration->provideSignatureHelp = !isset($options['enable-provide-signature-help'])
+            || !is_string($options['enable-provide-signature-help'])
+            || strtolower($options['enable-provide-signature-help']) !== 'false';
+
+        $clientConfiguration->provideHover = !isset($options['enable-provide-hover'])
+            || !is_string($options['enable-provide-hover'])
+            || strtolower($options['enable-provide-hover']) !== 'false';
+
+        $clientConfiguration->provideDiagnostics = !isset($options['enable-provide-diagnostics'])
+            || !is_string($options['enable-provide-diagnostics'])
+            || strtolower($options['enable-provide-diagnostics']) !== 'false';
+
+        $clientConfiguration->provideCodeActions = !isset($options['enable-code-actions'])
+            || !is_string($options['enable-code-actions'])
+            || strtolower($options['enable-code-actions']) !== 'false';
 
         $clientConfiguration->provideCompletion = !isset($options['enable-autocomplete'])
             || !is_string($options['enable-autocomplete'])

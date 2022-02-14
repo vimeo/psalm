@@ -234,24 +234,52 @@ abstract class FunctionLikeStorage
      */
     public $description;
 
-    public function __toString(): string
+    /**
+     * Used in the Language Server
+     */
+    public function getHoverMarkdown(): string
     {
-        return $this->getSignature(false);
-    }
-
-    public function getSignature(bool $allow_newlines): string
-    {
-        $newlines = $allow_newlines && !empty($this->params);
-
-        $symbol_text = 'function ' . $this->cased_name . '(' . ($newlines ? "\n" : '') . implode(
-            ',' . ($newlines ? "\n" : ' '),
+        $symbol_text = 'function ' . $this->cased_name . '(' . "\n" . implode(
+            ',' . "\n",
             array_map(
-                function (FunctionLikeParameter $param) use ($newlines): string {
-                    return ($newlines ? '    ' : '') . ($param->type ?: 'mixed') . ' $' . $param->name;
+                function (FunctionLikeParameter $param): string {
+                    return '    ' . ($param->type ?: 'mixed') . ' $' . $param->name;
                 },
                 $this->params
             )
-        ) . ($newlines ? "\n" : '') . ') : ' . ($this->return_type ?: 'mixed');
+        ) . "\n" . ') : ' . ($this->return_type ?: 'mixed');
+
+        if (!$this instanceof MethodStorage) {
+            return $symbol_text;
+        }
+
+        switch ($this->visibility) {
+            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
+                $visibility_text = 'private';
+                break;
+
+            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
+                $visibility_text = 'protected';
+                break;
+
+            default:
+                $visibility_text = 'public';
+        }
+
+        return $visibility_text . ' ' . $symbol_text;
+    }
+
+    public function getCompletionSignature(): string
+    {
+        $symbol_text = 'function ' . $this->cased_name . '('   . implode(
+            ',',
+            array_map(
+                function (FunctionLikeParameter $param): string {
+                    return  ($param->type ?: 'mixed') . ' $' . $param->name;
+                },
+                $this->params
+            )
+        ) .  ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;

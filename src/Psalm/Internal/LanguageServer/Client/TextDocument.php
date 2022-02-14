@@ -43,6 +43,10 @@ class TextDocument
      */
     public function publishDiagnostics(string $uri, array $diagnostics, ?int $version = null): void
     {
+        if (!$this->server->client->clientConfiguration->provideDiagnostics) {
+            return;
+        }
+
         $this->server->logDebug("textDocument/publishDiagnostics");
 
         $this->handler->notify('textDocument/publishDiagnostics', [
