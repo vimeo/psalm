@@ -245,7 +245,7 @@ abstract class FunctionLikeStorage
             array_map(
                 function (FunctionLikeParameter $param): string {
                     $realType = $param->type ?: 'mixed';
-                    return "    {$realType}  \${$param->name}";
+                    return "    {$realType} \${$param->name}";
                 },
                 $this->params
             )
