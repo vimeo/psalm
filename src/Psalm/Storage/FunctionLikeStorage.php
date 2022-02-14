@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 use function array_column;
 use function array_fill_keys;
 use function array_map;
+use function count;
 use function implode;
 
 abstract class FunctionLikeStorage
@@ -239,15 +240,18 @@ abstract class FunctionLikeStorage
      */
     public function getHoverMarkdown(): string
     {
-        $symbol_text = 'function ' . $this->cased_name . '(' . "\n" . implode(
-            ',' . "\n",
+        $params = count($this->params) > 0 ? "\n" . implode(
+            ",\n",
             array_map(
                 function (FunctionLikeParameter $param): string {
-                    return '    ' . ($param->type ?: 'mixed') . ' $' . $param->name;
+                    $realType = $param->type ?: 'mixed';
+                    return "    {$realType}  \${$param->name}";
                 },
                 $this->params
             )
-        ) . "\n" . ') : ' . ($this->return_type ?: 'mixed');
+        ) . "\n" : '';
+        $return_type = $this->return_type ?: 'mixed';
+        $symbol_text = "function {$this->cased_name}({$params}): {$return_type}";
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;
