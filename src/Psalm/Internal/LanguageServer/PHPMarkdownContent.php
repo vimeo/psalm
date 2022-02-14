@@ -13,10 +13,10 @@ class PHPMarkdownContent extends MarkupContent
     {
         $markdown = '';
         if ($title !== null) {
-            $markdown = "**$title**\n\n$markdown";
+            $markdown = "**$title**\n\n";
         }
         if ($description !== null) {
-            $markdown = "$description\n$markdown";
+            $markdown = "$markdown$description\n\n";
         }
         parent::__construct(
             MarkupKind::MARKDOWN,
