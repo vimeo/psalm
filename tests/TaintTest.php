@@ -232,7 +232,8 @@ class TaintTest extends TestCase
             ],
             'taintFilterVarInt' => [
                 'code' => '<?php
-                    echo filter_var($_GET["bad"], FILTER_VALIDATE_INT);'
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_INT);
+                    echo filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_INT);'
             ],
             'taintFilterVarBoolean' => [
                 'code' => '<?php
@@ -240,7 +241,8 @@ class TaintTest extends TestCase
             ],
             'taintFilterVarFloat' => [
                 'code' => '<?php
-                    echo filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT);'
+                    echo filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT);
+                    echo filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_FLOAT);'
             ],
             'taintLdapEscape' => [
                 'code' => '<?php

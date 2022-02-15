@@ -677,6 +677,12 @@ function array_product(array $array) {}
  * 259 is FILTER_VALIDATE_FLOAT
  * @psalm-taint-escape ($filter is 259 ? 'html' : null)
  *
+ * 519 is FILTER_SANITIZE_NUMBER_INT
+ * @psalm-taint-escape ($filter is 519 ? 'html' : null)
+ *
+ * 520 is FILTER_SANITIZE_NUMBER_FLOAT
+ * @psalm-taint-escape ($filter is 520 ? 'html' : null)
+ *
  * @psalm-flow ($value, $filter, $options) -> return
  */
 function filter_var(mixed $value, int $filter = FILTER_DEFAULT, array|int $options = 0): mixed {}
