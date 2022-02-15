@@ -442,14 +442,16 @@ class StatementsAnalyzer extends SourceAnalyzer
                 $var_comments = [];
 
                 try {
-                    $var_comments = CommentAnalyzer::arrayToDocblocks(
-                        $docblock,
-                        $statements_analyzer->parsed_docblock,
-                        $statements_analyzer->getSource(),
-                        $statements_analyzer->getAliases(),
-                        $template_type_map,
-                        $file_storage->type_aliases
-                    );
+                    $var_comments = $codebase->config->disable_var_parsing
+                        ? []
+                        : CommentAnalyzer::arrayToDocblocks(
+                            $docblock,
+                            $statements_analyzer->parsed_docblock,
+                            $statements_analyzer->getSource(),
+                            $statements_analyzer->getAliases(),
+                            $template_type_map,
+                            $file_storage->type_aliases
+                        );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
