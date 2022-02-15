@@ -69,7 +69,7 @@ class LanguageClient
         $this->mapper = new JsonMapper;
         $this->server = $server;
 
-        $this->textDocument = new ClientTextDocument($this->handler, $this->mapper, $this->server);
+        $this->textDocument = new ClientTextDocument($this->handler, $this->server);
         $this->workspace = new ClientWorkspace($this->handler, $this->mapper, $this->server);
         $this->clientConfiguration = $clientConfiguration;
     }
@@ -85,7 +85,9 @@ class LanguageClient
                 if ($error) {
                     $this->server->logError('There was an error getting configuration');
                 } else {
-                    $this->mapper->map($value[0], $this->clientConfiguration);
+                    /** @var array<int, array> $value */
+                    [$config] = $value;
+                    $this->mapper->map($config, $this->clientConfiguration);
                     $this->configurationRefreshed();
                 }
             });
@@ -97,6 +99,7 @@ class LanguageClient
      * The amount and content of these notifications depends on the current trace configuration.
      *
      * @param LogTrace $logTrace
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logTrace(LogTrace $logTrace): void
     {

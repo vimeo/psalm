@@ -2,10 +2,13 @@
 
 namespace Psalm;
 
+use InvalidArgumentException;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
@@ -41,8 +44,10 @@ use Psalm\Type\Union;
 use ReflectionType;
 use UnexpectedValueException;
 
+use function array_combine;
 use function array_merge;
 use function explode;
+use function in_array;
 use function is_string;
 use function strpos;
 use function strtolower;
@@ -51,6 +56,7 @@ use function substr;
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
 use const PHP_VERSION_ID;
+
 
 class Codebase
 {
@@ -143,6 +149,7 @@ class Codebase
 
     /**
      * @var Analyzer
+     * @psalm-suppress PropertyNotSetInConstructor
      */
     public $analyzer;
 
@@ -1030,5 +1037,71 @@ class Codebase
         );
 
         $this->taint_flow_graph->addSink($sink);
+    }
+
+        /**
+     * @param array<string> $candidate_files
+     *
+     */
+    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files, bool $force = false): void
+    {
+        $this->loadAnalyzer();
+
+        if ($force) {
+            FileReferenceProvider::clearCache();
+        }
+
+        $this->file_reference_provider->loadReferenceCache($force);
+
+        FunctionLikeAnalyzer::clearCache();
+
+        if ($force || !$this->statements_provider->parser_cache_provider) {
+            $diff_files = $candidate_files;
+        } else {
+            $diff_files = [];
+
+            $parser_cache_provider = $this->statements_provider->parser_cache_provider;
+
+            foreach ($candidate_files as $candidate_file_path) {
+                if ($parser_cache_provider->loadExistingFileContentsFromCache($candidate_file_path)
+                    !== $this->file_provider->getContents($candidate_file_path)
+                ) {
+                    $diff_files[] = $candidate_file_path;
+                }
+            }
+        }
+
+        $referenced_files = $project_analyzer->getReferencedFilesFromDiff($diff_files, false);
+
+        foreach ($diff_files as $diff_file_path) {
+            $this->invalidateInformationForFile($diff_file_path);
+        }
+
+        foreach ($referenced_files as $referenced_file_path) {
+            if (in_array($referenced_file_path, $diff_files, true)) {
+                continue;
+            }
+
+            $file_storage = $this->file_storage_provider->get($referenced_file_path);
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $this->classlike_storage_provider->remove($fq_classlike_name);
+                $this->classlikes->removeClassLike($fq_classlike_name);
+            }
+
+            $this->file_storage_provider->remove($referenced_file_path);
+            $this->scanner->removeFile($referenced_file_path);
+        }
+
+        $referenced_files = array_combine($referenced_files, $referenced_files);
+
+        $this->scanner->addFilesToDeepScan($referenced_files);
+        $this->addFilesToAnalyze(array_combine($candidate_files, $candidate_files));
+
+        $this->scanner->scanFiles($this->classlikes);
+
+        $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
+
+        $this->populator->populateCodebase();
     }
 }

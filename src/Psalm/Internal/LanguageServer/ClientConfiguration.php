@@ -76,6 +76,7 @@ class ClientConfiguration
      * Provide Completion or not
      *
      * @var bool|null
+     * @psalm-suppress PossiblyUnusedProperty
      */
     public $findUnusedVariables;
 
@@ -92,6 +93,7 @@ class ClientConfiguration
      * @var int|null
      *
      * @see MessageType
+     * @psalm-suppress PossiblyUnusedProperty
      */
     public $logLevel;
 

@@ -7,6 +7,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
+use function array_values;
+use function property_exists;
+
 class ClassConstantStorage
 {
     /**
@@ -83,6 +86,7 @@ class ClassConstantStorage
             $types = $this->type->getAtomicTypes();
             $type = array_values($types)[0];
             if (property_exists($type, 'value')) {
+                /** @psalm-suppress UndefinedPropertyFetch */
                 $value = " = {$type->value};";
             }
         }

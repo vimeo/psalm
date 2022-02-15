@@ -49,7 +49,10 @@ require_once __DIR__ . '/../LanguageServer/ClientConfiguration.php';
 
 final class LanguageServer
 {
-    /** @param array<int,string> $argv */
+    /**
+     * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod
+     */
     public static function run(array $argv): void
     {
         $clientConfiguration = new ClientConfiguration();

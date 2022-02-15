@@ -5,6 +5,7 @@ namespace Psalm\Tests\LanguageServer;
 use LanguageServerProtocol\Position;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
@@ -18,6 +19,9 @@ use function count;
 
 class CompletionTest extends TestCase
 {
+    /** @var Codebase */
+    protected $codebase;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -35,17 +39,25 @@ class CompletionTest extends TestCase
             new ProjectCacheProvider()
         );
 
+        $this->codebase = new Codebase($config, $providers);
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
+            null,
+            [],
+            1,
+            null,
+            $this->codebase
         );
+
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 
     public function testCompletionOnThisWithNoAssignment(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -73,7 +85,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnThisWithAssignmentBelow(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -103,7 +115,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnThisWithIfBelow(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -152,7 +164,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnSelfWithIfBelow(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -201,7 +213,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnSelfWithListBelow(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -250,7 +262,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnThisProperty(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -277,7 +289,7 @@ class CompletionTest extends TestCase
                 }'
         );
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
 
         $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
@@ -288,7 +300,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnThisPropertyWithCharacter(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -315,7 +327,7 @@ class CompletionTest extends TestCase
                 }'
         );
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
 
         $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
@@ -326,7 +338,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnThisPropertyWithAnotherCharacter(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -353,7 +365,7 @@ class CompletionTest extends TestCase
                 }'
         );
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
 
         $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
@@ -364,7 +376,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnTemplatedThisProperty(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -400,7 +412,7 @@ class CompletionTest extends TestCase
                 }'
         );
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
 
         $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
@@ -417,7 +429,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValue(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -446,7 +458,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodArgument(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -477,7 +489,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValueWithArgument(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -508,7 +520,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnVariableWithWhitespace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -533,7 +545,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnVariableWithWhitespaceAndReturn(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -560,7 +572,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValueWithWhitespace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -590,7 +602,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValueWithWhitespaceAndReturn(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -621,7 +633,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValueWhereParamIsClosure(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -650,7 +662,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnMethodReturnValueWhereParamIsClosureWithStmt(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -679,7 +691,7 @@ class CompletionTest extends TestCase
 
     public function testCursorPositionOnMethodCompletion(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -716,7 +728,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnNewExceptionWithoutNamespace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -737,7 +749,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnNewExceptionWithNamespaceNoUse(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -784,7 +796,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnNewExceptionWithNamespaceAndUse(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -833,7 +845,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnNamespaceWithFullyQualified(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -876,7 +888,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnExceptionWithNamespaceAndUseInClass(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -920,7 +932,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionForFunctionNames(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -956,7 +968,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionForNamespacedOverriddenFunctionNames(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -986,7 +998,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionForFunctionNamesRespectUsedNamespaces(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1013,7 +1025,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionForFunctionNamesRespectCase(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1039,7 +1051,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNames(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1064,7 +1076,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNamesFromPredefinedFunctions(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1083,7 +1095,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNamesFromUsedFunction(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1106,7 +1118,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNamesFromUsedNamespace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1129,7 +1141,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNamesFromUsedNamespaceRespectFirstCharCase(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1152,7 +1164,7 @@ class CompletionTest extends TestCase
 
     public function testGetMatchingFunctionNamesWithNamespace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1177,7 +1189,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionOnInstanceofWithNamespaceAndUse(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1220,7 +1232,7 @@ class CompletionTest extends TestCase
     public function testCompletionOnClassReference(): void
     {
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1252,7 +1264,7 @@ class CompletionTest extends TestCase
     public function testCompletionOnClassInstanceReferenceWithAssignmentAfter(): void
     {
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1287,7 +1299,7 @@ class CompletionTest extends TestCase
     public function testCompletionOnClassStaticReferenceWithAssignmentAfter(): void
     {
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1320,7 +1332,7 @@ class CompletionTest extends TestCase
 
     public function testNoCrashOnLoopId(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1338,7 +1350,7 @@ class CompletionTest extends TestCase
     public function testCompletionOnArrayKey(): void
     {
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1372,7 +1384,7 @@ class CompletionTest extends TestCase
     public function testTypeContextForFunctionArgument(): void
     {
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1396,7 +1408,7 @@ class CompletionTest extends TestCase
 
     public function testTypeContextForFunctionArgumentWithWhiteSpace(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1420,7 +1432,7 @@ class CompletionTest extends TestCase
 
     public function testCallStaticInInstance(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -1439,7 +1451,7 @@ class CompletionTest extends TestCase
                 }'
         );
 
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
 
         $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
@@ -1456,7 +1468,7 @@ class CompletionTest extends TestCase
 
     public function testCompletionsForType(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 

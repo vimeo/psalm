@@ -246,13 +246,6 @@ class ProjectAnalyzer
     ];
 
     /**
-     * When this is true, the language server will send the diagnostic code with a help link.
-     *
-     * @var bool
-     */
-    public $language_server_use_extended_diagnostic_codes = false;
-
-    /**
      * @param array<ReportOptions> $generated_report_options
      */
     public function __construct(

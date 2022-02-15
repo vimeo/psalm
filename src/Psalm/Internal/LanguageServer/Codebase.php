@@ -19,14 +19,11 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Codebase as PsalmCodebase;
 use Psalm\Exception\UnanalyzedFileException;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
@@ -38,7 +35,6 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 
-use function array_combine;
 use function array_pop;
 use function array_reverse;
 use function count;
@@ -46,7 +42,6 @@ use function dirname;
 use function error_log;
 use function explode;
 use function implode;
-use function in_array;
 use function is_numeric;
 use function krsort;
 use function ksort;
@@ -324,6 +319,7 @@ class Codebase extends PsalmCodebase
                 continue;
             }
 
+            /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
             $num_whitespace_bytes = preg_match('/\G\s+/', $file_contents, $matches, 0, $end_pos_excluding_whitespace)
                 ? strlen($matches[0])
                 : 0;
@@ -888,6 +884,10 @@ class Codebase extends PsalmCodebase
             $symbol = preg_replace('/:.*/', '', $reference->symbol);
             $symbol_parts = explode('-', $symbol);
 
+            if (!isset($symbol_parts[0]) || !isset($symbol_parts[1])) {
+                return null;
+            }
+
             $file_contents = $this->getFileContents($reference->file_path);
 
             return new Raw(
@@ -972,71 +972,5 @@ class Codebase extends PsalmCodebase
     public function removeTemporaryFileChanges(string $file_path): void
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
-    }
-
-    /**
-     * @param array<string> $candidate_files
-     *
-     */
-    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files, bool $force = false): void
-    {
-        $this->loadAnalyzer();
-
-        if ($force) {
-            FileReferenceProvider::clearCache();
-        }
-
-        $this->file_reference_provider->loadReferenceCache($force);
-
-        FunctionLikeAnalyzer::clearCache();
-
-        if ($force || !$this->statements_provider->parser_cache_provider) {
-            $diff_files = $candidate_files;
-        } else {
-            $diff_files = [];
-
-            $parser_cache_provider = $this->statements_provider->parser_cache_provider;
-
-            foreach ($candidate_files as $candidate_file_path) {
-                if ($parser_cache_provider->loadExistingFileContentsFromCache($candidate_file_path)
-                    !== $this->file_provider->getContents($candidate_file_path)
-                ) {
-                    $diff_files[] = $candidate_file_path;
-                }
-            }
-        }
-
-        $referenced_files = $project_analyzer->getReferencedFilesFromDiff($diff_files, false);
-
-        foreach ($diff_files as $diff_file_path) {
-            $this->invalidateInformationForFile($diff_file_path);
-        }
-
-        foreach ($referenced_files as $referenced_file_path) {
-            if (in_array($referenced_file_path, $diff_files, true)) {
-                continue;
-            }
-
-            $file_storage = $this->file_storage_provider->get($referenced_file_path);
-
-            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->classlike_storage_provider->remove($fq_classlike_name);
-                $this->classlikes->removeClassLike($fq_classlike_name);
-            }
-
-            $this->file_storage_provider->remove($referenced_file_path);
-            $this->scanner->removeFile($referenced_file_path);
-        }
-
-        $referenced_files = array_combine($referenced_files, $referenced_files);
-
-        $this->scanner->addFilesToDeepScan($referenced_files);
-        $this->addFilesToAnalyze(array_combine($candidate_files, $candidate_files));
-
-        $this->scanner->scanFiles($this->classlikes);
-
-        $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
-
-        $this->populator->populateCodebase();
     }
 }

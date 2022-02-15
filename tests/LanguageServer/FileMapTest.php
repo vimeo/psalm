@@ -4,6 +4,7 @@ namespace Psalm\Tests\LanguageServer;
 
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
@@ -16,6 +17,9 @@ use function count;
 
 class FileMapTest extends TestCase
 {
+    /** @var Codebase */
+    protected $codebase;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -33,17 +37,25 @@ class FileMapTest extends TestCase
             new ProjectCacheProvider()
         );
 
+        $this->codebase = new Codebase($config, $providers);
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
+            null,
+            [],
+            1,
+            null,
+            $this->codebase
         );
+
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 
     public function testMapIsUpdatedOnReloadFiles(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -73,7 +85,7 @@ class FileMapTest extends TestCase
 
     public function testGetTypeMap(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -109,7 +121,7 @@ class FileMapTest extends TestCase
 
     public function testMapIsUpdatedAfterEditingMethod(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $codebase->diff_methods = true;
         $config = $codebase->config;
         $config->throw_exception = false;
@@ -163,7 +175,7 @@ class FileMapTest extends TestCase
 
     public function testMapIsUpdatedAfterDeletingFirstMethod(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $codebase->diff_methods = true;
         $config = $codebase->config;
         $config->throw_exception = false;
@@ -211,7 +223,7 @@ class FileMapTest extends TestCase
 
     public function testMapIsUpdatedAfterDeletingSecondMethod(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $codebase->diff_methods = true;
         $config = $codebase->config;
         $config->throw_exception = false;
@@ -257,7 +269,7 @@ class FileMapTest extends TestCase
 
     public function testMapIsUpdatedAfterAddingMethod(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $codebase->diff_methods = true;
         $config = $codebase->config;
         $config->throw_exception = false;

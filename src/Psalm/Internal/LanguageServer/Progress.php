@@ -3,6 +3,7 @@
 namespace Psalm\Internal\LanguageServer;
 
 use Psalm\Progress\Progress as Base;
+
 use function str_replace;
 
 /**
@@ -15,11 +16,6 @@ class Progress extends Base
      * @var LanguageServer|null
      */
     private $server;
-
-    public function __construct()
-    {
-
-    }
 
     public function setServer(LanguageServer $server): void
     {

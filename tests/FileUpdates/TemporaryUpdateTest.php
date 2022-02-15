@@ -4,6 +4,7 @@ namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
@@ -24,6 +25,9 @@ use const DIRECTORY_SEPARATOR;
 
 class TemporaryUpdateTest extends TestCase
 {
+    /** @var Codebase */
+    protected $codebase;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -42,10 +46,18 @@ class TemporaryUpdateTest extends TestCase
             new ProjectCacheProvider()
         );
 
+        $this->codebase = new Codebase($config, $providers);
+
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
+            null,
+            [],
+            1,
+            null,
+            $this->codebase
         );
+
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
@@ -64,7 +76,7 @@ class TemporaryUpdateTest extends TestCase
         bool $test_save = true,
         bool $check_unused_code = false
     ): void {
-        $codebase = $this->project_analyzer->getCodebase();
+        $codebase = $this->codebase;
         $codebase->diff_methods = true;
 
         if ($check_unused_code) {

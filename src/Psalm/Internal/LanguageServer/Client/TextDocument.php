@@ -20,19 +20,13 @@ class TextDocument
     private $handler;
 
     /**
-     * @var JsonMapper
-     */
-    private $mapper;
-
-    /**
      * @var LanguageServer
      */
     private $server;
 
-    public function __construct(ClientHandler $handler, JsonMapper $mapper, LanguageServer $server)
+    public function __construct(ClientHandler $handler, LanguageServer $server)
     {
         $this->handler = $handler;
-        $this->mapper = $mapper;
         $this->server = $server;
     }
 

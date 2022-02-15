@@ -22,7 +22,7 @@ use const DIRECTORY_SEPARATOR;
 class FileProvider
 {
     /**
-     * @var array<lowercase-string, string>
+     * @var array<lowercase-string, array{version: ?int, content: string}>
      */
     protected $temp_files = [];
 
@@ -66,7 +66,10 @@ class FileProvider
         }
 
         if (isset($this->temp_files[$file_path_lc])) {
-            $this->temp_files[$file_path_lc] = $file_contents;
+            $this->temp_files[$file_path_lc] = [
+                'version'=> null,
+                'content' => $file_contents
+            ];
         }
 
         file_put_contents($file_path, $file_contents);
@@ -129,7 +132,11 @@ class FileProvider
     public function closeFile(string $file_path): void
     {
         $file_path_lc = strtolower($file_path);
-        unset($this->temp_files[$file_path_lc], $this->open_files[$file_path_lc], $this->open_files_paths[$file_path_lc]);
+        unset(
+            $this->temp_files[$file_path_lc],
+            $this->open_files[$file_path_lc],
+            $this->open_files_paths[$file_path_lc]
+        );
     }
 
     public function fileExists(string $file_path): bool

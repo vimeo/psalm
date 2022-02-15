@@ -657,7 +657,7 @@ class LanguageServer extends Dispatcher
      */
     public function queueSaveFileAnalysis(string $file_path, string $uri): void
     {
-        $this->queueFileAnalysisWithOpenedFiles([$file_path => $this->pathToUri($file_path)]);
+        $this->queueFileAnalysisWithOpenedFiles([$file_path => $uri]);
     }
 
     /**
@@ -855,6 +855,10 @@ class LanguageServer extends Dispatcher
      */
     public function log(int $type, string $message, array $context = []): void
     {
+        if ($this->client->clientConfiguration->logLevel < $type) {
+            return;
+        }
+
         if (!empty($context)) {
             $message .= "\n" . json_encode($context, JSON_PRETTY_PRINT);
         }
