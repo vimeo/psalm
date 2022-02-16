@@ -1163,7 +1163,6 @@ class ArrayFetchAnalyzer
                 $offset_type,
                 $in_assignment,
                 $expected_offset_types,
-                $replacement_type,
                 $array_access_type,
                 $original_type,
                 $has_valid_offset
@@ -1231,7 +1230,6 @@ class ArrayFetchAnalyzer
         Union $offset_type,
         bool $in_assignment,
         array &$expected_offset_types,
-        ?Union $replacement_type,
         ?Union &$array_access_type,
         Atomic $original_type,
         bool &$has_valid_offset
@@ -1349,14 +1347,6 @@ class ArrayFetchAnalyzer
 
         if (!$stmt->dim && $type instanceof TNonEmptyArray && $type->count !== null) {
             $type->count++;
-        }
-
-        if ($in_assignment && $replacement_type) {
-            $type->type_params[1] = Type::combineUnionTypes(
-                $type->type_params[1],
-                $replacement_type,
-                $codebase
-            );
         }
 
         $array_access_type = Type::combineUnionTypes(
