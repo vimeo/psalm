@@ -249,6 +249,7 @@
             <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCatch" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidClassConstantType" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidConstantAssignmentValue" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
@@ -343,6 +344,7 @@
             <xs:element name="NullPropertyAssignment" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenFinalConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenInterfaceConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />
