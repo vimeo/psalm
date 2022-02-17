@@ -988,7 +988,8 @@ class AssignmentAnalyzer
 
         $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
 
-        if (($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
+        if ($statements_analyzer->data_flow_graph !== null
+            && ($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
             && $stmt->var->var instanceof Variable
             && is_string($stmt->var->var->name)
         ) {
