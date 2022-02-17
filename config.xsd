@@ -193,6 +193,7 @@
             <xs:element name="AmbiguousConstantInheritance" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="ArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />

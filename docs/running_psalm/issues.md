@@ -5,6 +5,7 @@
  - [AmbiguousConstantInheritance](issues/AmbiguousConstantInheritance.md)
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [AssignmentToVoid](issues/AssignmentToVoid.md)
+ - [CheckType](issues/CheckType.md)
  - [CircularReference](issues/CircularReference.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
