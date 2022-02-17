@@ -354,7 +354,7 @@ class ClassLikeDocblockParser
                     );
 
                     $method_tree = $parse_tree_creator->create();
-                } catch (TypeParseTreeException $e) {
+                } catch (TypeParseTreeException $_) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
@@ -425,7 +425,7 @@ class ClassLikeDocblockParser
                         $codebase->analysis_php_version_id,
                         $has_errors
                     );
-                } catch (Exception $e) {
+                } catch (Exception $_) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 

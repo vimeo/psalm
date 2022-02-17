@@ -454,7 +454,7 @@ class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     // do nothing
                 }
             }
@@ -516,7 +516,7 @@ class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     // do nothing
                 }
             }
@@ -1146,7 +1146,7 @@ class TemplateStandinTypeReplacer
             $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
             $container_class_storage = $codebase->classlike_storage_provider->get($container_type_part->value);
             $container_type_params_covariant = $container_class_storage->template_covariants;
-        } catch (Throwable $e) {
+        } catch (Throwable $_) {
             $input_class_storage = null;
         }
 

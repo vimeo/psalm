@@ -278,7 +278,7 @@ class TypeExpander
                             $matching_constant,
                             ReflectionProperty::IS_PRIVATE
                         );
-                    } catch (CircularReferenceException $e) {
+                    } catch (CircularReferenceException $_) {
                         $class_constant = null;
                     }
 
@@ -912,7 +912,7 @@ class TypeExpander
                     $type_param->const_name,
                     ReflectionProperty::IS_PRIVATE
                 );
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException $_) {
                 return [$return_type];
             }
 

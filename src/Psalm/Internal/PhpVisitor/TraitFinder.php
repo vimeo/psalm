@@ -71,7 +71,7 @@ class TraitFinder extends PhpParser\NodeVisitorAbstract
 
         try {
             $reflection_trait = new ReflectionClass($this->fq_trait_name);
-        } catch (Throwable $t) {
+        } catch (Throwable $_) {
             return null;
         }
 

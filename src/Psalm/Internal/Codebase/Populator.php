@@ -102,7 +102,7 @@ class Populator
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
-                } catch (InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException $_) {
                     continue;
                 }
 
@@ -296,7 +296,7 @@ class Populator
                     )
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -447,7 +447,7 @@ class Populator
                 )
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return;
         }
 
@@ -549,7 +549,7 @@ class Populator
 
         try {
             $parent_storage = $storage_provider->get($parent_storage_class);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_storage_class] = true;
@@ -732,7 +732,7 @@ class Populator
                     )
                 );
                 $new_parent_interface_storage = $storage_provider->get($new_parent);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -753,7 +753,7 @@ class Populator
                 )
             );
             $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
@@ -786,7 +786,7 @@ class Populator
                 )
             );
             $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$implemented_interface_lc] = true;
@@ -828,7 +828,7 @@ class Populator
         foreach ($storage->required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -840,7 +840,7 @@ class Populator
         foreach ($all_required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -858,7 +858,7 @@ class Populator
         foreach ($storage->referenced_classlikes as $fq_class_name) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -868,14 +868,14 @@ class Populator
 
             try {
                 $included_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
             foreach ($classlike_storage->used_traits as $used_trait) {
                 try {
                     $trait_storage = $this->classlike_storage_provider->get($used_trait);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     continue;
                 }
 
@@ -887,7 +887,7 @@ class Populator
                     $included_trait_file_storage = $this->file_storage_provider->get(
                         $trait_storage->location->file_path
                     );
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     continue;
                 }
 
@@ -908,7 +908,7 @@ class Populator
         foreach ($all_required_file_paths as $required_file_path) {
             try {
                 $required_file_storage = $this->file_storage_provider->get($required_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -918,7 +918,7 @@ class Populator
         foreach ($storage->required_classes as $required_classlike) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($required_classlike);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -928,7 +928,7 @@ class Populator
 
             try {
                 $required_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 

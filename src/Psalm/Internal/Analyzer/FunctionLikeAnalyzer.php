@@ -1597,7 +1597,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             try {
                 return $codebase_methods->getStorage($method_id);
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $_) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id === null) {

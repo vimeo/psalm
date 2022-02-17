@@ -326,7 +326,7 @@ class FunctionLikeNodeScanner
 
                         try {
                             $negated_formula = Algebra::negateFormula($if_clauses);
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException $_) {
                             $var_assertions = [];
                             break;
                         }
@@ -1048,7 +1048,7 @@ class FunctionLikeNodeScanner
                     $docblock_info = null;
                     try {
                         $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
-                    } catch (DocblockParseException $e) {
+                    } catch (DocblockParseException $_) {
                     }
                     if ($docblock_info) {
                         if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {

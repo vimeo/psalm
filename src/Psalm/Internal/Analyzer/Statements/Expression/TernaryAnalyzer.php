@@ -64,7 +64,7 @@ class TernaryAnalyzer
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $_) {
             return false;
         }
 
@@ -155,7 +155,7 @@ class TernaryAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $_) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
@@ -166,7 +166,7 @@ class TernaryAnalyzer
                     $codebase,
                     false
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $_) {
                 $if_scope->negated_clauses = [];
             }
         }

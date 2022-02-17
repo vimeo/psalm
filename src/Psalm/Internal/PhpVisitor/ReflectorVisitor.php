@@ -371,7 +371,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $template_types,
                     $this->type_aliases
                 );
-            } catch (DocblockParseException $e) {
+            } catch (DocblockParseException $_) {
                 // do nothing
             }
 

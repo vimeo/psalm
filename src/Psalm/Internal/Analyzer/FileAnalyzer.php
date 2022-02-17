@@ -173,7 +173,7 @@ class FileAnalyzer extends SourceAnalyzer
 
         try {
             $stmts = $codebase->getStatementsForFile($this->file_path);
-        } catch (PhpParser\Error $e) {
+        } catch (PhpParser\Error $_) {
             return;
         }
 

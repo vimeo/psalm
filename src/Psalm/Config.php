@@ -1643,7 +1643,7 @@ class Config
             try {
                 $file_storage = $codebase->file_storage_provider->get($file_path);
                 $dependent_files += $file_storage->required_by_file_paths;
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 // do nothing
             }
         }
@@ -2406,7 +2406,7 @@ class Config
         if (file_exists($composer_json_path)) {
             try {
                 $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
+            } catch (JsonException $_) {
                 $composer_json = null;
             }
 

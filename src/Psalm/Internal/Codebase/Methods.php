@@ -142,7 +142,7 @@ class Methods
 
         try {
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return false;
         }
 
@@ -1239,7 +1239,7 @@ class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return false;
         }
 

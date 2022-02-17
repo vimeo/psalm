@@ -71,7 +71,7 @@ class ElseIfAnalyzer
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
             $entry_clauses = $if_conditional_scope->entry_clauses;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException $_) {
             return false;
         }
 
@@ -194,7 +194,7 @@ class ElseIfAnalyzer
             $negated_elseif_types = Algebra::getTruthsFromFormula(
                 Algebra::negateFormula($elseif_clauses)
             );
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $_) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
         }
@@ -432,7 +432,7 @@ class ElseIfAnalyzer
                     Algebra::negateFormula($elseif_clauses)
                 )
             );
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $_) {
             $if_scope->negated_clauses = [];
         }
 

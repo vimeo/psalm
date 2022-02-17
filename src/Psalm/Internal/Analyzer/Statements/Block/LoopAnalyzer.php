@@ -465,7 +465,7 @@ class LoopAnalyzer
 
             try {
                 $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $_) {
                 $negated_pre_condition_clauses = [];
             }
 

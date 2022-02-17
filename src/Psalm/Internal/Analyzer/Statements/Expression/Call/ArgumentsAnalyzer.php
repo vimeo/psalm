@@ -398,7 +398,7 @@ class ArgumentsAnalyzer
 
                 return $codebase->methods->getStorage($method_id);
             }
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $_) {
             return null;
         }
 
@@ -605,7 +605,7 @@ class ArgumentsAnalyzer
                 $statements_analyzer->getFilePath(),
                 $closure_id
             );
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $_) {
             return;
         }
 

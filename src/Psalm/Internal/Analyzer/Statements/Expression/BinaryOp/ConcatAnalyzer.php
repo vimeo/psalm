@@ -384,7 +384,7 @@ class ConcatAnalyzer
                     )) {
                         try {
                             $storage = $codebase->methods->getStorage($to_string_method_id);
-                        } catch (UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException $_) {
                             continue;
                         }
 

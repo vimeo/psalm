@@ -286,7 +286,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 try {
                     $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
                     $this->function_analyzers[$fq_function_name] = $function_analyzer;
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $_) {
                     // do nothing
                 }
             }
@@ -606,7 +606,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 );
 
                 $class_analyzer->analyze(null, $global_context);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 // disregard this exception, we'll likely see it elsewhere in the form
                 // of an issue
             }
@@ -1115,7 +1115,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                                 $is_expected = true;
                                 break;
                             }
-                        } catch (InvalidArgumentException $e) {
+                        } catch (InvalidArgumentException $_) {
                             $is_expected = true;
                             break;
                         }

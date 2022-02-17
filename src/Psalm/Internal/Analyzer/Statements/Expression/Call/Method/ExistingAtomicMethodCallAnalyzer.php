@@ -198,7 +198,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         try {
             $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException $_) {
             $method_storage = null;
         }
 

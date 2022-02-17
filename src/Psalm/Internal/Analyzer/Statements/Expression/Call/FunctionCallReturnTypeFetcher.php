@@ -233,7 +233,7 @@ class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }

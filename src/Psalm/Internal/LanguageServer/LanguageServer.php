@@ -483,7 +483,7 @@ class LanguageServer extends Dispatcher
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
                     $type
                 );
-            } catch (Throwable $err) {
+            } catch (Throwable $_) {
                 // do nothing
             }
         }
@@ -507,7 +507,7 @@ class LanguageServer extends Dispatcher
                 3,
                 'telemetry/event'
             );
-        } catch (Throwable $err) {
+        } catch (Throwable $_) {
             // do nothing
         }
         new Success(null);

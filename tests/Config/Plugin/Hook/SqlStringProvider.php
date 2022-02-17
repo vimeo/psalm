@@ -23,7 +23,7 @@ class SqlStringProvider implements StringInterpreterInterface
                 if (!$parser->errors) {
                     return new TSqlSelectString($value);
                 }
-            } catch (Throwable $e) {
+            } catch (Throwable $_) {
                 // fall through
             }
         }

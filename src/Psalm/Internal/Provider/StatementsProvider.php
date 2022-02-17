@@ -443,7 +443,7 @@ class StatementsProvider
                 try {
                     /** @var list<Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-                } catch (Throwable $t) {
+                } catch (Throwable $_) {
                     $stmts = [];
 
                     // hope this got caught below
@@ -453,7 +453,7 @@ class StatementsProvider
             try {
                 /** @var list<Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-            } catch (Throwable $t) {
+            } catch (Throwable $_) {
                 $stmts = [];
 
                 // hope this got caught below

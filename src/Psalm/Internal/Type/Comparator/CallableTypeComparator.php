@@ -211,7 +211,7 @@ class CallableTypeComparator
                 }
 
                 $codebase->methods->getStorage($method_id);
-            } catch (Exception $e) {
+            } catch (Exception $_) {
                 return false;
             }
         }
@@ -305,7 +305,7 @@ class CallableTypeComparator
                     $return_type,
                     $function_storage->pure
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $_) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -370,7 +370,7 @@ class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure
                     );
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $_) {
                     // do nothing
                 }
             }

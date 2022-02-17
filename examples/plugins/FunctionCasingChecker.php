@@ -58,7 +58,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     // fall through
                 }
             }
-        } catch (Exception $e) {
+        } catch (Exception $_) {
             // can throw if storage is missing
         }
     }
@@ -98,7 +98,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     // fall through
                 }
             }
-        } catch (Exception $e) {
+        } catch (Exception $_) {
             // can throw if storage is missing
         }
     }

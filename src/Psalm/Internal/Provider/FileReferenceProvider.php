@@ -398,7 +398,7 @@ class FileReferenceProvider
 
                     try {
                         $referenced_files[] = $codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException $_) {
                         if (isset(self::$classlike_files[$fq_class_name_lc])) {
                             $referenced_files[] = self::$classlike_files[$fq_class_name_lc];
                         }

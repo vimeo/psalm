@@ -709,7 +709,7 @@ class Scanner
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     return new ReflectionClass($fq_class_name);
-                } catch (Throwable $e) {
+                } catch (Throwable $_) {
                     // do not cache any results here (as case-sensitive filenames can screw things up)
 
                     return null;

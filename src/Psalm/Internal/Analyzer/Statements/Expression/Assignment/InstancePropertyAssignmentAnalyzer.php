@@ -121,7 +121,7 @@ class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $context
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException $_) {
                 // do nothing
             }
 

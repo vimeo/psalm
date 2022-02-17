@@ -90,7 +90,7 @@ class OrAnalyzer
                 if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
                     $post_leaving_if_context = clone $context;
                 }
-            } catch (ScopeAnalysisException $e) {
+            } catch (ScopeAnalysisException $_) {
                 return false;
             }
         } else {
@@ -151,7 +151,7 @@ class OrAnalyzer
 
         try {
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException $_) {
             try {
                 $negated_left_clauses = FormulaGenerator::getFormula(
                     $left_cond_id,
@@ -162,7 +162,7 @@ class OrAnalyzer
                     $codebase,
                     false
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $_) {
                 return false;
             }
         }
