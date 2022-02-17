@@ -923,7 +923,7 @@ class AssignmentAnalyzer
                     )
                 );
             }
-            if (!empty($var_comments)) {
+            if (!empty($var_comments) && $var_comments[0]->type !== null && $var_comments[0]->var_id === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         "Docblock type cannot be used for reference assignment",
@@ -1002,6 +1002,15 @@ class AssignmentAnalyzer
                     $stmt->var instanceof ArrayDimFetch
                         ? "offset-assignment-as-reference"
                         : "property-assignment-as-reference"
+                );
+            }
+
+            if ($root_var_id === '$this') {
+                // Variables on `$this` are always used
+                $statements_analyzer->data_flow_graph->addPath(
+                    $lhs_node,
+                    new DataFlowNode('variable-use', 'variable use', null),
+                    'variable-use',
                 );
             }
         }
