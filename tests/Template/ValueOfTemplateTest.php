@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Tests;
+namespace Psalm\Tests\Template;
 
+use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
