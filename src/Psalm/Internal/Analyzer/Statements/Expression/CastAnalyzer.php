@@ -45,7 +45,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function count;
 use function get_class;
 
 /**
@@ -77,12 +76,26 @@ class CastAnalyzer
                     $valid_int_type = Type::getInt(false, (int)$maybe_type->getSingleStringLiteral()->value);
                 }
 
-                if (count($maybe_type->getAtomicTypes()) === 1
-                    && $maybe_type->getSingleAtomic() instanceof Type\Atomic\TBool) {
-                    $valid_int_type = new Union([
-                        new TLiteralInt(0),
-                        new TLiteralInt(1),
-                    ]);
+                if ($maybe_type->hasBool()) {
+                    $casted_type = clone $maybe_type;
+                    if (isset($casted_type->getAtomicTypes()['bool'])) {
+                        $casted_type->addType(new TLiteralInt(0));
+                        $casted_type->addType(new TLiteralInt(1));
+                    } else {
+                        if (isset($casted_type->getAtomicTypes()['true'])) {
+                            $casted_type->addType(new TLiteralInt(1));
+                        }
+                        if (isset($casted_type->getAtomicTypes()['false'])) {
+                            $casted_type->addType(new TLiteralInt(0));
+                        }
+                    }
+                    $casted_type->removeType('bool');
+                    $casted_type->removeType('true');
+                    $casted_type->removeType('false');
+
+                    if ($casted_type->isInt()) {
+                        $valid_int_type = $casted_type;
+                    }
                 }
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
