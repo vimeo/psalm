@@ -695,6 +695,7 @@ class LanguageServer extends Dispatcher
                 return;
             }
 
+            $this->logDebug("Reloading Files");
             $this->codebase->reloadFiles(
                 $this->project_analyzer,
                 array_keys($files)
@@ -703,6 +704,8 @@ class LanguageServer extends Dispatcher
             $this->codebase->analyzer->addFilesToAnalyze(
                 array_combine(array_keys($files), array_keys($files))
             );
+
+            $this->logDebug("Analyze Files");
             $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $this->emitVersionedIssues($files, $version);
