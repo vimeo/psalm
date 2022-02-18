@@ -1669,6 +1669,36 @@ class FunctionCallTest extends TestCase
                     '$a' => 'DateTimeImmutable|float',
                 ],
             ],
+            'maxUnpackArray' => [
+                'code' => '<?php
+                    $files = [
+                        __FILE__,
+                        __FILE__,
+                        __FILE__,
+                        __FILE__,
+                    ];
+
+                    $a = array_map("filemtime", $files);
+                    $b = array_map(
+                        function (string $file): int {
+                            return filemtime($file);
+                        },
+                        $files,
+                    );
+                    $A = max(filemtime(__FILE__), ...$a);
+                    $B = max(filemtime(__FILE__), ...$b);
+
+                    echo date("c", $A), "\n", date("c", $B);
+                ',
+            ],
+            'maxUnpackArrayWithNonInt' => [
+                'code' => '<?php
+                    $max = max(1, 2, ...[new DateTime(), 3, 4]);
+                ',
+                'assertions' => [
+                    '$max===' => '1|2|3|4|DateTime',
+                ],
+            ],
             'strtolowerEmptiness' => [
                 'code' => '<?php
                     /** @param non-empty-string $s */
