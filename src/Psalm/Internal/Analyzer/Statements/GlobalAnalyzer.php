@@ -30,7 +30,7 @@ class GlobalAnalyzer
         if (!$context->collect_initializations && !$global_context) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
-                    'Cannot use global scope here',
+                    'Cannot use global scope here (unless this file is included from a non-global scope)',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSource()->getSuppressedIssues()
