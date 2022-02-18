@@ -93,6 +93,28 @@ class ArrayAnalyzer
             );
         }
 
+        // if this array looks like an object-like array, let's return that instead
+        if ($array_creation_info->can_create_objectlike
+            && $array_creation_info->property_types
+        ) {
+            $object_like = new TKeyedArray(
+                $array_creation_info->property_types,
+                $array_creation_info->class_strings
+            );
+            $object_like->sealed = true;
+            $object_like->is_list = $array_creation_info->all_list;
+
+            $stmt_type = new Union([$object_like]);
+
+            if ($array_creation_info->parent_taint_nodes) {
+                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            return true;
+        }
+
         if ($array_creation_info->item_key_atomic_types) {
             $item_key_type = TypeCombiner::combine(
                 $array_creation_info->item_key_atomic_types,
@@ -119,31 +141,6 @@ class ArrayAnalyzer
 
         if ($item_key_type === null && $item_value_type === null) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
-
-            return true;
-        }
-
-        // if this array looks like an object-like array, let's return that instead
-        if ($item_value_type
-            && $item_key_type
-            && ($item_key_type->hasString() || $item_key_type->hasInt())
-            && $array_creation_info->can_create_objectlike
-            && $array_creation_info->property_types
-        ) {
-            $object_like = new TKeyedArray(
-                $array_creation_info->property_types,
-                $array_creation_info->class_strings
-            );
-            $object_like->sealed = true;
-            $object_like->is_list = $array_creation_info->all_list;
-
-            $stmt_type = new Union([$object_like]);
-
-            if ($array_creation_info->parent_taint_nodes) {
-                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
-            }
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return true;
         }
