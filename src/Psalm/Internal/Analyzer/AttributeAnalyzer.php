@@ -31,7 +31,7 @@ class AttributeAnalyzer
         AttributeGroup $attribute_group,
         array $suppressed_issues,
         int $target,
-        ?ClassLikeStorage $classlike_storage = null,
+        ?ClassLikeStorage $classlike_storage = null
     ): void {
         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $source,

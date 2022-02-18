@@ -404,7 +404,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class->attrGroups[$i],
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
                 1,
-                $storage,
+                $storage
             );
         }
 
