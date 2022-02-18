@@ -5,6 +5,8 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class AttributeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -240,7 +242,28 @@ class AttributeTest extends TestCase
                 [],
                 [],
                 '8.1'
-            ]
+            ],
+            'createObjectAsAttributeArg' => [
+                '<?php
+                    #[Attribute]
+                    class B
+                    {
+                        public function __construct(?array $listOfB = null) {}
+                    }
+
+                    #[Attribute(Attribute::TARGET_CLASS)]
+                    class A
+                    {
+                        /**
+                         * @param B[] $listOfB
+                         */
+                        public function __construct(?array $listOfB = null) {}
+                    }
+
+                    #[A([new B])]
+                    class C {}
+                ',
+            ],
         ];
     }
 
@@ -256,7 +279,7 @@ class AttributeTest extends TestCase
 
                     #[A]
                     class B {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 [],
                 false,
                 '8.0'
@@ -267,7 +290,7 @@ class AttributeTest extends TestCase
 
                     #[Pure]
                     class Video {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 [],
                 false,
                 '8.0'
@@ -278,7 +301,7 @@ class AttributeTest extends TestCase
 
                     #[Pure]
                     function foo() : void {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 [],
                 false,
                 '8.0'
@@ -288,7 +311,7 @@ class AttributeTest extends TestCase
                     use Foo\Bar\Pure;
 
                     function foo(#[Pure] string $str) : void {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36',
                 [],
                 false,
                 '8.0'
@@ -304,7 +327,7 @@ class AttributeTest extends TestCase
 
                     #[Table()]
                     class Video {}',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
                 [],
                 false,
                 '8.0'
@@ -321,7 +344,7 @@ class AttributeTest extends TestCase
 
                     #[Foo("foo")]
                     class Bar{}',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27',
                 [],
                 false,
                 '8.0'
@@ -337,7 +360,7 @@ class AttributeTest extends TestCase
 
                     #[Table("videos")]
                     function foo() : void {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
                 [],
                 false,
                 '8.0'
@@ -346,7 +369,7 @@ class AttributeTest extends TestCase
                 '<?php
                     #[Attribute]
                     interface Foo {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 [],
                 false,
                 '8.0'
@@ -355,7 +378,7 @@ class AttributeTest extends TestCase
                 '<?php
                     #[Attribute]
                     interface Foo {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 [],
                 false,
                 '8.0'
@@ -364,7 +387,7 @@ class AttributeTest extends TestCase
                 '<?php
                     #[Attribute]
                     abstract class Baz {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 [],
                 false,
                 '8.0'
@@ -375,7 +398,7 @@ class AttributeTest extends TestCase
                     class Baz {
                         private function __construct() {}
                     }',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 [],
                 false,
                 '8.0'

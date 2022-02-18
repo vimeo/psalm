@@ -13,6 +13,7 @@ use Psalm\Plugin\Hook\MethodParamsProviderInterface as LegacyMethodParamsProvide
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeParameter;
 
+use function array_values;
 use function is_subclass_of;
 use function strtolower;
 
@@ -101,7 +102,7 @@ class MethodParamsProvider
     /**
      * @param ?list<Arg>  $call_args
      *
-     * @return  ?array<int, FunctionLikeParameter>
+     * @return  ?list<FunctionLikeParameter>
      */
     public function getMethodParams(
         string $fq_classlike_name,
@@ -122,7 +123,7 @@ class MethodParamsProvider
             );
 
             if ($result !== null) {
-                return $result;
+                return array_values($result);
             }
         }
 
@@ -138,7 +139,7 @@ class MethodParamsProvider
             $result = $class_handler($event);
 
             if ($result !== null) {
-                return $result;
+                return array_values($result);
             }
         }
 
