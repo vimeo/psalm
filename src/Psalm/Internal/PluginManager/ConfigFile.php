@@ -10,6 +10,7 @@ use RuntimeException;
 use function assert;
 use function file_get_contents;
 use function file_put_contents;
+use function sprintf;
 use function strpos;
 use function substr;
 
@@ -143,6 +144,9 @@ class ConfigFile
             }
         }
 
-        file_put_contents($this->path, $new_file_contents);
+        $result = file_put_contents($this->path, $new_file_contents);
+        if ($result === false) {
+            throw new RuntimeException(sprintf('Unable to save xml to %s', $this->path));
+        }
     }
 }
