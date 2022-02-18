@@ -10,6 +10,7 @@ use RuntimeException;
 use function assert;
 use function file_get_contents;
 use function file_put_contents;
+use function sprintf;
 use function strpos;
 use function substr;
 
