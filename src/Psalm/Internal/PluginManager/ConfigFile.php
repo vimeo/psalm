@@ -143,6 +143,9 @@ class ConfigFile
             }
         }
 
-        file_put_contents($this->path, $new_file_contents);
+        $result = file_put_contents($this->path, $new_file_contents);
+        if ($result === false) {
+            throw new RuntimeException(sprintf('Unable to save xml to %s', $this->path));
+        }
     }
 }
