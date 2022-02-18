@@ -255,7 +255,7 @@ class Codebase extends PsalmCodebase
             // ?
             if (isset($file_storage->constants[$reference->symbol])) {
                 return new PHPMarkdownContent(
-                    'const' . $reference->symbol . ' ' . $file_storage->constants[$reference->symbol],
+                    'const ' . $reference->symbol . ' ' . $file_storage->constants[$reference->symbol],
                     $reference->symbol
                 );
             }

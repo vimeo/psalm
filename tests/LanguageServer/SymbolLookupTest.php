@@ -57,8 +57,7 @@ class SymbolLookupTest extends TestCase
 
     public function testSimpleSymbolLookup(): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
-        $config = $codebase->config;
+        $config = $this->codebase->config;
         $config->globals['$my_global'] = 'string';
         $this->addFile(
             'somefile.php',
@@ -108,7 +107,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame('<?php public function foo() : void', $information->value);
+        $this->assertSame("public function foo(): void", $information->code);
+        $this->assertSame("B\A::foo", $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -118,7 +119,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame('<?php protected int|null $a', $information->value);
+        $this->assertSame('protected int|null $a', $information->code);
+        $this->assertSame('B\A::$a', $information->title);
+        $this->assertSame('', $information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -128,7 +131,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame('<?php function B\bar() : int', $information->value);
+        $this->assertSame('function B\bar(): int', $information->code);
+        $this->assertSame('b\bar', $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -138,7 +143,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame('<?php BANANA', $information->value);
+        $this->assertSame('public const BANANA = 🍌;', $information->code);
+        $this->assertSame('B\A::BANANA', $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -148,7 +155,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php function B\baz(\n    int \$a\n) : int", $information->value);
+        $this->assertSame("function B\baz(\n    int \$a\n): int", $information->code);
+        $this->assertSame('b\baz', $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -158,7 +167,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php function B\qux(\n    int \$a,\n    int \$b\n) : int", $information->value);
+        $this->assertSame("function B\qux(\n    int \$a,\n    int \$b\n): int", $information->code);
+        $this->assertSame('b\qux', $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -168,7 +179,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php array<array-key, mixed>", $information->value);
+        $this->assertSame("array<array-key, mixed>", $information->code);
+        $this->assertSame('$_SERVER', $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -178,7 +191,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php string", $information->value);
+        $this->assertSame("string", $information->code);
+        $this->assertSame('$my_global', $information->title);
+        $this->assertNull($information->description);
     }
 
     public function testSimpleSymbolLookupGlobalConst(): void
@@ -204,7 +219,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php const APPLE string", $information->value);
+        $this->assertSame("const APPLE string", $information->code);
+        $this->assertSame("APPLE", $information->title);
+        $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
@@ -214,7 +231,9 @@ class SymbolLookupTest extends TestCase
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("<?php const BANANA string", $information->value);
+        $this->assertSame("const BANANA string", $information->code);
+        $this->assertSame("BANANA", $information->title);
+        $this->assertNull($information->description);
     }
 
     public function testSimpleSymbolLocation(): void
