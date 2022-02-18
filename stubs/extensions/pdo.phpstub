@@ -323,6 +323,7 @@ class PDOStatement implements IteratorAggregate
 }
 
  class PDOException extends RuntimeException {
-    protected string $code;
+    /** @var int|string */
+    protected $code;
     public ?array $errorInfo = null;
 }
