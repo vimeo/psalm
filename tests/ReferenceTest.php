@@ -247,6 +247,16 @@ class ReferenceTest extends TestCase
                 ',
                 'assertions' => [],
             ],
+            'allowDocblockTypingOtherVariable' => [
+                'code' => '<?php
+                    $a = 1;
+                    /** @var string $a */
+                    $b = &$a;
+                ',
+                'assertions' => [
+                    '$b' => 'string',
+                ],
+            ],
         ];
     }
 
