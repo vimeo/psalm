@@ -370,6 +370,11 @@ class Config
     /**
      * @var bool
      */
+    public $disable_var_parsing = false;
+
+    /**
+     * @var bool
+     */
     public $check_for_throws_docblock = false;
 
     /**
@@ -954,6 +959,7 @@ class Config
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
+            'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'disableSuppressAll' => 'disable_suppress_all',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
