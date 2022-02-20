@@ -368,6 +368,14 @@ class TryCatchTest extends TestCase
                         }
                     }'
             ],
+            'suppressUndefinedVarInFinally' => [
+                'code' => '<?php
+                    try {} finally {
+                        /** @psalm-suppress UndefinedGlobalVariable, MixedPropertyAssignment */
+                        $event->end = null;
+                    }
+                ',
+            ],
             'returnsInTry' => [
                 'code' => '<?php
                     final class A
