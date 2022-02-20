@@ -257,7 +257,6 @@ class TryAnalyzer
 
         $fq_catch_classes = [];
 
-        assert(!empty($catch->types));
         foreach ($catch->types as $catch_type_stmt) {
             $fq_catch_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $catch_type_stmt,

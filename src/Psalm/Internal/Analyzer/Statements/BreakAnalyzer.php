@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 
 use function end;
@@ -16,7 +15,6 @@ use function end;
 class BreakAnalyzer
 {
     public static function analyze(
-        StatementsAnalyzer $_statements_analyzer,
         PhpParser\Node\Stmt\Break_ $stmt,
         Context $context
     ): void {

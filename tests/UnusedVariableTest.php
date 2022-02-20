@@ -444,7 +444,7 @@ class UnusedVariableTest extends TestCase
                     function callDangerous(): void {
                         try {
                             $s = dangerous();
-                        } catch (Throwable $e) {
+                        } catch (Exception $e) {
                             echo $e->getMessage();
                             $s = "hello";
                         }
@@ -470,7 +470,7 @@ class UnusedVariableTest extends TestCase
                         } else {
                             try {
                                 $t = dangerous();
-                            } catch (Throwable $e) {
+                            } catch (Exception $e) {
                                 echo $e->getMessage();
                                 $t = "hello";
                             }
@@ -500,7 +500,7 @@ class UnusedVariableTest extends TestCase
                         } catch (E1 $e) {
                             echo $e->getMessage();
                             $s = false;
-                        } catch (Throwable $_) {
+                        } catch (Exception $_) {
                             return;
                         }
 
@@ -592,7 +592,7 @@ class UnusedVariableTest extends TestCase
                             if (!$s) {
                                 echo "Failed to get string\n";
                             }
-                        } catch (Throwable $_) {
+                        } catch (Exception $_) {
                             $s = "fallback";
                         }
                         printf("s is %s\n", $s);
@@ -2889,7 +2889,7 @@ class UnusedVariableTest extends TestCase
                         } else {
                             try {
                                 $t = dangerous();
-                            } catch (Throwable $e) {
+                            } catch (Exception $e) {
                                 echo $e->getMessage();
                                 $t = "hello";
                             }

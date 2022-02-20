@@ -65,7 +65,6 @@ class DocumentationTest extends TestCase
      * annotations that we don’t want documented
      */
     private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
-        '@psalm-check-type', // Used internally for testing try-catch-finally, not sure if we want to support it
         '@psalm-self-out', // Not documented as it's a legacy alias of @psalm-this-out
         '@psalm-variadic',
     ];

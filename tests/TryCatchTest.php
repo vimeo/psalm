@@ -44,7 +44,7 @@ class TryCatchTest extends TestCase
                 'code' => '<?php
                     try {
                         $worked = true;
-                    } catch (\Throwable $e) {
+                    } catch (\Exception $e) {
                         $worked = false;
                     }',
                 'assertions' => [
@@ -141,7 +141,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $var = test();
-                    } catch (Throwable $e) {
+                    } catch (Exception $e) {
                         return;
                     }
 
@@ -159,7 +159,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $var = test();
-                    } catch (Throwable $e) {
+                    } catch (Exception $e) {
                         $var = "bad";
                     }
 
@@ -257,7 +257,7 @@ class TryCatchTest extends TestCase
 
                     try {
                         $str = "a";
-                    } catch (Throwable $e) {
+                    } catch (Exception $e) {
                         example();
                     }
                     ord($str);',

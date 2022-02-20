@@ -567,7 +567,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-            BreakAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            BreakAnalyzer::analyze($stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
             ContinueAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
