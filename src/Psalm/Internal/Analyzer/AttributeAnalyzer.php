@@ -2,19 +2,17 @@
 
 namespace Psalm\Internal\Analyzer;
 
+use PhpParser\Node\AttributeGroup;
+use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\Expression;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualNew;
-use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Stmt\VirtualExpression;
-use Psalm\Node\VirtualArg;
-use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Union;
@@ -30,6 +28,7 @@ class AttributeAnalyzer
     public static function analyze(
         SourceAnalyzer $source,
         AttributeStorage $attribute,
+        AttributeGroup $attribute_group,
         array $suppressed_issues,
         int $target,
         ?ClassLikeStorage $classlike_storage = null
@@ -107,77 +106,12 @@ class AttributeAnalyzer
 
         self::checkAttributeTargets($source, $attribute, $target);
 
-        $node_args = [];
-
-        foreach ($attribute->args as $storage_arg) {
-            $type = $storage_arg->type;
-
-            if ($type instanceof UnresolvedConstantComponent) {
-                $type = new Union([
-                    ConstantTypeResolver::resolve(
-                        $codebase->classlikes,
-                        $type,
-                        $source instanceof StatementsAnalyzer ? $source : null
-                    )
-                ]);
-            }
-
-            if ($type->isMixed()) {
-                return;
-            }
-
-            $type_expr = StubsGenerator::getExpressionFromType(
-                $type
-            );
-
-            $arg_attributes = [
-                'startFilePos' => $storage_arg->location->raw_file_start,
-                'endFilePos' => $storage_arg->location->raw_file_end,
-                'startLine' => $storage_arg->location->raw_line_number
-            ];
-
-            $type_expr->setAttributes($arg_attributes);
-
-            $node_args[] = new VirtualArg(
-                $type_expr,
-                false,
-                false,
-                $arg_attributes,
-                $storage_arg->name
-                    ? new VirtualIdentifier(
-                        $storage_arg->name,
-                        $arg_attributes
-                    )
-                    : null
-            );
-        }
-
-        $new_stmt = new VirtualNew(
-            new VirtualFullyQualified(
-                $attribute->fq_class_name,
-                [
-                    'startFilePos' => $attribute->name_location->raw_file_start,
-                    'endFilePos' => $attribute->name_location->raw_file_end,
-                    'startLine' => $attribute->name_location->raw_line_number
-                ]
-            ),
-            $node_args,
-            [
-                'startFilePos' => $attribute->location->raw_file_start,
-                'endFilePos' => $attribute->location->raw_file_end,
-                'startLine' => $attribute->location->raw_line_number
-            ]
-        );
-
         $statements_analyzer = new StatementsAnalyzer(
             $source,
             new NodeDataProvider()
         );
 
-        $statements_analyzer->analyze(
-            [new VirtualExpression($new_stmt)],
-            new Context()
-        );
+        $statements_analyzer->analyze(self::attributeGroupToStmts($attribute_group), new Context());
     }
 
     /**
@@ -252,5 +186,17 @@ class AttributeAnalyzer
                 $source->getSuppressedIssues()
             );
         }
+    }
+
+    /**
+     * @return list<Stmt>
+     */
+    private static function attributeGroupToStmts(AttributeGroup $attribute_group): array
+    {
+        $stmts = [];
+        foreach ($attribute_group->attrs as $attr) {
+            $stmts[] = new Expression(new New_($attr->name, $attr->args, $attr->getAttributes()));
+        }
+        return $stmts;
     }
 }
