@@ -1,0 +1,14 @@
+vendor
+vendor-bin
+composer.lock
+vendor-bin/box/vendor
+vendor-bin/box/composer.lock
+.circleci
+.github
+assets
+bin
+build
+docs
+tests
+Makefile
+README.md
