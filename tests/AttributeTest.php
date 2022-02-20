@@ -5,6 +5,8 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class AttributeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -246,7 +248,28 @@ class AttributeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
-            ]
+            ],
+            'createObjectAsAttributeArg' => [
+                'code' => '<?php
+                    #[Attribute]
+                    class B
+                    {
+                        public function __construct(?array $listOfB = null) {}
+                    }
+
+                    #[Attribute(Attribute::TARGET_CLASS)]
+                    class A
+                    {
+                        /**
+                         * @param B[] $listOfB
+                         */
+                        public function __construct(?array $listOfB = null) {}
+                    }
+
+                    #[A([new B])]
+                    class C {}
+                ',
+            ],
         ];
     }
 
@@ -262,9 +285,9 @@ class AttributeTest extends TestCase
 
                     #[A]
                     class B {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'missingAttributeOnClass' => [
                 'code' => '<?php
@@ -272,9 +295,9 @@ class AttributeTest extends TestCase
 
                     #[Pure]
                     class Video {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'missingAttributeOnFunction' => [
                 'code' => '<?php
@@ -282,18 +305,18 @@ class AttributeTest extends TestCase
 
                     #[Pure]
                     function foo() : void {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'missingAttributeOnParam' => [
                 'code' => '<?php
                     use Foo\Bar\Pure;
 
                     function foo(#[Pure] string $str) : void {}',
-                'error_message' => 'UndefinedAttributeClass',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'tooFewArgumentsToAttributeConstructor' => [
                 'code' => '<?php
@@ -306,9 +329,9 @@ class AttributeTest extends TestCase
 
                     #[Table()]
                     class Video {}',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'invalidArgument' => [
                 'code' => '<?php
@@ -322,9 +345,9 @@ class AttributeTest extends TestCase
 
                     #[Foo("foo")]
                     class Bar{}',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'classAttributeUsedOnFunction' => [
                 'code' => '<?php
@@ -337,33 +360,33 @@ class AttributeTest extends TestCase
 
                     #[Table("videos")]
                     function foo() : void {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'interfaceCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]
                     interface Foo {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'traitCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]
                     interface Foo {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'abstractClassCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]
                     abstract class Baz {}',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'abstractClassCannotHavePrivateConstructor' => [
                 'code' => '<?php
@@ -371,9 +394,9 @@ class AttributeTest extends TestCase
                     class Baz {
                         private function __construct() {}
                     }',
-                'error_message' => 'InvalidAttribute',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
         ];
     }

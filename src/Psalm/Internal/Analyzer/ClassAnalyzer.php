@@ -394,10 +394,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->attributes as $attribute) {
+        foreach ($storage->attributes as $i => $attribute) {
             AttributeAnalyzer::analyze(
                 $this,
                 $attribute,
+                $class->attrGroups[$i],
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
                 1,
                 $storage
@@ -1517,10 +1518,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $property_storage = $class_storage->properties[$property_name];
 
-        foreach ($property_storage->attributes as $attribute) {
+        foreach ($property_storage->attributes as $i => $attribute) {
             AttributeAnalyzer::analyze(
                 $source,
                 $attribute,
+                $stmt->attrGroups[$i],
                 $this->source->getSuppressedIssues(),
                 8
             );
