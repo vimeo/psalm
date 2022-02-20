@@ -1,8 +1,7 @@
 vendor
 vendor-bin
 composer.lock
-vendor-bin/box/vendor
-vendor-bin/box/composer.lock
+vendor-bin
 .circleci
 .github
 assets
