@@ -561,6 +561,7 @@ class TryAnalyzer
             $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($types, $codebase);
             $context->vars_in_scope[$var_id]->possibly_undefined = $possibly_undefined;
             $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+            $context->vars_possibly_in_scope[$var_id] = true;
         }
     }
 
@@ -630,6 +631,7 @@ class TryAnalyzer
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($types, $codebase);
                 $context->vars_in_scope[$var_id]->possibly_undefined = $possibly_undefined;
                 $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                $context->vars_possibly_in_scope[$var_id] = true;
             }
 
             if (count($leaving_catches) < $catch_block_count) {
@@ -645,6 +647,7 @@ class TryAnalyzer
             // Set all variables to their types at the end of the `try` block, since
             // it would have to complete successfully for execution to continue.
             $context->vars_in_scope = $end_of_try_context->vars_in_scope;
+            $context->vars_possibly_in_scope = $end_of_try_context->vars_possibly_in_scope;
             $context->references_in_scope = $end_of_try_context->references_in_scope;
         }
     }

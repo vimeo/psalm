@@ -1082,6 +1082,22 @@ class TryCatchTest extends TestCase
                     '$foo===' => '1|2',
                 ],
             ],
+            'tryInsideIfPossiblyUndefined' => [
+                'code' => '<?php
+                    function foo(): void
+                    {
+                        if (random_int(0, 1)) {
+                            try {
+                            } catch (Exception $e) {
+                            }
+                        }
+
+                        if (isset($e)) {
+                            throw $e;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
