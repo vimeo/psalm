@@ -4,6 +4,7 @@ composer.lock
 vendor-bin
 .circleci
 .github
+.git
 assets
 bin
 build
