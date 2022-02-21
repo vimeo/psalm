@@ -46,18 +46,11 @@ class TryAnalyzer
         Context $context
     ): ?bool {
         $catch_actions = [];
-        $all_catches_leave = true;
 
         $codebase = $statements_analyzer->getCodebase();
 
-        /** @var int $i */
-        foreach ($stmt->catches as $i => $catch) {
-            $catch_actions[$i] = ScopeAnalyzer::getControlActions(
-                $catch->stmts,
-                $statements_analyzer->node_data,
-                []
-            );
-            $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
+        if ($codebase->alter_code) {
+            $context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
@@ -71,13 +64,6 @@ class TryAnalyzer
 
         $old_try_catch_scope = $context->try_catch_scope;
         $context->try_catch_scope = new TryCatchScope();
-
-        if (!$all_catches_leave || $stmt->finally) {
-            if ($codebase->alter_code) {
-                // TODO can this be moved?
-                $context->branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
-            }
-        }
 
         $assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
