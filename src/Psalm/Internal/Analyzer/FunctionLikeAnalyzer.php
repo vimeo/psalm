@@ -822,6 +822,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->attributes as $i => $attribute) {
             AttributeAnalyzer::analyze(
                 $this,
+                $context,
                 $attribute,
                 $this->function->attrGroups[$i],
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -1271,6 +1272,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             foreach ($function_param->attributes as $i => $attribute) {
                 AttributeAnalyzer::analyze(
                     $this,
+                    $context,
                     $attribute,
                     $param_stmts[$offset]->attrGroups[$i],
                     $storage->suppressed_issues,

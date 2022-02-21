@@ -264,6 +264,25 @@ class AttributeTest extends TestCase
                     class C {}
                 ',
             ],
+            'attributeUsesClassContext' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    #[SomeAttr(self::class)]
+                    class A {}
+
+                    #[SomeAttr(parent::class)]
+                    class B extends A {}
+
+                    #[SomeAttr(self::class)]
+                    interface C {}
+                ',
+            ],
         ];
     }
 
@@ -402,6 +421,20 @@ class AttributeTest extends TestCase
                 [],
                 false,
                 '8.0'
+            ],
+            'noParentInAttributeOnClassWithoutParent' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    #[SomeAttr(parent::class)]
+                    class A {}
+                ',
+                'error_message' => 'ParentNotFound',
             ],
         ];
     }

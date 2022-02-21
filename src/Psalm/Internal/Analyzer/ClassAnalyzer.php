@@ -400,6 +400,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->attributes as $i => $attribute) {
             AttributeAnalyzer::analyze(
                 $this,
+                $class_context,
                 $attribute,
                 $class->attrGroups[$i],
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -1526,6 +1527,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($property_storage->attributes as $i => $attribute) {
             AttributeAnalyzer::analyze(
                 $source,
+                $context,
                 $attribute,
                 $stmt->attrGroups[$i],
                 $this->source->getSuppressedIssues(),

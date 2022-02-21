@@ -27,6 +27,7 @@ class AttributeAnalyzer
      */
     public static function analyze(
         SourceAnalyzer $source,
+        Context $context,
         AttributeStorage $attribute,
         AttributeGroup $attribute_group,
         array $suppressed_issues,
@@ -111,7 +112,7 @@ class AttributeAnalyzer
             new NodeDataProvider()
         );
 
-        $statements_analyzer->analyze(self::attributeGroupToStmts($attribute_group), new Context());
+        $statements_analyzer->analyze(self::attributeGroupToStmts($attribute_group), $context);
     }
 
     /**
