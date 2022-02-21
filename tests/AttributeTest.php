@@ -264,7 +264,7 @@ class AttributeTest extends TestCase
                     class C {}
                 ',
             ],
-            'attributeUsesClassContext' => [
+            'selfInClassAttribute' => [
                 '<?php
                     #[Attribute]
                     class SomeAttr
@@ -274,13 +274,62 @@ class AttributeTest extends TestCase
                     }
 
                     #[SomeAttr(self::class)]
+                    class A
+                    {
+                        #[SomeAttr(self::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(self::class)]
+                        public string $foo = "bar";
+
+                        #[SomeAttr(self::class)]
+                        public function baz(): void {}
+                    }
+                ',
+            ],
+            'parentInClassAttribute' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
                     class A {}
 
                     #[SomeAttr(parent::class)]
-                    class B extends A {}
+                    class B extends A
+                    {
+                        #[SomeAttr(parent::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(parent::class)]
+                        public string $foo = "bar";
+
+                        #[SomeAttr(parent::class)]
+                        public function baz(): void {}
+                    }
+                ',
+            ],
+            'selfInInterfaceAttribute' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
 
                     #[SomeAttr(self::class)]
-                    interface C {}
+                    interface C
+                    {
+                        #[SomeAttr(self::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(self::class)]
+                        public function baz(): void {}
+                    }
                 ',
             ],
         ];
