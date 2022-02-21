@@ -264,6 +264,74 @@ class AttributeTest extends TestCase
                     class C {}
                 ',
             ],
+            'selfInClassAttribute' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    #[SomeAttr(self::class)]
+                    class A
+                    {
+                        #[SomeAttr(self::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(self::class)]
+                        public string $foo = "bar";
+
+                        #[SomeAttr(self::class)]
+                        public function baz(): void {}
+                    }
+                ',
+            ],
+            'parentInClassAttribute' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    class A {}
+
+                    #[SomeAttr(parent::class)]
+                    class B extends A
+                    {
+                        #[SomeAttr(parent::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(parent::class)]
+                        public string $foo = "bar";
+
+                        #[SomeAttr(parent::class)]
+                        public function baz(): void {}
+                    }
+                ',
+            ],
+            'selfInInterfaceAttribute' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    #[SomeAttr(self::class)]
+                    interface C
+                    {
+                        #[SomeAttr(self::class)]
+                        public const CONST = "const";
+
+                        #[SomeAttr(self::class)]
+                        public function baz(): void {}
+                    }
+                ',
+            ],
         ];
     }
 
@@ -402,6 +470,20 @@ class AttributeTest extends TestCase
                 [],
                 false,
                 '8.0'
+            ],
+            'noParentInAttributeOnClassWithoutParent' => [
+                '<?php
+                    #[Attribute]
+                    class SomeAttr
+                    {
+                        /** @param class-string $class */
+                        public function __construct(string $class) {}
+                    }
+
+                    #[SomeAttr(parent::class)]
+                    class A {}
+                ',
+                'error_message' => 'ParentNotFound',
             ],
         ];
     }
