@@ -1,0 +1,23 @@
+<?php
+
+class PDO
+{
+    public const MYSQL_ATTR_USE_BUFFERED_QUERY = 1000;
+    public const MYSQL_ATTR_LOCAL_INFILE = 1001;
+    public const MYSQL_ATTR_INIT_COMMAND = 1002;
+    public const MYSQL_ATTR_COMPRESS = 1003;
+    public const MYSQL_ATTR_DIRECT_QUERY = 1004;
+    public const MYSQL_ATTR_FOUND_ROWS = 1005;
+    public const MYSQL_ATTR_IGNORE_SPACE = 1006;
+    public const MYSQL_ATTR_SSL_KEY = 1007;
+    public const MYSQL_ATTR_SSL_CERT = 1008;
+    public const MYSQL_ATTR_SSL_CA = 1009;
+    public const MYSQL_ATTR_SSL_CAPATH = 1010;
+    public const MYSQL_ATTR_SSL_CIPHER = 1011;
+    public const MYSQL_ATTR_SERVER_PUBLIC_KEY = 1012;
+    public const MYSQL_ATTR_MULTI_STATEMENTS = 1013;
+    /** @since PHP-7.0.18 (actually 7.0.18 and 7.1.4) */
+    public const MYSQL_ATTR_SSL_VERIFY_SERVER_CERT = 1014;
+    /** @since PHP-8.1 */
+    public const MYSQL_ATTR_LOCAL_INFILE_DIRECTORY = 1015;
+}

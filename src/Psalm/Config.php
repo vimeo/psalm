@@ -40,6 +40,8 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use ReflectionClass;
+use ReflectionFunctionAbstract;
 use SimpleXMLElement;
 use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
@@ -54,6 +56,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -160,6 +163,26 @@ class Config
         'MixedArgumentTypeCoercion',
         'MixedPropertyTypeCoercion',
         'MixedReturnTypeCoercion',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    public const SUPPORTED_EXTENSIONS = [
+        "decimal",
+        "dom",
+        "ds",
+        "geos",
+        "gmp",
+        "mongodb",
+        "mysqli",
+        "pdo",
+        "pdo_mysql",
+        "pdo_pgsql",
+        "pdo_sqlite",
+        "simplexml",
+        "soap",
+        "xdebug",
     ];
 
     /**
@@ -576,18 +599,7 @@ class Config
 
     /**
      * @psalm-readonly-allow-private-mutation
-     * @var array{
-     *     decimal: bool,
-     *     dom: bool,
-     *     ds: bool,
-     *     geos: bool,
-     *     gmp: bool,
-     *     mongodb: bool,
-     *     mysqli: bool,
-     *     pdo: bool,
-     *     soap: bool,
-     *     xdebug: bool,
-     * }
+     * @var array<value-of<self::SUPPORTED_EXTENSIONS>, bool>
      */
     public $php_extensions = [
         "decimal" => false,
@@ -598,6 +610,10 @@ class Config
         "mongodb" => false,
         "mysqli" => false,
         "pdo" => false,
+        "pdo_mysql" => false,
+        "pdo_pgsql" => false,
+        "pdo_sqlite" => false,
+        "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
     ];
@@ -2178,7 +2194,11 @@ class Config
 
     public function collectPredefinedConstants(): void
     {
-        $this->predefined_constants = get_defined_constants();
+        $predefined_constants = get_defined_constants(true);
+        foreach (self::SUPPORTED_EXTENSIONS as $ext_name) {
+            unset($predefined_constants[$ext_name]);
+        }
+        $this->predefined_constants = array_merge(...array_values($predefined_constants));
     }
 
     /**
@@ -2447,5 +2467,16 @@ class Config
     public function getUniversalObjectCrates(): array
     {
         return array_map('strtolower', $this->universal_object_crates);
+    }
+
+    /**
+     * @internal
+     *
+     * @param ReflectionClass|ReflectionFunctionAbstract $reflection
+     */
+    public function isReflectionFromSupportedExtension($reflection): bool
+    {
+        $extension = $reflection->getExtension();
+        return $extension !== null && isset($this->php_extensions[strtolower($extension->getName())]);
     }
 }

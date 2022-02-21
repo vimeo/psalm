@@ -188,7 +188,9 @@ class ClassLikes
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_class);
 
-            if (!$reflection_class->isUserDefined()) {
+            if (!$reflection_class->isUserDefined()
+                && !$this->config->isReflectionFromSupportedExtension($reflection_class)
+            ) {
                 $predefined_class_lc = strtolower($predefined_class);
                 $this->existing_classlikes_lc[$predefined_class_lc] = true;
                 $this->existing_classes_lc[$predefined_class_lc] = true;
@@ -204,7 +206,9 @@ class ClassLikes
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_interface);
 
-            if (!$reflection_class->isUserDefined()) {
+            if (!$reflection_class->isUserDefined()
+                && !$this->config->isReflectionFromSupportedExtension($reflection_class)
+            ) {
                 $predefined_interface_lc = strtolower($predefined_interface);
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
@@ -810,7 +814,7 @@ class ClassLikes
             ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id
         );
 
-        $trait_finder = new TraitFinder($fq_trait_name);
+        $trait_finder = new TraitFinder($fq_trait_name, $this->config);
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(

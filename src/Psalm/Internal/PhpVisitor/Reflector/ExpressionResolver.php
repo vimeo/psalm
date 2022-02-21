@@ -381,7 +381,9 @@ class ExpressionResolver
         ) {
             $reflection_function = new ReflectionFunction($function->getArgs()[0]->value->value);
 
-            if ($reflection_function->isInternal()) {
+            if ($reflection_function->isInternal()
+                && !$codebase->config->isReflectionFromSupportedExtension($reflection_function)
+            ) {
                 return true;
             }
 
@@ -405,6 +407,10 @@ class ExpressionResolver
 
             if ($string_value && class_exists($string_value)) {
                 $reflection_class = new ReflectionClass($string_value);
+
+                if ($codebase->config->isReflectionFromSupportedExtension($reflection_class)) {
+                    return false;
+                }
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
@@ -435,6 +441,10 @@ class ExpressionResolver
 
             if ($string_value && interface_exists($string_value)) {
                 $reflection_class = new ReflectionClass($string_value);
+
+                if ($codebase->config->isReflectionFromSupportedExtension($reflection_class)) {
+                    return false;
+                }
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
@@ -467,6 +477,10 @@ class ExpressionResolver
             // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
             if ($string_value && class_exists($string_value)) {
                 $reflection_class = new ReflectionClass($string_value);
+
+                if ($codebase->config->isReflectionFromSupportedExtension($reflection_class)) {
+                    return false;
+                }
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(

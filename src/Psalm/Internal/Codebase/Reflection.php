@@ -371,6 +371,10 @@ class Reflection
                 return null;
             }
 
+            if ($this->codebase->config->isReflectionFromSupportedExtension($reflection_function)) {
+                return false;
+            }
+
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {

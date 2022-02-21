@@ -717,22 +717,28 @@ class PropertyTypeTest extends TestCase
             'grandparentReflectedProperties' => [
                 'code' => '<?php
                     $a = new DOMElement("foo");
-                    $owner = $a->ownerDocument;',
+                    $owner = $a->ownerDocument;
+                ',
                 'assertions' => [
                     '$owner' => 'DOMDocument|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
-            'propertyMapHydration' => [
+            'SKIPPED-propertyMapHydration' => [ // Property map is no longer used for DOM.
                 'code' => '<?php
                     function foo(DOMElement $e) : void {
                         echo $e->attributes->length;
-                    }',
+                    }
+                ',
             ],
-            'genericTypeFromPropertyMap' => [
+            'SKIPPED-genericTypeFromPropertyMap' => [ // Property map is no longer used for DOM.
                 'code' => '<?php
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
-                    }'
+                    }
+                ',
             ],
             'goodArrayProperties' => [
                 'code' => '<?php
@@ -1391,6 +1397,9 @@ class PropertyTypeTest extends TestCase
                     '$d' => 'SimpleXMLElement',
                     '$d->e' => 'mixed',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'allowLessSpecificReturnTypeForOverriddenMethod' => [
                 'code' => '<?php

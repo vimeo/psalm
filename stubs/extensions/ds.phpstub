@@ -4,6 +4,7 @@ namespace Ds;
 
 use ArrayAccess;
 use Countable;
+use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
 use OutOfRangeException;
@@ -11,17 +12,42 @@ use Traversable;
 use UnderflowException;
 
 /**
- * @template-covariant TKey
- * @template-covariant TValue
- * @extends Traversable<TKey, TValue>
+ * @template T
  */
-interface Collection extends Traversable, Countable, JsonSerializable
+interface Hashable
 {
     /**
-     * @return Collection<TKey, TValue>
+     * @return scalar
+     * @psalm-mutation-free
+     */
+    public function hash();
+
+    /**
+     * @param T $obj
+     * @psalm-mutation-free
+     */
+    public function equals($obj) : bool;
+}
+
+/**
+ * @template-covariant TKey
+ * @template-covariant TValue
+ * @extends IteratorAggregate<TKey, TValue>
+ */
+interface Collection extends IteratorAggregate, Countable, JsonSerializable
+{
+    public function clear(): void;
+
+    /**
+     * @return Collection<TKey, TValue>&static
      * @psalm-mutation-free
      */
     public function copy(): Collection;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool;
 
     /**
      * @return array<TKey, TValue>
@@ -30,168 +56,123 @@ interface Collection extends Traversable, Countable, JsonSerializable
     public function toArray(): array;
 
     /**
+     * @return Traversable<TKey, TValue>
      * @psalm-mutation-free
      */
-    public function isEmpty(): bool;
+    public function getIterator(): Traversable;
 
     /**
      * @psalm-mutation-free
      */
     public function count(): int;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed;
 }
 
 /**
  * @template TValue
- * @implements Sequence<TValue>
+ * @extends Collection<int<0, max>, TValue>
+ * @extends ArrayAccess<int<0, max>, TValue>
  */
-final class Deque implements Sequence
+interface Sequence extends Collection, ArrayAccess
 {
-    /**
-     * @param iterable<TValue> $values
-     */
-    public function __construct(iterable $values = [])
-    {
-    }
+    public function allocate(int $capacity): void;
 
     /**
-     * @return Deque<TValue>
-     * @psalm-mutation-free
+     * @template TOut
+     * @param callable(TValue): TOut $callback
+     * @psalm-this-out Sequence<TOut>&static
      */
-    public function copy(): Deque
-    {
-    }
-
-    /**
-     * @return list<TValue>
-     * @psalm-mutation-free
-     */
-    public function toArray(): array
-    {
-    }
+    public function apply(callable $callback): void;
 
     /**
      * @psalm-mutation-free
      */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return float|int
-     * @psalm-mutation-free
-     */
-    public function sum()
-    {
-    }
+    public function capacity(): int;
 
     /**
      * @param TValue ...$values
      * @psalm-mutation-free
      */
-    public function contains(...$values): bool
-    {
-    }
+    public function contains(...$values): bool;
 
     /**
      * @param (callable(TValue): bool)|null $callback
-     * @return Deque<TValue>
+     * @return Sequence<TValue>&static
      * @psalm-mutation-free
      */
-    public function filter(callable $callback = null): Deque
-    {
-    }
+    public function filter(?callable $callback = null): Sequence;
 
     /**
      * @param TValue $value
      * @return int|false
      * @psalm-mutation-free
      */
-    public function find($value)
-    {
-    }
+    public function find($value);
 
     /**
      * @return TValue
      * @throws \UnderflowException
      * @psalm-mutation-free
      */
-    public function first()
-    {
-    }
+    public function first();
 
     /**
+     * @param int<0, max> $index
      * @return TValue
      * @throws \OutOfRangeException
      * @psalm-mutation-free
      */
-    public function get(int $index)
-    {
-    }
+    public function get(int $index);
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void;
 
     /**
      * @psalm-mutation-free
      */
-    public function join(?string $glue = null): string
-    {
-    }
+    public function join(?string $glue = null): string;
 
     /**
      * @return TValue
      * @throws \UnderflowException
      * @psalm-mutation-free
      */
-    public function last()
-    {
-    }
+    public function last();
 
     /**
      * @template TNewValue
      * @param callable(TValue): TNewValue $callback
-     * @return Deque<TNewValue>
+     * @return Sequence<TNewValue>&static
      * @psalm-mutation-free
      */
-    public function map(callable $callback): Deque
-    {
-    }
+    public function map(callable $callback): Sequence;
 
     /**
      * @template TValue2
      * @param iterable<TValue2> $values
-     * @return Deque<TValue|TValue2>
+     * @return Sequence<TValue|TValue2>&static
      * @psalm-mutation-free
      */
-    public function merge(iterable $values): Deque
-    {
-    }
+    public function merge(iterable $values): Sequence;
 
     /**
      * @return TValue
      * @throws \UnderflowException
      */
-    public function pop()
-    {
-    }
+    public function pop();
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void;
 
     /**
      * @template TCarry
@@ -200,50 +181,518 @@ final class Deque implements Sequence
      * @return TCarry
      * @psalm-mutation-free
      */
-    public function reduce(callable $callback, $initial = null)
-    {
-    }
+    public function reduce(callable $callback, $initial = null);
 
     /**
+     * @param int<0, max> $index
      * @return TValue
      * @throws \OutOfRangeException
      */
-    public function remove(int $index)
-    {
-    }
+    public function remove(int $index);
+
+    public function reverse(): void;
 
     /**
-     * @return Deque<TValue>
+     * @return Sequence<TValue>&static
      * @psalm-mutation-free
      */
-    public function reversed(): Deque
-    {
-    }
+    public function reversed(): Sequence;
+
+    public function rotate(int $rotations): void;
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void;
 
     /**
      * @return TValue
      * @throws \UnderflowException
      */
-    public function shift()
-    {
-    }
+    public function shift();
 
     /**
-     * @return Deque<TValue>
+     * @return Sequence<TValue>&static
      * @psalm-mutation-free
      */
-    public function slice(int $offset, ?int $length = null): Deque
-    {
-    }
+    public function slice(int $index, ?int $length = null): Sequence;
 
     /**
      * @param (callable(TValue, TValue): int)|null $comparator
-     * @return Deque<TValue>
+     */
+    public function sort(?callable $comparator = null): void;
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     * @return Sequence<TValue>&static
      * @psalm-mutation-free
      */
-    public function sorted(callable $comparator = null): Deque
-    {
-    }
+    public function sorted(?callable $comparator = null): Sequence;
+
+    /**
+     * @return float|int
+     * @psalm-mutation-free
+     */
+    public function sum();
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void;
+
+    /**
+     * @return Sequence<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Sequence;
+
+    /**
+     * @return list<TValue>
+     * @psalm-mutation-free
+     */
+    public function toArray(): array;
+}
+
+/**
+ * @template TValue
+ * @implements Sequence<TValue>
+ */
+final class Vector implements Sequence
+{
+    public const MIN_CAPACITY = 8;
+
+    /**
+     * @param iterable<TValue> $values
+     */
+    public function __construct(iterable $values = []) {}
+
+    public function allocate(int $capacity): void {}
+
+    /**
+     * @template TOut
+     * @param callable(TValue): TOut $callback
+     * @psalm-this-out Vector<TOut>&static
+     */
+    public function apply(callable $callback): void {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function capacity(): int {}
+
+    public function clear(): void {}
+
+    /**
+     * @param TValue ...$values
+     * @psalm-mutation-free
+     */
+    public function contains(...$values): bool {}
+
+    /**
+     * @return Vector<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Vector {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * @param (callable(TValue): bool)|null $callback
+     * @return Vector<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function filter(?callable $callback = null): Vector {}
+
+    /**
+     * @param TValue $value
+     * @return int|false
+     * @psalm-mutation-free
+     */
+    public function find($value) {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     * @psalm-mutation-free
+     */
+    public function first() {}
+
+    /**
+     * @param int<0, max> $index
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function get(int $index) {}
+
+    /**
+     * @return Traversable<int, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function join(?string $glue = null): string {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     * @psalm-mutation-free
+     */
+    public function last() {}
+
+    /**
+     * @template TNewValue
+     * @param callable(TValue): TNewValue $callback
+     * @return Vector<TNewValue>&static
+     * @psalm-mutation-free
+     */
+    public function map(callable $callback): Vector {}
+
+    /**
+     * @template TValue2
+     * @param iterable<TValue2> $values
+     * @return Vector<TValue|TValue2>&static
+     * @psalm-mutation-free
+     */
+    public function merge(iterable $values): Vector {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function pop() {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void {}
+
+    /**
+     * @template TCarry
+     * @param callable(TCarry, TValue): TCarry $callback
+     * @param TCarry $initial
+     * @return TCarry
+     * @psalm-mutation-free
+     */
+    public function reduce(callable $callback, $initial = null) {}
+
+    /**
+     * @param int<0, max> $index
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function remove(int $index) {}
+
+    public function reverse(): void;
+
+    /**
+     * @return Vector<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function reversed(): Vector {}
+
+    public function rotate(int $rotations): void {}
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function shift() {}
+
+    /**
+     * @return Vector<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function slice(int $index, ?int $length = null): Vector {}
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     */
+    public function sort(?callable $comparator = null): void {}
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     * @return Vector<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function sorted(callable $comparator = null): Vector {}
+
+    /**
+     * @return float|int
+     * @psalm-mutation-free
+     */
+    public function sum() {}
+
+    /**
+     * @return list<TValue>
+     * @psalm-mutation-free
+     */
+    public function toArray(): array {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void {}
+}
+
+/**
+ * @template TValue
+ * @implements Sequence<TValue>
+ */
+final class Deque implements Sequence
+{
+    public const MIN_CAPACITY = 8;
+
+    /**
+     * @param iterable<TValue> $values
+     */
+    public function __construct(iterable $values = []) {}
+
+    public function allocate(int $capacity): void {}
+
+    /**
+     * @template TOut
+     * @param callable(TValue): TOut $callback
+     * @psalm-this-out Deque<TOut>&static
+     */
+    public function apply(callable $callback): void {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function capacity(): int {}
+
+    public function clear(): void {}
+
+    /**
+     * @param TValue ...$values
+     * @psalm-mutation-free
+     */
+    public function contains(...$values): bool {}
+
+    /**
+     * @return Deque<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Deque {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * @param (callable(TValue): bool)|null $callback
+     * @return Deque<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function filter(?callable $callback = null): Deque {}
+
+    /**
+     * @param TValue $value
+     * @return int|false
+     * @psalm-mutation-free
+     */
+    public function find($value) {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     * @psalm-mutation-free
+     */
+    public function first() {}
+
+    /**
+     * @param int<0, max> $index
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function get(int $index) {}
+
+    /**
+     * @return Traversable<int, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function join(?string $glue = null): string {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     * @psalm-mutation-free
+     */
+    public function last() {}
+
+    /**
+     * @template TNewValue
+     * @param callable(TValue): TNewValue $callback
+     * @return Deque<TNewValue>&static
+     * @psalm-mutation-free
+     */
+    public function map(callable $callback): Deque {}
+
+    /**
+     * @template TValue2
+     * @param iterable<TValue2> $values
+     * @return Deque<TValue|TValue2>&static
+     * @psalm-mutation-free
+     */
+    public function merge(iterable $values): Deque {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function pop() {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void {}
+
+    /**
+     * @template TCarry
+     * @param callable(TCarry, TValue): TCarry $callback
+     * @param TCarry $initial
+     * @return TCarry
+     * @psalm-mutation-free
+     */
+    public function reduce(callable $callback, $initial = null) {}
+
+    /**
+     * @param int<0, max> $index
+     * @return TValue
+     * @throws \OutOfRangeException
+     */
+    public function remove(int $index) {}
+
+    public function reverse(): void {}
+
+    /**
+     * @return Deque<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function reversed(): Deque {}
+
+    public function rotate(int $rotations): void {}
+
+    /**
+     * @param int<0, max> $index
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void {}
+
+    /**
+     * @return TValue
+     * @throws \UnderflowException
+     */
+    public function shift() {}
+
+    /**
+     * @return Deque<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function slice(int $index, ?int $length = null): Deque {}
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     */
+    public function sort(?callable $comparator = null): void {}
+
+    /**
+     * @param (callable(TValue, TValue): int)|null $comparator
+     * @return Deque<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function sorted(?callable $comparator = null): Deque {}
+
+    /**
+     * @return float|int
+     * @psalm-mutation-free
+     */
+    public function sum() {}
+
+    /**
+     * @return list<TValue>
+     * @psalm-mutation-free
+     */
+    public function toArray(): array {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void {}
 }
 
 /**
@@ -254,147 +703,61 @@ final class Deque implements Sequence
  */
 final class Map implements Collection, ArrayAccess
 {
+    public const MIN_CAPACITY = 8;
+
     /**
      * @param iterable<TKey, TValue> $values
      */
-    public function __construct(iterable $values = [])
-    {
-    }
+    public function __construct(iterable $values = []) {}
+
+    public function allocate(int $capacity): void {}
+
+    /**
+     * @template TNewValue
+     * @param callable(TKey, TValue): TNewValue $callback
+     * @psalm-this-out Map<TKey, TNewValue>&static
+     */
+    public function apply(callable $callback): void {}
 
     /**
      * @psalm-mutation-free
      */
-    public function allocate(int $capacity): void
-    {
-    }
+    public function capacity(): int {}
+
+    public function clear(): void;
+
+    /**
+     * @return Map<TKey, TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Map {}
 
     /**
      * @psalm-mutation-free
      */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return Map<TKey, TValue>
-     * @psalm-mutation-free
-     */
-    public function copy(): Map
-    {
-    }
-
-    /**
-     * @return array<TKey, TValue>
-     * @psalm-mutation-free
-     */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @param callable(TKey, TValue): TValue $callback
-     */
-    public function apply(callable $callback): void
-    {
-    }
-
-    /**
-     * @return Pair<TKey, TValue>
-     * @throws UnderflowException
-     * @psalm-mutation-free
-     */
-    public function first(): Pair
-    {
-    }
-
-    /**
-     * @return Pair<TKey, TValue>
-     * @throws UnderflowException
-     * @psalm-mutation-free
-     */
-    public function last(): Pair
-    {
-    }
-
-    /**
-     * @return Pair<TKey, TValue>
-     * @throws OutOfRangeException
-     * @psalm-mutation-free
-     */
-    public function skip(int $position): Pair
-    {
-    }
-
-    /**
-     * @template TKey2
-     * @template TValue2
-     * @param iterable<TKey2, TValue2> $values
-     * @return Map<TKey|TKey2, TValue|TValue2>
-     * @psalm-mutation-free
-     */
-    public function merge(iterable $values): Map
-    {
-    }
-
-    /**
-     * @template TKey2
-     * @template TValue2
-     * @param Map<TKey2, TValue2> $map
-     * @return Map<TKey&TKey2, TValue>
-     * @psalm-mutation-free
-     */
-    public function intersect(Map $map): Map
-    {
-    }
+    public function count(): int {}
 
     /**
      * @template TValue2
      * @param Map<TKey, TValue2> $map
-     * @return Map<TKey, TValue>
+     * @return Map<TKey, TValue>&static
      * @psalm-mutation-free
      */
-    public function diff(Map $map): Map
-    {
-    }
-
-    /**
-     * @param TKey $key
-     * @psalm-mutation-free
-     */
-    public function hasKey($key): bool
-    {
-    }
-
-    /**
-     * @param TValue $value
-     * @psalm-mutation-free
-     */
-    public function hasValue($value): bool
-    {
-    }
+    public function diff(Map $map): Map {}
 
     /**
      * @param (callable(TKey, TValue): bool)|null $callback
-     * @return Map<TKey, TValue>
+     * @return Map<TKey, TValue>&static
      * @psalm-mutation-free
      */
-    public function filter(callable $callback = null): Map
-    {
-    }
+    public function filter(?callable $callback = null): Map {}
+
+    /**
+     * @return Pair<TKey, TValue>
+     * @throws UnderflowException
+     * @psalm-mutation-free
+     */
+    public function first(): Pair {}
 
     /**
      * @template TDefault
@@ -405,53 +768,114 @@ final class Map implements Collection, ArrayAccess
      *     ? TValue
      *     : TValue|TDefault
      * )
-     * @throws OutOfBoundsException
+     * @throws OutOfBoundsException iff $default is not provided and the key isn't found
      * @psalm-mutation-free
      */
-    public function get($key, $default = null)
-    {
-    }
+    public function get($key, $default = null) {}
+
+    /**
+     * @return Traversable<TKey, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
+     * @param TKey $key
+     * @psalm-mutation-free
+     */
+    public function hasKey($key): bool {}
+
+    /**
+     * @param TValue $value
+     * @psalm-mutation-free
+     */
+    public function hasValue($value): bool {}
+
+    /**
+     * @template TKey2
+     * @template TValue2
+     * @param Map<TKey2, TValue2> $map
+     * @return Map<TKey&TKey2, TValue>&static
+     * @psalm-mutation-free
+     */
+    public function intersect(Map $map): Map {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
 
     /**
      * @return Set<TKey>
      * @psalm-mutation-free
      */
-    public function keys(): Set
-    {
-    }
+    public function keys(): Set {}
+
+    /**
+     * @param (callable(TKey, TKey): int)|null $comparator
+     */
+    public function ksort(?callable $comparator = null) {}
+
+    /**
+     * @param (callable(TKey, TKey): int)|null $comparator
+     * @return Map<TKey, TValue>&static
+     * @psalm-mutation-free
+     */
+    public function ksorted(?callable $comparator = null): Map {}
+
+    /**
+     * @return Pair<TKey, TValue>
+     * @throws UnderflowException
+     * @psalm-mutation-free
+     */
+    public function last(): Pair {}
 
     /**
      * @template TNewValue
      * @param callable(TKey, TValue): TNewValue $callback
-     * @return Map<TKey, TNewValue>
+     * @return Map<TKey, TNewValue>&static
      * @psalm-mutation-free
      */
-    public function map(callable $callback): Map
-    {
-    }
+    public function map(callable $callback): Map {}
+
+    /**
+     * @template TKey2
+     * @template TValue2
+     * @param iterable<TKey2, TValue2> $values
+     * @return Map<TKey|TKey2, TValue|TValue2>&static
+     * @psalm-mutation-free
+     */
+    public function merge(iterable $values): Map {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
 
     /**
      * @return Sequence<Pair<TKey, TValue>>
      * @psalm-mutation-free
      */
-    public function pairs(): Sequence
-    {
-    }
+    public function pairs(): Sequence {}
 
     /**
      * @param TKey $key
      * @param TValue $value
      */
-    public function put($key, $value)
-    {
-    }
+    public function put($key, $value) {}
 
     /**
      * @param iterable<TKey, TValue> $values
      */
-    public function putAll(iterable $values)
-    {
-    }
+    public function putAll(iterable $values) {}
 
     /**
      * @template TCarry
@@ -460,9 +884,7 @@ final class Map implements Collection, ArrayAccess
      * @return TCarry
      * @psalm-mutation-free
      */
-    public function reduce(callable $callback, $initial = null)
-    {
-    }
+    public function reduce(callable $callback, $initial = null) {}
 
     /**
      * @template TDefault
@@ -473,67 +895,73 @@ final class Map implements Collection, ArrayAccess
      *     ? TValue
      *     : TValue|TDefault
      * )
-     * @throws \OutOfBoundsException
+     * @throws \OutOfBoundsException iff $default is not provided and the key isn't found
      */
-    public function remove($key, $default = null)
-    {
-    }
+    public function remove($key, $default = null) {}
+
+    public function reverse(): void {}
 
     /**
-     * @return Map<TKey, TValue>
+     * @return Map<TKey, TValue>&static
      * @psalm-mutation-free
      */
-    public function reversed(): Map
-    {
-    }
+    public function reversed(): Map {}
 
     /**
-     * @return Map<TKey, TValue>
+     * @param int<0, max> $position
+     * @return Pair<TKey, TValue>
+     * @throws OutOfRangeException
      * @psalm-mutation-free
      */
-    public function slice(int $offset, ?int $length = null): Map
-    {
-    }
+    public function skip(int $position): Pair {}
+
+    /**
+     * @return Map<TKey, TValue>&static
+     * @psalm-mutation-free
+     */
+    public function slice(int $index, ?int $length = null): Map {}
 
     /**
      * @param (callable(TValue, TValue): int)|null $comparator
      */
-    public function sort(callable $comparator = null)
-    {
-    }
+    public function sort(?callable $comparator = null) {}
 
     /**
      * @param (callable(TValue, TValue): int)|null $comparator
-     * @return Map<TKey, TValue>
+     * @return Map<TKey, TValue>&static
      * @psalm-mutation-free
      */
-    public function sorted(callable $comparator = null): Map
-    {
-    }
+    public function sorted(?callable $comparator = null): Map {}
 
     /**
-     * @param (callable(TKey, TKey): int)|null $comparator
-     */
-    public function ksort(callable $comparator = null)
-    {
-    }
-
-    /**
-     * @param (callable(TKey, TKey): int)|null $comparator
-     * @return Map<TKey, TValue>
+     * @return float|int
      * @psalm-mutation-free
      */
-    public function ksorted(callable $comparator = null): Map
-    {
-    }
+    public function sum() {}
+
+    /**
+     * TODO precondition on TKey
+     *
+     * @return array<TKey, TValue>
+     * @throws \TypeError when TKey is non-scalar
+     * @psalm-mutation-free
+     */
+    public function toArray(): array {}
+
+    /**
+     * @template TKey2
+     * @template TValue2
+     * @param Map<TKey2, TValue2> $map
+     * @return Map<TKey|TKey2, TValue|TValue2>&static
+     * @psalm-mutation-free
+     */
+    public function union(Map $map): Map {}
 
     /**
      * @return Sequence<TValue>
      * @psalm-mutation-free
      */
-    public function values(): Sequence
-    {
-    }
+    public function values(): Sequence {}
 
     /**
      * @template TKey2
@@ -542,20 +970,7 @@ final class Map implements Collection, ArrayAccess
      * @return Map<TKey|TKey2, TValue|TValue2>
      * @psalm-mutation-free
      */
-    public function union(Map $map): Map
-    {
-    }
-
-    /**
-     * @template TKey2
-     * @template TValue2
-     * @param Map<TKey2, TValue2> $map
-     * @return Map<TKey|TKey2, TValue|TValue2>
-     * @psalm-mutation-free
-     */
-    public function xor(Map $map): Map
-    {
-    }
+    public function xor(Map $map): Map {}
 }
 
 /**
@@ -578,410 +993,25 @@ final class Pair implements JsonSerializable
      * @param TKey $key
      * @param TValue $value
      */
-    public function __construct($key = null, $value = null)
-    {
-    }
+    public function __construct($key = null, $value = null) {}
 
     /**
      * @return Pair<TKey, TValue>
      * @psalm-mutation-free
      */
-    public function copy(): Pair
-    {
-    }
-}
+    public function copy(): Pair {}
 
-/**
- * @template TValue
- * @extends Collection<int, TValue>
- * @extends ArrayAccess<int, TValue>
- */
-interface Sequence extends Collection, ArrayAccess
-{
     /**
-     * @return Sequence<TValue>
+     * @return array{key: TKey, value: TValue}
      * @psalm-mutation-free
      */
-    public function copy(): Sequence;
+    public function jsonSerialize(): array {}
 
     /**
-     * @return list<TValue>
+     * @return array{key: TKey, value: TValue}
      * @psalm-mutation-free
      */
-    public function toArray(): array;
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool;
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int;
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void;
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int;
-
-    /**
-     * @return float|int
-     * @psalm-mutation-free
-     */
-    public function sum();
-
-    /**
-     * @param callable(TValue): TValue $callback
-     */
-    public function apply(callable $callback): void;
-
-    /**
-     * @param TValue ...$values
-     * @psalm-mutation-free
-     */
-    public function contains(...$values): bool;
-
-    /**
-     * @param (callable(TValue): bool)|null $callback
-     * @return Sequence<TValue>
-     * @psalm-mutation-free
-     */
-    public function filter(callable $callback = null): Sequence;
-
-    /**
-     * @param TValue $value
-     * @return int|false
-     * @psalm-mutation-free
-     */
-    public function find($value);
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     * @psalm-mutation-free
-     */
-    public function first();
-
-    /**
-     * @return TValue
-     * @throws \OutOfRangeException
-     * @psalm-mutation-free
-     */
-    public function get(int $index);
-
-    /**
-     * @param TValue ...$values
-     * @throws \OutOfRangeException
-     */
-    public function insert(int $index, ...$values);
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function join(?string $glue = null): string;
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     * @psalm-mutation-free
-     */
-    public function last();
-
-    /**
-     * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
-     * @return Sequence<TNewValue>
-     * @psalm-mutation-free
-     */
-    public function map(callable $callback): Sequence;
-
-    /**
-     * @template TValue2
-     * @param iterable<TValue2> $values
-     * @return Sequence<TValue|TValue2>
-     * @psalm-mutation-free
-     */
-    public function merge(iterable $values): Sequence;
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     */
-    public function pop();
-
-    /**
-     * @param TValue ...$values
-     */
-    public function push(...$values);
-
-    /**
-     * @template TCarry
-     * @param callable(TCarry, TValue): TCarry $callback
-     * @param TCarry $initial
-     * @return TCarry
-     * @psalm-mutation-free
-     */
-    public function reduce(callable $callback, $initial = null);
-
-    /**
-     * @return TValue
-     * @throws \OutOfRangeException
-     */
-    public function remove(int $index);
-
-    /**
-     * @return Sequence<TValue>
-     * @psalm-mutation-free
-     */
-    public function reversed(): Sequence;
-
-    /**
-     * @param TValue $value
-     * @throws \OutOfRangeException
-     */
-    public function set(int $index, $value);
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     */
-    public function shift();
-
-    /**
-     * @return Sequence<TValue>
-     * @psalm-mutation-free
-     */
-    public function slice(int $index, ?int $length = null): Sequence;
-
-    /**
-     * @param (callable(TValue, TValue): int)|null $comparator
-     */
-    public function sort(callable $comparator = null);
-
-    /**
-     * @param (callable(TValue, TValue): int)|null $comparator
-     * @return Sequence<TValue>
-     * @psalm-mutation-free
-     */
-    public function sorted(callable $comparator = null): Sequence;
-
-    /**
-     * @param TValue ...$values
-     */
-    public function unshift(...$values);
-}
-
-
-/**
- * @template TValue
- * @implements Sequence<TValue>
- */
-final class Vector implements Sequence
-{
-    /**
-     * @param iterable<TValue> $values
-     */
-    public function __construct(iterable $values = [])
-    {
-    }
-
-    /**
-     * @return Vector<TValue>
-     * @psalm-mutation-free
-     */
-    public function copy(): Vector
-    {
-    }
-
-    /**
-     * @return list<TValue>
-     * @psalm-mutation-free
-     */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return float|int
-     * @psalm-mutation-free
-     */
-    public function sum()
-    {
-    }
-
-    /**
-     * @param TValue ...$values
-     * @psalm-mutation-free
-     */
-    public function contains(...$values): bool
-    {
-    }
-
-    /**
-     * @param (callable(TValue): bool)|null $callback
-     * @return Vector<TValue>
-     * @psalm-mutation-free
-     */
-    public function filter(callable $callback = null): Vector
-    {
-    }
-
-    /**
-     * @param TValue $value
-     * @return int|false
-     * @psalm-mutation-free
-     */
-    public function find($value)
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     * @psalm-mutation-free
-     */
-    public function first()
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \OutOfRangeException
-     * @psalm-mutation-free
-     */
-    public function get(int $index)
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function join(?string $glue = null): string
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     * @psalm-mutation-free
-     */
-    public function last()
-    {
-    }
-
-    /**
-     * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
-     * @return Vector<TNewValue>
-     * @psalm-mutation-free
-     */
-    public function map(callable $callback): Vector
-    {
-    }
-
-    /**
-     * @template TValue2
-     * @param iterable<TValue2> $values
-     * @return Vector<TValue|TValue2>
-     * @psalm-mutation-free
-     */
-    public function merge(iterable $values): Sequence
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     */
-    public function pop()
-    {
-    }
-
-    /**
-     * @template TCarry
-     * @param callable(TCarry, TValue): TCarry $callback
-     * @param TCarry $initial
-     * @return TCarry
-     * @psalm-mutation-free
-     */
-    public function reduce(callable $callback, $initial = null)
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \OutOfRangeException
-     */
-    public function remove(int $index)
-    {
-    }
-
-    /**
-     * @return Vector<TValue>
-     * @psalm-mutation-free
-     */
-    public function reversed(): Vector
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws \UnderflowException
-     */
-    public function shift()
-    {
-    }
-
-    /**
-     * @return Vector<TValue>
-     * @psalm-mutation-free
-     */
-    public function slice(int $offset, ?int $length = null): Vector
-    {
-    }
-
-    /**
-     * @param (callable(TValue, TValue): int)|null $comparator
-     * @return Vector<TValue>
-     * @psalm-mutation-free
-     */
-    public function sorted(callable $comparator = null): Vector
-    {
-    }
+    public function toArray(): array {}
 }
 
 /**
@@ -991,136 +1021,116 @@ final class Vector implements Sequence
  */
 final class Set implements Collection, ArrayAccess
 {
+    public const MIN_CAPACITY = 8;
+
     /**
      * @param iterable<TValue> $values
      */
-    public function __construct(iterable $values = [])
-    {
-    }
-
-    /**
-     * @return Set<TValue>
-     * @psalm-mutation-free
-     */
-    public function copy(): Set
-    {
-    }
-
-    /**
-     * @return list<TValue>
-     * @psalm-mutation-free
-     */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
+    public function __construct(iterable $values = []) {}
 
     /**
      * @param TValue ...$values
      */
-    public function add(...$values): void
-    {
-    }
+    public function add(...$values): void {}
+
+    public function allocate(int $capacity): void {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function capacity(): int {}
+
+    public function clear(): void {}
 
     /**
      * @param TValue ...$values
      * @psalm-mutation-free
      */
-    public function contains(...$values): bool
-    {
-    }
+    public function contains(...$values): bool {}
+
+    /**
+     * @return Set<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Set {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
 
     /**
      * @template TValue2
      * @param Set<TValue2> $set
-     * @return Set<TValue>
+     * @return Set<TValue>&static
      * @psalm-mutation-free
      */
-    public function diff(Set $set): Set
-    {
-    }
+    public function diff(Set $set): Set {}
 
     /**
      * @param (callable(TValue): bool)|null $callback
-     * @return Set<TValue>
+     * @return Set<TValue>&static
      * @psalm-mutation-free
      */
-    public function filter(callable $callback = null): Set
-    {
-    }
+    public function filter(?callable $callback = null): Set {}
 
     /**
      * @return TValue
      * @throws \UnderflowException
      * @psalm-mutation-free
      */
-    public function first()
-    {
-    }
+    public function first() {}
 
     /**
+     * @param int<0, max> $index
      * @return TValue
      * @throws \OutOfRangeException
      * @psalm-mutation-free
      */
-    public function get(int $index)
-    {
-    }
+    public function get(int $index) {}
+
+    /**
+     * @return Traversable<TKey, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
 
     /**
      * @template TValue2
      * @param Set<TValue2> $set
-     * @return Set<TValue&TValue2>
+     * @return Set<TValue&TValue2>&static
      * @psalm-mutation-free
      */
-    public function intersect(Set $set): Set
-    {
-    }
+    public function intersect(Set $set): Set {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function join(?string $glue = null): string {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
 
     /**
      * @return TValue
      * @throws \UnderflowException
      * @psalm-mutation-free
      */
-    public function last()
-    {
-    }
+    public function last() {}
 
     /**
      * @template TNewValue
      * @param callable(TValue): TNewValue $callback
-     * @return Set<TNewValue>
+     * @return Set<TNewValue>&static
      */
-    public function map(callable $callback): Set
-    {
-    }
+    public function map(callable $callback): Set {}
 
     /**
      * @template TValue2
@@ -1128,68 +1138,83 @@ final class Set implements Collection, ArrayAccess
      * @return Set<TValue|TValue2>
      * @psalm-mutation-free
      */
-    public function merge(iterable $values): Set
-    {
-    }
+    public function merge(iterable $values): Set {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
+
+    /**
+     * @template TCarry
+     * @param callable(TCarry, TValue): TCarry $callback
+     * @param TCarry $initial
+     * @return TCarry
+     * @psalm-mutation-free
+     */
+    public function reduce(callable $callback, $initial = null) {}
 
     /**
      * @param TValue ...$values
      */
-    public function remove(...$values): void
-    {
-    }
+    public function remove(...$values): void {}
+
+    public function reverse(): void {}
 
     /**
-     * @return Set<TValue>
+     * @return Set<TValue>&static
      * @psalm-mutation-free
      */
-    public function reversed(): Set
-    {
-    }
+    public function reversed(): Set {}
 
     /**
-     * @return Set<TValue>
+     * @return Set<TValue>&static
      * @psalm-mutation-free
      */
-    public function slice(int $index, ?int $length = null): Set
-    {
-    }
+    public function slice(int $index, ?int $length = null): Set {}
 
     /**
      * @param (callable(TValue, TValue): int)|null $comparator
      */
-    public function sort(callable $comparator = null): void
-    {
-    }
+    public function sort(?callable $comparator = null): void {}
 
     /**
      * @param (callable(TValue, TValue): int)|null $comparator
-     * @return Set<TValue>
+     * @return Set<TValue>&static
      * @psalm-mutation-free
      */
-    public function sorted(callable $comparator = null): Set
-    {
-    }
+    public function sorted(?callable $comparator = null): Set {}
+
+    /**
+     * @return float|int
+     * @psalm-mutation-free
+     */
+    public function sum();
+
+    /**
+     * @return list<TValue>
+     * @psalm-mutation-free
+     */
+    public function toArray(): array {}
 
     /**
      * @template TValue2
      * @param Set<TValue2> $set
-     * @return Set<TValue|TValue2>
+     * @return Set<TValue|TValue2>&static
      * @psalm-mutation-free
      */
-    public function union(Set $set): Set
-    {
-    }
+    public function union(Set $set): Set {}
 
     /**
      * @template TValue2
      * @param Set<TValue2> $set
-     * @return Set<TValue|TValue2>
+     * @return Set<TValue|TValue2>&static
      * @psalm-mutation-free
      */
-    public function xor(Set $set): Set
-    {
-    }
+    public function xor(Set $set): Set {}
 }
 
 /**
@@ -1202,77 +1227,75 @@ final class Stack implements Collection, ArrayAccess
     /**
      * @param iterable<TValue> $values
      */
-    public function __construct(iterable $values = [])
-    {
-    }
+    public function __construct(iterable $values = []) {}
+
+    public function allocate(int $capacity): void {}
 
     /**
-     * @return Stack<TValue>
      * @psalm-mutation-free
      */
-    public function copy(): Stack
-    {
-    }
+    public function capacity(): int {}
+
+    public function clear(): void {}
+
+    /**
+     * @return Stack<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Stack {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * @return Traversable<int, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     * @psalm-mutation-free
+     */
+    public function peek() {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     */
+    public function pop() {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void {}
 
     /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     * @psalm-mutation-free
-     */
-    public function peek()
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     */
-    public function pop()
-    {
-    }
-
-    /**
-     * @param TValue ...$values
-     */
-    public function push(...$values): void
-    {
-    }
+    public function toArray(): array {}
 }
 
 /**
@@ -1282,80 +1305,80 @@ final class Stack implements Collection, ArrayAccess
  */
 final class Queue implements Collection, ArrayAccess
 {
+    public const MIN_CAPACITY = 8;
+
     /**
      * @param iterable<TValue> $values
      */
-    public function __construct(iterable $values = [])
-    {
-    }
+    public function __construct(iterable $values = []) {}
+
+    public function allocate(int $capacity): void {}
 
     /**
-     * @return Queue<TValue>
      * @psalm-mutation-free
      */
-    public function copy(): Queue
-    {
-    }
+    public function capacity(): int {}
+
+    public function clear(): void {}
+
+    /**
+     * @return Queue<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): Queue {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * @return Traversable<int, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
+
+    public function offsetExists(mixed $offset): bool {}
+
+    public function offsetGet(mixed $offset): mixed {}
+
+    public function offsetSet(mixed $offset, mixed $value): void {}
+
+    public function offsetUnset(mixed $offset): void {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     * @psalm-mutation-free
+     */
+    public function peek() {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     */
+    public function pop() {}
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void {}
 
     /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     * @psalm-mutation-free
-     */
-    public function peek()
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     */
-    public function pop()
-    {
-    }
-
-    /**
-     * @param TValue ...$values
-     */
-    public function push(...$values): void
-    {
-    }
+    public function toArray(): array {}
 }
 
 /**
@@ -1364,71 +1387,65 @@ final class Queue implements Collection, ArrayAccess
  */
 final class PriorityQueue implements Collection
 {
+    public const MIN_CAPACITY = 8;
+
+    public function allocate(int $capacity): void {}
+
     /**
-     * @return PriorityQueue<TValue>
      * @psalm-mutation-free
      */
-    public function copy(): PriorityQueue
-    {
-    }
+    public function capacity(): int {}
+
+    public function clear(): void {}
+
+    /**
+     * @return PriorityQueue<TValue>&static
+     * @psalm-mutation-free
+     */
+    public function copy(): PriorityQueue {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * @return Traversable<int, TValue>
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmpty(): bool {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): mixed {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     * @psalm-mutation-free
+     */
+    public function peek() {}
+
+    /**
+     * @return TValue
+     * @throws UnderflowException
+     */
+    public function pop() {}
+
+    /**
+     * @param TValue $value
+     */
+    public function push($value, int $priority): void {}
 
     /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
-    public function toArray(): array
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function isEmpty(): bool
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function count(): int
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function allocate(int $capacity): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function capacity(): int
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     * @psalm-mutation-free
-     */
-    public function peek()
-    {
-    }
-
-    /**
-     * @return TValue
-     * @throws UnderflowException
-     */
-    public function pop()
-    {
-    }
-
-    /**
-     * @param TValue $value
-     */
-    public function push($value, int $priority): void
-    {
-    }
+    public function toArray(): array {}
 }

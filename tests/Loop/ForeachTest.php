@@ -863,7 +863,12 @@ class ForeachTest extends TestCase
                 'code' => '<?php
                     function foo(DOMNodeList $list) : void {
                         foreach ($list as $item) {}
-                    }',
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['dom'],
             ],
             'loopOverArrayChunk' => [
                 'code' => '<?php
@@ -1006,7 +1011,12 @@ class ForeachTest extends TestCase
                         foreach ($elt as $item) {
                             f($item);
                         }
-                    }'
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['simplexml'],
             ],
             'loopOverIteratorWithTooFewParams' => [
                 'code' => '<?php

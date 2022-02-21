@@ -16,6 +16,8 @@ class MethodSignatureTest extends TestCase
 
     public function testExtendSoapClientWithDocblockTypes(): void
     {
+        $this->testConfig->enableExtension("soap");
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -46,6 +48,8 @@ class MethodSignatureTest extends TestCase
 
     public function testExtendSoapClientWithNoDocblockTypes(): void
     {
+        $this->testConfig->enableExtension("soap");
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -68,6 +72,8 @@ class MethodSignatureTest extends TestCase
 
     public function testExtendSoapClientWithParamType(): void
     {
+        $this->testConfig->enableExtension("soap");
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -239,26 +245,22 @@ class MethodSignatureTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                class A extends SoapClient
+                class A
                 {
-                   /**
-                     * @param string $function_name
-                     * @param string $arguments
-                     * @param array<mixed> $options default null
-                     * @param array<mixed> $input_headers default null
-                     * @param array<mixed> $output_headers default null
-                     * @return mixed
+                    /**
+                     * @param array $args
                      */
-                    public function __soapCall(
-                        $function_name,
-                        $arguments,
-                        $options = [],
-                        $input_headers = [],
-                        &$output_headers = []
-                    ) {
+                    public function foo($args): void {}
+                }
 
-                    }
-                }'
+                class B extends A
+                {
+                    /**
+                     * @param string $args
+                     */
+                    public function foo($args): void {}
+                }
+            '
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -272,18 +274,19 @@ class MethodSignatureTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                class A extends SoapClient
+                class A
                 {
-                    public function __soapCall(
-                        $function_name,
-                        string $arguments,
-                        $options = [],
-                        $input_headers = [],
-                        &$output_headers = []
-                    ) {
+                    /**
+                     * @param array $args
+                     */
+                    public function foo($args): void {}
+                }
 
-                    }
-                }'
+                class B extends A
+                {
+                    public function foo(string $args): void {}
+                }
+            '
         );
 
         $this->analyzeFile('somefile.php', new Context());

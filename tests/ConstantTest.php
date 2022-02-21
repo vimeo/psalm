@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -84,7 +85,7 @@ class ConstantTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>, php_version?: string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1040,7 +1041,12 @@ class ConstantTest extends TestCase
                     /**
                      * @psalm-param \PDO::PARAM_* $type
                      */
-                    function param(int $type): void {}'
+                    function param(int $type): void {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['pdo'],
             ],
             'templatedConstantInType' => [
                 'code' => '<?php

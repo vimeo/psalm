@@ -49,50 +49,6 @@ return [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
     ],
-    'PDOStatement::bindColumn' => [
-      'old' => ['bool', 'column'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'column'=>'mixed', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindParam' => [
-      'old' => ['bool', 'paramno'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'param,'=>'string|int', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindValue' => [
-      'old' => ['bool', 'paramno'=>'mixed', 'param'=>'mixed', 'type='=>'int'],
-      'new' => ['bool', 'param'=>'string|int', 'value'=>'mixed', 'type='=>'int'],
-    ],
-    'PDOStatement::debugDumpParams' => [
-      'old' => ['void'],
-      'new' => ['bool|null'],
-    ],
-    'PDOStatement::errorCode' => [
-      'old' => ['string'],
-      'new' => ['string|null'],
-    ],
-    'PDOStatement::execute' => [
-      'old' => ['bool', 'bound_input_params='=>'?array'],
-      'new' => ['bool', 'params='=>'?array'],
-    ],
-    'PDOStatement::fetch' => [
-      'old' => ['mixed', 'how='=>'int', 'orientation='=>'int', 'offset='=>'int'],
-      'new' => ['mixed', 'mode='=>'int', 'cursorOrientation='=>'int', 'cursorOffset='=>'int'],
-    ],
-    'PDOStatement::fetchAll' => [
-      'old' => ['array|false', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'?array'],
-      'new' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
-    ],
-    'PDOStatement::fetchColumn' => [
-      'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
-      'new' => ['mixed', 'column='=>'int'],
-    ],
-    'PDOStatement::fetchObject' => [
-      'old' => ['object|false', 'class_name='=>'string', 'ctor_args='=>'array'],
-      'new' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
-    ],
-    'PDOStatement::setFetchMode' => [
-      'old' => ['bool', 'mode'=>'int'],
-      'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
-    ],
     'Phar::getMetadata' => [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
@@ -309,10 +265,6 @@ return [
       'old' => ['string|false', 'object'=>'DateTimeInterface', 'format'=>'string'],
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
     ],
-    'dom_import_simplexml' => [
-        'old' => ['DOMElement|null', 'node'=>'SimpleXMLElement'],
-        'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
-    ],
     'explode' => [
       'old' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
       'new' => ['list<string>', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
@@ -324,10 +276,6 @@ return [
     'gmmktime' => [
       'old' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
       'new' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
-    ],
-    'gmp_binomial' => [
-      'old' => ['GMP|false', 'n'=>'GMP|string|int', 'k'=>'int'],
-      'new' => ['GMP', 'n'=>'GMP|string|int', 'k'=>'int'],
     ],
     'gmstrftime' => [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
@@ -1599,14 +1547,10 @@ return [
     ],
   ],
   'removed' => [
-    'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
-    'PDOStatement::setFetchMode\'2' => ['bool', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
-    'PDOStatement::setFetchMode\'3' => ['bool', 'fetch_into'=>'int', 'object'=>'object'],
     'ReflectionType::isBuiltin' => ['bool'],
     'SplFileObject::fgetss' => ['string|false', 'allowable_tags='=>'string'],
     'create_function' => ['string', 'args'=>'string', 'code'=>'string'],
     'each' => ['array{0:int|string,key:int|string,1:mixed,value:mixed}', '&r_arr'=>'array'],
-    'gmp_random' => ['GMP', 'limiter='=>'int'],
     'gzgetss' => ['string|false', 'zp'=>'resource', 'length'=>'int', 'allowable_tags='=>'string'],
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
@@ -1614,12 +1558,5 @@ return [
     'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
-    'SimpleXMLIterator::rewind' => ['void'],
-    'SimpleXMLIterator::valid' => ['bool'],
-    'SimpleXMLIterator::current' => ['?SimpleXMLIterator'],
-    'SimpleXMLIterator::key' => ['string|false'],
-    'SimpleXMLIterator::next' => ['void'],
-    'SimpleXMLIterator::hasChildren' => ['bool'],
-    'SimpleXMLIterator::getChildren' => ['SimpleXMLIterator'],
   ],
 ];

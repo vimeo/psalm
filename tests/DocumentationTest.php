@@ -12,10 +12,6 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
 use function array_diff;
@@ -138,17 +134,7 @@ class DocumentationTest extends TestCase
 
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider()
-            )
-        );
+        parent::setUp();
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
     }
@@ -210,12 +196,16 @@ class DocumentationTest extends TestCase
      * @param string $error_message
      * @param array<string> $error_levels
      * @param bool $check_references
-     *
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false, string $php_version = '8.0'): void
+    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false, string $php_version = '8.0', array $required_extensions = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
@@ -258,7 +248,8 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string[],bool,string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,check_references?:bool,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
+     * @psalm-suppress MismatchingDocblockReturnType https://github.com/vimeo/psalm/issues/7640
      */
     public function providerInvalidCodeParse(): array
     {
@@ -267,6 +258,7 @@ class DocumentationTest extends TestCase
         foreach (self::getCodeBlocksFromDocs() as $issue_name => $blocks) {
             $php_version = '8.0';
             $ignored_issues = [];
+            $required_extensions = [];
             switch ($issue_name) {
                 case 'InvalidStringClass':
                 case 'MissingThrowsDocblock':
@@ -319,16 +311,21 @@ class DocumentationTest extends TestCase
                 case 'OverriddenFinalConstant':
                     $php_version = '8.1';
                     break;
+
+                case 'TaintedSql':
+                    $required_extensions[] = "pdo";
+                    break;
             }
 
             $invalid_code_data[$issue_name] = [
-                $blocks[0],
-                $issue_name,
-                $ignored_issues,
-                strpos($issue_name, 'Unused') !== false
+                'code' => $blocks[0],
+                'error_message' => $issue_name,
+                'ignored_issues' => $ignored_issues,
+                'check_references' => strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
-                $php_version
+                'php_version' => $php_version,
+                'required_extensions' => $required_extensions,
             ];
         }
 

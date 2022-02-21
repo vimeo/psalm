@@ -16,7 +16,6 @@
  */
 return [
   'added' => [
-    'DOMNodeList::count' => ['int'],
     'ReflectionClass::isIterable' => ['bool'],
     'ZipArchive::count' => ['int'],
     'ZipArchive::setEncryptionIndex' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'string'],

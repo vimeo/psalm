@@ -46,6 +46,7 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function get_class;
+use function strtolower;
 
 /**
  * @internal
@@ -402,6 +403,11 @@ class CastAnalyzer
                                 $castable_types,
                                 array_values($return_type->getAtomicTypes())
                             );
+
+                            continue 2;
+                        } elseif (strtolower($intersection_type->value) === "gmp") {
+                            // GMP can cast to string but doesn't actually have __toString
+                            $castable_types[] = new TNumericString();
 
                             continue 2;
                         }

@@ -207,6 +207,19 @@ class ToStringTest extends TestCase
 
                     echo implode(":", [new Bar()]);',
             ],
+            'gmpStringCast' => [
+                'code' => '<?php
+                    // GMP doesn\'t have __toString but it can still be cast to string
+                    $gmp = gmp_init(123);
+                    $str = (string) $gmp;
+                ',
+                'assertions' => [
+                    '$str===' => 'numeric-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['gmp'],
+            ],
         ];
     }
 
@@ -488,6 +501,19 @@ class ToStringTest extends TestCase
                     }
                 ',
                 'error_message' => 'ImplicitToStringCast'
+            ],
+            'gmpStringCast' => [
+                'code' => '<?php
+                    // GMP doesn\'t have __toString but it can still be cast to string
+                    $gmp = gmp_init(123);
+                    takesString($gmp);
+
+                    function takesString(string $s): void {}
+                ',
+                'error_message' => 'ImplicitToStringCast',
+                'ignored_issues' => [],
+                'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+                'required_extensions' => ['gmp'],
             ],
         ];
     }

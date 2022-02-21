@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
@@ -516,6 +517,9 @@ class Scanner
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $reflected_class = new ReflectionClass($fq_classlike_name);
+                    if ($this->config->isReflectionFromSupportedExtension($reflected_class)) {
+                        throw new InvalidArgumentException("Unexpected ClassLike from supported extension");
+                    }
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
                 } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
@@ -708,7 +712,11 @@ class Scanner
                     $this->progress->debug('Using reflection to locate file for ' . $fq_class_name . "\n");
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    return new ReflectionClass($fq_class_name);
+                    $reflected_class = new ReflectionClass($fq_class_name);
+                    if ($this->config->isReflectionFromSupportedExtension($reflected_class)) {
+                        throw new InvalidArgumentException("Unexpected ClassLike from supported extension");
+                    }
+                    return $reflected_class;
                 } catch (Throwable $e) {
                     // do not cache any results here (as case-sensitive filenames can screw things up)
 

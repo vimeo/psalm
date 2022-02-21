@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests\ReturnTypeProvider;
 
+use Psalm\Config;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -10,7 +11,7 @@ class ExceptionCodeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -37,6 +38,9 @@ class ExceptionCodeTest extends TestCase
                 }
             ',
             'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.3', // Not needed, only here because required_extensions has to be set
+            'required_extensions' => ['pdo'],
         ];
         yield 'CustomThrowable' => [
             'code' => '<?php

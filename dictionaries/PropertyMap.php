@@ -39,10 +39,6 @@ return [
         'boost' => 'float',
         'values' => 'array',
     ],
-    'domprocessinginstruction' => [
-        'target' => 'string',
-        'data' => 'string',
-    ],
     'recursivearrayiterator' => [
         'name' => 'string',
     ],
@@ -54,22 +50,8 @@ return [
         'slaveokay' => 'boolean',
         'timeout' => 'integer',
     ],
-    'domxpath' => [
-        'document' => 'DOMDocument',
-    ],
-    'domentity' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'notationName' => 'string',
-        'actualEncoding' => 'string',
-        'encoding' => 'string',
-        'version' => 'string',
-    ],
     'splminheap' => [
         'name' => 'string',
-    ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
     ],
     'ziparchive' => [
         'status' => 'int',
@@ -121,16 +103,7 @@ return [
         'file' => 'string',
         'line' => 'int',
     ],
-    'domexception' => [
-        'code' => 'int',
-    ],
-    'domentityreference' => [
-        'name' => 'string',
-    ],
     'spldoublylinkedlist' => [
-        'name' => 'string',
-    ],
-    'domdocumentfragment' => [
         'name' => 'string',
     ],
     'collator' => [
@@ -138,13 +111,6 @@ return [
     ],
     'streamwrapper' => [
         'context' => 'resource',
-    ],
-    'pdostatement' => [
-        'querystring' => 'string',
-    ],
-    'domnotation' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
     ],
     'snmpexception' => [
         'code' => 'string',
@@ -165,9 +131,6 @@ return [
     'splheap' => [
         'name' => 'string',
     ],
-    'domnodelist' => [
-        'length' => 'int',
-    ],
     'mongodb' => [
         'w' => 'integer',
         'wtimeout' => 'integer',
@@ -179,32 +142,6 @@ return [
         'connected' => 'boolean',
         'status' => 'string',
     ],
-    'domdocument' => [
-        'actualEncoding' => 'string',
-        'config' => 'null',
-        'doctype' => 'DOMDocumentType',
-        'documentElement' => 'DOMElement',
-        'documentURI' => 'string',
-        'encoding' => 'string',
-        'firstElementChild' => 'DOMElement|null',
-        'formatOutput' => 'bool',
-        'childElementCount' => 'int',
-        'implementation' => 'DOMImplementation',
-        'lastElementChild' => 'DOMElement|null',
-        'preserveWhiteSpace' => 'bool',
-        'recover' => 'bool',
-        'resolveExternals' => 'bool',
-        'standalone' => 'bool',
-        'strictErrorChecking' => 'bool',
-        'substituteEntities' => 'bool',
-        'validateOnParse' => 'bool',
-        'version' => 'string',
-        'xmlEncoding' => 'string',
-        'xmlStandalone' => 'bool',
-        'xmlVersion' => 'string',
-        'ownerDocument' => 'null',
-        'parentNode' => 'null',
-    ],
     'libxmlerror' => [
         'level' => 'int',
         'code' => 'int',
@@ -212,9 +149,6 @@ return [
         'message' => 'string',
         'file' => 'string',
         'line' => 'int',
-    ],
-    'domimplementation' => [
-        'name' => 'string',
     ],
     'normalizer' => [
         'name' => 'string',
@@ -225,23 +159,11 @@ return [
     'event' => [
         'pending' => 'bool',
     ],
-    'domdocumenttype' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'name' => 'string',
-        'entities' => 'DOMNamedNodeMap',
-        'notations' => 'DOMNamedNodeMap',
-        'internalSubset' => 'string',
-    ],
     'errorexception' => [
         'severity' => 'int',
     ],
     'recursivedirectoryiterator' => [
         'name' => 'string',
-    ],
-    'domcharacterdata' => [
-        'data' => 'string',
-        'length' => 'int',
     ],
     'mongocollection' => [
         'db' => 'MongoDB',
@@ -251,61 +173,6 @@ return [
     'mongoint64' => [
         'value' => 'string',
     ],
-    'mysqli' => [
-        'affected_rows' => 'int',
-        'client_info' => 'string',
-        'client_version' => 'int',
-        'connect_errno' => 'int',
-        'connect_error' => '?string',
-        'errno' => 'int',
-        'error' => 'string',
-        'error_list' => 'array',
-        'field_count' => 'int',
-        'host_info' => 'string',
-        'info' => 'string',
-        'insert_id' => 'int|string',
-        'protocol_version' => 'string',
-        'server_info' => 'string',
-        'server_version' => 'int',
-        'sqlstate' => 'string',
-        'thread_id' => 'int',
-        'warning_count' => 'int',
-    ],
-    'mysqli_driver' => [
-        'client_info' => 'string',
-        'client_version' => 'string',
-        'driver_version' => 'string',
-        'embedded' => 'string',
-        'reconnect' => 'bool',
-        'report_mode' => 'int'
-    ],
-    'mysqli_result' => [
-        'current_field'  => 'int',
-        'field_count' => 'int',
-        'lengths' => 'array|null',
-        'num_rows' => 'int',
-        'type' => 'mixed',
-    ],
-    'mysqli_sql_exception' => [
-        'sqlstate' => 'string'
-    ],
-    'mysqli_stmt' => [
-        'affected_rows' => 'int',
-        'errno' => 'int',
-        'error' => 'string',
-        'error_list' => 'array',
-        'field_count' => 'int',
-        'id' => 'mixed',
-        'insert_id' => 'int',
-        'num_rows' => 'int',
-        'param_count' => 'int',
-        'sqlstate' => 'string',
-    ],
-    'mysqli_warning' => [
-        'errno' => 'int',
-        'message' => 'string',
-        'sqlstate' => 'string',
-    ],
     'eventlistener' => [
         'fd' => 'int',
     ],
@@ -314,16 +181,6 @@ return [
     ],
     'regexiterator' => [
         'name' => 'string',
-    ],
-    'domelement' => [
-        'schemaTypeInfo' => 'bool',
-        'tagName' => 'string',
-        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
-        'childElementCount' => 'int',
-        'firstElementChild' => 'DOMElement|null',
-        'lastElementChild' => 'DOMElement|null',
-        'nextElementSibling' => 'DOMElement|null',
-        'previousElementSibling' => 'DOMElement|null',
     ],
     'tidynode' => [
         'value' => 'string',
@@ -351,9 +208,6 @@ return [
         'http-raw-response' => 'string',
         'http-digested-response' => 'string',
     ],
-    'domnamednodemap' => [
-        'length' => 'int',
-    ],
     'splstack' => [
         'name' => 'string',
     ],
@@ -363,38 +217,6 @@ return [
     'eventsslcontext' => [
         'local-cert' => 'string',
         'local-pk' => 'string',
-    ],
-    'pdoexception' => [
-        'errorinfo' => 'array',
-        'code' => 'string',
-    ],
-    'domnode' => [
-        'nodeName' => 'string',
-        'nodeValue' => 'string|null',
-        'nodeType' => 'int',
-        'parentNode' => 'DOMNode|null',
-        'childNodes' => 'DomNodeList<DomNode>',
-        'firstChild' => 'DOMNode|null',
-        'lastChild' => 'DOMNode|null',
-        'previousSibling' => 'DOMNode|null',
-        'nextSibling' => 'DOMNode|null',
-        'attributes' => 'null',
-        'ownerDocument' => 'DOMDocument|null',
-        'namespaceURI' => 'string|null',
-        'prefix' => 'string',
-        'localName' => 'string',
-        'baseURI' => 'string|null',
-        'textContent' => 'string',
-    ],
-    'domattr' => [
-        'name' => 'string',
-        'ownerElement' => 'DOMElement',
-        'schemaTypeInfo' => 'bool',
-        'specified' => 'bool',
-        'value' => 'string',
-    ],
-    'simplexmliterator' => [
-        'name' => 'string',
     ],
     'snmp' => [
         'max-oids' => 'int',
@@ -430,9 +252,6 @@ return [
         'priority' => 'integer',
         'input' => 'EventBuffer',
         'output' => 'EventBuffer',
-    ],
-    'domtext' => [
-        'wholeText' => 'string',
     ],
     'exception' => [
         'message' => 'string',
@@ -525,14 +344,5 @@ return [
         'offset' => 'int',
         'timestamp' => 'int',
         'headers' => 'array<string, string>|null',
-    ],
-    'soapfault' => [
-        'faultcode' => 'string|null',
-        'faultcodens' => 'string|null',
-        'faultstring' => 'string',
-        'faultactor' => 'string|null',
-        'detail' => 'mixed|null',
-        '_name' => 'string',
-        'headerfault' => 'mixed|null',
     ],
 ];

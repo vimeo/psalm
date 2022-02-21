@@ -16,10 +16,13 @@ use function version_compare;
 use const PHP_OS;
 use const PHP_VERSION;
 
+/**
+ * @psalm-require-extends \Psalm\Tests\TestCase
+ */
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string,required_extensions?:list<value-of<Config::SUPPORTED_EXTENSIONS>>}>
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
@@ -28,12 +31,14 @@ trait InvalidCodeAnalysisTestTrait
      * @small
      *
      * @param list<string> $error_levels
+     * @param list<value-of<Config::SUPPORTED_EXTENSIONS>> $required_extensions
      */
     public function testInvalidCode(
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.3'
+        string $php_version = '7.3',
+        array $required_extensions = []
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
@@ -46,6 +51,10 @@ trait InvalidCodeAnalysisTestTrait
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $code = str_replace("\n", "\r\n", $code);
+        }
+
+        foreach ($required_extensions as $ext_name) {
+            $this->testConfig->enableExtension($ext_name);
         }
 
         foreach ($error_levels as $error_level) {
