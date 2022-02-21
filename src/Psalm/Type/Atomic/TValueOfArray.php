@@ -55,6 +55,7 @@ final class TValueOfArray extends Atomic
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TList
+                && !$type instanceof TPropertiesOf
             ) {
                 return false;
             }

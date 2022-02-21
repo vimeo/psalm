@@ -11,317 +11,294 @@ class PropertiesOfTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
-            'varStatement' => [
-                '<?php
-                class A {
-                    public int $foo = 42;
-                }
-
-                /** @var properties-of<A> */
-                $test = \'foo\';
-                ',
-            ],
-            'returnStatement' => [
-                '<?php
-                class A {
-                    public int $foo = 42;
-                }
-
-                /** @return properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'foo\';
-                }
-                ',
-            ],
             'publicPropertiesOf' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var bool */
+                        public $foo = false;
+                        /** @var string */
+                        private $bar = "";
+                        /** @var int */
+                        protected $adams = 42;
+                    }
 
-                /** @return public-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'foo\';
-                }
+                    /** @return public-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["foo" => true];
+                    }
                 ',
             ],
             'protectedPropertiesOf' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var bool */
+                        public $foo = false;
+                        /** @var string */
+                        private $bar = "";
+                        /** @var int */
+                        protected $adams = 42;
+                    }
 
-                /** @return protected-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'adams\';
-                }
+                    /** @return protected-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["adams" => 42];
+                    }
                 ',
             ],
             'privatePropertiesOf' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var bool */
+                        public $foo = false;
+                        /** @var string */
+                        private $bar = "";
+                        /** @var int */
+                        protected $adams = 42;
+                    }
 
-                /** @return private-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'bar\';
-                }
+                    /** @return private-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["bar" => "foo"];
+                    }
                 ',
             ],
             'allPropertiesOf' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
-
-                /** @return properties-of<A> */
-                function returnPropertyOfA(int $visibility) {
-                    if ($visibility === 1) {
-                        return \'foo\';
-                    } elseif ($visibility === 2) {
-                        return \'bar\';
-                    } else {
-                        return \'adams\';
+                'code' => '<?php
+                    class A {
+                        /** @var bool */
+                        public $foo = false;
+                        /** @var string */
+                        private $bar = "";
+                        /** @var int */
+                        protected $adams = 42;
                     }
-                }
+
+                    /** @return properties-of<A> */
+                    function returnPropertyOfA(int $visibility) {
+                        return [
+                            "foo" => true,
+                            "bar" => "foo",
+                            "adams" => 1
+                        ];
+                    }
                 ',
             ],
-            'usePropertiesOfSelfAsArrayKey' => [
-                '<?php
-                class A {
-                    /** @var int */
-                    public $a = 1;
-                    /** @var int */
-                    public $b = 2;
 
-                    /** @return array<properties-of<self>, int> */
-                    public function asArray() {
-                        return [
-                            \'a\' => $this->a,
-                            \'b\' => $this->b
-                        ];
+            'usePropertiesOfSelfAsArrayKey' => [
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        public $a = 1;
+                        /** @var int */
+                        public $b = 2;
+
+                        /** @return properties-of<self> */
+                        public function asArray() {
+                            return [
+                                "a" => $this->a,
+                                "b" => $this->b
+                            ];
+                        }
                     }
-                }',
+                ',
             ],
             'usePropertiesOfStaticAsArrayKey' => [
-                '<?php
-                class A {
-                    /** @var int */
-                    public $a = 1;
-                    /** @var int */
-                    public $b = 2;
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        public $a = 1;
+                        /** @var int */
+                        public $b = 2;
 
-                    /** @return array<properties-of<static>, int> */
-                    public function asArray() {
-                        return [
-                            \'a\' => $this->a,
-                            \'b\' => $this->b
-                        ];
+                        /** @return properties-of<static> */
+                        public function asArray() {
+                            return [
+                                "a" => $this->a,
+                                "b" => $this->b
+                            ];
+                        }
                     }
-                }
 
-                class B extends A {
-                    /** @var int */
-                    public $c = 3;
+                    class B extends A {
+                        /** @var int */
+                        public $c = 3;
 
-                    public function asArray() {
-                        return [
-                            \'a\' => $this->a,
-                            \'b\' => $this->b,
-                            \'c\' => $this->c,
-                        ];
+                        public function asArray() {
+                            return [
+                                "a" => $this->a,
+                                "b" => $this->b,
+                                "c" => $this->c,
+                            ];
+                        }
                     }
-                }
                 ',
             ],
             'propertiesOfMultipleInheritanceStaticAsArrayKey' => [
-                '<?php
-                class A {
-                    /** @var int */
-                    public $a = 1;
-                    /** @var int */
-                    public $b = 2;
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        public $a = 1;
+                        /** @var int */
+                        public $b = 2;
 
-                    /** @return array<properties-of<static>, int> */
-                    public function asArray() {
-                        return [
-                            \'a\' => $this->a,
-                            \'b\' => $this->b
-                        ];
+                        /** @return properties-of<static> */
+                        public function asArray() {
+                            return [
+                                "a" => $this->a,
+                                "b" => $this->b
+                            ];
+                        }
                     }
-                }
 
-                class B extends A {
-                    /** @var int */
-                    public $c = 3;
-                }
-
-                class C extends B {
-                    /** @var int */
-                    public $d = 4;
-
-                    public function asArray() {
-                        return [
-                            \'a\' => $this->a,
-                            \'b\' => $this->b,
-                            \'c\' => $this->c,
-                            \'d\' => $this->d,
-                        ];
+                    class B extends A {
+                        /** @var int */
+                        public $c = 3;
                     }
-                }
+
+                    class C extends B {
+                        /** @var int */
+                        public $d = 4;
+
+                        public function asArray() {
+                            return [
+                                "a" => $this->a,
+                                "b" => $this->b,
+                                "c" => $this->c,
+                                "d" => $this->d,
+                            ];
+                        }
+                    }
                 ',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'onlyOneTemplateParam' => [
-                '<?php
+                'code' => '<?php
+                    class A {}
+                    class B {}
 
-                class A {}
-                class B {}
-
-                /** @var properties-of<A, B> */
-                $test = \'foobar\';
+                    /** @var properties-of<A, B> */
+                    $test = "foobar";
                 ',
                 'error_message' => 'InvalidDocblock',
             ],
             'publicPropertiesOfPicksNoPrivate' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return public-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'bar\';
-                }
+                    /** @return public-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["bar" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
             'publicPropertiesOfPicksNoProtected' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return public-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'adams\';
-                }
+                    /** @return public-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["adams" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
             'protectedPropertiesOfPicksNoPublic' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return protected-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'foo\';
-                }
+                    /** @return protected-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["foo" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
             'protectedPropertiesOfPicksNoPrivate' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return protected-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'bar\';
-                }
+                    /** @return protected-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["bar" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
             'privatePropertiesOfPicksNoPublic' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return private-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'foo\';
-                }
+                    /** @return private-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["foo" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],
             'privatePropertiesOfPicksNoProtected' => [
-                '<?php
-                class A {
-                    /** @var mixed */
-                    public $foo;
-                    /** @var mixed */
-                    private $bar;
-                    /** @var mixed */
-                    protected $adams;
-                }
+                'code' => '<?php
+                    class A {
+                        /** @var mixed */
+                        public $foo;
+                        /** @var mixed */
+                        private $bar;
+                        /** @var mixed */
+                        protected $adams;
+                    }
 
-                /** @return private-properties-of<A> */
-                function returnPropertyOfA() {
-                    return \'adams\';
-                }
+                    /** @return private-properties-of<A> */
+                    function returnPropertyOfA() {
+                        return ["adams" => true];
+                    }
                 ',
                 'error_message' => 'InvalidReturnStatement'
             ],

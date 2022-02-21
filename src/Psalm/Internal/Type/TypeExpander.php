@@ -27,7 +27,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
@@ -61,7 +60,6 @@ class TypeExpander
 {
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -318,7 +316,7 @@ class TypeExpander
             }
 
             if (!$codebase->classExists($return_type->fq_classlike_name)) {
-                return $return_type;
+                return [$return_type];
             }
 
             // Get and merge all properties from parent classes
@@ -347,15 +345,22 @@ class TypeExpander
 
             // Return property names as literal string
             $properties = array_map(
-                function (string $property_name): TLiteralString {
-                    return new TLiteralString($property_name);
+                function (PropertyStorage $property): ?Union {
+                    return $property->type;
                 },
-                array_keys($properties_types)
+                $properties_types
             );
-            if (empty($properties)) {
+            $properties = array_filter(
+                $properties,
+                function (?Union $property_type): bool {
+                    return $property_type !== null;
+                }
+            );
+
+            if ($properties === []) {
                 return $return_type;
             }
-            return $properties;
+            return [new TKeyedArray($properties)];
         }
 
         if ($return_type instanceof TTypeAlias) {
@@ -414,8 +419,14 @@ class TypeExpander
                 $codebase,
                 $return_type,
                 $self_class,
+                $static_class_type,
+                $parent_class,
                 $evaluate_class_constants,
-                $throw_on_unresolvable_constant
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
         }
 
@@ -935,20 +946,40 @@ class TypeExpander
 
     /**
      * @param TKeyOfArray|TValueOfArray $return_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandKeyOfValueOfArray(
         Codebase $codebase,
-        $return_type,
+        Atomic &$return_type,
         ?string $self_class,
-        bool $evaluate_class_constants,
-        bool $throw_on_unresolvable_constant
+        $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool $expand_generic = false,
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
     ): array {
         // Expand class constants to their atomics
         $type_atomics = [];
         foreach ($return_type->type->getAtomicTypes() as $type_param) {
             if (!$evaluate_class_constants || !$type_param instanceof TClassConstant) {
-                array_push($type_atomics, $type_param);
+                $type_param_expanded = self::expandAtomic(
+                    $codebase,
+                    $type_param,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+                $type_atomics = array_merge($type_atomics, $type_param_expanded);
                 continue;
             }
 
@@ -957,8 +988,8 @@ class TypeExpander
             }
 
             if ($throw_on_unresolvable_constant
-                    && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
-                ) {
+                && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
+            ) {
                 throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
             }
 
