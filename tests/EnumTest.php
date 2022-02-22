@@ -371,7 +371,7 @@ class EnumTest extends TestCase
                 [],
                 '8.1',
             ],
-            'InterfacesWithProperties' => [
+            'PHP81-InterfacesWithProperties' => [
                 '<?php
 
                     static fn (\UnitEnum $tag): string => $tag->name;
