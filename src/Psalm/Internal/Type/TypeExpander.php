@@ -310,8 +310,7 @@ class TypeExpander
                 $codebase,
                 $return_type,
                 $self_class,
-                $static_class_type,
-                $parent_class
+                $static_class_type
             );
         }
 
@@ -902,10 +901,9 @@ class TypeExpander
      */
     private static function expandPropertiesOf(
         Codebase $codebase,
-        TPropertiesOf &$return_type,
+        TPropertiesOf $return_type,
         ?string $self_class,
-        $static_class_type,
-        ?string $parent_class
+        $static_class_type
     ): array {
         if ($return_type->fq_classlike_name === 'self' && $self_class) {
             $return_type->fq_classlike_name = $self_class;
@@ -937,8 +935,7 @@ class TypeExpander
         $properties_types = array_filter(
             $properties_types,
             function (PropertyStorage $property) use ($return_type): bool {
-                if (
-                    $return_type->visibility_filter !== null
+                if ($return_type->visibility_filter !== null
                     && $property->visibility !== $return_type->visibility_filter
                 ) {
                     return false;
