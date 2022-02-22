@@ -196,33 +196,9 @@ class AtomicPropertyFetchAnalyzer
                     ])
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
-                $case_values = [];
-
-                foreach ($class_storage->enum_cases as $enum_case) {
-                    if (is_string($enum_case->value)) {
-                        $case_values[] = new TLiteralString($enum_case->value);
-                    } elseif (is_int($enum_case->value)) {
-                        $case_values[] = new TLiteralInt($enum_case->value);
-                    } else {
-                        // this should never happen
-                        $case_values[] = new TMixed();
-                    }
-                }
-
-                // todo: this is suboptimal when we reference enum directly, e.g. Status::Open->value
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    new Union($case_values)
-                );
+                self::handleEnumValue($statements_analyzer, $stmt, $class_storage);
             } elseif ($prop_name === 'name') {
-                if ($lhs_type_part instanceof TEnumCase) {
-                    $statements_analyzer->node_data->setType(
-                        $stmt,
-                        new Union([new TLiteralString($lhs_type_part->case_name)])
-                    );
-                } else {
-                    $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
-                }
+                self::handleEnumName($statements_analyzer, $stmt, $lhs_type_part);
             } else {
                 self::handleNonExistentProperty(
                     $statements_analyzer,
@@ -916,6 +892,47 @@ class AtomicPropertyFetchAnalyzer
 
             $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
         }
+    }
+
+    private static function handleEnumName(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        Atomic $lhs_type_part
+    ): void {
+        if ($lhs_type_part instanceof TEnumCase) {
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Union([new TLiteralString($lhs_type_part->case_name)])
+            );
+        } else {
+            $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
+        }
+    }
+
+    private static function handleEnumValue(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        ClassLikeStorage $class_storage
+    ): void {
+        $case_values = [];
+
+        foreach ($class_storage->enum_cases as $enum_case) {
+            if (is_string($enum_case->value)) {
+                $case_values[] = new TLiteralString($enum_case->value);
+            } elseif (is_int($enum_case->value)) {
+                $case_values[] = new TLiteralInt($enum_case->value);
+            } else {
+                // this should never happen
+                $case_values[] = new TMixed();
+            }
+        }
+
+        // todo: this is suboptimal when we reference enum directly, e.g. Status::Open->value
+        /** @psalm-suppress ArgumentTypeCoercion */
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            new Union($case_values)
+        );
     }
 
     private static function handleUndefinedProperty(
