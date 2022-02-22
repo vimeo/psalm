@@ -52,6 +52,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 - `key-of<Foo\Bar::ARRAY_CONST>`
 - `value-of<Foo\Bar::ARRAY_CONST>`
 - `T[K]`
+- [`properties-of<T>`](utility_types.md#properties-oft)
 
 ## Top types, bottom types
 
