@@ -43,7 +43,6 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_push;
 use function array_values;
 use function count;
 use function get_class;
@@ -307,60 +306,13 @@ class TypeExpander
         }
 
         if ($return_type instanceof TPropertiesOf) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
-            }
-
-            if ($return_type->fq_classlike_name === 'static' && $self_class) {
-                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
-            }
-
-            if (!$codebase->classExists($return_type->fq_classlike_name)) {
-                return [$return_type];
-            }
-
-            // Get and merge all properties from parent classes
-            $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
-            $properties_types = $class_storage->properties;
-            foreach ($class_storage->parent_classes as $parent_class) {
-                if (!$codebase->classOrInterfaceExists($parent_class)) {
-                    continue;
-                }
-                $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
-                $properties_types = array_merge(
-                    $properties_types,
-                    $parent_class_storage->properties
-                );
-            }
-
-            // Filter properties if configured
-            if ($return_type->visibility_filter !== null) {
-                $properties_types = array_filter(
-                    $properties_types,
-                    function (PropertyStorage $property) use ($return_type): bool {
-                        return $property->visibility === $return_type->visibility_filter;
-                    }
-                );
-            }
-
-            // Return property names as literal string
-            $properties = array_map(
-                function (PropertyStorage $property): ?Union {
-                    return $property->type;
-                },
-                $properties_types
+            return self::expandPropertiesOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class
             );
-            $properties = array_filter(
-                $properties,
-                function (?Union $property_type): bool {
-                    return $property_type !== null;
-                }
-            );
-
-            if ($properties === []) {
-                return $return_type;
-            }
-            return [new TKeyedArray($properties)];
         }
 
         if ($return_type instanceof TTypeAlias) {
@@ -942,6 +894,77 @@ class TypeExpander
         );
 
         return [$return_type];
+    }
+
+    /**
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandPropertiesOf(
+        Codebase $codebase,
+        TPropertiesOf &$return_type,
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class
+    ): array {
+        if ($return_type->fq_classlike_name === 'self' && $self_class) {
+            $return_type->fq_classlike_name = $self_class;
+        }
+
+        if ($return_type->fq_classlike_name === 'static' && $self_class) {
+            $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
+        }
+
+        if (!$codebase->classExists($return_type->fq_classlike_name)) {
+            return [$return_type];
+        }
+
+        // Get and merge all properties from parent classes
+        $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
+        $properties_types = $class_storage->properties;
+        foreach ($class_storage->parent_classes as $parent_class) {
+            if (!$codebase->classOrInterfaceExists($parent_class)) {
+                continue;
+            }
+            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $properties_types = array_merge(
+                $properties_types,
+                $parent_class_storage->properties
+            );
+        }
+
+        // Filter only non-static properties, and check visibility filter
+        $properties_types = array_filter(
+            $properties_types,
+            function (PropertyStorage $property) use ($return_type): bool {
+                if (
+                    $return_type->visibility_filter !== null
+                    && $property->visibility !== $return_type->visibility_filter
+                ) {
+                    return false;
+                }
+                return !$property->is_static;
+            }
+        );
+
+        // Return property names as literal string
+        $properties = array_map(
+            function (PropertyStorage $property): ?Union {
+                return $property->type;
+            },
+            $properties_types
+        );
+        $properties = array_filter(
+            $properties,
+            function (?Union $property_type): bool {
+                return $property_type !== null;
+            }
+        );
+
+        if ($properties === []) {
+            return [$return_type];
+        }
+        return [new TKeyedArray($properties)];
     }
 
     /**
