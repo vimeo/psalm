@@ -49,6 +49,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -56,6 +57,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -184,8 +186,16 @@ class AtomicPropertyFetchAnalyzer
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if ($class_storage->is_enum) {
-            if ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
+        if ($class_storage->is_enum || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))) {
+            if ($prop_name === 'value' && !$class_storage->is_enum) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    new Union([
+                        new TString(),
+                        new TInt()
+                    ])
+                );
+            } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $case_values = [];
 
                 foreach ($class_storage->enum_cases as $enum_case) {
@@ -1009,7 +1019,8 @@ class AtomicPropertyFetchAnalyzer
 
             if (!$class_exists &&
                 //interfaces can't have properties. Except when they do... In PHP Core, they can
-                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
+                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
+                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
             ) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
