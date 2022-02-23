@@ -25,10 +25,12 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 use Throwable;
@@ -323,6 +325,28 @@ class TemplateStandinTypeReplacer
             }
 
             return $atomic_types;
+        }
+
+        if ($atomic_type instanceof TTemplatePropertiesOf) {
+            if (!$replace
+                || !isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+            ) {
+                return [$atomic_type];
+            }
+
+            $template_type = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
+
+            $classlike_type = $template_type->getSingleAtomic();
+            if (!$classlike_type instanceof TNamedObject) {
+                return [$atomic_type];
+            }
+
+            $atomic_type = new TPropertiesOf(
+                (string) $classlike_type,
+                clone $classlike_type,
+                $atomic_type->visibility_filter
+            );
+            return [$atomic_type];
         }
 
         $matching_atomic_types = [];

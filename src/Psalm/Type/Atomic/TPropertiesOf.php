@@ -65,7 +65,7 @@ class TPropertiesOf extends Atomic
     /**
      * @return TokenName
      */
-    private static function tokenNameForFilter(?int $visibility_filter): string
+    public static function tokenNameForFilter(?int $visibility_filter): string
     {
         switch ($visibility_filter) {
             case self::VISIBILITY_PUBLIC:
@@ -80,12 +80,13 @@ class TPropertiesOf extends Atomic
     }
 
     /**
-     * Constructs a new instance of a generic type
-     *
      * @param self::VISIBILITY_*|null $visibility_filter
      */
-    public function __construct(string $fq_classlike_name, TNamedObject $classlike_type, ?int $visibility_filter = null)
-    {
+    public function __construct(
+        string $fq_classlike_name,
+        TNamedObject $classlike_type,
+        ?int $visibility_filter
+    ) {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->classlike_type = $classlike_type;
         $this->visibility_filter = $visibility_filter;

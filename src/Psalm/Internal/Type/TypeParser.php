@@ -60,6 +60,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfArray;
@@ -691,12 +692,25 @@ class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $class_name = (string) $generic_params[0];
+            $param_name = (string) $generic_params[0];
 
-            if (isset($template_type_map[$class_name])) {
-                throw new TypeParseTreeException('Template types are not allowed in ' . $generic_type_value . ' param');
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
+                $template_param = $generic_params[0]->getSingleAtomic();
+                if (!$template_param instanceof TTemplateParam) {
+                    throw new TypeParseTreeException(
+                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.'
+                    );
+                }
+
+                return new TTemplatePropertiesOf(
+                    $param_name,
+                    $defining_class,
+                    $template_param,
+                    TPropertiesOf::filterForTokenName($generic_type_value)
+                );
             }
-
 
             $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
@@ -709,7 +723,7 @@ class TypeParser
             }
 
             return new TPropertiesOf(
-                $class_name,
+                $param_name,
                 $param_union_types[0],
                 TPropertiesOf::filterForTokenName($generic_type_value)
             );
