@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -97,16 +98,14 @@ class MethodCallReturnTypeFetcher
 
         if ($premixin_method_id->method_name === 'getcode'
             && $premixin_method_id->fq_class_name !== Exception::class
+            && $premixin_method_id->fq_class_name !== RuntimeException::class
+            && $premixin_method_id->fq_class_name !== PDOException::class
             && (
                 $codebase->classImplements($premixin_method_id->fq_class_name, Throwable::class)
                 || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
             )
         ) {
-            if ($premixin_method_id->fq_class_name === PDOException::class) {
-                return Type::getString();
-            } else {
-                return Type::getInt(true); // TODO: Remove the flag in Psalm 5
-            }
+            return Type::getInt(true); // TODO: Remove the flag in Psalm 5
         }
 
         if ($declaring_method_id && $declaring_method_id !== $method_id) {
