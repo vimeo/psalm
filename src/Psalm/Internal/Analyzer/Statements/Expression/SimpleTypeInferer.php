@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -523,6 +524,12 @@ class SimpleTypeInferer
 
         if (!$item_key_type || !$item_value_type) {
             return null;
+        }
+
+        if ($array_creation_info->all_list) {
+            return new Union([
+                new TNonEmptyList($item_value_type),
+            ]);
         }
 
         return new Union([
