@@ -305,7 +305,9 @@ class FileAnalyzer extends SourceAnalyzer
         $leftover_stmts = [];
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                $leftover_stmts[] = $stmt;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->populateClassLikeAnalyzers($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
