@@ -97,17 +97,14 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
         $interface_context = new Context($this->getFQCLN());
 
-        foreach ($class_storage->attributes as $i => $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $interface_context,
-                $attribute,
-                $this->class->attrGroups[$i],
-                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
-                1,
-                $class_storage
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $interface_context,
+            $class_storage,
+            $this->class->attrGroups,
+            1,
+            $class_storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
