@@ -5,7 +5,8 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type\Atomic;
 
 /**
- * Type that resolves to property names of a class/interface.
+ * Type that resolves to a keyed-array with properties of a class as keys and
+ * their apropriate types as values.
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
  */

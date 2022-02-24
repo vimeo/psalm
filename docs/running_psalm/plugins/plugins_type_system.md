@@ -59,6 +59,10 @@ The classes are as follows:
 
 `TTemplateValueOf` - Represents the type used when using TValueOfArray when the type of the array is a template
 
+`TPropertiesOf` - Represents properties and their types of a class as a keyed array (e.g. `properties-of<MyClass>`)
+
+`TTemplatePropertiesOf` - Represents the type used when using TPropertiesOf when type of the class is a template
+
 `TTypeAlias` - To be documented
 
 ### Scalar supertype
