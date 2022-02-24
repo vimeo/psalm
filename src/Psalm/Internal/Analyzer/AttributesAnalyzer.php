@@ -91,9 +91,9 @@ class AttributesAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidAttribute(
                             "Attribute {$attribute_storage->fq_class_name} is not repeatable",
-                            $attribute_storage->location,
+                            $attribute_storage->location
                         ),
-                        $suppressed_issues,
+                        $suppressed_issues
                     );
                 }
                 $appearing_non_repeatable_attributes[$attribute_storage->fq_class_name] = true;
@@ -106,7 +106,7 @@ class AttributesAnalyzer
                             . self::TARGET_DESCRIPTIONS[$target],
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             }
 
@@ -155,7 +155,7 @@ class AttributesAnalyzer
                         'Traits cannot act as attribute classes',
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             } elseif ($classlike_storage->is_interface) {
                 IssueBuffer::maybeAdd(
@@ -163,7 +163,7 @@ class AttributesAnalyzer
                         'Interfaces cannot act as attribute classes',
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             } elseif ($classlike_storage->abstract) {
                 IssueBuffer::maybeAdd(
@@ -171,7 +171,7 @@ class AttributesAnalyzer
                         'Abstract classes cannot act as attribute classes',
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             } elseif (isset($classlike_storage->methods['__construct'])
                 && $classlike_storage->methods['__construct']->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
@@ -181,7 +181,7 @@ class AttributesAnalyzer
                         'Classes with protected/private constructors cannot act as attribute classes',
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             } elseif ($classlike_storage->is_enum) {
                 IssueBuffer::maybeAdd(
@@ -189,7 +189,7 @@ class AttributesAnalyzer
                         'Enums cannot act as attribute classes',
                         $attribute_storage->name_location
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues
                 );
             }
         }
@@ -360,7 +360,7 @@ class AttributesAnalyzer
             $class_string->value,
             $arg_location,
             $class_storage,
-            $statements_analyzer->getSuppressedIssues(),
+            $statements_analyzer->getSuppressedIssues()
         );
 
         if (($class_attribute_target & $target) === 0) {
@@ -368,9 +368,9 @@ class AttributesAnalyzer
                 new InvalidAttribute(
                     "Attribute {$class_string->value} cannot be used on a "
                         . self::TARGET_DESCRIPTIONS[$target],
-                    $arg_location,
+                    $arg_location
                 ),
-                $statements_analyzer->getSuppressedIssues(),
+                $statements_analyzer->getSuppressedIssues()
             );
         }
     }
