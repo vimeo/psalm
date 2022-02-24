@@ -571,7 +571,7 @@ class AttributeTest extends TestCase
                 ',
                 'error_message' => 'UndefinedConstant',
             ],
-            'SKIPPED-getAttributesOnClassWithNonClassAttribute' => [
+            'getAttributesOnClassWithNonClassAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_PROPERTY)]
                     class Attr {}
@@ -581,21 +581,22 @@ class AttributeTest extends TestCase
                     $r = new ReflectionClass(Foo::class);
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 Attr cannot be used on a class',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a class',
             ],
-            'SKIPPED-getAttributesOnFunctionWithNonFunctionAttribute' => [
+            'getAttributesOnFunctionWithNonFunctionAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_PROPERTY)]
                     class Attr {}
 
                     function foo(): void {}
 
+                    /** @psalm-suppress InvalidArgument */
                     $r = new ReflectionFunction("foo");
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 Attr cannot be used on a function',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:39 - Attribute Attr cannot be used on a function',
             ],
-            'SKIPPED-getAttributesOnMethodWithNonMethodAttribute' => [
+            'getAttributesOnMethodWithNonMethodAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_PROPERTY)]
                     class Attr {}
@@ -608,9 +609,9 @@ class AttributeTest extends TestCase
                     $r = new ReflectionMethod("Foo::bar");
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 Attr cannot be used on a method',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a method',
             ],
-            'SKIPPED-getAttributesOnPropertyWithNonPropertyAttribute' => [
+            'getAttributesOnPropertyWithNonPropertyAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_CLASS)]
                     class Attr {}
@@ -623,9 +624,9 @@ class AttributeTest extends TestCase
                     $r = new ReflectionProperty(Foo::class, "bar");
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 Attr cannot be used on a property',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a property',
             ],
-            'SKIPPED-getAttributesOnClassConstantWithNonClassConstantAttribute' => [
+            'getAttributesOnClassConstantWithNonClassConstantAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_PROPERTY)]
                     class Attr {}
@@ -638,9 +639,9 @@ class AttributeTest extends TestCase
                     $r = new ReflectionClassConstant(Foo::class, "BAR");
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 Attr cannot be used on a class constant',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a class constant',
             ],
-            'SKIPPED-getAttributesOnParameterWithNonParameterAttribute' => [
+            'getAttributesOnParameterWithNonParameterAttribute' => [
                 '<?php
                     #[Attribute(Attribute::TARGET_PROPERTY)]
                     class Attr {}
@@ -650,7 +651,18 @@ class AttributeTest extends TestCase
                     $r = new ReflectionParameter("foo", "bar");
                     $r->getAttributes(Attr::class);
                 ',
-                'error_message' => 'InvalidAttribute - snc' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 Attr cannot be used on a parameter',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a function/method parameter',
+            ],
+            'getAttributesWithNonAttribute' => [
+                '<?php
+                    class NonAttr {}
+
+                    function foo(int $bar): void {}
+
+                    $r = new ReflectionParameter("foo", "bar");
+                    $r->getAttributes(NonAttr::class);
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - The class NonAttr doesn\'t have the Attribute attribute',
             ],
             'analyzeConstructorForNonexistentAttributes' => [
                 '<?php

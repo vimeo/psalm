@@ -3,10 +3,12 @@
 namespace Psalm\Internal\Analyzer;
 
 use Generator;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Stmt\Expression;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -18,9 +20,13 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\HasAttributesInterface;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_shift;
+use function assert;
+use function count;
 use function reset;
 
 class AttributesAnalyzer
@@ -63,7 +69,8 @@ class AttributesAnalyzer
 
             $attribute_class_flags = self::getAttributeClassFlags(
                 $source,
-                $attribute_storage,
+                $attribute_storage->fq_class_name,
+                $attribute_storage->name_location,
                 $attribute_class_storage,
                 $suppressed_issues
             );
@@ -114,7 +121,7 @@ class AttributesAnalyzer
     /**
      * @param array<int, string> $suppressed_issues
      */
-    public static function analyzeAttributeConstruction(
+    private static function analyzeAttributeConstruction(
         SourceAnalyzer $source,
         Context $context,
         AttributeStorage $attribute_storage,
@@ -216,11 +223,12 @@ class AttributesAnalyzer
      */
     private static function getAttributeClassFlags(
         SourceAnalyzer $source,
-        AttributeStorage $attribute,
+        string $attribute_name,
+        CodeLocation $attribute_location,
         ?ClassLikeStorage $attribute_class_storage,
         array $suppressed_issues
     ): int {
-        if ($attribute->fq_class_name === "Attribute") {
+        if ($attribute_name === "Attribute") {
             // We override this here because we still want to analyze attributes
             // for PHP 7.4 when the Attribute class doesn't yet exist.
             return 1;
@@ -260,8 +268,8 @@ class AttributesAnalyzer
 
         IssueBuffer::maybeAdd(
             new InvalidAttribute(
-                "The class {$attribute->fq_class_name} doesn't have the Attribute attribute",
-                $attribute->name_location
+                "The class {$attribute_name} doesn't have the Attribute attribute",
+                $attribute_location
             ),
             $suppressed_issues
         );
@@ -280,6 +288,91 @@ class AttributesAnalyzer
             foreach ($attribute_group->attrs as $attribute) {
                 yield $attribute;
             }
+        }
+    }
+
+    /**
+     * Analyze Reflection getAttributes method calls.
+
+     * @param list<Arg> $args
+     */
+    public static function analyzeGetAttributes(
+        StatementsAnalyzer $statements_analyzer,
+        string $method_id,
+        array $args
+    ): void {
+        if (count($args) !== 1) {
+            // We skip this analysis if $flags is specified on getAttributes, since the only option
+            // is ReflectionAttribute::IS_INSTANCEOF, which causes getAttributes to return children.
+            // When returning children we don't want to limit this since a child could add a target.
+            return;
+        }
+
+        switch ($method_id) {
+            case "ReflectionClass::getattributes":
+                $target = 1;
+                break;
+            case "ReflectionFunction::getattributes":
+                $target = 2;
+                break;
+            case "ReflectionMethod::getattributes":
+                $target = 4;
+                break;
+            case "ReflectionProperty::getattributes":
+                $target = 8;
+                break;
+            case "ReflectionClassConstant::getattributes":
+                $target = 16;
+                break;
+            case "ReflectionParameter::getattributes":
+                $target = 32;
+                break;
+            default:
+                return;
+        }
+
+        $arg = $args[0];
+        if ($arg->name !== null) {
+            for (; $arg !== null || $arg->name !== null && $arg->name->name !== "name"; $arg = array_shift($args));
+            if ($arg->name->name ?? null !== "name") {
+                // No named argument for "name" parameter
+                return;
+            }
+        }
+
+        $arg_type = $statements_analyzer->getNodeTypeProvider()->getType($arg->value);
+        if ($arg_type === null || !$arg_type->isSingle() || !$arg_type->hasLiteralString()) {
+            return;
+        }
+
+        $class_string = $arg_type->getSingleAtomic();
+        assert($class_string instanceof TLiteralString);
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->classExists($class_string->value)) {
+            return;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($class_string->value);
+        $arg_location = new CodeLocation($statements_analyzer, $arg);
+        $class_attribute_target = self::getAttributeClassFlags(
+            $statements_analyzer,
+            $class_string->value,
+            $arg_location,
+            $class_storage,
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        if (($class_attribute_target & $target) === 0) {
+            IssueBuffer::maybeAdd(
+                new InvalidAttribute(
+                    "Attribute {$class_string->value} cannot be used on a "
+                        . self::TARGET_DESCRIPTIONS[$target],
+                    $arg_location,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
     }
 }

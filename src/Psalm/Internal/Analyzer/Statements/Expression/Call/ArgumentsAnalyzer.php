@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -258,6 +259,16 @@ class ArgumentsAnalyzer
             if ($toggled_class_exists) {
                 $context->inside_class_exists = false;
             }
+        }
+
+        if ($method_id === "ReflectionClass::getattributes"
+            || $method_id === "ReflectionClassConstant::getattributes"
+            || $method_id === "ReflectionFunction::getattributes"
+            || $method_id === "ReflectionMethod::getattributes"
+            || $method_id === "ReflectionParameter::getattributes"
+            || $method_id === "ReflectionProperty::getattributes"
+        ) {
+            AttributesAnalyzer::analyzeGetAttributes($statements_analyzer, $method_id, $args);
         }
 
         return null;
