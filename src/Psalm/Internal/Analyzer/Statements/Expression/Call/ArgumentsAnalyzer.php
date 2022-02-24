@@ -55,6 +55,7 @@ use UnexpectedValueException;
 use function array_map;
 use function array_reverse;
 use function array_slice;
+use function array_values;
 use function count;
 use function in_array;
 use function is_string;
@@ -268,7 +269,7 @@ class ArgumentsAnalyzer
             || $method_id === "ReflectionParameter::getattributes"
             || $method_id === "ReflectionProperty::getattributes"
         ) {
-            AttributesAnalyzer::analyzeGetAttributes($statements_analyzer, $method_id, $args);
+            AttributesAnalyzer::analyzeGetAttributes($statements_analyzer, $method_id, array_values($args));
         }
 
         return null;

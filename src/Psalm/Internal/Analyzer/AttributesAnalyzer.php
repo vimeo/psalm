@@ -25,6 +25,7 @@ use Psalm\Type\Union;
 use RuntimeException;
 
 use function array_shift;
+use function array_values;
 use function assert;
 use function count;
 use function reset;
@@ -42,9 +43,9 @@ class AttributesAnalyzer
     ];
 
     /**
-     * @param list<AttributeGroup> $attribute_groups
-     * @param 1|2|4|8|16|32 $target
-     * @param array<int, string> $suppressed_issues
+     * @param array<array-key, AttributeGroup> $attribute_groups
+     * @param 1|2|4|8|16|32|40 $target
+     * @param array<array-key, string> $suppressed_issues
      */
     public static function analyze(
         SourceAnalyzer $source,
@@ -80,7 +81,6 @@ class AttributesAnalyzer
                 $context,
                 $attribute_storage,
                 $attribute,
-                $attribute_class_storage,
                 $suppressed_issues,
                 $storage instanceof ClassLikeStorage ? $storage : null
             );
@@ -119,14 +119,13 @@ class AttributesAnalyzer
     }
 
     /**
-     * @param array<int, string> $suppressed_issues
+     * @param array<array-key, string> $suppressed_issues
      */
     private static function analyzeAttributeConstruction(
         SourceAnalyzer $source,
         Context $context,
         AttributeStorage $attribute_storage,
         Attribute $attribute,
-        ?ClassLikeStorage $attribute_class_storage,
         array $suppressed_issues,
         ?ClassLikeStorage $classlike_storage = null
     ): void {
@@ -199,7 +198,7 @@ class AttributesAnalyzer
             $source,
             new NodeDataProvider()
         );
-        $statements_analyzer->addSuppressedIssues($suppressed_issues);
+        $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
 
         IssueBuffer::startRecording();
         $statements_analyzer->analyze(
@@ -219,7 +218,7 @@ class AttributesAnalyzer
     }
 
     /**
-     * @param array<int, string> $suppressed_issues
+     * @param array<array-key, string> $suppressed_issues
      */
     private static function getAttributeClassFlags(
         SourceAnalyzer $source,
@@ -278,11 +277,11 @@ class AttributesAnalyzer
     }
 
     /**
-     * @param list<AttributeGroup> $attribute_groups
+     * @param iterable<AttributeGroup> $attribute_groups
      *
-     * @return iterator<int, Attribute>
+     * @return Generator<int, Attribute>
      */
-    private static function iterateAttributeNodes(array $attribute_groups): Generator
+    private static function iterateAttributeNodes(iterable $attribute_groups): Generator
     {
         foreach ($attribute_groups as $attribute_group) {
             foreach ($attribute_group->attrs as $attribute) {
@@ -333,7 +332,7 @@ class AttributesAnalyzer
 
         $arg = $args[0];
         if ($arg->name !== null) {
-            for (; $arg !== null || $arg->name !== null && $arg->name->name !== "name"; $arg = array_shift($args));
+            for (; !empty($args) && ($arg->name->name ?? null) !== "name"; $arg = array_shift($args));
             if ($arg->name->name ?? null !== "name") {
                 // No named argument for "name" parameter
                 return;
