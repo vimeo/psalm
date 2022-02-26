@@ -131,7 +131,7 @@ class CommentAnalyzer
                             $template_type_map,
                             $type_aliases
                         );
-                    } catch (TypeParseTreeException $e) {
+                    } catch (TypeParseTreeException $_) {
                         throw new DocblockParseException($line_parts[0] . ' is not a valid type');
                     }
 
@@ -161,7 +161,7 @@ class CommentAnalyzer
                         $template_type_map ?: [],
                         $type_aliases ?: []
                     );
-                } catch (TypeParseTreeException $e) {
+                } catch (TypeParseTreeException $_) {
                     throw new DocblockParseException(
                         $line_parts[0] .
                         ' is not a valid type' .

@@ -836,3 +836,5 @@
    - :information_source: migration possible using `Psalm\PluginFileExtensionsSocket`
  - [BC] Method `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getClasslikeStorage()` was removed,
    use correct `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getFunctionlikeStorage()` instead
+ - [BC] Property `Psalm\Context::$inside_try` was removed
+ - [BC] Property `Psalm\Context::$finally_scope` was removed

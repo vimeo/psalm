@@ -562,7 +562,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->defined_constants = $function_storage->defined_constants;
                         $function_call_info->global_variables = $function_storage->global_variables;
                     }
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $_) {
                     $function_call_info->function_params = [
                         new FunctionLikeParameter('args', false, null, null, null, false, false, true)
                     ];

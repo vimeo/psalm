@@ -129,7 +129,7 @@ class TemplateInferredTypeReplacer
                                         }
                                     }
                                 }
-                            } catch (InvalidArgumentException $e) {
+                            } catch (InvalidArgumentException $_) {
                             }
                         }
                     }

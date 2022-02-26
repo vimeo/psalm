@@ -11,7 +11,9 @@ use Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor;
 
 use function array_key_exists;
 use function array_slice;
+use function assert;
 use function count;
+use function ctype_space;
 use function is_array;
 use function is_string;
 use function strlen;
@@ -45,7 +47,28 @@ class UnusedAssignmentRemover
         [$assign_stmt, $assign_exp] = $search_result;
         $chain_assignment = false;
 
-        if ($assign_stmt !== null && $assign_exp !== null) {
+        if ($assign_stmt instanceof PhpParser\Node\Stmt\Catch_) {
+            assert($assign_stmt->var !== null && is_string($assign_stmt->var->name));
+            if ($codebase->analysis_php_version_id < 8_00_00) {
+                $new_file_manipulation = new FileManipulation(
+                    $original_location->raw_file_start + 1,
+                    $original_location->raw_file_start + 1 + strlen($assign_stmt->var->name),
+                    "_",
+                );
+            } else {
+                $file_content = $codebase->file_provider->getContents(
+                    $original_location->file_path
+                );
+                $end_of_exception = $original_location->raw_file_start - 1;
+                for (; ctype_space($file_content[$end_of_exception]); --$end_of_exception);
+                $new_file_manipulation = new FileManipulation(
+                    $end_of_exception + 1,
+                    $original_location->raw_file_start + 1 + strlen($assign_stmt->var->name),
+                    "",
+                );
+            }
+            FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
+        } elseif ($assign_stmt !== null && $assign_exp !== null) {
             // Check if we have to remove assignment statement as expression (i.e. just "$var = ")
 
             // Consider chain of assignments
@@ -231,9 +254,9 @@ class UnusedAssignmentRemover
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
      * @return array{
-     *          0: PhpParser\Node\Stmt|null,
-     *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
-     *          }
+     *     PhpParser\Node\Stmt|null,
+     *     PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
+     * }
      */
     private function findAssignStmt(array $stmts, string $var_id, CodeLocation $original_location): array
     {
@@ -255,17 +278,32 @@ class UnusedAssignmentRemover
                     $assign_exp = $target_exp;
                     $assign_stmt = $levels_taken === 1 ? $stmt : null;
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Catch_) {
+                $var = $stmt->var;
+
+                if ($var instanceof PhpParser\Node\Expr\Variable
+                    && $var->name === substr($var_id, 1)
+                    && $var->getStartFilePos() === $original_location->raw_file_start
+                ) {
+                    $assign_exp_found = true;
+                    $assign_stmt = $stmt;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
 
-                if ($search_result[0] && $search_result[1]) {
+                if ($search_result[0]) {
+                    return $search_result;
+                }
+
+                $search_result = $this->findAssignStmt($stmt->catches, $var_id, $original_location);
+                if ($search_result[0]) {
                     return $search_result;
                 }
 
                 foreach ($stmt->catches as $catch_stmt) {
                     $search_result = $this->findAssignStmt($catch_stmt->stmts, $var_id, $original_location);
 
-                    if ($search_result[0] && $search_result[1]) {
+                    if ($search_result[0]) {
                         return $search_result;
                     }
                 }
@@ -274,32 +312,32 @@ class UnusedAssignmentRemover
             ) {
                 $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
 
-                if ($search_result[0] && $search_result[1]) {
+                if ($search_result[0]) {
                     return $search_result;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
 
-                if ($search_result[0] && $search_result[1]) {
+                if ($search_result[0]) {
                     return $search_result;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
 
-                if ($search_result[0] && $search_result[1]) {
+                if ($search_result[0]) {
                     return $search_result;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $search_result = $this->findAssignStmt($stmt->stmts, $var_id, $original_location);
 
-                if ($search_result[0] && $search_result[1]) {
+                if ($search_result[0]) {
                     return $search_result;
                 }
 
                 foreach ($stmt->elseifs as $elseif_stmt) {
                     $search_result = $this->findAssignStmt($elseif_stmt->stmts, $var_id, $original_location);
 
-                    if ($search_result[0] && $search_result[1]) {
+                    if ($search_result[0]) {
                         return $search_result;
                     }
                 }
@@ -307,7 +345,7 @@ class UnusedAssignmentRemover
                 if ($stmt->else) {
                     $search_result = $this->findAssignStmt($stmt->else->stmts, $var_id, $original_location);
 
-                    if ($search_result[0] && $search_result[1]) {
+                    if ($search_result[0]) {
                         return $search_result;
                     }
                 }

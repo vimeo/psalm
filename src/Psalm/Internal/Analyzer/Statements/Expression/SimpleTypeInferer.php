@@ -297,7 +297,7 @@ class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (InvalidArgumentException | CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException $_) {
                         return null;
                     }
                 }

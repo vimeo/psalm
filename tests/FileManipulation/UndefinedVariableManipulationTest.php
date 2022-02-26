@@ -101,6 +101,28 @@ class UndefinedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
                 'safe_types' => true,
             ],
+            'SKIPPED-possiblyUndefinedVariableInTry' => [
+                'input' => '<?php
+                    try {
+                        $foo = 1;
+                    } catch (Exception $_) {
+                    }
+
+                    echo $foo;
+                ',
+                'output' => '<?php
+                    $foo = null;
+                    try {
+                        $foo = 1;
+                    } catch (Exception $_) {
+                    }
+
+                    echo $foo;
+                ',
+                'php_version' => '7.3',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
+            ],
             'unsetPossiblyUndefinedVariable' => [
                 'input' => '<?php
                     if (rand(0, 1)) {

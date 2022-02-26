@@ -211,7 +211,7 @@ class TypeChecker extends NodeVisitor
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return;
         }
 

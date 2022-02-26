@@ -204,7 +204,7 @@ class IncludeAnalyzer
                         $context,
                         $global_context
                     );
-                } catch (UnpreparedAnalysisException $e) {
+                } catch (UnpreparedAnalysisException $_) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
                         $context->check_variables = false;

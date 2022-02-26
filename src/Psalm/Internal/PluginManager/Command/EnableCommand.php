@@ -64,7 +64,7 @@ class EnableCommand extends Command
 
         try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             $io->error('Unknown plugin class ' . $plugin_name);
 
             return 2;

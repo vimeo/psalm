@@ -946,7 +946,7 @@ final class Codebase
 
         try {
             $file_storage = $this->file_storage_provider->get($file_path);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return;
         }
 
@@ -1086,7 +1086,7 @@ final class Codebase
                     'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
                     'description' => $storage->description,
                 ];
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
             }
 
             if (strpos($symbol, '\\')) {
@@ -1198,7 +1198,7 @@ final class Codebase
             error_log($e->getMessage());
 
             return null;
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return null;
         }
     }
@@ -1348,7 +1348,7 @@ final class Codebase
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
-            } catch (Exception $exception) {
+            } catch (Exception $_) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
@@ -1608,7 +1608,7 @@ final class Codebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (Exception $e) {
+            } catch (Exception $_) {
                 continue;
             }
 
@@ -1683,7 +1683,7 @@ final class Codebase
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
                 $description = $class_storage->description;
-            } catch (Exception $e) {
+            } catch (Exception $_) {
                 $description = null;
             }
 

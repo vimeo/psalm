@@ -367,24 +367,27 @@ class VariableFetchAnalyzer
 
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
-                if ($context->is_global) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedGlobalVariable(
-                            'Possibly undefined global variable ' . $var_name . ' defined in try block',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $var_name . ' defined in try block',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
+            if (!$context->inside_isset) {
+                $from_try_message = $stmt_type->possibly_undefined_from_try ? " defined in try block" : "";
+                if ($stmt_type->possibly_undefined) {
+                    if ($context->is_global) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyUndefinedGlobalVariable(
+                                "Possibly undefined global variable {$var_name}{$from_try_message}",
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $var_name
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyUndefinedVariable(
+                                "Possibly undefined variable {$var_name}{$from_try_message}",
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        );
+                    }
                 }
             }
 

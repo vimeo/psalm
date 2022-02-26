@@ -270,7 +270,7 @@ class ClassConstAnalyzer
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException $_) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -559,7 +559,7 @@ class ClassConstAnalyzer
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException $_) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',

@@ -233,7 +233,7 @@ class ClassLikeNodeScanner
                     foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
                         try {
                             $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
-                        } catch (InvalidArgumentException $exception) {
+                        } catch (InvalidArgumentException $_) {
                             continue;
                         }
                         $dependent_storage->populated = false;
@@ -510,7 +510,7 @@ class ClassLikeNodeScanner
                     );
 
                     $storage->yield = $yield_type;
-                } catch (TypeParseTreeException $e) {
+                } catch (TypeParseTreeException $_) {
                     // do nothing
                 }
             }
@@ -809,7 +809,7 @@ class ClassLikeNodeScanner
                     return new ClassTypeAlias(
                         array_values($union->getAtomicTypes())
                     );
-                } catch (Exception $e) {
+                } catch (Exception $_) {
                     return null;
                 }
             },
@@ -1885,7 +1885,7 @@ class ClassLikeNodeScanner
                     $type_alias_tokens + $type_aliases,
                     $self_fqcln
                 );
-            } catch (TypeParseTreeException $e) {
+            } catch (TypeParseTreeException $_) {
                 throw new DocblockParseException($type_string . ' is not a valid type');
             }
 

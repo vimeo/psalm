@@ -1417,8 +1417,10 @@ class ArgumentAnalyzer
                 $input_type->by_ref = $by_ref;
             }
 
+            $new_variable = false;
             if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
                 $context->assigned_var_ids[$var_id] = 0;
+                $new_variable = true;
             }
 
             if ($was_cloned) {
@@ -1453,6 +1455,10 @@ class ArgumentAnalyzer
                 }
             } else {
                 $context->vars_in_scope[$var_id] = $input_type;
+            }
+
+            if ($new_variable && $context->try_catch_scope !== null) {
+                $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
             }
         }
     }

@@ -48,6 +48,10 @@ class UnsetAnalyzer
             if ($var_id) {
                 $context->remove($var_id);
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
+
+                if ($context->try_catch_scope !== null) {
+                    $context->try_catch_scope->unset_from_scope[$var_id] = true;
+                }
             }
 
             if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch && $var->dim) {

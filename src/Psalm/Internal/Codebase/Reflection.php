@@ -75,7 +75,7 @@ class Reflection
             $this->storage_provider->get($class_name_lower);
 
             return;
-        } catch (Exception $e) {
+        } catch (Exception $_) {
             // this is fine
         }
 
@@ -412,7 +412,7 @@ class Reflection
             }
 
             $storage->cased_name = $reflection_function->getName();
-        } catch (ReflectionException $e) {
+        } catch (ReflectionException $_) {
             return false;
         }
 

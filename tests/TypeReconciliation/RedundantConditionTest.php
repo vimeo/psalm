@@ -1540,6 +1540,30 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition'
             ],
+            'redundantConditionInTry' => [
+                'code' => '<?php
+                    $a = 1;
+                    try {
+                        $a = 2;
+                        $a = 3;
+                    } catch (Throwable $_) {
+                        if ($a > 0) {}
+                    }
+                ',
+                'error_message' => 'RedundantCondition',
+            ],
+            'impossibleConditionInTry' => [
+                'code' => '<?php
+                    $a = 1;
+                    try {
+                        $a = 2;
+                        $a = 3;
+                    } catch (Throwable $_) {
+                        if ($a < 0) {}
+                    }
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

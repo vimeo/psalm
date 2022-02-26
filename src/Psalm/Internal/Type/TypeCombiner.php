@@ -1287,7 +1287,7 @@ class TypeCombiner
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return [];
         }
 

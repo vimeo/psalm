@@ -212,6 +212,7 @@
  - [RawObjectIteration](issues/RawObjectIteration.md)
  - [RedundantCast](issues/RedundantCast.md)
  - [RedundantCastGivenDocblockType](issues/RedundantCastGivenDocblockType.md)
+ - [RedundantCatch](issues/RedundantCatch.md)
  - [RedundantCondition](issues/RedundantCondition.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
  - [RedundantFunctionCall](issues/RedundantFunctionCall.md)

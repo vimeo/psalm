@@ -87,6 +87,7 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_merge;
+use function assert;
 use function count;
 use function in_array;
 use function is_string;
@@ -104,6 +105,7 @@ class AssignmentAnalyzer
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      *
      * @return false|Union
+     * @psalm-suppress ComplexMethod
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -258,6 +260,9 @@ class AssignmentAnalyzer
 
                     // if we're not exiting immediately, make everything mixed
                     $context->vars_in_scope[$var_id] = $comment_type ?? Type::getMixed();
+                    if ($context->try_catch_scope !== null) {
+                        $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+                    }
                 }
 
                 return false;
@@ -328,14 +333,6 @@ class AssignmentAnalyzer
             $assign_value_type->parent_nodes = [
                 $assignment_node->id => $assignment_node
             ];
-
-            if ($context->inside_try) {
-                // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
-                // point this is a workaround to ensure that use of a variable also uses all previous assignments.
-                if (isset($context->vars_in_scope[$extended_var_id])) {
-                    $assign_value_type->parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
-                }
-            }
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
@@ -576,6 +573,10 @@ class AssignmentAnalyzer
 
                 $context->inside_assignment = $was_in_assignment;
 
+                if ($context->try_catch_scope !== null) {
+                    $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+                }
+
                 return $context->vars_in_scope[$var_id];
             }
 
@@ -593,6 +594,10 @@ class AssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = Type::getNever();
 
                 $context->inside_assignment = $was_in_assignment;
+
+                if ($context->try_catch_scope !== null) {
+                    $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+                }
 
                 return $context->vars_in_scope[$var_id];
             }
@@ -649,6 +654,13 @@ class AssignmentAnalyzer
                     }
                 }
             }
+
+            if ($context->try_catch_scope !== null) {
+                $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+            }
+        } elseif (isset($root_var_id) && $context->try_catch_scope !== null) {
+            assert(is_string($root_var_id));
+            $context->try_catch_scope->assignments_from_scope[$root_var_id][] = $context->vars_in_scope[$root_var_id];
         }
 
         $context->inside_assignment = $was_in_assignment;
@@ -1146,6 +1158,9 @@ class AssignmentAnalyzer
             $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
+            if ($context->try_catch_scope !== null) {
+                $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+            }
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -1584,6 +1599,11 @@ class AssignmentAnalyzer
                     || $has_null
                 ) {
                     $context->vars_in_scope[$list_var_id]->addType(new TNull);
+                }
+
+                if ($context->try_catch_scope !== null) {
+                    $context->try_catch_scope->assignments_from_scope[$list_var_id][] =
+                        $context->vars_in_scope[$list_var_id];
                 }
             }
         }

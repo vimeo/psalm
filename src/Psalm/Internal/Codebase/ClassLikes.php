@@ -867,7 +867,7 @@ class ClassLikes
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -971,7 +971,7 @@ class ClassLikes
                 $source_method_storage = $methods->getStorage(
                     new MethodIdentifier(...$source_parts)
                 );
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -979,7 +979,7 @@ class ClassLikes
 
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -1048,7 +1048,7 @@ class ClassLikes
         foreach ($codebase->properties_to_move as $source => $destination) {
             try {
                 $source_property_storage = $properties->getStorage($source);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $_) {
                 continue;
             }
 
@@ -1704,7 +1704,7 @@ class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     continue;
                 }
 
@@ -1790,7 +1790,7 @@ class ClassLikes
                         foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
                             try {
                                 $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
-                            } catch (InvalidArgumentException $e) {
+                            } catch (InvalidArgumentException $_) {
                                 continue;
                             }
 
@@ -1985,7 +1985,7 @@ class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $_) {
                     continue;
                 }
 
@@ -2324,7 +2324,7 @@ class ClassLikes
 
         try {
             return $this->classlike_storage_provider->get($fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $_) {
             return null;
         }
     }

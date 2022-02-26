@@ -439,7 +439,7 @@ class SwitchCaseAnalyzer
         if ($case_clauses && $case_equality_expr) {
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException $_) {
                 $case_equality_expr_id = spl_object_id($case_equality_expr);
 
                 try {
@@ -453,7 +453,7 @@ class SwitchCaseAnalyzer
                         false,
                         false
                     );
-                } catch (ComplicatedExpressionException $e) {
+                } catch (ComplicatedExpressionException $_) {
                     $negated_case_clauses = [];
                 }
             }

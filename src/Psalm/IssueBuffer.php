@@ -648,7 +648,7 @@ final class IssueBuffer
 
             try {
                 $source_control_info = (new GitInfoCollector())->collect();
-            } catch (RuntimeException $e) {
+            } catch (RuntimeException $_) {
                 // do nothing
             }
 

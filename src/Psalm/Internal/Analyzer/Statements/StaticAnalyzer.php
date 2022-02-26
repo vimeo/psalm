@@ -176,6 +176,9 @@ class StaticAnalyzer
                 $context->vars_in_scope[$var_id] = $comment_type ? clone $comment_type : Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+                if ($context->try_catch_scope !== null) {
+                    $context->try_catch_scope->assignments_from_scope[$var_id][] = $context->vars_in_scope[$var_id];
+                }
                 $statements_analyzer->byref_uses[$var_id] = true;
 
                 $location = new CodeLocation($statements_analyzer, $var);

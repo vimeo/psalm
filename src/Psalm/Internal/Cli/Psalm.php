@@ -654,7 +654,7 @@ final class Psalm
                 new FileProvider,
                 $options['set-baseline']
             );
-        } catch (ConfigException $e) {
+        } catch (ConfigException $_) {
             $issue_baseline = [];
         }
 

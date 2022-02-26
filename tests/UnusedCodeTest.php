@@ -371,7 +371,7 @@ class UnusedCodeTest extends TestCase
                             foreach ([1, 2, 3] as $_) {
                                 try {
                                     $c->foo();
-                                } catch (Exception $e) {}
+                                } catch (Exception $_) {}
                             }
                         }
                     }

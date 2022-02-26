@@ -34,7 +34,7 @@ class PluginListFactory
     {
         try {
             $config_file = new ConfigFile($current_dir, $config_file_path);
-        } catch (RuntimeException $exception) {
+        } catch (RuntimeException $_) {
             $config_file = null;
         }
         $composer_lock = new ComposerLock($this->findLockFiles());

@@ -323,7 +323,7 @@ class Functions
                 if (strpos($alias_name, $stub) === 0) {
                     try {
                         $match_function_patterns[] = $function_name;
-                    } catch (Exception $e) {
+                    } catch (Exception $_) {
                     }
                 }
             }
@@ -547,7 +547,7 @@ class Functions
 
                         try {
                             return $codebase->methods->getStorage($count_method_id)->mutation_free;
-                        } catch (Exception $e) {
+                        } catch (Exception $_) {
                             // do nothing
                         }
                     }

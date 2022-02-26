@@ -361,7 +361,7 @@ class ParserCacheProvider
         if (!is_dir($parser_cache_directory)) {
             try {
                 mkdir($parser_cache_directory, 0777, true);
-            } catch (RuntimeException $e) {
+            } catch (RuntimeException $_) {
                 // Race condition (#4483)
                 if (!is_dir($parser_cache_directory)) {
                     trigger_error('Could not create parser cache directory: ' . $parser_cache_directory, E_USER_ERROR);
