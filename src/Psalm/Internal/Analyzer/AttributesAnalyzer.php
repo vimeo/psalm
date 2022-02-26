@@ -30,6 +30,9 @@ use function assert;
 use function count;
 use function reset;
 
+/**
+ * @internal
+ */
 class AttributesAnalyzer
 {
     private const TARGET_DESCRIPTIONS = [

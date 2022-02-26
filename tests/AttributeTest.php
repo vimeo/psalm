@@ -253,7 +253,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'selfInClassAttribute' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class SomeAttr
                     {
@@ -276,7 +276,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'parentInClassAttribute' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class SomeAttr
                     {
@@ -301,7 +301,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'selfInInterfaceAttribute' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class SomeAttr
                     {
@@ -321,7 +321,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'allowBothParamAndPropertyAttributesForPromotedProperties' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute(Attribute::TARGET_PARAMETER)]
                     class Foo {}
 
@@ -335,7 +335,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'multipleAttributesInMultipleGroups' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute]
                     class A {}
                     #[Attribute]
@@ -351,7 +351,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'propertyLevelSuppression' => [
-                '<?php
+                'code' => '<?php
                     #[Attribute(Attribute::TARGET_CLASS)]
                     class ClassAttr {}
 
@@ -364,7 +364,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'invalidAttributeDoesntCrash' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress InvalidScalarArgument */
                     #[Attribute("foobar")]
                     class Foo {}

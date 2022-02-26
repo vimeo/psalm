@@ -85,7 +85,7 @@ class ListTest extends TestCase
                     takesList($a);',
             ],
             'simpleTypeInfererNonEmptyList' => [
-                '<?php
+                'code' => '<?php
 
                     class Foo {
                         public const VARS = [

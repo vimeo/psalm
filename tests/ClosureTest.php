@@ -774,7 +774,7 @@ class ClosureTest extends TestCase
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:AssignmentVisitorMap' => [
-                '<?php
+                'code' => '<?php
                     class Test {
                         /** @var list<\Closure():void> */
                         public array $handlers = [];

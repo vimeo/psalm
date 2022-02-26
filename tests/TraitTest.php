@@ -13,7 +13,7 @@ class TraitTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,error_levels?:string[],php_version?:string}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -991,7 +991,7 @@ class TraitTest extends TestCase
                     }'
             ],
             'suppressIssueOnTrait' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress InvalidAttribute */
                     #[Attribute]
                     trait Foo {}',

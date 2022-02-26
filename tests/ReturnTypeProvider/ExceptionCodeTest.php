@@ -22,13 +22,13 @@ class ExceptionCodeTest extends TestCase
             'assertions' => ['$code' => 'int|string'],
         ];
         yield 'CustomRuntimeException' => [
-            '<?php
+            'code' => '<?php
                 class CustomRuntimeException extends \RuntimeException {}
 
                 /** @var CustomRuntimeException $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int'],
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'LogicException' => [
             'code' => '<?php

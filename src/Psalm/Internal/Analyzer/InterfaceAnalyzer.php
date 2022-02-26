@@ -37,8 +37,6 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             throw new LogicException('Something went badly wrong');
         }
 
-        $interface_context = new Context($this->fq_class_name);
-
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
