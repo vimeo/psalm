@@ -11,7 +11,7 @@ namespace {
         public static function cases(): array;
     }
 
-    interface BackedEnum
+    interface BackedEnum extends UnitEnum
     {
         public readonly int|string $value;
 

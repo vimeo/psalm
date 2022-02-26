@@ -1306,8 +1306,8 @@ class Config
             }
         }
 
-        if (isset($config_xml->threads)) {
-            $config->threads = (int)$config_xml->threads;
+        if (isset($config_xml['threads'])) {
+            $config->threads = (int)$config_xml['threads'];
         }
 
         return $config;

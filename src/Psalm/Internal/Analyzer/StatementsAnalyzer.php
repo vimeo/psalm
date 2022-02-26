@@ -610,6 +610,8 @@ class StatementsAnalyzer extends SourceAnalyzer
                 // disregard this exception, we'll likely see it elsewhere in the form
                 // of an issue
             }
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {

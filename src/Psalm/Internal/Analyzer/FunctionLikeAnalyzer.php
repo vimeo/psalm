@@ -820,15 +820,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        foreach ($storage->attributes as $i => $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $this->function->attrGroups[$i],
-                $storage->suppressed_issues + $this->getSuppressedIssues(),
-                $storage instanceof MethodStorage ? 4 : 2
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $context,
+            $storage,
+            $this->function->attrGroups,
+            $storage instanceof MethodStorage ? 4 : 2,
+            $storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         return null;
     }
@@ -1272,15 +1271,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->hasVariable('$' . $function_param->name);
             }
 
-            foreach ($function_param->attributes as $i => $attribute) {
-                AttributeAnalyzer::analyze(
-                    $this,
-                    $attribute,
-                    $param_stmts[$offset]->attrGroups[$i],
-                    $storage->suppressed_issues,
-                    $function_param->promoted_property ? 8 : 32
-                );
-            }
+            AttributesAnalyzer::analyze(
+                $this,
+                $context,
+                $function_param,
+                $param_stmts[$offset]->attrGroups,
+                $function_param->promoted_property ? 40 : 32,
+                $storage->suppressed_issues + $this->getSuppressedIssues()
+            );
         }
 
         return $check_stmts;

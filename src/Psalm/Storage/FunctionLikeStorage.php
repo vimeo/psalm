@@ -12,7 +12,7 @@ use function array_fill_keys;
 use function array_map;
 use function implode;
 
-abstract class FunctionLikeStorage
+abstract class FunctionLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
@@ -298,5 +298,13 @@ abstract class FunctionLikeStorage
     {
         $this->params[] = $param;
         $this->param_lookup[$param->name] = $lookup_value ?? true;
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     */
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }

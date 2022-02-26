@@ -72,6 +72,7 @@
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
         <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
+        <xs:attribute name="threads" type="xs:integer" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

@@ -118,17 +118,16 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+        $interface_context = new Context($this->getFQCLN());
 
-        foreach ($class_storage->attributes as $i => $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $this->class->attrGroups[$i],
-                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
-                1,
-                $class_storage
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $interface_context,
+            $class_storage,
+            $this->class->attrGroups,
+            1,
+            $class_storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
@@ -137,7 +136,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $type_provider = new NodeDataProvider();
 
-                $method_analyzer->analyze(new Context($this->getFQCLN()), $type_provider);
+                $method_analyzer->analyze($interface_context, $type_provider);
 
                 $actual_method_id = $method_analyzer->getMethodId();
 

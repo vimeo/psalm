@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
-final class FunctionLikeParameter
+final class FunctionLikeParameter implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
@@ -149,5 +149,13 @@ final class FunctionLikeParameter
         if ($this->type) {
             $this->type = clone $this->type;
         }
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     */
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }

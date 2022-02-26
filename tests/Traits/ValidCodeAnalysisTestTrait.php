@@ -42,6 +42,10 @@ trait ValidCodeAnalysisTestTrait
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
+        } elseif (strpos($test_name, 'PHP81-') !== false) {
+            if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+                $this->markTestSkipped('Test case requires PHP 8.1.');
+            }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
