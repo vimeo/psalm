@@ -456,7 +456,7 @@ class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
-        self::extendTemplateParams($storage, $trait_storage);
+        self::extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
@@ -524,7 +524,7 @@ class Populator
 
         $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-        self::extendTemplateParams($storage, $parent_storage);
+        self::extendTemplateParams($storage, $parent_storage, true);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
@@ -596,7 +596,7 @@ class Populator
             $interface_storage->invalid_dependencies
         );
 
-        self::extendTemplateParams($storage, $interface_storage);
+        self::extendTemplateParams($storage, $interface_storage, false);
 
         $new_parents = array_keys($interface_storage->parent_interfaces);
         $new_parents[] = $interface_storage->name;
@@ -618,7 +618,8 @@ class Populator
 
     private static function extendTemplateParams(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
+        bool $from_direct_parent
     ): void {
         if ($parent_storage->template_types) {
             $storage->template_extended_params[$parent_storage->name] = [];
@@ -654,11 +655,13 @@ class Populator
                     }
                 }
 
-                if ($parent_storage->template_extended_params) {
-                    $storage->template_extended_params = array_merge(
-                        $storage->template_extended_params,
-                        $parent_storage->template_extended_params
-                    );
+                if ($from_direct_parent) {
+                    if ($parent_storage->template_extended_params) {
+                        $storage->template_extended_params = array_merge(
+                            $storage->template_extended_params,
+                            $parent_storage->template_extended_params
+                        );
+                    }
                 }
             }
         } elseif ($parent_storage->template_extended_params) {
