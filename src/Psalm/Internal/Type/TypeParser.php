@@ -55,10 +55,12 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfArray;
@@ -682,6 +684,48 @@ class TypeParser
                 $template_param_name,
                 $template_as_type,
                 $generic_params[1]
+            );
+        }
+
+        if (in_array($generic_type_value, TPropertiesOf::tokenNames())) {
+            if (count($generic_params) !== 1) {
+                throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
+            }
+
+            $param_name = (string) $generic_params[0];
+
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
+                $template_param = $generic_params[0]->getSingleAtomic();
+                if (!$template_param instanceof TTemplateParam) {
+                    throw new TypeParseTreeException(
+                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.'
+                    );
+                }
+
+                return new TTemplatePropertiesOf(
+                    $param_name,
+                    $defining_class,
+                    $template_param,
+                    TPropertiesOf::filterForTokenName($generic_type_value)
+                );
+            }
+
+            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
+
+            if (count($param_union_types) > 1) {
+                throw new TypeParseTreeException('Union types are not allowed in ' . $generic_type_value . ' param');
+            }
+
+            if (!$param_union_types[0] instanceof TNamedObject) {
+                throw new TypeParseTreeException('Param should be a named object in ' . $generic_type_value);
+            }
+
+            return new TPropertiesOf(
+                $param_name,
+                $param_union_types[0],
+                TPropertiesOf::filterForTokenName($generic_type_value)
             );
         }
 

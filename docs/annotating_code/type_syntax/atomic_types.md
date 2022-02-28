@@ -49,9 +49,10 @@ Atomic types are the basic building block of all type information used in Psalm.
 ## Magical types
 
 - [(T is true ? string : bool)](conditional_types.md)
-- `key-of<Foo\Bar::ARRAY_CONST>`
-- `value-of<Foo\Bar::ARRAY_CONST>`
+- [`key-of<T>`](utility_types.md#key-oft)
+- [`value-of<T>`](utility_types.md#value-oft)
 - `T[K]`
+- [`properties-of<T>`](utility_types.md#properties-oft)
 
 ## Top types, bottom types
 

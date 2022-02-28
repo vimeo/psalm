@@ -55,6 +55,7 @@ final class TKeyOfArray extends TArrayKey
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TList
+                && !$type instanceof TPropertiesOf
             ) {
                 return false;
             }
