@@ -456,46 +456,7 @@ class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
-        if ($trait_storage->template_types) {
-            $storage->template_extended_params[$trait_storage->name] = [];
-
-            if (isset($storage->template_extended_offsets[$trait_storage->name])) {
-                foreach ($storage->template_extended_offsets[$trait_storage->name] as $i => $type) {
-                    $trait_template_type_names = array_keys($trait_storage->template_types);
-
-                    $mapped_name = $trait_template_type_names[$i] ?? null;
-
-                    if ($mapped_name) {
-                        $storage->template_extended_params[$trait_storage->name][$mapped_name] = $type;
-                    }
-                }
-
-                if ($trait_storage->template_extended_params) {
-                    foreach ($trait_storage->template_extended_params as $t_storage_class => $type_map) {
-                        foreach ($type_map as $i => $type) {
-                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                $type,
-                                $storage
-                            );
-                        }
-                    }
-                }
-            } else {
-                foreach ($trait_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type;
-                        $default_param->from_docblock = false;
-                        $storage->template_extended_params[$trait_storage->name][$template_name]
-                            = $default_param;
-                    }
-                }
-            }
-        } elseif ($trait_storage->template_extended_params) {
-            $storage->template_extended_params = array_merge(
-                $storage->template_extended_params ?: [],
-                $trait_storage->template_extended_params
-            );
-        }
+        self::extendTemplateParams($storage, $trait_storage);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
@@ -563,53 +524,7 @@ class Populator
 
         $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-        if ($parent_storage->template_types) {
-            $storage->template_extended_params[$parent_storage->name] = [];
-
-            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
-                    $parent_template_type_names = array_keys($parent_storage->template_types);
-
-                    $mapped_name = $parent_template_type_names[$i] ?? null;
-
-                    if ($mapped_name) {
-                        $storage->template_extended_params[$parent_storage->name][$mapped_name] = $type;
-                    }
-                }
-
-                if ($parent_storage->template_extended_params) {
-                    foreach ($parent_storage->template_extended_params as $t_storage_class => $type_map) {
-                        foreach ($type_map as $i => $type) {
-                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                $type,
-                                $storage
-                            );
-                        }
-                    }
-                }
-            } else {
-                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type;
-                        $default_param->from_docblock = false;
-                        $storage->template_extended_params[$parent_storage->name][$template_name]
-                            = $default_param;
-                    }
-                }
-
-                if ($parent_storage->template_extended_params) {
-                    $storage->template_extended_params = array_merge(
-                        $storage->template_extended_params,
-                        $parent_storage->template_extended_params
-                    );
-                }
-            }
-        } elseif ($parent_storage->template_extended_params) {
-            $storage->template_extended_params = array_merge(
-                $storage->template_extended_params ?: [],
-                $parent_storage->template_extended_params
-            );
-        }
+        self::extendTemplateParams($storage, $parent_storage);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
@@ -681,46 +596,7 @@ class Populator
             $interface_storage->invalid_dependencies
         );
 
-        if ($interface_storage->template_types) {
-            $storage->template_extended_params[$interface_storage->name] = [];
-
-            if (isset($storage->template_extended_offsets[$interface_storage->name])) {
-                foreach ($storage->template_extended_offsets[$interface_storage->name] as $i => $type) {
-                    $parent_template_type_names = array_keys($interface_storage->template_types);
-
-                    $mapped_name = $parent_template_type_names[$i] ?? null;
-
-                    if ($mapped_name) {
-                        $storage->template_extended_params[$interface_storage->name][$mapped_name] = $type;
-                    }
-                }
-
-                if ($interface_storage->template_extended_params) {
-                    foreach ($interface_storage->template_extended_params as $t_storage_class => $type_map) {
-                        foreach ($type_map as $i => $type) {
-                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                $type,
-                                $storage
-                            );
-                        }
-                    }
-                }
-            } else {
-                foreach ($interface_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type;
-                        $default_param->from_docblock = false;
-                        $storage->template_extended_params[$interface_storage->name][$template_name]
-                            = $default_param;
-                    }
-                }
-            }
-        } elseif ($interface_storage->template_extended_params) {
-            $storage->template_extended_params = array_merge(
-                $storage->template_extended_params ?: [],
-                $interface_storage->template_extended_params
-            );
-        }
+        self::extendTemplateParams($storage, $interface_storage);
 
         $new_parents = array_keys($interface_storage->parent_interfaces);
         $new_parents[] = $interface_storage->name;
@@ -737,6 +613,59 @@ class Populator
             }
 
             $new_parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+        }
+    }
+
+    private static function extendTemplateParams(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage
+    ): void {
+        if ($parent_storage->template_types) {
+            $storage->template_extended_params[$parent_storage->name] = [];
+
+            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
+                    $parent_template_type_names = array_keys($parent_storage->template_types);
+
+                    $mapped_name = $parent_template_type_names[$i] ?? null;
+
+                    if ($mapped_name) {
+                        $storage->template_extended_params[$parent_storage->name][$mapped_name]
+                            = $type;
+                    }
+                }
+
+                if ($parent_storage->template_extended_params) {
+                    foreach ($parent_storage->template_extended_params as $t_storage_class => $type_map) {
+                        foreach ($type_map as $i => $type) {
+                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
+                                $type,
+                                $storage
+                            );
+                        }
+                    }
+                }
+            } else {
+                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
+                    foreach ($template_type_map as $template_type) {
+                        $default_param = clone $template_type;
+                        $default_param->from_docblock = false;
+                        $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                    }
+                }
+
+                if ($parent_storage->template_extended_params) {
+                    $storage->template_extended_params = array_merge(
+                        $storage->template_extended_params,
+                        $parent_storage->template_extended_params
+                    );
+                }
+            }
+        } elseif ($parent_storage->template_extended_params) {
+            $storage->template_extended_params = array_merge(
+                $storage->template_extended_params ?: [],
+                $parent_storage->template_extended_params
+            );
         }
     }
 
