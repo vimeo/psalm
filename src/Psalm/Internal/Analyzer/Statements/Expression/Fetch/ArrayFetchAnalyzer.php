@@ -1101,44 +1101,45 @@ class ArrayFetchAnalyzer
     ): void {
         $has_array_access = true;
 
-        if ($in_assignment && $type instanceof TArray) {
-            $from_empty_array = $type->isEmptyArray();
+        if ($in_assignment) {
+            if ($type instanceof TArray) {
+                $from_empty_array = $type->isEmptyArray();
 
-            if (count($key_values) === 1) {
-                $single_atomic = $key_values[0];
-                $from_mixed_array = $type->type_params[1]->isMixed();
+                if (count($key_values) === 1) {
+                    $single_atomic = $key_values[0];
+                    $from_mixed_array = $type->type_params[1]->isMixed();
 
-                [$previous_key_type, $previous_value_type] = $type->type_params;
+                    [$previous_key_type, $previous_value_type] = $type->type_params;
 
-                // ok, type becomes an TKeyedArray
-                $array_type->removeType($type_string);
-                $type = new TKeyedArray([
-                    $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever()
-                ]);
-                if ($single_atomic instanceof TLiteralClassString) {
-                    $type->class_strings[$single_atomic->value] = true;
+                    // ok, type becomes an TKeyedArray
+                    $array_type->removeType($type_string);
+                    $type = new TKeyedArray([
+                        $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever()
+                    ]);
+                    if ($single_atomic instanceof TLiteralClassString) {
+                        $type->class_strings[$single_atomic->value] = true;
+                    }
+
+                    $type->sealed = $from_empty_array;
+
+                    if (!$from_empty_array) {
+                        $type->previous_value_type = clone $previous_value_type;
+                        $type->previous_key_type = clone $previous_key_type;
+                    }
+
+                    $array_type->addType($type);
+                } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
+                    $array_type->removeType($type_string);
+                    $array_type->addType(new TNonEmptyList($replacement_type));
+                    return;
                 }
-
-                $type->sealed = $from_empty_array;
-
-                if (!$from_empty_array) {
-                    $type->previous_value_type = clone $previous_value_type;
-                    $type->previous_key_type = clone $previous_key_type;
-                }
-
-                $array_type->addType($type);
-            } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                $array_type->removeType($type_string);
-                $array_type->addType(new TNonEmptyList($replacement_type));
-                return;
+            } elseif ($type instanceof TKeyedArray
+                && $type->previous_value_type
+                && $type->previous_value_type->isMixed()
+                && count($key_values) === 1
+            ) {
+                $type->properties[$key_values[0]->value] = Type::getMixed();
             }
-        } elseif ($in_assignment
-            && $type instanceof TKeyedArray
-            && $type->previous_value_type
-            && $type->previous_value_type->isMixed()
-            && count($key_values) === 1
-        ) {
-            $type->properties[$key_values[0]->value] = Type::getMixed();
         }
 
         $offset_type = self::replaceOffsetTypeWithInts($offset_type);

@@ -560,10 +560,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
             ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {

@@ -216,7 +216,6 @@ class ArrayAssignmentAnalyzer
                 $current_type,
                 $root_type,
                 $offset_already_existed,
-                $child_stmt,
                 $parent_var_id
             );
         } else {
@@ -471,7 +470,6 @@ class ArrayAssignmentAnalyzer
         Union $value_type,
         Union $root_type,
         bool $offset_already_existed,
-        ?PhpParser\Node\Expr $child_stmt,
         ?string $parent_var_id
     ): Union {
         $templated_assignment = false;
@@ -525,7 +523,6 @@ class ArrayAssignmentAnalyzer
             }
 
             if ($offset_already_existed
-                && $child_stmt
                 && $parent_var_id
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
@@ -669,7 +666,8 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param  array<PhpParser\Node\Expr\ArrayDimFetch>  $child_stmts
+     * @param  non-empty-list<PhpParser\Node\Expr\ArrayDimFetch>  $child_stmts
+     * @param-out PhpParser\Node\Expr $child_stmt
      */
     private static function analyzeNestedArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -688,17 +686,14 @@ class ArrayAssignmentAnalyzer
     ): void {
         $reversed_child_stmts = [];
         $var_id_additions = [];
-        $full_var_id = true;
 
         $child_stmt = null;
 
-        if (!empty($child_stmts)) {
-            $root_var = reset($child_stmts)->var;
-        }
+        $root_var = reset($child_stmts)->var;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
-        while ($child_stmts) {
+        do {
             $child_stmt = array_shift($child_stmts);
 
             if (count($child_stmts)) {
@@ -820,12 +815,12 @@ class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
-        }
+        } while ($child_stmts);
 
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             && $root_var_id !== null
             && isset($context->references_to_external_scope[$root_var_id])
-            && isset($root_var) && $root_var instanceof Variable && is_string($root_var->name)
+            && $root_var instanceof Variable && is_string($root_var->name)
             && $root_var_id === '$' . $root_var->name
         ) {
             // Array is a reference to an external scope, mark it as used
@@ -841,7 +836,6 @@ class ArrayAssignmentAnalyzer
 
         if ($root_var_id
             && $full_var_id
-            && $child_stmt
             && ($child_stmt_var_type = $statements_analyzer->node_data->getType($child_stmt->var))
             && !$child_stmt_var_type->hasObjectType()
         ) {

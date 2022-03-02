@@ -155,6 +155,8 @@ class ReturnAnalyzer
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 $context->inside_return = false;
+                $context->has_returned = true;
+
                 return;
             }
 
@@ -212,6 +214,8 @@ class ReturnAnalyzer
                 }
             }
         }
+
+        $context->has_returned = true;
 
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
