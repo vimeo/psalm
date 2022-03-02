@@ -155,8 +155,6 @@ class ArrayAssignmentAnalyzer
 
         $offset_already_existed = false;
 
-        $child_stmt = null;
-
         self::analyzeNestedArrayAssignment(
             $statements_analyzer,
             $codebase,
@@ -166,7 +164,6 @@ class ArrayAssignmentAnalyzer
             array_reverse($child_stmts),
             $root_var_id,
             $parent_var_id,
-            $child_stmt,
             $root_type,
             $current_type,
             $current_dim,
@@ -678,7 +675,6 @@ class ArrayAssignmentAnalyzer
         array $child_stmts,
         ?string $root_var_id,
         ?string &$parent_var_id,
-        ?PhpParser\Node\Expr &$child_stmt,
         Union &$root_type,
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
@@ -686,8 +682,6 @@ class ArrayAssignmentAnalyzer
     ): void {
         $reversed_child_stmts = [];
         $var_id_additions = [];
-
-        $child_stmt = null;
 
         $root_var = reset($child_stmts)->var;
 
