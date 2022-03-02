@@ -41,13 +41,12 @@ use function array_pop;
 use function array_reverse;
 use function array_shift;
 use function array_slice;
-use function array_unshift;
 use function count;
+use function end;
 use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
-use function reset;
 use function strlen;
 
 /**
@@ -161,7 +160,7 @@ class ArrayAssignmentAnalyzer
             $context,
             $assign_value,
             $assignment_type,
-            array_reverse($child_stmts),
+            $child_stmts,
             $root_var_id,
             $parent_var_id,
             $root_type,
@@ -680,20 +679,13 @@ class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed
     ): void {
-        $reversed_child_stmts = [];
         $var_id_additions = [];
 
-        $root_var = reset($child_stmts)->var;
+        $root_var = end($child_stmts)->var;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
-        do {
-            $child_stmt = array_shift($child_stmts);
-
-            if (count($child_stmts)) {
-                array_unshift($reversed_child_stmts, $child_stmt);
-            }
-
+        foreach (array_reverse($child_stmts) as $i => $child_stmt) {
             $child_stmt_dim_type = null;
 
             $offset_type = null;
@@ -748,6 +740,8 @@ class ArrayAssignmentAnalyzer
 
             $array_type = clone $child_stmt_var_type;
 
+            $is_last = $i === count($child_stmts) - 1;
+
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $child_stmt,
@@ -757,7 +751,7 @@ class ArrayAssignmentAnalyzer
                 $extended_var_id,
                 $context,
                 $assign_value,
-                $child_stmts ? null : $assignment_type
+                !$is_last ? null : $assignment_type
             );
 
             $statements_analyzer->node_data->setType(
@@ -779,7 +773,7 @@ class ArrayAssignmentAnalyzer
                 $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
             }
 
-            if (!$child_stmts) {
+            if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
                 if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
@@ -809,7 +803,7 @@ class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
-        } while ($child_stmts);
+        }
 
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             && $root_var_id !== null
@@ -846,8 +840,10 @@ class ArrayAssignmentAnalyzer
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
+        array_shift($child_stmts);
+
         // only update as many child stmts are we were able to process above
-        foreach ($reversed_child_stmts as $child_stmt) {
+        foreach ($child_stmts as $child_stmt) {
             $child_stmt_type = $statements_analyzer->node_data->getType($child_stmt);
 
             if (!$child_stmt_type) {
