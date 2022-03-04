@@ -4890,7 +4890,7 @@ return [
     'PDO::sqliteCreateAggregate' => ['bool', 'function_name'=>'string', 'step_func'=>'callable', 'finalize_func'=>'callable', 'num_args='=>'int'],
     'PDO::sqliteCreateCollation' => ['bool', 'name'=>'string', 'callback'=>'callable'],
     'PDO::sqliteCreateFunction' => ['bool', 'function_name'=>'string', 'callback'=>'callable', 'num_args='=>'int'],
-    'PDOException::getCode' => ['string'],
+    'PDOException::getCode' => ['int|string'],
     'PDOException::getFile' => ['string'],
     'PDOException::getLine' => ['int'],
     'PDOException::getMessage' => ['string'],

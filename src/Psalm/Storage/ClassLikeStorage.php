@@ -11,7 +11,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-class ClassLikeStorage
+class ClassLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
@@ -461,5 +461,13 @@ class ClassLikeStorage
     public function __construct(string $name)
     {
         $this->name = $name;
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     */
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }

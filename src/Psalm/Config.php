@@ -376,6 +376,11 @@ class Config
     /**
      * @var bool
      */
+    public $disable_var_parsing = false;
+
+    /**
+     * @var bool
+     */
     public $check_for_throws_docblock = false;
 
     /**
@@ -920,6 +925,7 @@ class Config
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
+            'disableVarParsing' => 'disable_var_parsing',
             'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'disableSuppressAll' => 'disable_suppress_all',
@@ -1246,8 +1252,8 @@ class Config
             }
         }
 
-        if (isset($config_xml->threads)) {
-            $config->threads = (int)$config_xml->threads;
+        if (isset($config_xml['threads'])) {
+            $config->threads = (int)$config_xml['threads'];
         }
 
         return $config;

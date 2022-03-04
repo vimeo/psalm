@@ -397,15 +397,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $storage->suppressed_issues + $this->getSuppressedIssues(),
-                1,
-                $storage
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $class_context,
+            $storage,
+            $class->attrGroups,
+            1,
+            $storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         self::addContextProperties(
             $this,
@@ -551,8 +550,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         foreach ($class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Property && !$storage->is_enum && !isset($stmt->type)) {
-                $this->checkForMissingPropertyType($this, $stmt, $class_context);
+            if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                $this->analyzeProperty($this, $stmt, $class_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -598,7 +597,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt, $class_context);
+                            $this->analyzeProperty($trait_analyzer, $trait_stmt, $class_context);
                         }
                     }
 
@@ -1492,7 +1491,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         return null;
     }
 
-    private function checkForMissingPropertyType(
+    private function analyzeProperty(
         SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
@@ -1522,14 +1521,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $property_storage = $class_storage->properties[$property_name];
 
-        foreach ($property_storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $source,
-                $attribute,
-                $this->source->getSuppressedIssues(),
-                8
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $source,
+            $context,
+            $property_storage,
+            $stmt->attrGroups,
+            8,
+            $property_storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
             return;

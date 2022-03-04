@@ -109,6 +109,7 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="disableVarParsing" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="2" />
         <xs:attribute name="reportMixedIssues" type="xs:boolean" default="true" />
         <xs:attribute name="useDocblockTypes" type="xs:boolean" default="true" />
@@ -127,6 +128,7 @@
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
         <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
+        <xs:attribute name="threads" type="xs:integer" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

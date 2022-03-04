@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
@@ -63,6 +64,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function array_values;
 use function count;
 use function end;
 use function in_array;
@@ -351,6 +353,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $storage,
             $cased_method_id,
             $params,
+            array_values($this->function->params),
             $context,
             (bool) $template_types
         );
@@ -816,14 +819,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        foreach ($storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $storage->suppressed_issues + $this->getSuppressedIssues(),
-                $storage instanceof MethodStorage ? 4 : 2
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $context,
+            $storage,
+            $this->function->attrGroups,
+            $storage instanceof MethodStorage ? 4 : 2,
+            $storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         return null;
     }
@@ -968,13 +971,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, FunctionLikeParameter> $params
+     * @param list<FunctionLikeParameter> $params
+     * @param list<Param> $param_stmts
      */
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
         ?string $cased_method_id,
         array $params,
+        array $param_stmts,
         Context $context,
         bool $has_template_types
     ): bool {
@@ -1262,14 +1267,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->hasVariable('$' . $function_param->name);
             }
 
-            foreach ($function_param->attributes as $attribute) {
-                AttributeAnalyzer::analyze(
-                    $this,
-                    $attribute,
-                    $storage->suppressed_issues,
-                    $function_param->promoted_property ? 8 : 32
-                );
-            }
+            AttributesAnalyzer::analyze(
+                $this,
+                $context,
+                $function_param,
+                $param_stmts[$offset]->attrGroups,
+                $function_param->promoted_property ? 40 : 32,
+                $storage->suppressed_issues + $this->getSuppressedIssues()
+            );
         }
 
         return $check_stmts;

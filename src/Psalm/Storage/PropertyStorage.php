@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Union;
 
-class PropertyStorage
+class PropertyStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
@@ -123,5 +123,13 @@ class PropertyStorage
         }
 
         return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     */
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }
