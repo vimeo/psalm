@@ -106,6 +106,29 @@ class ClientConfiguration
      */
     public $onchangeLineLimit;
 
+    /**
+     * Debounce time in milliseconds for onChange events
+     *
+     * @var int|null
+     *
+     */
+    public $onChangeDebounceMs;
+
+    /**
+     * Undocumented function
+     *
+     * @param boolean $hideWarnings
+     * @param boolean|null $provideCompletion
+     * @param boolean|null $provideDefinition
+     * @param boolean|null $provideHover
+     * @param boolean|null $provideSignatureHelp
+     * @param boolean|null $provideCodeActions
+     * @param boolean|null $provideDiagnostics
+     * @param boolean|null $findUnusedVariables
+     * @param 'always'|'auto'|null $findUnusedCode
+     * @param integer|null $logLevel
+     * @param integer|null $onchangeLineLimit
+     */
     public function __construct(
         bool $hideWarnings = true,
         bool $provideCompletion = null,
@@ -113,6 +136,11 @@ class ClientConfiguration
         bool $provideHover = null,
         bool $provideSignatureHelp = null,
         bool $provideCodeActions = null,
+        bool $provideDiagnostics = null,
+        bool $findUnusedVariables = null,
+        string $findUnusedCode = null,
+        int $logLevel = null,
+        int $onchangeLineLimit = null,
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;
@@ -120,5 +148,10 @@ class ClientConfiguration
         $this->provideHover = $provideHover;
         $this->provideSignatureHelp = $provideSignatureHelp;
         $this->provideCodeActions = $provideCodeActions;
+        $this->provideDiagnostics = $provideDiagnostics;
+        $this->findUnusedVariables = $findUnusedVariables;
+        $this->findUnusedCode = $findUnusedCode;
+        $this->logLevel = $logLevel;
+        $this->onchangeLineLimit = $onchangeLineLimit;
     }
 }

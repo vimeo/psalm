@@ -85,6 +85,7 @@ final class LanguageServer
             'enable-provide-signature-help::',
             'enable-provide-definition::',
             'show-diagnostic-warnings::',
+            'on-change-debounce-ms::',
             'use-extended-diagnostic-codes',
             'verbose'
         ];
@@ -209,6 +210,9 @@ Options:
     --use-extended-diagnostic-codes (DEPRECATED)
         Enables sending help uri links with the code in diagnostic messages.
 
+    --on-change-debounce-ms=[INT]
+        The number of milliseconds to debounce onChange events.
+
     --verbose
         Will send log messages to the client with information.
 
@@ -306,6 +310,10 @@ HELP;
 
         if (isset($options['disable-on-change'])) {
             $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
+        }
+
+        if (isset($options['on-change-debounce-ms'])) {
+            $clientConfiguration->onChangeDebounceMs = (int) $options['on-change-debounce-ms'];
         }
 
         $clientConfiguration->provideDefinition = !isset($options['enable-provide-definition'])

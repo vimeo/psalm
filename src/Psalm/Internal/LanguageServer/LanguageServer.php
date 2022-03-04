@@ -141,6 +141,12 @@ class LanguageServer extends Dispatcher
      */
     protected $codebase;
 
+    /**
+     * The AMP Delay token
+     * @var string
+     */
+    protected $versionedAnalysisDelayToken = '';
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -627,7 +633,7 @@ class LanguageServer extends Dispatcher
      */
     public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
-        $this->doVersionedAnalysis([$file_path => $uri], $version);
+        $this->doVersionedAnalysisDebounce([$file_path => $uri], $version);
     }
 
     /**
@@ -682,6 +688,25 @@ class LanguageServer extends Dispatcher
     }
 
     /**
+     * Debounced Queue File Analysis with optional version
+     *
+     * @param array<string, string> $files
+     * @param int|null $version
+     */
+    public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
+    {
+        Loop::cancel($this->versionedAnalysisDelayToken);
+        if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
+            $this->doVersionedAnalysis($files, $version);
+        } else {
+            $this->versionedAnalysisDelayToken = Loop::delay(
+                $this->client->clientConfiguration->onChangeDebounceMs,
+                fn() => $this->doVersionedAnalysis($files, $version)
+            );
+        }
+    }
+
+    /**
      * Queue File Analysis with optional version
      *
      * @param array<string, string> $files
@@ -689,13 +714,9 @@ class LanguageServer extends Dispatcher
      */
     public function doVersionedAnalysis(array $files, ?int $version = null): void
     {
+        Loop::cancel($this->versionedAnalysisDelayToken);
         try {
-            if (empty($files)) {
-                $this->logWarning("No versioned analysis to do.");
-                return;
-            }
-
-            $this->logDebug("Reloading Files");
+            $this->logDebug("Doing Analysis from version: $version");
             $this->codebase->reloadFiles(
                 $this->project_analyzer,
                 array_keys($files)
@@ -705,7 +726,7 @@ class LanguageServer extends Dispatcher
                 array_combine(array_keys($files), array_keys($files))
             );
 
-            $this->logDebug("Analyze Files");
+            $this->logDebug("Reloading Files");
             $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $this->emitVersionedIssues($files, $version);
