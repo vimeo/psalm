@@ -71,7 +71,7 @@ class Redis {
 
     public function config(string $operation, string $key, mixed $value = null): mixed;
 
-    public function connect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
+    public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
 
     public function copy(string $src, string $dst, array $options = null): bool;
 
@@ -137,6 +137,10 @@ class Redis {
 
     public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): Redis|mixed|false;
 
+    public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
+
+    public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
+
 	/** @return string|Redis */
     public function get(string $key);
 
@@ -197,7 +201,7 @@ class Redis {
 
     public function hVals(string $key): Redis|array|false;
 
-    public function hscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
 	/** @return int|Redis */
     public function incr(string $key, int $by = 1);
@@ -281,9 +285,9 @@ class Redis {
      * @deprecated
      * @alias Redis::connect
      */
-    public function open(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function open(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
-    public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function pconnect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
 public function persist(string $key): bool;
 
@@ -306,7 +310,7 @@ public function persist(string $key): bool;
      * @deprecated
      * @alias Redis::pconnect
      */
-    public function popen(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function popen(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
     public function psetex(string $key, int $expire, mixed $value);
@@ -387,7 +391,7 @@ public function persist(string $key): bool;
     public function setRange(string $key, int $start, string $value);
 
 
-    public function setOption(string $option, mixed $value): bool;
+    public function setOption(int $option, mixed $value): bool;
 
     /** @return bool|Redis */
     public function setex(string $key, int $expire, mixed $value);
@@ -506,6 +510,8 @@ public function persist(string $key): bool;
 
     public function zRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false;
 
+    public function zRandMember(string $key, array $options = null): string|array;
+
     public function zRank(string $key, mixed $member): Redis|int|false;
 
     public function zRem(mixed $key, mixed $member, mixed ...$other_members): Redis|int|false;
@@ -534,7 +540,7 @@ public function persist(string $key): bool;
 
     public function zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
 
-    public function zscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
     public function zunion(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
