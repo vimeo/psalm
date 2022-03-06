@@ -1310,6 +1310,7 @@ class ArrayFunctionCallTest extends TestCase
                     $m_prepare = makeKeyedArray();
                     assert($m_prepare !== []);
                     $m = array_column($m_prepare, "y");
+                    $n = array_column([["a" => 1], ["a" => 2], ["a" => 3]], null, "a");
                 ',
                 'assertions' => [
                     '$a' => 'non-empty-list<int>',
@@ -1325,6 +1326,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$k' => 'non-empty-list<string>',
                     '$l' => 'list<int>',
                     '$m' => 'list<int>',
+                    '$n' => 'array<int, array{a: int}>',
                 ],
             ],
             'splatArrayIntersect' => [
