@@ -50,6 +50,17 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
+            if (strpos($filePath, 'vendor/symfony/polyfill') === 0) {
+                return str_replace(
+                    $prefix . '\\Stringable',
+                    'Stringable',
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
+        function ($filePath, $prefix, $contents) {
             if ($filePath === 'src/Psalm/Internal/Cli/Psalm.php') {
                 return str_replace(
                     '\\' . $prefix . '\\PSALM_VERSION',
