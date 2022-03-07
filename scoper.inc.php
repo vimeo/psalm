@@ -1,27 +1,6 @@
 <?php
 
-use Isolated\Symfony\Component\Finder\Finder;
-
-$polyfillsBootstraps = array_map(
-    static fn (SplFileInfo $fileInfo) => $fileInfo->getPathname(),
-    iterator_to_array(
-        Finder::create()
-            ->files()
-            ->in(__DIR__ . '/vendor/symfony/polyfill-*')
-            ->name('bootstrap*.php'),
-        false,
-    ),
-);
-$polyfillsStubs = array_map(
-    static fn (SplFileInfo $fileInfo) => $fileInfo->getPathname(),
-    iterator_to_array(
-        Finder::create()
-            ->files()
-            ->in(__DIR__ . '/vendor/symfony/polyfill-*/Resources/stubs')
-            ->name('*.php'),
-        false,
-    ),
-);
+use Composer\Autoload\ClassLoader;
 
 return [
     'patchers' => [
@@ -90,26 +69,17 @@ return [
             return $ret;
         },
     ],
-    'exclude-namespaces' => [
-        'Symfony\Polyfill',
-        'Psalm',
+    'whitelist' => [
+        ClassLoader::class,
+        Stringable::class,
+        'Psalm\*',
     ],
-    'exclude-constants' => [
-        // Symfony global constants
-        // TODO: switch to the following regex once regexes are supported here
-        // https://github.com/humbug/php-scoper/issues/634
-        '/^SYMFONY\_[\p{L}_]+$/',
-        // Meanwhile:
-        'SYMFONY_GRAPHEME_CLUSTER_RX',
-        'PSALM_VERSION',
-        'PHP_PARSER_VERSION',
-    ],
-    'exclude-files' => [
+    'files-whitelist' => [
         'src/spl_object_id.php',
-        ...$polyfillsBootstraps,
-        ...$polyfillsStubs,
-    ],
-    'expose-classes' => [
-        \Composer\Autoload\ClassLoader::class,
+        'vendor/symfony/polyfill-php80/Php80.php',
+        'vendor/symfony/polyfill-php80/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php',
     ],
 ];
