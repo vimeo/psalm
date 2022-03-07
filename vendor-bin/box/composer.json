@@ -2,7 +2,8 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"humbug/box": "3.10.*"
+		"humbug/box": "^3.16",
+		"symfony/polyfill-php80": "1.24.0"
 	},
 	"config": {
 		"allow-plugins": {
