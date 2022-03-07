@@ -1,6 +1,5 @@
 {
     "require": {
-        "roave/backward-compatibility-check": "^6.1",
-        "symfony/polyfill-php80": "v1.24.0"   
+        "roave/backward-compatibility-check": "^6.1"
     }
 }
