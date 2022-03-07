@@ -1,6 +1,27 @@
 <?php
 
-use Composer\Autoload\ClassLoader;
+use Isolated\Symfony\Component\Finder\Finder;
+
+$polyfillsBootstraps = array_map(
+    static fn (SplFileInfo $fileInfo) => $fileInfo->getPathname(),
+    iterator_to_array(
+        Finder::create()
+            ->files()
+            ->in(__DIR__ . '/vendor/symfony/polyfill-*')
+            ->name('bootstrap*.php'),
+        false,
+    ),
+);
+$polyfillsStubs = array_map(
+    static fn (SplFileInfo $fileInfo) => $fileInfo->getPathname(),
+    iterator_to_array(
+        Finder::create()
+            ->files()
+            ->in(__DIR__ . '/vendor/symfony/polyfill-*/Resources/stubs')
+            ->name('*.php'),
+        false,
+    ),
+);
 
 return [
     'patchers' => [
@@ -50,17 +71,6 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if (strpos($filePath, 'vendor/symfony/polyfill') === 0) {
-                return str_replace(
-                    $prefix . '\\Stringable',
-                    'Stringable',
-                    $contents
-                );
-            }
-
-            return $contents;
-        },
-        function ($filePath, $prefix, $contents) {
             if ($filePath === 'src/Psalm/Internal/Cli/Psalm.php') {
                 return str_replace(
                     '\\' . $prefix . '\\PSALM_VERSION',
@@ -80,11 +90,26 @@ return [
             return $ret;
         },
     ],
-    'whitelist' => [
-        ClassLoader::class,
-        'Psalm\*',
+    'exclude-namespaces' => [
+        'Symfony\Polyfill',
+        'Psalm',
     ],
-    'files-whitelist' => [
+    'exclude-constants' => [
+        // Symfony global constants
+        // TODO: switch to the following regex once regexes are supported here
+        // https://github.com/humbug/php-scoper/issues/634
+        '/^SYMFONY\_[\p{L}_]+$/',
+        // Meanwhile:
+        'SYMFONY_GRAPHEME_CLUSTER_RX',
+        'PSALM_VERSION',
+        'PHP_PARSER_VERSION',
+    ],
+    'exclude-files' => [
         'src/spl_object_id.php',
+        ...$polyfillsBootstraps,
+        ...$polyfillsStubs,
+    ],
+    'expose-classes' => [
+        \Composer\Autoload\ClassLoader::class,
     ],
 ];
