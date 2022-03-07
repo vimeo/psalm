@@ -82,9 +82,15 @@ return [
     ],
     'whitelist' => [
         ClassLoader::class,
+        Stringable::class,
         'Psalm\*',
     ],
     'files-whitelist' => [
         'src/spl_object_id.php',
+        'vendor/symfony/polyfill-php80/Php80.php',
+        'vendor/symfony/polyfill-php80/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php',
     ],
 ];
