@@ -67,7 +67,7 @@ final class CliUtils
 
         if ($in_phar) {
             // require this before anything else
-            require_once __DIR__ . '/../../../polyfill-php80/Resources/stubs/Stringable.php';
+            require_once __DIR__ . '/../../../polyfill-php80/Stringable.php';
             require_once __DIR__ . '/../../../vendor/autoload.php';
 
             // hack required for JsonMapper
