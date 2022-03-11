@@ -798,6 +798,16 @@ class IntRangeTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'minGreaterThanMax' => [
+                '<?php
+                    /**
+                     * @param int<4, 3> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
