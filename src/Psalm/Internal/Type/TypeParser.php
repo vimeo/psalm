@@ -830,19 +830,24 @@ class TypeParser
                 throw new TypeParseTreeException('Union types are not allowed in int range type');
             }
 
-            if ($param0_union_types[0] instanceof TNamedObject &&
-                $param0_union_types[0]->value === TIntRange::BOUND_MAX
-            ) {
-                throw new TypeParseTreeException("min bound for int range param can't be 'max'");
+            if (!($param0_union_types[0] instanceof TNamedObject) && !($param0_union_types[0] instanceof TLiteralInt) ||
+                !($param1_union_types[0] instanceof TNamedObject) && !($param1_union_types[0] instanceof TLiteralInt)) {
+                throw new TypeParseTreeException('Unsupported parameter');
             }
-            if ($param1_union_types[0] instanceof TNamedObject &&
-                $param1_union_types[0]->value === TIntRange::BOUND_MIN
-            ) {
-                throw new TypeParseTreeException("max bound for int range param can't be 'min'");
+
+            if ($param0_union_types[0] instanceof TNamedObject
+                && $param0_union_types[0]->value !== TIntRange::BOUND_MIN) {
+                throw new TypeParseTreeException('Unknown named object as a min boundary');
+            }
+
+            if ($param1_union_types[0] instanceof TNamedObject
+                && $param1_union_types[0]->value !== TIntRange::BOUND_MAX) {
+                throw new TypeParseTreeException('Unknown named object as a max boundary');
             }
 
             $min_bound = null;
             $max_bound = null;
+
             if ($param0_union_types[0] instanceof TLiteralInt) {
                 $min_bound = $param0_union_types[0]->value;
             }
