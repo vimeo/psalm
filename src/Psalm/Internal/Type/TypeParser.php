@@ -837,12 +837,12 @@ class TypeParser
 
             if ($param0_union_types[0] instanceof TNamedObject
                 && $param0_union_types[0]->value !== TIntRange::BOUND_MIN) {
-                throw new TypeParseTreeException('Unknown named object as a min boundary');
+                throw new TypeParseTreeException('Incorrect named object as a min boundary');
             }
 
             if ($param1_union_types[0] instanceof TNamedObject
                 && $param1_union_types[0]->value !== TIntRange::BOUND_MAX) {
-                throw new TypeParseTreeException('Unknown named object as a max boundary');
+                throw new TypeParseTreeException('Incorrect named object as a max boundary');
             }
 
             $min_bound = null;
