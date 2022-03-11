@@ -864,7 +864,7 @@ class TypeParser
             }
 
             if (is_int($min_bound) && is_int($max_bound) && $min_bound > $max_bound) {
-                throw new TypeParseTreeException("Min bound can't be greater than max bound");
+                throw new TypeParseTreeException("Min bound can't be greater than max bound, int<" . $min_bound . "," . $max_bound . "> given");
             }
 
             return new TIntRange($min_bound, $max_bound);
