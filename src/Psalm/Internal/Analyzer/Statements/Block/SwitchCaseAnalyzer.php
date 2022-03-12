@@ -464,12 +464,6 @@ class SwitchCaseAnalyzer
             );
         }
 
-        $pre_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids = [];
-
-        $pre_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = [];
-
         $statements_analyzer->analyze($case_stmts, $case_context);
 
         $traverser = new PhpParser\NodeTraverser;
@@ -483,15 +477,6 @@ class SwitchCaseAnalyzer
         $traverser->traverse([$case]);
 
         $statements_analyzer->node_data = $old_node_data;
-
-        /** @var array<string, int> */
-        $new_case_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = $pre_assigned_var_ids + $new_case_assigned_var_ids;
-
-        /** @var array<string, bool> */
-        $new_case_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids =
-            $pre_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
 
         $context->referenced_var_ids = array_merge(
             $context->referenced_var_ids,
