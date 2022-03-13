@@ -12,15 +12,14 @@ use Psalm\Type\Atomic\TLiteralString;
 use function array_diff;
 use function array_keys;
 use function array_map;
-use function array_unique;
 use function array_values;
 use function count;
 use function implode;
 use function json_encode;
+use function krsort;
 use function ksort;
 use function md5;
 use function reset;
-use function sort;
 use function substr;
 
 use const JSON_THROW_ON_ERROR;

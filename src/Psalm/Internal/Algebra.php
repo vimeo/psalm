@@ -14,11 +14,11 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
-use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
 use function mt_rand;
+use function reset;
 
 /**
  * @internal
@@ -141,7 +141,9 @@ class Algebra
                         foreach ($clause_a->possibilities as $key => $a_possibilities) {
                             $b_possibilities = $clause_b->possibilities[$key];
 
-                            if (array_keys($clause_a->possibilities[$key]) === array_keys($clause_b->possibilities[$key])) {
+                            if (array_keys($clause_a->possibilities[$key])
+                                === array_keys($clause_b->possibilities[$key])
+                            ) {
                                 continue;
                             }
 
