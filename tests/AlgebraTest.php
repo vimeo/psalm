@@ -28,7 +28,7 @@ class AlgebraTest extends TestCase
     public function testNegateFormula(): void
     {
         $formula = [
-            new Clause(['$a' => [new Truthy()]], 1, 1),
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -37,7 +37,7 @@ class AlgebraTest extends TestCase
         $this->assertSame('!$a', (string)$negated_formula[0]);
 
         $formula = [
-            new Clause(['$a' => [new Truthy()], '$b' => [new Truthy()]], 1, 1),
+            new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -47,8 +47,8 @@ class AlgebraTest extends TestCase
         $this->assertSame('!$b', (string)$negated_formula[1]);
 
         $formula = [
-            new Clause(['$a' => [new Truthy()]], 1, 1),
-            new Clause(['$b' => [new Truthy()]], 1, 2),
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$b' => ['truthy' => new Truthy()]], 1, 2),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -56,11 +56,14 @@ class AlgebraTest extends TestCase
         $this->assertCount(1, $negated_formula);
         $this->assertSame('(!$a) || (!$b)', (string)$negated_formula[0]);
 
+        $a1 = new IsType(new TInt());
+        $a2 = new IsType(new TString());
+
         $formula = [
             new Clause(
                 [
-                    '$a' => [new IsType(new TInt()), new IsType(new TString())],
-                    '$b' => [new Truthy()]
+                    '$a' => [(string)$a1 => $a1, (string)$a2 => $a2],
+                    '$b' => ['truthy' => new Truthy()]
                 ],
                 1,
                 1
@@ -77,9 +80,10 @@ class AlgebraTest extends TestCase
 
     public function testNegateFormulaWithUnreconcilableTerm(): void
     {
+        $a1 = new IsType(new TInt());
         $formula = [
-            new Clause(['$a' => [new IsType(new TInt())]], 1, 1),
-            new Clause(['$b' => [new IsType(new TInt())]], 1, 2, false, false),
+            new Clause(['$a' => [(string)$a1 => $a1]], 1, 1),
+            new Clause(['$b' => [(string)$a1 => clone $a1]], 1, 2, false, false),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);
@@ -129,15 +133,15 @@ class AlgebraTest extends TestCase
         $this->assertTrue(
             (new Clause(
                 [
-                    '$a' => [new Truthy()],
-                    '$b' => [new Truthy()],
+                    '$a' => ['truthy' => new Truthy()],
+                    '$b' => ['truthy' => new Truthy()],
                 ],
                 1,
                 1
             ))->contains(
                 new Clause(
                     [
-                        '$a' => [new Truthy()],
+                        '$a' => ['truthy' => new Truthy()],
                     ],
                     1,
                     1
@@ -148,15 +152,15 @@ class AlgebraTest extends TestCase
         $this->assertFalse(
             (new Clause(
                 [
-                    '$a' => [new Truthy()],
+                    '$a' => ['truthy' => new Truthy()],
                 ],
                 1,
                 1
             ))->contains(
                 new Clause(
                     [
-                        '$a' => [new Truthy()],
-                        '$b' => [new Truthy()],
+                        '$a' => ['truthy' => new Truthy()],
+                        '$b' => ['truthy' => new Truthy()],
                     ],
                     1,
                     1
@@ -168,8 +172,8 @@ class AlgebraTest extends TestCase
     public function testSimplifySimpleCNF(): void
     {
         $formula = [
-            new Clause(['$a' => [new Truthy()]], 1, 1),
-            new Clause(['$a' => [new Falsy()], '$b' => [new Falsy()]], 1, 2),
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['falsy' => new Falsy()]], 1, 2),
         ];
 
         $simplified_formula = Algebra::simplifyCNF($formula);
@@ -181,9 +185,10 @@ class AlgebraTest extends TestCase
 
     public function testSimplifyCNFWithOneUselessTerm(): void
     {
+        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
         $formula = [
-            new Clause(['$a' => [new Truthy()], '$b' => [new Truthy()]], 1, 1),
-            new Clause(['$a' => [new Falsy()], '$b' => [new Truthy()]], 1, 2),
+            new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['truthy' => new Truthy()]], 1, 2),
         ];
 
         $simplified_formula = Algebra::simplifyCNF($formula);
@@ -195,8 +200,8 @@ class AlgebraTest extends TestCase
     public function testSimplifyCNFWithNonUselessTerm(): void
     {
         $formula = [
-            new Clause(['$a' => [new Truthy()], '$b' => [new Truthy()]], 1, 1),
-            new Clause(['$a' => [new Falsy()], '$b' => [new Falsy()]], 1, 2),
+            new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['falsy' => new Falsy()]], 1, 2),
         ];
 
         $simplified_formula = Algebra::simplifyCNF($formula);
@@ -208,10 +213,11 @@ class AlgebraTest extends TestCase
 
     public function testSimplifyCNFWithUselessTermAndOneInMiddle(): void
     {
+        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
         $formula = [
-            new Clause(['$a' => [new Truthy()], '$b' => [new Truthy()]], 1, 1),
-            new Clause(['$b' => [new Truthy()]], 1, 2),
-            new Clause(['$a' => [new Falsy()], '$b' => [new Truthy()]], 1, 3),
+            new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$b' => ['truthy' => new Truthy()]], 1, 2),
+            new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['truthy' => new Truthy()]], 1, 3),
         ];
 
         $simplified_formula = Algebra::simplifyCNF($formula);
@@ -222,9 +228,11 @@ class AlgebraTest extends TestCase
 
     public function testGroupImpossibilities(): void
     {
+        $a1 = new IsIdentical(new TArray([Type::getArrayKey(), Type::getMixed()]));
+
         $clause1 = (new Clause(
             [
-                '$a' => [new IsIdentical(new TArray([Type::getArrayKey(), Type::getMixed()]))]
+                '$a' => [(string)$a1 => $a1]
             ],
             1,
             2,
@@ -234,9 +242,11 @@ class AlgebraTest extends TestCase
             []
         ))->calculateNegation();
 
+        $a2 = new IsIsset();
+
         $clause2 = (new Clause(
             [
-                '$b' => [new IsIsset()]
+                '$b' => [(string)$a2 => $a2]
             ],
             1,
             2,

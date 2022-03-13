@@ -159,8 +159,12 @@ class FormulaGenerator
                         }
 
                         foreach ($anded_types as $orred_types) {
+                            $mapped_orred_types = [];
+                            foreach ($orred_types as $orred_type) {
+                                $mapped_orred_types[(string)$orred_type] = $orred_type;
+                            }
                             $clauses[] = new Clause(
-                                [$var => $orred_types],
+                                [$var => $mapped_orred_types],
                                 $conditional_object_id,
                                 spl_object_id($conditional->expr),
                                 false,
@@ -426,8 +430,12 @@ class FormulaGenerator
                 }
 
                 foreach ($anded_types as $orred_types) {
+                    $mapped_orred_types = [];
+                    foreach ($orred_types as $orred_type) {
+                        $mapped_orred_types[(string)$orred_type] = $orred_type;
+                    }
                     $clauses[] = new Clause(
-                        [$var => $orred_types],
+                        [$var => $mapped_orred_types],
                         $conditional_object_id,
                         $creating_object_id,
                         false,
@@ -447,6 +455,6 @@ class FormulaGenerator
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
-        return [new Clause([$conditional_ref => [new Truthy()]], $conditional_object_id, $creating_object_id)];
+        return [new Clause([$conditional_ref => ['truthy' => new Truthy()]], $conditional_object_id, $creating_object_id)];
     }
 }

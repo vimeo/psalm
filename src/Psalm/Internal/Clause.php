@@ -51,14 +51,9 @@ class Clause
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
      *
-     * @var array<string, non-empty-list<Assertion>>
+     * @var array<string, non-empty-array<string, Assertion>>
      */
     public $possibilities;
-
-    /**
-     * @var array<string, non-empty-list<string>>
-     */
-    public $possibility_strings = [];
 
     /**
      * An array of things that are not true
@@ -92,7 +87,7 @@ class Clause
     public $hash;
 
     /**
-     * @param array<string, non-empty-list<Assertion>>  $possibilities
+     * @param array<string, non-empty-array<string, Assertion>>  $possibilities
      * @param array<string, bool> $redefined_vars
      */
     public function __construct(
@@ -109,20 +104,14 @@ class Clause
         } else {
             ksort($possibilities);
 
+            $possibility_strings = [];
+
             foreach ($possibilities as $i => $_) {
-                sort($possibilities[$i]);
+                krsort($possibilities[$i]);
+                $possibility_strings[$i] = array_keys($possibilities[$i]);
             }
 
-            $possibility_strings = array_map(
-                fn($possibility_map) => array_map(
-                    fn($possibility) => (string)$possibility,
-                    $possibility_map
-                ),
-                $possibilities
-            );
-
             $this->hash = md5(json_encode($possibility_strings, JSON_THROW_ON_ERROR));
-            $this->possibility_strings = $possibility_strings;
         }
 
         $this->possibilities = $possibilities;
@@ -156,7 +145,7 @@ class Clause
     {
         $clause_strings = array_map(
             /**
-             * @param non-empty-list<Assertion> $values
+             * @param non-empty-array<string, Assertion> $values
              */
             function (string $var_id, array $values): string {
                 if ($var_id[0] === '*') {
@@ -198,7 +187,7 @@ class Clause
                     return '(' . implode(') || (', $var_id_clauses) . ')';
                 }
 
-                return $var_id_clauses[0];
+                return reset($var_id_clauses);
             },
             array_keys($this->possibilities),
             array_values($this->possibilities)
@@ -209,25 +198,6 @@ class Clause
         }
 
         return reset($clause_strings);
-    }
-
-    public function makeUnique(): self
-    {
-        $possibilities = $this->possibilities;
-
-        foreach ($possibilities as $var_id => $var_possibilities) {
-            $possibilities[$var_id] = array_values(array_unique($var_possibilities));
-        }
-
-        return new self(
-            $possibilities,
-            $this->creating_conditional_id,
-            $this->creating_object_id,
-            $this->wedge,
-            $this->reconcilable,
-            $this->generated,
-            $this->redefined_vars
-        );
     }
 
     public function removePossibilities(string $var_id): ?self
@@ -251,7 +221,7 @@ class Clause
     }
 
     /**
-     * @param non-empty-list<Assertion> $clause_var_possibilities
+     * @param non-empty-array<string, Assertion> $clause_var_possibilities
      */
     public function addPossibilities(string $var_id, array $clause_var_possibilities): self
     {

@@ -682,7 +682,7 @@ final class Context
 
             if (!isset($clause->possibilities[$remove_var_id])
                 || (count($clause->possibilities[$remove_var_id]) === 1
-                    && (string)$clause->possibilities[$remove_var_id][0] === $new_type_string)
+                    && array_keys($clause->possibilities[$remove_var_id])[0] === $new_type_string)
             ) {
                 $clauses_to_keep[] = $clause;
             } elseif ($statements_analyzer &&
