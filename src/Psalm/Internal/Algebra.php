@@ -7,7 +7,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Falsy;
 use UnexpectedValueException;
 
-use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
