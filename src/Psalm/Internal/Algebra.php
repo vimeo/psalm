@@ -457,10 +457,9 @@ class Algebra
                     foreach ($impossible_types as $impossible_type) {
                         $new_clause_possibilities = $grouped_clause->possibilities;
 
-                        if (isset($grouped_clause->possibilities[$var])) {
-                            $new_clause_possibilities[$var][(string)$impossible_type] = $impossible_type;
-
-                            $removed_indexes = [];
+                        if (isset($new_clause_possibilities[$var])) {
+                            $impossible_type_string = (string)$impossible_type;
+                            $new_clause_possibilities[$var][$impossible_type_string] = $impossible_type;
 
                             foreach ($new_clause_possibilities[$var] as $ak => $av) {
                                 foreach ($new_clause_possibilities[$var] as $bk => $bv) {
@@ -468,31 +467,17 @@ class Algebra
                                         break;
                                     }
 
-                                    if ($av->isNegationOf($bv)) {
-                                        $removed_indexes[$ak] = true;
-                                        $removed_indexes[$bk] = true;
+                                    if ($ak !== $impossible_type_string && $bk !== $impossible_type_string) {
+                                        continue;
                                     }
-                                }
-                            }
 
-                            if ($removed_indexes) {
-                                $new_possibilities = array_diff_key(
-                                    $new_clause_possibilities[$var],
-                                    $removed_indexes
-                                );
-
-                                if (!$new_possibilities) {
-                                    unset($new_clause_possibilities[$var]);
-                                } else {
-                                    $new_clause_possibilities[$var] = $new_possibilities;
+                                    if ($av->isNegationOf($bv)) {
+                                        break 3;
+                                    }
                                 }
                             }
                         } else {
                             $new_clause_possibilities[$var] = [(string)$impossible_type => $impossible_type];
-                        }
-
-                        if (!$new_clause_possibilities) {
-                            continue;
                         }
 
                         $new_clause = new Clause(
