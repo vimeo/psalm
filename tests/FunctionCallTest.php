@@ -1785,6 +1785,27 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.0',
             ],
+            'functionsAssertingArgumentIsNonEmptyString' => [
+                '<?php
+                    /** @param non-empty-string $s */
+                    function foo(string $s): string { return $s; }
+		    function bar(string $s, string $s2): void {
+                        if (extension_loaded($s)) { foo($s); }
+                        if (file_exists($s)) { foo($s); }
+                        if (function_exists($s)) { foo($s); }
+                        if (is_dir($s)) { foo($s); }
+                        if (is_executable($s)) { foo($s); }
+                        if (is_file($s)) { foo($s); }
+                        if (is_link($s)) { foo($s); }
+                        if (is_readable($s)) { foo($s); }
+                        if (is_uploaded_file($s)) { foo($s); }
+                        if (is_writable($s)) { foo($s); }
+                        if (is_writeable($s)) { foo($s); }
+                        if (method_exists(stdClass::class, $s)) { foo($s); }
+                        if (touch($s)) { foo($s); }
+                    }
+                ',
+            ]
         ];
     }
 

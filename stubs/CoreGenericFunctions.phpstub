@@ -1347,3 +1347,65 @@ function mb_convert_encoding(array|string $string, string $to_encoding, array|st
  * @psalm-suppress ReferenceConstraintViolation
  */
 function stream_select(null|array &$read, null|array &$write, null|array &$except, null|int $seconds, null|int $microseconds = null) : bool|int {}
+
+
+/**
+ * @psalm-assert-if-true non-empty-string $extension
+ */
+function extension_loaded(string $extension): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function file_exists(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_dir(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_executable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_file(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_link(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_readable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_uploaded_file(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_writable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function is_writeable(string $filename): bool {}
+
+/**
+ * @param object|class-string|interface-string $object_or_class
+ * @psalm-assert-if-true non-empty-string $method
+ */
+function method_exists(object|string $object_or_class, string $method): bool {}
+
+/**
+ * @psalm-assert-if-true non-empty-string $filename
+ */
+function touch(string $filename, int|null $mtime = null, int|null $atime = null): bool {}
