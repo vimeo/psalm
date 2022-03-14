@@ -79,7 +79,7 @@ return [
     ],
     'PDOStatement::fetchAll' => [
       'old' => ['array|false', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'?array'],
-      'new' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
+      'new' => ['array', 'mode='=>'int', '...args='=>'mixed'],
     ],
     'PDOStatement::fetchColumn' => [
       'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
