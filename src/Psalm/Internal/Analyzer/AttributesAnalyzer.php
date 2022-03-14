@@ -54,7 +54,7 @@ class AttributesAnalyzer
 
     /**
      * @param array<array-key, AttributeGroup> $attribute_groups
-     * @param 1|2|4|8|16|32|40 $target
+     * @param key-of<self::TARGET_DESCRIPTIONS> $target
      * @param array<array-key, string> $suppressed_issues
      */
     public static function analyze(
