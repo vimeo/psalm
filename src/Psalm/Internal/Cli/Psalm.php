@@ -551,6 +551,9 @@ final class Psalm
         }
     }
 
+    /**
+     * @param non-empty-string $current_dir
+     */
     private static function loadConfig(
         ?string $path_to_config,
         string $current_dir,
@@ -833,6 +836,7 @@ final class Psalm
         exit;
     }
 
+    /** @return non-empty-string */
     private static function getCurrentDir(array $options): string
     {
         $cwd = getcwd();
@@ -977,6 +981,7 @@ final class Psalm
     }
 
     /**
+     * @param non-empty-string $current_dir
      * @param array<int, string> $args
      * @return array{Config,?string}
      */

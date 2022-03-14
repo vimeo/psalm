@@ -49,7 +49,11 @@ function getPsalmHelpText(): string
     return CliUtils::getPsalmHelpText();
 }
 
-/** @deprecated going to be removed in Psalm 5 */
+/**
+ * @param non-empty-string $current_dir
+ *
+ * @deprecated going to be removed in Psalm 5
+ */
 function initialiseConfig(
     ?string $path_to_config,
     string $current_dir,

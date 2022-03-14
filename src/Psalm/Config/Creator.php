@@ -91,6 +91,9 @@ class Creator
         );
     }
 
+    /**
+     * @param  non-empty-string  $current_dir
+     */
     public static function createBareConfig(
         string $current_dir,
         ?string $suggested_dir,

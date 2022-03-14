@@ -687,6 +687,7 @@ class Config
 
     /**
      * Creates a new config object from an XML string
+     * @param  non-empty-string $base_dir
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      * @param  non-empty-string $file_contents
      *
@@ -708,6 +709,7 @@ class Config
     }
 
     /**
+     * @param non-empty-string $base_dir
      * @param non-empty-string $file_contents
      */
     private static function loadDomDocument(string $base_dir, string $file_contents): DOMDocument
@@ -727,6 +729,7 @@ class Config
     }
 
     /**
+     * @param non-empty-string $base_dir
      * @param non-empty-string $file_contents
      *
      * @throws ConfigException
@@ -886,6 +889,7 @@ class Config
     }
 
     /**
+     * @param non-empty-string $base_dir
      * @param non-empty-string $file_contents
      *
      * @psalm-suppress MixedMethodCall

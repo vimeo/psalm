@@ -985,7 +985,7 @@ class ProjectAnalyzer
                 if ($potential_file_path && !file_exists($potential_file_path)) {
                     $containing_dir = dirname($potential_file_path);
 
-                    if (!file_exists($containing_dir)) {
+                    if ($containing_dir !== '' && !file_exists($containing_dir)) {
                         mkdir($containing_dir, 0777, true);
                     }
 

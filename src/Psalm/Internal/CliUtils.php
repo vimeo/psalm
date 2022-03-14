@@ -483,6 +483,9 @@ Miscellaneous:
 HELP;
     }
 
+    /**
+     * @param non-empty-string $current_dir
+     */
     public static function initializeConfig(
         ?string $path_to_config,
         string $current_dir,
