@@ -7,6 +7,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Expression;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -17,18 +18,17 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
-use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\HasAttributesInterface;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
-use RuntimeException;
 
 use function array_shift;
 use function array_values;
 use function assert;
 use function count;
 use function reset;
+use function strtolower;
 
 class AttributesAnalyzer
 {
@@ -41,6 +41,16 @@ class AttributesAnalyzer
         32 => 'function/method parameter',
         40 => 'promoted property',
     ];
+
+    // Copied from Attribute class since that class might not exist at runtime
+    public const TARGET_CLASS = 1;
+    public const TARGET_FUNCTION = 2;
+    public const TARGET_METHOD = 4;
+    public const TARGET_PROPERTY = 8;
+    public const TARGET_CLASS_CONSTANT = 16;
+    public const TARGET_PARAMETER = 32;
+    public const TARGET_ALL = 63;
+    public const IS_REPEATABLE = 64;
 
     /**
      * @param array<array-key, AttributeGroup> $attribute_groups
@@ -57,21 +67,25 @@ class AttributesAnalyzer
     ): void {
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
-        $attribute_iterator = self::iterateAttributeNodes($attribute_groups);
-        foreach ($storage->getAttributeStorages() as $attribute_storage) {
-            if (!$attribute_iterator->valid()) {
-                throw new RuntimeException("Expected attribute count to match attribute storage count");
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            if ($attribute->name instanceof FullyQualified) {
+                $fq_attribute_name = (string) $attribute->name;
+            } else {
+                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
             }
-            $attribute = $attribute_iterator->current();
 
-            $attribute_class_storage = $codebase->classlikes->classExists($attribute_storage->fq_class_name)
-                ? $codebase->classlike_storage_provider->get($attribute_storage->fq_class_name)
+            $attribute_name = (string) $attribute->name;
+            $attribute_name_location = new CodeLocation($source, $attribute->name);
+
+            $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name)
+                ? $codebase->classlike_storage_provider->get($fq_attribute_name)
                 : null;
 
             $attribute_class_flags = self::getAttributeClassFlags(
                 $source,
-                $attribute_storage->fq_class_name,
-                $attribute_storage->name_location,
+                $attribute_name,
+                $fq_attribute_name,
+                $attribute_name_location,
                 $attribute_class_storage,
                 $suppressed_issues
             );
@@ -79,42 +93,36 @@ class AttributesAnalyzer
             self::analyzeAttributeConstruction(
                 $source,
                 $context,
-                $attribute_storage,
+                $fq_attribute_name,
                 $attribute,
                 $suppressed_issues,
                 $storage instanceof ClassLikeStorage ? $storage : null
             );
 
-            if (($attribute_class_flags & 64) === 0) {
+            if (($attribute_class_flags & self::IS_REPEATABLE) === 0) {
                 // Not IS_REPEATABLE
-                if (isset($appearing_non_repeatable_attributes[$attribute_storage->fq_class_name])) {
+                if (isset($appearing_non_repeatable_attributes[$fq_attribute_name])) {
                     IssueBuffer::maybeAdd(
                         new InvalidAttribute(
-                            "Attribute {$attribute_storage->fq_class_name} is not repeatable",
-                            $attribute_storage->location
+                            "Attribute {$attribute_name} is not repeatable",
+                            $attribute_name_location
                         ),
                         $suppressed_issues
                     );
                 }
-                $appearing_non_repeatable_attributes[$attribute_storage->fq_class_name] = true;
+                $appearing_non_repeatable_attributes[$fq_attribute_name] = true;
             }
 
             if (($attribute_class_flags & $target) === 0) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
-                        "Attribute {$attribute_storage->fq_class_name} cannot be used on a "
+                        "Attribute {$attribute_name} cannot be used on a "
                             . self::TARGET_DESCRIPTIONS[$target],
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
             }
-
-            $attribute_iterator->next();
-        }
-
-        if ($attribute_iterator->valid()) {
-            throw new RuntimeException("Expected attribute count to match attribute storage count");
         }
     }
 
@@ -124,15 +132,17 @@ class AttributesAnalyzer
     private static function analyzeAttributeConstruction(
         SourceAnalyzer $source,
         Context $context,
-        AttributeStorage $attribute_storage,
+        string $fq_attribute_name,
         Attribute $attribute,
         array $suppressed_issues,
         ?ClassLikeStorage $classlike_storage = null
     ): void {
+        $attribute_name_location = new CodeLocation($source, $attribute->name);
+
         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $source,
-            $attribute_storage->fq_class_name,
-            $attribute_storage->location,
+            $fq_attribute_name,
+            $attribute_name_location,
             null,
             null,
             $suppressed_issues,
@@ -148,12 +158,12 @@ class AttributesAnalyzer
             return;
         }
 
-        if ($attribute_storage->fq_class_name === 'Attribute' && $classlike_storage) {
+        if (strtolower($fq_attribute_name) === 'attribute' && $classlike_storage) {
             if ($classlike_storage->is_trait) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Traits cannot act as attribute classes',
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
@@ -161,7 +171,7 @@ class AttributesAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Interfaces cannot act as attribute classes',
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
@@ -169,7 +179,7 @@ class AttributesAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Abstract classes cannot act as attribute classes',
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
@@ -179,7 +189,7 @@ class AttributesAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Classes with protected/private constructors cannot act as attribute classes',
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
@@ -187,7 +197,7 @@ class AttributesAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         'Enums cannot act as attribute classes',
-                        $attribute_storage->name_location
+                        $attribute_name_location
                     ),
                     $suppressed_issues
                 );
@@ -200,16 +210,21 @@ class AttributesAnalyzer
         );
         $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
 
+        $had_returned = $context->has_returned;
+        $context->has_returned = false;
+
         IssueBuffer::startRecording();
         $statements_analyzer->analyze(
             [new Expression(new New_($attribute->name, $attribute->args, $attribute->getAttributes()))],
             // Use a new Context for the Attribute attribute so that it can't access `self`
-            $attribute_storage->fq_class_name === "Attribute" ? new Context() : $context
+            strtolower($fq_attribute_name) === "attribute" ? new Context() : $context
         );
+        $context->has_returned = $had_returned;
+
         $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
         foreach ($issues as $issue) {
-            if ($issue instanceof UndefinedClass && $issue->fq_classlike_name === $attribute_storage->fq_class_name) {
+            if ($issue instanceof UndefinedClass && $issue->fq_classlike_name === $fq_attribute_name) {
                 // Remove UndefinedClass for the attribute, since we already added UndefinedAttribute
                 continue;
             }
@@ -223,24 +238,25 @@ class AttributesAnalyzer
     private static function getAttributeClassFlags(
         SourceAnalyzer $source,
         string $attribute_name,
-        CodeLocation $attribute_location,
+        string $fq_attribute_name,
+        CodeLocation $attribute_name_location,
         ?ClassLikeStorage $attribute_class_storage,
         array $suppressed_issues
     ): int {
-        if ($attribute_name === "Attribute") {
+        if (strtolower($fq_attribute_name) === "attribute") {
             // We override this here because we still want to analyze attributes
             // for PHP 7.4 when the Attribute class doesn't yet exist.
-            return 1;
+            return self::TARGET_CLASS;
         }
 
         if ($attribute_class_storage === null) {
-            return 63; // Defaults to TARGET_ALL
+            return self::TARGET_ALL; // Defaults to TARGET_ALL
         }
 
         foreach ($attribute_class_storage->attributes as $attribute_attribute) {
             if ($attribute_attribute->fq_class_name === 'Attribute') {
                 if (!$attribute_attribute->args) {
-                    return 63; // Defaults to TARGET_ALL
+                    return self::TARGET_ALL; // Defaults to TARGET_ALL
                 }
 
                 $first_arg = reset($attribute_attribute->args);
@@ -258,7 +274,7 @@ class AttributesAnalyzer
                 }
 
                 if (!$first_arg_type->isSingleIntLiteral()) {
-                    return 63; // Fall back to default if it's invalid
+                    return self::TARGET_ALL; // Fall back to default if it's invalid
                 }
 
                 return $first_arg_type->getSingleIntLiteral()->value;
@@ -268,12 +284,12 @@ class AttributesAnalyzer
         IssueBuffer::maybeAdd(
             new InvalidAttribute(
                 "The class {$attribute_name} doesn't have the Attribute attribute",
-                $attribute_location
+                $attribute_name_location
             ),
             $suppressed_issues
         );
 
-        return 63; // Fall back to default if it's invalid
+        return self::TARGET_ALL; // Fall back to default if it's invalid
     }
 
     /**
@@ -309,22 +325,22 @@ class AttributesAnalyzer
 
         switch ($method_id) {
             case "ReflectionClass::getattributes":
-                $target = 1;
+                $target = self::TARGET_CLASS;
                 break;
             case "ReflectionFunction::getattributes":
-                $target = 2;
+                $target = self::TARGET_FUNCTION;
                 break;
             case "ReflectionMethod::getattributes":
-                $target = 4;
+                $target = self::TARGET_METHOD;
                 break;
             case "ReflectionProperty::getattributes":
-                $target = 8;
+                $target = self::TARGET_PROPERTY;
                 break;
             case "ReflectionClassConstant::getattributes":
-                $target = 16;
+                $target = self::TARGET_CLASS_CONSTANT;
                 break;
             case "ReflectionParameter::getattributes":
-                $target = 32;
+                $target = self::TARGET_PARAMETER;
                 break;
             default:
                 return;
@@ -357,6 +373,7 @@ class AttributesAnalyzer
         $arg_location = new CodeLocation($statements_analyzer, $arg);
         $class_attribute_target = self::getAttributeClassFlags(
             $statements_analyzer,
+            $class_string->value,
             $class_string->value,
             $arg_location,
             $class_storage,
