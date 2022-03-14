@@ -1789,7 +1789,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     /** @param non-empty-string $s */
                     function foo(string $s): string { return $s; }
-		    function bar(string $s, string $s2): void {
+                    function bar(string $s, string $s2): void {
                         if (extension_loaded($s)) { foo($s); }
                         if (file_exists($s)) { foo($s); }
                         if (function_exists($s)) { foo($s); }
