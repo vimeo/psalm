@@ -73,8 +73,8 @@ class AlgebraTest extends TestCase
         $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertCount(3, $negated_formula);
-        $this->assertSame('$a is not string', (string)$negated_formula[0]);
-        $this->assertSame('$a is not int', (string)$negated_formula[1]);
+        $this->assertSame('$a is not int', (string)$negated_formula[0]);
+        $this->assertSame('$a is not string', (string)$negated_formula[1]);
         $this->assertSame('!$b', (string)$negated_formula[2]);
     }
 
