@@ -106,7 +106,7 @@ class Clause
             $possibility_strings = [];
 
             foreach ($possibilities as $i => $_) {
-                krsort($possibilities[$i]);
+                ksort($possibilities[$i]);
                 $possibility_strings[$i] = array_keys($possibilities[$i]);
             }
 
