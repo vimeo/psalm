@@ -1017,7 +1017,7 @@ class FunctionLikeDocblockScanner
                 }
             } elseif ($classlike_storage
                 && !$classlike_storage->user_defined
-                && $codebase->analysis_php_version_id >= 80000
+                && $codebase->analysis_php_version_id >= 8_00_00
             ) {
                 $new = [];
                 /** @var SplQueue<array<string, Atomic>> */

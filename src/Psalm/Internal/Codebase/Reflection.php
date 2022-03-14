@@ -311,7 +311,7 @@ class Reflection
             $storage->setParams($callables[0]->params);
 
             $storage->return_type = $callables[0]->return_type;
-            if ($this->codebase->analysis_php_version_id >= 80000) {
+            if ($this->codebase->analysis_php_version_id >= 8_00_00) {
                 $storage->signature_return_type = $storage->return_type;
             }
             $storage->return_type->queueClassLikesForScanning($this->codebase);
