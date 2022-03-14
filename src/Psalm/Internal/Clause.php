@@ -16,7 +16,6 @@ use function array_values;
 use function count;
 use function implode;
 use function json_encode;
-use function krsort;
 use function ksort;
 use function md5;
 use function reset;
