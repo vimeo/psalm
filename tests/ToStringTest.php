@@ -178,6 +178,7 @@ class ToStringTest extends TestCase
                     function foo(Stringable $s): void {}
 
                     class Bar {
+                        /** @psalm-suppress MethodSignatureMismatch */
                         public function __toString() {
                             return "foo";
                         }
@@ -231,6 +232,7 @@ class ToStringTest extends TestCase
             'invalidToStringReturnType' => [
                 'code' => '<?php
                     class A {
+                        /** @psalm-suppress MethodSignatureMismatch */
                         function __toString(): void { }
                     }',
                 'error_message' => 'InvalidToString',
@@ -245,6 +247,7 @@ class ToStringTest extends TestCase
             'invalidInferredToStringReturnTypeWithTruePhp8' => [
                 'code' => '<?php
                     class A {
+                        /** @psalm-suppress MethodSignatureMismatch */
                         function __toString() {
                             /** @psalm-suppress InvalidReturnStatement */
                             return true;

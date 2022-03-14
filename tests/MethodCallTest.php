@@ -974,6 +974,7 @@ class MethodCallTest extends TestCase
 
                     class Datetime extends \DateTime
                     {
+                        /** @psalm-suppress MethodSignatureMismatch */
                         public static function createFromInterface(\DatetimeInterface $datetime): \DateTime
                         {
                             return parent::createFromInterface($datetime);

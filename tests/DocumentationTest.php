@@ -309,6 +309,10 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
+                case 'InvalidToString':
+                    $ignored_issues = ['MethodSignatureMismatch'];
+                    break;
+
                 case 'AmbiguousConstantInheritance':
                 case 'DeprecatedConstant':
                 case 'DuplicateEnumCase':

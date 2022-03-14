@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
+use RuntimeException;
 use SplDoublyLinkedList;
 use SplQueue;
 
@@ -1033,7 +1034,7 @@ class FunctionLikeDocblockScanner
                     }
                 }
                 if (!$new) {
-                    throw new \RuntimeException('Impossible!');
+                    throw new RuntimeException('Impossible!');
                 }
                 $storage->signature_return_type = new Union($new);
             }
