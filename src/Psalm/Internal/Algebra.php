@@ -442,6 +442,21 @@ class Algebra
             return $seed_clauses;
         }
 
+        $complexity_upper_bound = count($seed_clauses);
+
+        foreach ($clauses as $clause) {
+            $i = 0;
+            foreach ($clause->possibilities as $p) {
+                $i += count($p);
+            }
+
+            $complexity_upper_bound *= $i;
+
+            if ($complexity_upper_bound > 20_000) {
+                throw new ComplicatedExpressionException();
+            }
+        }
+
         while ($clauses) {
             $clause = array_pop($clauses);
 
