@@ -974,14 +974,13 @@ class MethodCallTest extends TestCase
 
                     class Datetime extends \DateTime
                     {
-                        /** @psalm-suppress MethodSignatureMismatch */
                         public static function createFromInterface(\DatetimeInterface $datetime): \DateTime
                         {
                             return parent::createFromInterface($datetime);
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'MethodSignatureMismatch'],
                 'php_version' => '8.0'
             ],
             'nullsafeShortCircuit' => [
