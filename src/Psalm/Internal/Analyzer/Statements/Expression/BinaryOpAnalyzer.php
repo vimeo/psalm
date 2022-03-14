@@ -292,7 +292,7 @@ class BinaryOpAnalyzer
                                             new DocblockTypeContradiction(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                null
+                                                "strlen($atomic_right_type) !== $string_length"
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         );
@@ -301,7 +301,7 @@ class BinaryOpAnalyzer
                                             new TypeDoesNotContainType(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                null
+                                                "strlen($atomic_right_type) !== $string_length"
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         );
@@ -312,7 +312,7 @@ class BinaryOpAnalyzer
                                             new RedundantConditionGivenDocblockType(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                null
+                                                "strlen($atomic_right_type) !== $string_length"
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         );
@@ -321,7 +321,7 @@ class BinaryOpAnalyzer
                                             new RedundantCondition(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                null
+                                                "strlen($atomic_right_type) !== $string_length"
                                             ),
                                             $statements_analyzer->getSuppressedIssues()
                                         );

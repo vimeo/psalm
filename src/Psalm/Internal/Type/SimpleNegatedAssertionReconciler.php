@@ -125,7 +125,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' with docblock-defined type '
                                     . $existing_var_type . ' and !isset assertion',
                                 $code_location,
-                                null
+                                'cannot resolve !isset '.$existing_var_type. ' ' . $key
                             ),
                             $suppressed_issues
                         );
@@ -135,7 +135,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' with type '
                                     . $existing_var_type . ' and !isset assertion',
                                 $code_location,
-                                null
+                                'cannot resolve !isset '.$existing_var_type. ' ' . $key
                             ),
                             $suppressed_issues
                         );

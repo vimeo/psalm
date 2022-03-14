@@ -1526,7 +1526,7 @@ class AssertionReconciler extends Reconciler
                     new TypeDoesNotContainType(
                         'Cannot allow string comparison to object for ' . $key,
                         $code_location,
-                        null
+                        "no string comparison to $key"
                     ),
                     $suppressed_issues
                 );

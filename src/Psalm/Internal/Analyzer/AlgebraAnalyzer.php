@@ -68,7 +68,7 @@ class AlgebraAnalyzer
                     new RedundantCondition(
                         $formula_2_clause . ' has already been asserted',
                         new CodeLocation($statements_analyzer, $stmt),
-                        null
+                        'already asserted ' . $formula_2_clause
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
