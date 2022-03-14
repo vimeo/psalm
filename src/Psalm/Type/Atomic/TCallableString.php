@@ -13,6 +13,11 @@ final class TCallableString extends TNonFalsyString
         return 'callable-string';
     }
 
+    public function getId(bool $exact = true, bool $nested = false): string
+    {
+        return $this->getKey();
+    }
+
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
