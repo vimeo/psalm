@@ -15,13 +15,11 @@ use function array_map;
 use function array_values;
 use function count;
 use function implode;
-use function json_encode;
 use function ksort;
 use function md5;
 use function reset;
+use function serialize;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @internal
@@ -109,7 +107,7 @@ class Clause
                 $possibility_strings[$i] = array_keys($possibilities[$i]);
             }
 
-            $this->hash = md5(json_encode($possibility_strings, JSON_THROW_ON_ERROR));
+            $this->hash = md5(serialize($possibility_strings));
         }
 
         $this->possibilities = $possibilities;
