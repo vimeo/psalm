@@ -443,6 +443,8 @@ Allows you to hard-code the number of threads Psalm will use (similar to `--thre
 This setting controls the maximum length of literal strings that will be transformed into a literal string type during Psalm analysis.  
 Strings longer than this value (by default 1000 bytes) will be transformed in a generic `non-empty-string` type, instead.  
 
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
+
 #### maxShapedArraySize
 ```xml
 <psalm
@@ -451,6 +453,8 @@ Strings longer than this value (by default 1000 bytes) will be transformed in a 
 ```
 This setting controls the maximum size of shaped arrays that will be transformed into a shaped `array{key1: "value", key2: T}` type during Psalm analysis.  
 Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.  
+
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
 
 ## Project settings
 
