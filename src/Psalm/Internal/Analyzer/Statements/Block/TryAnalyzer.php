@@ -66,24 +66,18 @@ class TryAnalyzer
 
         $old_context = clone $context;
 
-        if ($all_catches_leave && !$stmt->finally) {
-            $try_context = $context;
-        } else {
-            $try_context = clone $context;
+        $try_context = clone $context;
 
-            if ($codebase->alter_code) {
-                $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
-            }
+        if ($codebase->alter_code) {
+            $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
 
-            if ($stmt->finally) {
-                $try_context->finally_scope = new FinallyScope($try_context->vars_in_scope);
-            }
+        if ($stmt->finally) {
+            $try_context->finally_scope = new FinallyScope($try_context->vars_in_scope);
         }
 
         $assigned_var_ids = $try_context->assigned_var_ids;
         $context->assigned_var_ids = [];
-
-        $old_referenced_var_ids = $try_context->referenced_var_ids;
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
@@ -118,34 +112,22 @@ class TryAnalyzer
             $newly_assigned_var_ids
         );
 
-        $possibly_referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $old_referenced_var_ids
-        );
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!isset($try_context->vars_in_scope[$var_id])) {
+                $try_context->vars_in_scope[$var_id] = clone $type;
 
-        if ($try_context !== $context) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                if (!isset($try_context->vars_in_scope[$var_id])) {
-                    $try_context->vars_in_scope[$var_id] = clone $type;
-
-                    $context->vars_in_scope[$var_id]->possibly_undefined = true;
-                    $context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
-                } else {
-                    $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $try_context->vars_in_scope[$var_id],
-                        $type
-                    );
-                }
+                $context->vars_in_scope[$var_id]->possibly_undefined = true;
+                $context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
+            } else {
+                $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $try_context->vars_in_scope[$var_id],
+                    $type
+                );
             }
-
-            $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
-            $try_context->possibly_thrown_exceptions = $context->possibly_thrown_exceptions;
-
-            $context->referenced_var_ids = array_intersect_key(
-                $try_context->referenced_var_ids,
-                $context->referenced_var_ids
-            );
         }
+
+        $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
+        $try_context->possibly_thrown_exceptions = $context->possibly_thrown_exceptions;
 
         $try_leaves_loop = $context->loop_scope
             && $context->loop_scope->final_actions
@@ -350,7 +332,7 @@ class TryAnalyzer
                 }
             }
 
-            $old_catch_assigned_var_ids = $catch_context->referenced_var_ids;
+            $old_catch_assigned_var_ids = $catch_context->assigned_var_ids;
 
             $catch_context->assigned_var_ids = [];
 
@@ -373,16 +355,6 @@ class TryAnalyzer
             $new_catch_assigned_var_ids = $catch_context->assigned_var_ids;
 
             $catch_context->assigned_var_ids += $old_catch_assigned_var_ids;
-
-            $context->referenced_var_ids = array_intersect_key(
-                $catch_context->referenced_var_ids,
-                $context->referenced_var_ids
-            );
-
-            $possibly_referenced_var_ids = array_merge(
-                $catch_context->referenced_var_ids,
-                $possibly_referenced_var_ids
-            );
 
             if ($catch_context->collect_exceptions) {
                 $context->mergeExceptions($catch_context);

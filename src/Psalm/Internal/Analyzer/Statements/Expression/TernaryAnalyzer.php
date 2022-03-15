@@ -212,9 +212,9 @@ class TernaryAnalyzer
                 return false;
             }
 
-            $context->referenced_var_ids = array_merge(
-                $context->referenced_var_ids,
-                $if_context->referenced_var_ids
+            $context->cond_referenced_var_ids = array_merge(
+                $context->cond_referenced_var_ids,
+                $if_context->cond_referenced_var_ids
             );
         }
 
@@ -302,9 +302,9 @@ class TernaryAnalyzer
             $t_else_context->vars_possibly_in_scope
         );
 
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $t_else_context->referenced_var_ids
+        $context->cond_referenced_var_ids = array_merge(
+            $context->cond_referenced_var_ids,
+            $t_else_context->cond_referenced_var_ids
         );
 
         $lhs_type = null;

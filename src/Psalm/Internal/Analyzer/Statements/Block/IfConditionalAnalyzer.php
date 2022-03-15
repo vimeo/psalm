@@ -98,8 +98,8 @@ class IfConditionalAnalyzer
 
         $pre_condition_vars_in_scope = $outer_context->vars_in_scope;
 
-        $referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = [];
+        $referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = [];
 
         $pre_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = [];
@@ -128,8 +128,8 @@ class IfConditionalAnalyzer
             $first_cond_assigned_var_ids
         );
 
-        $first_cond_referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = array_merge(
+        $first_cond_referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = array_merge(
             $referenced_var_ids,
             $first_cond_referenced_var_ids
         );
@@ -161,7 +161,7 @@ class IfConditionalAnalyzer
             $if_conditional_context->assigned_var_ids = [];
 
             $referenced_var_ids = $first_cond_referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = [];
+            $if_conditional_context->cond_referenced_var_ids = [];
 
             $was_inside_conditional = $if_conditional_context->inside_conditional;
 
@@ -174,8 +174,8 @@ class IfConditionalAnalyzer
             $if_conditional_context->inside_conditional = $was_inside_conditional;
 
             /** @var array<string, bool> */
-            $more_cond_referenced_var_ids = $if_conditional_context->referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = array_merge(
+            $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
+            $if_conditional_context->cond_referenced_var_ids = array_merge(
                 $more_cond_referenced_var_ids,
                 $referenced_var_ids
             );

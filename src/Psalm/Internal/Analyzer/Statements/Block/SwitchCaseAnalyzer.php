@@ -478,11 +478,6 @@ class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $case_context->referenced_var_ids
-        );
-
         if ($case_exit_type !== 'return_throw') {
             if (self::handleNonReturningCase(
                 $statements_analyzer,

@@ -210,7 +210,7 @@ class AssignmentAnalyzer
         }
 
         if ($extended_var_id) {
-            unset($context->referenced_var_ids[$extended_var_id]);
+            unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }

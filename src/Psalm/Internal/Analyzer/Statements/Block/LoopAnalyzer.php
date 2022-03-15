@@ -19,7 +19,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
-use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -107,8 +106,6 @@ class LoopAnalyzer
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
         }
-
-        $pre_outer_context = $loop_parent_context;
 
         if ($assignment_depth === 0 || $does_always_break) {
             $continue_context = clone $loop_context;
@@ -389,8 +386,6 @@ class LoopAnalyzer
                     IssueBuffer::bubbleUp($recorded_issue);
                 }
             }
-
-            $pre_outer_context = $original_parent_context;
         }
 
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
@@ -499,14 +494,6 @@ class LoopAnalyzer
             }
         }
 
-        $loop_context->referenced_var_ids = array_merge(
-            array_intersect_key(
-                $continue_context->referenced_var_ids,
-                $pre_outer_context->vars_in_scope
-            ),
-            $loop_context->referenced_var_ids
-        );
-
         if ($always_enters_loop) {
             foreach ($continue_context->vars_in_scope as $var_id => $type) {
                 // if there are break statements in the loop it's not certain
@@ -590,8 +577,8 @@ class LoopAnalyzer
         Context $outer_context,
         bool $is_do
     ): array {
-        $pre_referenced_var_ids = $loop_context->referenced_var_ids;
-        $loop_context->referenced_var_ids = [];
+        $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
+        $loop_context->cond_referenced_var_ids = [];
 
         $was_inside_conditional = $loop_context->inside_conditional;
 
@@ -605,8 +592,8 @@ class LoopAnalyzer
 
         $loop_context->inside_conditional = $was_inside_conditional;
 
-        $new_referenced_var_ids = $loop_context->referenced_var_ids;
-        $loop_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+        $new_referenced_var_ids = $loop_context->cond_referenced_var_ids;
+        $loop_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
 
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 

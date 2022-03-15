@@ -152,11 +152,6 @@ class IfAnalyzer
             $outer_context->vars_possibly_in_scope
         );
 
-        $outer_context->referenced_var_ids = array_merge(
-            $if_context->referenced_var_ids,
-            $outer_context->referenced_var_ids
-        );
-
         $old_if_context = clone $if_context;
         
         $codebase = $statements_analyzer->getCodebase();

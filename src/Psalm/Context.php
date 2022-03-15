@@ -272,11 +272,11 @@ final class Context
     public $collect_exceptions = false;
 
     /**
-     * A list of variables that have been referenced
+     * A list of variables that have been referenced in conditionals
      *
      * @var array<string, bool>
      */
-    public $referenced_var_ids = [];
+    public $cond_referenced_var_ids = [];
 
     /**
      * A list of variables that have been passed by reference (where we know their type)
@@ -616,7 +616,7 @@ final class Context
         }
         unset(
             $this->vars_in_scope[$remove_var_id],
-            $this->referenced_var_ids[$remove_var_id],
+            $this->cond_referenced_var_ids[$remove_var_id],
             $this->referenced_counts[$remove_var_id],
             $this->references_in_scope[$remove_var_id],
             $this->references_to_external_scope[$remove_var_id],
@@ -836,7 +836,7 @@ final class Context
         $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
-            $this->referenced_var_ids[$var_name] = true;
+            $this->cond_referenced_var_ids[$var_name] = true;
         }
 
         return isset($this->vars_in_scope[$var_name]);

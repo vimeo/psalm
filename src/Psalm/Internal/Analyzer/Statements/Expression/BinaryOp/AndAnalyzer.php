@@ -51,13 +51,13 @@ class AndAnalyzer
             return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
         }
 
-        $pre_referenced_var_ids = $context->referenced_var_ids;
+        $pre_referenced_var_ids = $context->cond_referenced_var_ids;
 
         $pre_assigned_var_ids = $context->assigned_var_ids;
 
         $left_context = clone $context;
 
-        $left_context->referenced_var_ids = [];
+        $left_context->cond_referenced_var_ids = [];
         $left_context->assigned_var_ids = [];
 
         /** @var list<string> $left_context->reconciled_expression_clauses */
@@ -89,8 +89,8 @@ class AndAnalyzer
         }
 
         /** @var array<string, bool> */
-        $left_referenced_var_ids = $left_context->referenced_var_ids;
-        $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
+        $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
+        $context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
         $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
@@ -161,9 +161,9 @@ class AndAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
-        $context->referenced_var_ids = array_merge(
-            $right_context->referenced_var_ids,
-            $left_context->referenced_var_ids
+        $context->cond_referenced_var_ids = array_merge(
+            $right_context->cond_referenced_var_ids,
+            $left_context->cond_referenced_var_ids
         );
 
         if ($context->inside_conditional) {
@@ -188,9 +188,9 @@ class AndAnalyzer
                 $context->vars_in_scope
             );
 
-            $if_body_context->referenced_var_ids = array_merge(
-                $if_body_context->referenced_var_ids,
-                $context->referenced_var_ids,
+            $if_body_context->cond_referenced_var_ids = array_merge(
+                $if_body_context->cond_referenced_var_ids,
+                $context->cond_referenced_var_ids,
             );
 
             $if_body_context->assigned_var_ids = array_merge(
