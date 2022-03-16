@@ -11,10 +11,10 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
-use function json_encode;
 use function ksort;
 use function md5;
 use function reset;
+use function serialize;
 use function sort;
 use function strpos;
 use function substr;
@@ -110,7 +110,7 @@ class Clause
                 sort($possibilities[$i]);
             }
 
-            $this->hash = md5((string) json_encode($possibilities));
+            $this->hash = md5(serialize($possibilities));
         }
     }
 
