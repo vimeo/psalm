@@ -31,7 +31,7 @@ class Redis {
      */
     public function acl(string $subcmd, ...$args);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function append(string $key, mixed $value);
 
     public function auth(mixed $credentials): bool;
@@ -79,10 +79,10 @@ class Redis {
 
     public function debug(string $key): string;
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function decr(string $key, int $by = 1);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function decrBy(string $key, int $value);
 
     /**
@@ -101,7 +101,7 @@ class Redis {
 
     public function dump(string $key): string;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function echo(string $str);
 
     public function eval(string $script, array $keys = null, int $num_keys = 0): mixed;
@@ -110,7 +110,7 @@ class Redis {
 
     public function exec(): Redis|array|false;
 
-    /** @return int|Redis|bool */
+	/** @return int|Redis|bool */
     public function exists(mixed $key, mixed ...$other_keys);
 
     public function expire(string $key, int $timeout): Redis|bool;
@@ -141,12 +141,12 @@ class Redis {
 
     public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function get(string $key);
 
     public function getAuth(): mixed;
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function getBit(string $key, int $idx);
 
     public function getDBNum(): int;
@@ -163,12 +163,12 @@ class Redis {
 
     public function getPort(): int;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function getRange(string $key, int $start, int $end);
 
     public function getReadTimeout(): int;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function getset(string $key, mixed $value);
 
     public function getTimeout(): int;
@@ -203,20 +203,20 @@ class Redis {
 
     public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function incr(string $key, int $by = 1);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function incrBy(string $key, int $value);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function incrByFloat(string $key, float $value);
 
     public function info(string $opt = null): Redis|array|false;
 
     public function isConnected(): bool;
 
-    /** @return array|Redis */
+	/** @return array|Redis */
     public function keys(string $pattern);
 
     /**
@@ -230,7 +230,7 @@ class Redis {
 
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function lPop(string $key);
 
     /**
@@ -245,10 +245,10 @@ class Redis {
      */
     public function rPush(string $key, ...$elements);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function lPushx(string $key, mixed $value);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function rPushx(string $key, mixed $value);
 
     public function lSet(string $key, int $index, mixed $value): Redis|bool;
@@ -266,7 +266,7 @@ class Redis {
 
     public function ltrim(string $key, int $start , int $end): Redis|bool;
 
-    /** @return array|Redis */
+	/** @return array|Redis */
     public function mget(array $keys);
 
     public function migrate(string $host, int $port, string $key, string $dst, int $timeout, bool $copy = false, bool $replace = false): bool;
@@ -301,7 +301,7 @@ public function persist(string $key): bool;
 
     public function pfmerge(string $dst, array $keys): bool;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function ping(string $key = NULL);
 
     public function pipeline(): bool|Redis;
@@ -325,18 +325,18 @@ public function persist(string $key): bool;
 
     public function punsubscribe(array $patterns): array;
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function rPop(string $key);
 
-    /** @return string|Redis */
+	/** @return string|Redis */
     public function randomKey();
 
     public function rawcommand(string $command, mixed ...$args): mixed;
 
-    /** @return bool|Redis */
+	/** @return bool|Redis */
     public function rename(string $key_src, string $key_dst);
 
-    /** @return bool|Redis */
+	/** @return bool|Redis */
     public function renameNx(string $key_src, string $key_dst);
 
     public function restore(string $key, int $timeout, string $value): bool;
@@ -384,10 +384,10 @@ public function persist(string $key): bool;
     /** @return bool|Redis */
     public function set(string $key, mixed $value, mixed $opt = NULL);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function setBit(string $key, int $idx, bool $value);
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function setRange(string $key, int $start, string $value);
 
 
@@ -396,7 +396,7 @@ public function persist(string $key): bool;
     /** @return bool|Redis */
     public function setex(string $key, int $expire, mixed $value);
 
-    /** @return bool|array|Redis */
+	/** @return bool|array|Redis */
     public function setnx(string $key, mixed $value);
 
     public function sismember(string $key, mixed $value): Redis|bool;
@@ -431,7 +431,7 @@ public function persist(string $key): bool;
 
     public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function strlen(string $key);
 
     public function subscribe(string $channel, string ...$other_channels): array;
@@ -442,7 +442,7 @@ public function persist(string $key): bool;
 
     public function ttl(string $key): Redis|int|false;
 
-    /** @return int|Redis */
+	/** @return int|Redis */
     public function type(string $key);
 
        /**
@@ -452,7 +452,7 @@ public function persist(string $key): bool;
 
     public function unsubscribe(string $channel, string ...$other_channels): array;
 
-    /** @return bool|Redis */
+	/** @return bool|Redis */
     public function unwatch();
 
     /**
