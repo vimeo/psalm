@@ -7,7 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Represents the type that is the result of a bitmask combination of its parameters.
  * This is the same concept as TIntMask but TIntMaskOf is used with with a reference to constants in code
- * `int-mask<MyClass::CLASS_CONSTANT_*>` will corresponds to `0|1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
+ * `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `0|1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
  */
 final class TIntMaskOf extends TInt
 {
