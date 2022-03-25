@@ -1332,3 +1332,18 @@ function is_a($object_or_class, string $class, $allow_string = false): bool{}
  * @psalm-ignore-falsable-return
  */
 function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false{}
+
+/**
+ * @template TRead of null|array<array-key, resource>
+ * @template TWrite of null|array<array-key, resource>
+ * @template TExcept of null|array<array-key, resource>
+ * @param TRead $read
+ * @param TWrite $write
+ * @param TExcept $except
+ * @return false|int<0, max>
+ * @param-out (TRead is null ? null : array<array-key, resource>) $read
+ * @param-out (TWrite is null ? null : array<array-key, resource>) $write
+ * @param-out (TExcept is null ? null : array<array-key, resource>) $except
+ * @psalm-suppress ReferenceConstraintViolation
+ */
+function stream_select(null|array &$read, null|array &$write, null|array &$except, null|int $seconds, null|int $microseconds = null) : bool|int {}

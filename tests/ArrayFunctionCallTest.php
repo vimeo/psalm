@@ -1297,34 +1297,40 @@ class ArrayFunctionCallTest extends TestCase
                     function makeKeyedArray(): array { return []; }
                     $a = array_column([[1], [2], [3]], 0);
                     $b = array_column([["a" => 1], ["a" => 2], ["a" => 3]], "a");
-                    $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
-                    $d = array_column([], 0);
-                    $e = array_column(makeMixedArray(), 0);
-                    $f = array_column(makeMixedArray(), 0, "k");
-                    $g = array_column(makeMixedArray(), 0, null);
-                    $h = array_column(makeGenericArray(), 0);
-                    $i = array_column(makeShapeArray(), 0);
-                    $j = array_column(makeUnionArray(), 0);
-                    $k = array_column([[0 => "test"]], 0);
-                    $l = array_column(makeKeyedArray(), "y");
-                    $m_prepare = makeKeyedArray();
-                    assert($m_prepare !== []);
-                    $m = array_column($m_prepare, "y");
+                    $c = array_column([["a" => 1], ["a" => 2], ["a" => 3]], null, "a");
+                    $d = array_column([["a" => 1], ["a" => 2], ["a" => 3]], null, "b");
+                    $e = array_column([["a" => 1], ["a" => 2], ["a" => 3]], rand(0,1) ? "a" : "b", "b");
+                    $f = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
+                    $g = array_column([], 0);
+                    $h = array_column(makeMixedArray(), 0);
+                    $i = array_column(makeMixedArray(), 0, "k");
+                    $j = array_column(makeMixedArray(), 0, null);
+                    $k = array_column(makeGenericArray(), 0);
+                    $l = array_column(makeShapeArray(), 0);
+                    $m = array_column(makeUnionArray(), 0);
+                    $n = array_column([[0 => "test"]], 0);
+                    $o = array_column(makeKeyedArray(), "y");
+                    $p_prepare = makeKeyedArray();
+                    assert($p_prepare !== []);
+                    $p = array_column($p_prepare, "y");
                 ',
                 'assertions' => [
                     '$a' => 'non-empty-list<int>',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'non-empty-array<string, int>',
-                    '$d' => 'list<mixed>',
-                    '$e' => 'list<mixed>',
-                    '$f' => 'array<array-key, mixed>',
+                    '$c' => 'array<int, array{a: int}>',
+                    '$d' => 'array<array-key, array{a: int}>',
+                    '$e' => 'array<array-key, mixed>',
+                    '$f' => 'non-empty-array<string, int>',
                     '$g' => 'list<mixed>',
                     '$h' => 'list<mixed>',
-                    '$i' => 'list<string>',
+                    '$i' => 'array<array-key, mixed>',
                     '$j' => 'list<mixed>',
-                    '$k' => 'non-empty-list<string>',
-                    '$l' => 'list<int>',
-                    '$m' => 'list<int>',
+                    '$k' => 'list<mixed>',
+                    '$l' => 'list<string>',
+                    '$m' => 'list<mixed>',
+                    '$n' => 'non-empty-list<string>',
+                    '$o' => 'list<int>',
+                    '$p' => 'list<int>',
                 ],
             ],
             'splatArrayIntersect' => [

@@ -1735,6 +1735,24 @@ class ArrayAssignmentTest extends TestCase
                 [],
                 '8.1'
             ],
+            'allowsArrayAccessNullOffset' => [
+                '<?php
+                    /**
+                     * @template-implements ArrayAccess<int, string>
+                     */
+                    class C implements ArrayAccess {
+                        public function offsetExists(int $offset) : bool { return true; }
+
+                        public function offsetGet($offset) : string { return "";}
+
+                        public function offsetSet(int $offset, string $value) : void {}
+
+                        public function offsetUnset(int $offset) : void { }
+                    }
+
+                    $c = new C();
+                    $c[] = "hello";'
+            ],
         ];
     }
 
@@ -1850,25 +1868,6 @@ class ArrayAssignmentTest extends TestCase
                         $arr["foo"][0] = "5";
                     }',
                 'error_message' => 'MixedArrayAssignment',
-            ],
-            'implementsArrayAccessPreventNullOffset' => [
-                '<?php
-                    /**
-                     * @template-implements ArrayAccess<int, string>
-                     */
-                    class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
-
-                        public function offsetGet($offset) : string { return "";}
-
-                        public function offsetSet(int $offset, string $value) : void {}
-
-                        public function offsetUnset(int $offset) : void { }
-                    }
-
-                    $c = new C();
-                    $c[] = "hello";',
-                'error_message' => 'NullArgument',
             ],
             'storageKeyMustBeObject' => [
                 '<?php

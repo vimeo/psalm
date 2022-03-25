@@ -824,7 +824,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             $storage,
             $this->function->attrGroups,
-            $storage instanceof MethodStorage ? 4 : 2,
+            $storage instanceof MethodStorage ? AttributesAnalyzer::TARGET_METHOD : AttributesAnalyzer::TARGET_FUNCTION,
             $storage->suppressed_issues + $this->getSuppressedIssues()
         );
 
@@ -1272,7 +1272,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
                 $function_param,
                 $param_stmts[$offset]->attrGroups,
-                $function_param->promoted_property ? 40 : 32,
+                AttributesAnalyzer::TARGET_PARAMETER
+                    | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
                 $storage->suppressed_issues + $this->getSuppressedIssues()
             );
         }

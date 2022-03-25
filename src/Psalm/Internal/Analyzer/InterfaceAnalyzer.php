@@ -102,7 +102,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             $interface_context,
             $class_storage,
             $this->class->attrGroups,
-            1,
+            AttributesAnalyzer::TARGET_CLASS,
             $class_storage->suppressed_issues + $this->getSuppressedIssues()
         );
 

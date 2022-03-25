@@ -904,6 +904,11 @@ class ValueTest extends TestCase
                         if (empty($s)) {}
                     }',
             ],
+            'falseDateInterval' => [
+                '<?php
+                    $interval = \DateInterval::createFromDateString("30 дней");
+                    if ($interval === false) {}',
+            ],
         ];
     }
 
