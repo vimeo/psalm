@@ -697,6 +697,17 @@ class IntRangeTest extends TestCase
                     '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
                 ],
             ],
+            'minMaxInNamespace' => [
+                '<?php
+                    namespace Foo {
+                        /**
+                         * @param int<0, max> $_a
+                         * @param int<min, 0> $_b
+                         */
+                        function bar(int $_a, int $_b): void {}
+                    }
+                ',
+            ]
         ];
     }
 
