@@ -8,7 +8,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function array_merge;
 use function implode;
+use function sort;
 use function strrpos;
 use function substr;
 
@@ -57,7 +59,10 @@ class TNamedObject extends Atomic
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
-            return $this->value . '&' . implode('&', $this->extra_types);
+            $types = array_merge([$this->value], $this->extra_types);
+            sort($types);
+
+            return implode('&', $types);
         }
 
         return $this->value;
@@ -66,8 +71,8 @@ class TNamedObject extends Atomic
     public function getId(bool $nested = false): string
     {
         if ($this->extra_types) {
-            return $this->value . '&' . implode(
-                '&',
+            $types = array_merge(
+                [$this->value],
                 array_map(
                     function ($type) {
                         return $type->getId(true);
@@ -75,6 +80,9 @@ class TNamedObject extends Atomic
                     $this->extra_types
                 )
             );
+            sort($types);
+
+            return implode('&', $types);
         }
 
         return $this->was_static ? $this->value . '&static' : $this->value;
