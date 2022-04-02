@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_merge;
 use function array_shift;
+use function rtrim;
 use function strtolower;
 
 /**
@@ -192,7 +193,7 @@ class InstancePropertyFetchAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullPropertyFetch(
-                        'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
+                        rtrim('Cannot get property on possibly null variable ' . $stmt_var_id) . ' of type ' . $stmt_var_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
