@@ -361,8 +361,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$type[0]</code>
+      <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">

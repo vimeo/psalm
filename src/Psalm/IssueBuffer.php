@@ -293,7 +293,7 @@ final class IssueBuffer
             . $trace_var
             . '-' . $e->getShortLocation()
             . ':' . $e->code_location->getColumn()
-            . ' ' . $e->dupe_key;
+            . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
@@ -518,7 +518,7 @@ final class IssueBuffer
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
                     . ':' . $issue->column_from
-                    . ' ' . $issue->dupe_key;
+                    . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
