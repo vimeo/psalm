@@ -129,15 +129,14 @@ class AndAnalyzer
 
         $changed_var_ids = [];
 
-        $right_context = clone $left_context;
-
         if ($left_type_assertions) {
+            $right_context = clone $context;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $right_vars_in_scope = Reconciler::reconcileKeyedTypes(
                 $left_type_assertions,
                 $active_left_assertions,
-                $context->vars_in_scope,
+                $right_context->vars_in_scope,
                 $context->references_in_scope,
                 $changed_var_ids,
                 $left_referenced_var_ids,
@@ -149,6 +148,8 @@ class AndAnalyzer
             );
 
             $right_context->vars_in_scope = $right_vars_in_scope;
+        } else {
+            $right_context = clone $left_context;
         }
 
         $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);
