@@ -35,8 +35,6 @@ class ClassTemplateParamCollector
         ?Atomic $lhs_type_part = null,
         bool $self_call = false
     ): ?array {
-        $static_fq_class_name = $static_class_storage->name;
-
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
             : $class_storage;
@@ -124,15 +122,12 @@ class ClassTemplateParamCollector
                         $static_class_storage,
                         $lhs_type_part
                     );
-                    if (!$self_call || $static_fq_class_name !== $class_storage->name) {
-                        $class_template_params[$type_name][$class_storage->name]
-                            = $output_type_extends ?? Type::getMixed();
-                    }
+
+                    $class_template_params[$type_name][$class_storage->name]
+                        = $output_type_extends ?? Type::getMixed();
                 }
 
-                if ((!$self_call || $static_fq_class_name !== $class_storage->name)
-                    && !isset($class_template_params[$type_name])
-                ) {
+                if (!isset($class_template_params[$type_name][$class_storage->name])) {
                     $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
                 }
             }

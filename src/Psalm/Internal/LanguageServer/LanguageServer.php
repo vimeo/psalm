@@ -422,6 +422,7 @@ class LanguageServer extends Dispatcher
                     } else {
                         // the Diagnostic constructor only takes `int` for the code, but the property can be
                         // `int` or `string`, so we set the property directly because we want to use a `string`
+                        /** @psalm-suppress InvalidPropertyAssignmentValue */
                         $diagnostic->code = $code;
                     }
 

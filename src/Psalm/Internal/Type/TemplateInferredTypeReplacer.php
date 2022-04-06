@@ -305,16 +305,15 @@ class TemplateInferredTypeReplacer
                             if (isset($classlike_storage->template_extended_params[$defining_class])) {
                                 $param_map = $classlike_storage->template_extended_params[$defining_class];
 
-                                if (isset($param_map[$key])
-                                    && isset($inferred_lower_bounds[(string) $param_map[$key]][$template_class])
-                                ) {
+                                if (isset($param_map[$key])) {
                                     $template_name = (string) $param_map[$key];
-
-                                    $template_type
-                                        = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                            $inferred_lower_bounds[$template_name][$template_class],
-                                            $codebase
-                                        );
+                                    if (isset($inferred_lower_bounds[$template_name][$template_class])) {
+                                        $template_type
+                                            = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                                $inferred_lower_bounds[$template_name][$template_class],
+                                                $codebase
+                                            );
+                                    }
                                 }
                             }
                         }
