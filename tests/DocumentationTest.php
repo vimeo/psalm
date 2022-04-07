@@ -85,7 +85,6 @@ class DocumentationTest extends TestCase
         '@psalm-seal-methods',
         '@psalm-stub-override',
         '@psalm-taint-unescape',
-        '@psalm-yield',
     ];
 
     /** @var ProjectAnalyzer */

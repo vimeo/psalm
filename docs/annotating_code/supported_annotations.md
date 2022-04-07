@@ -553,6 +553,45 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it exclude the case where the offset would be a string with the name of the parameter
 
+### `@psalm-yield`
+
+Used to specify the type of value which will be sent back to a generator when an annotated object instance is yielded.
+
+```php
+<?php
+/**
+ * @template-covariant TValue
+ * @psalm-yield TValue
+ */
+interface Promise {}
+
+/**
+ * @template-covariant TValue
+ * @template-implements Promise<TValue>
+ */
+class Success implements Promise {
+    /**
+     * @psalm-param TValue $value
+     */
+    public function __construct($value) {}
+}
+
+/**
+ * @return Promise<string>
+ */
+function fetch(): Promise {
+	return new Success('{"data":[]}');
+}
+
+function (): Generator {
+    $data = yield fetch();
+    
+    // this is fine, Psalm knows that $data is a string
+    return json_decode($data);
+};
+```
+This annotation supports only generic types, meaning that e.g. `@psalm-yield string` would be ignored.
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
