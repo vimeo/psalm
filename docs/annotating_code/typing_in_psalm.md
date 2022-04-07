@@ -10,7 +10,7 @@ Psalm allows you to express a lot of complicated type information in docblocks.
 
 All docblock types are either [atomic types](type_syntax/atomic_types.md), [union types](type_syntax/union_types.md) or [intersection types](type_syntax/intersection_types.md).
 
-Additionally Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
+Additionally, Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
 
 ## Property declaration types vs Assignment typehints
 
