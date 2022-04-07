@@ -31,7 +31,7 @@ The `@var` tag is supposed to only be used for properties. Psalm, taking a lead 
 
 If `VariableReference` is provided, it should be of the form `$variable` or `$variable->property`. If used above an assignment, Psalm checks whether the `VariableReference` matches the variable being assigned. If they differ, Psalm will assign the `Type` to `VariableReference` and use it in the expression below.
 
-If no `VariableReference` is given, the annotation tells Psalm that the right hand side of the expression, whether an assignment or a return, is of type `Type`.
+If no `VariableReference` is given, the annotation tells Psalm that the right-hand side of the expression, whether an assignment or a return, is of type `Type`.
 
 ```php
 <?php
@@ -187,7 +187,7 @@ Used to mark a class, property or function as internal to a given namespace. Psa
 the PHPDoc `@internal` tag. For `@internal`, an issue is raised if the calling code is in a namespace completely
 unrelated to the namespace of the calling code, i.e. not sharing the first element of the namespace.
 
-In contrast for `@psalm-internal`, the docbloc line must specify a namespace. An issue is raised if the calling code
+In contrast for `@psalm-internal`, the docblock line must specify a namespace. An issue is raised if the calling code
 is not within the given namespace.
 
 ```php
@@ -551,7 +551,7 @@ Incidentally, it will change the inferred type for the following code:
         var_dump($a);
     }
 ```
-The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it exclude the case where the offset would be a string with the name of the parameter
+The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
 ### `@psalm-yield`
 
