@@ -553,6 +553,31 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
+### `@psalm-ignore-variable-property` and `@psalm-ignore-variable-method`
+
+Instructs Psalm to ignore variable property fetch / variable method call when looking for dead code.
+```php
+class Foo
+{
+    // this property can be deleted by Psalter,
+    // as potential reference in get() is ignored
+    public string $bar = 'bar';
+
+    public function get(string $name): mixed
+    {
+        /** @psalm-ignore-variable-property */
+        return $this->{$name};
+    }
+}
+```
+When Psalm encounters variable property, it treats all properties in given class as potentially referenced.
+With `@psalm-ignore-variable-property` annotation, this reference is ignored. 
+
+While `PossiblyUnusedProperty` would be emitted in both cases, using `@psalm-ignore-variable-property`
+would allow [Psalter](../manipulating_code/fixing.md) to delete `Foo::$bar`.
+
+`@psalm-ignore-variable-method` behaves the same way, but for variable method calls.
+
 ### `@psalm-yield`
 
 Used to specify the type of value which will be sent back to a generator when an annotated object instance is yielded.
