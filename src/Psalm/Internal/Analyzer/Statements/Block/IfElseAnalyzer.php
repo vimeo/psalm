@@ -28,7 +28,6 @@ use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_unique;
 use function array_values;
@@ -139,27 +138,25 @@ class IfElseAnalyzer
             $if_clauses = [];
         }
 
-        $if_clauses = array_map(
-            /**
-             * @return Clause
-             */
-            function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
-                $keys = array_keys($c->possibilities);
+        $if_clauses_handled = [];
+        foreach ($if_clauses as $clause) {
+            $keys = array_keys($clause->possibilities);
 
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_object_id, $cond_object_id, true);
-                        }
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
                     }
                 }
+            }
 
-                return $c;
-            },
-            $if_clauses
-        );
+            $if_clauses_handled[] = $clause;
+        }
+
+        $if_clauses = $if_clauses_handled;
 
         $entry_clauses = $context->clauses;
 
@@ -186,7 +183,7 @@ class IfElseAnalyzer
             $if_context->clauses = array_values(
                 array_filter(
                     $if_context->clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
 

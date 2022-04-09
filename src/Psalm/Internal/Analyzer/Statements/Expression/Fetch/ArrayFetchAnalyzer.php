@@ -778,7 +778,8 @@ class ArrayFetchAnalyzer
 
                 if ($key_values) {
                     $used_offset = "using offset value of '" .
-                        implode('|', array_map(fn (Atomic $atomic_type) => $atomic_type->value, $key_values)) . "'";
+                        implode('|', array_map(static fn(Atomic $atomic_type)
+                            => $atomic_type->value, $key_values)) . "'";
                 }
 
                 if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
@@ -1562,7 +1563,8 @@ class ArrayFetchAnalyzer
                             $formatted_keys = implode(
                                 ', ',
                                 array_map(
-                                    fn($key) => is_int($key) ? $key : '\'' . $key . '\'',
+                                    /** @param int|string $key */
+                                    static fn($key): string => is_int($key) ? "$key" : '\'' . $key . '\'',
                                     $object_like_keys
                                 )
                             );

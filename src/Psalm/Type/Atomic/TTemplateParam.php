@@ -61,7 +61,8 @@ final class TTemplateParam extends Atomic
 
         if ($this->extra_types) {
             return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact)
-                . ')&' . implode('&', array_map(fn($type) => $type->getId($exact, true), $this->extra_types));
+                . ')&' . implode('&', array_map(static fn(Atomic $type): string
+                    => $type->getId($exact, true), $this->extra_types));
         }
 
         return ($nested ? '(' : '') . $this->param_name

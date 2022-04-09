@@ -421,7 +421,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                        static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                             $template_result,
                             $lhs_var_id,
                             $codebase
@@ -435,7 +435,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                        static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                             $template_result,
                             $lhs_var_id,
                             $codebase

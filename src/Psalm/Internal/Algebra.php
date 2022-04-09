@@ -10,10 +10,10 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function assert;
 use function count;
 use function in_array;
 use function mt_rand;
@@ -33,39 +33,36 @@ class Algebra
      */
     public static function negateTypes(array $all_types): array
     {
-        return array_filter(
-            array_map(
-                /**
-                 * @param  non-empty-list<non-empty-list<Assertion>> $anded_types
-                 *
-                 * @return list<non-empty-list<Assertion>>
-                 */
-                function (array $anded_types): array {
-                    if (count($anded_types) > 1) {
-                        $new_anded_types = [];
+        $negated_types = [];
 
-                        foreach ($anded_types as $orred_types) {
-                            if (count($orred_types) > 1) {
-                                return [];
-                            }
+        foreach ($all_types as $key => $anded_types) {
+            if (count($anded_types) > 1) {
+                $new_anded_types = [];
 
-                            $new_anded_types[] = $orred_types[0]->getNegation();
-                        }
-
-                        return [$new_anded_types];
+                foreach ($anded_types as $orred_types) {
+                    if (count($orred_types) === 1) {
+                        $new_anded_types[] = $orred_types[0]->getNegation();
+                    } else {
+                        continue 2;
                     }
+                }
 
-                    $new_orred_types = [];
+                assert($new_anded_types !== []);
 
-                    foreach ($anded_types[0] as $orred_type) {
-                        $new_orred_types[] = [$orred_type->getNegation()];
-                    }
+                $negated_types[$key] = [$new_anded_types];
+                continue;
+            }
 
-                    return $new_orred_types;
-                },
-                $all_types
-            )
-        );
+            $new_orred_types = [];
+
+            foreach ($anded_types[0] as $orred_type) {
+                $new_orred_types[] = [$orred_type->getNegation()];
+            }
+
+            $negated_types[$key] = $new_orred_types;
+        }
+
+        return $negated_types;
     }
 
     /**
@@ -654,7 +651,7 @@ class Algebra
     {
         $clauses = array_filter(
             $clauses,
-            fn($clause) => $clause->reconcilable
+            static fn(Clause $clause): bool => $clause->reconcilable
         );
 
         if (!$clauses) {

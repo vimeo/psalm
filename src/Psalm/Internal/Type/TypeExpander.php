@@ -264,7 +264,7 @@ class TypeExpander
                     if ($const_name_part) {
                         $matching_constants = array_filter(
                             $matching_constants,
-                            fn($constant_name): bool => $constant_name !== $const_name_part
+                            static fn($constant_name): bool => $constant_name !== $const_name_part
                                 && strpos($constant_name, $const_name_part) === 0
                         );
                     }
@@ -603,14 +603,14 @@ class TypeExpander
             if ($container_class_storage->template_types
                 && array_filter(
                     $container_class_storage->template_types,
-                    fn($type_map) => !reset($type_map)->hasMixed()
+                    static fn($type_map): bool => !reset($type_map)->hasMixed()
                 )
             ) {
                 $return_type = new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
-                            fn($type_map) => clone reset($type_map),
+                            static fn($type_map) => clone reset($type_map),
                             $container_class_storage->template_types
                         )
                     )

@@ -248,7 +248,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
             . implode(
                 ',' . ($newlines ? "\n" : ' '),
                 array_map(
-                    fn(FunctionLikeParameter $param): string =>
+                    static fn(FunctionLikeParameter $param): string =>
                         ($newlines ? '    ' : '')
                         . ($param->type ? $param->type->getId(false) : 'mixed')
                         . ' $' . $param->name,

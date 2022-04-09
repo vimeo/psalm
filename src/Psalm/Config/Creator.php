@@ -141,7 +141,7 @@ final class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                fn($amount): bool => $amount > 0.1
+                static fn($amount): bool => $amount > 0.1
             );
 
             if (array_sum($filtered_issues) > 0.5) {

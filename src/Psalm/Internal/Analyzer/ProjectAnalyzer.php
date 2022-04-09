@@ -522,7 +522,7 @@ class ProjectAnalyzer
                         $reader = new ProtocolStreamReader($socket);
                         $reader->on(
                             'close',
-                            function (): void {
+                            static function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
                             }
                         );
@@ -953,7 +953,7 @@ class ProjectAnalyzer
             foreach ($migration_manipulations as $file_path => $file_manipulations) {
                 usort(
                     $file_manipulations,
-                    function (FileManipulation $a, FileManipulation $b): int {
+                    static function (FileManipulation $a, FileManipulation $b): int {
                         if ($a->start === $b->start) {
                             if ($b->end === $a->end) {
                                 return $b->insertion_text > $a->insertion_text ? 1 : -1;
@@ -1517,7 +1517,7 @@ class ProjectAnalyzer
     {
         return array_map(
             /** @param class-string $issue_class */
-            function (string $issue_class): string {
+            static function (string $issue_class): string {
                 $parts = explode('\\', $issue_class);
                 return end($parts);
             },

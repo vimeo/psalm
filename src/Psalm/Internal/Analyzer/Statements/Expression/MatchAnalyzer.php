@@ -23,6 +23,7 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -266,7 +267,7 @@ class MatchAnalyzer
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
                     $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
-                        fn($type) => $type instanceof TLiteralInt
+                        static fn(Atomic $type): bool => $type instanceof TLiteralInt
                             || $type instanceof TLiteralString
                             || $type instanceof TLiteralFloat
                             || $type instanceof TEnumCase
@@ -314,7 +315,7 @@ class MatchAnalyzer
         }
 
         $array_items = array_map(
-            fn($cond): PhpParser\Node\Expr\ArrayItem =>
+            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
                 new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds
         );

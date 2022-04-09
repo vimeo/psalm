@@ -12,7 +12,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
-use function array_map;
 use function count;
 use function implode;
 
@@ -110,29 +109,19 @@ trait CallableTrait
         $return_type_string = '';
 
         if ($this->params !== null) {
-            $param_string = '(' . implode(
-                ', ',
-                array_map(
-                    /**
-                     * @return string
-                     */
-                    function (FunctionLikeParameter $param) use ($namespace, $aliased_classes, $this_class): string {
-                        if (!$param->type) {
-                            $type_string = 'mixed';
-                        } else {
-                            $type_string = $param->type->toNamespacedString(
-                                $namespace,
-                                $aliased_classes,
-                                $this_class,
-                                false
-                            );
-                        }
+            $params_array = [];
 
-                        return ($param->is_variadic ? '...' : '') . $type_string . ($param->is_optional ? '=' : '');
-                    },
-                    $this->params
-                )
-            ) . ')';
+            foreach ($this->params as $param) {
+                if (!$param->type) {
+                    $type_string = 'mixed';
+                } else {
+                    $type_string = $param->type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+                }
+
+                $params_array[] = ($param->is_variadic ? '...' : '') . $type_string . ($param->is_optional ? '=' : '');
+            }
+
+            $param_string = '(' . implode(', ', $params_array) . ')';
         }
 
         if ($this->return_type !== null) {

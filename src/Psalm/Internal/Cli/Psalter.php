@@ -207,7 +207,7 @@ final class Psalter
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            fn(): ?\Composer\Autoload\ClassLoader =>
+            static fn(): ?\Composer\Autoload\ClassLoader =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
@@ -432,7 +432,7 @@ final class Psalter
     private static function validateCliArguments(array $args): void
     {
         array_map(
-            function (string $arg): void {
+            static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
@@ -497,7 +497,7 @@ final class Psalter
         $codeowners_file = file_get_contents($codeowners_file_path);
 
         $codeowner_lines = array_map(
-            function (string $line): array {
+            static function (string $line): array {
                 $line_parts = preg_split('/\s+/', $line);
 
                 $file_selector = substr(array_shift($line_parts), 1);
@@ -505,7 +505,7 @@ final class Psalter
             },
             array_filter(
                 explode("\n", $codeowners_file),
-                function (string $line): bool {
+                static function (string $line): bool {
                     $line = trim($line);
 
                     // currently we don’t match wildcard files or files that could appear anywhere

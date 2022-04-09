@@ -109,14 +109,14 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($event->getFunctionId() === 'min') {
                 assert(count($min_bounds) !== 0);
                 //null values in $max_bounds doesn't make sense for min() so we remove them
-                $max_bounds = array_filter($max_bounds, fn($v) => $v !== null) ?: [null];
+                $max_bounds = array_filter($max_bounds, static fn($v): bool => $v !== null) ?: [null];
 
                 $min_potential_int = in_array(null, $min_bounds, true) ? null : min($min_bounds);
                 $max_potential_int = in_array(null, $max_bounds, true) ? null : min($max_bounds);
             } else {
                 assert(count($max_bounds) !== 0);
                 //null values in $min_bounds doesn't make sense for max() so we remove them
-                $min_bounds = array_filter($min_bounds, fn($v) => $v !== null) ?: [null];
+                $min_bounds = array_filter($min_bounds, static fn($v): bool => $v !== null) ?: [null];
 
                 $min_potential_int = in_array(null, $min_bounds, true) ? null : max($min_bounds);
                 $max_potential_int = in_array(null, $max_bounds, true) ? null : max($max_bounds);

@@ -192,7 +192,7 @@ class ArrayTypeComparator
                 // if the array has a known size < 10, make sure the array keys are literal ints
                 if ($input_type_part->count !== null && $input_type_part->count < 10) {
                     $literal_ints = array_map(
-                        fn($i) => new TLiteralInt($i),
+                        static fn($i): TLiteralInt => new TLiteralInt($i),
                         range(0, $input_type_part->count - 1)
                     );
 

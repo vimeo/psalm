@@ -161,10 +161,10 @@ final class IssueHandler
     {
         return array_filter(
             array_map(
-                fn(string $file_name): string => substr($file_name, 0, -4),
+                static fn(string $file_name): string => substr($file_name, 0, -4),
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
-            fn(string $issue_name): bool => $issue_name !== ''
+            static fn(string $issue_name): bool => $issue_name !== ''
                 && $issue_name !== 'MethodIssue'
                 && $issue_name !== 'PropertyIssue'
                 && $issue_name !== 'ClassConstantIssue'

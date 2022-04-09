@@ -743,7 +743,7 @@ class TypeCombiner
                 $min_prop_count = count(
                     array_filter(
                         $type->properties,
-                        fn($p) => !$p->possibly_undefined
+                        static fn(Union $p): bool => !$p->possibly_undefined
                     )
                 );
                 $combination->array_min_counts[$min_prop_count] = true;
@@ -1174,7 +1174,7 @@ class TypeCombiner
 
                 $all_nonnegative = !array_filter(
                     $combination->ints,
-                    fn($int): bool => $int->value < 0
+                    static fn($int): bool => $int->value < 0
                 );
 
                 if (isset($combination->value_types['int'])) {
@@ -1350,7 +1350,7 @@ class TypeCombiner
             ) {
                 $combination->objectlike_entries = array_filter(
                     $combination->objectlike_entries,
-                    fn(Union $type): bool => !$type->possibly_undefined
+                    static fn(Union $type): bool => !$type->possibly_undefined
                 );
             }
 

@@ -201,10 +201,7 @@ class MissingMethodCallHandler
         $result->existent_method_ids[] = $method_id->__toString();
 
         $array_values = array_map(
-            /**
-             * @return PhpParser\Node\Expr\ArrayItem
-             */
-            fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+            static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
                 $arg->value,
                 null,
                 false,

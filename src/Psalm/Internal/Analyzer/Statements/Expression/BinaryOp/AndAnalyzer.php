@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
@@ -104,7 +105,7 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
                 )
             );
 
@@ -202,7 +203,8 @@ class AndAnalyzer
             $if_body_context->reconciled_expression_clauses = array_merge(
                 $if_body_context->reconciled_expression_clauses,
                 array_map(
-                    fn($c) => $c->hash,
+                    /** @return string|int */
+                    static fn(Clause $c) => $c->hash,
                     $partitioned_clauses[1]
                 )
             );

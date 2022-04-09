@@ -569,7 +569,7 @@ final class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    function (IssueData $d1, IssueData $d2): int {
+                    static function (IssueData $d1, IssueData $d2): int {
                         if ($d1->file_path === $d2->file_path) {
                             if ($d1->line_from === $d2->line_from) {
                                 if ($d1->column_from === $d2->column_from) {
