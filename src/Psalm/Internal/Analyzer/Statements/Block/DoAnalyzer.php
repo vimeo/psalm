@@ -72,7 +72,7 @@ class DoAnalyzer
         $while_clauses = array_values(
             array_filter(
                 $while_clauses,
-                function (Clause $c) use ($mixed_var_ids): bool {
+                static function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = array_diff($mixed_var_ids, $keys);

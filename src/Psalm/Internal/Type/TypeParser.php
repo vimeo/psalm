@@ -499,7 +499,7 @@ class TypeParser
         $potential_values = array_unique($potential_values);
 
         return array_map(
-            fn($int) => new TLiteralInt($int),
+            static fn($int): TLiteralInt => new TLiteralInt($int),
             array_values($potential_values)
         );
     }
@@ -981,26 +981,25 @@ class TypeParser
         array $template_type_map,
         array $type_aliases
     ): Atomic {
-        $intersection_types = array_map(
-            function (ParseTree $child_tree) use ($codebase, $template_type_map, $type_aliases) {
-                $atomic_type = self::getTypeFromTree(
-                    $child_tree,
-                    $codebase,
-                    null,
-                    $template_type_map,
-                    $type_aliases
+        $intersection_types = [];
+
+        foreach ($parse_tree->children as $name => $child_tree) {
+            $atomic_type = self::getTypeFromTree(
+                $child_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases
+            );
+
+            if (!$atomic_type instanceof Atomic) {
+                throw new TypeParseTreeException(
+                    'Intersection types cannot contain unions'
                 );
+            }
 
-                if (!$atomic_type instanceof Atomic) {
-                    throw new TypeParseTreeException(
-                        'Intersection types cannot contain unions'
-                    );
-                }
-
-                return $atomic_type;
-            },
-            $parse_tree->children
-        );
+            $intersection_types[$name] = $atomic_type;
+        }
 
         $first_type = reset($intersection_types);
         $last_type = end($intersection_types);
@@ -1143,67 +1142,58 @@ class TypeParser
         array $template_type_map,
         array $type_aliases
     ) {
-        $params = array_map(
-        /**
-         * @return FunctionLikeParameter
-         */
-            function (ParseTree $child_tree) use (
-                $codebase,
-                $template_type_map,
-                $type_aliases
-            ): FunctionLikeParameter {
-                $is_variadic = false;
-                $is_optional = false;
+        $params = [];
 
-                if ($child_tree instanceof CallableParamTree) {
-                    if (isset($child_tree->children[0])) {
-                        $tree_type = self::getTypeFromTree(
-                            $child_tree->children[0],
-                            $codebase,
-                            null,
-                            $template_type_map,
-                            $type_aliases
-                        );
-                    } else {
-                        $tree_type = new TMixed();
-                    }
+        foreach ($parse_tree->children as $child_tree) {
+            $is_variadic = false;
+            $is_optional = false;
 
-                    $is_variadic = $child_tree->variadic;
-                    $is_optional = $child_tree->has_default;
-                } else {
-                    if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
-                        $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
-                    }
-
+            if ($child_tree instanceof CallableParamTree) {
+                if (isset($child_tree->children[0])) {
                     $tree_type = self::getTypeFromTree(
-                        $child_tree,
+                        $child_tree->children[0],
                         $codebase,
                         null,
                         $template_type_map,
                         $type_aliases
                     );
+                } else {
+                    $tree_type = new TMixed();
                 }
 
-                $tree_type = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
+                $is_variadic = $child_tree->variadic;
+                $is_optional = $child_tree->has_default;
+            } else {
+                if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
+                    $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
+                }
 
-                $param = new FunctionLikeParameter(
-                    '',
-                    false,
-                    $tree_type,
+                $tree_type = self::getTypeFromTree(
+                    $child_tree,
+                    $codebase,
                     null,
-                    null,
-                    $is_optional,
-                    false,
-                    $is_variadic
+                    $template_type_map,
+                    $type_aliases
                 );
+            }
 
-                // type is not authoritative
-                $param->signature_type = null;
+            $param = new FunctionLikeParameter(
+                '',
+                false,
+                $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
+                null,
+                null,
+                $is_optional,
+                false,
+                $is_variadic
+            );
 
-                return $param;
-            },
-            $parse_tree->children
-        );
+            // type is not authoritative
+            $param->signature_type = null;
+
+            $params[] = $param;
+        }
+
         $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
 
         if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {

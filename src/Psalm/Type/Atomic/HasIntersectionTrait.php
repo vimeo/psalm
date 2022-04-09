@@ -35,10 +35,8 @@ trait HasIntersectionTrait
             array_map(
                 /**
                  * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $extra_type
-                 *
-                 * @return string
                  */
-                fn(Atomic $extra_type): string => $extra_type->toNamespacedString(
+                static fn(Atomic $extra_type): string => $extra_type->toNamespacedString(
                     $namespace,
                     $aliased_classes,
                     $this_class,

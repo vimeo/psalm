@@ -75,7 +75,7 @@ class IfAnalyzer
 
         if (array_filter(
             $outer_context->clauses,
-            fn($clause): bool => (bool)$clause->possibilities
+            static fn(Clause $clause): bool => (bool) $clause->possibilities
         )) {
             $omit_keys = array_reduce(
                 $outer_context->clauses,
@@ -83,7 +83,8 @@ class IfAnalyzer
                  * @param array<string> $carry
                  * @return array<string>
                  */
-                fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
+                static fn(array $carry, Clause $clause): array
+                    => array_merge($carry, array_keys($clause->possibilities)),
                 []
             );
 
@@ -153,7 +154,7 @@ class IfAnalyzer
         );
 
         $old_if_context = clone $if_context;
-        
+
         $codebase = $statements_analyzer->getCodebase();
 
         $assigned_var_ids = $if_context->assigned_var_ids;

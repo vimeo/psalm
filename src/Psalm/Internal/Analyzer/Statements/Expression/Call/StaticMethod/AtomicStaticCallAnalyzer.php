@@ -445,7 +445,7 @@ class AtomicStaticCallAnalyzer
 
                     $mixin_candidates_no_generic = array_filter(
                         $mixin_candidates,
-                        fn($check): bool => !($check instanceof TGenericObject)
+                        static fn(Atomic $check): bool => !($check instanceof TGenericObject)
                     );
 
                     // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
@@ -643,7 +643,7 @@ class AtomicStaticCallAnalyzer
                 }
 
                 $array_values = array_map(
-                    fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
                         $arg->value,
                         null,
                         false,

@@ -127,9 +127,7 @@ class MethodComparator
             && !$implementer_method_storage->signature_return_type
             && !array_filter(
                 $implementer_method_storage->attributes,
-                function (AttributeStorage $s) {
-                    return $s->fq_class_name === 'ReturnTypeWillChange';
-                }
+                static fn (AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange'
             )
         ) {
             IssueBuffer::maybeAdd(

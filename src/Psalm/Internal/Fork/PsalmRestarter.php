@@ -39,7 +39,7 @@ class PsalmRestarter extends XdebugHandler
     {
         $this->required = (bool) array_filter(
             $this->disabledExtensions,
-            fn(string $extension): bool => extension_loaded($extension)
+            static fn(string $extension): bool => extension_loaded($extension)
         );
 
         return $default || $this->required;

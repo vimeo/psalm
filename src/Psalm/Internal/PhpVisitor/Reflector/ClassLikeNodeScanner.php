@@ -64,8 +64,6 @@ use Psalm\Type\Union;
 use RuntimeException;
 use UnexpectedValueException;
 
-use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -430,7 +428,7 @@ class ClassLikeNodeScanner
 
                 usort(
                     $docblock_info->templates,
-                    fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1
+                    static fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1
                 );
 
                 foreach ($docblock_info->templates as $i => $template_map) {
@@ -794,30 +792,20 @@ class ClassLikeNodeScanner
             }
         }
 
-        $converted_aliases = array_map(
-            function (InlineTypeAlias $t): ?ClassTypeAlias {
-                try {
-                    $union = TypeParser::parseTokens(
-                        $t->replacement_tokens,
-                        null,
-                        [],
-                        $this->type_aliases
-                    );
+        $converted_aliases = [];
+        foreach ($this->classlike_type_aliases as $key => $type) {
+            try {
+                $union = TypeParser::parseTokens(
+                    $type->replacement_tokens,
+                    null,
+                    [],
+                    $this->type_aliases
+                );
 
-                    $union->setFromDocblock();
+                $union->setFromDocblock();
 
-                    return new ClassTypeAlias(
-                        array_values($union->getAtomicTypes())
-                    );
-                } catch (Exception $e) {
-                    return null;
-                }
-            },
-            $this->classlike_type_aliases
-        );
-
-        foreach ($converted_aliases as $key => $type) {
-            if (!$type) {
+                $converted_aliases[$key] = new ClassTypeAlias(array_values($union->getAtomicTypes()));
+            } catch (Exception $e) {
                 $classlike_storage->docblock_issues[] = new InvalidDocblock(
                     '@psalm-type ' . $key . ' contains invalid references',
                     new CodeLocation($this->file_scanner, $node, null, true)
@@ -825,7 +813,7 @@ class ClassLikeNodeScanner
             }
         }
 
-        $classlike_storage->type_aliases = array_filter($converted_aliases);
+        $classlike_storage->type_aliases = $converted_aliases;
 
         return $classlike_storage;
     }

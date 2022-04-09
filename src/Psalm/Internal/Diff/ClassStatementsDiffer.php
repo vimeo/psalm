@@ -35,7 +35,7 @@ class ClassStatementsDiffer extends AstDiffer
         $diff_map = [];
 
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            function (
+            static function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,

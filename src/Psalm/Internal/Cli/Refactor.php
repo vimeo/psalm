@@ -83,7 +83,7 @@ final class Refactor
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
         array_map(
-            function (string $arg) use ($valid_long_options): void {
+            static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
@@ -182,7 +182,7 @@ final class Refactor
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            fn(): ?\Composer\Autoload\ClassLoader =>
+            static fn(): ?\Composer\Autoload\ClassLoader =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 

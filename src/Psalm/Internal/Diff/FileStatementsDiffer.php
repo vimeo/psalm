@@ -30,7 +30,7 @@ class FileStatementsDiffer extends AstDiffer
     public static function diff(array $a, array $b, string $a_code, string $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            function (
+            static function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,

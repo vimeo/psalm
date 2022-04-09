@@ -20,8 +20,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function addslashes;
-use function array_keys;
-use function array_map;
 use function count;
 use function get_class;
 use function implode;
@@ -87,25 +85,24 @@ class TKeyedArray extends Atomic
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        $property_strings = array_map(
-            function ($name, Union $type) use ($exact): string {
-                if ($this->is_list && $this->sealed) {
-                    return $type->getId($exact);
-                }
+        $property_strings = [];
 
-                $class_string_suffix = '';
-                if (isset($this->class_strings[$name])) {
-                    $class_string_suffix = '::class';
-                }
+        foreach ($this->properties as $name => $type) {
+            if ($this->is_list && $this->sealed) {
+                $property_strings[$name] = $type->getId($exact);
+                continue;
+            }
 
-                $name = $this->escapeAndQuote($name);
+            $class_string_suffix = '';
+            if (isset($this->class_strings[$name])) {
+                $class_string_suffix = '::class';
+            }
 
-                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
-                    . ': ' . $type->getId($exact);
-            },
-            array_keys($this->properties),
-            $this->properties
-        );
+            $name = $this->escapeAndQuote($name);
+
+            $property_strings[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
+                . ': ' . $type->getId($exact);
+        }
 
         if (!$this->is_list) {
             sort($property_strings);
@@ -141,39 +138,26 @@ class TKeyedArray extends Atomic
             );
         }
 
-        return static::KEY . '{' .
-                implode(
-                    ', ',
-                    array_map(
-                        function (
-                            $name,
-                            Union $type
-                        ) use (
-                            $namespace,
-                            $aliased_classes,
-                            $this_class,
-                            $use_phpdoc_format
-                        ): string {
-                            $class_string_suffix = '';
-                            if (isset($this->class_strings[$name])) {
-                                $class_string_suffix = '::class';
-                            }
+        $suffixed_properties = [];
 
-                            $name = $this->escapeAndQuote($name);
+        foreach ($this->properties as $name => $type) {
+            $class_string_suffix = '';
+            if (isset($this->class_strings[$name])) {
+                $class_string_suffix = '::class';
+            }
 
-                            return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
-                                $type->toNamespacedString(
-                                    $namespace,
-                                    $aliased_classes,
-                                    $this_class,
-                                    $use_phpdoc_format
-                                );
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
-                '}';
+            $name = $this->escapeAndQuote($name);
+
+            $suffixed_properties[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
+                $type->toNamespacedString(
+                    $namespace,
+                    $aliased_classes,
+                    $this_class,
+                    false
+                );
+        }
+
+        return static::KEY . '{' . implode(', ', $suffixed_properties) . '}';
     }
 
     /**

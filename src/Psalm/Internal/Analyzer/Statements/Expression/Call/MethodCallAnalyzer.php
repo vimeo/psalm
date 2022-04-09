@@ -228,7 +228,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         if (count($possible_new_class_types) > 0) {
             $class_type = array_reduce(
                 $possible_new_class_types,
-                fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase)
+                static fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase)
             );
         }
 

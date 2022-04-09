@@ -1058,7 +1058,7 @@ class CallAnalyzer
                 if (count($lower_bounds) > 1) {
                     $bounds_with_equality = array_filter(
                         $lower_bounds,
-                        fn($lower_bound) => (bool)$lower_bound->equality_bound_classlike
+                        static fn($lower_bound): bool => (bool)$lower_bound->equality_bound_classlike
                     );
 
                     if (!$bounds_with_equality) {
@@ -1067,7 +1067,7 @@ class CallAnalyzer
 
                     $equality_types = array_unique(
                         array_map(
-                            fn($bound_with_equality) => $bound_with_equality->type->getId(),
+                            static fn($bound_with_equality) => $bound_with_equality->type->getId(),
                             $bounds_with_equality
                         )
                     );

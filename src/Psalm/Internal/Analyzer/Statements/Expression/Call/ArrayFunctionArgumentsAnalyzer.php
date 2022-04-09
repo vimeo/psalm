@@ -147,7 +147,7 @@ class ArrayFunctionArgumentsAnalyzer
 
         $unpacked_args = array_filter(
             $args,
-            fn($arg) => $arg->unpack
+            static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack
         );
 
         if ($method_id === 'array_push' && !$unpacked_args) {

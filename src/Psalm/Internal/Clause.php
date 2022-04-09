@@ -11,8 +11,6 @@ use Psalm\Type\Atomic\TLiteralString;
 
 use function array_diff;
 use function array_keys;
-use function array_map;
-use function array_values;
 use function count;
 use function implode;
 use function json_encode;
@@ -141,55 +139,51 @@ class Clause
      */
     public function __toString(): string
     {
-        $clause_strings = array_map(
-            /**
-             * @param non-empty-array<string, Assertion> $values
-             */
-            function (string $var_id, array $values): string {
-                if ($var_id[0] === '*') {
-                    $var_id = '<expr>';
+        $clause_strings = [];
+
+        foreach ($this->possibilities as $var_id => $values) {
+            if ($var_id[0] === '*') {
+                $var_id = '<expr>';
+            }
+
+            $var_id_clauses = [];
+            foreach ($values as $value) {
+                $value = (string) $value;
+                if ($value === 'falsy') {
+                    $var_id_clauses[] = '!'.$var_id;
+                    continue;
                 }
 
-                $var_id_clauses = array_map(
-                    function (Assertion $value) use ($var_id): string {
-                        $value = (string) $value;
-                        if ($value === 'falsy') {
-                            return '!' . $var_id;
-                        }
-
-                        if ($value === '!falsy') {
-                            return $var_id;
-                        }
-
-                        $negate = false;
-
-                        if ($value[0] === '!') {
-                            $negate = true;
-                            $value = substr($value, 1);
-                        }
-
-                        if ($value[0] === '=') {
-                            $value = substr($value, 1);
-                        }
-
-                        if ($negate) {
-                            return $var_id . ' is not ' . $value;
-                        }
-
-                        return $var_id . ' is ' . $value;
-                    },
-                    $values
-                );
-
-                if (count($var_id_clauses) > 1) {
-                    return '(' . implode(') || (', $var_id_clauses) . ')';
+                if ($value === '!falsy') {
+                    $var_id_clauses[] = $var_id;
+                    continue;
                 }
 
-                return reset($var_id_clauses);
-            },
-            array_keys($this->possibilities),
-            array_values($this->possibilities)
-        );
+                $negate = false;
+
+                if ($value[0] === '!') {
+                    $negate = true;
+                    $value  = substr($value, 1);
+                }
+
+                if ($value[0] === '=') {
+                    $value = substr($value, 1);
+                }
+
+                if ($negate) {
+                    $var_id_clauses[] = $var_id.' is not '.$value;
+                    continue;
+                }
+
+                $var_id_clauses[] = $var_id.' is '.$value;
+            }
+
+            if (count($var_id_clauses) > 1) {
+                $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
+            } else {
+                $clause_strings[] = reset($var_id_clauses);
+            }
+        }
 
         if (count($clause_strings) > 1) {
             return '(' . implode(') || (', $clause_strings) . ')';

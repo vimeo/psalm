@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -26,7 +27,6 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -173,7 +173,7 @@ class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
 
@@ -242,23 +242,18 @@ class OrAnalyzer
         if ($changed_var_ids) {
             $partitioned_clauses = Context::removeReconciledClauses($right_context->clauses, $changed_var_ids);
             $right_context->clauses = $partitioned_clauses[0];
-            $right_context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+            $right_context->reconciled_expression_clauses = $context->reconciled_expression_clauses;
+
+            foreach ($partitioned_clauses[1] as $clause) {
+                $right_context->reconciled_expression_clauses[] = $clause->hash;
+            }
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
             $context->clauses = $partitioned_clauses[0];
-            $context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+
+            foreach ($partitioned_clauses[1] as $clause) {
+                $context->reconciled_expression_clauses[] = $clause->hash;
+            }
         }
 
         $right_context->if_body_context = null;

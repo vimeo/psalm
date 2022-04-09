@@ -369,7 +369,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        fn(Possibilities $assertion): Possibilities =>
+                        static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $function_call_info->function_storage->if_true_assertions
                     )
@@ -380,7 +380,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        fn(Possibilities $assertion): Possibilities =>
+                        static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $function_call_info->function_storage->if_false_assertions
                     )
@@ -965,7 +965,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $context->references_in_scope,
                 $changed_var_ids,
                 array_map(
-                    fn($_): bool => true,
+                    static fn($_): bool => true,
                     $assert_type_assertions
                 ),
                 $statements_analyzer,

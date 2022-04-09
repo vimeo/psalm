@@ -265,7 +265,7 @@ class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        function (string $fq_catch_class) use ($codebase): TNamedObject {
+                        static function (string $fq_catch_class) use ($codebase): TNamedObject {
                             $catch_class_type = new TNamedObject($fq_catch_class);
 
                             if (version_compare(PHP_VERSION, '7.0.0dev', '>=')

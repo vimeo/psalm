@@ -11,6 +11,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Issue\CircularReference;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -542,8 +543,9 @@ class Populator
         $storage->constants = array_merge(
             array_filter(
                 $parent_storage->constants,
-                fn($constant) => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                static fn(ClassConstantStorage $constant): bool
+                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
             ),
             $storage->constants
         );
@@ -586,7 +588,8 @@ class Populator
         $storage->constants = array_merge(
             array_filter(
                 $interface_storage->constants,
-                fn($constant) => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                static fn(ClassConstantStorage $constant): bool
+                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ),
             $storage->constants
         );

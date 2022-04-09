@@ -16,7 +16,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_map;
 use function in_array;
 use function is_string;
 use function preg_match;
@@ -231,17 +230,15 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
     ): ?bool {
-        $param_names = array_map(
-            function (PhpParser\Node\Param $p): string {
-                if (!$p->var instanceof PhpParser\Node\Expr\Variable
-                    || !is_string($p->var->name)
-                ) {
-                    return '';
-                }
-                return $p->var->name;
-            },
-            $stmt->params
-        );
+        $param_names = [];
+
+        foreach ($stmt->params as $i => $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_names[$i] = $param->var->name;
+            } else {
+                $param_names[$i] = '';
+            }
+        }
 
         foreach ($stmt->uses as $use) {
             if (!is_string($use->var->name)) {

@@ -779,6 +779,8 @@
     - [BC] Class `Psalm\Type\Atomic\TClassConstant` became final
     - [BC] Class `Psalm\Type\TaintKind` became final
     - [BC] Class `Psalm\Type\Union` became final
+ - [BC] Property `Psalm\Config::$universal_object_crates` changed default value
+   from `array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
