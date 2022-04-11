@@ -43,7 +43,7 @@ class DOMNodeList implements Traversable, Countable {
      *
      * @var int
      *
-     * @since 5.0
+     * @since PHP-5.0
      * @link http://php.net/manual/en/class.domnodelist.php#domnodelist.props.length
      */
     public $length;

@@ -129,7 +129,7 @@ class SoapClient  {
      * <b>SOAP_SSL_METHOD_SSLv23</b>.
      * </p>
      * @throws SoapFault A SoapFault exception will be thrown if the wsdl URI cannot be loaded.
-     * @since 5.0.1
+     * @since PHP-5.0.1
      */
     public function __construct ($wsdl, array $options = null) {}
 
@@ -139,7 +139,7 @@ class SoapClient  {
       * @param string $function_name
       * @param array $arguments
       * @return mixed
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __call ($function_name, $arguments) {}
 
@@ -182,7 +182,7 @@ class SoapClient  {
       * <p>
       * On error, if the SoapClient object was constructed with the exceptions
       * option set to <b>FALSE</b>, a SoapFault object will be returned.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __soapCall (string $function_name, array $arguments, array $options = null, $input_headers = null, &$output_headers = null) {}
 
@@ -190,7 +190,7 @@ class SoapClient  {
       * Returns last SOAP request
       * @link https://php.net/manual/en/soapclient.getlastrequest.php
       * @return string|null The last SOAP request, as an XML string.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getLastRequest () {}
 
@@ -198,7 +198,7 @@ class SoapClient  {
       * Returns last SOAP response
       * @link https://php.net/manual/en/soapclient.getlastresponse.php
       * @return string|null The last SOAP response, as an XML string.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getLastResponse () {}
 
@@ -206,7 +206,7 @@ class SoapClient  {
       * Returns the SOAP headers from the last request
       * @link https://php.net/manual/en/soapclient.getlastrequestheaders.php
       * @return string|null The last SOAP request headers.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getLastRequestHeaders () {}
 
@@ -214,7 +214,7 @@ class SoapClient  {
       * Returns the SOAP headers from the last response
       * @link https://php.net/manual/en/soapclient.getlastresponseheaders.php
       * @return string|null The last SOAP response headers.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getLastResponseHeaders () {}
 
@@ -223,7 +223,7 @@ class SoapClient  {
       * @link https://php.net/manual/en/soapclient.getfunctions.php
       * @return array|null The array of SOAP function prototypes, detailing the return type,
       * the function name and type-hinted parameters.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getFunctions () {}
 
@@ -231,7 +231,7 @@ class SoapClient  {
       * Returns a list of SOAP types
       * @link https://php.net/manual/en/soapclient.gettypes.php
       * @return array|null The array of SOAP types, detailing all structures and types.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __getTypes () {}
 
@@ -239,7 +239,7 @@ class SoapClient  {
       * Returns a list of all cookies
       * @link https://php.net/manual/en/soapclient.getcookies.php
       * @return array The array of all cookies
-      * @since 5.4.3
+      * @since PHP-5.4.3
       */
      public function __getCookies () {}
 
@@ -253,7 +253,7 @@ class SoapClient  {
       * The value of the cookie. If not specified, the cookie will be deleted.
       * </p>
       * @return void No value is returned.
-      * @since 5.0.4
+      * @since PHP-5.0.4
       */
      public function __setCookie ($name, $value = null) {}
 
@@ -264,7 +264,7 @@ class SoapClient  {
       * The new endpoint URL.
       * </p>
       * @return string The old endpoint URL.
-      * @since 5.0.1
+      * @since PHP-5.0.1
       */
      public function __setLocation ($new_location = null) {}
 
@@ -277,7 +277,7 @@ class SoapClient  {
       * If not specified or set to <b>NULL</b>, the headers will be deleted.
       * </p>
       * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
-      * @since 5.0.5
+      * @since PHP-5.0.5
       */
      public function __setSoapHeaders ($soapheaders = null) {}
 

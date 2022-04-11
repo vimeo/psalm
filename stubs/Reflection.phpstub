@@ -48,7 +48,7 @@ class ReflectionClass implements Reflector {
     public function getTraitNames(): array {}
 
     /**
-     * @since 8.0
+     * @since PHP-8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
@@ -59,7 +59,7 @@ class ReflectionClass implements Reflector {
 class ReflectionFunction implements Reflector
 {
     /**
-     * @since 8.0
+     * @since PHP-8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
@@ -70,7 +70,7 @@ class ReflectionFunction implements Reflector
 class ReflectionProperty implements Reflector
 {
     /**
-     * @since 8.0
+     * @since PHP-8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
@@ -78,13 +78,13 @@ class ReflectionProperty implements Reflector
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 
     /**
-     * @since 7.4
+     * @since PHP-7.4
      * @psalm-assert-if-true ReflectionType $this->getType()
      */
     public function hasType() : bool {}
 
     /**
-     * @since 7.4
+     * @since PHP-7.4
      * @psalm-mutation-free
      */
     public function getType() : ?ReflectionType {}
@@ -93,7 +93,7 @@ class ReflectionProperty implements Reflector
 class ReflectionMethod implements Reflector
 {
     /**
-     * @since 8.0
+     * @since PHP-8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
@@ -106,7 +106,7 @@ class ReflectionMethod implements Reflector
 class ReflectionClassConstant implements Reflector
 {
     /**
-     * @since 8.0
+     * @since PHP-8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
