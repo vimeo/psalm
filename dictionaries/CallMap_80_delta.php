@@ -45,6 +45,10 @@ return [
       'old' => ['int|false'],
       'new' => ['int'],
     ],
+    'DateTimeInterface::getTimestamp' => [
+       'old' => ['int|false'],
+       'new' => ['int'],
+    ],
     'DateTimeImmutable::format' => [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
