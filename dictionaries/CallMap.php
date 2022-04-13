@@ -9313,7 +9313,7 @@ return [
 'opendir' => ['resource|false', 'directory'=>'string', 'context='=>'resource'],
 'openlog' => ['bool', 'prefix'=>'string', 'flags'=>'int', 'facility'=>'int'],
 'openssl_cipher_iv_length' => ['int|false', 'cipher_algo'=>'string'],
-'openssl_csr_export' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'OpenSSLAsymmetricKey', 'no_text='=>'bool'],
+'openssl_csr_export' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'string', 'no_text='=>'bool'],
 'openssl_csr_export_to_file' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', 'output_filename'=>'string', 'no_text='=>'bool'],
 'openssl_csr_get_public_key' => ['OpenSSLAsymmetricKey|false', 'csr'=>'OpenSSLCertificateSigningRequest|string', 'short_names='=>'bool'],
 'openssl_csr_get_subject' => ['array|false', 'csr'=>'OpenSSLCertificateSigningRequest|string', 'short_names='=>'bool'],
