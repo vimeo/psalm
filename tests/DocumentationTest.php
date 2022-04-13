@@ -76,7 +76,6 @@ class DocumentationTest extends TestCase
         '@psalm-assert-untainted',
         '@psalm-consistent-constructor',
         '@psalm-flow',
-        '@psalm-generator-return',
         '@psalm-ignore-variable-method',
         '@psalm-ignore-variable-property',
         '@psalm-override-method-visibility',

@@ -24,7 +24,7 @@ final class DocComment
         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
         'ignore-nullable-return', 'override-property-visibility',
         'override-method-visibility', 'seal-properties', 'seal-methods',
-        'generator-return', 'ignore-falsable-return', 'variadic', 'pure',
+        'ignore-falsable-return', 'variadic', 'pure',
         'ignore-variable-method', 'ignore-variable-property', 'internal',
         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly',

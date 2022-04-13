@@ -53,20 +53,6 @@ class GeneratorTest extends TestCase
                     '$g' => 'Generator<int, stdClass, mixed, mixed>',
                 ],
             ],
-            'generatorWithReturn' => [
-                'code' => '<?php
-                    /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return string
-                     */
-                    function fooFoo(int $i): Generator {
-                        if ($i === 1) {
-                            return "bash";
-                        }
-
-                        yield 1;
-                    }',
-            ],
             'generatorSend' => [
                 'code' => '<?php
                     /** @return Generator<int, string, DateTimeInterface, void> */
