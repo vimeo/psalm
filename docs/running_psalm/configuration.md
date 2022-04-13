@@ -398,12 +398,15 @@ Allows you to hard-code the number of threads Psalm will use (similar to `--thre
 ## Project settings
 
 #### &lt;projectFiles&gt;
-Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive, e.g.
+Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive and optional `allowMissingFiles` attribute, e.g.
 ```xml
 <projectFiles>
   <directory name="src" />
   <ignoreFiles>
     <directory name="src/Stubs" />
+  </ignoreFiles>
+  <ignoreFiles allowMissingFiles="true">
+    <directory name="path-that-may-not-exist" />
   </ignoreFiles>
 </projectFiles>
 ```
