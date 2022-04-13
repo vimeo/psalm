@@ -47,7 +47,7 @@ The classes are as follows:
 
 `TIntMask` - Represents the type that is the result of a bitmask combination of its parameters. `int-mask<1, 2, 4>` corresponds to `1|2|3|4|5|6|7`
 
-`TIntMaskOf` - as above, but used with with a reference to constants in code`int-mask<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
+`TIntMaskOf` - as above, but used with a reference to constants in code `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
 
 `TKeyOfArray` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
 
@@ -58,6 +58,10 @@ The classes are as follows:
 `TTemplateKeyOf` - Represents the type used when using TKeyOfArray when the type of the array is a template
 
 `TTemplateValueOf` - Represents the type used when using TValueOfArray when the type of the array is a template
+
+`TPropertiesOf` - Represents properties and their types of a class as a keyed array (e.g. `properties-of<MyClass>`)
+
+`TTemplatePropertiesOf` - Represents the type used when using TPropertiesOf when type of the class is a template
 
 `TTypeAlias` - To be documented
 

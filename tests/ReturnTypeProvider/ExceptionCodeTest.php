@@ -16,27 +16,33 @@ class ExceptionCodeTest extends TestCase
     {
         yield 'RuntimeException' => [
             'code' => '<?php
-                function f(\RuntimeException $e): int {
-                    return $e->getCode();
-                }
+                /** @var \RuntimeException $e */
+                $code = $e->getCode();
             ',
-            'assertions' => [],
+            'assertions' => ['$code' => 'int|string'],
+        ];
+        yield 'CustomRuntimeException' => [
+            'code' => '<?php
+                class CustomRuntimeException extends \RuntimeException {}
+
+                /** @var CustomRuntimeException $e */
+                $code = $e->getCode();
+            ',
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'LogicException' => [
             'code' => '<?php
-                function f(\LogicException $e): int {
-                    return $e->getCode();
-                }
+                /** @var \LogicException $e */
+                $code = $e->getCode();
             ',
-            'assertions' => [],
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'PDOException' => [
             'code' => '<?php
-                function f(\PDOException $e): string {
-                    return $e->getCode();
-                }
+                /** @var \PDOException $e */
+                $code = $e->getCode();
             ',
-            'assertions' => [],
+            'assertions' => ['$code' => 'int|string'],
         ];
         yield 'CustomThrowable' => [
             'code' => '<?php

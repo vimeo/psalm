@@ -59,7 +59,7 @@ class ShowCommand extends Command
             /**
              * @return array{0: null|string, 1: string}
              */
-            fn(string $class, ?string $package): array => [$package, $class];
+            static fn(string $class, ?string $package): array => [$package, $class];
 
         $io->section('Enabled');
         if (count($enabled)) {

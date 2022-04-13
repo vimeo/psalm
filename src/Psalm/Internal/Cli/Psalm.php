@@ -217,7 +217,7 @@ final class Psalm
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            fn(): ?\Composer\Autoload\ClassLoader =>
+            static fn(): ?\Composer\Autoload\ClassLoader =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
@@ -432,7 +432,7 @@ final class Psalm
     private static function validateCliArguments(array $args): void
     {
         array_map(
-            function (string $arg): void {
+            static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
@@ -500,7 +500,7 @@ final class Psalm
 
         $args = array_values(array_filter(
             $args,
-            fn(string $arg): bool => $arg !== '--ansi'
+            static fn(string $arg): bool => $arg !== '--ansi'
                 && $arg !== '--no-ansi'
                 && $arg !== '-i'
                 && $arg !== '--init'
@@ -1068,7 +1068,7 @@ final class Psalm
         if ($flow_graph !== null && $dump_taint_graph !== null) {
             file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
                 implode("\n\t", array_map(
-                    fn(array $edges) => '"'.implode('" -> "', $edges).'"',
+                    static fn(array $edges) => '"'.implode('" -> "', $edges).'"',
                     $flow_graph->summarizeEdges()
                 )) .
                 "\n}\n");

@@ -2,8 +2,11 @@
 
 namespace Psalm\Internal\Analyzer;
 
-use PhpParser;
+use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
+use Psalm\Context;
+
+use function assert;
 
 /**
  * @internal
@@ -16,7 +19,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     private $aliases;
 
     public function __construct(
-        PhpParser\Node\Stmt\Trait_ $class,
+        Trait_ $class,
         SourceAnalyzer $source,
         string $fq_class_name,
         Aliases $aliases
@@ -55,5 +58,19 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     public function getAliasedClassesFlippedReplaceable(): array
     {
         return [];
+    }
+
+    public static function analyze(StatementsAnalyzer $statements_analyzer, Trait_ $stmt, Context $context): void
+    {
+        assert($stmt->name !== null);
+        $storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($stmt->name->name);
+        AttributesAnalyzer::analyze(
+            $statements_analyzer,
+            $context,
+            $storage,
+            $stmt->attrGroups,
+            1,
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues()
+        );
     }
 }

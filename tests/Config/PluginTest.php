@@ -20,7 +20,6 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -646,47 +645,6 @@ class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testSqlStringProviderHooks(): void
-    {
-        require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
-
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\SqlStringProviderPlugin" />
-                    </plugins>
-                </psalm>'
-            )
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                $a = "select * from videos;";'
-        );
-
-        $context = new Context();
-        $this->analyzeFile($file_path, $context);
-
-        $this->assertTrue(isset($context->vars_in_scope['$a']));
-
-        foreach ($context->vars_in_scope['$a']->getAtomicTypes() as $type) {
-            $this->assertInstanceOf(TSqlSelectString::class, $type);
-        }
     }
 
     public function testPropertyProviderHooksInvalidAssignment(): void

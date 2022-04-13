@@ -162,13 +162,15 @@ class AssignmentAnalyzer
             $template_type_map = $statements_analyzer->getTemplateTypeMap();
 
             try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment,
-                    $statements_analyzer->getSource(),
-                    $statements_analyzer->getAliases(),
-                    $template_type_map,
-                    $file_storage->type_aliases
-                );
+                $var_comments = $codebase->config->disable_var_parsing
+                    ? []
+                    : CommentAnalyzer::getTypeFromComment(
+                        $doc_comment,
+                        $statements_analyzer->getSource(),
+                        $statements_analyzer->getAliases(),
+                        $template_type_map,
+                        $file_storage->type_aliases
+                    );
             } catch (IncorrectDocblockException $e) {
                 IssueBuffer::maybeAdd(
                     new MissingDocblockType(
@@ -208,7 +210,7 @@ class AssignmentAnalyzer
         }
 
         if ($extended_var_id) {
-            unset($context->referenced_var_ids[$extended_var_id]);
+            unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
@@ -778,12 +780,12 @@ class AssignmentAnalyzer
 
         $unspecialized_parent_nodes = array_filter(
             $parent_nodes,
-            fn($parent_node) => !$parent_node->specialization_key
+            static fn($parent_node): bool => !$parent_node->specialization_key
         );
 
         $specialized_parent_nodes = array_filter(
             $parent_nodes,
-            fn($parent_node) => (bool) $parent_node->specialization_key
+            static fn($parent_node): bool => (bool) $parent_node->specialization_key
         );
 
         $new_parent_nodes = [];
@@ -923,7 +925,7 @@ class AssignmentAnalyzer
                     )
                 );
             }
-            if (!empty($var_comments)) {
+            if (!empty($var_comments) && $var_comments[0]->type !== null && $var_comments[0]->var_id === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         "Docblock type cannot be used for reference assignment",
@@ -988,7 +990,8 @@ class AssignmentAnalyzer
 
         $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
 
-        if (($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
+        if ($statements_analyzer->data_flow_graph !== null
+            && ($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
             && $stmt->var->var instanceof Variable
             && is_string($stmt->var->var->name)
         ) {
@@ -1002,6 +1005,15 @@ class AssignmentAnalyzer
                     $stmt->var instanceof ArrayDimFetch
                         ? "offset-assignment-as-reference"
                         : "property-assignment-as-reference"
+                );
+            }
+
+            if ($root_var_id === '$this') {
+                // Variables on `$this` are always used
+                $statements_analyzer->data_flow_graph->addPath(
+                    $lhs_node,
+                    new DataFlowNode('variable-use', 'variable use', null),
+                    'variable-use',
                 );
             }
         }
@@ -1797,7 +1809,7 @@ class AssignmentAnalyzer
                     );
 
                     $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => [new Falsy()]], $var_object_id, $var_object_id)],
+                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
                         $right_clauses,
                         $cond_object_id
                     );

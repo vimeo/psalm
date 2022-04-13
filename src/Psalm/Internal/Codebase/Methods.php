@@ -360,7 +360,7 @@ class Methods
     /**
      * @param  list<PhpParser\Node\Arg> $args
      *
-     * @return array<int, FunctionLikeParameter>
+     * @return list<FunctionLikeParameter>
      */
     public function getMethodParams(
         MethodIdentifier $method_id,

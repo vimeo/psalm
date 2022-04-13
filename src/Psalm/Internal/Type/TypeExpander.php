@@ -5,7 +5,11 @@ namespace Psalm\Internal\Type;
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Internal\Type\SimpleAssertionReconciler;
+use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -27,6 +31,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOfArray;
@@ -38,7 +43,6 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_push;
 use function array_values;
 use function count;
 use function get_class;
@@ -55,7 +59,6 @@ class TypeExpander
 {
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -261,7 +264,7 @@ class TypeExpander
                     if ($const_name_part) {
                         $matching_constants = array_filter(
                             $matching_constants,
-                            fn($constant_name): bool => $constant_name !== $const_name_part
+                            static fn($constant_name): bool => $constant_name !== $const_name_part
                                 && strpos($constant_name, $const_name_part) === 0
                         );
                     }
@@ -300,6 +303,15 @@ class TypeExpander
             }
 
             return [$return_type];
+        }
+
+        if ($return_type instanceof TPropertiesOf) {
+            return self::expandPropertiesOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type
+            );
         }
 
         if ($return_type instanceof TTypeAlias) {
@@ -358,8 +370,14 @@ class TypeExpander
                 $codebase,
                 $return_type,
                 $self_class,
+                $static_class_type,
+                $parent_class,
                 $evaluate_class_constants,
-                $throw_on_unresolvable_constant
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
         }
 
@@ -585,14 +603,14 @@ class TypeExpander
             if ($container_class_storage->template_types
                 && array_filter(
                     $container_class_storage->template_types,
-                    fn($type_map) => !reset($type_map)->hasMixed()
+                    static fn($type_map): bool => !reset($type_map)->hasMixed()
                 )
             ) {
                 $return_type = new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
-                            fn($type_map) => clone reset($type_map),
+                            static fn($type_map) => clone reset($type_map),
                             $container_class_storage->template_types
                         )
                     )
@@ -878,21 +896,110 @@ class TypeExpander
     }
 
     /**
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandPropertiesOf(
+        Codebase $codebase,
+        TPropertiesOf $return_type,
+        ?string $self_class,
+        $static_class_type
+    ): array {
+        if ($return_type->fq_classlike_name === 'self' && $self_class) {
+            $return_type->fq_classlike_name = $self_class;
+        }
+
+        if ($return_type->fq_classlike_name === 'static' && $self_class) {
+            $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
+        }
+
+        if (!$codebase->classExists($return_type->fq_classlike_name)) {
+            return [$return_type];
+        }
+
+        // Get and merge all properties from parent classes
+        $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
+        $properties_types = $class_storage->properties;
+        foreach ($class_storage->parent_classes as $parent_class) {
+            if (!$codebase->classOrInterfaceExists($parent_class)) {
+                continue;
+            }
+            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $properties_types = array_merge(
+                $properties_types,
+                $parent_class_storage->properties
+            );
+        }
+
+        // Filter only non-static properties, and check visibility filter
+        $properties_types = array_filter(
+            $properties_types,
+            function (PropertyStorage $property) use ($return_type): bool {
+                if ($return_type->visibility_filter !== null
+                    && $property->visibility !== $return_type->visibility_filter
+                ) {
+                    return false;
+                }
+                return !$property->is_static;
+            }
+        );
+
+        // Return property names as literal string
+        $properties = array_map(
+            function (PropertyStorage $property): ?Union {
+                return $property->type;
+            },
+            $properties_types
+        );
+        $properties = array_filter(
+            $properties,
+            function (?Union $property_type): bool {
+                return $property_type !== null;
+            }
+        );
+
+        if ($properties === []) {
+            return [$return_type];
+        }
+        return [new TKeyedArray($properties)];
+    }
+
+    /**
      * @param TKeyOfArray|TValueOfArray $return_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandKeyOfValueOfArray(
         Codebase $codebase,
-        $return_type,
+        Atomic &$return_type,
         ?string $self_class,
-        bool $evaluate_class_constants,
-        bool $throw_on_unresolvable_constant
+        $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool $expand_generic = false,
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
     ): array {
         // Expand class constants to their atomics
         $type_atomics = [];
         foreach ($return_type->type->getAtomicTypes() as $type_param) {
             if (!$evaluate_class_constants || !$type_param instanceof TClassConstant) {
-                array_push($type_atomics, $type_param);
+                $type_param_expanded = self::expandAtomic(
+                    $codebase,
+                    $type_param,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+                $type_atomics = array_merge($type_atomics, $type_param_expanded);
                 continue;
             }
 
@@ -901,8 +1008,8 @@ class TypeExpander
             }
 
             if ($throw_on_unresolvable_constant
-                    && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
-                ) {
+                && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
+            ) {
                 throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
             }
 

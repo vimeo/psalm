@@ -217,7 +217,7 @@ class LanguageServer extends Dispatcher
     ): Promise {
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
+            function (): Generator {
                 $this->verboseLog("Initializing...");
                 $this->clientStatus('initializing');
 
@@ -373,62 +373,62 @@ class LanguageServer extends Dispatcher
         $this->current_issues = $data;
 
         foreach ($uris as $file_path => $uri) {
-            $diagnostics = array_map(
-                function (IssueData $issue_data): Diagnostic {
-                    //$check_name = $issue->check_name;
-                    $description = $issue_data->message;
-                    $severity = $issue_data->severity;
+            $diagnostics = [];
 
-                    $start_line = max($issue_data->line_from, 1);
-                    $end_line = $issue_data->line_to;
-                    $start_column = $issue_data->column_from;
-                    $end_column = $issue_data->column_to;
-                    // Language server has 0 based lines and columns, phan has 1-based lines and columns.
-                    $range = new Range(
-                        new Position($start_line - 1, $start_column - 1),
-                        new Position($end_line - 1, $end_column - 1)
-                    );
-                    switch ($severity) {
-                        case Config::REPORT_INFO:
-                            $diagnostic_severity = DiagnosticSeverity::WARNING;
-                            break;
-                        case Config::REPORT_ERROR:
-                        default:
-                            $diagnostic_severity = DiagnosticSeverity::ERROR;
-                            break;
-                    }
-                    $diagnostic = new Diagnostic(
-                        $description,
-                        $range,
-                        null,
-                        $diagnostic_severity,
-                        'Psalm'
-                    );
+            foreach (($data[$file_path] ?? []) as $issue_data) {
+                //$check_name = $issue->check_name;
+                $description = $issue_data->message;
+                $severity = $issue_data->severity;
 
-                    //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
-                    $code = $issue_data->link;
+                $start_line = max($issue_data->line_from, 1);
+                $end_line = $issue_data->line_to;
+                $start_column = $issue_data->column_from;
+                $end_column = $issue_data->column_to;
+                // Language server has 0 based lines and columns, phan has 1-based lines and columns.
+                $range = new Range(
+                    new Position($start_line - 1, $start_column - 1),
+                    new Position($end_line - 1, $end_column - 1)
+                );
+                switch ($severity) {
+                    case Config::REPORT_INFO:
+                        $diagnostic_severity = DiagnosticSeverity::WARNING;
+                        break;
+                    case Config::REPORT_ERROR:
+                    default:
+                        $diagnostic_severity = DiagnosticSeverity::ERROR;
+                        break;
+                }
+                $diagnostic = new Diagnostic(
+                    $description,
+                    $range,
+                    null,
+                    $diagnostic_severity,
+                    'Psalm'
+                );
 
-                    if ($this->project_analyzer->language_server_use_extended_diagnostic_codes) {
-                        // Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
-                        // Since this new functionality is not backwards compatible, we use a
-                        // configuration option so the end user must opt in to it using the cli argument.
-                        // https://github.com/microsoft/vscode/blob/1.43.0/src/vs/vscode.d.ts#L4688-L4699
+                //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
+                $code = $issue_data->link;
 
+                if ($this->project_analyzer->language_server_use_extended_diagnostic_codes) {
+                    // Added in VSCode 1.43.0 and will be part of the LSP 3.16.0 standard.
+                    // Since this new functionality is not backwards compatible, we use a
+                    // configuration option so the end user must opt in to it using the cli argument.
+                    // https://github.com/microsoft/vscode/blob/1.43.0/src/vs/vscode.d.ts#L4688-L4699
+
+                    /** @psalm-suppress InvalidPropertyAssignmentValue */
+                    $diagnostic->code = [
+                        "value" => $code,
+                        "target" => $issue_data->link,
+                    ];
+                } else {
+                    // the Diagnostic constructor only takes `int` for the code, but the property can be
+                    // `int` or `string`, so we set the property directly because we want to use a `string`
                         /** @psalm-suppress InvalidPropertyAssignmentValue */
-                        $diagnostic->code = [
-                            "value" => $code,
-                            "target" => $issue_data->link,
-                        ];
-                    } else {
-                        // the Diagnostic constructor only takes `int` for the code, but the property can be
-                        // `int` or `string`, so we set the property directly because we want to use a `string`
-                        $diagnostic->code = $code;
-                    }
+                    $diagnostic->code = $code;
+                }
 
-                    return $diagnostic;
-                },
-                $data[$file_path] ?? []
-            );
+                $diagnostics[] = $diagnostic;
+            }
 
             $this->client->textDocument->publishDiagnostics($uri, $diagnostics);
         }

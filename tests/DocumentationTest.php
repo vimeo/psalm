@@ -268,22 +268,12 @@ class DocumentationTest extends TestCase
             $php_version = '8.0';
             $ignored_issues = [];
             switch ($issue_name) {
-                case 'MissingThrowsDocblock':
-                    continue 2;
-
-                case 'UncaughtThrowInGlobalScope':
-                    continue 2;
-
                 case 'InvalidStringClass':
-                    continue 2;
-
+                case 'MissingThrowsDocblock':
                 case 'PluginClass':
-                    continue 2;
-
                 case 'RedundantIdentityWithTrue':
-                    continue 2;
-
                 case 'TraitMethodSignatureMismatch':
+                case 'UncaughtThrowInGlobalScope':
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -320,12 +310,13 @@ class DocumentationTest extends TestCase
                     break;
 
                 case 'AmbiguousConstantInheritance':
-                case 'InvalidEnumBackingType':
-                case 'InvalidEnumCaseValue':
+                case 'DeprecatedConstant':
                 case 'DuplicateEnumCase':
                 case 'DuplicateEnumCaseValue':
+                case 'InvalidEnumBackingType':
+                case 'InvalidEnumCaseValue':
                 case 'NoEnumProperties':
-                case 'DeprecatedConstant':
+                case 'OverriddenFinalConstant':
                     $php_version = '8.1';
                     break;
             }

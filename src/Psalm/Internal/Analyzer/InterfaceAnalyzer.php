@@ -37,8 +37,6 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             throw new LogicException('Something went badly wrong');
         }
 
-        $interface_context = new Context($this->fq_class_name);
-
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
@@ -100,7 +98,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $extended_interface_name
                     );
                 }
-                
+
                 $this->checkTemplateParams(
                     $codebase,
                     $class_storage,
@@ -111,15 +109,23 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($class_storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
-                1,
-                $class_storage
-            );
+        $fq_interface_name = $this->getFQCLN();
+
+        if (!$fq_interface_name) {
+            throw new UnexpectedValueException('bad');
         }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+        $interface_context = new Context($this->getFQCLN());
+
+        AttributesAnalyzer::analyze(
+            $this,
+            $interface_context,
+            $class_storage,
+            $this->class->attrGroups,
+            1,
+            $class_storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
@@ -128,7 +134,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $type_provider = new NodeDataProvider();
 
-                $method_analyzer->analyze(new Context($this->getFQCLN()), $type_provider);
+                $method_analyzer->analyze($interface_context, $type_provider);
 
                 $actual_method_id = $method_analyzer->getMethodId();
 

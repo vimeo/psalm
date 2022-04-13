@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TPropertiesOf;
 
 use function array_diff_key;
 use function array_keys;
@@ -67,6 +68,9 @@ class TypeComparatorTest extends TestCase
             'int-mask' => true,
             'pure-Closure' => true,
         ];
+        foreach (TPropertiesOf::tokenNames() as $token_name) {
+            $basic_generic_types[$token_name] = true;
+        }
 
         $basic_types = array_diff_key(
             TypeTokenizer::PSALM_RESERVED_WORDS,

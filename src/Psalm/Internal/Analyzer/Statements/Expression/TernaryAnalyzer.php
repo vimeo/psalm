@@ -98,10 +98,7 @@ class TernaryAnalyzer
         }
 
         $if_clauses = array_map(
-            /**
-             * @return Clause
-             */
-            function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
+            static function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
                 $keys = array_keys($c->possibilities);
 
                 $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -140,7 +137,7 @@ class TernaryAnalyzer
             $ternary_context_clauses = array_values(
                 array_filter(
                     $ternary_context_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
 
@@ -212,9 +209,9 @@ class TernaryAnalyzer
                 return false;
             }
 
-            $context->referenced_var_ids = array_merge(
-                $context->referenced_var_ids,
-                $if_context->referenced_var_ids
+            $context->cond_referenced_var_ids = array_merge(
+                $context->cond_referenced_var_ids,
+                $if_context->cond_referenced_var_ids
             );
         }
 
@@ -302,9 +299,9 @@ class TernaryAnalyzer
             $t_else_context->vars_possibly_in_scope
         );
 
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $t_else_context->referenced_var_ids
+        $context->cond_referenced_var_ids = array_merge(
+            $context->cond_referenced_var_ids,
+            $t_else_context->cond_referenced_var_ids
         );
 
         $lhs_type = null;

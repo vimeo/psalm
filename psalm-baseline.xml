@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@485e516088a22efd18e902926a2efdad1b040d72">
+<files psalm-version="dev-master@f7fc28bf5c23969ef1d9c8fd26f020ade0a2db9e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -17,9 +17,6 @@
       <code>$matches[0]</code>
       <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <PossiblyUnusedProperty occurrences="1">
-      <code>$analysis_php_version_id</code>
-    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -69,11 +66,6 @@
       <code>$switch_scope-&gt;leftover_statements[0]</code>
       <code>$traverser-&gt;traverse([$switch_condition])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/TryAnalyzer.php">
-    <InvalidPropertyAssignmentValue occurrences="1">
-      <code>$catch_context-&gt;assigned_var_ids += $old_catch_assigned_var_ids</code>
-    </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
     <PossiblyUndefinedIntArrayOffset occurrences="34">
@@ -308,7 +300,7 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="9">
+    <PossiblyUndefinedIntArrayOffset occurrences="8">
       <code>$intersection_types[0]</code>
       <code>$parse_tree-&gt;children[0]</code>
       <code>$parse_tree-&gt;condition-&gt;children[0]</code>
@@ -316,14 +308,8 @@
       <code>array_keys($template_type_map[$array_param_name])[0]</code>
       <code>array_keys($template_type_map[$class_name])[0]</code>
       <code>array_keys($template_type_map[$fq_classlike_name])[0]</code>
-      <code>array_keys($template_type_map[$param_name])[0]</code>
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Issue/MethodSignatureMustProvideReturnType.php">
-    <UnusedClass occurrences="1">
-      <code>MethodSignatureMustProvideReturnType</code>
-    </UnusedClass>
   </file>
   <file src="src/Psalm/Node/Stmt/VirtualClass.php">
     <PropertyNotSetInConstructor occurrences="1">
@@ -361,8 +347,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$type[0]</code>
+      <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">

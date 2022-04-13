@@ -11,16 +11,12 @@ use Psalm\Type\Atomic\TLiteralString;
 
 use function array_diff;
 use function array_keys;
-use function array_map;
-use function array_unique;
-use function array_values;
 use function count;
 use function implode;
 use function json_encode;
 use function ksort;
 use function md5;
 use function reset;
-use function sort;
 use function substr;
 
 use const JSON_THROW_ON_ERROR;
@@ -51,14 +47,9 @@ class Clause
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
      *
-     * @var array<string, non-empty-list<Assertion>>
+     * @var array<string, non-empty-array<string, Assertion>>
      */
     public $possibilities;
-
-    /**
-     * @var array<string, non-empty-list<string>>
-     */
-    public $possibility_strings = [];
 
     /**
      * An array of things that are not true
@@ -92,7 +83,7 @@ class Clause
     public $hash;
 
     /**
-     * @param array<string, non-empty-list<Assertion>>  $possibilities
+     * @param array<string, non-empty-array<string, Assertion>>  $possibilities
      * @param array<string, bool> $redefined_vars
      */
     public function __construct(
@@ -109,20 +100,14 @@ class Clause
         } else {
             ksort($possibilities);
 
+            $possibility_strings = [];
+
             foreach ($possibilities as $i => $_) {
-                sort($possibilities[$i]);
+                ksort($possibilities[$i]);
+                $possibility_strings[$i] = array_keys($possibilities[$i]);
             }
 
-            $possibility_strings = array_map(
-                fn($possibility_map) => array_map(
-                    fn($possibility) => (string)$possibility,
-                    $possibility_map
-                ),
-                $possibilities
-            );
-
             $this->hash = md5(json_encode($possibility_strings, JSON_THROW_ON_ERROR));
-            $this->possibility_strings = $possibility_strings;
         }
 
         $this->possibilities = $possibilities;
@@ -154,80 +139,57 @@ class Clause
      */
     public function __toString(): string
     {
-        $clause_strings = array_map(
-            /**
-             * @param non-empty-list<Assertion> $values
-             */
-            function (string $var_id, array $values): string {
-                if ($var_id[0] === '*') {
-                    $var_id = '<expr>';
+        $clause_strings = [];
+
+        foreach ($this->possibilities as $var_id => $values) {
+            if ($var_id[0] === '*') {
+                $var_id = '<expr>';
+            }
+
+            $var_id_clauses = [];
+            foreach ($values as $value) {
+                $value = (string) $value;
+                if ($value === 'falsy') {
+                    $var_id_clauses[] = '!'.$var_id;
+                    continue;
                 }
 
-                $var_id_clauses = array_map(
-                    function (Assertion $value) use ($var_id): string {
-                        $value = (string) $value;
-                        if ($value === 'falsy') {
-                            return '!' . $var_id;
-                        }
-
-                        if ($value === '!falsy') {
-                            return $var_id;
-                        }
-
-                        $negate = false;
-
-                        if ($value[0] === '!') {
-                            $negate = true;
-                            $value = substr($value, 1);
-                        }
-
-                        if ($value[0] === '=') {
-                            $value = substr($value, 1);
-                        }
-
-                        if ($negate) {
-                            return $var_id . ' is not ' . $value;
-                        }
-
-                        return $var_id . ' is ' . $value;
-                    },
-                    $values
-                );
-
-                if (count($var_id_clauses) > 1) {
-                    return '(' . implode(') || (', $var_id_clauses) . ')';
+                if ($value === '!falsy') {
+                    $var_id_clauses[] = $var_id;
+                    continue;
                 }
 
-                return $var_id_clauses[0];
-            },
-            array_keys($this->possibilities),
-            array_values($this->possibilities)
-        );
+                $negate = false;
+
+                if ($value[0] === '!') {
+                    $negate = true;
+                    $value  = substr($value, 1);
+                }
+
+                if ($value[0] === '=') {
+                    $value = substr($value, 1);
+                }
+
+                if ($negate) {
+                    $var_id_clauses[] = $var_id.' is not '.$value;
+                    continue;
+                }
+
+                $var_id_clauses[] = $var_id.' is '.$value;
+            }
+
+            if (count($var_id_clauses) > 1) {
+                $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
+            } else {
+                $clause_strings[] = reset($var_id_clauses);
+            }
+        }
 
         if (count($clause_strings) > 1) {
             return '(' . implode(') || (', $clause_strings) . ')';
         }
 
         return reset($clause_strings);
-    }
-
-    public function makeUnique(): self
-    {
-        $possibilities = $this->possibilities;
-
-        foreach ($possibilities as $var_id => $var_possibilities) {
-            $possibilities[$var_id] = array_values(array_unique($var_possibilities));
-        }
-
-        return new self(
-            $possibilities,
-            $this->creating_conditional_id,
-            $this->creating_object_id,
-            $this->wedge,
-            $this->reconcilable,
-            $this->generated,
-            $this->redefined_vars
-        );
     }
 
     public function removePossibilities(string $var_id): ?self
@@ -251,7 +213,7 @@ class Clause
     }
 
     /**
-     * @param non-empty-list<Assertion> $clause_var_possibilities
+     * @param non-empty-array<string, Assertion> $clause_var_possibilities
      */
     public function addPossibilities(string $var_id, array $clause_var_possibilities): self
     {

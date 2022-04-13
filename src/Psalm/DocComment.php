@@ -32,7 +32,7 @@ final class DocComment
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
         'require-extends', 'require-implements', 'param-out', 'ignore-var',
-        'consistent-templates', 'if-this-is', 'this-out'
+        'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
     ];
 
     /**

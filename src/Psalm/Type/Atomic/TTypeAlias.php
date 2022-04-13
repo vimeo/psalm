@@ -37,7 +37,7 @@ final class TTypeAlias extends Atomic
             return $this->getKey() . '&' . implode(
                 '&',
                 array_map(
-                    fn($type) => $type->getId($exact, true),
+                    static fn(Atomic $type): string => $type->getId($exact, true),
                     $this->extra_types
                 )
             );

@@ -293,7 +293,7 @@ final class IssueBuffer
             . $trace_var
             . '-' . $e->getShortLocation()
             . ':' . $e->code_location->getColumn()
-            . ' ' . $e->dupe_key;
+            . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
@@ -518,7 +518,7 @@ final class IssueBuffer
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
                     . ':' . $issue->column_from
-                    . ' ' . $issue->dupe_key;
+                    . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
@@ -569,7 +569,7 @@ final class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    function (IssueData $d1, IssueData $d2): int {
+                    static function (IssueData $d1, IssueData $d2): int {
                         if ($d1->file_path === $d2->file_path) {
                             if ($d1->line_from === $d2->line_from) {
                                 if ($d1->column_from === $d2->column_from) {

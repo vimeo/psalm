@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -26,7 +27,6 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -94,8 +94,8 @@ class OrAnalyzer
                 return false;
             }
         } else {
-            $pre_referenced_var_ids = $context->referenced_var_ids;
-            $context->referenced_var_ids = [];
+            $pre_referenced_var_ids = $context->cond_referenced_var_ids;
+            $context->cond_referenced_var_ids = [];
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
@@ -129,8 +129,8 @@ class OrAnalyzer
                 }
             }
 
-            $left_referenced_var_ids = $left_context->referenced_var_ids;
-            $left_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
+            $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
+            $left_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
             $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
             $left_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $left_context->assigned_var_ids);
@@ -173,7 +173,7 @@ class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
 
@@ -242,29 +242,24 @@ class OrAnalyzer
         if ($changed_var_ids) {
             $partitioned_clauses = Context::removeReconciledClauses($right_context->clauses, $changed_var_ids);
             $right_context->clauses = $partitioned_clauses[0];
-            $right_context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+            $right_context->reconciled_expression_clauses = $context->reconciled_expression_clauses;
+
+            foreach ($partitioned_clauses[1] as $clause) {
+                $right_context->reconciled_expression_clauses[] = $clause->hash;
+            }
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
             $context->clauses = $partitioned_clauses[0];
-            $context->reconciled_expression_clauses = array_merge(
-                $context->reconciled_expression_clauses,
-                array_map(
-                    fn($c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
-            );
+
+            foreach ($partitioned_clauses[1] as $clause) {
+                $context->reconciled_expression_clauses[] = $clause->hash;
+            }
         }
 
         $right_context->if_body_context = null;
 
-        $pre_referenced_var_ids = $right_context->referenced_var_ids;
-        $right_context->referenced_var_ids = [];
+        $pre_referenced_var_ids = $right_context->cond_referenced_var_ids;
+        $right_context->cond_referenced_var_ids = [];
 
         $pre_assigned_var_ids = $right_context->assigned_var_ids;
         $right_context->assigned_var_ids = [];
@@ -275,8 +270,8 @@ class OrAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
-        $right_referenced_var_ids = $right_context->referenced_var_ids;
-        $right_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
+        $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
+        $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
 
         $right_assigned_var_ids = $right_context->assigned_var_ids;
         $right_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $right_assigned_var_ids);
@@ -361,9 +356,9 @@ class OrAnalyzer
             $context->updateChecks($right_context);
         }
 
-        $context->referenced_var_ids = array_merge(
-            $right_context->referenced_var_ids,
-            $context->referenced_var_ids
+        $context->cond_referenced_var_ids = array_merge(
+            $right_context->cond_referenced_var_ids,
+            $context->cond_referenced_var_ids
         );
 
         $context->assigned_var_ids = array_merge(
@@ -390,9 +385,9 @@ class OrAnalyzer
                 }
             }
 
-            $if_body_context->referenced_var_ids = array_merge(
-                $context->referenced_var_ids,
-                $if_body_context->referenced_var_ids
+            $if_body_context->cond_referenced_var_ids = array_merge(
+                $context->cond_referenced_var_ids,
+                $if_body_context->cond_referenced_var_ids
             );
 
             $if_body_context->assigned_var_ids = array_merge(

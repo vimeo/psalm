@@ -46,7 +46,6 @@ use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -182,9 +181,13 @@ class FunctionLikeDocblockScanner
                 $line
             );
 
-            $class_names = array_filter(array_map('trim', explode('|', $throw)));
+            foreach (explode('|', $throw) as $throw_class) {
+                $throw_class = trim($throw_class);
 
-            foreach ($class_names as $throw_class) {
+                if ($throw_class === '') {
+                    continue;
+                }
+
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
                     $exception_fqcln = Type::getFQCLNFromString(
                         $throw_class,
@@ -285,7 +288,7 @@ class FunctionLikeDocblockScanner
         if ($storage instanceof MethodStorage) {
             $storage->has_docblock_param_types = (bool) array_filter(
                 $storage->params,
-                fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type
+                static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type
             );
         }
 
@@ -895,7 +898,7 @@ class FunctionLikeDocblockScanner
 
         $params_without_docblock_type = array_filter(
             $storage->params,
-            fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray())
+            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray())
         );
 
         if ($params_without_docblock_type) {

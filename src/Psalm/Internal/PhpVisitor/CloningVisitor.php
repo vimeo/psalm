@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
-use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
-
-use function array_map;
 
 /**
  * Visitor cloning all nodes and linking to the original nodes using an attribute.
@@ -22,17 +19,14 @@ class CloningVisitor extends NodeVisitorAbstract
     public function enterNode(Node $node): Node
     {
         $node = clone $node;
-        if ($cs = $node->getComments()) {
-            $node->setAttribute(
-                'comments',
-                array_map(
-                    /**
-                     * @return Comment
-                     */
-                    fn(Comment $c): Comment => clone $c,
-                    $cs
-                )
-            );
+
+        if (($cs = $node->getComments()) !== []) {
+            $comments = [];
+            foreach ($cs as $i => $comment) {
+                $comments[$i] = clone $comment;
+            }
+
+            $node->setAttribute('comments', $comments);
         }
 
         return $node;

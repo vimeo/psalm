@@ -33,6 +33,7 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TClassString;
@@ -462,7 +463,8 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
                         array_map(
-                            fn($assertion) => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                            static fn(Possibilities $assertion): Possibilities
+                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_true_assertions
                         )
                     );
@@ -472,7 +474,8 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
                         array_map(
-                            fn($assertion) => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                            static fn(Possibilities $assertion): Possibilities
+                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_false_assertions
                         )
                     );
@@ -494,11 +497,12 @@ class NewAnalyzer extends CallAnalyzer
                             $template_name,
                             $storage->template_extended_params,
                             array_map(
-                                fn($type_map) => array_map(
-                                    fn($bounds) => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                        $bounds,
-                                        $codebase
-                                    ),
+                                static fn(array $type_map): array => array_map(
+                                    static fn(array $bounds): Union
+                                        => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            $bounds,
+                                            $codebase
+                                        ),
                                     $type_map
                                 ),
                                 $template_result->lower_bounds
@@ -545,7 +549,7 @@ class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 array_values(
                     array_map(
-                        fn($map) => clone reset($map),
+                        static fn($map) => clone reset($map),
                         $storage->template_types
                     )
                 )

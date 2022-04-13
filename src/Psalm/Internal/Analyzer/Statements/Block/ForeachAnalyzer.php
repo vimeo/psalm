@@ -60,7 +60,6 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -376,11 +375,6 @@ class ForeachAnalyzer
         $context->vars_possibly_in_scope = array_merge(
             $foreach_context->vars_possibly_in_scope,
             $context->vars_possibly_in_scope
-        );
-
-        $context->referenced_var_ids = array_intersect_key(
-            $foreach_context->referenced_var_ids,
-            $context->referenced_var_ids
         );
 
         if ($context->collect_exceptions) {
@@ -1017,7 +1011,7 @@ class ForeachAnalyzer
                     : array_values(
                         array_map(
                             /** @param array<string, Union> $arr */
-                            fn(array $arr): Union => $arr[$iterator_atomic_type->value] ?? Type::getMixed(),
+                            static fn(array $arr): Union => $arr[$iterator_atomic_type->value] ?? Type::getMixed(),
                             $generic_storage->template_types
                         )
                     );

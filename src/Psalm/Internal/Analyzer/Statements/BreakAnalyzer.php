@@ -76,16 +76,14 @@ class BreakAnalyzer
         $case_scope = $context->case_scope;
         if ($case_scope && $leaving_switch) {
             foreach ($context->vars_in_scope as $var_id => $type) {
-                if ($case_scope->parent_context !== $context) {
-                    if ($case_scope->break_vars === null) {
-                        $case_scope->break_vars = [];
-                    }
-
-                    $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
-                        $type,
-                        $case_scope->break_vars[$var_id] ?? null
-                    );
+                if ($case_scope->break_vars === null) {
+                    $case_scope->break_vars = [];
                 }
+
+                $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
+                    $type,
+                    $case_scope->break_vars[$var_id] ?? null
+                );
             }
         }
 

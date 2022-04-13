@@ -408,8 +408,6 @@ class TextDocument
                  * https://github.com/felixfbecker/php-language-server-protocol
                  * See:
                  * https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
-                 *
-                 * @psalm-suppress InvalidArgument
                  */
                 $edit = new WorkspaceEdit([
                     $textDocument->uri => [

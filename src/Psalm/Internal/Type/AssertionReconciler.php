@@ -45,8 +45,11 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
@@ -793,6 +796,13 @@ class AssertionReconciler extends Reconciler
             $matching_atomic_type = $new_range;
         }
 
+        // Lowercase-string and non-empty-string are compatible but none is contained into the other completely
+        if (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyString) ||
+            ($type_2_atomic instanceof TNonEmptyString && $type_1_atomic instanceof TLowercaseString)
+        ) {
+            $matching_atomic_type = new TNonEmptyLowercaseString();
+        }
+
         if (!$atomic_comparison_results->type_coerced && $atomic_comparison_results->scalar_type_match_found) {
             $any_scalar_type_match_found = true;
         }
@@ -1526,7 +1536,7 @@ class AssertionReconciler extends Reconciler
                     new TypeDoesNotContainType(
                         'Cannot allow string comparison to object for ' . $key,
                         $code_location,
-                        null
+                        "no string comparison to $key"
                     ),
                     $suppressed_issues
                 );

@@ -18,12 +18,10 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
-use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -77,7 +75,7 @@ class IfConditionalAnalyzer
                     $entry_clauses = array_values(
                         array_filter(
                             $entry_clauses,
-                            fn(Clause $c): bool => count($c->possibilities) > 1
+                            static fn(Clause $c): bool => count($c->possibilities) > 1
                                 || $c->wedge
                                 || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
                         )
@@ -98,8 +96,8 @@ class IfConditionalAnalyzer
 
         $pre_condition_vars_in_scope = $outer_context->vars_in_scope;
 
-        $referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = [];
+        $referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = [];
 
         $pre_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = [];
@@ -128,8 +126,8 @@ class IfConditionalAnalyzer
             $first_cond_assigned_var_ids
         );
 
-        $first_cond_referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = array_merge(
+        $first_cond_referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = array_merge(
             $referenced_var_ids,
             $first_cond_referenced_var_ids
         );
@@ -161,7 +159,7 @@ class IfConditionalAnalyzer
             $if_conditional_context->assigned_var_ids = [];
 
             $referenced_var_ids = $first_cond_referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = [];
+            $if_conditional_context->cond_referenced_var_ids = [];
 
             $was_inside_conditional = $if_conditional_context->inside_conditional;
 
@@ -174,8 +172,8 @@ class IfConditionalAnalyzer
             $if_conditional_context->inside_conditional = $was_inside_conditional;
 
             /** @var array<string, bool> */
-            $more_cond_referenced_var_ids = $if_conditional_context->referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = array_merge(
+            $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
+            $if_conditional_context->cond_referenced_var_ids = array_merge(
                 $more_cond_referenced_var_ids,
                 $referenced_var_ids
             );
@@ -202,20 +200,16 @@ class IfConditionalAnalyzer
             $assigned_in_conditional_var_ids = $first_cond_assigned_var_ids;
         }
 
-        $newish_var_ids = array_map(
-            /**
-             * @param Union $_
-             *
-             * @return true
-             */
-            fn(Union $_): bool => true,
-            array_diff_key(
-                $if_conditional_context->vars_in_scope,
-                $pre_condition_vars_in_scope,
-                $cond_referenced_var_ids,
-                $assigned_in_conditional_var_ids
-            )
-        );
+        $newish_var_ids = [];
+
+        foreach (array_diff_key(
+            $if_conditional_context->vars_in_scope,
+            $pre_condition_vars_in_scope,
+            $cond_referenced_var_ids,
+            $assigned_in_conditional_var_ids
+        ) as $name => $_value) {
+            $newish_var_ids[$name] = true;
+        }
 
         self::handleParadoxicalCondition($statements_analyzer, $cond, true);
 

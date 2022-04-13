@@ -64,7 +64,7 @@ class TextDocument
             /**
              * @return Generator<int, Promise<object>, object, TextDocumentItem>
              */
-            function () use ($textDocument) {
+            static function () use ($textDocument) {
                 /** @var Promise<object> */
                 $promise = $this->handler->request(
                     'textDocument/xcontent',

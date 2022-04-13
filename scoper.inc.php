@@ -39,17 +39,6 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if (strpos($filePath, 'vendor/phpmyadmin/sql-parser/src/Context.php') === 0) {
-                return str_replace(
-                    '\'' . $prefix,
-                    '\'\\\\' . $prefix,
-                    $contents
-                );
-            }
-
-            return $contents;
-        },
-        function ($filePath, $prefix, $contents) {
             if (strpos($filePath, 'vendor/openlss') === 0) {
                 return str_replace(
                     $prefix . '\\DomDocument',
@@ -82,9 +71,15 @@ return [
     ],
     'whitelist' => [
         ClassLoader::class,
+        Stringable::class,
         'Psalm\*',
     ],
     'files-whitelist' => [
         'src/spl_object_id.php',
+        'vendor/symfony/polyfill-php80/Php80.php',
+        'vendor/symfony/polyfill-php80/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
+        'vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php',
     ],
 ];

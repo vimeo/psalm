@@ -394,15 +394,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $this,
-                $attribute,
-                $storage->suppressed_issues + $this->getSuppressedIssues(),
-                1,
-                $storage
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $this,
+            $class_context,
+            $storage,
+            $class->attrGroups,
+            1,
+            $storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         self::addContextProperties(
             $this,
@@ -550,8 +549,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         foreach ($class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Property && !$storage->is_enum && !isset($stmt->type)) {
-                $this->checkForMissingPropertyType($this, $stmt, $class_context);
+            if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                $this->analyzeProperty($this, $stmt, $class_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -595,7 +594,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt, $class_context);
+                            $this->analyzeProperty($trait_analyzer, $trait_stmt, $class_context);
                         }
                     }
 
@@ -895,7 +894,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
                 $stmt = array_filter(
                     $stmts,
-                    fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
+                    static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
                         && $stmt->props[0]->name->name === $property_name
                 );
@@ -1115,7 +1114,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $constructor_storage = $constructor_class_storage->methods['__construct'];
 
                 $fake_constructor_params = array_map(
-                    function (FunctionLikeParameter $param): PhpParser\Node\Param {
+                    static function (FunctionLikeParameter $param): PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
                             $fake_param->setType((string)$param->signature_type);
@@ -1139,7 +1138,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 $fake_constructor_stmt_args = array_map(
-                    function (FunctionLikeParameter $param): PhpParser\Node\Arg {
+                    static function (FunctionLikeParameter $param): PhpParser\Node\Arg {
                         $attributes = $param->location
                             ? [
                                 'startFilePos' => $param->location->raw_file_start,
@@ -1487,7 +1486,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         return null;
     }
 
-    private function checkForMissingPropertyType(
+    private function analyzeProperty(
         SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
         Context $context
@@ -1517,14 +1516,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $property_storage = $class_storage->properties[$property_name];
 
-        foreach ($property_storage->attributes as $attribute) {
-            AttributeAnalyzer::analyze(
-                $source,
-                $attribute,
-                $this->source->getSuppressedIssues(),
-                8
-            );
-        }
+        AttributesAnalyzer::analyze(
+            $source,
+            $context,
+            $property_storage,
+            $stmt->attrGroups,
+            8,
+            $property_storage->suppressed_issues + $this->getSuppressedIssues()
+        );
 
         if ($class_property_type && ($property_storage->type_location || !$codebase->alter_code)) {
             return;
@@ -1944,7 +1943,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $overridden_method_ids = array_map(
-            fn($method_id) => $method_id->__toString(),
+            static fn($method_id): string => $method_id->__toString(),
             $overridden_method_ids
         );
 

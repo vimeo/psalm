@@ -72,6 +72,7 @@
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
         <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
+        <xs:attribute name="threads" type="xs:integer" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -193,6 +194,7 @@
             <xs:element name="AmbiguousConstantInheritance" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="ArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
@@ -249,6 +251,7 @@
             <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCatch" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidClassConstantType" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidConstantAssignmentValue" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
@@ -343,6 +346,7 @@
             <xs:element name="NullPropertyAssignment" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenFinalConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenInterfaceConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />

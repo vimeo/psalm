@@ -609,6 +609,8 @@ class IntRangeTest extends TestCase
                     $i = max($b, $c, $d);
                     $j = max($d, $e);
                     $k = max($e, 40);
+                    $l = min($a, ...[$b, $c], $d);
+                    $m = max(...[$a, ...[$b, $c]], $d);
                     ',
                 'assertions' => [
                     '$f===' => 'int<min, -16>',
@@ -617,6 +619,8 @@ class IntRangeTest extends TestCase
                     '$i===' => 'int<20, max>',
                     '$j===' => 'int<20, max>',
                     '$k===' => 'int<40, max>',
+                    '$l===' => 'int<min, -16>',
+                    '$m===' => 'int<20, max>',
                 ],
             ],
             'dontCrashOnFalsy' => [
@@ -813,7 +817,23 @@ class IntRangeTest extends TestCase
 
                         return true;
                     }'
-            ]
+            ],
+            'literalArrayUnpack' => [
+                'code' => '<?php
+                    /** @var int<0, 5> */
+                    $a = 2;
+                    /** @var int<6, 10> */
+                    $b = 9;
+
+                    /**
+                     * @param int<0, 5> $_a
+                     * @param int<6, 10> $_b
+                     */
+                    function foo(int $_a, int $_b): void {}
+
+                    foo(...[$a, $b]);
+                ',
+            ],
         ];
     }
 

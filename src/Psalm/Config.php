@@ -49,7 +49,6 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_key_exists;
-use function array_map;
 use function array_merge;
 use function array_pad;
 use function array_pop;
@@ -164,13 +163,9 @@ class Config
 
     /**
      * These are special object classes that allow any and all properties to be get/set on them
-     * @var array<int, class-string>
+     * @var array<int, lowercase-string>
      */
-    protected $universal_object_crates = [
-        stdClass::class,
-        SimpleXMLElement::class,
-        SimpleXMLIterator::class,
-    ];
+    protected $universal_object_crates;
 
     /**
      * @var static|null
@@ -366,6 +361,11 @@ class Config
      * @var bool
      */
     public $add_param_default_to_docblock_type = false;
+
+    /**
+     * @var bool
+     */
+    public $disable_var_parsing = false;
 
     /**
      * @var bool
@@ -614,6 +614,11 @@ class Config
     {
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();
+        $this->universal_object_crates = [
+            strtolower(stdClass::class),
+            strtolower(SimpleXMLElement::class),
+            strtolower(SimpleXMLIterator::class),
+        ];
     }
 
     /**
@@ -954,6 +959,7 @@ class Config
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
+            'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'disableSuppressAll' => 'disable_suppress_all',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
@@ -1300,8 +1306,8 @@ class Config
             }
         }
 
-        if (isset($config_xml->threads)) {
-            $config->threads = (int)$config_xml->threads;
+        if (isset($config_xml['threads'])) {
+            $config->threads = (int)$config_xml['threads'];
         }
 
         return $config;
@@ -2221,7 +2227,7 @@ class Config
 
         if (file_exists($vendor_autoload_files_path)) {
             $this->include_collector->runAndCollect(
-                fn(): array =>
+                static fn(): array =>
                     /**
                      * @psalm-suppress UnresolvableInclude
                      * @var string[]
@@ -2240,11 +2246,7 @@ class Config
             $codebase->classlikes->forgetMissingClassLikes();
 
             $this->include_collector->runAndCollect(
-                function (): void {
-                    // do this in a separate method so scope does not leak
-                    /** @psalm-suppress UnresolvableInclude */
-                    require $this->autoloader;
-                }
+                [$this, 'requireAutoloader']
             );
         }
 
@@ -2432,7 +2434,7 @@ class Config
         if (!class_exists($class)) {
             throw new UnexpectedValueException($class . ' is not a known class');
         }
-        $this->universal_object_crates[] = $class;
+        $this->universal_object_crates[] = strtolower($class);
     }
 
     /**
@@ -2440,6 +2442,13 @@ class Config
      */
     public function getUniversalObjectCrates(): array
     {
-        return array_map('strtolower', $this->universal_object_crates);
+        return $this->universal_object_crates;
+    }
+
+    /** @internal */
+    public function requireAutoloader(): void
+    {
+        /** @psalm-suppress UnresolvableInclude */
+        require $this->autoloader;
     }
 }

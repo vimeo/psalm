@@ -3124,7 +3124,7 @@ class AssertionFinder
                         new DocblockTypeContradiction(
                             $var_type . ' does not contain an empty array',
                             new CodeLocation($source, $conditional),
-                            null
+                            $var_type . ' !== []'
                         ),
                         $source->getSuppressedIssues()
                     );
@@ -3133,7 +3133,7 @@ class AssertionFinder
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain empty array',
                             new CodeLocation($source, $conditional),
-                            null
+                            $var_type . ' !== []'
                         ),
                         $source->getSuppressedIssues()
                     );

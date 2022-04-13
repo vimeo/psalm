@@ -10,7 +10,6 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_intersect_key;
 use function array_merge;
 use function in_array;
 
@@ -108,11 +107,6 @@ class WhileAnalyzer
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
-
-        $context->referenced_var_ids = array_intersect_key(
-            $while_context->referenced_var_ids,
-            $context->referenced_var_ids
-        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($while_context);

@@ -27,7 +27,6 @@ use function array_diff_key;
 use function array_filter;
 use function array_key_exists;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_reduce;
 use function array_unique;
@@ -70,7 +69,6 @@ class ElseIfAnalyzer
             $elseif_context = $if_conditional_scope->if_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-            $entry_clauses = $if_conditional_scope->entry_clauses;
         } catch (ScopeAnalysisException $e) {
             return false;
         }
@@ -94,47 +92,40 @@ class ElseIfAnalyzer
             $codebase
         );
 
-        $elseif_clauses = array_map(
-            /**
-             * @return Clause
-             */
-            function (Clause $c) use ($mixed_var_ids, $elseif_cond_id): Clause {
-                $keys = array_keys($c->possibilities);
+        $elseif_clauses_handled = [];
 
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+        foreach ($elseif_clauses as $clause) {
+            $keys = array_keys($clause->possibilities);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $elseif_cond_id, $elseif_cond_id, true);
-                        }
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $elseif_clauses_handled[] = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        break 2;
                     }
                 }
+            }
 
-                return $c;
-            },
-            $elseif_clauses
-        );
+            $elseif_clauses_handled[] = $clause;
+        }
 
-        $entry_clauses = array_map(
-            /**
-             * @return Clause
-             */
-            function (Clause $c) use ($assigned_in_conditional_var_ids, $elseif_cond_id): Clause {
-                $keys = array_keys($c->possibilities);
+        $elseif_clauses = $elseif_clauses_handled;
 
-                foreach ($keys as $key) {
-                    foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
-                        if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
-                            return new Clause([], $elseif_cond_id, $elseif_cond_id, true);
-                        }
+        $entry_clauses = [];
+
+        foreach ($if_conditional_scope->entry_clauses as $c) {
+            foreach ($c->possibilities as $key => $_value) {
+                foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
+                    if (preg_match('/^'.preg_quote($conditional_assigned_var_id, '/').'(\[|-|$)/', $key)) {
+                        $entry_clauses[] =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        break 2;
                     }
                 }
+            }
 
-                return $c;
-            },
-            $entry_clauses
-        );
+            $entry_clauses[] = $c;
+        }
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
@@ -153,7 +144,7 @@ class ElseIfAnalyzer
             $elseif_context_clauses = array_values(
                 array_filter(
                     $elseif_context_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
                 )
             );
         }
@@ -165,7 +156,7 @@ class ElseIfAnalyzer
         try {
             if (array_filter(
                 $entry_clauses,
-                fn($clause): bool => (bool)$clause->possibilities
+                static fn(Clause $clause): bool => (bool) $clause->possibilities
             )) {
                 $omit_keys = array_reduce(
                     $entry_clauses,
@@ -173,7 +164,8 @@ class ElseIfAnalyzer
                      * @param array<string> $carry
                      * @return array<string>
                      */
-                    fn(array $carry, Clause $clause): array => array_merge($carry, array_keys($clause->possibilities)),
+                    static fn(array $carry, Clause $clause): array
+                        => array_merge($carry, array_keys($clause->possibilities)),
                     []
                 );
 

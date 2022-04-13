@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
@@ -51,13 +52,13 @@ class AndAnalyzer
             return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
         }
 
-        $pre_referenced_var_ids = $context->referenced_var_ids;
+        $pre_referenced_var_ids = $context->cond_referenced_var_ids;
 
         $pre_assigned_var_ids = $context->assigned_var_ids;
 
         $left_context = clone $context;
 
-        $left_context->referenced_var_ids = [];
+        $left_context->cond_referenced_var_ids = [];
         $left_context->assigned_var_ids = [];
 
         /** @var list<string> $left_context->reconciled_expression_clauses */
@@ -89,8 +90,8 @@ class AndAnalyzer
         }
 
         /** @var array<string, bool> */
-        $left_referenced_var_ids = $left_context->referenced_var_ids;
-        $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
+        $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
+        $context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
         $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
@@ -104,7 +105,7 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    fn($c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
                 )
             );
 
@@ -129,15 +130,14 @@ class AndAnalyzer
 
         $changed_var_ids = [];
 
-        $right_context = clone $left_context;
-
         if ($left_type_assertions) {
+            $right_context = clone $context;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $right_vars_in_scope = Reconciler::reconcileKeyedTypes(
                 $left_type_assertions,
                 $active_left_assertions,
-                $context->vars_in_scope,
+                $right_context->vars_in_scope,
                 $context->references_in_scope,
                 $changed_var_ids,
                 $left_referenced_var_ids,
@@ -149,6 +149,8 @@ class AndAnalyzer
             );
 
             $right_context->vars_in_scope = $right_vars_in_scope;
+        } else {
+            $right_context = clone $left_context;
         }
 
         $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);
@@ -161,9 +163,9 @@ class AndAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
-        $context->referenced_var_ids = array_merge(
-            $right_context->referenced_var_ids,
-            $left_context->referenced_var_ids
+        $context->cond_referenced_var_ids = array_merge(
+            $right_context->cond_referenced_var_ids,
+            $left_context->cond_referenced_var_ids
         );
 
         if ($context->inside_conditional) {
@@ -188,9 +190,9 @@ class AndAnalyzer
                 $context->vars_in_scope
             );
 
-            $if_body_context->referenced_var_ids = array_merge(
-                $if_body_context->referenced_var_ids,
-                $context->referenced_var_ids,
+            $if_body_context->cond_referenced_var_ids = array_merge(
+                $if_body_context->cond_referenced_var_ids,
+                $context->cond_referenced_var_ids,
             );
 
             $if_body_context->assigned_var_ids = array_merge(
@@ -201,7 +203,8 @@ class AndAnalyzer
             $if_body_context->reconciled_expression_clauses = array_merge(
                 $if_body_context->reconciled_expression_clauses,
                 array_map(
-                    fn($c) => $c->hash,
+                    /** @return string|int */
+                    static fn(Clause $c) => $c->hash,
                     $partitioned_clauses[1]
                 )
             );
