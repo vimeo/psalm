@@ -41,9 +41,21 @@ return [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
     ],
+    'DateTime::getTimestamp' => [
+      'old' => ['int|false'],
+      'new' => ['int'],
+    ],
+    'DateTimeInterface::getTimestamp' => [
+       'old' => ['int|false'],
+       'new' => ['int'],
+    ],
     'DateTimeImmutable::format' => [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
+    ],
+    'DateTimeImmutable::getTimestamp' => [
+        'old' => ['int|false'],
+        'new' => ['int'],
     ],
     'DateTimeZone::listIdentifiers' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
