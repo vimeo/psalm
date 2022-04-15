@@ -451,7 +451,7 @@ class ArithmeticOpAnalyzer
             ) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
-                        'Left operand cannot be a non-int template',
+                        'Left operand cannot be a non-numeric template',
                         new CodeLocation($statements_source, $left)
                     ),
                     $statements_source->getSuppressedIssues()
@@ -464,7 +464,7 @@ class ArithmeticOpAnalyzer
             ) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
-                        'Right operand cannot be a non-int template',
+                        'Right operand cannot be a non-numeric template',
                         new CodeLocation($statements_source, $right)
                     ),
                     $statements_source->getSuppressedIssues()
