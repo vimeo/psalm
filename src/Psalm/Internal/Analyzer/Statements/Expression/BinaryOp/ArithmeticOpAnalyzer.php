@@ -444,7 +444,10 @@ class ArithmeticOpAnalyzer
         }
 
         if ($left_type_part instanceof TTemplateParam || $right_type_part instanceof TTemplateParam) {
-            if ($left_type_part instanceof TTemplateParam && !$left_type_part->as->isInt() && !$left_type_part->as->isFloat()) {
+            if ($left_type_part instanceof TTemplateParam
+                && !$left_type_part->as->isInt()
+                && !$left_type_part->as->isFloat()
+            ) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
                         'Left operand cannot be a non-int template',
@@ -454,7 +457,10 @@ class ArithmeticOpAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($right_type_part instanceof TTemplateParam && !$right_type_part->as->isInt() && !$right_type_part->as->isFloat()) {
+            } elseif ($right_type_part instanceof TTemplateParam
+                && !$right_type_part->as->isInt()
+                && !$right_type_part->as->isFloat()
+            ) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
                         'Right operand cannot be a non-int template',
