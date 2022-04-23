@@ -116,10 +116,13 @@ class ArgTest extends TestCase
                     ksort($a);
                     $b = ["b" => 5, "a" => 8];
                     sort($b);
+                    $c = [];
+                    sort($c);
                 ',
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
-                    '$b' => 'list<int>',
+                    '$b' => 'non-empty-list<int>',
+                    '$c' => 'list<empty>',
                 ],
             ],
             'arrayModificationFunctions' => [
